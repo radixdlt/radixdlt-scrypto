@@ -209,6 +209,7 @@ pub enum Type {
     Decimal,
     PreciseDecimal,
     NonFungibleId,
+    Bytes
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -251,7 +252,7 @@ pub enum Value {
     // Other interpreted types
     Expression(Box<Value>),
     Blob(Box<Value>),
-    NonFungibleAddress(Box<Value>),
+    NonFungibleAddress(Vec<Value>),
 
     // Uninterpreted,
     Hash(Box<Value>),
@@ -262,6 +263,7 @@ pub enum Value {
     Decimal(Box<Value>),
     PreciseDecimal(Box<Value>),
     NonFungibleId(Box<Value>),
+    Bytes(Box<Value>)
 }
 
 impl Value {
@@ -311,6 +313,7 @@ impl Value {
             Value::Decimal(_) => Type::Decimal,
             Value::PreciseDecimal(_) => Type::PreciseDecimal,
             Value::NonFungibleId(_) => Type::NonFungibleId,
+            Value::Bytes(_) => Type::Bytes
         }
     }
 }

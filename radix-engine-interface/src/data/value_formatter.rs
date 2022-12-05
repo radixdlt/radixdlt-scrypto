@@ -256,7 +256,7 @@ pub fn format_custom_value<F: fmt::Write>(
             write!(f, "Blob(\"{}\")", value)?;
         }
         ScryptoCustomValue::NonFungibleAddress(value) => {
-            write!(f, "NonFungibleAddress(\"{}\")", value)?;
+            write!(f, "NonFungibleAddress({})", value)?;
         }
         // Uninterpreted
         ScryptoCustomValue::Hash(value) => {

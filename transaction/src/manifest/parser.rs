@@ -300,7 +300,8 @@ impl Parser {
             TokenKind::EddsaEd25519Signature |
             TokenKind::Decimal |
             TokenKind::PreciseDecimal |
-            TokenKind::NonFungibleId  => self.parse_scrypto_types(),
+            TokenKind::NonFungibleId |
+            TokenKind::Bytes => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -360,7 +361,7 @@ impl Parser {
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
             TokenKind::NonFungibleAddress => {
-                Ok(Value::NonFungibleAddress(self.parse_values_one()?.into()))
+                Ok(Value::NonFungibleAddress(self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?.into()))
             }
 
             // Uninterpreted
@@ -379,7 +380,12 @@ impl Parser {
             )),
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
+            TokenKind::NonFungibleId => {
+                Ok(Value::NonFungibleId(self.parse_values_one()?.into()))
+            }
+            TokenKind::Bytes => {
+                Ok(Value::Bytes(self.parse_values_one()?.into()))
+            }
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }

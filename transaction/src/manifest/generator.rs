@@ -917,24 +917,43 @@ fn generate_vault(value: &ast::Value) -> Result<Vault, GeneratorError> {
     }
 }
 
+fn generate_non_fungible_id_internal(value: &ast::Value) -> Result<NonFungibleId, GeneratorError> {
+    match value {
+        ast::Value::U32(u) => Ok(NonFungibleId::U32(*u)),
+        ast::Value::U64(u) => Ok(NonFungibleId::U64(*u)),
+        ast::Value::U128(u) => Ok(NonFungibleId::UUID(*u)),
+        ast::Value::String(s) => Ok(NonFungibleId::String(s.clone())),
+        ast::Value::Bytes(v) => match &**v {
+                ast::Value::String(s) => NonFungibleId::try_bytes_from_hex(s)
+                    .map_err(|_| GeneratorError::InvalidNonFungibleId(s.into())),
+                v => invalid_type!(v, ast::Type::String),
+            }
+        v => invalid_type!(v, ast::Type::String),
+    }
+}
+
 fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleId, GeneratorError> {
     match value {
-        ast::Value::NonFungibleId(inner) => match &**inner {
-            ast::Value::String(s) => NonFungibleId::from_str(s)
-                .map_err(|_| GeneratorError::InvalidNonFungibleId(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
+        ast::Value::NonFungibleId(inner) => generate_non_fungible_id_internal(inner),
         v => invalid_type!(v, ast::Type::NonFungibleId),
     }
 }
 
 fn generate_non_fungible_address(value: &ast::Value) -> Result<NonFungibleAddress, GeneratorError> {
     match value {
-        ast::Value::NonFungibleAddress(inner) => match &**inner {
-            ast::Value::String(s) => NonFungibleAddress::from_str(s)
-                .map_err(|_| GeneratorError::InvalidNonFungibleAddress(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
+        ast::Value::NonFungibleAddress(vec) => {
+            if vec.len() != 2 {
+                return invalid_type!(value, ast::Type::NonFungibleAddress)
+            } else {
+                let resource_address = match &vec[0] {
+                    ast::Value::String(s) => ResourceAddress::try_from_hex(s).
+                        map_err(|_| GeneratorError::InvalidNonFungibleAddress(s.into()))?,
+                    _ => return invalid_type!(value, ast::Type::NonFungibleAddress)
+                };
+                let nfid = generate_non_fungible_id_internal(&vec[1])?;
+                Ok(NonFungibleAddress::new(resource_address, nfid))
+            } 
+        }
         v => invalid_type!(v, ast::Type::NonFungibleAddress),
     }
 }
@@ -1124,6 +1143,10 @@ fn generate_value(
                 value: ScryptoCustomValue::NonFungibleId(v),
             })
         }
+        ast::Value::Bytes(value) =>  
+            Ok( SborValue::String {
+                value: generate_string(value)?
+            } )
     }
 }
 
@@ -1203,6 +1226,7 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::Decimal => SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
         ast::Type::PreciseDecimal => SborTypeId::Custom(ScryptoCustomTypeId::PreciseDecimal),
         ast::Type::NonFungibleId => SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId),
+        ast::Type::Bytes => SborTypeId::String,
     }
 }
 

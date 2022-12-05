@@ -346,7 +346,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "PUBLISH_PACKAGE_WITH_OWNER Blob(\"{}\") Blob(\"{}\") NonFungibleAddress(\"{}\");",
+                "PUBLISH_PACKAGE_WITH_OWNER Blob(\"{}\") Blob(\"{}\") NonFungibleAddress({});",
                 code, abi, owner_badge,
             )?;
         }

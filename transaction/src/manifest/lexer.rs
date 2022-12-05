@@ -77,6 +77,7 @@ pub enum TokenKind {
     Decimal,
     PreciseDecimal,
     NonFungibleId,
+    Bytes,
 
     /* Punctuations */
     OpenParenthesis,
@@ -417,6 +418,7 @@ impl Lexer {
             "Decimal" => Ok(TokenKind::Decimal),
             "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
             "NonFungibleId" => Ok(TokenKind::NonFungibleId),
+            "Bytes" => Ok(TokenKind::Bytes),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),

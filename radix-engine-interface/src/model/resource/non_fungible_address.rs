@@ -117,7 +117,7 @@ impl fmt::Display for NonFungibleAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         // Note that if the non-fungible ID is empty, the non-fungible address won't be distinguishable from resource address.
         // TODO: figure out what's best for the users
-        write!(f, "{}", hex::encode(&self.to_vec()))
+        write!(f, "\"{}\", {}", self.resource_address.to_hex(), self.non_fungible_id)
     }
 }
 
