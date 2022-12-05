@@ -921,7 +921,6 @@ mod tests {
                 { "type": "NonFungibleId", "value": "hello" },
                 { "type": "NonFungibleId", "value": 123 },
                 { "type": "NonFungibleId", "value": "123" },
-                { "type": "NonFungibleId", "value": "123.456" },
                 { "type": "NonFungibleId", "value": { "hex": "2345" } },
                 { "type": "NonFungibleId", "value": "371" },
             ]
@@ -981,7 +980,6 @@ mod tests {
                         { "type": "NonFungibleId", "value": { "type": "String", "value": "hello" } },
                         { "type": "NonFungibleId", "value": { "type": "U32", "value": 123 } },
                         { "type": "NonFungibleId", "value": { "type": "U64", "value": "123" } },
-                        { "type": "NonFungibleId", "value": { "type": "Decimal", "value": "123.456" } },
                         { "type": "NonFungibleId", "value": { "type": "Array", "element_type": "U8", "value": { "hex": "2345" } } },
                         { "type": "NonFungibleId", "value": { "type": "U128", "value": "371" } },
                     ]
