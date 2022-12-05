@@ -1,12 +1,8 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
-use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
-    ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
-};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId, RENodeId};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValueDecodeError,
-    ValueFormattingContext,
+    scrypto_encode, IndexedScryptoValue, ScryptoValueDecodeError, ValueFormattingContext,
 };
 use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
@@ -326,19 +322,30 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("DROP_ALL_PROOFS;")?;
         }
         Instruction::CallFunction {
-            function_ident,
+            package_address,
+            blueprint_name,
+            function_name,
             args,
-        } => decompile_call_function(f, context, function_ident, args)?,
-        Instruction::CallMethod { method_ident, args } => {
-            decompile_call_scrypto_method(f, context, method_ident, args)?
-        }
-        Instruction::CallNativeFunction {
-            function_ident,
+        } => decompile_call_function(
+            f,
+            context,
+            package_address,
+            blueprint_name,
+            function_name,
             args,
-        } => decompile_call_native_function(f, context, function_ident, args)?,
-        Instruction::CallNativeMethod { method_ident, args } => {
-            decompile_call_native_method(f, context, method_ident, args)?
-        }
+        )?,
+        Instruction::CallMethod {
+            component_address,
+            method_name,
+            args,
+        } => decompile_call_method(f, context, component_address, method_name, args)?,
+        Instruction::PublishPackage {
+            code,
+            abi,
+            royalty_config,
+            metadata,
+            access_rules,
+        } => todo!(),
         Instruction::PublishPackageWithOwner {
             code,
             abi,
@@ -350,6 +357,37 @@ pub fn decompile_instruction<F: fmt::Write>(
                 code, abi, owner_badge,
             )?;
         }
+        Instruction::CreateResource {
+            resource_type,
+            metadata,
+            access_rules,
+            mint_params,
+        } => todo!(),
+        Instruction::CreateResourceWithOwner {
+            resource_type,
+            metadata,
+            owner_badge,
+            mint_params,
+        } => todo!(),
+        Instruction::BurnResource { bucket_id } => todo!(),
+        Instruction::MintFungible {
+            resource_address,
+            amount,
+        } => todo!(),
+        Instruction::SetMetadata {
+            entity_address,
+            metadata,
+        } => todo!(),
+        Instruction::SetPackageRoyaltyConfig {
+            package_address,
+            royalty_config,
+        } => todo!(),
+        Instruction::SetComponentRoyaltyConfig {
+            component_address,
+            royalty_config,
+        } => todo!(),
+        Instruction::ClaimPackageRoyalty { package_address } => todo!(),
+        Instruction::ClaimComponentRoyalty { component_address } => todo!(),
     }
     Ok(())
 }
@@ -357,134 +395,34 @@ pub fn decompile_instruction<F: fmt::Write>(
 pub fn decompile_call_function<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
-    function_ident: &ScryptoFunctionIdent,
+    package_address: &PackageAddress,
+    blueprint_name: &String,
+    function_name: &String,
     args: &Vec<u8>,
 ) -> Result<(), DecompileError> {
     write!(
         f,
         "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-        match &function_ident.package {
-            ScryptoPackage::Global(package_address) => {
-                package_address.display(context.bech32_encoder)
-            }
-        },
-        function_ident.blueprint_name,
-        function_ident.function_name,
+        package_address.display(context.bech32_encoder),
+        blueprint_name,
+        function_name,
     )?;
     format_args(f, context, args)?;
     f.write_str(";")?;
     Ok(())
 }
 
-pub fn decompile_call_native_function<F: fmt::Write>(
+pub fn decompile_call_method<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
-    function_ident: &NativeFunctionIdent,
+    component_address: &ComponentAddress,
+    method_name: &String,
     args: &Vec<u8>,
 ) -> Result<(), DecompileError> {
-    // Try to recognize the invocation
-    let blueprint_name = &function_ident.blueprint_name;
-    let function_name = &function_ident.function_name;
-    match (blueprint_name.as_str(), function_name.as_ref()) {
-        ("ResourceManager", "burn") => {
-            if let Ok(input) = scrypto_decode::<ResourceManagerBurnInvocation>(&args) {
-                write!(
-                    f,
-                    "BURN_BUCKET Bucket({});",
-                    context
-                        .bucket_names
-                        .get(&input.bucket.0)
-                        .map(|name| format!("\"{}\"", name))
-                        .unwrap_or(format!("{}u32", input.bucket.0)),
-                )?;
-                return Ok(());
-            }
-        }
-        ("ResourceManager", "create") => {
-            if let Ok(input) = scrypto_decode::<ResourceManagerCreateInvocation>(&args) {
-                f.write_str(&format!(
-                    "CREATE_RESOURCE {} {} {} {};",
-                    IndexedScryptoValue::from_typed(&input.resource_type)
-                        .display(context.for_value_display()),
-                    IndexedScryptoValue::from_typed(&input.metadata)
-                        .display(context.for_value_display()),
-                    IndexedScryptoValue::from_typed(&input.access_rules)
-                        .display(context.for_value_display()),
-                    IndexedScryptoValue::from_typed(&input.mint_params)
-                        .display(context.for_value_display()),
-                ))?;
-                return Ok(());
-            }
-        }
-        _ => {}
-    }
-
-    // Fall back to generic representation
-    write!(
-        f,
-        "CALL_NATIVE_FUNCTION \"{}\" \"{}\"",
-        blueprint_name, function_name,
-    )?;
-    format_args(f, context, args)?;
-    f.write_str(";")?;
-    Ok(())
-}
-
-pub fn decompile_call_scrypto_method<F: fmt::Write>(
-    f: &mut F,
-    context: &mut DecompilationContext,
-    method_ident: &ScryptoMethodIdent,
-    args: &Vec<u8>,
-) -> Result<(), DecompileError> {
-    let receiver = match method_ident.receiver {
-        ScryptoReceiver::Global(address) => {
-            format!(
-                "ComponentAddress(\"{}\")",
-                address.display(context.bech32_encoder)
-            )
-        }
-        ScryptoReceiver::Component(id) => {
-            format!("Component(\"{}\")", format_id(&id))
-        }
-    };
     f.write_str(&format!(
-        "CALL_METHOD {} \"{}\"",
-        receiver, method_ident.method_name
-    ))?;
-    format_args(f, context, args)?;
-    f.write_str(";")?;
-    Ok(())
-}
-
-pub fn decompile_call_native_method<F: fmt::Write>(
-    f: &mut F,
-    context: &mut DecompilationContext,
-    method_ident: &NativeMethodIdent,
-    args: &Vec<u8>,
-) -> Result<(), DecompileError> {
-    // Try to recognize the invocation
-    match (method_ident.receiver, method_ident.method_name.as_ref()) {
-        (RENodeId::Global(GlobalAddress::Resource(resource_address)), "mint") => {
-            if let Ok(input) = scrypto_decode::<ResourceManagerMintInvocation>(&args) {
-                if let MintParams::Fungible { amount } = input.mint_params {
-                    write!(
-                        f,
-                        "MINT_FUNGIBLE ResourceAddress(\"{}\") Decimal(\"{}\");",
-                        resource_address.display(context.bech32_encoder),
-                        amount,
-                    )?;
-                }
-                return Ok(());
-            }
-        }
-        _ => {}
-    }
-
-    // Fall back to generic representation
-    let receiver = format_node_id(&method_ident.receiver, context);
-    f.write_str(&format!(
-        "CALL_NATIVE_METHOD {} \"{}\"",
-        receiver, method_ident.method_name
+        "CALL_METHOD ComponentAddress({}) \"{}\"",
+        component_address.display(context.bech32_encoder),
+        method_name
     ))?;
     format_args(f, context, args)?;
     f.write_str(";")?;

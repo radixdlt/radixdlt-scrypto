@@ -86,8 +86,8 @@ pub enum Instruction {
     },
 
     CallMethod {
-        receiver: ScryptoReceiver,
-        method: Value,
+        component_address: Value,
+        method_name: Value,
         args: Vec<Value>,
     },
 
@@ -123,6 +123,7 @@ pub enum Instruction {
         bucket: Value,
     },
 
+    // TODO: Dedicated bucket for this?
     MintFungible {
         resource_address: Value,
         amount: Value,
@@ -130,8 +131,7 @@ pub enum Instruction {
 
     SetMetadata {
         entity_address: Value,
-        key: Value,
-        value: Value,
+        metadata: Value,
     },
 
     SetPackageRoyaltyConfig {
@@ -144,41 +144,15 @@ pub enum Instruction {
         royalty_config: Value,
     },
 
+    // TODO: Dedicated bucket for this?
     ClaimPackageRoyalty {
         package_address: Value,
     },
 
+    // TODO: Dedicated bucket for this?
     ClaimComponentRoyalty {
         component_address: Value,
     },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScryptoReceiver {
-    Global(Value),
-    Component(Value),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Receiver {
-    Ref(RENode),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RENode {
-    Bucket(Value),
-    Proof(Value),
-    AuthZoneStack(Value),
-    Worktop,
-    Global(Value),
-    KeyValueStore(Value),
-    NonFungibleStore(Value),
-    Component(Value),
-    Vault(Value),
-    ResourceManager(Value),
-    Package(Value),
-    EpochManager(Value),
-    Clock(Value),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -155,9 +155,8 @@ pub enum Instruction {
     },
 
     SetMetadata {
-        entity: GlobalAddress,
-        key: String,
-        value: String,
+        entity_address: GlobalAddress,
+        metadata: HashMap<String, String>,
     },
 
     SetPackageRoyaltyConfig {
@@ -177,6 +176,5 @@ pub enum Instruction {
     ClaimComponentRoyalty {
         component_address: ComponentAddress,
     },
-
     // TODO: add_access_rules & set_access_rules
 }

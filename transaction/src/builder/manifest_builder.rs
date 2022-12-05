@@ -274,13 +274,6 @@ impl ManifestBuilder {
         access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> &mut Self {
-        let input = ResourceManagerCreateInvocation {
-            resource_type,
-            metadata,
-            access_rules,
-            mint_params,
-        };
-
         self.add_instruction(Instruction::CreateResource {
             resource_type,
             metadata,

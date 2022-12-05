@@ -6,8 +6,8 @@ use crate::model::*;
 use crate::scrypto;
 
 /// Represents the minting config
-#[derive(Debug, Clone)]
-#[scrypto(Encode, Decode, TypeId, Describe, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(Encode, Decode, TypeId, Describe)]
 pub enum MintParams {
     /// To mint fungible resource, represented by an amount
     Fungible { amount: Decimal },

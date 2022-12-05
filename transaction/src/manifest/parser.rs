@@ -1,5 +1,4 @@
-use super::ast::ScryptoReceiver;
-use crate::manifest::ast::{Instruction, RENode, Receiver, Type, Value};
+use crate::manifest::ast::{Instruction, Type, Value};
 use crate::manifest::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -148,8 +147,8 @@ impl Parser {
                 },
             },
             TokenKind::CallMethod => Instruction::CallMethod {
-                receiver: self.parse_scrypto_receiver()?,
-                method: self.parse_value()?,
+                component_address: self.parse_value()?,
+                method_name: self.parse_value()?,
                 args: {
                     let mut values = vec![];
                     while self.peek()?.kind != TokenKind::Semicolon {
@@ -186,8 +185,7 @@ impl Parser {
             },
             TokenKind::SetMetadata => Instruction::SetMetadata {
                 entity_address: self.parse_value()?,
-                key: self.parse_value()?,
-                value: self.parse_value()?,
+                metadata: self.parse_value()?,
             },
             TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
                 package_address: self.parse_value()?,
@@ -209,53 +207,6 @@ impl Parser {
         };
         advance_match!(self, TokenKind::Semicolon);
         Ok(instruction)
-    }
-
-    pub fn parse_scrypto_receiver(&mut self) -> Result<ScryptoReceiver, ParserError> {
-        let token = self.advance()?;
-        match token.kind {
-            TokenKind::ComponentAddress => Ok(ScryptoReceiver::Global(self.parse_values_one()?)),
-            TokenKind::Component => Ok(ScryptoReceiver::Component(self.parse_values_one()?)),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
-    }
-
-    pub fn parse_receiver(&mut self) -> Result<Receiver, ParserError> {
-        let token = self.peek()?;
-        match token.kind {
-            TokenKind::Bucket
-            | TokenKind::Proof
-            | TokenKind::AuthZoneStack
-            | TokenKind::Worktop
-            | TokenKind::Global
-            | TokenKind::KeyValueStore
-            | TokenKind::NonFungibleStore
-            | TokenKind::Component
-            | TokenKind::EpochManager
-            | TokenKind::Vault
-            | TokenKind::ResourceManager
-            | TokenKind::Package => Ok(Receiver::Ref(self.parse_re_node()?)),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
-    }
-
-    pub fn parse_re_node(&mut self) -> Result<RENode, ParserError> {
-        let token = self.advance()?;
-        match token.kind {
-            TokenKind::Bucket => Ok(RENode::Bucket(self.parse_values_one()?)),
-            TokenKind::Proof => Ok(RENode::Proof(self.parse_values_one()?)),
-            TokenKind::AuthZoneStack => Ok(RENode::AuthZoneStack(self.parse_values_one()?)),
-            TokenKind::Worktop => Ok(RENode::Worktop),
-            TokenKind::Global => Ok(RENode::Global(self.parse_values_one()?)),
-            TokenKind::KeyValueStore => Ok(RENode::KeyValueStore(self.parse_values_one()?)),
-            TokenKind::NonFungibleStore => Ok(RENode::NonFungibleStore(self.parse_values_one()?)),
-            TokenKind::Component => Ok(RENode::Component(self.parse_values_one()?)),
-            TokenKind::EpochManager => Ok(RENode::EpochManager(self.parse_values_one()?)),
-            TokenKind::Vault => Ok(RENode::Vault(self.parse_values_one()?)),
-            TokenKind::ResourceManager => Ok(RENode::ResourceManager(self.parse_values_one()?)),
-            TokenKind::Package => Ok(RENode::Package(self.parse_values_one()?)),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
     }
 
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
