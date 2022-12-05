@@ -1,29 +1,29 @@
 use crate::engine::*;
 use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative};
+use radix_engine_interface::api::api::{EngineApi, InvokableModel, LoggerApi};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue};
 
-pub struct ScryptoExecutor<I: WasmInstance> {
+pub struct ScryptoExecutorToParsed<I: WasmInstance> {
     instance: I,
     args: IndexedScryptoValue,
 }
 
-impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
+impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
     type Output = IndexedScryptoValue;
 
     fn execute<Y>(
         mut self,
-        system_api: &mut Y,
+        api: &mut Y,
     ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation>
             + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
+            + InvokableModel<RuntimeError>
+            + LoggerApi<RuntimeError>,
     {
-        let (export_name, return_type) = match system_api.get_actor() {
+        let (export_name, return_type) = match api.get_actor() {
             REActor::Method(
                 ResolvedMethod::Scrypto {
                     export_name,
@@ -45,8 +45,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
         };
 
         let output = {
-            let mut runtime: Box<dyn WasmRuntime> =
-                Box::new(RadixEngineWasmRuntime::new(system_api));
+            let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(api));
             self.instance
                 .invoke_export(&export_name, &self.args, &mut runtime)
                 .map_err(|e| match e {
@@ -75,6 +74,30 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
     }
 }
 
+pub struct ScryptoExecutor<I: WasmInstance> {
+    instance: I,
+    args: IndexedScryptoValue,
+}
+
+impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
+    type Output = Vec<u8>;
+
+    fn execute<Y>(self, api: &mut Y) -> Result<(Vec<u8>, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi
+            + EngineApi<RuntimeError>
+            + InvokableModel<RuntimeError>
+            + LoggerApi<RuntimeError>,
+    {
+        ScryptoExecutorToParsed {
+            instance: self.instance,
+            args: self.args,
+        }
+        .execute(api)
+        .map(|(indexed, update)| (indexed.raw, update))
+    }
+}
+
 pub struct ScryptoInterpreter<W: WasmEngine> {
     pub wasm_engine: W,
     /// WASM Instrumenter
@@ -94,6 +117,21 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
             .instrument(code, &self.wasm_metering_config);
         let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoExecutor {
+            instance,
+            args: args,
+        }
+    }
+
+    pub fn create_executor_to_parsed(
+        &self,
+        code: &[u8],
+        args: IndexedScryptoValue,
+    ) -> ScryptoExecutorToParsed<W::WasmInstance> {
+        let instrumented_code = self
+            .wasm_instrumenter
+            .instrument(code, &self.wasm_metering_config);
+        let instance = self.wasm_engine.instantiate(&instrumented_code);
+        ScryptoExecutorToParsed {
             instance,
             args: args,
         }

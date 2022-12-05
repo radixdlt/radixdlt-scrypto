@@ -1,11 +1,12 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, InterpreterError,
-    Invokable, LockFlags, MethodDeref, NativeExecutor, NativeProcedure, REActor, ResolvedMethod,
-    RuntimeError, SystemApi,
+    LockFlags, NativeExecutor, NativeProcedure, REActor, ResolvedMethod, ResolverApi, RuntimeError,
+    SystemApi,
 };
 use crate::model::{MethodAuthorization, MethodAuthorizationError};
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative};
+use crate::wasm::WasmEngine;
+use radix_engine_interface::api::api::{EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::api::types::{
     AccessRulesChainMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
 };
@@ -20,10 +21,10 @@ pub enum AccessRulesChainError {
     ProtectedMethod(AccessRuleKey),
 }
 
-impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -58,7 +59,7 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
         system_api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + Invokable<ScryptoInvocation> + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError>,
     {
         // Abi checks
         {
@@ -113,10 +114,10 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesSetMethodAccessRuleInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -153,10 +154,7 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
@@ -236,10 +234,10 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesSetGroupAccessRuleInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -276,10 +274,7 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
@@ -331,10 +326,10 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesSetMethodMutabilityInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -371,10 +366,7 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
@@ -454,10 +446,10 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesSetGroupMutabilityInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -494,10 +486,7 @@ impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
@@ -549,10 +538,10 @@ impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessRulesGetLengthInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -589,10 +578,7 @@ impl NativeProcedure for AccessRulesGetLengthInvocation {
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation>
-            + EngineApi<RuntimeError>
-            + SysInvokableNative<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
         let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;

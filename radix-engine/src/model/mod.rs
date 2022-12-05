@@ -14,9 +14,11 @@ mod method_authorization;
 mod package;
 mod package_extractor;
 mod resources;
+mod scrypto;
 mod substates;
 mod transaction_processor;
 
+pub use self::scrypto::*;
 pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
 pub use auth::*;

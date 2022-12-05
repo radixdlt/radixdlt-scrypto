@@ -22,15 +22,16 @@ impl Invocation for ProofGetAmountInvocation {
     type Output = Decimal;
 }
 
-impl ScryptoNativeInvocation for ProofGetAmountInvocation {
+impl SerializableInvocation for ProofGetAmountInvocation {
     type ScryptoOutput = Decimal;
 }
 
-impl Into<NativeFnInvocation> for ProofGetAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ProofGetAmountInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Proof(
             ProofMethodInvocation::GetAmount(self),
         ))
+        .into()
     }
 }
 
@@ -43,15 +44,16 @@ impl Invocation for ProofGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 }
 
-impl ScryptoNativeInvocation for ProofGetNonFungibleIdsInvocation {
+impl SerializableInvocation for ProofGetNonFungibleIdsInvocation {
     type ScryptoOutput = BTreeSet<NonFungibleId>;
 }
 
-impl Into<NativeFnInvocation> for ProofGetNonFungibleIdsInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ProofGetNonFungibleIdsInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Proof(
             ProofMethodInvocation::GetNonFungibleIds(self),
         ))
+        .into()
     }
 }
 
@@ -64,15 +66,16 @@ impl Invocation for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
 }
 
-impl ScryptoNativeInvocation for ProofGetResourceAddressInvocation {
+impl SerializableInvocation for ProofGetResourceAddressInvocation {
     type ScryptoOutput = ResourceAddress;
 }
 
-impl Into<NativeFnInvocation> for ProofGetResourceAddressInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ProofGetResourceAddressInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Proof(
             ProofMethodInvocation::GetResourceAddress(self),
         ))
+        .into()
     }
 }
 
@@ -85,15 +88,16 @@ impl Invocation for ProofCloneInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for ProofCloneInvocation {
+impl SerializableInvocation for ProofCloneInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<NativeFnInvocation> for ProofCloneInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for ProofCloneInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Proof(ProofMethodInvocation::Clone(
             self,
         )))
+        .into()
     }
 }
 

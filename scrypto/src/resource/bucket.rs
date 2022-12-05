@@ -1,5 +1,5 @@
 use crate::resource::{ComponentAuthZone, NonFungible, ScryptoProof};
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
@@ -29,7 +29,7 @@ pub trait ScryptoBucket {
 impl ScryptoBucket for Bucket {
     fn new(resource_address: ResourceAddress) -> Self {
         let mut env = ScryptoEnv;
-        env.sys_invoke(ResourceManagerCreateBucketInvocation {
+        env.invoke(ResourceManagerCreateBucketInvocation {
             receiver: resource_address,
         })
         .unwrap()
@@ -38,7 +38,7 @@ impl ScryptoBucket for Bucket {
     fn burn(self) {
         let mut env = ScryptoEnv;
         let receiver = self.resource_address();
-        env.sys_invoke(ResourceManagerBurnInvocation {
+        env.invoke(ResourceManagerBurnInvocation {
             receiver,
             bucket: Bucket(self.0),
         })
@@ -47,13 +47,13 @@ impl ScryptoBucket for Bucket {
 
     fn create_proof(&self) -> Proof {
         let mut env = ScryptoEnv;
-        env.sys_invoke(BucketCreateProofInvocation { receiver: self.0 })
+        env.invoke(BucketCreateProofInvocation { receiver: self.0 })
             .unwrap()
     }
 
     fn resource_address(&self) -> ResourceAddress {
         let mut env = ScryptoEnv;
-        env.sys_invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
+        env.invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
             .unwrap()
     }
 

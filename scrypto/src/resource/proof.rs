@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{ProofId, RENodeId};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -90,7 +90,7 @@ impl ScryptoProof for Proof {
 
     fn clone(&self) -> Self {
         let mut env = ScryptoEnv;
-        env.sys_invoke(ProofCloneInvocation { receiver: self.0 })
+        env.invoke(ProofCloneInvocation { receiver: self.0 })
             .unwrap()
     }
 

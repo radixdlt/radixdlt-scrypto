@@ -1,5 +1,5 @@
 use radix_engine_derive::scrypto;
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{ComponentId, GlobalAddress, RENodeId, ToString};
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRulesSetMethodAccessRuleInvocation,
@@ -36,7 +36,7 @@ impl ComponentAccessRules {
     pub fn set_method_auth(&mut self, method_name: &str, access_rule: AccessRule) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(AccessRulesSetMethodAccessRuleInvocation {
+            .invoke(AccessRulesSetMethodAccessRuleInvocation {
                 receiver: self.component.clone().into(),
                 index: self.index,
                 key: AccessRuleKey::ScryptoMethod(method_name.to_string()),
@@ -48,7 +48,7 @@ impl ComponentAccessRules {
     pub fn lock_method_auth(&mut self, method_name: &str) {
         let mut syscalls = ScryptoEnv;
         syscalls
-            .sys_invoke(AccessRulesSetMethodMutabilityInvocation {
+            .invoke(AccessRulesSetMethodMutabilityInvocation {
                 receiver: self.component.clone().into(),
                 index: self.index,
                 key: AccessRuleKey::ScryptoMethod(method_name.to_string()),

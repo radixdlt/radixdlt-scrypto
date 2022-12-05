@@ -25,15 +25,16 @@ impl Invocation for BucketTakeInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for BucketTakeInvocation {
+impl SerializableInvocation for BucketTakeInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<NativeFnInvocation> for BucketTakeInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for BucketTakeInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
             BucketMethodInvocation::Take(self),
         ))
+        .into()
     }
 }
 
@@ -48,15 +49,16 @@ impl Invocation for BucketPutInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for BucketPutInvocation {
+impl SerializableInvocation for BucketPutInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for BucketPutInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for BucketPutInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Bucket(BucketMethodInvocation::Put(
             self,
         )))
+        .into()
     }
 }
 
@@ -71,15 +73,16 @@ impl Invocation for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
 }
 
-impl ScryptoNativeInvocation for BucketTakeNonFungiblesInvocation {
+impl SerializableInvocation for BucketTakeNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<NativeFnInvocation> for BucketTakeNonFungiblesInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for BucketTakeNonFungiblesInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
             BucketMethodInvocation::TakeNonFungibles(self),
         ))
+        .into()
     }
 }
 
@@ -93,15 +96,16 @@ impl Invocation for BucketGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 }
 
-impl ScryptoNativeInvocation for BucketGetNonFungibleIdsInvocation {
+impl SerializableInvocation for BucketGetNonFungibleIdsInvocation {
     type ScryptoOutput = BTreeSet<NonFungibleId>;
 }
 
-impl Into<NativeFnInvocation> for BucketGetNonFungibleIdsInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for BucketGetNonFungibleIdsInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
             BucketMethodInvocation::GetNonFungibleIds(self),
         ))
+        .into()
     }
 }
 
@@ -115,15 +119,16 @@ impl Invocation for BucketGetAmountInvocation {
     type Output = Decimal;
 }
 
-impl ScryptoNativeInvocation for BucketGetAmountInvocation {
+impl SerializableInvocation for BucketGetAmountInvocation {
     type ScryptoOutput = Decimal;
 }
 
-impl Into<NativeFnInvocation> for BucketGetAmountInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for BucketGetAmountInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
             BucketMethodInvocation::GetAmount(self),
         ))
+        .into()
     }
 }
 
@@ -137,15 +142,16 @@ impl Invocation for BucketGetResourceAddressInvocation {
     type Output = ResourceAddress;
 }
 
-impl ScryptoNativeInvocation for BucketGetResourceAddressInvocation {
+impl SerializableInvocation for BucketGetResourceAddressInvocation {
     type ScryptoOutput = ResourceAddress;
 }
 
-impl Into<NativeFnInvocation> for BucketGetResourceAddressInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for BucketGetResourceAddressInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
             BucketMethodInvocation::GetResourceAddress(self),
         ))
+        .into()
     }
 }
 
@@ -159,15 +165,16 @@ impl Invocation for BucketCreateProofInvocation {
     type Output = Proof;
 }
 
-impl ScryptoNativeInvocation for BucketCreateProofInvocation {
+impl SerializableInvocation for BucketCreateProofInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<NativeFnInvocation> for BucketCreateProofInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for BucketCreateProofInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
             BucketMethodInvocation::CreateProof(self),
         ))
+        .into()
     }
 }
 

@@ -13,15 +13,16 @@ impl Invocation for EpochManagerCreateInvocation {
     type Output = SystemAddress;
 }
 
-impl ScryptoNativeInvocation for EpochManagerCreateInvocation {
+impl SerializableInvocation for EpochManagerCreateInvocation {
     type ScryptoOutput = SystemAddress;
 }
 
-impl Into<NativeFnInvocation> for EpochManagerCreateInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(
             EpochManagerFunctionInvocation::Create(self),
         ))
+        .into()
     }
 }
 
@@ -35,15 +36,16 @@ impl Invocation for EpochManagerGetCurrentEpochInvocation {
     type Output = u64;
 }
 
-impl ScryptoNativeInvocation for EpochManagerGetCurrentEpochInvocation {
+impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
     type ScryptoOutput = u64;
 }
 
-impl Into<NativeFnInvocation> for EpochManagerGetCurrentEpochInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
             EpochManagerMethodInvocation::GetCurrentEpoch(self),
         ))
+        .into()
     }
 }
 
@@ -58,14 +60,15 @@ impl Invocation for EpochManagerSetEpochInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for EpochManagerSetEpochInvocation {
+impl SerializableInvocation for EpochManagerSetEpochInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for EpochManagerSetEpochInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
             EpochManagerMethodInvocation::SetEpoch(self),
         ))
+        .into()
     }
 }

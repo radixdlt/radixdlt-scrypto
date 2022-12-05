@@ -1,10 +1,11 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, MethodDeref,
-    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver,
-    RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
+    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
+    SystemApi,
 };
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeMethod, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopMethod,
     WorktopOffset,
@@ -24,12 +25,12 @@ pub enum WorktopError {
     CouldNotDrop,
 }
 
-impl ExecutableInvocation for WorktopPutInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for WorktopPutInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -71,12 +72,12 @@ impl NativeProcedure for WorktopPutInvocation {
     }
 }
 
-impl ExecutableInvocation for WorktopTakeAmountInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -147,12 +148,12 @@ impl NativeProcedure for WorktopTakeAmountInvocation {
     }
 }
 
-impl ExecutableInvocation for WorktopTakeAllInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAllInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -222,12 +223,12 @@ impl NativeProcedure for WorktopTakeAllInvocation {
     }
 }
 
-impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -299,12 +300,12 @@ impl NativeProcedure for WorktopTakeNonFungiblesInvocation {
     }
 }
 
-impl ExecutableInvocation for WorktopAssertContainsInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -345,12 +346,12 @@ impl NativeProcedure for WorktopAssertContainsInvocation {
     }
 }
 
-impl ExecutableInvocation for WorktopAssertContainsAmountInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsAmountInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -391,12 +392,12 @@ impl NativeProcedure for WorktopAssertContainsAmountInvocation {
     }
 }
 
-impl ExecutableInvocation for WorktopAssertContainsNonFungiblesInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsNonFungiblesInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
@@ -447,12 +448,12 @@ impl NativeProcedure for WorktopAssertContainsNonFungiblesInvocation {
     }
 }
 
-impl ExecutableInvocation for WorktopDrainInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for WorktopDrainInvocation {
     type Exec = NativeExecutor<Self>;
 
-    fn resolve<D: MethodDeref>(
+    fn resolve<D: ResolverApi<W>>(
         self,
-        _deref: &mut D,
+        _api: &mut D,
     ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);

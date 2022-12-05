@@ -16,15 +16,16 @@ impl Invocation for MetadataSetInvocation {
     type Output = ();
 }
 
-impl ScryptoNativeInvocation for MetadataSetInvocation {
+impl SerializableInvocation for MetadataSetInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<NativeFnInvocation> for MetadataSetInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for MetadataSetInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Metadata(
             MetadataMethodInvocation::Set(self),
         ))
+        .into()
     }
 }
 
@@ -39,14 +40,15 @@ impl Invocation for MetadataGetInvocation {
     type Output = Option<String>;
 }
 
-impl ScryptoNativeInvocation for MetadataGetInvocation {
+impl SerializableInvocation for MetadataGetInvocation {
     type ScryptoOutput = Option<String>;
 }
 
-impl Into<NativeFnInvocation> for MetadataGetInvocation {
-    fn into(self) -> NativeFnInvocation {
+impl Into<SerializedInvocation> for MetadataGetInvocation {
+    fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Metadata(
             MetadataMethodInvocation::Get(self),
         ))
+        .into()
     }
 }

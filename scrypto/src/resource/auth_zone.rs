@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -23,7 +23,7 @@ impl ComponentAuthZone {
 
         let proof: Proof = proof.into();
 
-        env.sys_invoke(AuthZonePushInvocation {
+        env.invoke(AuthZonePushInvocation {
             receiver: node_id.into(),
             proof,
         })
@@ -37,7 +37,7 @@ impl ComponentAuthZone {
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZonePopInvocation {
+        env.invoke(AuthZonePopInvocation {
             receiver: node_id.into(),
         })
         .unwrap()
@@ -50,7 +50,7 @@ impl ComponentAuthZone {
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZoneCreateProofInvocation {
+        env.invoke(AuthZoneCreateProofInvocation {
             receiver: node_id.into(),
             resource_address,
         })
@@ -64,7 +64,7 @@ impl ComponentAuthZone {
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZoneCreateProofByAmountInvocation {
+        env.invoke(AuthZoneCreateProofByAmountInvocation {
             receiver: node_id.into(),
             amount,
             resource_address,
@@ -82,7 +82,7 @@ impl ComponentAuthZone {
             .into_iter()
             .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
             .expect("AuthZone does not exist");
-        env.sys_invoke(AuthZoneCreateProofByIdsInvocation {
+        env.invoke(AuthZoneCreateProofByIdsInvocation {
             receiver: node_id.into(),
             ids: ids.clone(),
             resource_address,

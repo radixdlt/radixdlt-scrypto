@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
@@ -46,7 +46,7 @@ impl ScryptoVault for Vault {
 
     fn amount(&self) -> Decimal {
         let mut env = ScryptoEnv;
-        env.sys_invoke(VaultGetAmountInvocation { receiver: self.0 })
+        env.invoke(VaultGetAmountInvocation { receiver: self.0 })
             .unwrap()
     }
 

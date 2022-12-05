@@ -2,9 +2,9 @@ use crate::engine::node::*;
 use crate::engine::*;
 use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use bitflags::bitflags;
-use radix_engine_interface::api::api::Invocation;
-use radix_engine_interface::api::types::{Level, LockHandle, RENodeId, SubstateOffset, VaultId};
+use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
 
 bitflags! {
     #[derive(Encode, Decode, TypeId)]
@@ -29,13 +29,6 @@ impl LockFlags {
 
 pub struct LockInfo {
     pub offset: SubstateOffset,
-}
-
-pub trait Invokable<I>
-where
-    I: Invocation,
-{
-    fn invoke(&mut self, input: I) -> Result<I::Output, RuntimeError>;
 }
 
 pub trait SystemApi {
@@ -103,7 +96,12 @@ pub trait SystemApi {
 
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError>;
 
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError>;
-
     fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError>;
+}
+
+// TODO: Clean this up
+pub trait ResolverApi<W: WasmEngine> {
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
+    fn vm(&mut self) -> &ScryptoInterpreter<W>;
+    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
 }

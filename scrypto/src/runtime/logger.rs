@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::api::LoggerApi;
 use radix_engine_interface::api::types::Level;
 use sbor::rust::string::String;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -10,8 +10,7 @@ pub struct Logger {}
 impl Logger {
     /// Emits a log to console.
     pub fn log(level: Level, message: String) {
-        let mut env = ScryptoEnv;
-        env.sys_emit_log(level, message).unwrap();
+        ScryptoEnv.emit_log(level, message).unwrap();
     }
 
     /// Emits a trace message.

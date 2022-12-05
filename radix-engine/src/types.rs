@@ -30,25 +30,3 @@ pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
 pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, SborValue, TypeId};
-
-use radix_engine_interface::api::api::Invocation;
-
-/// Scrypto function/method invocation.
-#[derive(Debug)]
-pub enum ScryptoInvocation {
-    Function(ScryptoFunctionIdent, IndexedScryptoValue),
-    Method(ScryptoMethodIdent, IndexedScryptoValue),
-}
-
-impl Invocation for ScryptoInvocation {
-    type Output = IndexedScryptoValue;
-}
-
-impl ScryptoInvocation {
-    pub fn args(&self) -> &IndexedScryptoValue {
-        match self {
-            ScryptoInvocation::Function(_, args) => &args,
-            ScryptoInvocation::Method(_, args) => &args,
-        }
-    }
-}

@@ -5,8 +5,8 @@ use crate::data::ScryptoDecode;
 pub use input::NativeFnInvocation;
 pub use input::*;
 
-pub trait ScryptoNativeInvocation:
-    Into<NativeFnInvocation> + Invocation<Output = Self::ScryptoOutput>
+pub trait SerializableInvocation:
+    Into<SerializedInvocation> + Invocation<Output = Self::ScryptoOutput>
 {
     type ScryptoOutput: ScryptoDecode;
 }
