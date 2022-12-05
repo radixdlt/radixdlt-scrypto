@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{ComponentId, RENodeId};
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::model::*;
@@ -14,9 +14,9 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>,
+        Y: EngineApi<E> + Invokable<AccessRulesAddAccessCheckInvocation, E>,
     {
-        sys_calls.sys_invoke(AccessRulesAddAccessCheckInvocation {
+        sys_calls.invoke(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Component(self.0),
             access_rules,
         })?;
@@ -30,9 +30,9 @@ impl Component {
         sys_calls: &mut Y,
     ) -> Result<&mut Self, E>
     where
-        Y: EngineApi<E> + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>,
+        Y: EngineApi<E> + Invokable<ComponentSetRoyaltyConfigInvocation, E>,
     {
-        sys_calls.sys_invoke(ComponentSetRoyaltyConfigInvocation {
+        sys_calls.invoke(ComponentSetRoyaltyConfigInvocation {
             receiver: RENodeId::Component(self.0),
             royalty_config,
         })?;

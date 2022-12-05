@@ -11,8 +11,8 @@ pub trait Invocation: Debug {
     type Output: Debug;
 }
 
-pub trait SysNativeInvokable<I: Invocation, E> {
-    fn sys_invoke(&mut self, invocation: I) -> Result<I::Output, E>;
+pub trait Invokable<I: Invocation, E> {
+    fn invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
 
 pub trait EngineApi<E: Debug> {
@@ -39,81 +39,81 @@ pub trait EngineApi<E: Debug> {
 }
 
 pub trait SysInvokableNative<E>:
-    SysNativeInvokable<EpochManagerCreateInvocation, E>
-    + SysNativeInvokable<EpochManagerSetEpochInvocation, E>
-    + SysNativeInvokable<EpochManagerGetCurrentEpochInvocation, E>
-    + SysNativeInvokable<ClockCreateInvocation, E>
-    + SysNativeInvokable<ClockSetCurrentTimeInvocation, E>
-    + SysNativeInvokable<ClockGetCurrentTimeInvocation, E>
-    + SysNativeInvokable<ClockCompareCurrentTimeInvocation, E>
-    + SysNativeInvokable<MetadataSetInvocation, E>
-    + SysNativeInvokable<MetadataGetInvocation, E>
-    + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
-    + SysNativeInvokable<AccessRulesSetMethodAccessRuleInvocation, E>
-    + SysNativeInvokable<AccessRulesSetMethodMutabilityInvocation, E>
-    + SysNativeInvokable<AccessRulesSetGroupAccessRuleInvocation, E>
-    + SysNativeInvokable<AccessRulesSetGroupMutabilityInvocation, E>
-    + SysNativeInvokable<AccessRulesGetLengthInvocation, E>
-    + SysNativeInvokable<AuthZonePopInvocation, E>
-    + SysNativeInvokable<AuthZonePushInvocation, E>
-    + SysNativeInvokable<AuthZoneCreateProofInvocation, E>
-    + SysNativeInvokable<AuthZoneCreateProofByAmountInvocation, E>
-    + SysNativeInvokable<AuthZoneCreateProofByIdsInvocation, E>
-    + SysNativeInvokable<AuthZoneClearInvocation, E>
-    + SysNativeInvokable<AuthZoneDrainInvocation, E>
-    + SysNativeInvokable<AuthZoneAssertAccessRuleInvocation, E>
-    + SysNativeInvokable<AccessRulesAddAccessCheckInvocation, E>
-    + SysNativeInvokable<ComponentGlobalizeInvocation, E>
-    + SysNativeInvokable<ComponentGlobalizeWithOwnerInvocation, E>
-    + SysNativeInvokable<ComponentSetRoyaltyConfigInvocation, E>
-    + SysNativeInvokable<ComponentClaimRoyaltyInvocation, E>
-    + SysNativeInvokable<PackageSetRoyaltyConfigInvocation, E>
-    + SysNativeInvokable<PackageClaimRoyaltyInvocation, E>
-    + SysNativeInvokable<PackagePublishInvocation, E>
-    + SysNativeInvokable<PackagePublishWithOwnerInvocation, E>
-    + SysNativeInvokable<BucketTakeInvocation, E>
-    + SysNativeInvokable<BucketPutInvocation, E>
-    + SysNativeInvokable<BucketTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable<BucketGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable<BucketGetAmountInvocation, E>
-    + SysNativeInvokable<BucketGetResourceAddressInvocation, E>
-    + SysNativeInvokable<BucketCreateProofInvocation, E>
-    + SysNativeInvokable<BucketCreateProofInvocation, E>
-    + SysNativeInvokable<ProofCloneInvocation, E>
-    + SysNativeInvokable<ProofGetAmountInvocation, E>
-    + SysNativeInvokable<ProofGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable<ProofGetResourceAddressInvocation, E>
-    + SysNativeInvokable<ResourceManagerBucketBurnInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateWithOwnerInvocation, E>
-    + SysNativeInvokable<ResourceManagerBurnInvocation, E>
-    + SysNativeInvokable<ResourceManagerUpdateVaultAuthInvocation, E>
-    + SysNativeInvokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateVaultInvocation, E>
-    + SysNativeInvokable<ResourceManagerCreateBucketInvocation, E>
-    + SysNativeInvokable<ResourceManagerMintInvocation, E>
-    + SysNativeInvokable<ResourceManagerGetResourceTypeInvocation, E>
-    + SysNativeInvokable<ResourceManagerGetTotalSupplyInvocation, E>
-    + SysNativeInvokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
-    + SysNativeInvokable<ResourceManagerNonFungibleExistsInvocation, E>
-    + SysNativeInvokable<ResourceManagerGetNonFungibleInvocation, E>
-    + SysNativeInvokable<VaultTakeInvocation, E>
-    + SysNativeInvokable<VaultPutInvocation, E>
-    + SysNativeInvokable<VaultLockFeeInvocation, E>
-    + SysNativeInvokable<VaultTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable<VaultGetAmountInvocation, E>
-    + SysNativeInvokable<VaultGetResourceAddressInvocation, E>
-    + SysNativeInvokable<VaultGetNonFungibleIdsInvocation, E>
-    + SysNativeInvokable<VaultCreateProofInvocation, E>
-    + SysNativeInvokable<VaultCreateProofByAmountInvocation, E>
-    + SysNativeInvokable<VaultCreateProofByIdsInvocation, E>
-    + SysNativeInvokable<WorktopPutInvocation, E>
-    + SysNativeInvokable<WorktopTakeAmountInvocation, E>
-    + SysNativeInvokable<WorktopTakeAllInvocation, E>
-    + SysNativeInvokable<WorktopTakeNonFungiblesInvocation, E>
-    + SysNativeInvokable<WorktopAssertContainsInvocation, E>
-    + SysNativeInvokable<WorktopAssertContainsAmountInvocation, E>
-    + SysNativeInvokable<WorktopAssertContainsNonFungiblesInvocation, E>
-    + SysNativeInvokable<WorktopDrainInvocation, E>
+    Invokable<EpochManagerCreateInvocation, E>
+    + Invokable<EpochManagerSetEpochInvocation, E>
+    + Invokable<EpochManagerGetCurrentEpochInvocation, E>
+    + Invokable<ClockCreateInvocation, E>
+    + Invokable<ClockSetCurrentTimeInvocation, E>
+    + Invokable<ClockGetCurrentTimeInvocation, E>
+    + Invokable<ClockCompareCurrentTimeInvocation, E>
+    + Invokable<MetadataSetInvocation, E>
+    + Invokable<MetadataGetInvocation, E>
+    + Invokable<AccessRulesAddAccessCheckInvocation, E>
+    + Invokable<AccessRulesSetMethodAccessRuleInvocation, E>
+    + Invokable<AccessRulesSetMethodMutabilityInvocation, E>
+    + Invokable<AccessRulesSetGroupAccessRuleInvocation, E>
+    + Invokable<AccessRulesSetGroupMutabilityInvocation, E>
+    + Invokable<AccessRulesGetLengthInvocation, E>
+    + Invokable<AuthZonePopInvocation, E>
+    + Invokable<AuthZonePushInvocation, E>
+    + Invokable<AuthZoneCreateProofInvocation, E>
+    + Invokable<AuthZoneCreateProofByAmountInvocation, E>
+    + Invokable<AuthZoneCreateProofByIdsInvocation, E>
+    + Invokable<AuthZoneClearInvocation, E>
+    + Invokable<AuthZoneDrainInvocation, E>
+    + Invokable<AuthZoneAssertAccessRuleInvocation, E>
+    + Invokable<AccessRulesAddAccessCheckInvocation, E>
+    + Invokable<ComponentGlobalizeInvocation, E>
+    + Invokable<ComponentGlobalizeWithOwnerInvocation, E>
+    + Invokable<ComponentSetRoyaltyConfigInvocation, E>
+    + Invokable<ComponentClaimRoyaltyInvocation, E>
+    + Invokable<PackageSetRoyaltyConfigInvocation, E>
+    + Invokable<PackageClaimRoyaltyInvocation, E>
+    + Invokable<PackagePublishInvocation, E>
+    + Invokable<PackagePublishWithOwnerInvocation, E>
+    + Invokable<BucketTakeInvocation, E>
+    + Invokable<BucketPutInvocation, E>
+    + Invokable<BucketTakeNonFungiblesInvocation, E>
+    + Invokable<BucketGetNonFungibleIdsInvocation, E>
+    + Invokable<BucketGetAmountInvocation, E>
+    + Invokable<BucketGetResourceAddressInvocation, E>
+    + Invokable<BucketCreateProofInvocation, E>
+    + Invokable<BucketCreateProofInvocation, E>
+    + Invokable<ProofCloneInvocation, E>
+    + Invokable<ProofGetAmountInvocation, E>
+    + Invokable<ProofGetNonFungibleIdsInvocation, E>
+    + Invokable<ProofGetResourceAddressInvocation, E>
+    + Invokable<ResourceManagerBucketBurnInvocation, E>
+    + Invokable<ResourceManagerCreateInvocation, E>
+    + Invokable<ResourceManagerCreateWithOwnerInvocation, E>
+    + Invokable<ResourceManagerBurnInvocation, E>
+    + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>
+    + Invokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
+    + Invokable<ResourceManagerCreateVaultInvocation, E>
+    + Invokable<ResourceManagerCreateBucketInvocation, E>
+    + Invokable<ResourceManagerMintInvocation, E>
+    + Invokable<ResourceManagerGetResourceTypeInvocation, E>
+    + Invokable<ResourceManagerGetTotalSupplyInvocation, E>
+    + Invokable<ResourceManagerUpdateNonFungibleDataInvocation, E>
+    + Invokable<ResourceManagerNonFungibleExistsInvocation, E>
+    + Invokable<ResourceManagerGetNonFungibleInvocation, E>
+    + Invokable<VaultTakeInvocation, E>
+    + Invokable<VaultPutInvocation, E>
+    + Invokable<VaultLockFeeInvocation, E>
+    + Invokable<VaultTakeNonFungiblesInvocation, E>
+    + Invokable<VaultGetAmountInvocation, E>
+    + Invokable<VaultGetResourceAddressInvocation, E>
+    + Invokable<VaultGetNonFungibleIdsInvocation, E>
+    + Invokable<VaultCreateProofInvocation, E>
+    + Invokable<VaultCreateProofByAmountInvocation, E>
+    + Invokable<VaultCreateProofByIdsInvocation, E>
+    + Invokable<WorktopPutInvocation, E>
+    + Invokable<WorktopTakeAmountInvocation, E>
+    + Invokable<WorktopTakeAllInvocation, E>
+    + Invokable<WorktopTakeNonFungiblesInvocation, E>
+    + Invokable<WorktopAssertContainsInvocation, E>
+    + Invokable<WorktopAssertContainsAmountInvocation, E>
+    + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
+    + Invokable<WorktopDrainInvocation, E>
 {
 }

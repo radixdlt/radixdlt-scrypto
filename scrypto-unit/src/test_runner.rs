@@ -19,7 +19,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_constants::*;
 use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
 use radix_engine_interface::core::NetworkDefinition;
@@ -872,7 +872,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
             vec![NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))],
             |kernel| {
                 kernel
-                    .sys_invoke(EpochManagerSetEpochInvocation {
+                    .invoke(EpochManagerSetEpochInvocation {
                         epoch,
                         receiver: EPOCH_MANAGER,
                     })
@@ -884,7 +884,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn get_current_epoch(&mut self) -> u64 {
         self.kernel_call(vec![], |kernel| {
             kernel
-                .sys_invoke(EpochManagerGetCurrentEpochInvocation {
+                .invoke(EpochManagerGetCurrentEpochInvocation {
                     receiver: EPOCH_MANAGER,
                 })
                 .unwrap()

@@ -228,274 +228,274 @@ impl NativeFnInvocation {
             NativeFnInvocation::Function(native_function) => match native_function {
                 NativeFunctionInvocation::EpochManager(invocation) => match invocation {
                     EpochManagerFunctionInvocation::Create(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::Clock(invocation) => match invocation {
                     ClockFunctionInvocation::Create(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::ResourceManager(invocation) => match invocation {
                     ResourceManagerFunctionInvocation::Create(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerFunctionInvocation::CreateWithOwner(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerFunctionInvocation::BurnBucket(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::Package(invocation) => match invocation {
                     PackageFunctionInvocation::Publish(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     PackageFunctionInvocation::PublishWithOwner(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeFunctionInvocation::Component(invocation) => match invocation {
                     ComponentFunctionInvocation::Globalize(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ComponentFunctionInvocation::GlobalizeWithOwner(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
             },
             NativeFnInvocation::Method(native_method) => match native_method {
                 NativeMethodInvocation::Component(component_method) => match component_method {
                     ComponentMethodInvocation::SetRoyaltyConfig(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ComponentMethodInvocation::ClaimRoyalty(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Package(package_method) => match package_method {
                     PackageMethodInvocation::SetRoyaltyConfig(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     PackageMethodInvocation::ClaimRoyalty(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Bucket(bucket_method) => match bucket_method {
                     BucketMethodInvocation::Take(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::CreateProof(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::TakeNonFungibles(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::GetNonFungibleIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::GetAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::Put(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     BucketMethodInvocation::GetResourceAddress(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
                     AuthZoneStackMethodInvocation::Pop(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneStackMethodInvocation::Push(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneStackMethodInvocation::CreateProof(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneStackMethodInvocation::CreateProofByAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneStackMethodInvocation::CreateProofByIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneStackMethodInvocation::Clear(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneStackMethodInvocation::Drain(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     AuthZoneStackMethodInvocation::AssertAuthRule(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Proof(proof_method) => match proof_method {
                     ProofMethodInvocation::GetAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ProofMethodInvocation::GetNonFungibleIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ProofMethodInvocation::GetResourceAddress(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ProofMethodInvocation::Clone(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Vault(vault_method) => match vault_method {
                     VaultMethodInvocation::Take(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::Put(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::LockFee(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::TakeNonFungibles(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::GetAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::GetResourceAddress(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::GetNonFungibleIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::CreateProof(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::CreateProofByAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::CreateProofByIds(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::AccessRulesChain(access_rules_method) => {
                     match access_rules_method {
                         AccessRulesChainMethodInvocation::AddAccessCheck(invocation) => system_api
-                            .sys_invoke(invocation)
+                            .invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                         AccessRulesChainMethodInvocation::SetMethodAccessRule(invocation) => {
                             system_api
-                                .sys_invoke(invocation)
+                                .invoke(invocation)
                                 .map(|a| IndexedScryptoValue::from_typed(&a))
                         }
                         AccessRulesChainMethodInvocation::SetMethodMutability(invocation) => {
                             system_api
-                                .sys_invoke(invocation)
+                                .invoke(invocation)
                                 .map(|a| IndexedScryptoValue::from_typed(&a))
                         }
                         AccessRulesChainMethodInvocation::SetGroupAccessRule(invocation) => {
                             system_api
-                                .sys_invoke(invocation)
+                                .invoke(invocation)
                                 .map(|a| IndexedScryptoValue::from_typed(&a))
                         }
                         AccessRulesChainMethodInvocation::SetGroupMutability(invocation) => {
                             system_api
-                                .sys_invoke(invocation)
+                                .invoke(invocation)
                                 .map(|a| IndexedScryptoValue::from_typed(&a))
                         }
                         AccessRulesChainMethodInvocation::GetLength(invocation) => system_api
-                            .sys_invoke(invocation)
+                            .invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
                 }
                 NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
                     MetadataMethodInvocation::Set(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     MetadataMethodInvocation::Get(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {
                     ResourceManagerMethodInvocation::Burn(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::UpdateVaultAuth(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::LockVaultAuth(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::CreateVault(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::CreateBucket(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::Mint(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetResourceType(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetTotalSupply(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::UpdateNonFungibleData(invocation) => {
                         system_api
-                            .sys_invoke(invocation)
+                            .invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a))
                     }
                     ResourceManagerMethodInvocation::NonFungibleExists(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ResourceManagerMethodInvocation::GetNonFungible(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::EpochManager(epoch_manager_method) => {
                     match epoch_manager_method {
                         EpochManagerMethodInvocation::GetCurrentEpoch(invocation) => system_api
-                            .sys_invoke(invocation)
+                            .invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                         EpochManagerMethodInvocation::SetEpoch(invocation) => system_api
-                            .sys_invoke(invocation)
+                            .invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }
                 }
                 NativeMethodInvocation::Clock(clock_method) => match clock_method {
                     ClockMethodInvocation::SetCurrentTime(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ClockMethodInvocation::GetCurrentTime(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     ClockMethodInvocation::CompareCurrentTime(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
                 NativeMethodInvocation::Worktop(worktop_method) => match worktop_method {
                     WorktopMethodInvocation::TakeNonFungibles(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::Put(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::Drain(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::AssertContainsNonFungibles(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::AssertContains(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::AssertContainsAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::TakeAll(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     WorktopMethodInvocation::TakeAmount(invocation) => system_api
-                        .sys_invoke(invocation)
+                        .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
             },

@@ -1,5 +1,5 @@
 use radix_engine_derive::Describe;
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
     SubstateOffset,
@@ -101,7 +101,7 @@ impl Component {
     /// Add access check on the component.
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let mut env = ScryptoEnv;
-        env.sys_invoke(AccessRulesAddAccessCheckInvocation {
+        env.invoke(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Component(self.0),
             access_rules,
         })
@@ -112,7 +112,7 @@ impl Component {
     /// Set the royalty configuration of the component.
     pub fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self {
         ScryptoEnv
-            .sys_invoke(ComponentSetRoyaltyConfigInvocation {
+            .invoke(ComponentSetRoyaltyConfigInvocation {
                 receiver: RENodeId::Component(self.0),
                 royalty_config,
             })
@@ -122,7 +122,7 @@ impl Component {
 
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
         ScryptoEnv
-            .sys_invoke(MetadataSetInvocation {
+            .invoke(MetadataSetInvocation {
                 receiver: RENodeId::Component(self.0),
                 key: name.as_ref().to_owned(),
                 value: value.as_ref().to_owned(),
@@ -133,7 +133,7 @@ impl Component {
 
     pub fn globalize(self) -> ComponentAddress {
         ScryptoEnv
-            .sys_invoke(ComponentGlobalizeInvocation {
+            .invoke(ComponentGlobalizeInvocation {
                 component_id: self.0,
             })
             .unwrap()
@@ -143,7 +143,7 @@ impl Component {
     /// methods, such as metadata and royalty.
     pub fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
         ScryptoEnv
-            .sys_invoke(ComponentGlobalizeWithOwnerInvocation {
+            .invoke(ComponentGlobalizeWithOwnerInvocation {
                 component_id: self.0,
                 owner_badge,
             })
@@ -154,7 +154,7 @@ impl Component {
     pub fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let mut env = ScryptoEnv;
         let length = env
-            .sys_invoke(AccessRulesGetLengthInvocation {
+            .invoke(AccessRulesGetLengthInvocation {
                 receiver: RENodeId::Component(self.0),
             })
             .unwrap();
@@ -209,7 +209,7 @@ impl BorrowedGlobalComponent {
     pub fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
         let mut env = ScryptoEnv;
 
-        env.sys_invoke(ComponentSetRoyaltyConfigInvocation {
+        env.invoke(ComponentSetRoyaltyConfigInvocation {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
             royalty_config,
         })
@@ -219,7 +219,7 @@ impl BorrowedGlobalComponent {
     pub fn claim_royalty(&self) -> Bucket {
         let mut env = ScryptoEnv;
 
-        env.sys_invoke(ComponentClaimRoyaltyInvocation {
+        env.invoke(ComponentClaimRoyaltyInvocation {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
         })
         .unwrap()
@@ -229,7 +229,7 @@ impl BorrowedGlobalComponent {
     pub fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
         let mut env = ScryptoEnv;
         let length = env
-            .sys_invoke(AccessRulesGetLengthInvocation {
+            .invoke(AccessRulesGetLengthInvocation {
                 receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
             })
             .unwrap();

@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
-use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, SysInvokableNative, Invokable};
 use radix_engine_interface::api::types::RENodeId;
 use sbor::rust::fmt::Debug;
 use crate::wasm::WasmEngine;
@@ -80,7 +80,7 @@ pub trait NativeProcedure {
     fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + SysNativeInvokable<ScryptoInvocation, RuntimeError>
+            + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>;
 }
@@ -93,7 +93,7 @@ impl<N: NativeProcedure> Executor for NativeExecutor<N> {
     fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + SysNativeInvokable<ScryptoInvocation, RuntimeError>
+            + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {

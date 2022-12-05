@@ -9,7 +9,7 @@ use crate::wasm::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
@@ -166,7 +166,7 @@ where
                 modules,
             );
 
-            let invoke_result = kernel.sys_invoke(TransactionProcessorRunInvocation {
+            let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
                 instructions: Cow::Borrowed(instructions),
             });

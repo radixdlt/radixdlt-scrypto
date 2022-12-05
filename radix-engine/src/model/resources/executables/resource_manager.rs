@@ -683,7 +683,7 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
             }
             .clone();
 
-            api.sys_invoke(AuthZoneAssertAccessRuleInvocation {
+            api.invoke(AuthZoneAssertAccessRuleInvocation {
                 receiver: auth_zone_id.into(),
                 access_rule,
             })?;
@@ -776,7 +776,7 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
             }
             .clone();
 
-            api.sys_invoke(AuthZoneAssertAccessRuleInvocation {
+            api.invoke(AuthZoneAssertAccessRuleInvocation {
                 receiver: auth_zone_id.into(),
                 access_rule,
             })?;

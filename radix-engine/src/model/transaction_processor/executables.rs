@@ -1,6 +1,6 @@
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative, Invokable};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFn, NativeFunction, NativeFunctionIdent, NativeMethodIdent,
     ProofId, RENodeId, TransactionProcessorFunction,
@@ -143,7 +143,7 @@ impl<'a> NativeProcedure for TransactionProcessorRunInvocation<'a> {
     fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + SysNativeInvokable<ScryptoInvocation, RuntimeError>
+            + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
@@ -266,7 +266,7 @@ impl TransactionProcessor {
     where
         Y: SystemApi
             + EngineApi<RuntimeError>
-            + SysNativeInvokable<ScryptoInvocation, RuntimeError>
+            + Invokable<ScryptoInvocation, RuntimeError>
             + SysInvokableNative<RuntimeError>,
     {
         for request in input.runtime_validations.as_ref() {
@@ -531,7 +531,7 @@ impl TransactionProcessor {
                     .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
                         // TODO: Replace with trusted indexed argument
-                        api.sys_invoke(ScryptoInvocation::Function(function_ident.clone(), args.raw))
+                        api.invoke(ScryptoInvocation::Function(function_ident.clone(), args.raw))
                             .map(|r| IndexedScryptoValue::from_slice(&r).unwrap())
                             .map_err(InvokeError::Downstream)
                     })
@@ -560,7 +560,7 @@ impl TransactionProcessor {
                     .and_then(|args| Self::process_expressions(args, api))
                     .and_then(|args| {
                         // TODO: Replace with trusted indexed argument
-                        api.sys_invoke(ScryptoInvocation::Method(method_ident.clone(), args.raw))
+                        api.invoke(ScryptoInvocation::Method(method_ident.clone(), args.raw))
                             .map(|r| IndexedScryptoValue::from_slice(&r).unwrap())
                             .map_err(InvokeError::Downstream)
                     })
@@ -584,7 +584,7 @@ impl TransactionProcessor {
                     abi,
                     owner_badge,
                 } => api
-                    .sys_invoke(PackagePublishWithOwnerInvocation {
+                    .invoke(PackagePublishWithOwnerInvocation {
                         code: code.clone(),
                         abi: abi.clone(),
                         royalty_config: HashMap::new(),

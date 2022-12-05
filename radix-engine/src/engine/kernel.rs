@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, Invocation, SysInvokableNative, Invokable};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
     PackageOffset, ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, ScryptoReceiver,
@@ -188,7 +188,7 @@ where
 
                 // TODO: Replace with trusted IndexedScryptoValue
                 let access_rule = rule!(require(non_fungible_address));
-                let result = self.sys_invoke(ScryptoInvocation::Function(
+                let result = self.invoke(ScryptoInvocation::Function(
                     ScryptoFunctionIdent {
                         package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
                         blueprint_name: "Account".to_string(),
@@ -624,7 +624,7 @@ pub trait Executor {
     ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + SysNativeInvokable<ScryptoInvocation, RuntimeError>
+            + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
             + SysInvokableNative<RuntimeError>;
 }
@@ -639,13 +639,13 @@ pub trait ExecutableInvocation<W:WasmEngine>: Invocation {
 }
 
 
-impl<'g, 's, W, R, N> SysNativeInvokable<N, RuntimeError> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R>
     where
         W: WasmEngine,
         R: FeeReserve,
         N: ExecutableInvocation<W>,
 {
-    fn sys_invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
+    fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
                 &self.current_frame,

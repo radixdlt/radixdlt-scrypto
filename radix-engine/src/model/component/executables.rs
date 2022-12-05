@@ -151,7 +151,7 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
-        api.sys_invoke(AccessRulesAddAccessCheckInvocation {
+        api.invoke(AccessRulesAddAccessCheckInvocation {
             receiver: component_node_id,
             access_rules,
         })?;

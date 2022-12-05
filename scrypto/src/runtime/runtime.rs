@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{EngineApi, SysNativeInvokable};
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{
     ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
@@ -20,7 +20,7 @@ impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> u64 {
         let mut env = ScryptoEnv;
-        env.sys_invoke(EpochManagerGetCurrentEpochInvocation {
+        env.invoke(EpochManagerGetCurrentEpochInvocation {
             receiver: EPOCH_MANAGER,
         })
         .unwrap()

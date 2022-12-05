@@ -1,6 +1,6 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
-use radix_engine_interface::api::api::SysNativeInvokable;
+use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::model::*;
 use sbor::rust::collections::HashMap;
@@ -20,7 +20,7 @@ impl BorrowedPackage {
 
     pub fn set_royalty_config(&self, royalty_config: HashMap<String, RoyaltyConfig>) {
         let mut env = ScryptoEnv;
-        env.sys_invoke(PackageSetRoyaltyConfigInvocation {
+        env.invoke(PackageSetRoyaltyConfigInvocation {
             receiver: self.0,
             royalty_config,
         })
@@ -29,7 +29,7 @@ impl BorrowedPackage {
 
     pub fn claim_royalty(&self) -> Bucket {
         let mut env = ScryptoEnv;
-        env.sys_invoke(PackageClaimRoyaltyInvocation { receiver: self.0 })
+        env.invoke(PackageClaimRoyaltyInvocation { receiver: self.0 })
             .unwrap()
     }
 }
