@@ -1,6 +1,7 @@
 use super::RoyaltyReceiver;
 use crate::model::Resource;
 use crate::types::*;
+use indexmap::IndexMap;
 use radix_engine_interface::api::types::VaultId;
 
 #[derive(Debug, Clone)]
@@ -15,21 +16,23 @@ pub struct FeeSummary {
     /// The total number of cost units consumed.
     pub cost_unit_consumed: u32,
     /// The total amount of XRD burned.
-    pub execution: Decimal,
+    pub total_execution_cost_xrd: Decimal,
     /// The total royalty.
-    pub royalty: Decimal,
-    /// The amount of bad debt due to transaction unable to repay loan.
-    pub bad_debt: Decimal,
-    /// The fee payments
-    pub payments: Vec<(VaultId, Resource, bool)>,
+    pub total_royalty_cost_xrd: Decimal,
+    /// The (non-negative) amount of bad debt due to transaction unable to repay loan.
+    pub bad_debt_xrd: Decimal,
+    /// The vaults locked for XRD payment
+    pub vault_locks: Vec<(VaultId, Resource, bool)>,
+    /// The resultant vault charges in XRD (only present on commit)
+    pub vault_payments_xrd: Option<IndexMap<VaultId, Decimal>>,
     /// The execution cost breakdown
-    pub execution_breakdown: HashMap<String, u32>,
+    pub execution_cost_unit_breakdown: HashMap<String, u32>,
     /// The royalty cost breakdown.
-    pub royalty_breakdown: HashMap<RoyaltyReceiver, u32>,
+    pub royalty_cost_unit_breakdown: HashMap<RoyaltyReceiver, u32>,
 }
 
 impl FeeSummary {
     pub fn loan_fully_repaid(&self) -> bool {
-        self.bad_debt <= 0.into()
+        self.bad_debt_xrd == 0.into()
     }
 }

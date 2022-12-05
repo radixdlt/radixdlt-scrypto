@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
+use indexmap::IndexMap;
 use radix_engine_interface::api::types::{
     BucketOffset, ComponentId, NativeMethod, RENodeId, SubstateId, SubstateOffset, VaultId,
     VaultMethod, VaultOffset,
@@ -583,7 +584,7 @@ impl ExecutionTraceReceipt {
 
     pub fn new(
         ops: Vec<(REActor, VaultId, VaultOp)>,
-        actual_fee_payments: HashMap<VaultId, Decimal>,
+        actual_fee_payments: &IndexMap<VaultId, Decimal>,
         to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
     ) -> Self {

@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, KeyValueStoreOffset, Level, NonFungibleStoreOffset, RENodeId,
     SubstateId, SubstateOffset, VaultId, VaultOffset,
@@ -646,16 +647,18 @@ impl<'s> FinalizingTrack<'s> {
 
         // Revert royalty in case of failure
         if !is_success {
-            fee_summary.royalty = Decimal::ZERO;
-            fee_summary.royalty_breakdown = HashMap::new();
+            fee_summary.total_royalty_cost_xrd = Decimal::ZERO;
+            fee_summary.royalty_cost_unit_breakdown = HashMap::new();
         }
 
         // Finalize payments
-        let mut actual_fee_payments: HashMap<VaultId, Decimal> = HashMap::new();
-        let mut required = fee_summary.execution + fee_summary.royalty - fee_summary.bad_debt;
+        let mut actual_fee_payments: IndexMap<VaultId, Decimal> = IndexMap::new();
+        let mut required = fee_summary.total_execution_cost_xrd
+            + fee_summary.total_royalty_cost_xrd
+            - fee_summary.bad_debt_xrd;
         let mut fees: Resource =
             Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 });
-        for (vault_id, mut locked, contingent) in fee_summary.payments.iter().cloned().rev() {
+        for (vault_id, mut locked, contingent) in fee_summary.vault_locks.iter().cloned().rev() {
             let amount = if contingent {
                 if is_success {
                     Decimal::min(locked.amount(), required)
@@ -691,11 +694,12 @@ impl<'s> FinalizingTrack<'s> {
             // Record final payments
             *actual_fee_payments.entry(vault_id).or_default() += amount;
         }
+        fee_summary.vault_payments_xrd = Some(actual_fee_payments);
 
         // TODO: update XRD supply or disable it
         // TODO: pay tips to the lead validator
 
-        for (receiver, amount) in &fee_summary.royalty_breakdown {
+        for (receiver, amount) in &fee_summary.royalty_cost_unit_breakdown {
             match receiver {
                 RoyaltyReceiver::Package(_, node_id) => {
                     let substate_id = SubstateId(
@@ -741,7 +745,7 @@ impl<'s> FinalizingTrack<'s> {
         // Generate commit result
         let execution_trace_receipt = ExecutionTraceReceipt::new(
             self.vault_ops,
-            actual_fee_payments,
+            fee_summary.vault_payments_xrd.as_ref().unwrap(),
             &mut to_persist,
             invoke_result.is_ok(),
         );

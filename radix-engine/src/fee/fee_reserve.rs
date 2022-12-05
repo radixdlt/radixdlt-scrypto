@@ -276,20 +276,21 @@ impl FeeReserve for SystemLoanFeeReserve {
             cost_unit_consumed: self.cost_unit_consumed,
             cost_unit_price: u128_to_decimal(self.cost_unit_price),
             tip_percentage: self.tip_percentage,
-            execution: u128_to_decimal(
+            total_execution_cost_xrd: u128_to_decimal(
                 self.execution_price() * self.execution.values().sum::<u32>() as u128,
             ),
-            royalty: u128_to_decimal(
+            total_royalty_cost_xrd: u128_to_decimal(
                 self.royalty_price() * self.royalty.values().sum::<u32>() as u128,
             ),
-            bad_debt: u128_to_decimal(self.xrd_owed),
-            payments: self.payments,
-            execution_breakdown: self
+            bad_debt_xrd: u128_to_decimal(self.xrd_owed),
+            vault_locks: self.payments,
+            vault_payments_xrd: None, // Resolved later
+            execution_cost_unit_breakdown: self
                 .execution
                 .into_iter()
                 .map(|(k, v)| (k.to_string(), v))
                 .collect(),
-            royalty_breakdown: self.royalty,
+            royalty_cost_unit_breakdown: self.royalty,
         }
     }
 }
@@ -324,9 +325,9 @@ mod tests {
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.cost_unit_consumed, 2);
-        assert_eq!(summary.execution, dec!("2") + dec!("0.04"));
-        assert_eq!(summary.royalty, dec!("0"));
-        assert_eq!(summary.bad_debt, dec!("0"));
+        assert_eq!(summary.total_execution_cost_xrd, dec!("2") + dec!("0.04"));
+        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
+        assert_eq!(summary.bad_debt_xrd, dec!("0"));
     }
 
     #[test]
@@ -339,9 +340,9 @@ mod tests {
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.cost_unit_consumed, 0);
-        assert_eq!(summary.execution, dec!("0"));
-        assert_eq!(summary.royalty, dec!("0"));
-        assert_eq!(summary.bad_debt, dec!("0"));
+        assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
+        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
+        assert_eq!(summary.bad_debt_xrd, dec!("0"));
     }
 
     #[test]
@@ -353,9 +354,9 @@ mod tests {
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.cost_unit_consumed, 0);
-        assert_eq!(summary.execution, dec!("0"));
-        assert_eq!(summary.royalty, dec!("0"));
-        assert_eq!(summary.bad_debt, dec!("0"));
+        assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
+        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
+        assert_eq!(summary.bad_debt_xrd, dec!("0"));
     }
 
     #[test]
@@ -367,10 +368,10 @@ mod tests {
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.cost_unit_consumed, 0);
-        assert_eq!(summary.execution, dec!("0"));
-        assert_eq!(summary.royalty, dec!("0"));
-        assert_eq!(summary.bad_debt, dec!("0"));
-        assert_eq!(summary.payments, vec![(TEST_VAULT_ID, xrd(100), false)],);
+        assert_eq!(summary.total_execution_cost_xrd, dec!("0"));
+        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
+        assert_eq!(summary.bad_debt_xrd, dec!("0"));
+        assert_eq!(summary.vault_locks, vec![(TEST_VAULT_ID, xrd(100), false)],);
     }
 
     #[test]
@@ -380,10 +381,10 @@ mod tests {
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), false);
         assert_eq!(summary.cost_unit_consumed, 2);
-        assert_eq!(summary.execution, dec!("10.1"));
-        assert_eq!(summary.royalty, dec!("0"));
-        assert_eq!(summary.bad_debt, dec!("10.1"));
-        assert_eq!(summary.payments, vec![],);
+        assert_eq!(summary.total_execution_cost_xrd, dec!("10.1"));
+        assert_eq!(summary.total_royalty_cost_xrd, dec!("0"));
+        assert_eq!(summary.bad_debt_xrd, dec!("10.1"));
+        assert_eq!(summary.vault_locks, vec![],);
     }
 
     #[test]
@@ -402,9 +403,9 @@ mod tests {
         let summary = fee_reserve.finalize();
         assert_eq!(summary.loan_fully_repaid(), true);
         assert_eq!(summary.cost_unit_consumed, 4);
-        assert_eq!(summary.execution, dec!("10.1"));
-        assert_eq!(summary.royalty, dec!("10"));
-        assert_eq!(summary.bad_debt, dec!("0"));
-        assert_eq!(summary.payments, vec![(TEST_VAULT_ID, xrd(100), false)],);
+        assert_eq!(summary.total_execution_cost_xrd, dec!("10.1"));
+        assert_eq!(summary.total_royalty_cost_xrd, dec!("10"));
+        assert_eq!(summary.bad_debt_xrd, dec!("0"));
+        assert_eq!(summary.vault_locks, vec![(TEST_VAULT_ID, xrd(100), false)],);
     }
 }

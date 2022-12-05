@@ -45,7 +45,7 @@ fn test_component_royalty() {
 
     receipt.expect_commit_success();
     assert_eq!(
-        receipt.execution.fee_summary.royalty,
+        receipt.execution.fee_summary.total_royalty_cost_xrd,
         dec!("1") * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
     );
 }
@@ -133,7 +133,7 @@ fn test_package_royalty() {
 
     receipt.expect_commit_success();
     assert_eq!(
-        receipt.execution.fee_summary.royalty,
+        receipt.execution.fee_summary.total_royalty_cost_xrd,
         (dec!("1") + dec!("2")) * u128_to_decimal(DEFAULT_COST_UNIT_PRICE)
     );
 }
