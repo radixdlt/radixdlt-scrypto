@@ -360,9 +360,10 @@ impl Parser {
             // Interpreted
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleAddress => {
-                Ok(Value::NonFungibleAddress(self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?.into()))
-            }
+            TokenKind::NonFungibleAddress => Ok(Value::NonFungibleAddress(
+                self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?
+                    .into(),
+            )),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
@@ -380,12 +381,8 @@ impl Parser {
             )),
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleId => {
-                Ok(Value::NonFungibleId(self.parse_values_one()?.into()))
-            }
-            TokenKind::Bytes => {
-                Ok(Value::Bytes(self.parse_values_one()?.into()))
-            }
+            TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
+            TokenKind::Bytes => Ok(Value::Bytes(self.parse_values_one()?.into())),
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }

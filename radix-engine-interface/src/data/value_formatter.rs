@@ -257,7 +257,8 @@ pub fn format_custom_value<F: fmt::Write>(
         }
         ScryptoCustomValue::NonFungibleAddress(value) => {
             f.write_str("NonFungibleAddress(\"")?;
-            value.resource_address()
+            value
+                .resource_address()
                 .format(f, context.bech32_encoder)
                 .expect("Failed to format address");
             write!(f, "\", {})", value.non_fungible_id())?;

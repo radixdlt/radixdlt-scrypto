@@ -46,7 +46,8 @@ impl NonFungibleId {
 
     /// Converts ordinary bytes buffer encoded as hex string
     pub fn try_bytes_from_hex(hex_str: &str) -> Result<Self, ParseNonFungibleIdError> {
-        let bytes = hex::decode(hex_str).map_err(|s| ParseNonFungibleIdError::InvalidHex(s.to_string()))?;
+        let bytes =
+            hex::decode(hex_str).map_err(|s| ParseNonFungibleIdError::InvalidHex(s.to_string()))?;
         Ok(Self::Bytes(bytes))
     }
 }
