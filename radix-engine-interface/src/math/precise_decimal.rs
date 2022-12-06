@@ -586,7 +586,7 @@ impl fmt::Display for ParsePreciseDecimalError {
 
 impl From<Decimal> for PreciseDecimal {
     fn from(val: Decimal) -> Self {
-        Self(val.0.into())
+        Self(I512::from(val.0) * I512::from(10i8).pow((Self::SCALE - Decimal::SCALE) as u32))
     }
 }
 
@@ -600,7 +600,7 @@ impl Truncate<Decimal> for PreciseDecimal {
 
     fn truncate(self) -> Self::Output {
         Decimal(
-            (self.0 / I512::from(10i8).pow(PreciseDecimal::SCALE - PreciseDecimal::SCALE))
+            (self.0 / I512::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE))
                 .try_into()
                 .expect("Overflow"),
         )
@@ -641,6 +641,7 @@ try_from_integer!(U512, I512);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dec;
     use crate::math::precise_decimal::RoundingMode;
     use crate::pdec;
     use sbor::rust::vec;
@@ -1174,6 +1175,32 @@ mod tests {
     fn test_from_str_failure_precise_decimal() {
         let pdec = PreciseDecimal::from_str("non_decimal_value");
         assert_eq!(pdec, Err(ParsePreciseDecimalError::InvalidChar('n')));
+    }
+
+    #[test]
+    fn test_from_decimal_precise_decimal() {
+        let dec = dec!(5);
+        let pdec = PreciseDecimal::from(dec);
+        assert_eq!(pdec.to_string(), "5");
+    }
+
+    #[test]
+    fn test_truncate_precise_decimal() {
+        let pdec =
+            pdec!("12345678.1234567890123456789012345678901234567890123456789012345678901234");
+        assert_eq!(pdec.truncate().to_string(), "12345678.123456789012345678");
+    }
+
+    #[test]
+    fn test_truncate_1_precise_decimal() {
+        let pdec = pdec!("1");
+        assert_eq!(pdec.truncate().to_string(), "1");
+    }
+
+    #[test]
+    fn test_truncate_123_5_precise_decimal() {
+        let pdec = pdec!("123.5");
+        assert_eq!(pdec.truncate().to_string(), "123.5");
     }
 
     #[test]

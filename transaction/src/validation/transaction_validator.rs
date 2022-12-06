@@ -93,7 +93,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
                     virtualizable_proofs_resource_addresses: BTreeSet::new(),
                 },
                 transaction_hash,
-                fee_payment: FeePayment {
+                fee_payment: FeePayment::User {
                     cost_unit_limit: header.cost_unit_limit,
                     tip_percentage: header.tip_percentage,
                 },
@@ -137,6 +137,15 @@ impl NotarizedTransactionValidator {
         let header = &intent.header;
         let manifest = &intent.manifest;
 
+        let fee_payment = if flags.unlimited_loan {
+            FeePayment::NoFee
+        } else {
+            FeePayment::User {
+                cost_unit_limit: header.cost_unit_limit,
+                tip_percentage: header.tip_percentage,
+            }
+        };
+
         Ok(Executable::new(
             &manifest.instructions,
             &manifest.blobs,
@@ -146,10 +155,7 @@ impl NotarizedTransactionValidator {
                     initial_proofs,
                     virtualizable_proofs_resource_addresses,
                 },
-                fee_payment: FeePayment {
-                    cost_unit_limit: header.cost_unit_limit,
-                    tip_percentage: header.tip_percentage,
-                },
+                fee_payment,
                 runtime_validations: vec![
                     RuntimeValidation::IntentHashUniqueness { intent_hash }
                         .with_skipped_assertion_if(flags.permit_duplicate_intent_hash),

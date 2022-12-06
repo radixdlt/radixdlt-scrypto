@@ -10,7 +10,9 @@ pub struct Span {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
-    /* Literals */
+    // ==============
+    // Literals
+    // ==============
     BoolLiteral(bool),
     I8Literal(i8),
     I16Literal(i16),
@@ -24,7 +26,9 @@ pub enum TokenKind {
     U128Literal(u128),
     StringLiteral(String),
 
-    /* SBOR core types */
+    // ==============
+    // SBOR basic types
+    // ==============
     Unit,
     Bool,
     I8,
@@ -41,7 +45,19 @@ pub enum TokenKind {
     Enum,
     Array,
     Tuple,
+
+    // ==============
+    // SBOR aliases
+    // ==============
+    Some,
+    None,
+    Ok,
+    Err,
     Bytes,
+
+    // ==============
+    // SBOR custom types
+    // ==============
 
     /* Global address */
     PackageAddress,
@@ -391,6 +407,11 @@ impl Lexer {
             "Enum" => Ok(TokenKind::Enum),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
+
+            "Some" => Ok(TokenKind::Some),
+            "None" => Ok(TokenKind::None),
+            "Ok" => Ok(TokenKind::Ok),
+            "Err" => Ok(TokenKind::Err),
             "Bytes" => Ok(TokenKind::Bytes),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),

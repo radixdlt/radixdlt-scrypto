@@ -226,7 +226,7 @@ impl AuthModule {
                             RENodeVisibilityOrigin::DirectAccess => match vault_fn {
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
-                                VaultMethod::TakeNonFungibles | VaultMethod::Take => {
+                                VaultMethod::Recall | VaultMethod::RecallNonFungibles => {
                                     let access_rule =
                                         substate.access_rules_chain[0].get_group("recall");
                                     let authorization = convert(

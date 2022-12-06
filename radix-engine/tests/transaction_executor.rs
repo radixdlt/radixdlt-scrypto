@@ -128,7 +128,7 @@ fn test_normal_transaction_flow() {
     };
 
     let intent_hash_manager = TestIntentHashManager::new();
-    let fee_reserve_config = FeeReserveConfig::standard();
+    let fee_reserve_config = FeeReserveConfig::default();
     let execution_config = ExecutionConfig::debug();
     let raw_transaction = create_notarized_transaction(TransactionParams {
         cost_unit_limit: 1_000_000,

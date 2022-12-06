@@ -48,7 +48,7 @@ fn bench_transfer(c: &mut Criterion) {
     let account1 = execute_and_commit_transaction(
         &mut substate_store,
         &mut scrypto_interpreter,
-        &FeeReserveConfig::standard(),
+        &FeeReserveConfig::default(),
         &ExecutionConfig::default(),
         &TestTransaction::new(manifest.clone(), 1, DEFAULT_COST_UNIT_LIMIT)
             .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
@@ -60,7 +60,7 @@ fn bench_transfer(c: &mut Criterion) {
     let account2 = execute_and_commit_transaction(
         &mut substate_store,
         &mut scrypto_interpreter,
-        &FeeReserveConfig::standard(),
+        &FeeReserveConfig::default(),
         &ExecutionConfig::default(),
         &TestTransaction::new(manifest, 2, DEFAULT_COST_UNIT_LIMIT)
             .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
@@ -83,7 +83,7 @@ fn bench_transfer(c: &mut Criterion) {
         execute_and_commit_transaction(
             &mut substate_store,
             &mut scrypto_interpreter,
-            &FeeReserveConfig::standard(),
+            &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
             &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
                 .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
@@ -109,7 +109,7 @@ fn bench_transfer(c: &mut Criterion) {
             let receipt = execute_and_commit_transaction(
                 &mut substate_store,
                 &mut scrypto_interpreter,
-                &FeeReserveConfig::standard(),
+                &FeeReserveConfig::default(),
                 &ExecutionConfig::default(),
                 &TestTransaction::new(manifest.clone(), nonce, DEFAULT_COST_UNIT_LIMIT)
                     .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),

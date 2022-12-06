@@ -1,5 +1,4 @@
 use crate::model::{AuthModule, AuthZoneParams, Executable, TransactionManifest};
-use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::crypto::Hash;
 
 use radix_engine_interface::scrypto;
@@ -28,10 +27,7 @@ impl SystemTransaction {
             ExecutionContext {
                 transaction_hash,
                 auth_zone_params,
-                fee_payment: FeePayment {
-                    cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-                    tip_percentage: 0,
-                },
+                fee_payment: FeePayment::NoFee,
                 runtime_validations: vec![],
             },
         )
