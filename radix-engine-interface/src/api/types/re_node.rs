@@ -32,6 +32,7 @@ pub enum RENodeType {
     Package,
     EpochManager,
     Clock,
+    TransactionHash,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -77,6 +78,7 @@ impl Into<u32> for RENodeId {
             RENodeId::Proof(id) => id,
             RENodeId::AuthZoneStack(id) => id,
             RENodeId::FeeReserve(id) => id,
+            RENodeId::TransactionHash(id) => id,
             _ => panic!("Not a transient id"),
         }
     }

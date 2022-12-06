@@ -627,7 +627,7 @@ where
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
-            }
+            },
         },
     }
 }

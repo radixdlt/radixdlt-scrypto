@@ -135,11 +135,13 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     loaded: false,
                                     size: 0,
                                 },
-                                RENodeId::TransactionHash(..) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: false,
-                                    size: 0,
-                                },
+                                RENodeId::TransactionHash(..) => {
+                                    SystemApiCostingEntry::BorrowNode {
+                                        // TODO: figure out loaded state and size
+                                        loaded: false,
+                                        size: 0,
+                                    }
+                                }
                             }
                         }),
                         1,

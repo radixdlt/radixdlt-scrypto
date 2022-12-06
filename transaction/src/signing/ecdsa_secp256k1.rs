@@ -70,7 +70,7 @@ mod tests {
     fn test_non_fungible_address_codec() {
         let expected_id = "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let expected_id_with_type_designator = format!("Bytes(\"{}\")", expected_id);
-        let expected_address = "00b91737ee8a4de59d49dad40de5560e5754466ac84cf5432ea95d5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
+        let expected_address = "008f2eea57193578e405ed383a1399cda825c4b6a1a2bd906afc635c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap();
         let public_key = private_key.public_key();
         let auth_address = NonFungibleAddress::new(

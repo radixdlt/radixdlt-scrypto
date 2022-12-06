@@ -519,7 +519,7 @@ impl NativeFnInvocation {
                     TransactionHashMethodInvocation::Get(invocation) => api
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                }
+                },
             },
         }
     }

@@ -119,6 +119,7 @@ pub enum ExecutionMode {
     NodeMoveModule,
     AuthModule,
     EntityModule,
+    TransactionModule,
     Application,
     DropNode,
 }

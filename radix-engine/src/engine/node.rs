@@ -43,9 +43,7 @@ pub enum RENode {
         CurrentTimeRoundedToMinutesSubstate,
         AccessRulesChainSubstate,
     ),
-    TransactionHash(
-        TransactionHashSubstate,
-    )
+    TransactionHash(TransactionHashSubstate),
 }
 
 impl RENode {

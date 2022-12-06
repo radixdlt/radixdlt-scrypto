@@ -1,4 +1,10 @@
-use radix_engine_interface::api::types::{AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod, ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod, NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod, ResourceManagerFunction, ResourceManagerMethod, TransactionHashMethod, TransactionProcessorFunction, VaultMethod, WorktopMethod};
+use radix_engine_interface::api::types::{
+    AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
+    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
+    NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionHashMethod,
+    TransactionProcessorFunction, VaultMethod, WorktopMethod,
+};
 
 pub enum SystemApiCostingEntry {
     /*
@@ -265,11 +271,9 @@ impl FeeTable {
                     VaultMethod::RecallNonFungibles => self.fixed_low,
                 }
             }
-            NativeMethod::TransactionHash(ident) => {
-                match ident {
-                    TransactionHashMethod::Get => self.fixed_low,
-                }
-            }
+            NativeMethod::TransactionHash(ident) => match ident {
+                TransactionHashMethod::Get => self.fixed_low,
+            },
         }
     }
 

@@ -104,19 +104,29 @@ where
         // Initial authzone
         // TODO: Move into module initialization
         kernel
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |system_api| {
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
                 let auth_zone = AuthZoneStackSubstate::new(
                     vec![],
                     auth_zone_params.virtualizable_proofs_resource_addresses,
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
 
-                let node_id = system_api.allocate_node_id(RENodeType::AuthZoneStack)?;
-                system_api.create_node(node_id, RENode::AuthZoneStack(auth_zone))?;
+                let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
+                api.create_node(node_id, RENode::AuthZoneStack(auth_zone))?;
 
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
+        kernel
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::TransactionModule, |api| {
+                let transaction_hash_substate = TransactionHashSubstate {
+                    hash: transaction_hash,
+                };
+                let node_id = api.allocate_node_id(RENodeType::TransactionHash)?;
+                api.create_node(node_id, RENode::TransactionHash(transaction_hash_substate))?;
+                Ok(())
+            })
+            .expect("TransactionModule failed to initialize");
 
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
@@ -261,6 +271,7 @@ where
                     Ok(())
                 }
                 RENodeId::Bucket(..) => Ok(()),
+                RENodeId::TransactionHash(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                     node_id,
                 ))),
@@ -331,6 +342,13 @@ where
         // New Call Frame pre-processing
         {
             // TODO: Abstract these away
+            self.execute_in_mode(ExecutionMode::TransactionModule, |system_api| {
+                TransactionHashModule::on_call_frame_enter(
+                    &mut call_frame_update,
+                    &actor,
+                    system_api,
+                )
+            })?;
             self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
@@ -832,6 +850,10 @@ where
                 .id_allocator
                 .new_proof_id()
                 .map(|id| RENodeId::Proof(id)),
+            RENodeType::TransactionHash => self
+                .id_allocator
+                .new_transaction_hash_id()
+                .map(|id| RENodeId::TransactionHash(id)),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
             RENodeType::Vault => self
                 .id_allocator
@@ -878,7 +900,9 @@ where
             RENodeType::GlobalClock => self
                 .id_allocator
                 .new_clock_address(self.transaction_hash)
-                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
+                .map(|address| {
+                    RENodeId::Global(GlobalAddress::System(address))
+                }),
             RENodeType::GlobalResourceManager => self
                 .id_allocator
                 .new_resource_address(self.transaction_hash)
@@ -890,7 +914,9 @@ where
             RENodeType::GlobalComponent => self
                 .id_allocator
                 .new_component_address(self.transaction_hash)
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+                .map(|address| {
+                    RENodeId::Global(GlobalAddress::Component(address))
+                }),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
@@ -988,6 +1014,7 @@ where
                 }
             }
             (RENodeId::Bucket(..), RENode::Bucket(..)) => {}
+            (RENodeId::TransactionHash(..), RENode::TransactionHash(..)) => {}
             (RENodeId::Proof(..), RENode::Proof(..)) => {}
             (RENodeId::AuthZoneStack(..), RENode::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENode::Vault(..)) => {}
