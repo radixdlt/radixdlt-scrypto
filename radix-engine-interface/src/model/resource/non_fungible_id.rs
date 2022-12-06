@@ -63,34 +63,38 @@ impl NonFungibleId {
     pub fn try_from_manifest_string(s: &str) -> Result<Self, ParseNonFungibleIdError> {
         // TODO: improve this parser for properly handing edge cases
         let s = s.trim();
-        if s.len() > 9 && s.starts_with("Bytes(\"") && s.ends_with("\")") {
-            Ok(NonFungibleId::Bytes(
+        let non_fungible_id = if s.len() > 9 && s.starts_with("Bytes(\"") && s.ends_with("\")") {
+            NonFungibleId::Bytes(
                 hex::decode(&s[7..s.len() - 2])
                     .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
-            ))
+            )
         } else if s.len() > 4 && s.ends_with("u128") {
-            Ok(NonFungibleId::UUID(
+            NonFungibleId::UUID(
                 s[0..s.len() - 4]
                     .parse::<u128>()
                     .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            ))
+            )
         } else if s.len() > 3 && s.ends_with("u64") {
-            Ok(NonFungibleId::U64(
+            NonFungibleId::U64(
                 s[0..s.len() - 3]
                     .parse::<u64>()
                     .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            ))
+            )
         } else if s.len() > 3 && s.ends_with("u32") {
-            Ok(NonFungibleId::U32(
+            NonFungibleId::U32(
                 s[0..s.len() - 3]
                     .parse::<u32>()
                     .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            ))
+            )
         } else if s.len() > 2 && s.starts_with("\"") && s.ends_with("\"") {
-            Ok(NonFungibleId::String(s[1..s.len() - 1].to_string()))
+            NonFungibleId::String(s[1..s.len() - 1].to_string())
         } else {
-            Err(ParseNonFungibleIdError::InvalidValue)
-        }
+            return Err(ParseNonFungibleIdError::InvalidValue);
+        };
+
+        non_fungible_id.validate_contents()?;
+
+        Ok(non_fungible_id)
     }
 
     /// Returns simple string representation of non-fungible ID value.
@@ -109,24 +113,28 @@ impl NonFungibleId {
         id_type: NonFungibleIdType,
         s: &str,
     ) -> Result<Self, ParseNonFungibleIdError> {
-        match id_type {
-            NonFungibleIdType::Bytes => Ok(NonFungibleId::Bytes(
+        let non_fungible_id = match id_type {
+            NonFungibleIdType::Bytes => NonFungibleId::Bytes(
                 hex::decode(s).map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            )),
-            NonFungibleIdType::U32 => Ok(NonFungibleId::U32(
+            ),
+            NonFungibleIdType::U32 => NonFungibleId::U32(
                 s.parse::<u32>()
                     .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            )),
-            NonFungibleIdType::U64 => Ok(NonFungibleId::U64(
+            ),
+            NonFungibleIdType::U64 => NonFungibleId::U64(
                 s.parse::<u64>()
                     .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            )),
-            NonFungibleIdType::String => Ok(NonFungibleId::String(s.to_string())),
-            NonFungibleIdType::UUID => Ok(NonFungibleId::UUID(
+            ),
+            NonFungibleIdType::String => NonFungibleId::String(s.to_string()),
+            NonFungibleIdType::UUID => NonFungibleId::UUID(
                 s.parse::<u128>()
                     .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            )),
-        }
+            ),
+        };
+
+        non_fungible_id.validate_contents()?;
+
+        Ok(non_fungible_id)
     }
 
     pub fn validate_contents(&self) -> Result<(), ParseNonFungibleIdError> {

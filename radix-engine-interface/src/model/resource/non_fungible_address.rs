@@ -28,11 +28,23 @@ pub struct NonFungibleAddress {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleAddressError {
     InvalidLength(usize),
-    InvalidResourceAddress,
-    InvalidNonFungibleId,
+    InvalidResourceAddress(AddressError),
+    InvalidNonFungibleId(ParseNonFungibleIdError),
     InvalidHex(String),
     InvalidPrefix,
-    InvalidNumberOfParts,
+    RequiresTwoParts,
+}
+
+impl From<AddressError> for ParseNonFungibleAddressError {
+    fn from(err: AddressError) -> Self {
+        Self::InvalidResourceAddress(err)
+    }
+}
+
+impl From<ParseNonFungibleIdError> for ParseNonFungibleAddressError {
+    fn from(err: ParseNonFungibleIdError) -> Self {
+        Self::InvalidNonFungibleId(err)
+    }
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -58,10 +70,8 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
         }
 
         let (resource_address_slice, non_fungible_id_slice) = slice.split_at(27);
-        let resource_address = ResourceAddress::try_from(resource_address_slice)
-            .map_err(|_| ParseNonFungibleAddressError::InvalidResourceAddress)?;
-        let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)
-            .map_err(|_| ParseNonFungibleAddressError::InvalidNonFungibleId)?;
+        let resource_address = ResourceAddress::try_from(resource_address_slice)?;
+        let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)?;
         Ok(NonFungibleAddress {
             resource_address,
             non_fungible_id,
@@ -110,22 +120,15 @@ impl NonFungibleAddress {
         s: &str,
     ) -> Result<Self, ParseNonFungibleAddressError> {
         let v = s
-            .split(':')
+            .splitn(2, ':')
             .filter(|&s| !s.is_empty())
             .collect::<Vec<&str>>();
-        if v.len() == 2 {
-            if let Ok(raddr) = bech32_decoder.validate_and_decode_resource_address(v[0]) {
-                if let Ok(nfid) = NonFungibleId::try_from_simple_string(id_type, v[1]) {
-                    Ok(NonFungibleAddress::new(raddr, nfid))
-                } else {
-                    Err(ParseNonFungibleAddressError::InvalidNonFungibleId)
-                }
-            } else {
-                Err(ParseNonFungibleAddressError::InvalidResourceAddress)
-            }
-        } else {
-            Err(ParseNonFungibleAddressError::InvalidNumberOfParts)
+        if v.len() != 2 {
+            return Err(ParseNonFungibleAddressError::RequiresTwoParts);
         }
+        let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
+        let non_fungible_id = NonFungibleId::try_from_simple_string(id_type, v[1])?;
+        Ok(NonFungibleAddress::new(resource_address, non_fungible_id))
     }
 }
 
@@ -273,55 +276,64 @@ mod tests {
 
     #[test]
     fn non_fungible_address_canonical_conversion_error() {
-        let dec = Bech32Decoder::for_simulator();
+        let bech32_decoder = Bech32Decoder::for_simulator();
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
-                &dec,
+                &bech32_decoder,
                 NonFungibleIdType::U32,
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p1",
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
             ),
-            Err(ParseNonFungibleAddressError::InvalidNumberOfParts)
+            Err(ParseNonFungibleAddressError::RequiresTwoParts)
         );
 
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
-                &dec,
-                NonFungibleIdType::U32,
+                &bech32_decoder,
+                NonFungibleIdType::String,
+                // : is not currently allowed in non-fungible ids
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1:2",
             ),
-            Err(ParseNonFungibleAddressError::InvalidNumberOfParts)
+            Err(ParseNonFungibleAddressError::InvalidNonFungibleId(
+                ParseNonFungibleIdError::InvalidCharacter(':')
+            ))
         );
 
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
-                &dec,
+                &bech32_decoder,
                 NonFungibleIdType::U32,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:",
             ),
-            Err(ParseNonFungibleAddressError::InvalidNumberOfParts)
-        );
-
-        assert_eq!(
-            NonFungibleAddress::try_from_canonical_string(&dec, NonFungibleIdType::U32, ":",),
-            Err(ParseNonFungibleAddressError::InvalidNumberOfParts)
+            Err(ParseNonFungibleAddressError::RequiresTwoParts)
         );
 
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
-                &dec,
+                &bech32_decoder,
+                NonFungibleIdType::U32,
+                ":",
+            ),
+            Err(ParseNonFungibleAddressError::RequiresTwoParts)
+        );
+
+        assert!(matches!(
+            NonFungibleAddress::try_from_canonical_string(
+                &bech32_decoder,
                 NonFungibleIdType::U32,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
             ),
-            Err(ParseNonFungibleAddressError::InvalidResourceAddress)
-        );
+            Err(ParseNonFungibleAddressError::InvalidResourceAddress(_))
+        ));
 
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
-                &dec,
+                &bech32_decoder,
                 NonFungibleIdType::U32,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:notnumber",
             ),
-            Err(ParseNonFungibleAddressError::InvalidNonFungibleId)
+            Err(ParseNonFungibleAddressError::InvalidNonFungibleId(
+                ParseNonFungibleIdError::InvalidValue
+            ))
         );
     }
 }
