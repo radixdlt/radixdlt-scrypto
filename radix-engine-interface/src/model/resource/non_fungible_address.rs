@@ -1,6 +1,7 @@
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use sbor::rust::format;
 use sbor::*;
 
 use crate::abi::*;

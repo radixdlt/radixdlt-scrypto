@@ -112,6 +112,8 @@ mod tests {
     use sbor::rust::hash::Hash;
     use sbor::rust::rc::Rc;
     use sbor::rust::string::String;
+    use sbor::rust::vec;
+    use sbor::rust::boxed::Box;
 
     #[test]
     fn test_args() {
