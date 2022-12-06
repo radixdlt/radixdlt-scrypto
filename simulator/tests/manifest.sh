@@ -10,7 +10,7 @@ resim="cargo run --bin resim $@ --"
 $resim reset
 
 export account=`$resim new-account | awk '/Account component address:/ {print $NF}'`
-export owner_badge=`$resim new-owner-badge --name 'OwnerBadge' | awk '/Owner badge:/ {print $NF}'`
+export owner_badge=`$resim new-simple-badge --name 'OwnerBadge' | awk '/NFAddress:/ {print $NF}'`
 export package=`$resim publish ../examples/hello-world $owner_badge | awk '/Package:/ {print $NF}'`
 
 export xrd=resource_sim1qzkcyv5dwq3r6kawy6pxpvcythx8rh8ntum6ws62p95sqjjpwr
