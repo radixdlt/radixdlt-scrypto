@@ -83,6 +83,6 @@ mod tests {
         let nfid = auth_address.non_fungible_id();
         assert_eq!(nfid.id_type(), NonFungibleIdType::Bytes);
         assert_eq!(nfid.to_string(), expected_id_with_type_designator);
-        assert!(matches!(nfid, NonFungibleId::Bytes(b) if b == hex::decode(expected_id).unwrap()));
+        assert!(matches!(nfid, NonFungibleId::Bytes(b) if *b == hex::decode(expected_id).unwrap()));
     }
 }

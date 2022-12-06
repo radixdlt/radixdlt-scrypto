@@ -83,8 +83,8 @@ impl NonFungibleAddress {
     }
 
     /// Returns the non-fungible id.
-    pub fn non_fungible_id(&self) -> NonFungibleId {
-        self.non_fungible_id.clone()
+    pub fn non_fungible_id(&self) -> &NonFungibleId {
+        &self.non_fungible_id
     }
 
     pub fn to_vec(&self) -> Vec<u8> {

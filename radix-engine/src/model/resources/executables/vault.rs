@@ -28,6 +28,27 @@ pub enum VaultError {
     LockFeeRepayFailure(FeeReserveError),
 }
 
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallInvocation {
+    type Exec = NativeExecutor<VaultTakeInvocation>;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        _api: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let receiver = RENodeId::Vault(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Recall)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = NativeExecutor(VaultTakeInvocation {
+            receiver: self.receiver,
+            amount: self.amount,
+        });
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeInvocation {
     type Exec = NativeExecutor<Self>;
 
@@ -193,6 +214,27 @@ impl NativeProcedure for VaultLockFeeInvocation {
         }
 
         Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallNonFungiblesInvocation {
+    type Exec = NativeExecutor<VaultTakeNonFungiblesInvocation>;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        _api: &mut D,
+    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let receiver = RENodeId::Vault(self.receiver);
+        let call_frame_update = CallFrameUpdate::copy_ref(receiver);
+        let actor = REActor::Method(
+            ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::RecallNonFungibles)),
+            ResolvedReceiver::new(receiver),
+        );
+        let executor = NativeExecutor(VaultTakeNonFungiblesInvocation {
+            receiver: self.receiver,
+            non_fungible_ids: self.non_fungible_ids,
+        });
+        Ok((actor, call_frame_update, executor))
     }
 }
 
