@@ -733,7 +733,7 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
         let non_fungible_ids = vec![
             NonFungibleId::U32(12),
             NonFungibleId::U64(19),
-            NonFungibleId::String("HelloWorld!".to_string()),
+            NonFungibleId::String("HelloWorld".to_string()),
             NonFungibleId::Decimal("1234".parse().unwrap()),
             NonFungibleId::Bytes(vec![0x12, 0x19, 0x22, 0xff, 0x3]),
             NonFungibleId::UUID(1922931322),
