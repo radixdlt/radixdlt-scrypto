@@ -1,5 +1,4 @@
 use crate::api::types::ScryptoActor;
-use crate::crypto::Hash;
 use crate::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -30,7 +29,6 @@ pub trait EngineApi<E: Debug> {
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
     fn sys_get_actor(&mut self) -> Result<ScryptoActor, E>;
     fn sys_generate_uuid(&mut self) -> Result<u128, E>;
-    fn sys_get_transaction_hash(&mut self) -> Result<Hash, E>;
 }
 
 pub trait LoggerApi<E: Debug> {

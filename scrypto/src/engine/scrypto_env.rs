@@ -2,7 +2,6 @@ use radix_engine_interface::api::api::{EngineApi, Invokable, LoggerApi};
 use radix_engine_interface::api::types::{
     Level, LockHandle, RENodeId, ScryptoActor, ScryptoRENode, SubstateOffset,
 };
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::wasm::*;
 use sbor::rust::fmt::Debug;
@@ -114,11 +113,6 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
 
     fn sys_generate_uuid(&mut self) -> Result<u128, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::GenerateUuid());
-        Ok(rtn)
-    }
-
-    fn sys_get_transaction_hash(&mut self) -> Result<Hash, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::GetTransactionHash());
         Ok(rtn)
     }
 }

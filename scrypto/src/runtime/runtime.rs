@@ -1,5 +1,8 @@
 use radix_engine_interface::api::api::{EngineApi, Invokable};
-use radix_engine_interface::api::types::{RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver};
+use radix_engine_interface::api::types::{
+    RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage,
+    ScryptoReceiver,
+};
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::{scrypto_decode, ScryptoDecode};
@@ -17,10 +20,11 @@ pub struct Runtime {}
 impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> u64 {
-        ScryptoEnv.invoke(EpochManagerGetCurrentEpochInvocation {
-            receiver: EPOCH_MANAGER,
-        })
-        .unwrap()
+        ScryptoEnv
+            .invoke(EpochManagerGetCurrentEpochInvocation {
+                receiver: EPOCH_MANAGER,
+            })
+            .unwrap()
     }
 
     /// Returns the running entity.
@@ -87,8 +91,10 @@ impl Runtime {
             .find(|n| matches!(n, RENodeId::TransactionHash(..)))
             .expect("AuthZone does not exist");
 
-        ScryptoEnv.invoke(TransactionHashGetInvocation {
-            receiver: node_id.into(),
-        }).unwrap()
+        ScryptoEnv
+            .invoke(TransactionHashGetInvocation {
+                receiver: node_id.into(),
+            })
+            .unwrap()
     }
 }

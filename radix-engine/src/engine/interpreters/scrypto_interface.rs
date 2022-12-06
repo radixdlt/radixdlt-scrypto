@@ -16,7 +16,6 @@ use radix_engine_interface::api::types::{
     ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
 };
@@ -180,9 +179,5 @@ where
 
     fn sys_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         self.generate_uuid()
-    }
-
-    fn sys_get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        self.read_transaction_hash()
     }
 }

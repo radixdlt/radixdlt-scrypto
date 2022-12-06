@@ -32,7 +32,10 @@ impl TypedInMemorySubstateStore {
                 None => panic!("Right missing substate: {:?}", id),
                 Some(right_val) => {
                     if !val.eq(right_val) {
-                        panic!("Substates not equal.\nLeft: {:?}\nRight: {:?}", val, right_val);
+                        panic!(
+                            "Substates not equal.\nLeft: {:?}\nRight: {:?}",
+                            val, right_val
+                        );
                     }
                 }
             }
@@ -42,7 +45,7 @@ impl TypedInMemorySubstateStore {
             let maybe_val = self.substates.get(id);
             match maybe_val {
                 None => panic!("Left missing substate: {:?}", id),
-                Some(..) => { }
+                Some(..) => {}
             }
         }
     }

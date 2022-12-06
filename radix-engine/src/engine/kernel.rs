@@ -900,9 +900,7 @@ where
             RENodeType::GlobalClock => self
                 .id_allocator
                 .new_clock_address(self.transaction_hash)
-                .map(|address| {
-                    RENodeId::Global(GlobalAddress::System(address))
-                }),
+                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
             RENodeType::GlobalResourceManager => self
                 .id_allocator
                 .new_resource_address(self.transaction_hash)
@@ -914,9 +912,7 @@ where
             RENodeType::GlobalComponent => self
                 .id_allocator
                 .new_component_address(self.transaction_hash)
-                .map(|address| {
-                    RENodeId::Global(GlobalAddress::Component(address))
-                }),
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
@@ -1263,32 +1259,6 @@ where
                 .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref_mut)
-    }
-
-    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::ReadTransactionHash,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::ReadTransactionHash {
-                    hash: &self.transaction_hash,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(self.transaction_hash)
     }
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {

@@ -257,19 +257,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::ReadTransactionHash => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
-                        1,
-                        "read_transaction_hash",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
             SysCallInput::ReadBlob { .. } => {
                 track
                     .fee_reserve
