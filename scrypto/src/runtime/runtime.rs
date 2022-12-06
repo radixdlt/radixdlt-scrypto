@@ -40,11 +40,6 @@ impl Runtime {
         }
     }
 
-    /// Generates a UUID.
-    pub fn generate_uuid() -> u128 {
-        ScryptoEnv.sys_generate_uuid().unwrap()
-    }
-
     /// Invokes a function on a blueprint.
     pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: ScryptoDecode>(
         package_address: PackageAddress,
@@ -89,10 +84,25 @@ impl Runtime {
         let node_id = visible_node_ids
             .into_iter()
             .find(|n| matches!(n, RENodeId::TransactionHash(..)))
-            .expect("AuthZone does not exist");
+            .expect("TransactionHash does not exist");
 
         ScryptoEnv
             .invoke(TransactionHashGetInvocation {
+                receiver: node_id.into(),
+            })
+            .unwrap()
+    }
+
+    /// Generates a UUID.
+    pub fn generate_uuid() -> u128 {
+        let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
+        let node_id = visible_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::TransactionHash(..)))
+            .expect("TransactionHash does not exist");
+
+        ScryptoEnv
+            .invoke(TransactionHashGenerateUuidInvocation {
                 receiver: node_id.into(),
             })
             .unwrap()
