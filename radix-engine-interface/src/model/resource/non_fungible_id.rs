@@ -132,12 +132,18 @@ impl NonFungibleId {
     pub fn validate_contents(&self) -> Result<(), ParseNonFungibleIdError> {
         match self {
             NonFungibleId::String(value) => {
+                if value.len() == 0 {
+                    return Err(ParseNonFungibleIdError::Empty);
+                }
                 if value.len() > NON_FUNGIBLE_ID_MAX_LENGTH {
                     return Err(ParseNonFungibleIdError::TooLong);
                 }
                 validate_non_fungible_id_string(value)?;
             }
             NonFungibleId::Bytes(value) => {
+                if value.len() == 0 {
+                    return Err(ParseNonFungibleIdError::Empty);
+                }
                 if value.len() > NON_FUNGIBLE_ID_MAX_LENGTH {
                     return Err(ParseNonFungibleIdError::TooLong);
                 }
@@ -169,6 +175,7 @@ pub enum ParseNonFungibleIdError {
     InvalidValue,
     UnexpectedTypeId,
     TooLong,
+    Empty,
     InvalidCharacter(char),
 }
 
@@ -337,6 +344,11 @@ mod tests {
             validation_result,
             Err(ParseNonFungibleIdError::TooLong)
         ));
+        let validation_result = NonFungibleId::Bytes(vec![]).validate_contents();
+        assert!(matches!(
+            validation_result,
+            Err(ParseNonFungibleIdError::Empty)
+        ));
 
         // String length
         let validation_result =
@@ -348,6 +360,11 @@ mod tests {
         assert!(matches!(
             validation_result,
             Err(ParseNonFungibleIdError::TooLong)
+        ));
+        let validation_result = NonFungibleId::String("".to_string()).validate_contents();
+        assert!(matches!(
+            validation_result,
+            Err(ParseNonFungibleIdError::Empty)
         ));
     }
 
