@@ -323,23 +323,23 @@ mod tests {
     fn test_non_fungible_id_type_and_display() {
         let nfid = NonFungibleId::U32(1);
         assert_eq!(nfid.id_type(), NonFungibleIdType::U32);
-        assert_eq!(format!("{}", nfid), "1u32");
+        assert_eq!(nfid.to_string(), "1");
 
         let nfid = NonFungibleId::U64(100);
         assert_eq!(nfid.id_type(), NonFungibleIdType::U64);
-        assert_eq!(format!("{}", nfid), "100u64");
+        assert_eq!(nfid.to_string(), "100");
 
         let nfid = NonFungibleId::String(String::from("test"));
         assert_eq!(nfid.id_type(), NonFungibleIdType::String);
-        assert_eq!(format!("{}", nfid), "\"test\"");
+        assert_eq!(nfid.to_string(), "test");
 
         let nfid = NonFungibleId::UUID(1_u128);
         assert_eq!(nfid.id_type(), NonFungibleIdType::UUID);
-        assert_eq!(format!("{}", nfid), "1u128");
+        assert_eq!(nfid.to_string(), "1");
 
         let nfid = NonFungibleId::Bytes(vec![1, 2, 3, 255]);
         assert_eq!(nfid.id_type(), NonFungibleIdType::Bytes);
-        assert_eq!(format!("{}", nfid), "Bytes(\"010203ff\")");
+        assert_eq!(nfid.to_string(), "010203ff");
     }
 
     #[test]
