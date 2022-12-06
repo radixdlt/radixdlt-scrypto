@@ -399,18 +399,18 @@ where
                 if num_part == 0 {
                     acc
                 } else if acc == "" && minus == "-" {
-                    format!("{}", num_part + 1) // avoid overflow of T::MIN
+                    (num_part + 1).to_string() // avoid overflow of T::MIN
                 } else {
-                    format!("{}{}", num_part, acc)
+                    num_part.to_string() + &acc
                 }
             } else {
                 let padding: String = vec!["0"; 38 - num_part.to_string().len()]
                     .into_iter()
                     .collect();
                 if acc == "" && minus == "-" {
-                    format!("{}{}", padding, num_part + 1)
+                    padding + &(num_part + 1).to_string()
                 } else {
-                    format!("{}{}{}", padding, num_part, acc)
+                    padding +  &num_part.to_string() + &acc
                 }
             }
         });
