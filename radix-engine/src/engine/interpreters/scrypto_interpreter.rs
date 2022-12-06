@@ -8,6 +8,7 @@ use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue}
 pub struct ScryptoExecutorToParsed<I: WasmInstance> {
     instance: I,
     export_name: String,
+    component_id: Option<ComponentId>,
     args: Vec<u8>,
     rtn_type: Type,
 }
@@ -25,10 +26,18 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
             + InvokableModel<RuntimeError>
             + LoggerApi<RuntimeError>,
     {
+        /*
+        let mut args = Vec::new();
+        if let Some(component_id) = self.component_id {
+            args.push(scrypto_encode(&component_id).unwrap());
+        }
+        args.push(self.args);
+         */
+
         let output = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(api));
             self.instance
-                .invoke_export(&self.export_name, &self.args, &mut runtime)
+                .invoke_export(&self.export_name, vec![self.args], &mut runtime)
                 .map_err(|e| match e {
                     InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
                     InvokeError::Downstream(runtime_error) => runtime_error,
@@ -57,6 +66,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
+    component_id: Option<ComponentId>,
     args: Vec<u8>,
     export_name: String,
     rtn_type: Type,
@@ -75,6 +85,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
         ScryptoExecutorToParsed {
             instance: self.instance,
             args: self.args,
+            component_id: self.component_id,
             export_name: self.export_name,
             rtn_type: self.rtn_type,
         }
@@ -96,6 +107,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
         &self,
         code: &[u8],
         export_name: String,
+        component_id: Option<ComponentId>,
         args: Vec<u8>,
         rtn_type: Type,
     ) -> ScryptoExecutor<W::WasmInstance> {
@@ -105,6 +117,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
         let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoExecutor {
             instance,
+            component_id,
             args,
             export_name,
             rtn_type,
@@ -115,6 +128,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
         &self,
         code: &[u8],
         export_name: String,
+        component_id: Option<ComponentId>,
         args: Vec<u8>,
         rtn_type: Type,
     ) -> ScryptoExecutorToParsed<W::WasmInstance> {
@@ -125,6 +139,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
         ScryptoExecutorToParsed {
             instance,
             export_name,
+            component_id,
             args,
             rtn_type,
         }

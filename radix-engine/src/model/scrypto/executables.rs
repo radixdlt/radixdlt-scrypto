@@ -92,6 +92,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     api.vm().create_executor(
                         &package.code,
                         fn_abi.export_name.clone(),
+                        None,
                         args.raw,
                         fn_abi.output.clone(),
                     ),
@@ -206,6 +207,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     api.vm().create_executor(
                         &package.code,
                         fn_abi.export_name.clone(),
+                        Some(component_node_id.into()),
                         args.raw,
                         fn_abi.output.clone(),
                     ),
@@ -329,6 +331,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     api.vm().create_executor_to_parsed(
                         &package.code,
                         fn_abi.export_name.clone(),
+                        None,
                         args.raw,
                         fn_abi.output.clone(),
                     ),
@@ -443,6 +446,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     api.vm().create_executor_to_parsed(
                         &package.code,
                         fn_abi.export_name.clone(),
+                        Some(component_node_id.into()),
                         args.raw,
                         fn_abi.output.clone(),
                     ),
