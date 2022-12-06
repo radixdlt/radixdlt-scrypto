@@ -4,7 +4,7 @@ use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::scrypto;
 use std::collections::BTreeSet;
 
-use super::{ExecutionContext, FeePayment, Instruction};
+use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -23,7 +23,7 @@ impl SystemTransaction {
         };
 
         Executable::new(
-            self.instructions.iter().map(|e| e.into()).collect(),
+            InstructionList::Mixed(&self.instructions),
             &self.blobs,
             ExecutionContext {
                 transaction_hash,

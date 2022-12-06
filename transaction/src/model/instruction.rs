@@ -209,29 +209,14 @@ pub enum Instruction {
     System(SystemInstruction),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ExecutableInstruction<'a> {
-    Basic(&'a BasicInstruction),
-    System(&'a SystemInstruction),
-}
-
-impl<'a> From<&'a BasicInstruction> for ExecutableInstruction<'a> {
-    fn from(i: &'a BasicInstruction) -> Self {
-        ExecutableInstruction::Basic(i)
+impl From<BasicInstruction> for Instruction {
+    fn from(i: BasicInstruction) -> Self {
+        Instruction::Basic(i)
     }
 }
 
-impl<'a> From<&'a SystemInstruction> for ExecutableInstruction<'a> {
-    fn from(i: &'a SystemInstruction) -> Self {
-        ExecutableInstruction::System(i)
-    }
-}
-
-impl<'a> From<&'a Instruction> for ExecutableInstruction<'a> {
-    fn from(i: &'a Instruction) -> Self {
-        match i {
-            Instruction::Basic(i) => ExecutableInstruction::Basic(i),
-            Instruction::System(i) => ExecutableInstruction::System(i),
-        }
+impl From<SystemInstruction> for Instruction {
+    fn from(i: SystemInstruction) -> Self {
+        Instruction::System(i)
     }
 }

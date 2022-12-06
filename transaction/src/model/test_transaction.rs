@@ -24,11 +24,7 @@ impl TestTransaction {
         let transaction_hash = hash(self.nonce.to_le_bytes());
 
         Executable::new(
-            self.manifest
-                .instructions
-                .iter()
-                .map(|e| e.into())
-                .collect(),
+            InstructionList::Basic(&self.manifest.instructions),
             &self.manifest.blobs,
             ExecutionContext {
                 transaction_hash,

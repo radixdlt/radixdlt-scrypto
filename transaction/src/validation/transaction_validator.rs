@@ -85,12 +85,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         let header = &intent.header;
 
         Ok(Executable::new(
-            intent
-                .manifest
-                .instructions
-                .iter()
-                .map(|e| ExecutableInstruction::Basic(e))
-                .collect(),
+            InstructionList::Basic(&intent.manifest.instructions),
             &intent.manifest.blobs,
             ExecutionContext {
                 auth_zone_params: AuthZoneParams {
@@ -152,7 +147,7 @@ impl NotarizedTransactionValidator {
         };
 
         Ok(Executable::new(
-            manifest.instructions.iter().map(|e| e.into()).collect(),
+            InstructionList::Basic(&manifest.instructions),
             &manifest.blobs,
             ExecutionContext {
                 transaction_hash,

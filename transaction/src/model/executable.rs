@@ -32,10 +32,15 @@ pub enum FeePayment {
     NoFee,
 }
 
-/// Represents a validated transaction
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InstructionList<'a> {
+    Basic(&'a [BasicInstruction]),
+    Mixed(&'a [Instruction]),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Executable<'a> {
-    instructions: Vec<ExecutableInstruction<'a>>,
+    instructions: InstructionList<'a>,
     blobs: HashMap<Hash, &'a [u8]>,
     context: ExecutionContext,
 }
@@ -80,7 +85,7 @@ impl RuntimeValidation {
 
 impl<'a> Executable<'a> {
     pub fn new(
-        instructions: Vec<ExecutableInstruction<'a>>,
+        instructions: InstructionList<'a>,
         blobs: &'a [Vec<u8>],
         context: ExecutionContext,
     ) -> Self {
@@ -100,7 +105,7 @@ impl<'a> Executable<'a> {
         &self.context.fee_payment
     }
 
-    pub fn instructions(&self) -> &[ExecutableInstruction] {
+    pub fn instructions(&self) -> &InstructionList {
         &self.instructions
     }
 
