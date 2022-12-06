@@ -492,30 +492,6 @@ mod tests {
     }
 
     #[test]
-    fn test_non_fungible_id_manifest_conversion() {
-        assert_eq!(
-            NonFungibleId::try_from_manifest_string("1u32").unwrap(),
-            NonFungibleId::U32(1)
-        );
-        assert_eq!(
-            NonFungibleId::try_from_manifest_string("10u64").unwrap(),
-            NonFungibleId::U64(10)
-        );
-        assert_eq!(
-            NonFungibleId::try_from_manifest_string("1234567890u128").unwrap(),
-            NonFungibleId::UUID(1234567890)
-        );
-        assert_eq!(
-            NonFungibleId::try_from_manifest_string("\"test\"").unwrap(),
-            NonFungibleId::String(String::from("test"))
-        );
-        assert_eq!(
-            NonFungibleId::try_from_manifest_string("Bytes(\"010a\")").unwrap(),
-            NonFungibleId::Bytes(vec![1, 10])
-        );
-    }
-
-    #[test]
     fn test_non_fungible_id_simple_conversion() {
         assert_eq!(
             NonFungibleId::try_from_simple_string(NonFungibleIdType::U32, "1").unwrap(),
