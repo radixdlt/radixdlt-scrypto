@@ -478,37 +478,13 @@ impl<'s, R: FeeReserve> Track<'s, R> {
         &mut self,
         executable: &Executable,
     ) -> Result<(), FeeReserveError> {
-        let encoded_instructions_byte_length = scrypto_encode(executable.instructions())
-            .expect("Valid transaction had instructions which couldn't be encoded")
-            .len();
-        let blobs_size = {
-            let mut total_size: usize = 0;
-            for blob in executable.blobs() {
-                total_size = total_size
-                    .checked_add(Hash::LENGTH)
-                    .ok_or(FeeReserveError::Overflow)?;
-                total_size = total_size
-                    .checked_add(blob.1.len())
-                    .ok_or(FeeReserveError::Overflow)?;
-            }
-            total_size
-        };
-
         self.fee_reserve
-            .consume_execution(self.fee_table.tx_base_fee(), 1, "base_fee", true)
+            .consume_execution(self.fee_table.tx_base_fee(), 1, "tx_base_fee", true)
             .and_then(|()| {
                 self.fee_reserve.consume_execution(
-                    self.fee_table.tx_manifest_decoding_per_byte(),
-                    encoded_instructions_byte_length,
-                    "decode_manifest",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume_execution(
-                    self.fee_table.tx_manifest_verification_per_byte(),
-                    encoded_instructions_byte_length,
-                    "verify_manifest",
+                    self.fee_table.tx_payload_cost_per_byte(),
+                    executable.payload_size(),
+                    "tx_payload_cost",
                     true,
                 )
             })
@@ -516,15 +492,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
                 self.fee_reserve.consume_execution(
                     self.fee_table.tx_signature_verification_per_sig(),
                     executable.auth_zone_params().initial_proofs.len(),
-                    "verify_signatures",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume_execution(
-                    self.fee_table.tx_blob_price_per_byte(),
-                    blobs_size,
-                    "blobs",
+                    "tx_signature_verification",
                     true,
                 )
             })

@@ -29,6 +29,7 @@ pub trait TransactionValidator<T: ScryptoDecode> {
     fn validate<'a, 't, I: IntentHashManager>(
         &'a self,
         transaction: &'t T,
+        payload_size: usize,
         intent_hash_manager: &'a I,
     ) -> Result<Executable<'t>, TransactionValidationError>;
 }
@@ -69,6 +70,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
     fn validate<'a, 't, I: IntentHashManager>(
         &'a self,
         transaction: &'t NotarizedTransaction,
+        payload_size: usize,
         intent_hash_manager: &'a I,
     ) -> Result<Executable<'t>, TransactionValidationError> {
         let intent = &transaction.signed_intent.intent;
@@ -88,11 +90,12 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
             InstructionList::Basic(&intent.manifest.instructions),
             &intent.manifest.blobs,
             ExecutionContext {
+                transaction_hash,
+                payload_size,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs: AuthModule::pk_non_fungibles(&signer_keys),
                     virtualizable_proofs_resource_addresses: BTreeSet::new(),
                 },
-                transaction_hash,
                 fee_payment: FeePayment::User {
                     cost_unit_limit: header.cost_unit_limit,
                     tip_percentage: header.tip_percentage,
@@ -151,6 +154,7 @@ impl NotarizedTransactionValidator {
             &manifest.blobs,
             ExecutionContext {
                 transaction_hash,
+                payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtualizable_proofs_resource_addresses,
@@ -418,6 +422,7 @@ mod tests {
                         $signers,
                         $notary
                     ),
+                    0,
                     &mut intent_hash_manager,
                 )
             );

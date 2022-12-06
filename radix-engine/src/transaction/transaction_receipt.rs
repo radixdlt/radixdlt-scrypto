@@ -319,8 +319,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             )?;
         }
 
-        let mut decompilation_context =
-            DecompilationContext::new_with_optional_network(bech32_encoder);
+        let decompilation_context = DecompilationContext::new_with_optional_network(bech32_encoder);
 
         if let TransactionResult::Commit(c) = &result {
             if let TransactionOutcome::Success(outputs) = &c.outcome {

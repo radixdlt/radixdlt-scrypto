@@ -546,7 +546,7 @@ impl TransactionProcessor {
                             ScryptoFunctionIdent {
                                 package: ScryptoPackage::Global(package_address.clone()),
                                 blueprint_name: blueprint_name.clone(),
-                                function_name: blueprint_name.clone(),
+                                function_name: function_name.clone(),
                             },
                             args,
                         ))

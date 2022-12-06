@@ -18,6 +18,7 @@ pub struct AuthZoneParams {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
+    pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
     pub runtime_validations: Vec<RuntimeValidationRequest>,
@@ -115,6 +116,10 @@ impl<'a> Executable<'a> {
 
     pub fn blobs(&self) -> &HashMap<Hash, &[u8]> {
         &self.blobs
+    }
+
+    pub fn payload_size(&self) -> usize {
+        self.context.payload_size
     }
 
     pub fn runtime_validations(&self) -> &[RuntimeValidationRequest] {

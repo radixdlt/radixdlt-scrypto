@@ -28,6 +28,7 @@ impl TestTransaction {
             &self.manifest.blobs,
             ExecutionContext {
                 transaction_hash,
+                payload_size: 0,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtualizable_proofs_resource_addresses: BTreeSet::new(),
