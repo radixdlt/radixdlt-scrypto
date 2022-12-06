@@ -104,6 +104,7 @@ mod tests {
     use crate::model::*;
     use crate::scrypto;
     use sbor::rust::borrow::ToOwned;
+    use sbor::rust::boxed::Box;
     use sbor::rust::cell::RefCell;
     use sbor::rust::collections::BTreeMap;
     use sbor::rust::collections::BTreeSet;
@@ -113,7 +114,6 @@ mod tests {
     use sbor::rust::rc::Rc;
     use sbor::rust::string::String;
     use sbor::rust::vec;
-    use sbor::rust::boxed::Box;
 
     #[test]
     fn test_args() {

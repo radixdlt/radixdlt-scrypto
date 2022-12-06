@@ -280,7 +280,9 @@ pub fn format_custom_value<F: fmt::Write>(
         }
         ScryptoCustomValue::NonFungibleAddress(value) => {
             f.write_str("NonFungibleAddress(")?;
-            value.contextual_format(f, &context.bech32_encoder.into()).expect("Failed to format address");
+            value
+                .contextual_format(f, &context.bech32_encoder.into())
+                .expect("Failed to format address");
             write!(f, ")")?;
         }
         // Uninterpreted

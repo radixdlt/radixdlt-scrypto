@@ -1,7 +1,7 @@
 use sbor::rust::fmt;
+use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::rust::format;
 use sbor::*;
 
 use crate::abi::*;
@@ -109,7 +109,10 @@ impl NonFungibleAddress {
         id_type: NonFungibleIdType,
         s: &str,
     ) -> Result<Self, ParseNonFungibleAddressError> {
-        let v = s.split(':').filter(|&s| !s.is_empty()).collect::<Vec<&str>>();
+        let v = s
+            .split(':')
+            .filter(|&s| !s.is_empty())
+            .collect::<Vec<&str>>();
         if v.len() == 2 {
             if let Ok(raddr) = bech32_decoder.validate_and_decode_resource_address(v[0]) {
                 if let Ok(nfid) = NonFungibleId::try_from_simple_string(id_type, v[1]) {
@@ -212,51 +215,67 @@ mod tests {
         let dec = Bech32Decoder::for_simulator();
         let enc = Bech32Encoder::for_simulator();
 
-        assert_eq!( NonFungibleAddress::try_from_canonical_string(
-            &dec,
-            NonFungibleIdType::U32,
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
-        )
-        .unwrap().to_canonical_string(&enc),
-        "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1");
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
+                &dec,
+                NonFungibleIdType::U32,
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
+            )
+            .unwrap()
+            .to_canonical_string(&enc),
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1"
+        );
 
-        assert_eq!( NonFungibleAddress::try_from_canonical_string(
-            &dec,
-            NonFungibleIdType::U64,
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:10",
-        )
-        .unwrap().to_canonical_string(&enc),
-        "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:10");
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
+                &dec,
+                NonFungibleIdType::U64,
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:10",
+            )
+            .unwrap()
+            .to_canonical_string(&enc),
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:10"
+        );
 
-        assert_eq!( NonFungibleAddress::try_from_canonical_string(
-            &dec,
-            NonFungibleIdType::UUID,
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1234567890",
-        )
-        .unwrap().to_canonical_string(&enc),
-        "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1234567890");
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
+                &dec,
+                NonFungibleIdType::UUID,
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1234567890",
+            )
+            .unwrap()
+            .to_canonical_string(&enc),
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1234567890"
+        );
 
-        assert_eq!( NonFungibleAddress::try_from_canonical_string(
-            &dec,
-            NonFungibleIdType::String,
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:test",
-        )
-        .unwrap().to_canonical_string(&enc),
-        "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:test");
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
+                &dec,
+                NonFungibleIdType::String,
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:test",
+            )
+            .unwrap()
+            .to_canonical_string(&enc),
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:test"
+        );
 
-        assert_eq!( NonFungibleAddress::try_from_canonical_string(
-            &dec,
-            NonFungibleIdType::Bytes,
-            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:010a",
-        )
-        .unwrap().to_canonical_string(&enc),
-        "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:010a");
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
+                &dec,
+                NonFungibleIdType::Bytes,
+                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:010a",
+            )
+            .unwrap()
+            .to_canonical_string(&enc),
+            "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:010a"
+        );
     }
 
     #[test]
     fn non_fungible_address_canonical_conversion_error() {
         let dec = Bech32Decoder::for_simulator();
-        assert_eq!(NonFungibleAddress::try_from_canonical_string(
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
                 &dec,
                 NonFungibleIdType::U32,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p1",
@@ -264,7 +283,8 @@ mod tests {
             Err(ParseNonFungibleAddressError::InvalidNumberOfParts)
         );
 
-        assert_eq!(NonFungibleAddress::try_from_canonical_string(
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
                 &dec,
                 NonFungibleIdType::U32,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1:2",
@@ -272,7 +292,8 @@ mod tests {
             Err(ParseNonFungibleAddressError::InvalidNumberOfParts)
         );
 
-        assert_eq!(NonFungibleAddress::try_from_canonical_string(
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
                 &dec,
                 NonFungibleIdType::U32,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:",
@@ -280,15 +301,13 @@ mod tests {
             Err(ParseNonFungibleAddressError::InvalidNumberOfParts)
         );
 
-        assert_eq!(NonFungibleAddress::try_from_canonical_string(
-                &dec,
-                NonFungibleIdType::U32,
-                ":",
-            ),
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(&dec, NonFungibleIdType::U32, ":",),
             Err(ParseNonFungibleAddressError::InvalidNumberOfParts)
         );
 
-        assert_eq!(NonFungibleAddress::try_from_canonical_string(
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
                 &dec,
                 NonFungibleIdType::U32,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
@@ -296,7 +315,8 @@ mod tests {
             Err(ParseNonFungibleAddressError::InvalidResourceAddress)
         );
 
-        assert_eq!(NonFungibleAddress::try_from_canonical_string(
+        assert_eq!(
+            NonFungibleAddress::try_from_canonical_string(
                 &dec,
                 NonFungibleIdType::U32,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:notnumber",

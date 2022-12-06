@@ -59,6 +59,7 @@ impl NonFungibleId {
 
     /// Converts transaction manifest representation string to non-fungible ID.
     pub fn try_from_manifest_string(s: &str) -> Result<Self, ParseNonFungibleIdError> {
+        // TODO: improve this parser for properly handing edge cases
         let s = s.trim();
         if s.len() > 9 && s.starts_with("Bytes(\"") && s.ends_with("\")") {
             Ok(NonFungibleId::Bytes(
