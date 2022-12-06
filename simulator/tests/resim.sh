@@ -20,7 +20,7 @@ minter_badge=`$resim new-badge-fixed 1 --name 'MinterBadge' | awk '/Resource:/ {
 token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print $NF}'`
 
 # Test - transfer non fungible
-non_fungible_create_receipt=`$resim new-owner-badge --name 'OwnerBadge'`
+non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
 non_fungible=`echo "$non_fungible_create_receipt" | awk '/NFAddress:/ {print $NF}'`
 non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
 non_fungible_id=`echo "$non_fungible_create_receipt" | awk '/NFID:/ {print $NF}'`
@@ -33,7 +33,7 @@ $resim mint 777 $token_address --proofs 1,$minter_badge
 $resim transfer 111 $token_address $account2
 
 # Test - publish, call-function and call-method and non-fungibles
-owner_badge=`$resim new-owner-badge --name 'OwnerBadge' | awk '/NFAddress:/ {print $NF}'`
+owner_badge=`$resim new-simple-badge --name 'OwnerBadge' | awk '/NFAddress:/ {print $NF}'`
 package=`$resim publish ../examples/hello-world $owner_badge | awk '/Package:/ {print $NF}'`
 component=`$resim call-function $package Hello instantiate_hello | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token

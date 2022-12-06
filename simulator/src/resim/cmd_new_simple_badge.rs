@@ -15,7 +15,7 @@ struct EmptyStruct;
 
 /// Create a badge with fixed supply
 #[derive(Parser, Debug)]
-pub struct NewOwnerBadge {
+pub struct NewSimpleBadge {
     /// The symbol
     #[clap(long)]
     symbol: Option<String>,
@@ -53,7 +53,7 @@ pub struct NewOwnerBadge {
     trace: bool,
 }
 
-impl NewOwnerBadge {
+impl NewSimpleBadge {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let network_definition = NetworkDefinition::simulator();
         let default_account = get_default_account()?;
