@@ -293,7 +293,8 @@ mod tests {
     #[test]
     fn test_non_fungible_string_validation() {
         let valid_id_string = "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWZYZ_0123456789";
-        let validation_result = NonFungibleId::String(valid_id_string.to_owned()).validate_contents();
+        let validation_result =
+            NonFungibleId::String(valid_id_string.to_owned()).validate_contents();
         assert!(matches!(validation_result, Ok(_)));
 
         test_invalid_char('.');
@@ -347,7 +348,7 @@ mod tests {
         assert_eq!(n.id_type(), val.id_type());
         assert!(matches!(val, NonFungibleId::UUID(v) if v == u128::MAX));
 
-        const TEST_STR: &str = "test string 0123";
+        const TEST_STR: &str = "test_string_0123";
         let n = NonFungibleId::String(TEST_STR.to_string());
         let buf = n.to_vec();
         let val = NonFungibleId::try_from(buf.as_slice()).unwrap();

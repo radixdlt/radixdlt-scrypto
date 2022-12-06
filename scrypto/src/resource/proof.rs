@@ -65,7 +65,7 @@ pub trait ScryptoProof: Sized {
     ) -> Result<(), ProofValidationError>;
     fn validate_contains_non_fungible_id(
         &self,
-        non_fungible_id: NonFungibleId,
+        non_fungible_id: &NonFungibleId,
     ) -> Result<(), ProofValidationError>;
     fn validate_contains_non_fungible_ids(
         &self,
@@ -204,9 +204,9 @@ impl ScryptoProof for Proof {
 
     fn validate_contains_non_fungible_id(
         &self,
-        non_fungible_id: NonFungibleId,
+        non_fungible_id: &NonFungibleId,
     ) -> Result<(), ProofValidationError> {
-        if self.non_fungible_ids().get(&non_fungible_id).is_some() {
+        if self.non_fungible_ids().get(non_fungible_id).is_some() {
             Ok(())
         } else {
             Err(ProofValidationError::NonFungibleIdNotFound)
