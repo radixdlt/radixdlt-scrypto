@@ -43,8 +43,8 @@ fn test_transaction_preview_cost_estimate() {
 
     let receipt = test_runner.execute_transaction_with_config(
         &make_executable(&network, &notarized_transaction),
-        &FeeReserveConfig::standard(),
-        &ExecutionConfig::standard(),
+        &FeeReserveConfig::default(),
+        &ExecutionConfig::default(),
     );
     receipt.expect_commit_success();
 

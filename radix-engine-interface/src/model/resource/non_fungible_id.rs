@@ -35,6 +35,8 @@ pub enum NonFungibleIdType {
     UUID,
 }
 
+pub const NON_FUNGIBLE_ID_MAX_LENGTH: usize = 64;
+
 impl NonFungibleId {
     /// Returns non-fungible ID type.
     pub fn id_type(&self) -> NonFungibleIdType {
@@ -47,6 +49,33 @@ impl NonFungibleId {
             NonFungibleId::UUID(..) => NonFungibleIdType::UUID,
         }
     }
+
+    pub fn validate_contents(&self) -> Result<(), ParseNonFungibleIdError> {
+        match self {
+            NonFungibleId::String(value) => {
+                if value.len() > NON_FUNGIBLE_ID_MAX_LENGTH {
+                    return Err(ParseNonFungibleIdError::TooLong);
+                }
+                validate_non_fungible_id_string(value)?;
+            }
+            NonFungibleId::Bytes(value) => {
+                if value.len() > NON_FUNGIBLE_ID_MAX_LENGTH {
+                    return Err(ParseNonFungibleIdError::TooLong);
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
+
+fn validate_non_fungible_id_string(string: &str) -> Result<(), ParseNonFungibleIdError> {
+    for char in string.chars() {
+        if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
+            return Err(ParseNonFungibleIdError::InvalidCharacter(char));
+        }
+    }
+    Ok(())
 }
 
 //========
@@ -57,8 +86,10 @@ impl NonFungibleId {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleIdError {
     InvalidHex(String),
-    InvalidValue,
+    InvalidSbor,
     UnexpectedTypeId,
+    TooLong,
+    InvalidCharacter(char),
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -86,38 +117,40 @@ impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match validate_id(slice) {
+        let non_fungible_id = match validate_id(slice) {
             Ok(type_id) => match type_id {
-                ScryptoSborTypeId::Array => Ok(NonFungibleId::Bytes(
+                ScryptoSborTypeId::Array => NonFungibleId::Bytes(
                     scrypto_decode::<Vec<u8>>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-                )),
-                ScryptoSborTypeId::String => Ok(NonFungibleId::String(
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                ),
+                ScryptoSborTypeId::String => NonFungibleId::String(
                     scrypto_decode::<String>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-                )),
-                ScryptoSborTypeId::U32 => Ok(NonFungibleId::U32(
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                ),
+                ScryptoSborTypeId::U32 => NonFungibleId::U32(
                     scrypto_decode::<u32>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-                )),
-                ScryptoSborTypeId::U64 => Ok(NonFungibleId::U64(
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                ),
+                ScryptoSborTypeId::U64 => NonFungibleId::U64(
                     scrypto_decode::<u64>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-                )),
-                ScryptoSborTypeId::U128 => Ok(NonFungibleId::UUID(
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                ),
+                ScryptoSborTypeId::U128 => NonFungibleId::UUID(
                     scrypto_decode::<u128>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-                )),
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Decimal) => {
-                    Ok(NonFungibleId::Decimal(
-                        scrypto_decode::<Decimal>(slice)
-                            .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-                    ))
-                }
-                _ => Err(ParseNonFungibleIdError::UnexpectedTypeId),
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                ),
+                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Decimal) => NonFungibleId::Decimal(
+                    scrypto_decode::<Decimal>(slice)
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                ),
+                _ => return Err(ParseNonFungibleIdError::UnexpectedTypeId),
             },
-            Err(_) => Err(ParseNonFungibleIdError::InvalidValue),
-        }
+            Err(_) => return Err(ParseNonFungibleIdError::InvalidSbor),
+        };
+
+        non_fungible_id.validate_contents()?;
+
+        Ok(non_fungible_id)
     }
 }
 
@@ -224,12 +257,79 @@ mod tests {
     }
 
     #[test]
+    fn test_non_fungible_length_validation() {
+        // Bytes length
+        let validation_result =
+            NonFungibleId::Bytes([0; NON_FUNGIBLE_ID_MAX_LENGTH].to_vec()).validate_contents();
+        assert!(matches!(validation_result, Ok(_)));
+        let validation_result =
+            NonFungibleId::Bytes([0; 1 + NON_FUNGIBLE_ID_MAX_LENGTH].to_vec()).validate_contents();
+        assert!(matches!(
+            validation_result,
+            Err(ParseNonFungibleIdError::TooLong)
+        ));
+
+        // String length
+        let validation_result =
+            NonFungibleId::String(string_of_length(NON_FUNGIBLE_ID_MAX_LENGTH)).validate_contents();
+        assert!(matches!(validation_result, Ok(_)));
+        let validation_result =
+            NonFungibleId::String(string_of_length(1 + NON_FUNGIBLE_ID_MAX_LENGTH))
+                .validate_contents();
+        assert!(matches!(
+            validation_result,
+            Err(ParseNonFungibleIdError::TooLong)
+        ));
+    }
+
+    fn string_of_length(size: usize) -> String {
+        let mut str_buf = String::new();
+        for _ in 0..size {
+            str_buf.push('a');
+        }
+        str_buf
+    }
+
+    #[test]
+    fn test_non_fungible_string_validation() {
+        let valid_id_string = "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWZYZ_0123456789";
+        let validation_result =
+            NonFungibleId::String(valid_id_string.to_owned()).validate_contents();
+        assert!(matches!(validation_result, Ok(_)));
+
+        test_invalid_char('.');
+        test_invalid_char('`');
+        test_invalid_char('\\');
+        test_invalid_char('"');
+        test_invalid_char(' ');
+        test_invalid_char('\r');
+        test_invalid_char('\n');
+        test_invalid_char('\t');
+        test_invalid_char('\u{0000}'); // Null
+        test_invalid_char('\u{0301}'); // Combining acute accent
+        test_invalid_char('\u{2764}'); // ❤
+        test_invalid_char('\u{000C}'); // Form feed
+        test_invalid_char('\u{202D}'); // LTR override
+        test_invalid_char('\u{202E}'); // RTL override
+        test_invalid_char('\u{1F600}'); // :-) emoji
+    }
+
+    fn test_invalid_char(char: char) {
+        let validation_result =
+            NonFungibleId::String(format!("valid_{}", char)).validate_contents();
+        assert_eq!(
+            validation_result,
+            Err(ParseNonFungibleIdError::InvalidCharacter(char))
+        );
+    }
+
+    #[test]
     fn test_non_fungible_id_type_default() {
         assert_eq!(NonFungibleIdType::default(), NonFungibleIdType::UUID);
     }
 
     #[test]
-    fn test_non_fungible_id_enocde_decode() {
+    fn test_non_fungible_id_encode_decode() {
         let n = NonFungibleId::U32(1);
         let buf = n.to_vec();
         let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
@@ -248,7 +348,7 @@ mod tests {
         assert_eq!(n.id_type(), val.id_type());
         assert!(matches!(val, NonFungibleId::UUID(v) if v == u128::MAX));
 
-        const TEST_STR: &str = "test string 0123";
+        const TEST_STR: &str = "test_string_0123";
         let n = NonFungibleId::String(TEST_STR.to_string());
         let buf = n.to_vec();
         let val = NonFungibleId::try_from(buf.as_slice()).unwrap();

@@ -4,6 +4,20 @@ CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqq
 
 CALL_METHOD 
     ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
+    "with_aliases"
+
+    # Test aliases and their non-aliased versions
+    None
+    Enum("None")
+    Some("hello")
+    Enum("Some", "hello")
+    Ok("test")
+    Enum("Ok", "test")
+    Err("test123")
+    Enum("Err", "test123");
+
+CALL_METHOD 
+    ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
     "with_all_types"
 
     # Global address types

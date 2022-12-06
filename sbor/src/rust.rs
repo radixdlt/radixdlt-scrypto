@@ -120,4 +120,7 @@ pub mod collections {
     pub use std::collections::HashMap;
     #[cfg(not(feature = "alloc"))]
     pub use std::collections::HashSet;
+
+    #[cfg(feature = "indexmap")]
+    pub use indexmap::IndexMap;
 }

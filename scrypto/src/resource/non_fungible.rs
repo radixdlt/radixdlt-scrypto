@@ -38,24 +38,24 @@ impl<T: NonFungibleData> NonFungible<T> {
         self.address.resource_address()
     }
 
-    /// Returns the non-fungible address.
-    pub fn address(&self) -> NonFungibleAddress {
-        self.address.clone()
+    /// Returns a reference to the non-fungible address.
+    pub fn address(&self) -> &NonFungibleAddress {
+        &self.address
     }
 
-    /// Returns the non-fungible ID.
-    pub fn id(&self) -> NonFungibleId {
+    /// Returns a reference to the the non-fungible ID.
+    pub fn id(&self) -> &NonFungibleId {
         self.address.non_fungible_id()
     }
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        borrow_resource_manager!(self.resource_address()).get_non_fungible_data(&self.id())
+        borrow_resource_manager!(self.resource_address()).get_non_fungible_data(self.id())
     }
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: T) {
         borrow_resource_manager!(self.resource_address())
-            .update_non_fungible_data(&self.id(), new_data);
+            .update_non_fungible_data(self.id(), new_data);
     }
 }

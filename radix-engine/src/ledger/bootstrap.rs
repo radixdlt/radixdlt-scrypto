@@ -1,8 +1,7 @@
 use crate::engine::ScryptoInterpreter;
-use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::transaction::{
-    execute_transaction_with_fee_reserve, ExecutionConfig, TransactionReceipt,
+    execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
 use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
@@ -291,13 +290,12 @@ where
         };
 
         let genesis_transaction = create_genesis();
-        let fee_reserve = SystemLoanFeeReserve::no_fee();
 
-        let transaction_receipt = execute_transaction_with_fee_reserve(
+        let transaction_receipt = execute_transaction(
             substate_store,
             &scrypto_interpreter,
-            fee_reserve,
-            &ExecutionConfig::standard(),
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
             &genesis_transaction.get_executable(),
         );
 
@@ -330,13 +328,12 @@ mod tests {
         };
         let substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
-        let fee_reserve = SystemLoanFeeReserve::no_fee();
 
-        let transaction_receipt = execute_transaction_with_fee_reserve(
+        let transaction_receipt = execute_transaction(
             &substate_store,
             &scrypto_interpreter,
-            fee_reserve,
-            &ExecutionConfig::standard(),
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
             &genesis_transaction.get_executable(),
         );
 

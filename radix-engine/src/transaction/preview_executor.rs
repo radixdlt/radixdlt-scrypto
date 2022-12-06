@@ -6,7 +6,6 @@ use transaction::validation::NotarizedTransactionValidator;
 use transaction::validation::ValidationConfig;
 
 use crate::engine::ScryptoInterpreter;
-use crate::fee::SystemLoanFeeReserve;
 use crate::ledger::*;
 use crate::transaction::TransactionReceipt;
 use crate::transaction::*;
@@ -39,16 +38,10 @@ pub fn execute_preview<S: ReadableSubstateStore, W: WasmEngine, IHM: IntentHashM
             .validate_preview_intent(&preview_intent, intent_hash_manager)
             .map_err(PreviewError::TransactionValidationError)?;
 
-        let fee_reserve = if preview_intent.flags.unlimited_loan {
-            SystemLoanFeeReserve::no_fee()
-        } else {
-            SystemLoanFeeReserve::default()
-        };
-
-        execute_transaction_with_fee_reserve(
+        execute_transaction(
             substate_store,
             scrypto_interpreter,
-            fee_reserve,
+            &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
             &executable,
         )

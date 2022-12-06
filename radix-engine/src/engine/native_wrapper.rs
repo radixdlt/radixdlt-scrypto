@@ -314,6 +314,20 @@ where
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
+                VaultMethod::Recall => {
+                    let invocation: VaultRecallInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+                VaultMethod::RecallNonFungibles => {
+                    let invocation: VaultRecallNonFungiblesInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
             },
             NativeMethod::AccessRulesChain(component_method) => match component_method {
                 AccessRulesChainMethod::AddAccessCheck => {

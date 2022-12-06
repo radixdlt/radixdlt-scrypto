@@ -105,9 +105,9 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 .add_instruction(Instruction::CallNativeMethod {
                     method_ident: NativeMethodIdent {
                         receiver: RENodeId::Vault(vault_id),
-                        method_name: "take".to_string(),
+                        method_name: "recall".to_string(),
                     },
-                    args: scrypto_encode(&VaultTakeInvocation {
+                    args: scrypto_encode(&VaultRecallInvocation {
                         receiver: vault_id,
                         amount: Decimal::from("1.0"),
                     })
