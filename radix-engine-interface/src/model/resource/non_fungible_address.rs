@@ -208,25 +208,6 @@ mod tests {
     use crate::address::Bech32Decoder;
 
     #[test]
-    pub fn non_fungible_address_from_and_to_string_succeeds() {
-        let expected_address = "00a6b27633f925c38a123dcfa488fbed09f3c36e97d055e2d603075c20071630071000000071dba5dd36e30de857049805fd1553cd";
-
-        let resource_address = Bech32Decoder::for_simulator()
-            .validate_and_decode_resource_address(
-                "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
-            )
-            .expect("Resource address from str failed.");
-        let non_fungible_id = NonFungibleId::Bytes(
-            hex::decode("30071000000071dba5dd36e30de857049805fd1553cd")
-                .expect("Invalid NonFungibleId hex"),
-        );
-        let non_fungible_address = NonFungibleAddress::new(resource_address, non_fungible_id);
-
-        let s1 = non_fungible_address.to_vec();
-        assert_eq!(hex::encode(s1), expected_address);
-    }
-
-    #[test]
     fn non_fungible_address_canonical_conversion() {
         let dec = Bech32Decoder::for_simulator();
         let enc = Bech32Encoder::for_simulator();
