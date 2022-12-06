@@ -23,7 +23,7 @@ impl SystemTransaction {
         };
 
         Executable::new(
-            InstructionList::Mixed(&self.instructions),
+            InstructionList::Any(&self.instructions),
             &self.blobs,
             ExecutionContext {
                 transaction_hash,

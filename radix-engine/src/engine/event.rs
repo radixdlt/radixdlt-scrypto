@@ -1,6 +1,6 @@
 use crate::engine::SysCallTrace;
 use crate::types::*;
-use transaction::model::BasicInstruction;
+use transaction::model::Instruction;
 
 #[derive(Debug)]
 pub enum Event<'a> {
@@ -13,11 +13,11 @@ pub enum RuntimeEvent<'a> {
     PreExecuteManifest,
     PreExecuteInstruction {
         instruction_index: usize,
-        instruction: &'a BasicInstruction,
+        instruction: &'a Instruction,
     },
     PostExecuteInstruction {
         instruction_index: usize,
-        instruction: &'a BasicInstruction,
+        instruction: &'a Instruction,
     },
     PostExecuteManifest,
 }

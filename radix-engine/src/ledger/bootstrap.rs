@@ -12,7 +12,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
-use transaction::model::{BasicInstruction, SystemTransaction, TransactionManifest};
+use transaction::model::{BasicInstruction, SystemInstruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
 
 const XRD_SYMBOL: &str = "XRD";
@@ -142,7 +142,7 @@ pub fn create_genesis() -> SystemTransaction {
     };
 
     let create_epoch_manager = {
-        BasicInstruction::CallNativeFunction {
+        SystemInstruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
                 function_name: EpochManagerFunction::Create.to_string(),
@@ -152,7 +152,7 @@ pub fn create_genesis() -> SystemTransaction {
     };
 
     let create_clock = {
-        BasicInstruction::CallNativeFunction {
+        SystemInstruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: CLOCK_BLUEPRINT.to_string(),
                 function_name: ClockFunction::Create.to_string(),
@@ -178,23 +178,21 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
-    let manifest = TransactionManifest {
+    SystemTransaction {
         instructions: vec![
-            create_faucet_package,
-            create_account_package,
-            create_ecdsa_secp256k1_token,
-            create_system_token,
-            create_xrd_token,
-            take_xrd,
-            create_xrd_faucet,
-            create_epoch_manager,
-            create_clock,
-            create_eddsa_ed25519_token,
+            create_faucet_package.into(),
+            create_account_package.into(),
+            create_ecdsa_secp256k1_token.into(),
+            create_system_token.into(),
+            create_xrd_token.into(),
+            take_xrd.into(),
+            create_xrd_faucet.into(),
+            create_epoch_manager.into(),
+            create_clock.into(),
+            create_eddsa_ed25519_token.into(),
         ],
         blobs,
-    };
-
-    SystemTransaction { manifest }
+    }
 }
 
 pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {

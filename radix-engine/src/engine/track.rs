@@ -476,14 +476,14 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
     fn attempt_apply_pre_execution_costs(
         &mut self,
-        transaction: &Executable,
+        executable: &Executable,
     ) -> Result<(), FeeReserveError> {
-        let encoded_instructions_byte_length = scrypto_encode(transaction.instructions())
+        let encoded_instructions_byte_length = scrypto_encode(executable.instructions())
             .expect("Valid transaction had instructions which couldn't be encoded")
             .len();
         let blobs_size = {
             let mut total_size: usize = 0;
-            for blob in transaction.blobs() {
+            for blob in executable.blobs() {
                 total_size = total_size
                     .checked_add(Hash::LENGTH)
                     .ok_or(FeeReserveError::Overflow)?;
@@ -515,7 +515,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             .and_then(|()| {
                 self.fee_reserve.consume_execution(
                     self.fee_table.tx_signature_verification_per_sig(),
-                    transaction.auth_zone_params().initial_proofs.len(),
+                    executable.auth_zone_params().initial_proofs.len(),
                     "verify_signatures",
                     true,
                 )

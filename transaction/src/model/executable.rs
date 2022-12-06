@@ -35,7 +35,7 @@ pub enum FeePayment {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InstructionList<'a> {
     Basic(&'a [BasicInstruction]),
-    Mixed(&'a [Instruction]),
+    Any(&'a [Instruction]),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
