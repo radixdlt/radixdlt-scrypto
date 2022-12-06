@@ -267,6 +267,8 @@ impl FeeTable {
                     VaultMethod::CreateProofByAmount => self.fixed_high,
                     VaultMethod::CreateProofByIds => self.fixed_high,
                     VaultMethod::LockFee => self.fixed_medium,
+                    VaultMethod::Recall => self.fixed_low,
+                    VaultMethod::RecallNonFungibles => self.fixed_low,
                 }
             }
         }

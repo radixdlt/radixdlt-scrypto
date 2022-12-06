@@ -641,9 +641,9 @@ try_from_integer!(U512, I512);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dec;
     use crate::math::precise_decimal::RoundingMode;
     use crate::pdec;
-    use crate::dec;
     use sbor::rust::vec;
 
     #[test]
@@ -1186,7 +1186,8 @@ mod tests {
 
     #[test]
     fn test_truncate_precise_decimal() {
-        let pdec = pdec!("12345678.1234567890123456789012345678901234567890123456789012345678901234");
+        let pdec =
+            pdec!("12345678.1234567890123456789012345678901234567890123456789012345678901234");
         assert_eq!(pdec.truncate().to_string(), "12345678.123456789012345678");
     }
 
