@@ -28,9 +28,9 @@ fn missing_memory_should_cause_error() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
         )
         .build();
@@ -130,9 +130,9 @@ fn test_basic_package() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
         )
         .build();
@@ -147,7 +147,7 @@ fn test_basic_package_missing_export() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let mut blueprints = HashMap::new();
+    let mut blueprints = BTreeMap::new();
     blueprints.insert(
         "some_blueprint".to_string(),
         BlueprintAbi {
@@ -169,8 +169,8 @@ fn test_basic_package_missing_export() {
         .publish_package(
             code,
             blueprints,
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
         )
         .build();

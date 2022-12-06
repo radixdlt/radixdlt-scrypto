@@ -232,9 +232,9 @@ fn test_publish_large_package() {
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
         )
         .build();
