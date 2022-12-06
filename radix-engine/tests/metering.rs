@@ -17,8 +17,8 @@ fn test_loop() {
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -44,8 +44,8 @@ fn test_loop_out_of_cost_unit() {
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -70,8 +70,8 @@ fn test_recursion() {
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -95,8 +95,8 @@ fn test_recursion_stack_overflow() {
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -120,8 +120,8 @@ fn test_grow_memory() {
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -145,8 +145,8 @@ fn test_grow_memory_out_of_cost_unit() {
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

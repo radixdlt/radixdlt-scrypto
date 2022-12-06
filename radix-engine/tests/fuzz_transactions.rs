@@ -26,7 +26,7 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
     let executable = validator
-        .validate(&transaction, &TestIntentHashManager::new())
+        .validate(&transaction, 0, &TestIntentHashManager::new())
         .unwrap();
 
     let mut store = TypedInMemorySubstateStore::with_bootstrap();

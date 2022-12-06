@@ -6,7 +6,6 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::NonFungibleAddress;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
-use transaction::model::BasicInstruction;
 
 use crate::resim::*;
 
@@ -56,7 +55,7 @@ pub struct NewOwnerBadge {
 impl NewOwnerBadge {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let default_account = get_default_account()?;
-        let mut metadata = HashMap::new();
+        let mut metadata = BTreeMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
         }
@@ -73,34 +72,27 @@ impl NewOwnerBadge {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let mut resource_auth = HashMap::new();
+        let mut resource_auth = BTreeMap::new();
         resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .add_instruction(BasicInstruction::CallNativeFunction {
-                function_ident: NativeFunctionIdent {
-                    blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                    function_name: ResourceManagerFunction::Create.to_string(),
+            .create_resource(
+                ResourceType::NonFungible {
+                    id_type: NonFungibleIdType::U32,
                 },
-                args: args!(
-                    ResourceType::NonFungible {
-                        id_type: NonFungibleIdType::U32
-                    },
-                    metadata,
-                    resource_auth,
-                    Option::Some(MintParams::NonFungible {
-                        entries: HashMap::from([(
-                            NonFungibleId::U32(1),
-                            (
-                                scrypto_encode(&EmptyStruct).unwrap(),
-                                scrypto_encode(&EmptyStruct).unwrap()
-                            )
-                        )])
-                    })
-                ),
-            })
-            .0
+                metadata,
+                resource_auth,
+                Option::Some(MintParams::NonFungible {
+                    entries: BTreeMap::from([(
+                        NonFungibleId::U32(1),
+                        (
+                            scrypto_encode(&EmptyStruct).unwrap(),
+                            scrypto_encode(&EmptyStruct).unwrap(),
+                        ),
+                    )]),
+                }),
+            )
             .call_method(
                 default_account,
                 "deposit_batch",

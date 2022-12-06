@@ -1,7 +1,7 @@
 use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{BucketId, ProofId};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Blob, Hash};
@@ -362,6 +362,54 @@ impl ManifestBuilder {
             args,
         });
         self
+    }
+
+    pub fn set_package_royalty_config(
+        &mut self,
+        package_address: PackageAddress,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::SetPackageRoyaltyConfig {
+            package_address,
+            royalty_config,
+        })
+        .0
+    }
+
+    pub fn set_component_royalty_config(
+        &mut self,
+        component_address: ComponentAddress,
+        royalty_config: RoyaltyConfig,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::SetComponentRoyaltyConfig {
+            component_address,
+            royalty_config,
+        })
+        .0
+    }
+
+    pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::ClaimPackageRoyalty { package_address })
+            .0
+    }
+
+    pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::ClaimComponentRoyalty { component_address })
+            .0
+    }
+
+    pub fn set_metadata(
+        &mut self,
+        entity_address: GlobalAddress,
+        key: String,
+        value: String,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::SetMetadata {
+            entity_address,
+            key,
+            value,
+        })
+        .0
     }
 
     /// Calls a method.

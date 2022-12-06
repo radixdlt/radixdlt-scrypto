@@ -52,7 +52,7 @@ pub struct NewTokenFixed {
 impl NewTokenFixed {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let default_account = get_default_account()?;
-        let mut metadata = HashMap::new();
+        let mut metadata = BTreeMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
         }

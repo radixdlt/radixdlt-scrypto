@@ -144,7 +144,7 @@ fn test_normal_transaction_flow() {
         .expect("Invalid transaction");
 
     let executable = validator
-        .validate(&transaction, &intent_hash_manager)
+        .validate(&transaction, raw_transaction.len(), &intent_hash_manager)
         .expect("Invalid transaction");
 
     // Act
@@ -165,7 +165,7 @@ fn get_executable<'a>(
 ) -> Result<Executable<'a>, TransactionValidationError> {
     let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-    validator.validate(&transaction, &TestIntentHashManager::new())
+    validator.validate(&transaction, 0, &TestIntentHashManager::new())
 }
 
 struct TransactionParams {
