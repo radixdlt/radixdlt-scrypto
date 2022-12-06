@@ -1,17 +1,16 @@
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::{Bech32Decoder, Bech32Encoder};
+use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
 use crate::data::ScryptoCustomTypeId;
 use crate::model::*;
 use crate::scrypto_type;
+use utils::ContextualDisplay;
 
 /// Identifier for a non-fungible unit.
 #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -140,16 +139,6 @@ scrypto_type!(
 // text
 //======
 
-impl FromStr for NonFungibleAddress {
-    type Err = ParseNonFungibleAddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseNonFungibleAddressError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_ref())
-    }
-}
-
 impl fmt::Display for NonFungibleAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         // Note that if the non-fungible ID is empty, the non-fungible address won't be distinguishable from resource address.
@@ -184,6 +173,34 @@ impl FromPublicKey for NonFungibleAddress {
     }
 }
 
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NonFungibleAddress {
+    type Error = AddressError;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
+        if let Some(encoder) = context.encoder {
+            write!(
+                f,
+                "\"{}\", {}",
+                self.resource_address.display(encoder),
+                self.non_fungible_id.to_manifest_string()
+            )
+            .map_err(|err| AddressError::FormatError(err))
+        } else {
+            write!(
+                f,
+                "\"{}\", {}",
+                self.resource_address.to_hex(),
+                self.non_fungible_id.to_manifest_string()
+            )
+            .map_err(|err| AddressError::FormatError(err))
+        }
+    }
+}
+
 //======
 // test
 //======
@@ -192,7 +209,6 @@ impl FromPublicKey for NonFungibleAddress {
 mod tests {
     use super::*;
     use crate::address::Bech32Decoder;
-    use sbor::rust::string::ToString;
 
     #[test]
     pub fn non_fungible_address_from_and_to_string_succeeds() {

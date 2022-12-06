@@ -346,10 +346,13 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "PUBLISH_PACKAGE_WITH_OWNER Blob(\"{}\") Blob(\"{}\") NonFungibleAddress(\"{}\", {});",
-                code, abi, owner_badge.resource_address().display(context.bech32_encoder),
-                owner_badge.non_fungible_id()
+                "PUBLISH_PACKAGE_WITH_OWNER Blob(\"{}\") Blob(\"{}\") NonFungibleAddress(",
+                code, abi,
             )?;
+            owner_badge
+                .contextual_format(f, &context.bech32_encoder.into())
+                .map_err(|_| DecompileError::InvalidArguments)?;
+            write!(f, ");")?;
         }
     }
     Ok(())

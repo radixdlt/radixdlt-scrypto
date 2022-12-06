@@ -77,13 +77,10 @@ mod tests {
             ECDSA_SECP256K1_TOKEN,
             NonFungibleId::Bytes(public_key.to_vec()),
         );
-        let s1 = auth_address.to_string();
-        let auth_address2 = NonFungibleAddress::from_str(&s1).unwrap();
-        let s2 = auth_address2.to_string();
-        assert_eq!(s1, expected_address);
-        assert_eq!(s2, expected_address);
+        let s1 = auth_address.to_vec();
+        assert_eq!(hex::encode(s1), expected_address);
 
-        let nfid = auth_address2.non_fungible_id();
+        let nfid = auth_address.non_fungible_id();
         assert_eq!(nfid.id_type(), NonFungibleIdType::Bytes);
         assert_eq!(nfid.to_string(), expected_id_with_type_designator);
         assert!(matches!(nfid, NonFungibleId::Bytes(b) if b == hex::decode(expected_id).unwrap()));

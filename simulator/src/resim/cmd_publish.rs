@@ -18,8 +18,8 @@ pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
     path: PathBuf,
 
-    /// The owner badge.
-    owner_badge: NonFungibleAddress,
+    /// The owner badge (hex value).
+    owner_badge: String,
 
     /// The address of an existing package to overwrite
     #[clap(long)]
@@ -95,9 +95,14 @@ impl Publish {
             );
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
+            let owner_badge = hex::decode(self.owner_badge.clone())
+                .map_err(|_| Error::AddressError(AddressError::HexDecodingError))?;
+            let nfaddr = NonFungibleAddress::try_from(owner_badge.as_slice())
+                .map_err(|_| Error::AddressError(AddressError::HexDecodingError))?;
+
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
-                .publish_package_with_owner(code, abi, self.owner_badge.clone())
+                .publish_package_with_owner(code, abi, nfaddr)
                 .build();
 
             let receipt = handle_manifest(
