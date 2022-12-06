@@ -26,18 +26,16 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
             + InvokableModel<RuntimeError>
             + LoggerApi<RuntimeError>,
     {
-        /*
         let mut args = Vec::new();
         if let Some(component_id) = self.component_id {
             args.push(scrypto_encode(&component_id).unwrap());
         }
         args.push(self.args);
-         */
 
         let output = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(api));
             self.instance
-                .invoke_export(&self.export_name, vec![self.args], &mut runtime)
+                .invoke_export(&self.export_name, args, &mut runtime)
                 .map_err(|e| match e {
                     InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
                     InvokeError::Downstream(runtime_error) => runtime_error,
