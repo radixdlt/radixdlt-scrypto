@@ -112,13 +112,6 @@ impl IdAllocator {
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }
 
-    /// Creates a new UUID.
-    pub fn new_uuid(&mut self, transaction_hash: Hash) -> Result<u128, IdAllocationError> {
-        let mut data = transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
-        Ok(u128::from_le_bytes(hash(data).lower_16_bytes()))
-    }
-
     pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneStackId, IdAllocationError> {
         Ok(self.next()?)
     }

@@ -28,7 +28,6 @@ pub trait EngineApi<E: Debug> {
     fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
     fn sys_get_actor(&mut self) -> Result<ScryptoActor, E>;
-    fn sys_generate_uuid(&mut self) -> Result<u128, E>;
 }
 
 pub trait LoggerApi<E: Debug> {

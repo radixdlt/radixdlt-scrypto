@@ -92,8 +92,6 @@ pub trait SystemApi {
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError>;
 
-    fn generate_uuid(&mut self) -> Result<u128, RuntimeError>;
-
     fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError>;
 }
 

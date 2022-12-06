@@ -78,9 +78,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::ReadBlob { blob_hash } => {
                 log!(call_frame, "Reading blob: hash = {}", blob_hash);
             }
-            SysCallInput::GenerateUuid => {
-                log!(call_frame, "Generating UUID");
-            }
             SysCallInput::EmitLog { .. } => {
                 log!(call_frame, "Emitting application log");
             }

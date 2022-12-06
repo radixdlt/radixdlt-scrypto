@@ -176,8 +176,4 @@ where
 
         Ok(actor)
     }
-
-    fn sys_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
-        self.generate_uuid()
-    }
 }

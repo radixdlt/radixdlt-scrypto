@@ -270,19 +270,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::GenerateUuid => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::GenerateUuid),
-                        1,
-                        "generate_uuid",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
             SysCallInput::EmitLog { message, .. } => {
                 track
                     .fee_reserve

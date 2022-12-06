@@ -70,16 +70,10 @@ pub enum SystemApiCostingEntry {
     /*
      * Misc
      */
-    /// Reads the current epoch.
-    ReadEpoch,
-    /// Reads the transaction hash.
-    ReadTransactionHash,
     /// Reads blob in transaction
     ReadBlob {
         size: u32,
     },
-    /// Generates a UUID.
-    GenerateUuid,
     /// Emits a log.
     EmitLog {
         size: u32,
@@ -313,10 +307,7 @@ impl FeeTable {
             SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropLock => self.fixed_low,
 
-            SystemApiCostingEntry::ReadEpoch => self.fixed_low,
-            SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
-            SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
             SystemApiCostingEntry::EmitEvent {
                 native,

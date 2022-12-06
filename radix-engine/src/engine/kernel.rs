@@ -165,13 +165,6 @@ where
         kernel
     }
 
-    fn new_uuid(
-        id_allocator: &mut IdAllocator,
-        transaction_hash: Hash,
-    ) -> Result<u128, IdAllocationError> {
-        id_allocator.new_uuid(transaction_hash)
-    }
-
     fn try_virtualize(
         &mut self,
         node_id: RENodeId,
@@ -1290,33 +1283,6 @@ where
         }
 
         Ok(blob)
-    }
-
-    fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::GenerateUuid,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        let uuid = Self::new_uuid(&mut self.id_allocator, self.transaction_hash)
-            .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::GenerateUuid { uuid },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(uuid)
     }
 
     fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError> {

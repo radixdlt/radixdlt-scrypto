@@ -70,7 +70,6 @@ where
                 encode(self.api.sys_drop_lock(lock_handle)?)?
             }
             RadixEngineInput::GetActor() => encode(self.api.sys_get_actor()?)?,
-            RadixEngineInput::GenerateUuid() => encode(self.api.sys_generate_uuid()?)?,
             RadixEngineInput::EmitLog(level, message) => {
                 encode(self.api.emit_log(level, message)?)?
             }

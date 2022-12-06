@@ -22,7 +22,6 @@ pub enum RadixEngineInput {
 
     GetActor(),
     EmitLog(Level, String),
-    GenerateUuid(),
 }
 
 #[derive(Debug)]

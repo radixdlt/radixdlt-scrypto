@@ -45,7 +45,6 @@ pub enum SysCallInput<'a> {
     ReadBlob {
         blob_hash: &'a Hash,
     },
-    GenerateUuid,
     EmitLog {
         level: &'a Level,
         message: &'a String,

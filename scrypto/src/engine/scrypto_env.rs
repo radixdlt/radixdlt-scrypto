@@ -110,11 +110,6 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         let rtn = call_engine(RadixEngineInput::GetActor());
         Ok(rtn)
     }
-
-    fn sys_generate_uuid(&mut self) -> Result<u128, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::GenerateUuid());
-        Ok(rtn)
-    }
 }
 
 impl LoggerApi<EngineApiError> for ScryptoEnv {
