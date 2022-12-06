@@ -86,7 +86,7 @@ fn validate_non_fungible_id_string(string: &str) -> Result<(), ParseNonFungibleI
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleIdError {
     InvalidHex(String),
-    InvalidSborPrefix,
+    InvalidSbor,
     UnexpectedTypeId,
     TooLong,
     InvalidCharacter(char),
@@ -121,31 +121,31 @@ impl TryFrom<&[u8]> for NonFungibleId {
             Ok(type_id) => match type_id {
                 ScryptoSborTypeId::Array => NonFungibleId::Bytes(
                     scrypto_decode::<Vec<u8>>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSborPrefix)?,
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
                 ),
                 ScryptoSborTypeId::String => NonFungibleId::String(
                     scrypto_decode::<String>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSborPrefix)?,
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
                 ),
                 ScryptoSborTypeId::U32 => NonFungibleId::U32(
                     scrypto_decode::<u32>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSborPrefix)?,
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
                 ),
                 ScryptoSborTypeId::U64 => NonFungibleId::U64(
                     scrypto_decode::<u64>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSborPrefix)?,
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
                 ),
                 ScryptoSborTypeId::U128 => NonFungibleId::UUID(
                     scrypto_decode::<u128>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSborPrefix)?,
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
                 ),
                 ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Decimal) => NonFungibleId::Decimal(
                     scrypto_decode::<Decimal>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSborPrefix)?,
+                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
                 ),
                 _ => return Err(ParseNonFungibleIdError::UnexpectedTypeId),
             },
-            Err(_) => return Err(ParseNonFungibleIdError::InvalidSborPrefix),
+            Err(_) => return Err(ParseNonFungibleIdError::InvalidSbor),
         };
 
         non_fungible_id.validate_contents()?;
