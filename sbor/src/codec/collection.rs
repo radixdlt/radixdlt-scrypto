@@ -54,6 +54,26 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X> + Ord + Hash> E
     }
 }
 
+#[cfg(feature = "indexmap")]
+impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X> + Hash> Encode<X, E>
+    for indexmap::IndexSet<T>
+{
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(T::type_id())?;
+        encoder.write_size(self.len())?;
+        for v in self {
+            encoder.encode_deeper_body(v)?;
+        }
+        Ok(())
+    }
+}
+
 impl<X: CustomTypeId, E: Encoder<X>, K: Encode<X, E>, V: Encode<X, E>> Encode<X, E>
     for BTreeMap<K, V>
 {
@@ -166,6 +186,26 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X> + Hash + Eq> De
         decoder.check_preloaded_type_id(type_id, Self::type_id())?;
         let elements: Vec<T> = Vec::<T>::decode_body_with_type_id(decoder, type_id)?;
         Ok(elements.into_iter().collect())
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X> + Hash + Eq> Decode<X, D>
+    for IndexSet<T>
+{
+    #[inline]
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: SborTypeId<X>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        let element_type_id = decoder.read_and_check_type_id(T::type_id())?;
+        let len = decoder.read_size()?;
+        let mut result = IndexSet::<T>::with_capacity(if len <= 1024 { len } else { 1024 });
+        for _ in 0..len {
+            result.insert(decoder.decode_deeper_body_with_type_id(element_type_id)?);
+        }
+        Ok(result)
     }
 }
 
