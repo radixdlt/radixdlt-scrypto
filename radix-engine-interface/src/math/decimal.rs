@@ -331,10 +331,10 @@ where
     type Output = Decimal;
 
     fn mul(self, other: T) -> Self::Output {
-        let a = I320::from(self.0);
+        let a = I384::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I320 = I320::from(b_dec.0);
-        let c: I320 = a * b / I320::from(Self::ONE.0);
+        let b: I384 = I384::from(b_dec.0);
+        let c: I384 = a * b / I384::from(Self::ONE.0);
         let c_256 = I256::try_from(c).unwrap();
         Decimal(c_256)
     }
@@ -347,10 +347,10 @@ where
     type Output = Decimal;
 
     fn div(self, other: T) -> Self::Output {
-        let a = I320::from(self.0);
+        let a = I384::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I320 = I320::from(b_dec.0);
-        let c: I320 = a * I320::from(Self::ONE.0) / b;
+        let b: I384 = I384::from(b_dec.0);
+        let c: I384 = a * I384::from(Self::ONE.0) / b;
         let c_256 = I256::try_from(c).unwrap();
         Decimal(c_256)
     }

@@ -337,10 +337,10 @@ where
     type Output = PreciseDecimal;
 
     fn mul(self, other: T) -> Self::Output {
-        let a = I728::from(self.0);
+        let a = I768::from(self.0);
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b: I728 = I728::from(b_dec.0);
-        let c: I728 = a * b / I728::from(Self::ONE.0);
+        let b: I768 = I768::from(b_dec.0);
+        let c: I768 = a * b / I768::from(Self::ONE.0);
         let c_512 = I512::try_from(c).unwrap();
         PreciseDecimal(c_512)
     }
@@ -353,10 +353,10 @@ where
     type Output = PreciseDecimal;
 
     fn div(self, other: T) -> Self::Output {
-        let a = I728::from(self.0);
+        let a = I768::from(self.0);
         let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
-        let b: I728 = I728::from(b_dec.0);
-        let c: I728 = a * I728::from(Self::ONE.0) / b;
+        let b: I768 = I768::from(b_dec.0);
+        let c: I768 = a * I768::from(Self::ONE.0) / b;
         let c_512 = I512::try_from(c).unwrap();
         PreciseDecimal(c_512)
     }
