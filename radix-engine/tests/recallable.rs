@@ -28,7 +28,7 @@ fn non_existing_vault_should_cause_error() {
         .add_instruction(Instruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(non_existing_vault_id),
-                method_name: "take".to_string(),
+                method_name: "recall".to_string(),
             },
             args: scrypto_encode(&VaultTakeInvocation {
                 receiver: non_existing_vault_id,
@@ -105,7 +105,7 @@ fn cannot_take_on_non_recallable_vault() {
         .add_instruction(Instruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(vault_id),
-                method_name: "take".to_string(),
+                method_name: "recall".to_string(),
             },
             args: scrypto_encode(&VaultTakeInvocation {
                 receiver: vault_id,
@@ -128,7 +128,7 @@ fn cannot_take_on_non_recallable_vault() {
             e,
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
                 actor: REActor::Method(
-                    ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Take)),
+                    ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Recall)),
                     ResolvedReceiver {
                         receiver: RENodeId::Vault(..),
                         ..
@@ -159,7 +159,7 @@ fn can_take_on_recallable_vault() {
         .add_instruction(Instruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(vault_id),
-                method_name: "take".to_string(),
+                method_name: "recall".to_string(),
             },
             args: scrypto_encode(&VaultTakeInvocation {
                 receiver: vault_id,

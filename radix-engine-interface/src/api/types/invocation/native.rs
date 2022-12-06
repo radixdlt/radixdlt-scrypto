@@ -348,6 +348,8 @@ pub enum VaultMethod {
     CreateProof,
     CreateProofByAmount,
     CreateProofByIds,
+    Recall,
+    RecallNonFungibles,
 }
 
 #[derive(

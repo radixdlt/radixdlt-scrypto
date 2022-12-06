@@ -18,6 +18,7 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::core::Expression;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
+use sbor::rust::collections::IndexMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::*;
@@ -140,7 +141,7 @@ impl NameResolver {
 pub fn generate_manifest(
     instructions: &[ast::Instruction],
     bech32_decoder: &Bech32Decoder,
-    blobs: HashMap<Hash, Vec<u8>>,
+    blobs: IndexMap<Hash, Vec<u8>>,
 ) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
@@ -167,7 +168,7 @@ pub fn generate_instruction(
     id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &IndexMap<Hash, Vec<u8>>,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
@@ -532,7 +533,7 @@ fn generate_args(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &IndexMap<Hash, Vec<u8>>,
 ) -> Result<Vec<Vec<u8>>, GeneratorError> {
     let mut result = Vec::new();
     for v in values {
@@ -953,7 +954,7 @@ fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError>
 
 fn generate_blob(
     value: &ast::Value,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &IndexMap<Hash, Vec<u8>>,
 ) -> Result<Blob, GeneratorError> {
     match value {
         ast::Value::Blob(inner) => match &**inner {
@@ -993,7 +994,7 @@ fn generate_value(
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &IndexMap<Hash, Vec<u8>>,
 ) -> Result<ScryptoValue, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
@@ -1005,6 +1006,9 @@ fn generate_value(
     }
 
     match value {
+        // ==============
+        // Basic types
+        // ==============
         ast::Value::Unit => Ok(SborValue::Unit),
         ast::Value::Bool(value) => Ok(SborValue::Bool { value: *value }),
         ast::Value::I8(value) => Ok(SborValue::I8 { value: *value }),
@@ -1037,6 +1041,46 @@ fn generate_value(
                 blobs,
             )?,
         }),
+        // ==============
+        // Aliases
+        // ==============
+        ast::Value::Some(value) => Ok(SborValue::Enum {
+            discriminator: "Some".to_owned(),
+            fields: vec![generate_value(
+                value,
+                None,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?],
+        }),
+        ast::Value::None => Ok(SborValue::Enum {
+            discriminator: "None".to_owned(),
+            fields: vec![],
+        }),
+        ast::Value::Ok(value) => Ok(SborValue::Enum {
+            discriminator: "Ok".to_owned(),
+            fields: vec![generate_value(
+                value,
+                None,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?],
+        }),
+        ast::Value::Err(value) => Ok(SborValue::Enum {
+            discriminator: "Err".to_owned(),
+            fields: vec![generate_value(
+                value,
+                None,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?],
+        }),
+        // ==============
+        // Custom Types
+        // ==============
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| SborValue::Custom {
                 value: ScryptoCustomValue::PackageAddress(v),
@@ -1132,7 +1176,7 @@ fn generate_singletons(
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &HashMap<Hash, Vec<u8>>,
+    blobs: &IndexMap<Hash, Vec<u8>>,
 ) -> Result<Vec<ScryptoValue>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
@@ -1227,7 +1271,7 @@ mod tests {
                     None,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut HashMap::new()
+                    &mut IndexMap::new()
                 ),
                 Ok($expected)
             );
@@ -1248,7 +1292,7 @@ mod tests {
                     &mut id_validator,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut HashMap::new()
+                    &mut IndexMap::new()
                 ),
                 Ok($expected)
             );
@@ -1264,7 +1308,7 @@ mod tests {
                 None,
                 &mut NameResolver::new(),
                 &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                &mut HashMap::new(),
+                &mut IndexMap::new(),
             ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
