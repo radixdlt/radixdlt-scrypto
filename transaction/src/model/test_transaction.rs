@@ -1,4 +1,5 @@
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::model::*;
 use sbor::rust::vec::Vec;
 use std::collections::BTreeSet;
@@ -22,13 +23,14 @@ impl TestTransaction {
 
     pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
         let transaction_hash = hash(self.nonce.to_le_bytes());
+        let payload_size = scrypto_encode(&self.manifest).unwrap().len();
 
         Executable::new(
             InstructionList::Basic(&self.manifest.instructions),
             &self.manifest.blobs,
             ExecutionContext {
                 transaction_hash,
-                payload_size: 0,
+                payload_size,
                 auth_zone_params: AuthZoneParams {
                     initial_proofs,
                     virtualizable_proofs_resource_addresses: BTreeSet::new(),
