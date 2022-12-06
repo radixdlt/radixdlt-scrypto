@@ -18,6 +18,12 @@ pub struct FeeReserveConfig {
     pub system_loan: u32,
 }
 
+impl Default for FeeReserveConfig {
+    fn default() -> Self {
+        FeeReserveConfig::standard()
+    }
+}
+
 impl FeeReserveConfig {
     pub fn standard() -> Self {
         Self {
@@ -87,17 +93,23 @@ where
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let fee_reserve = SystemLoanFeeReserve::new(
-            fee_reserve_config.cost_unit_price,
-            transaction.tip_percentage(),
-            transaction.cost_unit_limit().into(),
-            fee_reserve_config.system_loan,
-        );
+        let fee_reserve = match transaction.fee_payment() {
+            FeePayment::User {
+                cost_unit_limit,
+                tip_percentage,
+            } => SystemLoanFeeReserve::new(
+                fee_reserve_config.cost_unit_price,
+                *tip_percentage,
+                *cost_unit_limit,
+                fee_reserve_config.system_loan,
+            ),
+            FeePayment::NoFee => SystemLoanFeeReserve::no_fee(),
+        };
 
         self.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
     }
 
-    pub fn execute_with_fee_reserve<R: FeeReserve>(
+    fn execute_with_fee_reserve<R: FeeReserve>(
         &mut self,
         transaction: &Executable,
         execution_config: &ExecutionConfig,
@@ -244,19 +256,5 @@ pub fn execute_transaction<S: ReadableSubstateStore, W: WasmEngine>(
         transaction,
         fee_reserve_config,
         execution_config,
-    )
-}
-
-pub fn execute_transaction_with_fee_reserve<S: ReadableSubstateStore, W: WasmEngine>(
-    substate_store: &S,
-    scrypto_interpreter: &ScryptoInterpreter<W>,
-    fee_reserve: impl FeeReserve,
-    execution_config: &ExecutionConfig,
-    transaction: &Executable,
-) -> TransactionReceipt {
-    TransactionExecutor::new(substate_store, scrypto_interpreter).execute_with_fee_reserve(
-        transaction,
-        execution_config,
-        fee_reserve,
     )
 }

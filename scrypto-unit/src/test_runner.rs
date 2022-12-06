@@ -476,8 +476,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn execute_transaction(&mut self, transaction: &Executable) -> TransactionReceipt {
         self.execute_transaction_with_config(
             transaction,
-            &FeeReserveConfig::standard(),
-            &ExecutionConfig::standard(),
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
         )
     }
 
