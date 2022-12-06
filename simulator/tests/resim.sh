@@ -19,12 +19,21 @@ minter_badge=`$resim new-badge-fixed 1 --name 'MinterBadge' | awk '/Resource:/ {
 # Test - create mutable supply token
 token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print $NF}'`
 
+# Test - transfer non fungible
+non_fungible_create_receipt=`$resim new-owner-badge --name 'OwnerBadge'`
+non_fungible=`echo "$non_fungible_create_receipt" | awk '/NFAddress:/ {print $NF}'`
+non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
+non_fungible_id=`echo "$non_fungible_create_receipt" | awk '/NFID:/ {print $NF}'`
+# The below line looks like this: #U32#1,resource_address
+# You can put multiple ids into a bucket like so: #String#Id1,#String#num2,#String#num3,resource_address
+$resim call-method $account2 deposit "#$non_fungible_id,$non_fungible_resource"
+
 # Test - mint and transfer
 $resim mint 777 $token_address --proofs 1,$minter_badge
 $resim transfer 111 $token_address $account2
 
-# Test - publish, call-funciton and call-method
-owner_badge=`$resim new-owner-badge --name 'OwnerBadge' | awk '/Owner badge:/ {print $NF}'`
+# Test - publish, call-function and call-method and non-fungibles
+owner_badge=`$resim new-owner-badge --name 'OwnerBadge' | awk '/NFAddress:/ {print $NF}'`
 package=`$resim publish ../examples/hello-world $owner_badge | awk '/Package:/ {print $NF}'`
 component=`$resim call-function $package Hello instantiate_hello | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token

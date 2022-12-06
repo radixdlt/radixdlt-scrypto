@@ -129,10 +129,23 @@ impl NewOwnerBadge {
         let bech32_encoder = Bech32Encoder::new(&network_definition);
         writeln!(
             out,
-            "Owner badge: {}",
+            "NFAddress: {}",
             NonFungibleAddress::new(resource_address, NonFungibleId::U32(1))
-                .to_canonical_string(&bech32_encoder)
+                // This should be the opposite of parse_args in the manifest builder
+                .to_canonical_combined_string(&bech32_encoder)
                 .green()
+        )
+        .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "Resource: {}",
+            resource_address.to_string(&bech32_encoder).green()
+        )
+        .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "NFID: {}",
+            NonFungibleId::U32(1).to_combined_simple_string()
         )
         .map_err(Error::IOError)?;
         Ok(())

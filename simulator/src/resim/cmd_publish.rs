@@ -40,6 +40,9 @@ pub struct Publish {
 
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+        let network = NetworkDefinition::simulator();
+        let bech32_decoder = Bech32Decoder::new(&network);
+
         // Load wasm code
         let (code_path, abi_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
             build_package(&self.path, false, false).map_err(Error::BuildError)?
@@ -95,14 +98,15 @@ impl Publish {
             );
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
-            let owner_badge = hex::decode(self.owner_badge.clone())
-                .map_err(|_| Error::AddressError(AddressError::HexDecodingError))?;
-            let nfaddr = NonFungibleAddress::try_from(owner_badge.as_slice())
-                .map_err(|_| Error::AddressError(AddressError::HexDecodingError))?;
+            let owner_badge_nf_address = NonFungibleAddress::try_from_canonical_combined_string(
+                &bech32_decoder,
+                &self.owner_badge,
+            )
+            .map_err(Error::NonFungibleAddressError)?;
 
             let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
-                .publish_package_with_owner(code, abi, nfaddr)
+                .publish_package_with_owner(code, abi, owner_badge_nf_address)
                 .build();
 
             let receipt = handle_manifest(
