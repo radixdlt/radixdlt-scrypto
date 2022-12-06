@@ -43,6 +43,50 @@ impl NonFungibleId {
             NonFungibleId::UUID(..) => NonFungibleIdType::UUID,
         }
     }
+
+    /// Returns string representation of non-fungible ID value for transaction manifest.
+    pub fn to_manifest_string(&self) -> String {
+        match self {
+            NonFungibleId::Bytes(b) => format!("Bytes(\"{}\")", hex::encode(b)),
+            NonFungibleId::String(s) => format!("\"{}\"", s),
+            NonFungibleId::U32(n) => format!("{}u32", n),
+            NonFungibleId::U64(n) => format!("{}u64", n),
+            NonFungibleId::UUID(u) => format!("{}u128", u),
+        }
+    }
+
+    /// Converts transaction manifest representation string to non-fungible ID
+    pub fn try_from_manifest_string(s: &str) -> Result<Self, ParseNonFungibleIdError> {
+        let s = s.trim();
+        if s.len() > 9 && s.starts_with("Bytes(\"") && s.ends_with("\")") {
+            Ok(NonFungibleId::Bytes(
+                hex::decode(&s[7..s.len() - 2])
+                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+            ))
+        } else if s.len() > 4 && s.ends_with("u128") {
+            Ok(NonFungibleId::UUID(
+                s[0..s.len() - 4]
+                    .parse::<u128>()
+                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+            ))
+        } else if s.len() > 3 && s.ends_with("u64") {
+            Ok(NonFungibleId::U64(
+                s[0..s.len() - 3]
+                    .parse::<u64>()
+                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+            ))
+        } else if s.len() > 3 && s.ends_with("u32") {
+            Ok(NonFungibleId::U32(
+                s[0..s.len() - 3]
+                    .parse::<u32>()
+                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+            ))
+        } else if s.len() > 2 && s.starts_with("\"") && s.ends_with("\"") {
+            Ok(NonFungibleId::String(s[1..s.len() - 1].to_string()))
+        } else {
+            Err(ParseNonFungibleIdError::InvalidValue)
+        }
+    }
 }
 
 //========
@@ -270,6 +314,30 @@ mod tests {
         assert_eq!(
             NonFungibleId::from_str("5c0c0474657374").unwrap(),
             NonFungibleId::String(String::from("test"))
+        );
+    }
+
+    #[test]
+    fn test_non_fungible_id_manifest_conversion() {
+        assert_eq!(
+            NonFungibleId::try_from_manifest_string("1u32").unwrap(),
+            NonFungibleId::U32(1)
+        );
+        assert_eq!(
+            NonFungibleId::try_from_manifest_string("10u64").unwrap(),
+            NonFungibleId::U64(10)
+        );
+        assert_eq!(
+            NonFungibleId::try_from_manifest_string("1234567890u128").unwrap(),
+            NonFungibleId::UUID(1234567890)
+        );
+        assert_eq!(
+            NonFungibleId::try_from_manifest_string("\"test\"").unwrap(),
+            NonFungibleId::String(String::from("test"))
+        );
+        assert_eq!(
+            NonFungibleId::try_from_manifest_string("Bytes(\"010a\")").unwrap(),
+            NonFungibleId::Bytes(vec![1, 10])
         );
     }
 }
