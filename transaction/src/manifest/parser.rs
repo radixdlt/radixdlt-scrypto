@@ -257,6 +257,9 @@ impl Parser {
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
         let token = self.peek()?;
         match token.kind {
+            // ==============
+            // Basic Types
+            // ==============
             TokenKind::OpenParenthesis => {
                 advance_match!(self, TokenKind::OpenParenthesis);
                 advance_match!(self, TokenKind::CloseParenthesis);
@@ -278,6 +281,19 @@ impl Parser {
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
             TokenKind::Bytes => self.parse_bytes(),
+
+            // ==============
+            // Aliases
+            // ==============
+            TokenKind::Some |
+            TokenKind::None |
+            TokenKind::Ok |
+            TokenKind::Err => self.parse_alias(),
+
+            // ==============
+            // Custom Types
+            // ==============
+
             /* Global address */
             TokenKind::PackageAddress |
             TokenKind::SystemAddress |
@@ -341,6 +357,17 @@ impl Parser {
         advance_match!(self, TokenKind::Bytes);
         let value = self.parse_values_one()?.into();
         Ok(Value::Bytes(value))
+    }
+
+    pub fn parse_alias(&mut self) -> Result<Value, ParserError> {
+        let token = self.advance()?;
+        match token.kind {
+            TokenKind::Some => Ok(Value::Some(Box::new(self.parse_values_one()?))),
+            TokenKind::None => Ok(Value::None),
+            TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
+            TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
     }
 
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {

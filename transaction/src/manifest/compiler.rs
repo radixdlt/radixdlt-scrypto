@@ -2,7 +2,7 @@ use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
 
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::IndexMap;
 
 use crate::manifest::*;
 use crate::model::TransactionManifest;
@@ -25,7 +25,7 @@ pub fn compile(
     let instructions = parser::Parser::new(tokens)
         .parse_manifest()
         .map_err(CompileError::ParserError)?;
-    let mut blobs_by_hash = HashMap::new();
+    let mut blobs_by_hash = IndexMap::new();
     for blob in blobs {
         blobs_by_hash.insert(hash(&blob), blob);
     }

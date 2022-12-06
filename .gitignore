@@ -64,6 +64,9 @@ flamegraph.svg
 # IntelliJ
 .idea/
 
+# VScode
+.vscode/launch.json
+
 # Emacs
 *~
 

@@ -93,14 +93,24 @@ pub fn format_scrypto_value<F: fmt::Write>(
             discriminator,
             fields,
         } => {
-            f.write_str("Enum(\"")?;
-            f.write_str(discriminator)?;
-            f.write_str("\"")?;
-            if !fields.is_empty() {
-                f.write_str(", ")?;
-                format_elements(f, fields, context)?;
+            match (discriminator.as_str(), fields.len()) {
+                // Map aliases
+                ("Some", 1) => format_tuple(f, "Some", fields, context)?,
+                ("None", 0) => f.write_str("None")?,
+                ("Ok", 1) => format_tuple(f, "Ok", fields, context)?,
+                ("Err", 1) => format_tuple(f, "Err", fields, context)?,
+                // Standard
+                (_, _) => {
+                    f.write_str("Enum(\"")?;
+                    f.write_str(discriminator)?;
+                    f.write_str("\"")?;
+                    if !fields.is_empty() {
+                        f.write_str(", ")?;
+                        format_elements(f, fields, context)?;
+                    }
+                    f.write_str(")")?;
+                }
             }
-            f.write_str(")")?;
         }
         SborValue::Array {
             element_type_id,
@@ -117,6 +127,19 @@ pub fn format_scrypto_value<F: fmt::Write>(
             format_custom_value(f, value, context)?;
         }
     };
+    Ok(())
+}
+
+pub fn format_tuple<F: fmt::Write>(
+    f: &mut F,
+    name: &'static str,
+    fields: &[ScryptoValue],
+    context: &ValueFormattingContext,
+) -> fmt::Result {
+    f.write_str(name)?;
+    f.write_str("(")?;
+    format_elements(f, fields, context)?;
+    f.write_str(")")?;
     Ok(())
 }
 
