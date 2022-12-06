@@ -55,7 +55,7 @@ impl NonFungibleId {
         }
     }
 
-    /// Converts transaction manifest representation string to non-fungible ID
+    /// Converts transaction manifest representation string to non-fungible ID.
     pub fn try_from_manifest_string(s: &str) -> Result<Self, ParseNonFungibleIdError> {
         let s = s.trim();
         if s.len() > 9 && s.starts_with("Bytes(\"") && s.ends_with("\")") {
@@ -85,6 +85,42 @@ impl NonFungibleId {
             Ok(NonFungibleId::String(s[1..s.len() - 1].to_string()))
         } else {
             Err(ParseNonFungibleIdError::InvalidValue)
+        }
+    }
+
+    /// Returns simple string representation of non-fungible ID value.
+    pub fn to_simple_string(&self) -> String {
+        match self {
+            NonFungibleId::Bytes(b) => hex::encode(b),
+            NonFungibleId::String(s) => s.clone(),
+            NonFungibleId::U32(n) => format!("{}", n),
+            NonFungibleId::U64(n) => format!("{}", n),
+            NonFungibleId::UUID(u) => format!("{}", u),
+        }
+    }
+
+    /// Converts simple string representation to non-fungible ID.
+    pub fn try_from_simple_string(
+        id_type: NonFungibleIdType,
+        s: &str,
+    ) -> Result<Self, ParseNonFungibleIdError> {
+        match id_type {
+            NonFungibleIdType::Bytes => Ok(NonFungibleId::Bytes(
+                hex::decode(s).map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+            )),
+            NonFungibleIdType::U32 => Ok(NonFungibleId::U32(
+                s.parse::<u32>()
+                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+            )),
+            NonFungibleIdType::U64 => Ok(NonFungibleId::U64(
+                s.parse::<u64>()
+                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+            )),
+            NonFungibleIdType::String => Ok(NonFungibleId::String(s.to_string())),
+            NonFungibleIdType::UUID => Ok(NonFungibleId::UUID(
+                s.parse::<u128>()
+                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+            )),
         }
     }
 }
@@ -337,6 +373,30 @@ mod tests {
         );
         assert_eq!(
             NonFungibleId::try_from_manifest_string("Bytes(\"010a\")").unwrap(),
+            NonFungibleId::Bytes(vec![1, 10])
+        );
+    }
+
+    #[test]
+    fn test_non_fungible_id_simple_conversion() {
+        assert_eq!(
+            NonFungibleId::try_from_simple_string(NonFungibleIdType::U32, "1").unwrap(),
+            NonFungibleId::U32(1)
+        );
+        assert_eq!(
+            NonFungibleId::try_from_simple_string(NonFungibleIdType::U64, "10").unwrap(),
+            NonFungibleId::U64(10)
+        );
+        assert_eq!(
+            NonFungibleId::try_from_simple_string(NonFungibleIdType::UUID, "1234567890").unwrap(),
+            NonFungibleId::UUID(1234567890)
+        );
+        assert_eq!(
+            NonFungibleId::try_from_simple_string(NonFungibleIdType::String, "test").unwrap(),
+            NonFungibleId::String(String::from("test"))
+        );
+        assert_eq!(
+            NonFungibleId::try_from_simple_string(NonFungibleIdType::Bytes, "010a").unwrap(),
             NonFungibleId::Bytes(vec![1, 10])
         );
     }
