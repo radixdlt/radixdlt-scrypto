@@ -40,6 +40,7 @@ pub enum NativeMethod {
     Proof(ProofMethod),
     Worktop(WorktopMethod),
     Clock(ClockMethod),
+    TransactionHash(TransactionHashMethod),
 }
 
 // Native method enum used by Kernel SystemAPI and WASM
@@ -446,6 +447,28 @@ pub enum ClockMethod {
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
+}
+
+
+#[derive(
+Debug,
+Clone,
+Copy,
+PartialEq,
+Eq,
+Hash,
+PartialOrd,
+Ord,
+EnumString,
+EnumVariantNames,
+IntoStaticStr,
+AsRefStr,
+Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum TransactionHashMethod {
+    Get,
 }
 
 #[derive(

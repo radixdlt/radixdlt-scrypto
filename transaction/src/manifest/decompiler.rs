@@ -548,6 +548,7 @@ fn format_node_id(node_id: &RENodeId, context: &mut DecompilationContext) -> Str
         RENodeId::ResourceManager(id) => format!("ResourceManager(\"{}\")", format_id(id)),
         RENodeId::Package(id) => format!("Package(\"{}\")", format_id(id)),
         RENodeId::FeeReserve(id) => format!("FeeReserve({}u32)", id),
+        RENodeId::TransactionHash(id) => format!("TransactionHash({}u32)", id),
     }
 }
 

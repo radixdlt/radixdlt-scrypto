@@ -128,6 +128,7 @@ pub enum RuntimeSubstate {
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
     FeeReserve(FeeReserveSubstate),
+    TransactionHash(TransactionHashSubstate),
 }
 
 impl RuntimeSubstate {
@@ -176,7 +177,8 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::FeeReserve(..) => {
+            | RuntimeSubstate::FeeReserve(..)
+            | RuntimeSubstate::TransactionHash(..) => {
                 panic!("Should not get here");
             }
         }
@@ -221,7 +223,8 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
-            | RuntimeSubstate::FeeReserve(..) => {
+            | RuntimeSubstate::FeeReserve(..)
+            | RuntimeSubstate::TransactionHash(..) => {
                 panic!("Should not get here");
             }
         }
@@ -290,6 +293,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRefMut::FeeReserve(value),
+            RuntimeSubstate::TransactionHash(value) => SubstateRefMut::TransactionHash(value),
         }
     }
 
@@ -326,6 +330,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRef::FeeReserve(value),
+            RuntimeSubstate::TransactionHash(value) => SubstateRef::TransactionHash(value),
         }
     }
 
@@ -487,6 +492,12 @@ impl Into<RuntimeSubstate> for PackageRoyaltyConfigSubstate {
 impl Into<RuntimeSubstate> for PackageRoyaltyAccumulatorSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::PackageRoyaltyAccumulator(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for TransactionHashSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::TransactionHash(self)
     }
 }
 
@@ -682,6 +693,7 @@ pub enum SubstateRef<'a> {
     AccessRulesChain(&'a AccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
+    TransactionHash(&'a TransactionHashSubstate),
 }
 
 impl<'a> SubstateRef<'a> {
@@ -844,6 +856,13 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
+    pub fn transaction_hash(&self) -> &TransactionHashSubstate {
+        match self {
+            SubstateRef::TransactionHash(value) => *value,
+            _ => panic!("Not transaction hash"),
+        }
+    }
+
     pub fn current_time_rounded_to_minutes(&self) -> &CurrentTimeRoundedToMinutesSubstate {
         match self {
             SubstateRef::CurrentTimeRoundedToMinutes(substate) => *substate,
@@ -954,6 +973,7 @@ pub enum SubstateRefMut<'a> {
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
     FeeReserve(&'a mut FeeReserveSubstate),
+    TransactionHash(&'a mut TransactionHashSubstate),
     AuthZoneStack(&'a mut AuthZoneStackSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
 }

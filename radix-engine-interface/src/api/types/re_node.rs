@@ -51,6 +51,7 @@ pub enum RENodeId {
     Package(PackageId),
     EpochManager(EpochManagerId),
     Clock(ClockId),
+    TransactionHash(TransactionHashId),
 }
 
 impl Into<[u8; 36]> for RENodeId {
@@ -239,6 +240,11 @@ pub enum ClockOffset {
     CurrentTimeRoundedToMinutes,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum TransactionHashOffset {
+    TransactionHash,
+}
+
 /// Specifies a specific Substate into a given RENode
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -260,6 +266,7 @@ pub enum SubstateOffset {
     Proof(ProofOffset),
     Worktop(WorktopOffset),
     Clock(ClockOffset),
+    TransactionHash(TransactionHashOffset),
 }
 
 /// TODO: separate space addresses?
