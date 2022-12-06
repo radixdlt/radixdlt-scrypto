@@ -114,6 +114,8 @@ impl NonFungibleAddress {
     }
 
     /// Converts canonical representation to NonFungibleAddress.
+    /// 
+    /// This is composed of `resource_address:id_simple_representation`
     pub fn try_from_canonical_string(
         bech32_decoder: &Bech32Decoder,
         id_type: NonFungibleIdType,
@@ -128,6 +130,27 @@ impl NonFungibleAddress {
         }
         let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
         let non_fungible_id = NonFungibleId::try_from_simple_string(id_type, v[1])?;
+        Ok(NonFungibleAddress::new(resource_address, non_fungible_id))
+    }
+
+    /// Converts combined canonical representation to NonFungibleAddress.
+    /// 
+    /// This is composed of `resource_address:IdType#id_simple_representation`
+    /// 
+    /// Prefer the canonical string where the id type can be looked up.
+    pub fn try_from_canonical_combined_string(
+        bech32_decoder: &Bech32Decoder,
+        s: &str,
+    ) -> Result<Self, ParseNonFungibleAddressError> {
+        let v = s
+            .splitn(2, ':')
+            .filter(|&s| !s.is_empty())
+            .collect::<Vec<&str>>();
+        if v.len() != 2 {
+            return Err(ParseNonFungibleAddressError::RequiresTwoParts);
+        }
+        let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
+        let non_fungible_id = NonFungibleId::try_from_combined_simple_string(v[1])?;
         Ok(NonFungibleAddress::new(resource_address, non_fungible_id))
     }
 }
@@ -325,15 +348,15 @@ mod tests {
             Err(ParseNonFungibleAddressError::InvalidResourceAddress(_))
         ));
 
-        assert_eq!(
+        assert!(matches!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
                 NonFungibleIdType::U32,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:notnumber",
             ),
             Err(ParseNonFungibleAddressError::InvalidNonFungibleId(
-                ParseNonFungibleIdError::InvalidValue
+                ParseNonFungibleIdError::InvalidInt(_)
             ))
-        );
+        ));
     }
 }

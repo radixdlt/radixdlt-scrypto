@@ -1,4 +1,6 @@
-use sbor::rust::borrow::ToOwned;
+use core::num::ParseIntError;
+
+use hex::FromHexError;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::str::FromStr;
@@ -65,31 +67,24 @@ impl NonFungibleId {
         let s = s.trim();
         let non_fungible_id = if s.len() > 9 && s.starts_with("Bytes(\"") && s.ends_with("\")") {
             NonFungibleId::Bytes(
-                hex::decode(&s[7..s.len() - 2])
-                    .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                hex::decode(&s[7..s.len() - 2])?,
             )
         } else if s.len() > 4 && s.ends_with("u128") {
             NonFungibleId::UUID(
-                s[0..s.len() - 4]
-                    .parse::<u128>()
-                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+                s[0..s.len() - 4].parse::<u128>()?,
             )
         } else if s.len() > 3 && s.ends_with("u64") {
             NonFungibleId::U64(
-                s[0..s.len() - 3]
-                    .parse::<u64>()
-                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+                s[0..s.len() - 3].parse::<u64>()?,
             )
         } else if s.len() > 3 && s.ends_with("u32") {
             NonFungibleId::U32(
-                s[0..s.len() - 3]
-                    .parse::<u32>()
-                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
+                s[0..s.len() - 3].parse::<u32>()?,
             )
         } else if s.len() > 2 && s.starts_with("\"") && s.ends_with("\"") {
             NonFungibleId::String(s[1..s.len() - 1].to_string())
         } else {
-            return Err(ParseNonFungibleIdError::InvalidValue);
+            return Err(ParseNonFungibleIdError::CannotParseType);
         };
 
         non_fungible_id.validate_contents()?;
@@ -114,27 +109,58 @@ impl NonFungibleId {
         s: &str,
     ) -> Result<Self, ParseNonFungibleIdError> {
         let non_fungible_id = match id_type {
-            NonFungibleIdType::Bytes => NonFungibleId::Bytes(
-                hex::decode(s).map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            ),
-            NonFungibleIdType::U32 => NonFungibleId::U32(
-                s.parse::<u32>()
-                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            ),
-            NonFungibleIdType::U64 => NonFungibleId::U64(
-                s.parse::<u64>()
-                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            ),
+            NonFungibleIdType::Bytes => NonFungibleId::Bytes(hex::decode(s)?),
+            NonFungibleIdType::U32 => NonFungibleId::U32(s.parse::<u32>()?),
+            NonFungibleIdType::U64 => NonFungibleId::U64(s.parse::<u64>()?),
             NonFungibleIdType::String => NonFungibleId::String(s.to_string()),
-            NonFungibleIdType::UUID => NonFungibleId::UUID(
-                s.parse::<u128>()
-                    .map_err(|_| ParseNonFungibleIdError::InvalidValue)?,
-            ),
+            NonFungibleIdType::UUID => NonFungibleId::UUID(s.parse::<u128>()?),
         };
 
         non_fungible_id.validate_contents()?;
 
         Ok(non_fungible_id)
+    }
+
+    /// Returns the simple string representation of non-fungible ID value.
+    /// 
+    /// You should generally prefer the simple string representation without the type information,
+    /// unless the type information cannot be located.
+    /// 
+    /// This representation looks like:
+    /// * `String#abc`
+    /// * `Bytes#23ae33`
+    /// * `U32#122`
+    /// * `U64#23`
+    /// * `UUID#345`
+    pub fn to_combined_simple_string(&self) -> String {
+        format!("{}#{}", self.id_type(), self.to_simple_string())
+    }
+
+    /// Converts combined simple string representation to non-fungible ID.
+    /// 
+    /// You should generally prefer the simple string representation without the type information,
+    /// unless the type information cannot be located.
+    /// 
+    /// This accepts the following:
+    /// * `String#abc`
+    /// * `Bytes#23ae33`
+    /// * `U32#122`
+    /// * `U64#23`
+    /// * `UUID#345` or `U128#567`
+    pub fn try_from_combined_simple_string(
+        s: &str,
+    ) -> Result<Self, ParseNonFungibleIdError> {
+        let parts = s
+            .splitn(2, '#')
+            .filter(|&s| !s.is_empty())
+            .collect::<Vec<&str>>();
+
+        if parts.len() != 2 {
+            return Err(ParseNonFungibleIdError::RequiresTwoPartsSeparatedByHash);
+        }
+
+        let id_type = parts[0].parse::<NonFungibleIdType>()?;
+        Self::try_from_simple_string(id_type, parts[1])
     }
 
     pub fn validate_contents(&self) -> Result<(), ParseNonFungibleIdError> {
@@ -178,13 +204,40 @@ fn validate_non_fungible_id_string(string: &str) -> Result<(), ParseNonFungibleI
 /// Represents an error when decoding non-fungible id.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleIdError {
-    InvalidHex(String),
-    InvalidSbor,
-    InvalidValue,
+    InvalidSbor(DecodeError),
+    InvalidHex,
+    InvalidInt(ParseIntError),
+    InvalidIdType(ParseNonFungibleIdTypeError),
+    CannotParseType,
     UnexpectedTypeId,
     TooLong,
     Empty,
     InvalidCharacter(char),
+    RequiresTwoPartsSeparatedByHash,
+}
+
+impl From<DecodeError> for ParseNonFungibleIdError {
+    fn from(err: DecodeError) -> Self {
+        ParseNonFungibleIdError::InvalidSbor(err)
+    }
+}
+
+impl From<FromHexError> for ParseNonFungibleIdError {
+    fn from(_: FromHexError) -> Self {
+        ParseNonFungibleIdError::InvalidHex
+    }
+}
+
+impl From<ParseIntError> for ParseNonFungibleIdError {
+    fn from(err: ParseIntError) -> Self {
+        ParseNonFungibleIdError::InvalidInt(err)
+    }
+}
+
+impl From<ParseNonFungibleIdTypeError> for ParseNonFungibleIdError {
+    fn from(err: ParseNonFungibleIdTypeError) -> Self {
+        ParseNonFungibleIdError::InvalidIdType(err)
+    }
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -215,28 +268,23 @@ impl TryFrom<&[u8]> for NonFungibleId {
         let non_fungible_id = match validate_id(slice) {
             Ok(type_id) => match type_id {
                 ScryptoSborTypeId::Array => NonFungibleId::Bytes(
-                    scrypto_decode::<Vec<u8>>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                    scrypto_decode::<Vec<u8>>(slice)?,
                 ),
                 ScryptoSborTypeId::String => NonFungibleId::String(
-                    scrypto_decode::<String>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                    scrypto_decode::<String>(slice)?
                 ),
                 ScryptoSborTypeId::U32 => NonFungibleId::U32(
-                    scrypto_decode::<u32>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                    scrypto_decode::<u32>(slice)?
                 ),
                 ScryptoSborTypeId::U64 => NonFungibleId::U64(
-                    scrypto_decode::<u64>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                    scrypto_decode::<u64>(slice)?
                 ),
                 ScryptoSborTypeId::U128 => NonFungibleId::UUID(
-                    scrypto_decode::<u128>(slice)
-                        .map_err(|_| ParseNonFungibleIdError::InvalidSbor)?,
+                    scrypto_decode::<u128>(slice)?
                 ),
                 _ => return Err(ParseNonFungibleIdError::UnexpectedTypeId),
             },
-            Err(_) => return Err(ParseNonFungibleIdError::InvalidSbor),
+            Err(err) => return Err(err.into()),
         };
 
         non_fungible_id.validate_contents()?;
@@ -267,16 +315,6 @@ scrypto_type!(
 // text
 //======
 
-impl FromStr for NonFungibleId {
-    type Err = ParseNonFungibleIdError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseNonFungibleIdError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
 impl fmt::Display for NonFungibleIdType {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
@@ -292,6 +330,28 @@ impl fmt::Display for NonFungibleIdType {
 impl fmt::Debug for NonFungibleIdType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseNonFungibleIdTypeError {
+    UnknownType,
+}
+
+impl FromStr for NonFungibleIdType {
+    type Err = ParseNonFungibleIdTypeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let id_type = match s {
+            "String" => Self::String,
+            "U32" => Self::U32,
+            "U64" => Self::U64,
+            "Bytes" => Self::Bytes,
+            "UUID" => Self::UUID,
+            "U128" => Self::UUID, // Add this in as an alias
+            _ => return Err(ParseNonFungibleIdTypeError::UnknownType)
+        };
+        Ok(id_type)
     }
 }
 
@@ -458,28 +518,27 @@ mod tests {
     }
 
     #[test]
-    fn test_non_fungible_id_string_rep() {
+    fn test_non_fungible_id_bytes_rep() {
         // internal buffer representation:
         //   <sbor-v1 prefix: 5c><sbor type id><optional element id><optional size><bytes>
         assert_eq!(
-            NonFungibleId::from_str("5c2007023575").unwrap(),
+            NonFungibleId::try_from(hex::decode("5c2007023575").unwrap().as_slice()).unwrap(),
             NonFungibleId::Bytes(vec![53u8, 117u8]),
         );
         assert_eq!(
-            NonFungibleId::from_str("5c0905000000").unwrap(),
+            NonFungibleId::try_from(hex::decode("5c0905000000").unwrap().as_slice()).unwrap(),
             NonFungibleId::U32(5)
         );
         assert_eq!(
-            NonFungibleId::from_str("5c0a0500000000000000").unwrap(),
+            NonFungibleId::try_from(hex::decode("5c0a0500000000000000").unwrap().as_slice()).unwrap(),
             NonFungibleId::U64(5)
         );
         assert_eq!(
-            NonFungibleId::from_str("5c0b05000000000000000000000000000000").unwrap(),
+            NonFungibleId::try_from(hex::decode("5c0b05000000000000000000000000000000").unwrap().as_slice()).unwrap(),
             NonFungibleId::UUID(5)
         );
-
         assert_eq!(
-            NonFungibleId::from_str("5c0c0474657374").unwrap(),
+            NonFungibleId::try_from(hex::decode("5c0c0474657374").unwrap().as_slice()).unwrap(),
             NonFungibleId::String(String::from("test"))
         );
     }
