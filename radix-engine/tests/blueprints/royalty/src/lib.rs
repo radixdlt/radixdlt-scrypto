@@ -32,7 +32,7 @@ blueprint! {
         pub fn enable_royalty_for_this_package() {
             let package_address = Runtime::package_address();
 
-            borrow_package!(package_address).set_royalty_config(HashMap::from([(
+            borrow_package!(package_address).set_royalty_config(BTreeMap::from([(
                 "RoyaltyTest".to_owned(),
                 RoyaltyConfigBuilder::new()
                     .add_rule("paid_method", 2)

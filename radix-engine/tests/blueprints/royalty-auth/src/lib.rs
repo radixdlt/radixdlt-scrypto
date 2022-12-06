@@ -21,7 +21,7 @@ blueprint! {
 
         pub fn enable_royalty_for_package(address: PackageAddress, proof: Proof) {
             proof.authorize(|| {
-                borrow_package!(address).set_royalty_config(HashMap::from([(
+                borrow_package!(address).set_royalty_config(BTreeMap::from([(
                     "RoyaltyTest".to_owned(),
                     RoyaltyConfigBuilder::new()
                         .add_rule("paid_method", 2)
@@ -48,7 +48,7 @@ blueprint! {
 
         pub fn disable_package_royalty(address: PackageAddress, proof: Proof) {
             proof.authorize(|| {
-                borrow_package!(address).set_royalty_config(HashMap::from([]));
+                borrow_package!(address).set_royalty_config(BTreeMap::from([]));
             })
         }
 

@@ -650,7 +650,15 @@ impl TransactionProcessor {
                         mint_params: mint_params.clone(),
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .map_err(InvokeError::Downstream),
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|result| {
+                        // Auto move into worktop
+                        for (bucket_id, _) in &result.bucket_ids {
+                            Worktop::sys_put(Bucket(*bucket_id), api)
+                                .map_err(InvokeError::downstream)?;
+                        }
+                        Ok(result)
+                    }),
                 Instruction::Basic(BasicInstruction::CreateResourceWithOwner {
                     resource_type,
                     metadata,
@@ -664,7 +672,15 @@ impl TransactionProcessor {
                         mint_params: mint_params.clone(),
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .map_err(InvokeError::Downstream),
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|result| {
+                        // Auto move into worktop
+                        for (bucket_id, _) in &result.bucket_ids {
+                            Worktop::sys_put(Bucket(*bucket_id), api)
+                                .map_err(InvokeError::downstream)?;
+                        }
+                        Ok(result)
+                    }),
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     bucket_id_mapping
                         .get(bucket_id)
@@ -691,7 +707,15 @@ impl TransactionProcessor {
                         },
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .map_err(InvokeError::Downstream),
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|result| {
+                        // Auto move into worktop
+                        for (bucket_id, _) in &result.bucket_ids {
+                            Worktop::sys_put(Bucket(*bucket_id), api)
+                                .map_err(InvokeError::downstream)?;
+                        }
+                        Ok(result)
+                    }),
                 Instruction::Basic(BasicInstruction::SetMetadata {
                     entity_address,
                     key,
@@ -732,6 +756,14 @@ impl TransactionProcessor {
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream)
+                    .and_then(|result| {
+                        // Auto move into worktop
+                        for (bucket_id, _) in &result.bucket_ids {
+                            Worktop::sys_put(Bucket(*bucket_id), api)
+                                .map_err(InvokeError::downstream)?;
+                        }
+                        Ok(result)
+                    })
                 }
                 Instruction::Basic(BasicInstruction::ClaimComponentRoyalty {
                     component_address,
@@ -742,7 +774,15 @@ impl TransactionProcessor {
                         )),
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .map_err(InvokeError::Downstream),
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|result| {
+                        // Auto move into worktop
+                        for (bucket_id, _) in &result.bucket_ids {
+                            Worktop::sys_put(Bucket(*bucket_id), api)
+                                .map_err(InvokeError::downstream)?;
+                        }
+                        Ok(result)
+                    }),
                 Instruction::Basic(BasicInstruction::CallNativeFunction {
                     function_ident,
                     args,
