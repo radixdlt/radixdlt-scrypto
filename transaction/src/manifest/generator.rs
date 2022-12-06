@@ -158,7 +158,7 @@ pub fn generate_instruction(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Instruction, GeneratorError> {
+) -> Result<BasicInstruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
             resource_address,
@@ -169,7 +169,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeFromWorktop {
+            BasicInstruction::TakeFromWorktop {
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
@@ -183,7 +183,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeFromWorktopByAmount {
+            BasicInstruction::TakeFromWorktopByAmount {
                 amount: generate_decimal(amount)?,
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
@@ -198,7 +198,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeFromWorktopByIds {
+            BasicInstruction::TakeFromWorktopByIds {
                 ids: generate_non_fungible_ids(ids)?,
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
@@ -208,24 +208,24 @@ pub fn generate_instruction(
             id_validator
                 .drop_bucket(bucket_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::ReturnToWorktop { bucket_id }
+            BasicInstruction::ReturnToWorktop { bucket_id }
         }
         ast::Instruction::AssertWorktopContains { resource_address } => {
-            Instruction::AssertWorktopContains {
+            BasicInstruction::AssertWorktopContains {
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_address,
-        } => Instruction::AssertWorktopContainsByAmount {
+        } => BasicInstruction::AssertWorktopContainsByAmount {
             amount: generate_decimal(amount)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
         ast::Instruction::AssertWorktopContainsByIds {
             ids,
             resource_address,
-        } => Instruction::AssertWorktopContainsByIds {
+        } => BasicInstruction::AssertWorktopContainsByIds {
             ids: generate_non_fungible_ids(ids)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
@@ -235,16 +235,16 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::PopFromAuthZone
+            BasicInstruction::PopFromAuthZone
         }
         ast::Instruction::PushToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::PushToAuthZone { proof_id }
+            BasicInstruction::PushToAuthZone { proof_id }
         }
-        ast::Instruction::ClearAuthZone => Instruction::ClearAuthZone,
+        ast::Instruction::ClearAuthZone => BasicInstruction::ClearAuthZone,
 
         ast::Instruction::CreateProofFromAuthZone {
             resource_address,
@@ -256,7 +256,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZone { resource_address }
+            BasicInstruction::CreateProofFromAuthZone { resource_address }
         }
         ast::Instruction::CreateProofFromAuthZoneByAmount {
             amount,
@@ -270,7 +270,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZoneByAmount {
+            BasicInstruction::CreateProofFromAuthZoneByAmount {
                 amount,
                 resource_address,
             }
@@ -287,7 +287,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZoneByIds {
+            BasicInstruction::CreateProofFromAuthZoneByIds {
                 ids,
                 resource_address,
             }
@@ -299,7 +299,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromBucket { bucket_id }
+            BasicInstruction::CreateProofFromBucket { bucket_id }
         }
         ast::Instruction::CloneProof { proof, new_proof } => {
             let proof_id = generate_proof(proof, resolver)?;
@@ -308,20 +308,20 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id2)?;
 
-            Instruction::CloneProof { proof_id }
+            BasicInstruction::CloneProof { proof_id }
         }
         ast::Instruction::DropProof { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::DropProof { proof_id }
+            BasicInstruction::DropProof { proof_id }
         }
         ast::Instruction::DropAllProofs => {
             id_validator
                 .drop_all_proofs()
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::DropAllProofs
+            BasicInstruction::DropAllProofs
         }
         ast::Instruction::CallFunction {
             package_address,
@@ -342,7 +342,7 @@ pub fn generate_instruction(
                 .move_resources(&args_indexed)
                 .map_err(GeneratorError::IdValidationError)?;
 
-            Instruction::CallFunction {
+            BasicInstruction::CallFunction {
                 package_address,
                 blueprint_name,
                 function_name,
@@ -366,7 +366,7 @@ pub fn generate_instruction(
                 .move_resources(&args_indexed)
                 .map_err(GeneratorError::IdValidationError)?;
 
-            Instruction::CallMethod {
+            BasicInstruction::CallMethod {
                 component_address,
                 method_name,
                 args: args_encoded,
@@ -378,7 +378,7 @@ pub fn generate_instruction(
             royalty_config,
             metadata,
             access_rules,
-        } => Instruction::PublishPackage {
+        } => BasicInstruction::PublishPackage {
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
@@ -389,7 +389,7 @@ pub fn generate_instruction(
             code,
             abi,
             owner_badge,
-        } => Instruction::PublishPackageWithOwner {
+        } => BasicInstruction::PublishPackageWithOwner {
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
             owner_badge: generate_non_fungible_address(owner_badge)?,
@@ -399,7 +399,7 @@ pub fn generate_instruction(
             metadata,
             access_rules,
             mint_params,
-        } => Instruction::CreateResource {
+        } => BasicInstruction::CreateResource {
             resource_type: generate_typed_value(resource_type, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
@@ -410,7 +410,7 @@ pub fn generate_instruction(
             metadata,
             owner_badge,
             mint_params,
-        } => Instruction::CreateResourceWithOwner {
+        } => BasicInstruction::CreateResourceWithOwner {
             resource_type: generate_typed_value(resource_type, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             owner_badge: generate_non_fungible_address(owner_badge)?,
@@ -421,12 +421,12 @@ pub fn generate_instruction(
             id_validator
                 .drop_bucket(bucket_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::BurnResource { bucket_id }
+            BasicInstruction::BurnResource { bucket_id }
         }
         ast::Instruction::MintFungible {
             resource_address,
             amount,
-        } => Instruction::MintFungible {
+        } => BasicInstruction::MintFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             amount: generate_decimal(amount)?,
         },
@@ -434,7 +434,7 @@ pub fn generate_instruction(
             entity_address,
             key,
             value,
-        } => Instruction::SetMetadata {
+        } => BasicInstruction::SetMetadata {
             entity_address: generate_entity_address(entity_address, bech32_decoder)?,
             key: generate_string(key)?,
             value: generate_string(value)?,
@@ -442,24 +442,24 @@ pub fn generate_instruction(
         ast::Instruction::SetPackageRoyaltyConfig {
             package_address,
             royalty_config,
-        } => Instruction::SetPackageRoyaltyConfig {
+        } => BasicInstruction::SetPackageRoyaltyConfig {
             package_address: generate_package_address(package_address, bech32_decoder)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::SetComponentRoyaltyConfig {
             component_address,
             royalty_config,
-        } => Instruction::SetComponentRoyaltyConfig {
+        } => BasicInstruction::SetComponentRoyaltyConfig {
             component_address: generate_component_address(component_address, bech32_decoder)?,
             royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
         },
         ast::Instruction::ClaimPackageRoyalty { package_address } => {
-            Instruction::ClaimPackageRoyalty {
+            BasicInstruction::ClaimPackageRoyalty {
                 package_address: generate_package_address(package_address, bech32_decoder)?,
             }
         }
         ast::Instruction::ClaimComponentRoyalty { component_address } => {
-            Instruction::ClaimComponentRoyalty {
+            BasicInstruction::ClaimComponentRoyalty {
                 component_address: generate_component_address(component_address, bech32_decoder)?,
             }
         }
@@ -1329,27 +1329,27 @@ mod tests {
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromWorktopByAmount {
+            BasicInstruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             }
         );
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromWorktop {
+            BasicInstruction::TakeFromWorktop {
                 resource_address: resource
             }
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
-            Instruction::AssertWorktopContainsByAmount {
+            BasicInstruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             }
         );
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
-            Instruction::CallFunction {
+            BasicInstruction::CallFunction {
                 package_address: Bech32Decoder::for_simulator()
                     .validate_and_decode_package_address(
                         "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
@@ -1362,7 +1362,7 @@ mod tests {
         );
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
-            Instruction::CallMethod {
+            BasicInstruction::CallMethod {
                 component_address: component,
                 method_name: "refill".to_string(),
                 args: args!()
@@ -1370,7 +1370,7 @@ mod tests {
         );
         generate_instruction_ok!(
             r#"MINT_FUNGIBLE  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Decimal("100");"#,
-            Instruction::MintFungible {
+            BasicInstruction::MintFungible {
                 resource_address: resource,
                 amount: Decimal::from_str("100").unwrap()
             }

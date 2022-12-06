@@ -6,7 +6,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::NonFungibleAddress;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::BasicInstruction;
 
 use crate::resim::*;
 
@@ -78,7 +78,7 @@ impl NewOwnerBadge {
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .add_instruction(Instruction::CallNativeFunction {
+            .add_instruction(BasicInstruction::CallNativeFunction {
                 function_ident: NativeFunctionIdent {
                     blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                     function_name: ResourceManagerFunction::Create.to_string(),

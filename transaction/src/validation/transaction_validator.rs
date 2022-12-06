@@ -85,7 +85,12 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
         let header = &intent.header;
 
         Ok(Executable::new(
-            &intent.manifest.instructions,
+            intent
+                .manifest
+                .instructions
+                .iter()
+                .map(|e| ExecutableInstruction::Basic(e))
+                .collect(),
             &intent.manifest.blobs,
             ExecutionContext {
                 auth_zone_params: AuthZoneParams {
@@ -147,7 +152,7 @@ impl NotarizedTransactionValidator {
         };
 
         Ok(Executable::new(
-            &manifest.instructions,
+            manifest.instructions.iter().map(|e| e.into()).collect(),
             &manifest.blobs,
             ExecutionContext {
                 transaction_hash,
@@ -196,95 +201,96 @@ impl NotarizedTransactionValidator {
         let mut id_validator = IdValidator::new();
         for inst in &manifest.instructions {
             match inst {
-                Instruction::TakeFromWorktop { .. } => {
+                BasicInstruction::TakeFromWorktop { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::TakeFromWorktopByAmount { .. } => {
+                BasicInstruction::TakeFromWorktopByAmount { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::TakeFromWorktopByIds { .. } => {
+                BasicInstruction::TakeFromWorktopByIds { .. } => {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::ReturnToWorktop { bucket_id } => {
+                BasicInstruction::ReturnToWorktop { bucket_id } => {
                     id_validator
                         .drop_bucket(*bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::AssertWorktopContains { .. } => {}
-                Instruction::AssertWorktopContainsByAmount { .. } => {}
-                Instruction::AssertWorktopContainsByIds { .. } => {}
-                Instruction::PopFromAuthZone => {
+                BasicInstruction::AssertWorktopContains { .. } => {}
+                BasicInstruction::AssertWorktopContainsByAmount { .. } => {}
+                BasicInstruction::AssertWorktopContainsByIds { .. } => {}
+                BasicInstruction::PopFromAuthZone => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::PushToAuthZone { proof_id } => {
+                BasicInstruction::PushToAuthZone { proof_id } => {
                     id_validator
                         .drop_proof(*proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::ClearAuthZone => {}
-                Instruction::CreateProofFromAuthZone { .. } => {
+                BasicInstruction::ClearAuthZone => {}
+                BasicInstruction::CreateProofFromAuthZone { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneByAmount { .. } => {
+                BasicInstruction::CreateProofFromAuthZoneByAmount { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromAuthZoneByIds { .. } => {
+                BasicInstruction::CreateProofFromAuthZoneByIds { .. } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CreateProofFromBucket { bucket_id } => {
+                BasicInstruction::CreateProofFromBucket { bucket_id } => {
                     id_validator
                         .new_proof(ProofKind::BucketProof(*bucket_id))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CloneProof { proof_id } => {
+                BasicInstruction::CloneProof { proof_id } => {
                     id_validator
                         .clone_proof(*proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::DropProof { proof_id } => {
+                BasicInstruction::DropProof { proof_id } => {
                     id_validator
                         .drop_proof(*proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::DropAllProofs => {
+                BasicInstruction::DropAllProofs => {
                     id_validator
                         .drop_all_proofs()
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
+                BasicInstruction::CallFunction { args, .. }
+                | BasicInstruction::CallMethod { args, .. } => {
                     // TODO: decode into Value
                     Self::validate_call_data(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
-                Instruction::PublishPackage { .. } => {}
-                Instruction::PublishPackageWithOwner { .. } => {}
-                Instruction::CreateResource { .. } => {}
-                Instruction::CreateResourceWithOwner { .. } => {}
-                Instruction::BurnResource { bucket_id } => {
+                BasicInstruction::PublishPackage { .. } => {}
+                BasicInstruction::PublishPackageWithOwner { .. } => {}
+                BasicInstruction::CreateResource { .. } => {}
+                BasicInstruction::CreateResourceWithOwner { .. } => {}
+                BasicInstruction::BurnResource { bucket_id } => {
                     id_validator
                         .drop_bucket(*bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                Instruction::MintFungible { .. } => {}
-                Instruction::SetMetadata { .. } => {}
-                Instruction::SetPackageRoyaltyConfig { .. } => {}
-                Instruction::SetComponentRoyaltyConfig { .. } => {}
-                Instruction::ClaimPackageRoyalty { .. } => {}
-                Instruction::ClaimComponentRoyalty { .. } => {}
+                BasicInstruction::MintFungible { .. } => {}
+                BasicInstruction::SetMetadata { .. } => {}
+                BasicInstruction::SetPackageRoyaltyConfig { .. } => {}
+                BasicInstruction::SetComponentRoyaltyConfig { .. } => {}
+                BasicInstruction::ClaimPackageRoyalty { .. } => {}
+                BasicInstruction::ClaimComponentRoyalty { .. } => {}
             }
         }
 

@@ -12,7 +12,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
-use transaction::model::{Instruction, SystemTransaction, TransactionManifest};
+use transaction::model::{BasicInstruction, SystemTransaction, TransactionManifest};
 use transaction::validation::{IdAllocator, IdSpace};
 
 const XRD_SYMBOL: &str = "XRD";
@@ -39,7 +39,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_faucet_package = {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
-        let inst = Instruction::PublishPackage {
+        let inst = BasicInstruction::PublishPackage {
             code: Blob(hash(&faucet_code)),
             abi: Blob(hash(&faucet_abi)),
             royalty_config: BTreeMap::new(),
@@ -55,7 +55,7 @@ pub fn create_genesis() -> SystemTransaction {
     let create_account_package = {
         let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        let inst = Instruction::PublishPackage {
+        let inst = BasicInstruction::PublishPackage {
             code: Blob(hash(&account_code)),
             abi: Blob(hash(&account_abi)),
             royalty_config: BTreeMap::new(),
@@ -76,7 +76,7 @@ pub fn create_genesis() -> SystemTransaction {
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        Instruction::CreateResource {
+        BasicInstruction::CreateResource {
             resource_type: ResourceType::NonFungible {
                 id_type: NonFungibleIdType::default(),
             },
@@ -95,7 +95,7 @@ pub fn create_genesis() -> SystemTransaction {
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        Instruction::CreateResource {
+        BasicInstruction::CreateResource {
             resource_type: ResourceType::NonFungible {
                 id_type: NonFungibleIdType::default(),
             },
@@ -119,7 +119,7 @@ pub fn create_genesis() -> SystemTransaction {
             amount: XRD_MAX_SUPPLY.into(),
         });
 
-        Instruction::CreateResource {
+        BasicInstruction::CreateResource {
             resource_type: ResourceType::Fungible { divisibility: 18 },
             metadata,
             access_rules,
@@ -127,13 +127,13 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
-    let take_xrd = Instruction::TakeFromWorktop {
+    let take_xrd = BasicInstruction::TakeFromWorktop {
         resource_address: RADIX_TOKEN,
     };
 
     let create_xrd_faucet = {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
-        Instruction::CallFunction {
+        BasicInstruction::CallFunction {
             package_address: FAUCET_PACKAGE,
             blueprint_name: FAUCET_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
@@ -142,7 +142,7 @@ pub fn create_genesis() -> SystemTransaction {
     };
 
     let create_epoch_manager = {
-        Instruction::CallNativeFunction {
+        BasicInstruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
                 function_name: EpochManagerFunction::Create.to_string(),
@@ -152,7 +152,7 @@ pub fn create_genesis() -> SystemTransaction {
     };
 
     let create_clock = {
-        Instruction::CallNativeFunction {
+        BasicInstruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: CLOCK_BLUEPRINT.to_string(),
                 function_name: ClockFunction::Create.to_string(),
@@ -168,7 +168,7 @@ pub fn create_genesis() -> SystemTransaction {
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        Instruction::CreateResource {
+        BasicInstruction::CreateResource {
             resource_type: ResourceType::NonFungible {
                 id_type: NonFungibleIdType::default(),
             },

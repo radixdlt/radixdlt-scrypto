@@ -15,7 +15,7 @@ use crate::types::*;
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionContents {
-    pub instructions: Vec<Instruction>,
+    pub instructions: Vec<BasicInstruction>,
 }
 
 #[derive(Debug, Clone)]

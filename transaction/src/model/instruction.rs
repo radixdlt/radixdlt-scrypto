@@ -1,4 +1,6 @@
-use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
+use radix_engine_interface::api::types::{
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId,
+};
 use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -9,7 +11,7 @@ use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum Instruction {
+pub enum BasicInstruction {
     /// Takes resource from worktop.
     TakeFromWorktop {
         resource_address: ResourceAddress,
@@ -178,4 +180,58 @@ pub enum Instruction {
         component_address: ComponentAddress,
     },
     // TODO: add_access_rules & set_access_rules
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum SystemInstruction {
+    /// Calls a native function.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallNativeFunction {
+        function_ident: NativeFunctionIdent,
+        args: Vec<u8>,
+    },
+
+    /// Calls a native method.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallNativeMethod {
+        method_ident: NativeMethodIdent,
+        args: Vec<u8>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum Instruction {
+    Basic(BasicInstruction),
+    System(SystemInstruction),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ExecutableInstruction<'a> {
+    Basic(&'a BasicInstruction),
+    System(&'a SystemInstruction),
+}
+
+impl<'a> From<&'a BasicInstruction> for ExecutableInstruction<'a> {
+    fn from(i: &'a BasicInstruction) -> Self {
+        ExecutableInstruction::Basic(i)
+    }
+}
+
+impl<'a> From<&'a SystemInstruction> for ExecutableInstruction<'a> {
+    fn from(i: &'a SystemInstruction) -> Self {
+        ExecutableInstruction::System(i)
+    }
+}
+
+impl<'a> From<&'a Instruction> for ExecutableInstruction<'a> {
+    fn from(i: &'a Instruction) -> Self {
+        match i {
+            Instruction::Basic(i) => ExecutableInstruction::Basic(i),
+            Instruction::System(i) => ExecutableInstruction::System(i),
+        }
+    }
 }

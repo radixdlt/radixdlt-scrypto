@@ -36,7 +36,7 @@ pub fn compile(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Instruction;
+    use crate::model::BasicInstruction;
     use radix_engine_interface::core::Expression;
     use radix_engine_interface::data::*;
     use radix_engine_interface::math::Decimal;
@@ -68,7 +68,7 @@ mod tests {
                 .unwrap()
                 .instructions,
             vec![
-                Instruction::CallMethod {
+                BasicInstruction::CallMethod {
                     component_address: component1,
                     method_name: "withdraw_by_amount".to_string(),
                     args: args!(
@@ -80,7 +80,7 @@ mod tests {
                             .unwrap()
                     )
                 },
-                Instruction::TakeFromWorktopByAmount {
+                BasicInstruction::TakeFromWorktopByAmount {
                     amount: Decimal::from(2),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
@@ -88,12 +88,12 @@ mod tests {
                         )
                         .unwrap(),
                 },
-                Instruction::CallMethod {
+                BasicInstruction::CallMethod {
                     component_address: component2,
                     method_name: "buy_gumball".to_string(),
                     args: args!(Bucket(512))
                 },
-                Instruction::AssertWorktopContainsByAmount {
+                BasicInstruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
@@ -101,25 +101,25 @@ mod tests {
                         )
                         .unwrap(),
                 },
-                Instruction::AssertWorktopContains {
+                BasicInstruction::AssertWorktopContains {
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
                             "resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6"
                         )
                         .unwrap(),
                 },
-                Instruction::TakeFromWorktop {
+                BasicInstruction::TakeFromWorktop {
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
                             "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                         )
                         .unwrap(),
                 },
-                Instruction::CreateProofFromBucket { bucket_id: 513 },
-                Instruction::CloneProof { proof_id: 514 },
-                Instruction::DropProof { proof_id: 514 },
-                Instruction::DropProof { proof_id: 515 },
-                Instruction::CallMethod {
+                BasicInstruction::CreateProofFromBucket { bucket_id: 513 },
+                BasicInstruction::CloneProof { proof_id: 514 },
+                BasicInstruction::DropProof { proof_id: 514 },
+                BasicInstruction::DropProof { proof_id: 515 },
+                BasicInstruction::CallMethod {
                     component_address: component1,
                     method_name: "create_proof_by_amount".to_string(),
                     args: args!(
@@ -131,10 +131,10 @@ mod tests {
                             .unwrap()
                     )
                 },
-                Instruction::PopFromAuthZone,
-                Instruction::DropProof { proof_id: 516 },
-                Instruction::ReturnToWorktop { bucket_id: 513 },
-                Instruction::TakeFromWorktopByIds {
+                BasicInstruction::PopFromAuthZone,
+                BasicInstruction::DropProof { proof_id: 516 },
+                BasicInstruction::ReturnToWorktop { bucket_id: 513 },
+                BasicInstruction::TakeFromWorktopByIds {
                     ids: BTreeSet::from([NonFungibleId::U32(1),]),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
@@ -142,8 +142,8 @@ mod tests {
                         )
                         .unwrap()
                 },
-                Instruction::DropAllProofs,
-                Instruction::CallMethod {
+                BasicInstruction::DropAllProofs,
+                BasicInstruction::CallMethod {
                     component_address: component1,
                     method_name: "deposit_batch".to_string(),
                     args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
