@@ -241,10 +241,7 @@ fn generate_dispatcher(
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let actor = ::scrypto::runtime::Runtime::actor();
-                    });
-                    stmts.push(parse_quote! {
-                        let (component_id, ..) = actor.as_component();
+                        let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::buffer::scrypto_decode_from_buffer(id_ptr).unwrap();
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::runtime::DataPointer::new(
@@ -630,8 +627,7 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
-                    let actor = ::scrypto::runtime::Runtime::actor();
-                    let (component_id, ..) = actor.as_component();
+                    let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::buffer::scrypto_decode_from_buffer(id_ptr).unwrap();
                     let mut component_data = ::scrypto::runtime::DataPointer::new(
                         radix_engine_interface::api::types::RENodeId::Component(component_id),
                         radix_engine_interface::api::types::SubstateOffset::Component(radix_engine_interface::api::types::ComponentOffset::State),
