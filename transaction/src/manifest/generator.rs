@@ -989,7 +989,7 @@ fn generate_non_fungible_ids(
     }
 }
 
-fn generate_value(
+pub fn generate_value(
     value: &ast::Value,
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
