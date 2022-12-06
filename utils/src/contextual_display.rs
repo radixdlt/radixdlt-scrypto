@@ -1,5 +1,5 @@
 use sbor::rust::fmt;
-use sbor::rust::string::String;
+use sbor::rust::string::{String, ToString};
 
 /// This trait is used where context is required to correctly display a value.
 ///
