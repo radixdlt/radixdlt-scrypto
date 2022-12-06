@@ -66,6 +66,7 @@ pub enum GeneratorError {
     InvalidEcdsaSecp256k1Signature(String),
     InvalidEddsaEd25519PublicKey(String),
     InvalidEddsaEd25519Signature(String),
+    InvalidBytesHex(String),
     SborEncodeError(EncodeError),
     BlobNotFound(String),
     NameResolverError(NameResolverError),
@@ -928,12 +929,12 @@ fn generate_vault(value: &ast::Value) -> Result<Vault, GeneratorError> {
 }
 
 fn generate_non_fungible_id_internal(value: &ast::Value) -> Result<NonFungibleId, GeneratorError> {
-    match value {
-        ast::Value::U32(u) => Ok(NonFungibleId::U32(*u)),
-        ast::Value::U64(u) => Ok(NonFungibleId::U64(*u)),
-        ast::Value::U128(u) => Ok(NonFungibleId::UUID(*u)),
-        ast::Value::String(s) => Ok(NonFungibleId::String(s.clone())),
-        ast::Value::Bytes(v) => Ok(NonFungibleId::Bytes(generate_bytes(v)?)),
+    let non_fungible_id = match value {
+        ast::Value::U32(u) => NonFungibleId::U32(*u),
+        ast::Value::U64(u) => NonFungibleId::U64(*u),
+        ast::Value::U128(u) => NonFungibleId::UUID(*u),
+        ast::Value::String(s) => NonFungibleId::String(s.clone()),
+        ast::Value::Bytes(v) => NonFungibleId::Bytes(generate_byte_vec_from_hex(v)?),
         v => invalid_type!(
             v,
             ast::Type::U32,
@@ -941,8 +942,12 @@ fn generate_non_fungible_id_internal(value: &ast::Value) -> Result<NonFungibleId
             ast::Type::U128,
             ast::Type::String,
             ast::Type::Bytes
-        ),
-    }
+        )?,
+    };
+    non_fungible_id.validate_contents().map_err(|_| {
+        GeneratorError::InvalidNonFungibleId(non_fungible_id.to_combined_simple_string())
+    })?;
+    Ok(non_fungible_id)
 }
 
 fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleId, GeneratorError> {
@@ -1015,16 +1020,14 @@ fn generate_non_fungible_ids(
     }
 }
 
-fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
-    match value {
-        ast::Value::String(s) => Ok(hex::decode(s)
-            .map_err(|_| GeneratorError::InvalidValue {
-                expected_type: vec![ast::Type::String],
-                actual: value.clone(),
-            })?
-            .to_vec()),
-        v => invalid_type!(v, ast::Type::String),
-    }
+fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
+    let bytes = match value {
+        ast::Value::String(s) => {
+            hex::decode(s).map_err(|_| GeneratorError::InvalidBytesHex(s.to_owned()))?
+        }
+        v => invalid_type!(v, ast::Type::String)?,
+    };
+    Ok(bytes)
 }
 
 fn generate_value(
@@ -1116,6 +1119,13 @@ fn generate_value(
                 blobs,
             )?],
         }),
+        ast::Value::Bytes(value) => {
+            let bytes = generate_byte_vec_from_hex(value)?;
+            Ok(SborValue::Array {
+                element_type_id: SborTypeId::U8,
+                elements: bytes.iter().map(|i| SborValue::U8 { value: *i }).collect(),
+            })
+        }
         // ==============
         // Custom Types
         // ==============
@@ -1206,10 +1216,6 @@ fn generate_value(
                 value: ScryptoCustomValue::NonFungibleId(v),
             })
         }
-        ast::Value::Bytes(_) => generate_bytes(value).map(|v| SborValue::Array {
-            element_type_id: SborTypeId::U8,
-            elements: v.iter().map(|i| SborValue::U8 { value: *i }).collect(),
-        }),
     }
 }
 

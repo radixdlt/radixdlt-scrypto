@@ -280,7 +280,6 @@ impl Parser {
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
-            TokenKind::Bytes => self.parse_bytes(),
 
             // ==============
             // Aliases
@@ -288,7 +287,8 @@ impl Parser {
             TokenKind::Some |
             TokenKind::None |
             TokenKind::Ok |
-            TokenKind::Err => self.parse_alias(),
+            TokenKind::Err |
+            TokenKind::Bytes => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -353,12 +353,6 @@ impl Parser {
         )?))
     }
 
-    pub fn parse_bytes(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Bytes);
-        let value = self.parse_values_one()?.into();
-        Ok(Value::Bytes(value))
-    }
-
     pub fn parse_alias(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
@@ -366,6 +360,7 @@ impl Parser {
             TokenKind::None => Ok(Value::None),
             TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
             TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
+            TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }

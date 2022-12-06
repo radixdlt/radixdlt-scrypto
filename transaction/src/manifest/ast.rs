@@ -244,6 +244,8 @@ pub enum Value {
     Ok(Box<Value>),
     Err(Box<Value>),
 
+    Bytes(Box<Value>),
+
     // ==============
     // Custom Types
     // ==============
@@ -275,7 +277,6 @@ pub enum Value {
     Decimal(Box<Value>),
     PreciseDecimal(Box<Value>),
     NonFungibleId(Box<Value>),
-    Bytes(Box<Value>),
 }
 
 impl Value {
@@ -308,6 +309,7 @@ impl Value {
             Value::None => Type::Enum,
             Value::Ok(_) => Type::Enum,
             Value::Err(_) => Type::Enum,
+            Value::Bytes(_) => Type::Bytes,
 
             // ==============
             // Custom Types
@@ -340,7 +342,6 @@ impl Value {
             Value::Decimal(_) => Type::Decimal,
             Value::PreciseDecimal(_) => Type::PreciseDecimal,
             Value::NonFungibleId(_) => Type::NonFungibleId,
-            Value::Bytes(_) => Type::Bytes,
         }
     }
 }

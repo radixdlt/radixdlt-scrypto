@@ -114,7 +114,7 @@ impl NonFungibleAddress {
     }
 
     /// Converts canonical representation to NonFungibleAddress.
-    /// 
+    ///
     /// This is composed of `resource_address:id_simple_representation`
     pub fn try_from_canonical_string(
         bech32_decoder: &Bech32Decoder,
@@ -133,10 +133,19 @@ impl NonFungibleAddress {
         Ok(NonFungibleAddress::new(resource_address, non_fungible_id))
     }
 
+    /// Returns canonical representation of this NonFungibleAddress.
+    pub fn to_canonical_combined_string(&self, bech32_encoder: &Bech32Encoder) -> String {
+        format!(
+            "{}:{}",
+            bech32_encoder.encode_resource_address_to_string(&self.resource_address),
+            self.non_fungible_id.to_combined_simple_string()
+        )
+    }
+
     /// Converts combined canonical representation to NonFungibleAddress.
-    /// 
+    ///
     /// This is composed of `resource_address:IdType#id_simple_representation`
-    /// 
+    ///
     /// Prefer the canonical string where the id type can be looked up.
     pub fn try_from_canonical_combined_string(
         bech32_decoder: &Bech32Decoder,
@@ -165,17 +174,9 @@ scrypto_type!(
 // text
 //======
 
-impl fmt::Display for NonFungibleAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        // Note that if the non-fungible ID is empty, the non-fungible address won't be distinguishable from resource address.
-        // TODO: figure out what's best for the users
-        write!(f, "{}", hex::encode(&self.to_vec()))
-    }
-}
-
 impl fmt::Debug for NonFungibleAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{}", self.display(NO_NETWORK))
     }
 }
 
@@ -200,30 +201,19 @@ impl FromPublicKey for NonFungibleAddress {
 }
 
 impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NonFungibleAddress {
-    type Error = AddressError;
+    type Error = fmt::Error;
 
     fn contextual_format<F: fmt::Write>(
         &self,
         f: &mut F,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        if let Some(encoder) = context.encoder {
-            write!(
-                f,
-                "\"{}\", {}",
-                self.resource_address.display(encoder),
-                self.non_fungible_id.to_manifest_string()
-            )
-            .map_err(|err| AddressError::FormatError(err))
-        } else {
-            write!(
-                f,
-                "\"{}\", {}",
-                self.resource_address.to_hex(),
-                self.non_fungible_id.to_manifest_string()
-            )
-            .map_err(|err| AddressError::FormatError(err))
-        }
+        write!(
+            f,
+            "{}:{}",
+            self.resource_address.display(*context),
+            self.non_fungible_id()
+        )
     }
 }
 

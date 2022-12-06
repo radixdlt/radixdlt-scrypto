@@ -55,6 +55,7 @@ pub struct NewOwnerBadge {
 
 impl NewOwnerBadge {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+        let network_definition = NetworkDefinition::simulator();
         let default_account = get_default_account()?;
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {
@@ -76,7 +77,7 @@ impl NewOwnerBadge {
         let mut resource_auth = HashMap::new();
         resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new(&network_definition)
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .add_instruction(Instruction::CallNativeFunction {
                 function_ident: NativeFunctionIdent {
@@ -125,11 +126,12 @@ impl NewOwnerBadge {
             .entity_changes
             .new_resource_addresses[0];
 
+        let bech32_encoder = Bech32Encoder::new(&network_definition);
         writeln!(
             out,
             "Owner badge: {}",
             NonFungibleAddress::new(resource_address, NonFungibleId::U32(1))
-                .to_string()
+                .to_canonical_string(&bech32_encoder)
                 .green()
         )
         .map_err(Error::IOError)?;

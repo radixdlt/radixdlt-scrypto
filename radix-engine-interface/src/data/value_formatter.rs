@@ -64,6 +64,18 @@ impl<'a> Into<ValueFormattingContext<'a>> for Option<&'a Bech32Encoder> {
     }
 }
 
+impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for ScryptoValue {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ValueFormattingContext<'a>,
+    ) -> Result<(), Self::Error> {
+        format_scrypto_value(f, self, context)
+    }
+}
+
 pub fn format_scrypto_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoValue,
@@ -115,13 +127,27 @@ pub fn format_scrypto_value<F: fmt::Write>(
         SborValue::Array {
             element_type_id,
             elements,
-        } => {
-            f.write_str("Array<")?;
-            format_type_id(f, element_type_id)?;
-            f.write_str(">(")?;
-            format_elements(f, elements, context)?;
-            f.write_str(")")?;
-        }
+        } => match element_type_id {
+            SborTypeId::U8 => {
+                let vec: Vec<u8> = elements
+                    .iter()
+                    .map(|e| match e {
+                        SborValue::U8 { value } => Ok(*value),
+                        _ => Err(fmt::Error),
+                    })
+                    .collect::<Result<_, _>>()?;
+                f.write_str("Bytes(\"")?;
+                f.write_str(&hex::encode(vec))?;
+                f.write_str("\")")?;
+            }
+            _ => {
+                f.write_str("Array<")?;
+                format_type_id(f, element_type_id)?;
+                f.write_str(">(")?;
+                format_elements(f, elements, context)?;
+                f.write_str(")")?;
+            }
+        },
         // custom types
         SborValue::Custom { value } => {
             format_custom_value(f, value, context)?;
@@ -212,6 +238,18 @@ pub fn format_elements<F: fmt::Write>(
     Ok(())
 }
 
+impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for ScryptoCustomValue {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &ValueFormattingContext<'a>,
+    ) -> Result<(), Self::Error> {
+        format_custom_value(f, self, context)
+    }
+}
+
 pub fn format_custom_value<F: fmt::Write>(
     f: &mut F,
     value: &ScryptoCustomValue,
@@ -279,10 +317,13 @@ pub fn format_custom_value<F: fmt::Write>(
             write!(f, "Blob(\"{}\")", value)?;
         }
         ScryptoCustomValue::NonFungibleAddress(value) => {
-            f.write_str("NonFungibleAddress(")?;
+            f.write_str("NonFungibleAddress(\"")?;
             value
-                .contextual_format(f, &context.bech32_encoder.into())
+                .resource_address()
+                .format(f, context.bech32_encoder)
                 .expect("Failed to format address");
+            f.write_str("\", ")?;
+            format_non_fungible_id_contents(f, value.non_fungible_id())?;
             write!(f, ")")?;
         }
         // Uninterpreted
@@ -308,8 +349,23 @@ pub fn format_custom_value<F: fmt::Write>(
             write!(f, "PreciseDecimal(\"{}\")", value)?;
         }
         ScryptoCustomValue::NonFungibleId(value) => {
-            write!(f, "NonFungibleId({})", value)?;
+            f.write_str("NonFungibleId(")?;
+            format_non_fungible_id_contents(f, value)?;
+            write!(f, ")")?;
         }
     }
     Ok(())
+}
+
+pub fn format_non_fungible_id_contents<F: fmt::Write>(
+    f: &mut F,
+    value: &NonFungibleId,
+) -> fmt::Result {
+    match value {
+        NonFungibleId::Bytes(b) => write!(f, "Bytes(\"{}\")", hex::encode(b)),
+        NonFungibleId::String(s) => write!(f, "\"{}\"", s),
+        NonFungibleId::U32(n) => write!(f, "{}u32", n),
+        NonFungibleId::U64(n) => write!(f, "{}u64", n),
+        NonFungibleId::UUID(u) => write!(f, "{}u128", u),
+    }
 }

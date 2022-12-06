@@ -14,7 +14,10 @@ CALL_METHOD
     Ok("test")
     Enum("Ok", "test")
     Err("test123")
-    Enum("Err", "test123");
+    Enum("Err", "test123")
+    Bytes("050aff")
+    Array<U8>(5u8, 10u8, 255u8)
+    ;
 
 CALL_METHOD 
     ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")

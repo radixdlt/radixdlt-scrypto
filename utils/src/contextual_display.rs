@@ -68,6 +68,10 @@ pub trait ContextualDisplay<Context> {
             context: context.into(),
         }
     }
+
+    fn to_string<'a, 'b, TContext: Into<Context>>(&'a self, context: TContext) -> String {
+        self.display(context).to_string()
+    }
 }
 
 pub struct ContextDisplayable<'a, TValue, TContext>

@@ -50,48 +50,6 @@ impl NonFungibleId {
         }
     }
 
-    /// Returns string representation of non-fungible ID value for transaction manifest.
-    pub fn to_manifest_string(&self) -> String {
-        match self {
-            NonFungibleId::Bytes(b) => format!("Bytes(\"{}\")", hex::encode(b)),
-            NonFungibleId::String(s) => format!("\"{}\"", s),
-            NonFungibleId::U32(n) => format!("{}u32", n),
-            NonFungibleId::U64(n) => format!("{}u64", n),
-            NonFungibleId::UUID(u) => format!("{}u128", u),
-        }
-    }
-
-    /// Converts transaction manifest representation string to non-fungible ID.
-    pub fn try_from_manifest_string(s: &str) -> Result<Self, ParseNonFungibleIdError> {
-        // TODO: improve this parser for properly handing edge cases
-        let s = s.trim();
-        let non_fungible_id = if s.len() > 9 && s.starts_with("Bytes(\"") && s.ends_with("\")") {
-            NonFungibleId::Bytes(
-                hex::decode(&s[7..s.len() - 2])?,
-            )
-        } else if s.len() > 4 && s.ends_with("u128") {
-            NonFungibleId::UUID(
-                s[0..s.len() - 4].parse::<u128>()?,
-            )
-        } else if s.len() > 3 && s.ends_with("u64") {
-            NonFungibleId::U64(
-                s[0..s.len() - 3].parse::<u64>()?,
-            )
-        } else if s.len() > 3 && s.ends_with("u32") {
-            NonFungibleId::U32(
-                s[0..s.len() - 3].parse::<u32>()?,
-            )
-        } else if s.len() > 2 && s.starts_with("\"") && s.ends_with("\"") {
-            NonFungibleId::String(s[1..s.len() - 1].to_string())
-        } else {
-            return Err(ParseNonFungibleIdError::CannotParseType);
-        };
-
-        non_fungible_id.validate_contents()?;
-
-        Ok(non_fungible_id)
-    }
-
     /// Returns simple string representation of non-fungible ID value.
     pub fn to_simple_string(&self) -> String {
         match self {
@@ -122,10 +80,10 @@ impl NonFungibleId {
     }
 
     /// Returns the simple string representation of non-fungible ID value.
-    /// 
+    ///
     /// You should generally prefer the simple string representation without the type information,
     /// unless the type information cannot be located.
-    /// 
+    ///
     /// This representation looks like:
     /// * `String#abc`
     /// * `Bytes#23ae33`
@@ -137,19 +95,17 @@ impl NonFungibleId {
     }
 
     /// Converts combined simple string representation to non-fungible ID.
-    /// 
+    ///
     /// You should generally prefer the simple string representation without the type information,
     /// unless the type information cannot be located.
-    /// 
+    ///
     /// This accepts the following:
     /// * `String#abc`
     /// * `Bytes#23ae33`
     /// * `U32#122`
     /// * `U64#23`
     /// * `UUID#345` or `U128#567`
-    pub fn try_from_combined_simple_string(
-        s: &str,
-    ) -> Result<Self, ParseNonFungibleIdError> {
+    pub fn try_from_combined_simple_string(s: &str) -> Result<Self, ParseNonFungibleIdError> {
         let parts = s
             .splitn(2, '#')
             .filter(|&s| !s.is_empty())
@@ -267,21 +223,13 @@ impl TryFrom<&[u8]> for NonFungibleId {
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         let non_fungible_id = match validate_id(slice) {
             Ok(type_id) => match type_id {
-                ScryptoSborTypeId::Array => NonFungibleId::Bytes(
-                    scrypto_decode::<Vec<u8>>(slice)?,
-                ),
-                ScryptoSborTypeId::String => NonFungibleId::String(
-                    scrypto_decode::<String>(slice)?
-                ),
-                ScryptoSborTypeId::U32 => NonFungibleId::U32(
-                    scrypto_decode::<u32>(slice)?
-                ),
-                ScryptoSborTypeId::U64 => NonFungibleId::U64(
-                    scrypto_decode::<u64>(slice)?
-                ),
-                ScryptoSborTypeId::U128 => NonFungibleId::UUID(
-                    scrypto_decode::<u128>(slice)?
-                ),
+                ScryptoSborTypeId::Array => NonFungibleId::Bytes(scrypto_decode::<Vec<u8>>(slice)?),
+                ScryptoSborTypeId::String => {
+                    NonFungibleId::String(scrypto_decode::<String>(slice)?)
+                }
+                ScryptoSborTypeId::U32 => NonFungibleId::U32(scrypto_decode::<u32>(slice)?),
+                ScryptoSborTypeId::U64 => NonFungibleId::U64(scrypto_decode::<u64>(slice)?),
+                ScryptoSborTypeId::U128 => NonFungibleId::UUID(scrypto_decode::<u128>(slice)?),
                 _ => return Err(ParseNonFungibleIdError::UnexpectedTypeId),
             },
             Err(err) => return Err(err.into()),
@@ -349,7 +297,7 @@ impl FromStr for NonFungibleIdType {
             "Bytes" => Self::Bytes,
             "UUID" => Self::UUID,
             "U128" => Self::UUID, // Add this in as an alias
-            _ => return Err(ParseNonFungibleIdTypeError::UnknownType)
+            _ => return Err(ParseNonFungibleIdTypeError::UnknownType),
         };
         Ok(id_type)
     }
@@ -357,19 +305,13 @@ impl FromStr for NonFungibleIdType {
 
 impl fmt::Display for NonFungibleId {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        match self {
-            NonFungibleId::Bytes(b) => write!(f, "Bytes(\"{}\")", hex::encode(b)),
-            NonFungibleId::String(s) => write!(f, "\"{}\"", s),
-            NonFungibleId::U32(n) => write!(f, "{}u32", n),
-            NonFungibleId::U64(n) => write!(f, "{}u64", n),
-            NonFungibleId::UUID(u) => write!(f, "{}u128", u),
-        }
+        write!(f, "{}", self.to_simple_string())
     }
 }
 
 impl fmt::Debug for NonFungibleId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self.to_combined_simple_string())
     }
 }
 
@@ -530,11 +472,17 @@ mod tests {
             NonFungibleId::U32(5)
         );
         assert_eq!(
-            NonFungibleId::try_from(hex::decode("5c0a0500000000000000").unwrap().as_slice()).unwrap(),
+            NonFungibleId::try_from(hex::decode("5c0a0500000000000000").unwrap().as_slice())
+                .unwrap(),
             NonFungibleId::U64(5)
         );
         assert_eq!(
-            NonFungibleId::try_from(hex::decode("5c0b05000000000000000000000000000000").unwrap().as_slice()).unwrap(),
+            NonFungibleId::try_from(
+                hex::decode("5c0b05000000000000000000000000000000")
+                    .unwrap()
+                    .as_slice()
+            )
+            .unwrap(),
             NonFungibleId::UUID(5)
         );
         assert_eq!(
