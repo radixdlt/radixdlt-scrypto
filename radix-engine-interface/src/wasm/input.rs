@@ -200,6 +200,8 @@ pub enum VaultMethodInvocation {
     CreateProof(VaultCreateProofInvocation),
     CreateProofByAmount(VaultCreateProofByAmountInvocation),
     CreateProofByIds(VaultCreateProofByIdsInvocation),
+    Recall(VaultRecallInvocation),
+    RecallNonFungibles(VaultRecallNonFungiblesInvocation),
 }
 
 #[derive(Debug)]
@@ -385,6 +387,12 @@ impl NativeFnInvocation {
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     VaultMethodInvocation::CreateProofByIds(invocation) => api
+                        .invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    VaultMethodInvocation::Recall(invocation) => api
+                        .invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    VaultMethodInvocation::RecallNonFungibles(invocation) => api
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

@@ -113,6 +113,54 @@ impl Into<SerializedInvocation> for VaultGetAmountInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
+pub struct VaultRecallInvocation {
+    pub receiver: VaultId,
+    pub amount: Decimal,
+}
+
+impl Invocation for VaultRecallInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for VaultRecallInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<SerializedInvocation> for VaultRecallInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
+            VaultMethodInvocation::Recall(self),
+        ))
+        .into()
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct VaultRecallNonFungiblesInvocation {
+    pub receiver: VaultId,
+    pub non_fungible_ids: BTreeSet<NonFungibleId>,
+}
+
+impl Invocation for VaultRecallNonFungiblesInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for VaultRecallNonFungiblesInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<SerializedInvocation> for VaultRecallNonFungiblesInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Vault(
+            VaultMethodInvocation::RecallNonFungibles(self),
+        ))
+        .into()
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct VaultGetResourceAddressInvocation {
     pub receiver: VaultId,
 }
