@@ -202,10 +202,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let receipt = execute_and_commit_transaction(
                 &mut substate_store,
                 &mut scrypto_interpreter,
-                &FeeReserveConfig {
-                    cost_unit_price: DEFAULT_COST_UNIT_PRICE,
-                    system_loan: DEFAULT_SYSTEM_LOAN,
-                },
+                &FeeReserveConfig::default(),
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     trace,

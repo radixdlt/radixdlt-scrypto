@@ -47,7 +47,7 @@ impl TestTransaction {
                     initial_proofs,
                     virtualizable_proofs_resource_addresses: BTreeSet::new(),
                 },
-                fee_payment: FeePayment {
+                fee_payment: FeePayment::User {
                     cost_unit_limit: intent.header.cost_unit_limit,
                     tip_percentage: intent.header.tip_percentage,
                 },
