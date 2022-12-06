@@ -468,6 +468,7 @@ pub enum ClockMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionHashMethod {
     Get,
+    GenerateUuid,
 }
 
 #[derive(

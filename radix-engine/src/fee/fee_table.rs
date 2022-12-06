@@ -273,6 +273,7 @@ impl FeeTable {
             }
             NativeMethod::TransactionHash(ident) => match ident {
                 TransactionHashMethod::Get => self.fixed_low,
+                TransactionHashMethod::GenerateUuid => self.fixed_low,
             },
         }
     }

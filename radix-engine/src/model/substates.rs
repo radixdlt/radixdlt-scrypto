@@ -1098,6 +1098,13 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
+    pub fn transaction_hash(&mut self) -> &mut TransactionHashSubstate {
+        match self {
+            SubstateRefMut::TransactionHash(value) => *value,
+            _ => panic!("Not a transaction hash"),
+        }
+    }
+
     pub fn access_rules_chain(&mut self) -> &mut AccessRulesChainSubstate {
         match self {
             SubstateRefMut::AccessRulesChain(value) => *value,

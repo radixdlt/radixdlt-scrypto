@@ -28,3 +28,26 @@ impl Into<SerializedInvocation> for TransactionHashGetInvocation {
         .into()
     }
 }
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct TransactionHashGenerateUuidInvocation {
+    pub receiver: TransactionHashId,
+}
+
+impl Invocation for TransactionHashGenerateUuidInvocation {
+    type Output = u128;
+}
+
+impl SerializableInvocation for TransactionHashGenerateUuidInvocation {
+    type ScryptoOutput = u128;
+}
+
+impl Into<SerializedInvocation> for TransactionHashGenerateUuidInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::TransactionHash(
+            TransactionHashMethodInvocation::GenerateUuid(self),
+        ))
+        .into()
+    }
+}

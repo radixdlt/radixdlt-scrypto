@@ -4,4 +4,5 @@ use crate::types::*;
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionHashSubstate {
     pub hash: Hash,
+    pub next_id: u32,
 }

@@ -117,5 +117,6 @@ pub trait InvokableModel<E>:
     + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + Invokable<WorktopDrainInvocation, E>
     + Invokable<TransactionHashGetInvocation, E>
+    + Invokable<TransactionHashGenerateUuidInvocation, E>
 {
 }

@@ -121,6 +121,7 @@ where
             .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::TransactionModule, |api| {
                 let transaction_hash_substate = TransactionHashSubstate {
                     hash: transaction_hash,
+                    next_id: 0u32,
                 };
                 let node_id = api.allocate_node_id(RENodeType::TransactionHash)?;
                 api.create_node(node_id, RENode::TransactionHash(transaction_hash_substate))?;
