@@ -7,7 +7,7 @@ mod cmd_mint;
 mod cmd_new_account;
 mod cmd_new_badge_fixed;
 mod cmd_new_badge_mutable;
-mod cmd_new_owner_badge;
+mod cmd_new_simple_badge;
 mod cmd_new_token_fixed;
 mod cmd_new_token_mutable;
 mod cmd_publish;
@@ -31,7 +31,7 @@ pub use cmd_mint::*;
 pub use cmd_new_account::*;
 pub use cmd_new_badge_fixed::*;
 pub use cmd_new_badge_mutable::*;
-pub use cmd_new_owner_badge::*;
+pub use cmd_new_simple_badge::*;
 pub use cmd_new_token_fixed::*;
 pub use cmd_new_token_mutable::*;
 pub use cmd_publish::*;
@@ -99,7 +99,7 @@ pub enum Command {
     GenerateKeyPair(GenerateKeyPair),
     Mint(crate::resim::cmd_mint::Mint),
     NewAccount(NewAccount),
-    NewOwnerBadge(NewOwnerBadge),
+    NewSimpleBadge(NewSimpleBadge),
     NewBadgeFixed(NewBadgeFixed),
     NewBadgeMutable(NewBadgeMutable),
     NewTokenFixed(NewTokenFixed),
@@ -127,7 +127,7 @@ pub fn run() -> Result<(), Error> {
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),
-        Command::NewOwnerBadge(cmd) => cmd.run(&mut out),
+        Command::NewSimpleBadge(cmd) => cmd.run(&mut out),
         Command::NewBadgeFixed(cmd) => cmd.run(&mut out),
         Command::NewBadgeMutable(cmd) => cmd.run(&mut out),
         Command::NewTokenFixed(cmd) => cmd.run(&mut out),
