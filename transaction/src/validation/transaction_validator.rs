@@ -290,6 +290,10 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::SetComponentRoyaltyConfig { .. } => {}
                 BasicInstruction::ClaimPackageRoyalty { .. } => {}
                 BasicInstruction::ClaimComponentRoyalty { .. } => {}
+                BasicInstruction::CallNativeFunction { .. }
+                | BasicInstruction::CallNativeMethod { .. } => {
+                    // TODO: remove
+                }
             }
         }
 

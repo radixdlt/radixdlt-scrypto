@@ -179,7 +179,18 @@ pub enum BasicInstruction {
     ClaimComponentRoyalty {
         component_address: ComponentAddress,
     },
-    // TODO: add_access_rules & set_access_rules
+
+    // TODO: remove
+    CallNativeFunction {
+        function_ident: NativeFunctionIdent,
+        args: Vec<u8>,
+    },
+
+    // TODO: remove
+    CallNativeMethod {
+        method_ident: NativeMethodIdent,
+        args: Vec<u8>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
