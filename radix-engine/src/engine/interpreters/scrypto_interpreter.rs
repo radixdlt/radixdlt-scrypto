@@ -8,7 +8,7 @@ use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue}
 pub struct ScryptoExecutorToParsed<I: WasmInstance> {
     instance: I,
     export_name: String,
-    args: IndexedScryptoValue,
+    args: Vec<u8>,
     rtn_type: Type,
 }
 
@@ -57,7 +57,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
 
 pub struct ScryptoExecutor<I: WasmInstance> {
     instance: I,
-    args: IndexedScryptoValue,
+    args: Vec<u8>,
     export_name: String,
     rtn_type: Type,
 }
@@ -96,7 +96,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
         &self,
         code: &[u8],
         export_name: String,
-        args: IndexedScryptoValue,
+        args: Vec<u8>,
         rtn_type: Type,
     ) -> ScryptoExecutor<W::WasmInstance> {
         let instrumented_code = self
@@ -105,7 +105,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
         let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoExecutor {
             instance,
-            args: args,
+            args,
             export_name,
             rtn_type,
         }
@@ -115,7 +115,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
         &self,
         code: &[u8],
         export_name: String,
-        args: IndexedScryptoValue,
+        args: Vec<u8>,
         rtn_type: Type,
     ) -> ScryptoExecutorToParsed<W::WasmInstance> {
         let instrumented_code = self

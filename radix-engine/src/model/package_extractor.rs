@@ -3,7 +3,6 @@ use crate::fee::SystemLoanFeeReserve;
 use crate::model::InvokeError;
 use crate::types::*;
 use crate::wasm::*;
-use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug)]
 pub enum ExtractAbiError {
@@ -33,7 +32,7 @@ pub fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, Extract
     let mut blueprints = HashMap::new();
     for method_name in function_exports {
         let rtn = instance
-            .invoke_export(&method_name, &IndexedScryptoValue::unit(), &mut runtime)
+            .invoke_export(&method_name, &scrypto_encode(&()).unwrap(), &mut runtime)
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: BlueprintAbi =

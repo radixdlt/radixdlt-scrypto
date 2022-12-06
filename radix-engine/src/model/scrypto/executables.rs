@@ -92,7 +92,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     api.vm().create_executor(
                         &package.code,
                         fn_abi.export_name.clone(),
-                        args,
+                        args.raw,
                         fn_abi.output.clone(),
                     ),
                     REActor::Function(ResolvedFunction::Scrypto {
@@ -206,7 +206,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     api.vm().create_executor(
                         &package.code,
                         fn_abi.export_name.clone(),
-                        args,
+                        args.raw,
                         fn_abi.output.clone(),
                     ),
                     REActor::Method(
@@ -329,7 +329,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     api.vm().create_executor_to_parsed(
                         &package.code,
                         fn_abi.export_name.clone(),
-                        args,
+                        args.raw,
                         fn_abi.output.clone(),
                     ),
                     REActor::Function(ResolvedFunction::Scrypto {
@@ -443,7 +443,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     api.vm().create_executor_to_parsed(
                         &package.code,
                         fn_abi.export_name.clone(),
-                        args,
+                        args.raw,
                         fn_abi.output.clone(),
                     ),
                     REActor::Method(

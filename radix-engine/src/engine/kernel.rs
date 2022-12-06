@@ -12,7 +12,6 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
-use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;
 

@@ -229,7 +229,7 @@ impl WasmInstance for WasmerInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: &IndexedScryptoValue,
+        args: &[u8],
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         {
@@ -241,7 +241,7 @@ impl WasmInstance for WasmerInstance {
             *guard = runtime as *mut _ as usize;
         }
 
-        let pointer = send_value(&self.instance, &args.raw)?;
+        let pointer = send_value(&self.instance, args)?;
         let result = self
             .instance
             .exports
