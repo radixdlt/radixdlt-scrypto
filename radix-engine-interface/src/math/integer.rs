@@ -354,19 +354,26 @@ sbor_codec!(U32, SborTypeId::U32, U32);
 sbor_codec!(U64, SborTypeId::U64, U64);
 sbor_codec!(U128, SborTypeId::U128, U128);
 
+pub trait Min {
+    const MIN: Self;
+}
+
 fn fmt<
     T: fmt::Display
         + Copy
         + From<u32>
         + Pow<u32, Output = T>
         + Zero
+        + One
+        + ToPrimitive
         + TryInto<i128>
         + Add<Output = T>
         + Div<Output = T>
         + Rem<Output = T>
         + Sub<Output = T>
         + Eq
-        + Ord,
+        + Ord
+        + Min,
 >(
     to_fmt: T,
     f: &mut fmt::Formatter<'_>,
@@ -374,12 +381,15 @@ fn fmt<
 ) -> fmt::Result
 where
     <T as TryInto<i128>>::Error: fmt::Debug,
+    i128: sbor::rust::convert::TryFrom<T>,
 {
     let mut minus = "";
     let mut a = to_fmt;
+    let mut ls_digit = String::from("");
     if a < T::zero() {
         minus = "-";
-        a = T::zero() - a;
+        ls_digit = (a % T::from(10u32)).to_i128().unwrap().neg().to_string();
+        a = T::zero() - a / T::from(10u32); // avoid overflow of T::MIN
     }
     let num;
     let divisor = T::from(10u32).pow(38u32);
@@ -403,7 +413,12 @@ where
             }
         });
     }
-    write!(f, "{}{}", minus, num)
+
+    if minus == "-" && num == "0" {
+        write!(f, "{}{}", minus, ls_digit)
+    } else {
+        write!(f, "{}{}{}", minus, num, ls_digit)
+    }
 }
 
 macro_rules! forward_ref_unop {
