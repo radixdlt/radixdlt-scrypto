@@ -795,6 +795,20 @@ impl TransactionProcessor {
                         }
                         Ok(result)
                     }),
+                Instruction::Basic(BasicInstruction::SetMethodAccessRule {
+                    entity_address,
+                    index,
+                    key,
+                    rule,
+                }) => api
+                    .invoke(AccessRulesSetMethodAccessRuleInvocation {
+                        receiver: RENodeId::Global(entity_address.clone()),
+                        index: index.clone(),
+                        key: key.clone(),
+                        rule: rule.clone(),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
                 Instruction::System(SystemInstruction::CallNativeFunction {
                     function_ident,
                     args,
