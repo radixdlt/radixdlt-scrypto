@@ -385,7 +385,7 @@ where
 {
     let mut minus = "";
     let mut a = to_fmt;
-    let mut ls_digit: String = "".to_owned();
+    let mut ls_digit = String::from("");
     if a < T::zero() {
         minus = "-";
         ls_digit = (a % T::from(10u32)).to_i128().unwrap().neg().to_string();
