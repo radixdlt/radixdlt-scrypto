@@ -3,27 +3,25 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use radix_engine::engine::{Kernel, KernelError, ModuleError, ScryptoInterpreter};
-use radix_engine::engine::{RuntimeError, Track};
-use radix_engine::fee::{FeeTable, SystemLoanFeeReserve};
+use radix_engine::engine::RuntimeError;
+use radix_engine::engine::{KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::ledger::*;
 use radix_engine::model::{
     export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
 };
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
-    FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
+    execute_and_commit_transaction, execute_preview, ExecutionConfig, FeeReserveConfig,
+    PreviewError, PreviewResult, TransactionReceipt,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{
     DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
 };
 use radix_engine_constants::*;
-use radix_engine_interface::api::api::Invokable;
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::{EpochManagerMethod, NativeMethodIdent, RENodeId};
+use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
@@ -31,11 +29,12 @@ use radix_engine_interface::model::{
 };
 use radix_engine_interface::{dec, rule};
 use transaction::builder::ManifestBuilder;
-use transaction::model::{AuthZoneParams, Executable, TransactionManifest};
+use transaction::model::{Executable, SystemInstruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
 
+/// Note: in the context of TestRunner, `execute` means both executing and committing.
 pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     execution_stores: StagedSubstateStoreManager<'s, S>,
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
@@ -67,15 +66,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         }
     }
 
-    pub fn next_transaction_nonce(&self) -> u64 {
-        self.next_transaction_nonce
+    pub fn next_private_key(&mut self) -> u64 {
+        self.next_private_key += 1;
+        self.next_private_key - 1
+    }
+
+    pub fn next_transaction_nonce(&mut self) -> u64 {
+        self.next_transaction_nonce += 1;
+        self.next_transaction_nonce - 1
     }
 
     pub fn new_key_pair(&mut self) -> (EcdsaSecp256k1PublicKey, EcdsaSecp256k1PrivateKey) {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(self.next_private_key).unwrap();
+        let private_key = EcdsaSecp256k1PrivateKey::from_u64(self.next_private_key()).unwrap();
         let public_key = private_key.public_key();
 
-        self.next_private_key += 1;
         (public_key, private_key)
     }
 
@@ -435,26 +439,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         (code, abi)
     }
 
-    pub fn execute_manifest(
-        &mut self,
-        manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
-    ) -> TransactionReceipt {
-        let mut receipts =
-            self.execute_batch(vec![(manifest, initial_proofs)], DEFAULT_COST_UNIT_LIMIT);
-        receipts.pop().unwrap()
-    }
-
-    pub fn execute_manifest_with_cost_unit_limit(
-        &mut self,
-        manifest: TransactionManifest,
-        initial_proofs: Vec<NonFungibleAddress>,
-        limit: u32,
-    ) -> TransactionReceipt {
-        let mut receipts = self.execute_batch(vec![(manifest, initial_proofs)], limit);
-        receipts.pop().unwrap()
-    }
-
     pub fn execute_manifest_ignoring_fee(
         &mut self,
         mut manifest: TransactionManifest,
@@ -471,32 +455,94 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         self.execute_manifest(manifest, initial_proofs)
     }
 
-    pub fn execute_transaction(&mut self, executable: &Executable) -> TransactionReceipt {
-        self.execute_transaction_with_config(
-            executable,
-            &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+    pub fn execute_manifest(
+        &mut self,
+        manifest: TransactionManifest,
+        initial_proofs: Vec<NonFungibleAddress>,
+    ) -> TransactionReceipt {
+        self.execute_manifest_with_cost_unit_limit(
+            manifest,
+            initial_proofs,
+            DEFAULT_COST_UNIT_LIMIT,
         )
+    }
+
+    pub fn execute_manifest_with_cost_unit_limit(
+        &mut self,
+        manifest: TransactionManifest,
+        initial_proofs: Vec<NonFungibleAddress>,
+        limit: u32,
+    ) -> TransactionReceipt {
+        let mut receipts =
+            self.execute_manifest_batch_and_merge(vec![(manifest, initial_proofs)], limit);
+        receipts.pop().unwrap()
+    }
+
+    pub fn execute_manifest_batch_and_merge(
+        &mut self,
+        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
+        cost_unit_limit: u32,
+    ) -> Vec<TransactionReceipt> {
+        let node_id = self.create_child_node(0);
+        let receipts = self.execute_manifest_batch(node_id, manifests, cost_unit_limit);
+        self.merge_node(node_id);
+        receipts
+    }
+
+    pub fn execute_manifest_batch(
+        &mut self,
+        node_id: u64,
+        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
+        cost_unit_limit: u32,
+    ) -> Vec<TransactionReceipt> {
+        let transactions: Vec<(TestTransaction, Vec<NonFungibleAddress>)> = manifests
+            .into_iter()
+            .map(|(manifest, initial_proofs)| {
+                (
+                    TestTransaction::new(manifest, self.next_transaction_nonce(), cost_unit_limit),
+                    initial_proofs,
+                )
+            })
+            .collect();
+        let executables = transactions
+            .iter()
+            .map(|(tx, initial_proofs)| tx.get_executable(initial_proofs.clone()))
+            .collect();
+
+        let fee_config = FeeReserveConfig::default();
+        let mut execution_config = ExecutionConfig::default();
+        execution_config.trace = self.trace;
+
+        self.execute_batch_on_node(node_id, executables, &fee_config, &execution_config)
+    }
+
+    pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
+        let fee_config = FeeReserveConfig::default();
+        let mut execution_config = ExecutionConfig::default();
+        execution_config.trace = self.trace;
+
+        self.execute_transaction_with_config(executable, &fee_config, &execution_config)
     }
 
     pub fn execute_transaction_with_config(
         &mut self,
-        executable: &Executable,
+        executable: Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         let node_id = self.create_child_node(0);
 
-        execute_transaction(
-            &self.execution_stores.get_output_store(node_id),
-            &self.scrypto_interpreter,
+        let receipts = self.execute_batch_on_node(
+            node_id,
+            vec![executable],
             fee_reserve_config,
             execution_config,
-            executable,
-        )
+        );
+        self.merge_node(node_id);
+        receipts.into_iter().next().unwrap()
     }
 
-    pub fn execute_preview(
+    pub fn preview(
         &mut self,
         preview_intent: PreviewIntent,
         network: &NetworkDefinition,
@@ -512,17 +558,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         )
     }
 
-    pub fn execute_batch(
-        &mut self,
-        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
-        cost_unit_limit: u32,
-    ) -> Vec<TransactionReceipt> {
-        let node_id = self.create_child_node(0);
-        let receipts = self.execute_batch_on_node(node_id, manifests, cost_unit_limit);
-        self.merge_node(node_id);
-        receipts
-    }
-
     pub fn create_child_node(&mut self, parent_id: u64) -> u64 {
         self.execution_stores.new_child_node(parent_id)
     }
@@ -530,28 +565,19 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn execute_batch_on_node(
         &mut self,
         node_id: u64,
-        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
-        cost_unit_limit: u32,
+        executables: Vec<Executable>,
+        fee_reserve_config: &FeeReserveConfig,
+        execution_config: &ExecutionConfig,
     ) -> Vec<TransactionReceipt> {
         let mut store = self.execution_stores.get_output_store(node_id);
         let mut receipts = Vec::new();
-        for (manifest, initial_proofs) in manifests {
-            let transaction =
-                TestTransaction::new(manifest, self.next_transaction_nonce, cost_unit_limit);
-            self.next_transaction_nonce += 1;
+        for executable in executables {
             let receipt = execute_and_commit_transaction(
                 &mut store,
                 &mut self.scrypto_interpreter,
-                &FeeReserveConfig {
-                    cost_unit_price: DEFAULT_COST_UNIT_PRICE,
-                    system_loan: DEFAULT_SYSTEM_LOAN,
-                },
-                &ExecutionConfig {
-                    max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-                    trace: self.trace,
-                    max_sys_call_trace_depth: 1,
-                },
-                &transaction.get_executable(initial_proofs),
+                fee_reserve_config,
+                execution_config,
+                &executable,
             );
             receipts.push(receipt);
         }
@@ -866,72 +892,49 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        self.kernel_call(
-            vec![NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))],
-            |kernel| {
-                kernel
-                    .invoke(EpochManagerSetEpochInvocation {
-                        epoch,
-                        receiver: EPOCH_MANAGER,
-                    })
-                    .unwrap()
+        let instructions = vec![SystemInstruction::CallNativeMethod {
+            method_ident: NativeMethodIdent {
+                receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+                method_name: EpochManagerMethod::SetEpoch.as_ref().to_owned(),
             },
+            args: args!(EPOCH_MANAGER, epoch),
+        }
+        .into()];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
         );
+        receipt.expect_commit_success();
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        self.kernel_call(vec![], |kernel| {
-            kernel
-                .invoke(EpochManagerGetCurrentEpochInvocation {
-                    receiver: EPOCH_MANAGER,
-                })
-                .unwrap()
-        })
-    }
-
-    /// Performs a kernel call through a kernel with `is_system = true`.
-    fn kernel_call<F, O>(&mut self, initial_proofs: Vec<NonFungibleAddress>, fun: F) -> O
-    where
-        F: FnOnce(&mut Kernel<DefaultWasmEngine, SystemLoanFeeReserve>) -> O,
-    {
-        let tx_hash = hash(self.next_transaction_nonce.to_string());
-        let blobs = HashMap::new();
-        let substate_store = self.execution_stores.get_root_store();
-        let track = Track::new(
-            substate_store,
-            SystemLoanFeeReserve::default(),
-            FeeTable::new(),
-        );
-
-        let auth_zone_params = AuthZoneParams {
-            initial_proofs,
-            virtualizable_proofs_resource_addresses: BTreeSet::new(),
-        };
-
-        let mut kernel = Kernel::new(
-            tx_hash,
-            auth_zone_params,
-            &blobs,
-            DEFAULT_MAX_CALL_DEPTH,
-            track,
-            &mut self.scrypto_interpreter,
-            Vec::new(),
-        );
-
-        // Invoke the system
-        let output = fun(&mut kernel);
-
-        // The output is of generic type, so it isn't necessarily Vec<Vec<u8>> (the output type of TransactionProcessorRunInvocation).
-        // The receipt's output isn't really used, so it's fine to use an empty Vec here.
-        let receipt = kernel.finalize(Ok(Vec::new()));
-
-        // Commit
-        self.next_transaction_nonce += 1;
-        if let TransactionResult::Commit(c) = receipt.result {
-            c.state_updates.commit(substate_store);
+        let instructions = vec![SystemInstruction::CallNativeMethod {
+            method_ident: NativeMethodIdent {
+                receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+                method_name: EpochManagerMethod::GetCurrentEpoch.as_ref().to_owned(),
+            },
+            args: args!(EPOCH_MANAGER),
         }
+        .into()];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
 
-        output
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        scrypto_decode(&receipt.expect_commit_success()[0]).unwrap()
     }
 }
 

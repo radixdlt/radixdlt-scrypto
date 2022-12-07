@@ -25,7 +25,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
     .into()];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
-        &SystemTransaction {
+        SystemTransaction {
             instructions,
             blobs,
             nonce: 0,
@@ -54,7 +54,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
     .into()];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
-        &SystemTransaction {
+        SystemTransaction {
             instructions,
             blobs,
             nonce: 0,

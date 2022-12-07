@@ -29,7 +29,7 @@ fn test_transaction_preview_cost_estimate() {
         permit_duplicate_intent_hash: false,
     };
     let (notarized_transaction, preview_intent) = prepare_matching_test_tx_and_preview_intent(
-        &test_runner,
+        &mut test_runner,
         &network,
         manifest,
         &preview_flags,
@@ -37,12 +37,12 @@ fn test_transaction_preview_cost_estimate() {
 
     // Act & Assert: Execute the preview, followed by a normal execution.
     // Ensure that both succeed and that the preview result provides an accurate cost estimate
-    let preview_result = test_runner.execute_preview(preview_intent, &network);
+    let preview_result = test_runner.preview(preview_intent, &network);
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_commit_success();
 
     let receipt = test_runner.execute_transaction_with_config(
-        &make_executable(&network, &notarized_transaction),
+        make_executable(&network, &notarized_transaction),
         &FeeReserveConfig::default(),
         &ExecutionConfig::default(),
     );
@@ -86,21 +86,21 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
         .build();
 
     let (_, preview_intent) = prepare_matching_test_tx_and_preview_intent(
-        &test_runner,
+        &mut test_runner,
         &network,
         manifest,
         &preview_flags,
     );
 
     // Act
-    let result = test_runner.execute_preview(preview_intent, &network);
+    let result = test_runner.preview(preview_intent, &network);
 
     // Assert
     result.unwrap().receipt.expect_commit_success();
 }
 
 fn prepare_matching_test_tx_and_preview_intent(
-    test_runner: &TestRunner<TypedInMemorySubstateStore>,
+    test_runner: &mut TestRunner<TypedInMemorySubstateStore>,
     network: &NetworkDefinition,
     manifest: TransactionManifest,
     flags: &PreviewFlags,

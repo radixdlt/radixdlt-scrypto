@@ -72,7 +72,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     .into()];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
-        &SystemTransaction {
+        SystemTransaction {
             instructions,
             blobs,
             nonce: 0,
@@ -103,7 +103,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     .into()];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
-        &SystemTransaction {
+        SystemTransaction {
             instructions,
             blobs,
             nonce: 0,
