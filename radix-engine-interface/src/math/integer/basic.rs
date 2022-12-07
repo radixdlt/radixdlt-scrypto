@@ -3,10 +3,13 @@ use super::*;
 macro_rules! checked_int_impl_large {
     (type_id: $t:ident, bytes_len: $bytes_len:literal, MIN: $min: expr, MAX: $max: expr) => {
         paste! {
-            impl $t {
+            impl Min for $t {
                 /// Returns the smallest value that can be represented by this integer type.
                 ///
-                pub const MIN: Self = $min;
+                const MIN: Self = $min;
+            }
+
+            impl $t {
 
                 /// Returns the largest value that can be represented by this integer type.
                 ///
