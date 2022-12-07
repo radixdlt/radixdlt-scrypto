@@ -249,8 +249,8 @@ impl Parser {
             TokenKind::Some |
             TokenKind::None |
             TokenKind::Ok |
-            TokenKind::Err => self.parse_alias(),
-            TokenKind::Bytes => self.parse_bytes(),
+            TokenKind::Err |
+            TokenKind::Bytes => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -279,7 +279,7 @@ impl Parser {
             TokenKind::EddsaEd25519Signature |
             TokenKind::Decimal |
             TokenKind::PreciseDecimal |
-            TokenKind::NonFungibleId  => self.parse_scrypto_types(),
+            TokenKind::NonFungibleId => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -315,23 +315,6 @@ impl Parser {
         )?))
     }
 
-    pub fn parse_bytes(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Bytes);
-        advance_match!(self, TokenKind::OpenParenthesis);
-        let t = self.advance()?;
-        let bytes = if let TokenKind::StringLiteral(str) = &t.kind {
-            hex::decode(str).map_err(|_| ParserError::InvalidHex(str.to_owned()))?
-        } else {
-            return Err(ParserError::UnexpectedToken(t));
-        };
-        advance_match!(self, TokenKind::CloseParenthesis);
-
-        Ok(Value::Array(
-            Type::U8,
-            bytes.into_iter().map(|b| Value::U8(b)).collect(),
-        ))
-    }
-
     pub fn parse_alias(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
@@ -339,6 +322,7 @@ impl Parser {
             TokenKind::None => Ok(Value::None),
             TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
             TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
+            TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -367,7 +351,8 @@ impl Parser {
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
             TokenKind::NonFungibleAddress => {
-                Ok(Value::NonFungibleAddress(self.parse_values_one()?.into()))
+                let values = self.parse_values_two()?;
+                Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
             }
 
             // Uninterpreted
@@ -420,6 +405,19 @@ impl Parser {
             })
         } else {
             Ok(values[0].clone())
+        }
+    }
+
+    fn parse_values_two(&mut self) -> Result<(Value, Value), ParserError> {
+        let values =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        if values.len() != 2 {
+            Err(ParserError::InvalidNumberOfValues {
+                actual: values.len(),
+                expected: 2,
+            })
+        } else {
+            Ok((values[0].clone(), values[1].clone()))
         }
     }
 

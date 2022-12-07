@@ -123,4 +123,6 @@ pub mod collections {
 
     #[cfg(feature = "indexmap")]
     pub use indexmap::IndexMap;
+    #[cfg(feature = "indexmap")]
+    pub use indexmap::IndexSet;
 }

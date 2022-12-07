@@ -953,7 +953,18 @@ impl ManifestBuilder {
                             Ok(scrypto_encode(&value).unwrap())
                         }
                         Type::NonFungibleId => {
-                            let value = arg.parse::<NonFungibleId>().map_err(|_| {
+                            let value = NonFungibleId::try_from_combined_simple_string(arg)
+                                .map_err(|_| {
+                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                                })?;
+                            Ok(scrypto_encode(&value).unwrap())
+                        }
+                        Type::NonFungibleAddress => {
+                            let value = NonFungibleAddress::try_from_canonical_combined_string(
+                                &self.decoder,
+                                arg,
+                            )
+                            .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
                             Ok(scrypto_encode(&value).unwrap())
@@ -1090,17 +1101,24 @@ fn parse_resource_specifier(
     }
 
     // parse resource address
-    let token = tokens[tokens.len() - 1];
+    let resource_address_token = tokens[tokens.len() - 1];
     let resource_address = decoder
-        .validate_and_decode_resource_address(token)
-        .map_err(|_| ParseResourceSpecifierError::InvalidResourceAddress(token.to_owned()))?;
+        .validate_and_decode_resource_address(resource_address_token)
+        .map_err(|_| {
+            ParseResourceSpecifierError::InvalidResourceAddress(resource_address_token.to_owned())
+        })?;
 
     // parse non-fungible ids or amount
     if tokens[0].starts_with('#') {
         let mut ids = BTreeSet::<NonFungibleId>::new();
         for id in &tokens[..tokens.len() - 1] {
+            if !id.starts_with('#') {
+                return Err(ParseResourceSpecifierError::InvalidNonFungibleId(
+                    id.to_string(),
+                ));
+            }
             ids.insert(
-                id[1..].parse().map_err(|_| {
+                NonFungibleId::try_from_combined_simple_string(&id[1..]).map_err(|_| {
                     ParseResourceSpecifierError::InvalidNonFungibleId(id.to_string())
                 })?,
             );

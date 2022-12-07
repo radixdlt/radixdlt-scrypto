@@ -576,13 +576,6 @@ impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleI
                 SborTypeId::U64,
                 &value.to_string(),
             ),
-            NonFungibleId::Decimal(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ScryptoCustomTypeId::Decimal,
-                &value.to_string(),
-            ),
             NonFungibleId::Bytes(value) => serialize_value_with_element_type(
                 ValueEncoding::NoType,
                 serializer,
@@ -873,11 +866,6 @@ mod tests {
                             value: ScryptoCustomValue::NonFungibleId(NonFungibleId::U64(123)),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Decimal(
-                                Decimal::ONE * 123456 / 1000,
-                            )),
-                        },
-                        SborValue::Custom {
                             value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Bytes(vec![
                                 0x23, 0x45,
                             ])),
@@ -933,7 +921,6 @@ mod tests {
                 { "type": "NonFungibleId", "value": "hello" },
                 { "type": "NonFungibleId", "value": 123 },
                 { "type": "NonFungibleId", "value": "123" },
-                { "type": "NonFungibleId", "value": "123.456" },
                 { "type": "NonFungibleId", "value": { "hex": "2345" } },
                 { "type": "NonFungibleId", "value": "371" },
             ]
@@ -993,7 +980,6 @@ mod tests {
                         { "type": "NonFungibleId", "value": { "type": "String", "value": "hello" } },
                         { "type": "NonFungibleId", "value": { "type": "U32", "value": 123 } },
                         { "type": "NonFungibleId", "value": { "type": "U64", "value": "123" } },
-                        { "type": "NonFungibleId", "value": { "type": "Decimal", "value": "123.456" } },
                         { "type": "NonFungibleId", "value": { "type": "Array", "element_type": "U8", "value": { "hex": "2345" } } },
                         { "type": "NonFungibleId", "value": { "type": "U128", "value": "371" } },
                     ]

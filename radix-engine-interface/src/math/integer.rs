@@ -191,16 +191,6 @@ types! {
         },
     },
     {
-        type: I320,
-        self.0: [u8; 40],
-        self.zero(): I320([0u8; 40]),
-        I320::default(): I320([0u8; 40]),
-        format_var: f,
-        format_expr: {
-            fmt(*self, f, self.0.len() * 8)
-        },
-    },
-    {
         type: I384,
         self.0: [u8; 48],
         self.zero(): I384([0u8; 48]),
@@ -221,10 +211,10 @@ types! {
         },
     },
     {
-        type: I728,
-        self.0: [u8; 91],
-        self.zero(): I728([0u8; 91]),
-        U256::default(): I728([0u8; 91]),
+        type: I768,
+        self.0: [u8; 96],
+        self.zero(): I768([0u8; 96]),
+        U256::default(): I768([0u8; 96]),
         format_var: f,
         format_expr: {
             fmt(*self, f, self.0.len() * 8)
@@ -281,16 +271,6 @@ types! {
         },
     },
     {
-        type: U320,
-        self.0: [u8; 40],
-        self.zero(): U320([0u8; 40]),
-        U320::default(): U320([0u8; 40]),
-        format_var: f,
-        format_expr: {
-            fmt(*self, f, self.0.len() * 8)
-        },
-    },
-    {
         type: U384,
         self.0: [u8; 48],
         self.zero(): U384([0u8; 48]),
@@ -311,10 +291,10 @@ types! {
         },
     },
     {
-        type: U728,
-        self.0: [u8; 91],
-        self.zero(): U728([0u8; 91]),
-        U728::default(): U728([0u8; 91]),
+        type: U768,
+        self.0: [u8; 96],
+        self.zero(): U768([0u8; 96]),
+        U768::default(): U768([0u8; 96]),
         format_var: f,
         format_expr: {
             fmt(*self, f, self.0.len() * 8)
@@ -374,19 +354,26 @@ sbor_codec!(U32, SborTypeId::U32, U32);
 sbor_codec!(U64, SborTypeId::U64, U64);
 sbor_codec!(U128, SborTypeId::U128, U128);
 
+pub trait Min {
+    const MIN: Self;
+}
+
 fn fmt<
     T: fmt::Display
         + Copy
         + From<u32>
         + Pow<u32, Output = T>
         + Zero
+        + One
+        + ToPrimitive
         + TryInto<i128>
         + Add<Output = T>
         + Div<Output = T>
         + Rem<Output = T>
         + Sub<Output = T>
         + Eq
-        + Ord,
+        + Ord
+        + Min,
 >(
     to_fmt: T,
     f: &mut fmt::Formatter<'_>,
@@ -394,12 +381,15 @@ fn fmt<
 ) -> fmt::Result
 where
     <T as TryInto<i128>>::Error: fmt::Debug,
+    i128: sbor::rust::convert::TryFrom<T>,
 {
     let mut minus = "";
     let mut a = to_fmt;
+    let mut ls_digit = String::from("");
     if a < T::zero() {
         minus = "-";
-        a = T::zero() - a;
+        ls_digit = (a % T::from(10u32)).to_i128().unwrap().neg().to_string();
+        a = T::zero() - a / T::from(10u32); // avoid overflow of T::MIN
     }
     let num;
     let divisor = T::from(10u32).pow(38u32);
@@ -423,7 +413,12 @@ where
             }
         });
     }
-    write!(f, "{}{}", minus, num)
+
+    if minus == "-" && num == "0" {
+        write!(f, "{}{}", minus, ls_digit)
+    } else {
+        write!(f, "{}{}{}", minus, num, ls_digit)
+    }
 }
 
 macro_rules! forward_ref_unop {
@@ -579,7 +574,7 @@ macro_rules! op_impl {
             }
         };
     }
-op_impl! { I8, I16, I32, I64, I128, I256, I320, I384, I512, I728, U8, U16, U32, U64, U128, U256, U320, U384, U512, U728 }
+op_impl! { I8, I16, I32, I64, I128, I256, I384, I512, I768, U8, U16, U32, U64, U128, U256, U384, U512, U768 }
 
 pub trait CheckedAdd {
     fn checked_add(self, other: Self) -> Option<Self>
@@ -670,7 +665,7 @@ macro_rules! checked_impl {
         }
     }
 }
-checked_impl! { I8, I16, I32, I64, I128, I256, I320, I384, I512, I728, U8, U16, U32, U64, U128, U256, U320, U384, U512, U728 }
+checked_impl! { I8, I16, I32, I64, I128, I256, I384, I512, I768, U8, U16, U32, U64, U128, U256, U384, U512, U768 }
 
 macro_rules! pow_impl {
         ($($t:ty),*) => {
@@ -720,7 +715,7 @@ macro_rules! pow_impl {
         };
 }
 
-pow_impl! { I8, I16, I32, I64, I128, I256, I320, I384, I512, I728, U8, U16, U32, U64, U128, U256, U320, U384, U512, U728 }
+pow_impl! { I8, I16, I32, I64, I128, I256, I384, I512, I768, U8, U16, U32, U64, U128, U256, U384, U512, U768 }
 
 macro_rules! checked_impl_not_large {
     ($($t:ident),*) => {
@@ -754,7 +749,7 @@ macro_rules! checked_impl_not_small {
     }
 }
 
-checked_impl_not_large! {I256, I320, I384, I512, I728, U256, U320, U384, U512, U728}
+checked_impl_not_large! {I256, I384, I512, I768, U256, U384, U512, U768}
 checked_impl_not_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
 
 macro_rules! checked_int_impl_signed {
@@ -849,7 +844,7 @@ macro_rules! checked_int_impl_signed_all_small {
     )*}
 }
 
-checked_int_impl_signed_all_large! { I256, I320, I384, I512, I728 }
+checked_int_impl_signed_all_large! { I256, I384, I512, I768 }
 checked_int_impl_signed_all_small! { I8, I16, I32, I64, I128 }
 
 macro_rules! checked_int_impl_unsigned_large {
@@ -920,7 +915,7 @@ macro_rules! checked_int_impl_unsigned_small {
     )*)
 }
 
-checked_int_impl_unsigned_large! { U256, U320, U384, U512, U728 }
+checked_int_impl_unsigned_large! { U256, U384, U512, U768 }
 checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
 
 pub trait Sqrt {

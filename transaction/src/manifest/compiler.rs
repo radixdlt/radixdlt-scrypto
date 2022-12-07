@@ -135,7 +135,7 @@ mod tests {
                 BasicInstruction::DropProof { proof_id: 516 },
                 BasicInstruction::ReturnToWorktop { bucket_id: 513 },
                 BasicInstruction::TakeFromWorktopByIds {
-                    ids: BTreeSet::from([NonFungibleId::U32(1),]),
+                    ids: BTreeSet::from([NonFungibleId::U32(1)]),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
                             "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
