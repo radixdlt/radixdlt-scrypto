@@ -381,7 +381,7 @@ fn fmt<
 ) -> fmt::Result
 where
     <T as TryInto<i128>>::Error: fmt::Debug,
-    i128: sbor::rust::convert::TryFrom<T>
+    i128: sbor::rust::convert::TryFrom<T>,
 {
     let mut minus = "";
     let mut a = to_fmt;
@@ -389,7 +389,7 @@ where
     if a < T::zero() {
         minus = "-";
         ls_digit = (a % T::from(10u32)).to_i128().unwrap().neg().to_string();
-        a = T::zero() - a / T::from(10u32);  // avoid overflow of T::MIN
+        a = T::zero() - a / T::from(10u32); // avoid overflow of T::MIN
     }
     let num;
     let divisor = T::from(10u32).pow(38u32);
@@ -409,7 +409,7 @@ where
                 let padding: String = vec!["0"; 38 - num_part.to_string().len()]
                     .into_iter()
                     .collect();
-                padding +  &num_part.to_string() + &acc
+                padding + &num_part.to_string() + &acc
             }
         });
     }

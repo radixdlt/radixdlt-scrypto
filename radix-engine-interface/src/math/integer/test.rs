@@ -115,18 +115,18 @@ macro_rules! test_impl {
                     let _ = <$i>::MAX.pow(2u32);             // panics because of overflow
                 }
 
-                #[test] 
+                #[test]
                 fn  [<test_max_to_string_$i:lower>]() {
                     let a = <$i>::MAX;
                     let b = BigInt::from(a);
-                    assert_eq!(a.to_string(), b.to_string()); 
+                    assert_eq!(a.to_string(), b.to_string());
                 }
 
-                #[test] 
+                #[test]
                 fn  [<test_min_to_string_$i:lower>]() {
                     let a = <$i>::MIN;
                     let b = BigInt::from(a);
-                    assert_eq!(a.to_string(), b.to_string()); 
+                    assert_eq!(a.to_string(), b.to_string());
                 }
 
 //                #[test]
