@@ -19,7 +19,6 @@ pub enum DecompileError {
     InvalidSborValue(EncodeError),
     IdAllocationError(IdAllocationError),
     FormattingError(fmt::Error),
-    NativeInvocationToBeRemoved,
 }
 
 impl From<ScryptoValueDecodeError> for DecompileError {
@@ -459,9 +458,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             f.write_str("CLAIM_COMPONENT_ROYALTY")?;
             format_typed_value(f, context, component_address)?;
             f.write_str(";")?;
-        }
-        BasicInstruction::CallNativeFunction { .. } | BasicInstruction::CallNativeMethod { .. } => {
-            return Err(DecompileError::NativeInvocationToBeRemoved);
         }
     }
     Ok(())

@@ -1,9 +1,7 @@
 use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
-};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Blob, Hash};
@@ -287,40 +285,6 @@ impl ManifestBuilder {
             mint_params,
         });
 
-        self
-    }
-
-    // TODO: remove
-    pub fn call_native_method(
-        &mut self,
-        receiver: RENodeId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver,
-                method_name: method_name.to_string(),
-            },
-            args,
-        });
-        self
-    }
-
-    // TODO: remove
-    pub fn call_native_function(
-        &mut self,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<u8>,
-    ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: blueprint_name.to_string(),
-                function_name: function_name.to_string(),
-            },
-            args,
-        });
         self
     }
 
