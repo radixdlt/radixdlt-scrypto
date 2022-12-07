@@ -105,6 +105,39 @@ impl Into<SerializedInvocation> for ProofCloneInvocation {
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub ProofId);
 
+// TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
+/// Specifies the validation mode that should be used for validating a `Proof`.
+pub enum ProofValidationMode {
+    /// Specifies that the `Proof` should be validated against a single `ResourceAddress`.
+    ValidateResourceAddress(ResourceAddress),
+
+    /// Specifies that the `Proof` should have its resource address validated against a set of `ResourceAddress`es. If
+    /// the `Proof`'s resource address belongs to the set, then its valid.
+    ValidateResourceAddressBelongsTo(BTreeSet<ResourceAddress>),
+
+    /// Specifies that the `Proof` should be validating for containing a specific `NonFungibleAddress`.
+    ValidateContainsNonFungible(NonFungibleAddress),
+
+    /// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleId`s
+    /// to ensure that the `Proof` contains all of the NonFungibles in the set.
+    ValidateContainsNonFungibles(ResourceAddress, BTreeSet<NonFungibleId>),
+
+    /// Specifies that the `Proof` should be validated for the amount of resources that it contains.
+    ValidateContainsAmount(ResourceAddress, Decimal),
+}
+
+impl From<ResourceAddress> for ProofValidationMode {
+    fn from(resource_address: ResourceAddress) -> Self {
+        Self::ValidateResourceAddress(resource_address)
+    }
+}
+
+impl From<NonFungibleAddress> for ProofValidationMode {
+    fn from(non_fungible_address: NonFungibleAddress) -> Self {
+        Self::ValidateContainsNonFungible(non_fungible_address)
+    }
+}
+
 //========
 // error
 //========
