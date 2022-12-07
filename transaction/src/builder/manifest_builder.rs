@@ -322,7 +322,10 @@ impl ManifestBuilder {
         let input = ResourceManagerCreateInvocation {
             resource_type,
             metadata,
-            access_rules,
+            access_rules: access_rules
+                .into_iter()
+                .map(|(k, v)| (k, (v.0, v.1.into())))
+                .collect(),
             mint_params,
         };
 
