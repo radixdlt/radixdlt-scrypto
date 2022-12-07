@@ -1,3 +1,4 @@
+use radix_engine_interface::time::*;
 use radix_engine_interface::wasm::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
@@ -95,7 +96,20 @@ blueprint! {
             ));
         }
 
-        pub fn get_current_time_rounded_to_minutes() -> u64 {
+        pub fn test_date_time_conversions() {
+            let now = Clock::current_time_rounded_to_minutes();
+            let dt = DateTime::try_from(now).unwrap();
+            assert!(dt.to_instant().unwrap() == now);
+
+            let now_plus_2d = now.add_days(2).unwrap();
+            let dt_plus_2d = dt.add_days(2).unwrap();
+            let dt_instant_plus_2d = dt_plus_2d.to_instant().unwrap();
+
+            assert!(dt_instant_plus_2d == Instant::new(now.seconds_since_unix_epoch + 172800));
+            assert!(now_plus_2d == Instant::new(now.seconds_since_unix_epoch + 172800));
+        }
+
+        pub fn get_current_time_rounded_to_minutes() -> i64 {
             Clock::current_time_rounded_to_minutes().seconds_since_unix_epoch
         }
 

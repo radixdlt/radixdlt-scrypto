@@ -4,6 +4,7 @@ use sbor::*;
 use crate::api::api::*;
 use crate::model::*;
 use crate::scrypto;
+use crate::time::{Instant, TimeComparisonOperator};
 use crate::wasm::*;
 
 #[derive(Debug)]

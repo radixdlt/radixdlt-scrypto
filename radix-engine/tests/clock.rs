@@ -170,3 +170,26 @@ fn test_clock_comparison_methods_against_the_current_time() {
     // Assert
     receipt.expect_commit_success();
 }
+
+#[test]
+fn test_date_time_conversions() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "ClockTest",
+            "test_date_time_conversions",
+            args![],
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}

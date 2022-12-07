@@ -16,6 +16,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
+use radix_engine_interface::time::*;
 
 const SECONDS_TO_MS_FACTOR: u64 = 1000;
 const MINUTES_TO_SECONDS_FACTOR: u64 = 60;
@@ -203,7 +204,10 @@ impl NativeProcedure for ClockGetCurrentTimeExecutable {
                 let substate_ref = system_api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let instant = Instant::new(
-                    substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
+                    i64::try_from(
+                        substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
+                    )
+                    .expect("i64 overflow on current_time_rounded_to_minutes_ms"),
                 );
                 Ok((instant, CallFrameUpdate::empty()))
             }
@@ -262,11 +266,14 @@ impl NativeProcedure for ClockCompareCurrentTimeExecutable {
                 let substate_ref = system_api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let current_time_instant = Instant::new(
-                    substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
+                    i64::try_from(
+                        substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
+                    )
+                    .expect("i64 overflow on current_time_rounded_to_minutes_ms"),
                 );
                 let other_instant_rounded = Instant::new(
-                    (self.instant.seconds_since_unix_epoch / MINUTES_TO_SECONDS_FACTOR)
-                        * MINUTES_TO_SECONDS_FACTOR,
+                    (self.instant.seconds_since_unix_epoch / MINUTES_TO_SECONDS_FACTOR as i64)
+                        * MINUTES_TO_SECONDS_FACTOR as i64,
                 );
                 let result = current_time_instant.compare(other_instant_rounded, self.operator);
                 Ok((result, CallFrameUpdate::empty()))
