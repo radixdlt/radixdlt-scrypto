@@ -11,7 +11,6 @@ use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
-use transaction::model::BasicInstruction;
 
 #[test]
 fn non_existing_vault_should_cause_error() {
@@ -25,18 +24,7 @@ fn non_existing_vault_should_cause_error() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(BasicInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Vault(non_existing_vault_id),
-                method_name: "recall".to_string(),
-            },
-            args: scrypto_encode(&VaultTakeInvocation {
-                receiver: non_existing_vault_id,
-                amount: Decimal::one(),
-            })
-            .unwrap(),
-        })
-        .0
+        .recall(non_existing_vault_id, Decimal::one())
         .call_method(
             account,
             "deposit_batch",
@@ -56,39 +44,6 @@ fn non_existing_vault_should_cause_error() {
 }
 
 #[test]
-fn cannot_get_amount_on_direct_vault_access() {
-    // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
-    let (_, _, account) = test_runner.new_allocated_account();
-
-    let resource_address = test_runner.create_fungible_resource(10u32.into(), 0u8, account);
-    let vaults = test_runner.get_component_vaults(account, resource_address);
-    let vault_id = vaults[0];
-
-    // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(BasicInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Vault(vault_id),
-                method_name: "get_amount".to_string(),
-            },
-            args: scrypto_encode(&VaultGetAmountInvocation { receiver: vault_id }).unwrap(),
-        })
-        .0
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_specific_failure(|e| {
-        e.eq(&RuntimeError::ModuleError(ModuleError::AuthError(
-            AuthError::VisibilityError(RENodeId::Vault(vault_id)),
-        )))
-    });
-}
-
-#[test]
 fn cannot_take_on_non_recallable_vault() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
@@ -102,18 +57,7 @@ fn cannot_take_on_non_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(BasicInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Vault(vault_id),
-                method_name: "recall".to_string(),
-            },
-            args: scrypto_encode(&VaultTakeInvocation {
-                receiver: vault_id,
-                amount: Decimal::one(),
-            })
-            .unwrap(),
-        })
-        .0
+        .recall(vault_id, Decimal::one())
         .call_method(
             account,
             "deposit_batch",
@@ -156,18 +100,7 @@ fn can_take_on_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(BasicInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Vault(vault_id),
-                method_name: "recall".to_string(),
-            },
-            args: scrypto_encode(&VaultTakeInvocation {
-                receiver: vault_id,
-                amount: Decimal::one(),
-            })
-            .unwrap(),
-        })
-        .0
+        .recall(vault_id, Decimal::one())
         .call_method(
             other_account,
             "deposit_batch",

@@ -693,15 +693,30 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                         })
                 }
-                Instruction::Basic(BasicInstruction::MintFungible {
-                    resource_address,
+                Instruction::Basic(BasicInstruction::MintResource {
                     amount,
+                    resource_address,
                 }) => api
                     .invoke(ResourceManagerMintInvocation {
                         receiver: resource_address.clone(),
                         mint_params: MintParams::Fungible {
                             amount: amount.clone(),
                         },
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|result| {
+                        // Auto move into worktop
+                        for (bucket_id, _) in &result.bucket_ids {
+                            Worktop::sys_put(Bucket(*bucket_id), api)
+                                .map_err(InvokeError::downstream)?;
+                        }
+                        Ok(result)
+                    }),
+                Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => api
+                    .invoke(VaultTakeInvocation {
+                        receiver: vault_id.clone(),
+                        amount: amount.clone(),
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream)
