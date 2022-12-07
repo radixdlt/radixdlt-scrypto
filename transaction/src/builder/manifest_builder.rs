@@ -398,6 +398,22 @@ impl ManifestBuilder {
             .0
     }
 
+    pub fn set_method_access_rule(
+        &mut self,
+        entity_address: GlobalAddress,
+        index: u32,
+        key: AccessRuleKey,
+        rule: AccessRule,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::SetMethodAccessRule {
+            entity_address,
+            index,
+            key,
+            rule,
+        })
+        .0
+    }
+
     pub fn set_metadata(
         &mut self,
         entity_address: GlobalAddress,

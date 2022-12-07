@@ -135,6 +135,7 @@ pub enum TokenKind {
     SetComponentRoyaltyConfig,
     ClaimPackageRoyalty,
     ClaimComponentRoyalty,
+    SetMethodAccessRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -480,6 +481,7 @@ impl Lexer {
             "SET_COMPONENT_ROYALTY_CONFIG" => Ok(TokenKind::SetComponentRoyaltyConfig),
             "CLAIM_PACKAGE_ROYALTY" => Ok(TokenKind::ClaimPackageRoyalty),
             "CLAIM_COMPONENT_ROYALTY" => Ok(TokenKind::ClaimComponentRoyalty),
+            "SET_METHOD_ACCESS_RULE" => Ok(TokenKind::SetMethodAccessRule),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

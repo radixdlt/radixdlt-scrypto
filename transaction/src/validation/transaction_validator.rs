@@ -291,6 +291,7 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::SetComponentRoyaltyConfig { .. } => {}
                 BasicInstruction::ClaimPackageRoyalty { .. } => {}
                 BasicInstruction::ClaimComponentRoyalty { .. } => {}
+                BasicInstruction::SetMethodAccessRule { .. } => {}
             }
         }
 

@@ -160,6 +160,13 @@ pub enum Instruction {
     ClaimComponentRoyalty {
         component_address: Value,
     },
+
+    SetMethodAccessRule {
+        entity_address: Value,
+        index: Value,
+        key: Value,
+        rule: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

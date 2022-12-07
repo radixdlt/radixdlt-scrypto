@@ -184,6 +184,13 @@ pub enum BasicInstruction {
     ClaimComponentRoyalty {
         component_address: ComponentAddress,
     },
+
+    SetMethodAccessRule {
+        entity_address: GlobalAddress,
+        index: u32,
+        key: AccessRuleKey,
+        rule: AccessRule,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

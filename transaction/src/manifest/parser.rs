@@ -212,6 +212,12 @@ impl Parser {
             TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
                 component_address: self.parse_value()?,
             },
+            TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
+                entity_address: self.parse_value()?,
+                index: self.parse_value()?,
+                key: self.parse_value()?,
+                rule: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }
