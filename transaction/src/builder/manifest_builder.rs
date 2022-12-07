@@ -312,11 +312,11 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::DropAllProofs).0
     }
 
-    pub fn create_resource(
+    pub fn create_resource<R: Into<AccessRule>>(
         &mut self,
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, R)>,
         mint_params: Option<MintParams>,
     ) -> &mut Self {
         let input = ResourceManagerCreateInvocation {

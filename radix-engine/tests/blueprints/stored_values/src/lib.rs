@@ -9,7 +9,7 @@ blueprint! {
         pub fn create() -> ComponentAddress {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .restrict_withdraw(rule!(allow_all), LOCKED)
+                .restrict_withdraw(rule!(allow_all), rule!(deny_all))
                 .initial_supply(Decimal::from(5));
 
             let component = InvalidInitStoredBucket { bucket }.instantiate();
@@ -31,7 +31,7 @@ blueprint! {
         pub fn create_bucket_in_owned_component() -> ComponentAddress {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .restrict_withdraw(rule!(allow_all), LOCKED)
+                .restrict_withdraw(rule!(allow_all), rule!(deny_all))
                 .initial_supply(Decimal::from(5));
 
             let component = InvalidStoredBucketInOwnedComponent {

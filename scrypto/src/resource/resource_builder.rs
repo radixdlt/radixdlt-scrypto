@@ -66,13 +66,13 @@ impl FungibleResourceBuilder {
         self
     }
 
-    pub fn mintable(
+    pub fn mintable<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> FungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Mint, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Mint, (method_auth, mutability.into()));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
             metadata: self.metadata,
@@ -80,13 +80,13 @@ impl FungibleResourceBuilder {
         }
     }
 
-    pub fn burnable(
+    pub fn burnable<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> FungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Burn, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Burn, (method_auth, mutability.into()));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
             metadata: self.metadata,
@@ -94,13 +94,13 @@ impl FungibleResourceBuilder {
         }
     }
 
-    pub fn recallable(
+    pub fn recallable<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> FungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Recall, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Recall, (method_auth, mutability.into()));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
             metadata: self.metadata,
@@ -108,13 +108,13 @@ impl FungibleResourceBuilder {
         }
     }
 
-    pub fn restrict_withdraw(
+    pub fn restrict_withdraw<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> FungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Withdraw, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Withdraw, (method_auth, mutability.into()));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
             metadata: self.metadata,
@@ -122,13 +122,13 @@ impl FungibleResourceBuilder {
         }
     }
 
-    pub fn restrict_deposit(
+    pub fn restrict_deposit<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> FungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Deposit, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Deposit, (method_auth, mutability.into()));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
             metadata: self.metadata,
@@ -136,13 +136,13 @@ impl FungibleResourceBuilder {
         }
     }
 
-    pub fn updateable_metadata(
+    pub fn updateable_metadata<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> FungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(UpdateMetadata, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(UpdateMetadata, (method_auth, mutability.into()));
         FungibleResourceWithAuthBuilder {
             divisibility: self.divisibility,
             metadata: self.metadata,
@@ -249,39 +249,55 @@ impl FungibleResourceWithAuthBuilder {
         self
     }
 
-    pub fn mintable(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+    pub fn mintable<R: Into<AccessRule>>(mut self, method_auth: AccessRule, mutability: R) -> Self {
         self.authorization
-            .insert(Mint, (method_auth, AccessRule::from(mutability)));
+            .insert(Mint, (method_auth, mutability.into()));
         self
     }
 
-    pub fn burnable(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+    pub fn burnable<R: Into<AccessRule>>(mut self, method_auth: AccessRule, mutability: R) -> Self {
         self.authorization
-            .insert(Burn, (method_auth, AccessRule::from(mutability)));
+            .insert(Burn, (method_auth, mutability.into()));
         self
     }
 
-    pub fn recallable(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+    pub fn recallable<R: Into<AccessRule>>(
+        mut self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self {
         self.authorization
-            .insert(Recall, (method_auth, AccessRule::from(mutability)));
+            .insert(Recall, (method_auth, mutability.into()));
         self
     }
 
-    pub fn restrict_withdraw(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+    pub fn restrict_withdraw<R: Into<AccessRule>>(
+        mut self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self {
         self.authorization
-            .insert(Withdraw, (method_auth, AccessRule::from(mutability)));
+            .insert(Withdraw, (method_auth, mutability.into()));
         self
     }
 
-    pub fn restrict_deposit(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+    pub fn restrict_deposit<R: Into<AccessRule>>(
+        mut self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self {
         self.authorization
-            .insert(Deposit, (method_auth, AccessRule::from(mutability)));
+            .insert(Deposit, (method_auth, mutability.into()));
         self
     }
 
-    pub fn updateable_metadata(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+    pub fn updateable_metadata<R: Into<AccessRule>>(
+        mut self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self {
         self.authorization
-            .insert(UpdateMetadata, (method_auth, AccessRule::from(mutability)));
+            .insert(UpdateMetadata, (method_auth, mutability.into()));
         self
     }
 
@@ -343,13 +359,13 @@ impl NonFungibleResourceBuilder {
         self
     }
 
-    pub fn mintable(
+    pub fn mintable<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> NonFungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Mint, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Mint, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
             metadata: self.metadata,
@@ -357,13 +373,13 @@ impl NonFungibleResourceBuilder {
         }
     }
 
-    pub fn burnable(
+    pub fn burnable<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> NonFungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Burn, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Burn, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
             metadata: self.metadata,
@@ -371,13 +387,13 @@ impl NonFungibleResourceBuilder {
         }
     }
 
-    pub fn recallable(
+    pub fn recallable<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> NonFungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Recall, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Recall, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
             metadata: self.metadata,
@@ -385,13 +401,13 @@ impl NonFungibleResourceBuilder {
         }
     }
 
-    pub fn restrict_withdraw(
+    pub fn restrict_withdraw<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> NonFungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Withdraw, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Withdraw, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
             metadata: self.metadata,
@@ -399,13 +415,13 @@ impl NonFungibleResourceBuilder {
         }
     }
 
-    pub fn restrict_deposit(
+    pub fn restrict_deposit<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> NonFungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(Deposit, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(Deposit, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
             metadata: self.metadata,
@@ -413,13 +429,13 @@ impl NonFungibleResourceBuilder {
         }
     }
 
-    pub fn updateable_metadata(
+    pub fn updateable_metadata<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> NonFungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(UpdateMetadata, (method_auth, AccessRule::from(mutability)));
+        authorization.insert(UpdateMetadata, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
             metadata: self.metadata,
@@ -427,16 +443,13 @@ impl NonFungibleResourceBuilder {
         }
     }
 
-    pub fn updateable_non_fungible_data(
+    pub fn updateable_non_fungible_data<R: Into<AccessRule>>(
         self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> NonFungibleResourceWithAuthBuilder {
         let mut authorization = HashMap::new();
-        authorization.insert(
-            UpdateNonFungibleData,
-            (method_auth, AccessRule::from(mutability)),
-        );
+        authorization.insert(UpdateNonFungibleData, (method_auth, mutability.into()));
         NonFungibleResourceWithAuthBuilder {
             id_type: self.id_type,
             metadata: self.metadata,
@@ -557,51 +570,65 @@ impl NonFungibleResourceWithAuthBuilder {
         self
     }
 
-    pub fn mintable(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+    pub fn mintable<R: Into<AccessRule>>(mut self, method_auth: AccessRule, mutability: R) -> Self {
         self.authorization
-            .insert(Mint, (method_auth, AccessRule::from(mutability)));
+            .insert(Mint, (method_auth, mutability.into()));
         self
     }
 
-    pub fn burnable(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
+    pub fn burnable<R: Into<AccessRule>>(mut self, method_auth: AccessRule, mutability: R) -> Self {
         self.authorization
-            .insert(Burn, (method_auth, AccessRule::from(mutability)));
+            .insert(Burn, (method_auth, mutability.into()));
         self
     }
 
-    pub fn recallable(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
-        self.authorization
-            .insert(Recall, (method_auth, AccessRule::from(mutability)));
-        self
-    }
-
-    pub fn restrict_withdraw(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
-        self.authorization
-            .insert(Withdraw, (method_auth, AccessRule::from(mutability)));
-        self
-    }
-
-    pub fn restrict_deposit(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
-        self.authorization
-            .insert(Deposit, (method_auth, AccessRule::from(mutability)));
-        self
-    }
-
-    pub fn updateable_metadata(mut self, method_auth: AccessRule, mutability: Mutability) -> Self {
-        self.authorization
-            .insert(UpdateMetadata, (method_auth, AccessRule::from(mutability)));
-        self
-    }
-
-    pub fn updateable_non_fungible_data(
+    pub fn recallable<R: Into<AccessRule>>(
         mut self,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> Self {
-        self.authorization.insert(
-            UpdateNonFungibleData,
-            (method_auth, AccessRule::from(mutability)),
-        );
+        self.authorization
+            .insert(Recall, (method_auth, mutability.into()));
+        self
+    }
+
+    pub fn restrict_withdraw<R: Into<AccessRule>>(
+        mut self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self {
+        self.authorization
+            .insert(Withdraw, (method_auth, mutability.into()));
+        self
+    }
+
+    pub fn restrict_deposit<R: Into<AccessRule>>(
+        mut self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self {
+        self.authorization
+            .insert(Deposit, (method_auth, mutability.into()));
+        self
+    }
+
+    pub fn updateable_metadata<R: Into<AccessRule>>(
+        mut self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self {
+        self.authorization
+            .insert(UpdateMetadata, (method_auth, mutability.into()));
+        self
+    }
+
+    pub fn updateable_non_fungible_data<R: Into<AccessRule>>(
+        mut self,
+        method_auth: AccessRule,
+        mutability: R,
+    ) -> Self {
+        self.authorization
+            .insert(UpdateNonFungibleData, (method_auth, mutability.into()));
         self
     }
 

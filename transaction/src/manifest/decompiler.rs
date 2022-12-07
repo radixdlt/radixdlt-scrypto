@@ -572,7 +572,7 @@ mod tests {
     struct BadResourceManagerCreateInput {
         pub resource_type: ResourceType,
         pub metadata: HashMap<String, String>,
-        pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         // pub mint_params: Option<MintParams>,
     }
 

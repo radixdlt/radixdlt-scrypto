@@ -103,7 +103,7 @@ fn test_dynamic_authlist(
         .iter()
         .map(|index| NonFungibleAddress::from_public_key(&key_and_addresses.get(*index).unwrap().0))
         .collect();
-    let authorization = AccessRules::new().method("get_secret", auth_rule, LOCKED);
+    let authorization = AccessRules::new().method("get_secret", auth_rule, rule!(deny_all));
 
     // Arrange
     let package = test_runner.compile_and_publish("./tests/blueprints/component");

@@ -36,26 +36,6 @@ pub enum ResourceMethodAuthKey {
     Recall,
 }
 
-// TODO: Move this enum to another crate.
-// The Radix Engine does not rely on or use this enum in any way. It is mainly syntactic sugar for
-// Scrypto and the manifest builder. Therefore, it does not make sense to have this be in the
-// radix-engine-interface crate.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-pub enum Mutability {
-    LOCKED,
-    MUTABLE(AccessRule),
-}
-
-impl From<Mutability> for AccessRule {
-    fn from(val: Mutability) -> Self {
-        match val {
-            LOCKED => AccessRule::DenyAll,
-            MUTABLE(rule) => rule,
-        }
-    }
-}
-
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateInvocation {
