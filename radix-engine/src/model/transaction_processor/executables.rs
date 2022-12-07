@@ -73,7 +73,8 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
             match instruction {
                 Instruction::Basic(BasicInstruction::CallFunction { args, .. })
                 | Instruction::Basic(BasicInstruction::CallMethod { args, .. })
-                | Instruction::System(SystemInstruction::CallNativeFunction { args, .. }) => {
+                | Instruction::System(SystemInstruction::CallNativeFunction { args, .. })
+                | Instruction::System(SystemInstruction::CallNativeMethod { args, .. }) => {
                     let scrypto_value =
                         IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                     for global_address in scrypto_value.global_references() {
@@ -82,26 +83,13 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
                             .insert(RENodeId::Global(global_address));
                     }
                 }
-                Instruction::System(SystemInstruction::CallNativeMethod { args, method_ident }) => {
-                    let scrypto_value =
-                        IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
-                    for global_address in scrypto_value.global_references() {
-                        call_frame_update
-                            .node_refs_to_copy
-                            .insert(RENodeId::Global(global_address));
-                    }
-
+                Instruction::Basic(BasicInstruction::RecallResource { vault_id, .. }) => {
                     // TODO: This needs to be cleaned up
                     // TODO: How does this relate to newly created vaults in the transaction frame?
                     // TODO: Will probably want different spacing for refed vs. owned nodes
-                    match method_ident.receiver {
-                        RENodeId::Vault(..) => {
-                            call_frame_update
-                                .node_refs_to_copy
-                                .insert(method_ident.receiver);
-                        }
-                        _ => {}
-                    }
+                    call_frame_update
+                        .node_refs_to_copy
+                        .insert(RENodeId::Vault(*vault_id));
                 }
                 _ => {}
             }
@@ -714,7 +702,7 @@ impl TransactionProcessor {
                         Ok(result)
                     }),
                 Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => api
-                    .invoke(VaultTakeInvocation {
+                    .invoke(VaultRecallInvocation {
                         receiver: vault_id.clone(),
                         amount: amount.clone(),
                     })
