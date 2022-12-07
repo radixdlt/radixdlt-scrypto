@@ -725,22 +725,6 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
         );
     }
 
-    #[test]
-    fn test_decompile_non_fungible_ids() {
-        let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/non_fungible_ids_canonical.rtm"),
-            &NetworkDefinition::simulator(),
-            vec![],
-        );
-
-        // Act
-        compile_and_decompile_with_inversion_test(
-            &canonical_manifest,
-            &NetworkDefinition::simulator(),
-            vec![],
-        );
-    }
-
     fn compile_and_decompile_with_inversion_test(
         manifest: &str,
         network: &NetworkDefinition,
