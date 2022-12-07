@@ -48,7 +48,6 @@ impl NewAccount {
             &self.manifest,
             self.trace,
             false,
-            false,
             out,
         )?;
 

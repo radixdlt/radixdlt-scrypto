@@ -1,6 +1,7 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::data::*;
 use transaction::model::SystemInstruction;
 
@@ -28,6 +29,8 @@ impl SetCurrentEpoch {
         }
         .into()];
         let blobs = vec![];
-        handle_system_transaction(instructions, blobs, self.trace, true, out).map(|_| ())
+        let initial_proofs = vec![AuthAddresses::validator_role()];
+        handle_system_transaction(instructions, blobs, initial_proofs, self.trace, true, out)
+            .map(|_| ())
     }
 }

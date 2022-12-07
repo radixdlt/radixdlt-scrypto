@@ -71,7 +71,6 @@ use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
-use transaction::model::AuthModule;
 use transaction::model::Instruction;
 use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
@@ -149,6 +148,7 @@ pub fn run() -> Result<(), Error> {
 pub fn handle_system_transaction<O: std::io::Write>(
     instructions: Vec<Instruction>,
     blobs: Vec<Vec<u8>>,
+    initial_proofs: Vec<NonFungibleAddress>,
     trace: bool,
     print_receipt: bool,
     out: &mut O,
@@ -180,7 +180,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
             trace,
             max_sys_call_trace_depth: 1,
         },
-        &transaction.get_executable(vec![]),
+        &transaction.get_executable(initial_proofs),
     );
 
     if print_receipt {
@@ -213,7 +213,6 @@ pub fn handle_manifest<O: std::io::Write>(
     write_manifest: &Option<PathBuf>,
     trace: bool,
     print_receipt: bool,
-    with_system_privilege: bool,
     out: &mut O,
 ) -> Result<Option<TransactionReceipt>, Error> {
     let network = match network {
@@ -251,13 +250,10 @@ pub fn handle_manifest<O: std::io::Write>(
             };
 
             let sks = get_signing_keys(signing_keys)?;
-            let mut initial_proofs = sks
+            let initial_proofs = sks
                 .into_iter()
                 .map(|e| NonFungibleAddress::from_public_key(&e.public_key()))
                 .collect::<Vec<NonFungibleAddress>>();
-            if with_system_privilege {
-                initial_proofs.push(AuthModule::system_role_non_fungible_address());
-            }
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
 

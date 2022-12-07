@@ -5,12 +5,12 @@ use radix_engine::ledger::{
     WriteableSubstateStore,
 };
 use radix_engine::types::*;
+use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::AuthModule;
 
 fn test_auth_rule<
     's,
@@ -36,7 +36,7 @@ fn test_auth_rule<
         )
         .build();
     let receipt =
-        test_runner.execute_manifest(manifest, AuthModule::pk_non_fungibles(signer_public_keys));
+        test_runner.execute_manifest(manifest, AuthAddresses::signer_set(signer_public_keys));
 
     // Assert
     if should_succeed {

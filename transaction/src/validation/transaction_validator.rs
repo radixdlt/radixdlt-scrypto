@@ -93,7 +93,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
                 transaction_hash,
                 payload_size,
                 auth_zone_params: AuthZoneParams {
-                    initial_proofs: AuthModule::pk_non_fungibles(&signer_keys),
+                    initial_proofs: AuthAddresses::signer_set(&signer_keys),
                     virtualizable_proofs_resource_addresses: BTreeSet::new(),
                 },
                 fee_payment: FeePayment::User {
@@ -129,7 +129,7 @@ impl NotarizedTransactionValidator {
         let flags = &preview_intent.flags;
         let intent_hash = intent.hash()?;
         self.validate_intent(&intent_hash, intent, intent_hash_manager)?;
-        let initial_proofs = AuthModule::pk_non_fungibles(&preview_intent.signer_public_keys);
+        let initial_proofs = AuthAddresses::signer_set(&preview_intent.signer_public_keys);
 
         let mut virtualizable_proofs_resource_addresses = BTreeSet::new();
         if flags.assume_all_signature_proofs {

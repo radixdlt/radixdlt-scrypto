@@ -107,7 +107,6 @@ impl NewSimpleBadge {
             &self.manifest,
             self.trace,
             false,
-            false,
             out,
         )
         .unwrap()

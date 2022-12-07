@@ -1,4 +1,6 @@
 use crate::construct_address;
+use crate::crypto::PublicKey;
+use crate::model::FromPublicKey;
 use crate::model::*;
 
 // After changing Radix Engine ID allocation, you will most likely need to update the addresses below.
@@ -292,3 +294,22 @@ pub const CLOCK_BLUEPRINT: &str = "Clock";
 pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
 pub const PACKAGE_BLUEPRINT: &str = "Package";
 pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
+
+pub struct AuthAddresses;
+
+impl AuthAddresses {
+    pub fn genesis_role() -> NonFungibleAddress {
+        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(1))
+    }
+
+    pub fn validator_role() -> NonFungibleAddress {
+        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))
+    }
+
+    pub fn signer_set(signer_public_keys: &[PublicKey]) -> Vec<NonFungibleAddress> {
+        signer_public_keys
+            .iter()
+            .map(NonFungibleAddress::from_public_key)
+            .collect()
+    }
+}

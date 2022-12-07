@@ -1,11 +1,12 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{AuthModule, SystemInstruction, SystemTransaction};
+use transaction::model::{SystemInstruction, SystemTransaction};
 
 #[test]
 fn a_new_clock_instance_can_be_created_by_the_system() {
@@ -29,7 +30,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
             blobs,
             nonce: 0,
         }
-        .get_executable(vec![AuthModule::system_role_non_fungible_address()]),
+        .get_executable(vec![AuthAddresses::genesis_role()]),
     );
 
     // Assert
@@ -118,10 +119,7 @@ fn validator_can_set_current_time() {
             args![],
         )
         .build();
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![AuthModule::validator_role_non_fungible_address()],
-    );
+    let receipt = test_runner.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
 
     // Assert
     let outputs = receipt.expect_commit_success();
@@ -180,10 +178,7 @@ fn test_clock_comparison_methods_against_the_current_time() {
             args![],
         )
         .build();
-    let receipt = test_runner.execute_manifest(
-        manifest,
-        vec![AuthModule::validator_role_non_fungible_address()],
-    );
+    let receipt = test_runner.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
 
     // Assert
     receipt.expect_commit_success();

@@ -1,11 +1,12 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{AuthModule, SystemInstruction, SystemTransaction};
+use transaction::model::{SystemInstruction, SystemTransaction};
 
 #[test]
 fn get_epoch_should_succeed() {
@@ -107,7 +108,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             blobs,
             nonce: 0,
         }
-        .get_executable(vec![AuthModule::system_role_non_fungible_address()]),
+        .get_executable(vec![AuthAddresses::genesis_role()]),
     );
 
     // Assert

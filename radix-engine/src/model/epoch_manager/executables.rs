@@ -1,5 +1,5 @@
 use crate::engine::{
-    deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
     NativeProcedure, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolverApi, RuntimeError,
     SystemApi,
 };
@@ -14,6 +14,7 @@ use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
 };
+use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
 
@@ -58,13 +59,12 @@ impl NativeProcedure for EpochManagerCreateInvocation {
 
         let epoch_manager = EpochManagerSubstate { epoch: 0 };
 
-        let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
                 EpochManagerMethod::SetEpoch,
             ))),
-            rule!(require(auth_non_fungible)),
+            rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
@@ -199,7 +199,7 @@ impl EpochManager {
             EpochManagerFunction::Create => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::system_id()),
+                        AuthAddresses::genesis_role(),
                     )),
                 ))]
             }
