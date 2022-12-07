@@ -15,6 +15,7 @@ pub struct SystemTransaction {
 
 impl SystemTransaction {
     pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
+        // Fake transaction hash
         let transaction_hash = hash(self.nonce.to_le_bytes());
 
         let auth_zone_params = AuthZoneParams {

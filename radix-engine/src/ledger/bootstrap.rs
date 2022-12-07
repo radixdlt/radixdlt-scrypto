@@ -12,7 +12,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
-use transaction::model::{BasicInstruction, SystemInstruction, SystemTransaction};
+use transaction::model::{AuthModule, BasicInstruction, SystemInstruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
 
 const XRD_SYMBOL: &str = "XRD";
@@ -251,7 +251,8 @@ where
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &genesis_transaction.get_executable(vec![]),
+            &genesis_transaction
+                .get_executable(vec![AuthModule::system_role_non_fungible_address()]),
         );
 
         let commit_result = transaction_receipt.expect_commit();
@@ -289,7 +290,8 @@ mod tests {
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &genesis_transaction.get_executable(vec![]),
+            &genesis_transaction
+                .get_executable(vec![AuthModule::system_role_non_fungible_address()]),
         );
 
         let commit_result = transaction_receipt.expect_commit();
