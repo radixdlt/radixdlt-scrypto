@@ -73,7 +73,6 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
             match instruction {
                 Instruction::Basic(BasicInstruction::CallFunction { args, .. })
                 | Instruction::Basic(BasicInstruction::CallMethod { args, .. })
-                | Instruction::Basic(BasicInstruction::CallNativeFunction { args, .. })
                 | Instruction::System(SystemInstruction::CallNativeFunction { args, .. }) => {
                     let scrypto_value =
                         IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
@@ -83,9 +82,7 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
                             .insert(RENodeId::Global(global_address));
                     }
                 }
-                Instruction::Basic(BasicInstruction::CallNativeMethod { args, method_ident })
-                | Instruction::System(SystemInstruction::CallNativeMethod { args, method_ident }) =>
-                {
+                Instruction::System(SystemInstruction::CallNativeMethod { args, method_ident }) => {
                     let scrypto_value =
                         IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                     for global_address in scrypto_value.global_references() {
@@ -783,11 +780,7 @@ impl TransactionProcessor {
                         }
                         Ok(result)
                     }),
-                Instruction::Basic(BasicInstruction::CallNativeFunction {
-                    function_ident,
-                    args,
-                })
-                | Instruction::System(SystemInstruction::CallNativeFunction {
+                Instruction::System(SystemInstruction::CallNativeFunction {
                     function_ident,
                     args,
                 }) => {
@@ -830,9 +823,7 @@ impl TransactionProcessor {
                         Ok(result)
                     })
                 }
-                Instruction::Basic(BasicInstruction::CallNativeMethod { method_ident, args })
-                | Instruction::System(SystemInstruction::CallNativeMethod { method_ident, args }) =>
-                {
+                Instruction::System(SystemInstruction::CallNativeMethod { method_ident, args }) => {
                     Self::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,

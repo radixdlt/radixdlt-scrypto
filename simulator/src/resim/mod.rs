@@ -72,6 +72,8 @@ use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
 use transaction::model::AuthModule;
+use transaction::model::Instruction;
+use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
@@ -141,6 +143,66 @@ pub fn run() -> Result<(), Error> {
         Command::ShowLedger(cmd) => cmd.run(&mut out),
         Command::Show(cmd) => cmd.run(&mut out),
         Command::Transfer(cmd) => cmd.run(&mut out),
+    }
+}
+
+pub fn handle_system_transaction<O: std::io::Write>(
+    instructions: Vec<Instruction>,
+    blobs: Vec<Vec<u8>>,
+    trace: bool,
+    print_receipt: bool,
+    out: &mut O,
+) -> Result<Option<TransactionReceipt>, Error> {
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+
+    let mut scrypto_interpreter = ScryptoInterpreter {
+        wasm_engine: DefaultWasmEngine::default(),
+        wasm_instrumenter: WasmInstrumenter::default(),
+        wasm_metering_config: WasmMeteringConfig::new(
+            InstructionCostRules::tiered(1, 5, 10, 5000),
+            1024,
+        ),
+    };
+
+    let nonce = get_nonce()?;
+    let transaction = SystemTransaction {
+        instructions,
+        blobs,
+        nonce,
+    };
+
+    let receipt = execute_and_commit_transaction(
+        &mut substate_store,
+        &mut scrypto_interpreter,
+        &FeeReserveConfig::default(),
+        &ExecutionConfig {
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            trace,
+            max_sys_call_trace_depth: 1,
+        },
+        &transaction.get_executable(),
+    );
+
+    if print_receipt {
+        writeln!(out, "{}", receipt.display(&Bech32Encoder::for_simulator()))
+            .map_err(Error::IOError)?;
+    }
+
+    if receipt.is_commit() {
+        let mut configs = get_configs()?;
+        configs.nonce = nonce + 1;
+        set_configs(&configs)?;
+        return Ok(Some(receipt));
+    }
+
+    match receipt.result {
+        TransactionResult::Commit(commit) => match commit.outcome {
+            TransactionOutcome::Failure(error) => Err(Error::TransactionExecutionError(error)),
+            TransactionOutcome::Success(..) => {
+                panic!("Success case handled above to appease borrowing rules")
+            }
+        },
+        TransactionResult::Reject(rejection) => Err(Error::TransactionRejected(rejection.error)),
     }
 }
 

@@ -192,6 +192,7 @@ pub fn create_genesis() -> SystemTransaction {
             create_eddsa_ed25519_token.into(),
         ],
         blobs,
+        nonce: 0,
     }
 }
 

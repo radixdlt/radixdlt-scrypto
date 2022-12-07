@@ -1,21 +1,20 @@
+use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
 use crate::model::{AuthModule, AuthZoneParams, Executable};
-use radix_engine_interface::crypto::Hash;
-
+use radix_engine_interface::crypto::hash;
 use radix_engine_interface::scrypto;
 use std::collections::BTreeSet;
-
-use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
     pub blobs: Vec<Vec<u8>>,
+    pub nonce: u64,
 }
 
 impl SystemTransaction {
     pub fn get_executable<'a>(&'a self) -> Executable<'a> {
-        let transaction_hash = Hash([0u8; Hash::LENGTH]);
+        let transaction_hash = hash(self.nonce.to_le_bytes());
 
         let auth_zone_params = AuthZoneParams {
             initial_proofs: vec![AuthModule::system_role_non_fungible_address()],
