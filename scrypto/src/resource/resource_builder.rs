@@ -307,7 +307,7 @@ impl NonFungibleResourceBuilder {
     pub fn new(id_type: NonFungibleIdType) -> Self {
         Self {
             metadata: HashMap::new(),
-            id_type
+            id_type,
         }
     }
 
@@ -425,11 +425,11 @@ impl NonFungibleResourceBuilder {
     ///
     /// # Example
     /// ```ignore
-    /// let bucket = ResourceBuilder::new_non_fungible()
+    /// let bucket = ResourceBuilder::new_non_fungible(NonFungibleIdType::UUID)
     ///     .metadata("name", "TestNonFungible")
     ///     .initial_supply([
-    ///         (NftKey::from(1u128), "immutable_part", "mutable_part"),
-    ///         (NftKey::from(2u128), "another_immutable_part", "another_mutable_part"),
+    ///         (NonFungibleId::from(1u128), "immutable_part", "mutable_part"),
+    ///         (NonFungibleId::from(2u128), "another_immutable_part", "another_mutable_part"),
     ///     ]);
     /// ```
     pub fn initial_supply<T, V>(self, entries: T) -> Bucket
@@ -572,11 +572,6 @@ impl NonFungibleResourceWithAuthBuilder {
             UpdateNonFungibleData,
             (method_auth, AccessRule::from(mutability)),
         );
-        self
-    }
-
-    pub fn id_type(mut self, id_type: NonFungibleIdType) -> Self {
-        self.id_type = id_type;
         self
     }
 

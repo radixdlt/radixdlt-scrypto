@@ -587,7 +587,7 @@ mod tests {
                 },
                 args: scrypto_encode(&BadResourceManagerCreateInput {
                     resource_type: ResourceType::NonFungible {
-                        id_type: NonFungibleIdType::UUID
+                        id_type: NonFungibleIdType::UUID,
                     },
                     metadata: HashMap::new(),
                     access_rules: HashMap::new(),

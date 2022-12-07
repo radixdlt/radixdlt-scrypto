@@ -563,14 +563,23 @@ impl ManifestBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
         resource_auth.insert(
             Mint,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            (
+                rule!(require(minter_resource_address.clone())),
+                rule!(deny_all),
+            ),
         );
         resource_auth.insert(
             Burn,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            (
+                rule!(require(minter_resource_address.clone())),
+                rule!(deny_all),
+            ),
         );
 
         let mint_params: Option<MintParams> = Option::None;
@@ -579,12 +588,13 @@ impl ManifestBuilder {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: args!(
-                ResourceType::Fungible { divisibility: 18 },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible { divisibility: 18 },
                 metadata,
-                resource_auth,
-                mint_params
-            ),
+                access_rules: resource_auth,
+                mint_params,
+            })
+            .unwrap(),
         })
         .0
     }
@@ -596,21 +606,25 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: args!(
-                ResourceType::Fungible { divisibility: 18 },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible { divisibility: 18 },
                 metadata,
-                resource_auth,
-                Option::Some(MintParams::Fungible {
+                access_rules: resource_auth,
+                mint_params: Option::Some(MintParams::Fungible {
                     amount: initial_supply.into(),
-                })
-            ),
+                }),
+            })
+            .unwrap(),
         })
         .0
     }
@@ -622,14 +636,23 @@ impl ManifestBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
         resource_auth.insert(
             Mint,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            (
+                rule!(require(minter_resource_address.clone())),
+                rule!(deny_all),
+            ),
         );
         resource_auth.insert(
             Burn,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            (
+                rule!(require(minter_resource_address.clone())),
+                rule!(deny_all),
+            ),
         );
 
         let mint_params: Option<MintParams> = Option::None;
@@ -639,12 +662,13 @@ impl ManifestBuilder {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: args!(
-                ResourceType::Fungible { divisibility: 0 },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible { divisibility: 18 },
                 metadata,
-                resource_auth,
-                mint_params
-            ),
+                access_rules: resource_auth,
+                mint_params,
+            })
+            .unwrap(),
         })
         .0
     }
@@ -656,21 +680,25 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
 
         self.add_instruction(Instruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                 function_name: ResourceManagerFunction::Create.to_string(),
             },
-            args: args!(
-                ResourceType::Fungible { divisibility: 0 },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible { divisibility: 0 },
                 metadata,
-                resource_auth,
-                Option::Some(MintParams::Fungible {
+                access_rules: resource_auth,
+                mint_params: Option::Some(MintParams::Fungible {
                     amount: initial_supply.into(),
-                })
-            ),
+                }),
+            })
+            .unwrap(),
         })
         .0
     }

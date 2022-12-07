@@ -20,9 +20,8 @@ blueprint! {
                 .initial_supply(1);
 
             // Create non-fungible resource with mutable supply
-            let resource_address = ResourceBuilder::new_non_fungible()
+            let resource_address = ResourceBuilder::new_non_fungible(NonFungibleIdType::U32)
                 .metadata("name", "Katz's Sandwiches")
-                .id_type(NonFungibleIdType::U32)
                 .mintable(rule!(require(mint_badge.resource_address())), LOCKED)
                 .burnable(rule!(allow_all), LOCKED)
                 .updateable_non_fungible_data(rule!(require(mint_badge.resource_address())), LOCKED)
@@ -58,9 +57,8 @@ blueprint! {
         }
 
         pub fn create_burnable_non_fungible() -> Bucket {
-            ResourceBuilder::new_non_fungible()
+            ResourceBuilder::new_non_fungible(NonFungibleIdType::U32)
                 .metadata("name", "Katz's Sandwiches")
-                .id_type(NonFungibleIdType::U32)
                 .burnable(rule!(allow_all), LOCKED)
                 .initial_supply([
                     (
@@ -81,9 +79,8 @@ blueprint! {
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
-            ResourceBuilder::new_non_fungible()
+            ResourceBuilder::new_non_fungible(NonFungibleIdType::U32)
                 .metadata("name", "Katz's Sandwiches")
-                .id_type(NonFungibleIdType::U32)
                 .initial_supply([
                     (
                         NonFungibleId::U32(1),
@@ -250,7 +247,7 @@ blueprint! {
 
         pub fn create_wrong_non_fungible_id_type() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            ResourceBuilder::new_non_fungible()
+            ResourceBuilder::new_non_fungible(NonFungibleIdType::UUID)
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply([(
                     // adding non-fungible id with id type Number
@@ -264,7 +261,7 @@ blueprint! {
 
         pub fn create_with_default_non_fungible_id_type() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            ResourceBuilder::new_non_fungible()
+            ResourceBuilder::new_non_fungible(NonFungibleIdType::UUID)
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply([(
                     // adding random non-fungible id with type UUID
