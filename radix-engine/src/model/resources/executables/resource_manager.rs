@@ -107,29 +107,29 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateWithOwnerIn
         let mut access_rules = HashMap::new();
         access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
-            (AllowAll, MUTABLE(rule!(require(owner_badge.clone())))),
+            (AllowAll, rule!(require(owner_badge.clone()))),
         );
         access_rules.insert(
             ResourceMethodAuthKey::Deposit,
-            (AllowAll, MUTABLE(rule!(require(owner_badge.clone())))),
+            (AllowAll, rule!(require(owner_badge.clone()))),
         );
         access_rules.insert(
             ResourceMethodAuthKey::Recall,
-            (DenyAll, MUTABLE(rule!(require(owner_badge.clone())))),
+            (DenyAll, rule!(require(owner_badge.clone()))),
         );
         access_rules.insert(
             Mint,
-            (DenyAll, MUTABLE(rule!(require(owner_badge.clone())))),
+            (DenyAll, rule!(require(owner_badge.clone()))),
         );
         access_rules.insert(
             Burn,
-            (DenyAll, MUTABLE(rule!(require(owner_badge.clone())))),
+            (DenyAll, rule!(require(owner_badge.clone()))),
         );
         access_rules.insert(
             UpdateNonFungibleData,
             (
                 rule!(require(owner_badge.clone())),
-                MUTABLE(rule!(require(owner_badge.clone()))),
+                rule!(require(owner_badge.clone())),
             ),
         );
 
@@ -268,18 +268,18 @@ where
 }
 
 fn build_substates(
-    mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    mut access_rules_map: HashMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     metadata_access_rule: AccessRule,
     metadata_mutability: AccessRule,
 ) -> (AccessRulesChainSubstate, AccessRulesChainSubstate) {
     let (mint_access_rule, mint_mutability) =
-        access_rules_map.remove(&Mint).unwrap_or((DenyAll, LOCKED));
+        access_rules_map.remove(&Mint).unwrap_or((DenyAll, rule!(deny_all)));
     let (burn_access_rule, burn_mutability) =
-        access_rules_map.remove(&Burn).unwrap_or((DenyAll, LOCKED));
+        access_rules_map.remove(&Burn).unwrap_or((DenyAll, rule!(deny_all)));
     let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
         access_rules_map
             .remove(&UpdateNonFungibleData)
-            .unwrap_or((AllowAll, LOCKED));
+            .unwrap_or((AllowAll, rule!(deny_all)));
 
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
@@ -287,14 +287,14 @@ fn build_substates(
             ResourceManagerMethod::Mint,
         ))),
         mint_access_rule,
-        mint_mutability.into(),
+        mint_mutability,
     );
     access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
             ResourceManagerMethod::Burn,
         ))),
         burn_access_rule,
-        burn_mutability.into(),
+        burn_mutability,
     );
     access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
@@ -308,7 +308,7 @@ fn build_substates(
             ResourceManagerMethod::UpdateNonFungibleData,
         ))),
         update_non_fungible_data_access_rule,
-        update_non_fungible_data_mutability.into(),
+        update_non_fungible_data_mutability,
     );
     access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
@@ -380,24 +380,24 @@ fn build_substates(
 
     let (deposit_access_rule, deposit_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Deposit)
-        .unwrap_or((AllowAll, LOCKED));
+        .unwrap_or((AllowAll, rule!(deny_all)));
     let (withdraw_access_rule, withdraw_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Withdraw)
-        .unwrap_or((AllowAll, LOCKED));
+        .unwrap_or((AllowAll, rule!(deny_all)));
     let (recall_access_rule, recall_mutability) = access_rules_map
         .remove(&ResourceMethodAuthKey::Recall)
-        .unwrap_or((DenyAll, LOCKED));
+        .unwrap_or((DenyAll, rule!(deny_all)));
 
     let mut vault_access_rules = AccessRules::new();
     vault_access_rules.set_group_access_rule_and_mutability(
         "withdraw".to_string(),
         withdraw_access_rule,
-        withdraw_mutability.into(),
+        withdraw_mutability,
     );
     vault_access_rules.set_group_access_rule_and_mutability(
         "recall".to_string(),
         recall_access_rule,
-        recall_mutability.into(),
+        recall_mutability,
     );
     vault_access_rules.set_group_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
@@ -420,7 +420,7 @@ fn build_substates(
     vault_access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
         deposit_access_rule,
-        deposit_mutability.into(),
+        deposit_mutability,
     );
     vault_access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
