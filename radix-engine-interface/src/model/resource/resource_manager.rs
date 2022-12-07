@@ -43,9 +43,9 @@ pub enum Mutability {
     MUTABLE(AccessRule),
 }
 
-impl Into<AccessRule> for Mutability {
-    fn into(self) -> AccessRule {
-        match self {
+impl From<Mutability> for AccessRule {
+    fn from(val: Mutability) -> Self {
+        match val {
             LOCKED => AccessRule::DenyAll,
             MUTABLE(rule) => rule,
         }
@@ -57,7 +57,7 @@ impl Into<AccessRule> for Mutability {
 pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub mint_params: Option<MintParams>,
 }
 
