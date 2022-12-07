@@ -251,7 +251,7 @@ where
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &genesis_transaction.get_executable(),
+            &genesis_transaction.get_executable(vec![]),
         );
 
         let commit_result = transaction_receipt.expect_commit();
@@ -289,7 +289,7 @@ mod tests {
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &genesis_transaction.get_executable(),
+            &genesis_transaction.get_executable(vec![]),
         );
 
         let commit_result = transaction_receipt.expect_commit();

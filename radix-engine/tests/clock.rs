@@ -23,14 +23,13 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
     }
     .into()];
     let blobs = vec![];
-
     let receipt = test_runner.execute_transaction(
         &SystemTransaction {
             instructions,
             blobs,
             nonce: 0,
         }
-        .get_executable(),
+        .get_executable(vec![AuthModule::system_role_non_fungible_address()]),
     );
 
     // Assert
@@ -59,7 +58,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
             blobs,
             nonce: 0,
         }
-        .get_executable(),
+        .get_executable(vec![]),
     );
 
     // Assert

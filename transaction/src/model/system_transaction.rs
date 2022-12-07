@@ -1,6 +1,7 @@
 use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
-use crate::model::{AuthModule, AuthZoneParams, Executable};
+use crate::model::{AuthZoneParams, Executable};
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::model::NonFungibleAddress;
 use radix_engine_interface::scrypto;
 use std::collections::BTreeSet;
 
@@ -13,11 +14,11 @@ pub struct SystemTransaction {
 }
 
 impl SystemTransaction {
-    pub fn get_executable<'a>(&'a self) -> Executable<'a> {
+    pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
         let transaction_hash = hash(self.nonce.to_le_bytes());
 
         let auth_zone_params = AuthZoneParams {
-            initial_proofs: vec![AuthModule::system_role_non_fungible_address()],
+            initial_proofs,
             virtualizable_proofs_resource_addresses: BTreeSet::new(),
         };
 

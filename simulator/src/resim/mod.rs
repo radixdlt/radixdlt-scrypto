@@ -180,7 +180,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
             trace,
             max_sys_call_trace_depth: 1,
         },
-        &transaction.get_executable(),
+        &transaction.get_executable(vec![]),
     );
 
     if print_receipt {
