@@ -27,6 +27,14 @@ impl ResourceBuilder {
     }
 }
 
+/// A resource builder which builds fungible resources that may or may not have an owner badge.
+///
+/// # Note
+///
+/// Once one of the methods that set behavior is called, a new [`FungibleResourceWithAuthBuilder`]
+/// is created which commits the developer to building a resource that does not have an owner badge.
+/// If none of these methods are called, then the developer has the choice to either building a
+/// resource with an owner badge or without one.
 pub struct FungibleResourceBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
@@ -218,6 +226,13 @@ impl FungibleResourceBuilder {
     }
 }
 
+/// A resource builder which builds fungible resources that do not have an owner-badge where
+/// resource behavior is completely handled by the developer.
+///  
+/// Typically this resource builder is created from the [`FungibleResourceBuilder`] once the
+/// developer has called one of the methods that set resource behavior. This is done as a static
+/// way of committing the developer to this choice by transitioning into a builder which does not
+/// offer the `initial_supply_with_owner` and `no_initial_supply_with_owner` methods.
 pub struct FungibleResourceWithAuthBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
@@ -298,6 +313,14 @@ impl FungibleResourceWithAuthBuilder {
     }
 }
 
+/// A resource builder which builds non-fungible resources that may or may not have an owner badge.
+///
+/// # Note
+///
+/// Once one of the methods that set behavior is called, a new [`NonFungibleResourceWithAuthBuilder`]
+/// is created which commits the developer to building a resource that does not have an owner badge.
+/// If none of these methods are called, then the developer has the choice to either building a
+/// resource with an owner badge or without one.
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
     id_type: NonFungibleIdType,
@@ -511,6 +534,13 @@ impl NonFungibleResourceBuilder {
     }
 }
 
+/// A resource builder which builds non-fungible resources that do not have an owner-badge where
+/// resource behavior is completely handled by the developer.
+///  
+/// Typically this resource builder is created from the [`NonFungibleResourceBuilder`] once the
+/// developer has called one of the methods that set resource behavior. This is done as a static
+/// way of committing the developer to this choice by transitioning into a builder which does not
+/// offer the `initial_supply_with_owner` and `no_initial_supply_with_owner` methods.
 pub struct NonFungibleResourceWithAuthBuilder {
     id_type: NonFungibleIdType,
     metadata: HashMap<String, String>,
