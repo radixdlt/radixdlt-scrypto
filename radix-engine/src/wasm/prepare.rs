@@ -326,7 +326,6 @@ impl WasmModule {
                                     vec![ValueType::I32],
                                 )
                             }
-
                         } else {
                             false
                         }

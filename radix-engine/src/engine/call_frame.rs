@@ -565,7 +565,7 @@ impl CallFrame {
         let mut node_ids: Vec<RENodeId> = self.node_refs.keys().cloned().collect();
         let owned_ids: Vec<RENodeId> = self.owned_root_nodes.keys().cloned().collect();
         node_ids.extend(owned_ids);
-        node_ids.sort();
+        node_ids.sort(); // Required to make sure returned vector is deterministic
         node_ids
     }
 }

@@ -1,4 +1,5 @@
 use sbor::rust::fmt;
+use sbor::rust::string::{String, ToString};
 
 /// This trait is used where context is required to correctly display a value.
 ///
@@ -67,6 +68,10 @@ pub trait ContextualDisplay<Context> {
             value: self,
             context: context.into(),
         }
+    }
+
+    fn to_string<'a, 'b, TContext: Into<Context>>(&'a self, context: TContext) -> String {
+        self.display(context).to_string()
     }
 }
 

@@ -5,8 +5,8 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoValueDecodeError,
-    ValueFormattingContext,
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomValue,
+    ScryptoValueDecodeError, ValueFormattingContext,
 };
 use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
@@ -150,7 +150,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");",
                 ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", hex::encode(&k.to_vec())))
+                    .map(|k| ScryptoCustomValue::NonFungibleId(k.clone()).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -194,7 +194,8 @@ pub fn decompile_instruction<F: fmt::Write>(
                 f,
                 "ASSERT_WORKTOP_CONTAINS_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\");",
                 ids.iter()
-                    .map(|k| format!("NonFungibleId(\"{}\")", hex::encode(&k.to_vec())))
+                    .map(|k| ScryptoCustomValue::NonFungibleId(k.clone())
+                        .to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
                     .join(", "),
                 resource_address.display(context.bech32_encoder)
@@ -268,7 +269,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             write!(
                 f,
                 "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");",ids.iter()
-                .map(|k| format!("NonFungibleId(\"{}\")", hex::encode(&k.to_vec())))
+                .map(|k| ScryptoCustomValue::NonFungibleId(k.clone()).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),
                 resource_address.display(context.bech32_encoder),
@@ -346,8 +347,11 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "PUBLISH_PACKAGE_WITH_OWNER Blob(\"{}\") Blob(\"{}\") NonFungibleAddress(\"{}\");",
-                code, abi, owner_badge,
+                "PUBLISH_PACKAGE_WITH_OWNER Blob(\"{}\") Blob(\"{}\") {};",
+                code,
+                abi,
+                ScryptoCustomValue::NonFungibleAddress(owner_badge.clone())
+                    .display(context.for_value_display()),
             )?;
         }
     }
@@ -648,12 +652,12 @@ CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pn
 POP_FROM_AUTH_ZONE Proof("proof3");
 DROP_PROOF Proof("proof3");
 RETURN_TO_WORKTOP Bucket("bucket2");
-TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId("5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f")) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket3");
+TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"))) ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket3");
 CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Some(Enum("Fungible", Decimal("1")));
 CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch" Expression("ENTIRE_WORKTOP");
 DROP_ALL_PROOFS;
 CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "complicated_method" Decimal("1") PreciseDecimal("2");
-PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f");
+PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"));
 "#
         )
     }
@@ -722,40 +726,26 @@ CALL_NATIVE_METHOD Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy
             canonical_manifest,
             r#"TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
 CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof1");
-CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_aliases" None None Some("hello") Some("hello") Ok("test") Ok("test") Err("test123") Err("test123");
-CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_all_types" PackageAddress("package_sim1qyqzcexvnyg60z7lnlwauh66nhzg3m8tch2j8wc0e70qkydk8r") ComponentAddress("account_sim1q0u9gxewjxj8nhxuaschth2mgencma2hpkgwz30s9wlslthace") ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v") SystemAddress("system_sim1qne8qu4seyvzfgd94p3z8rjcdl3v0nfhv84judpum2lq7x4635") Component("000000000000000000000000000000000000000000000000000000000000000005000000") KeyValueStore("000000000000000000000000000000000000000000000000000000000000000005000000") Bucket("bucket1") Proof("proof1") Vault("000000000000000000000000000000000000000000000000000000000000000005000000") Expression("ALL_WORKTOP_RESOURCES") Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") NonFungibleAddress("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f") Hash("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824") EcdsaSecp256k1PublicKey("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798") EcdsaSecp256k1Signature("0079224ea514206706298d8d620f660828f7987068d6d02757e6f3cbbf4a51ab133395db69db1bc9b2726dd99e34efc252d8258dcb003ebaba42be349f50f7765e") EddsaEd25519PublicKey("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29") EddsaEd25519Signature("ce993adc51111309a041faa65cbcf1154d21ed0ecdc2d54070bc90b9deb744aa8605b3f686fa178fba21070b4a4678e54eee3486a881e0e328251cd37966de09") Decimal("1.2") PreciseDecimal("1.2") NonFungibleId(Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"));
+CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_aliases" None None Some("hello") Some("hello") Ok("test") Ok("test") Err("test123") Err("test123") Bytes("050aff") Bytes("050aff");
+CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_all_types" PackageAddress("package_sim1qyqzcexvnyg60z7lnlwauh66nhzg3m8tch2j8wc0e70qkydk8r") ComponentAddress("account_sim1q0u9gxewjxj8nhxuaschth2mgencma2hpkgwz30s9wlslthace") ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v") SystemAddress("system_sim1qne8qu4seyvzfgd94p3z8rjcdl3v0nfhv84judpum2lq7x4635") Component("000000000000000000000000000000000000000000000000000000000000000005000000") KeyValueStore("000000000000000000000000000000000000000000000000000000000000000005000000") Bucket("bucket1") Proof("proof1") Vault("000000000000000000000000000000000000000000000000000000000000000005000000") Expression("ALL_WORKTOP_RESOURCES") Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value") NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 123u32) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 456u64) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f")) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 1234567890u128) Hash("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824") EcdsaSecp256k1PublicKey("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798") EcdsaSecp256k1Signature("0079224ea514206706298d8d620f660828f7987068d6d02757e6f3cbbf4a51ab133395db69db1bc9b2726dd99e34efc252d8258dcb003ebaba42be349f50f7765e") EddsaEd25519PublicKey("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29") EddsaEd25519Signature("ce993adc51111309a041faa65cbcf1154d21ed0ecdc2d54070bc90b9deb744aa8605b3f686fa178fba21070b4a4678e54eee3486a881e0e328251cd37966de09") Decimal("1.2") PreciseDecimal("1.2") NonFungibleId(Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f")) NonFungibleId(12u32) NonFungibleId(12345u64) NonFungibleId(1234567890u128) NonFungibleId("SomeId");
 "#
         )
     }
 
     #[test]
-    fn decompiled_non_fungible_ids_are_equal_to_their_pre_compilation_representation() {
-        // Arrange
-        let non_fungible_ids = vec![
-            NonFungibleId::U32(12),
-            NonFungibleId::U64(19),
-            NonFungibleId::String("HelloWorld".to_string()),
-            NonFungibleId::Decimal("1234".parse().unwrap()),
-            NonFungibleId::Bytes(vec![0x12, 0x19, 0x22, 0xff, 0x3]),
-            NonFungibleId::UUID(1922931322),
-        ];
-
-        let canonical_manifest = non_fungible_ids
-            .iter()
-            .enumerate()
-            .map(|(i, id)| format!("TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>(NonFungibleId(\"{}\")) ResourceAddress(\"resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag\") Bucket(\"bucket{}\");\n", hex::encode(&id.to_vec()), i + 1))
-            .collect::<Vec<String>>()
-            .join("");
-
-        // Act
-        let decompiled = compile_and_decompile_with_inversion_test(
-            &canonical_manifest,
+    fn test_decompile_non_fungible_ids() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            include_str!("../../examples/non_fungible_ids_canonical.rtm"),
             &NetworkDefinition::simulator(),
             vec![],
         );
 
-        // Assert
-        assert_eq!(canonical_manifest, decompiled)
+        // Act
+        compile_and_decompile_with_inversion_test(
+            &canonical_manifest,
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
     }
 
     fn compile_and_decompile_with_inversion_test(

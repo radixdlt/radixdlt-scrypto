@@ -46,7 +46,6 @@ mod tests {
     use radix_engine_interface::math::{Decimal, PreciseDecimal};
     use radix_engine_interface::model::*;
     use sbor::rust::collections::*;
-    use sbor::rust::str::FromStr;
 
     #[test]
     fn test_compile() {
@@ -149,8 +148,12 @@ mod tests {
                 Instruction::ReturnToWorktop { bucket_id: 513 },
                 Instruction::TakeFromWorktopByIds {
                     ids: BTreeSet::from([
-                        NonFungibleId::from_str("5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
-                        NonFungibleId::from_str("5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
+                        NonFungibleId::Bytes(
+                            hex::decode("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap()
+                        ),
+                        NonFungibleId::Bytes(
+                            hex::decode("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap()
+                        ),
                     ]),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
@@ -190,7 +193,16 @@ mod tests {
                 Instruction::PublishPackageWithOwner {
                     code: Blob(code_hash),
                     abi: Blob(abi_hash),
-                    owner_badge: NonFungibleAddress::from_str("00ed9100551d7fae91eaf413e50a3c5a59f8b96af9f1297890a8f45c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap(),
+                    owner_badge: NonFungibleAddress::new(
+                        bech32_decoder
+                            .validate_and_decode_resource_address(
+                                "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
+                            )
+                            .unwrap(),
+                        NonFungibleId::Bytes(
+                            hex::decode("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f").unwrap()
+                        )
+                    )
                 },
             ]
         );

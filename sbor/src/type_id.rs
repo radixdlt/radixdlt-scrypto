@@ -302,7 +302,15 @@ impl<X: CustomTypeId, K, V> TypeId<X> for HashMap<K, V> {
 }
 
 #[cfg(feature = "indexmap")]
-impl<X: CustomTypeId, K, V> TypeId<X> for indexmap::IndexMap<K, V> {
+impl<X: CustomTypeId, T> TypeId<X> for IndexSet<T> {
+    #[inline]
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<X: CustomTypeId, K, V> TypeId<X> for IndexMap<K, V> {
     #[inline]
     fn type_id() -> SborTypeId<X> {
         SborTypeId::Array

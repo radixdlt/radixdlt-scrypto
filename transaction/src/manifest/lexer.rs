@@ -53,6 +53,7 @@ pub enum TokenKind {
     None,
     Ok,
     Err,
+    Bytes,
 
     // ==============
     // SBOR custom types
@@ -406,6 +407,7 @@ impl Lexer {
             "None" => Ok(TokenKind::None),
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
+            "Bytes" => Ok(TokenKind::Bytes),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "SystemAddress" => Ok(TokenKind::SystemAddress),
