@@ -471,9 +471,9 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         self.execute_manifest(manifest, initial_proofs)
     }
 
-    pub fn execute_transaction(&mut self, transaction: &Executable) -> TransactionReceipt {
+    pub fn execute_transaction(&mut self, executable: &Executable) -> TransactionReceipt {
         self.execute_transaction_with_config(
-            transaction,
+            executable,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
         )
@@ -481,7 +481,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn execute_transaction_with_config(
         &mut self,
-        transaction: &Executable,
+        executable: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
@@ -492,7 +492,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
             &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
-            transaction,
+            executable,
         )
     }
 
