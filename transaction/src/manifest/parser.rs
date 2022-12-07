@@ -185,8 +185,12 @@ impl Parser {
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
             },
-            TokenKind::MintFungible => Instruction::MintFungible {
+            TokenKind::MintResource => Instruction::MintResource {
+                amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
+            },
+            TokenKind::RecallResource => Instruction::RecallResource {
+                vault_id: self.parse_value()?,
                 amount: self.parse_value()?,
             },
             TokenKind::SetMetadata => Instruction::SetMetadata {

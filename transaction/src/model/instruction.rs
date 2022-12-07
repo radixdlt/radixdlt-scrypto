@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId,
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, VaultId,
 };
 use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
@@ -151,8 +151,13 @@ pub enum BasicInstruction {
         bucket_id: BucketId,
     },
 
-    MintFungible {
+    MintResource {
+        amount: Decimal,
         resource_address: ResourceAddress,
+    },
+
+    RecallResource {
+        vault_id: VaultId,
         amount: Decimal,
     },
 

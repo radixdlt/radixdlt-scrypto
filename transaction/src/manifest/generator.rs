@@ -425,11 +425,15 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::BurnResource { bucket_id }
         }
-        ast::Instruction::MintFungible {
-            resource_address,
+        ast::Instruction::MintResource {
             amount,
-        } => BasicInstruction::MintFungible {
+            resource_address,
+        } => BasicInstruction::MintResource {
+            amount: generate_decimal(amount)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+        },
+        ast::Instruction::RecallResource { vault_id, amount } => BasicInstruction::RecallResource {
+            vault_id: generate_typed_value(vault_id, resolver, bech32_decoder, blobs)?,
             amount: generate_decimal(amount)?,
         },
         ast::Instruction::SetMetadata {
@@ -1400,8 +1404,8 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"MINT_FUNGIBLE  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Decimal("100");"#,
-            BasicInstruction::MintFungible {
+            r#"MINT_RESOURCE Decimal("100") ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
+            BasicInstruction::MintResource {
                 resource_address: resource,
                 amount: Decimal::from_str("100").unwrap()
             }

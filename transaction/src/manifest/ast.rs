@@ -124,8 +124,14 @@ pub enum Instruction {
     },
 
     // TODO: Dedicated bucket for this?
-    MintFungible {
+    MintResource {
+        amount: Value,
         resource_address: Value,
+    },
+
+    // TODO: Dedicated bucket for this?
+    RecallResource {
+        vault_id: Value,
         amount: Value,
     },
 

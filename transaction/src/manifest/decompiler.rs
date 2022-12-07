@@ -411,12 +411,18 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", bucket_id)),
             )?;
         }
-        BasicInstruction::MintFungible {
-            resource_address,
+        BasicInstruction::MintResource {
             amount,
+            resource_address,
         } => {
-            f.write_str("MINT_FUNGIBLE")?;
+            f.write_str("MINT_RESOURCE")?;
+            format_typed_value(f, context, amount)?;
             format_typed_value(f, context, resource_address)?;
+            f.write_str(";")?;
+        }
+        BasicInstruction::RecallResource { vault_id, amount } => {
+            f.write_str("RECALL_RESOURCE")?;
+            format_typed_value(f, context, vault_id)?;
             format_typed_value(f, context, amount)?;
             f.write_str(";")?;
         }
@@ -591,10 +597,12 @@ CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pn
 
         assert_eq!(
             canonical_manifest,
-            r#"TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
-CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Some(Enum("Fungible", Decimal("1")));
+            r#"CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Some(Enum("Fungible", Decimal("1")));
 CREATE_RESOURCE_WITH_OWNER Enum("Fungible", 0u8) Array<Tuple>() NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value") None;
+TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
 BURN_RESOURCE Bucket("bucket1");
+MINT_RESOURCE Decimal("5") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+RECALL_RESOURCE Bytes("49cd9235ba62b2c217e32e5b4754c08219ef16389761356eaccbf6f6bdbfa44d00000000") Decimal("1.2");
 "#
         );
     }

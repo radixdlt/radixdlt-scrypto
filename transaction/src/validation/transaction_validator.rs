@@ -284,7 +284,8 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(*bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::MintFungible { .. } => {}
+                BasicInstruction::MintResource { .. } => {}
+                BasicInstruction::RecallResource { .. } => {}
                 BasicInstruction::SetMetadata { .. } => {}
                 BasicInstruction::SetPackageRoyaltyConfig { .. } => {}
                 BasicInstruction::SetComponentRoyaltyConfig { .. } => {}

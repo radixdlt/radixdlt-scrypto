@@ -1,7 +1,7 @@
 use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId, VaultId};
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Blob, Hash};
@@ -599,22 +599,25 @@ impl ManifestBuilder {
         .0
     }
 
-    /// Mints resource.
-    pub fn mint(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
-        self.add_instruction(BasicInstruction::MintFungible {
-            resource_address,
-            amount,
-        });
-        self
-    }
-
-    /// Burns a resource.
-    pub fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
+    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(BasicInstruction::BurnResource { bucket_id })
                 .0
         })
+    }
+
+    pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::MintResource {
+            amount,
+            resource_address,
+        });
+        self
+    }
+
+    pub fn recall(&mut self, vault_id: VaultId, amount: Decimal) -> &mut Self {
+        self.add_instruction(BasicInstruction::RecallResource { vault_id, amount });
+        self
     }
 
     pub fn burn_non_fungible(&mut self, non_fungible_address: NonFungibleAddress) -> &mut Self {
