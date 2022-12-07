@@ -36,9 +36,9 @@ pub enum ResourceMethodAuthKey {
     Recall,
 }
 
-// TODO: Move this enum to another crate. 
+// TODO: Move this enum to another crate.
 // The Radix Engine does not rely on or use this enum in any way. It is mainly syntactic sugar for
-// Scrypto and the manifest builder. Therefore, it does not make sense to have this be in the 
+// Scrypto and the manifest builder. Therefore, it does not make sense to have this be in the
 // radix-engine-interface crate.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[scrypto(TypeId, Encode, Decode, Describe)]

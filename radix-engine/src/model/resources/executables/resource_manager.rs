@@ -117,14 +117,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateWithOwnerIn
             ResourceMethodAuthKey::Recall,
             (DenyAll, rule!(require(owner_badge.clone()))),
         );
-        access_rules.insert(
-            Mint,
-            (DenyAll, rule!(require(owner_badge.clone()))),
-        );
-        access_rules.insert(
-            Burn,
-            (DenyAll, rule!(require(owner_badge.clone()))),
-        );
+        access_rules.insert(Mint, (DenyAll, rule!(require(owner_badge.clone()))));
+        access_rules.insert(Burn, (DenyAll, rule!(require(owner_badge.clone()))));
         access_rules.insert(
             UpdateNonFungibleData,
             (
@@ -272,10 +266,12 @@ fn build_substates(
     metadata_access_rule: AccessRule,
     metadata_mutability: AccessRule,
 ) -> (AccessRulesChainSubstate, AccessRulesChainSubstate) {
-    let (mint_access_rule, mint_mutability) =
-        access_rules_map.remove(&Mint).unwrap_or((DenyAll, rule!(deny_all)));
-    let (burn_access_rule, burn_mutability) =
-        access_rules_map.remove(&Burn).unwrap_or((DenyAll, rule!(deny_all)));
+    let (mint_access_rule, mint_mutability) = access_rules_map
+        .remove(&Mint)
+        .unwrap_or((DenyAll, rule!(deny_all)));
+    let (burn_access_rule, burn_mutability) = access_rules_map
+        .remove(&Burn)
+        .unwrap_or((DenyAll, rule!(deny_all)));
     let (update_non_fungible_data_access_rule, update_non_fungible_data_mutability) =
         access_rules_map
             .remove(&UpdateNonFungibleData)

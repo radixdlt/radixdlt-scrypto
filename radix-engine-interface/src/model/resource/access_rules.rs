@@ -47,18 +47,14 @@ impl AccessRules {
     }
 
     // TODO: Move into scrypto repo as a builder
-    pub fn method(
+    pub fn method<R: Into<AccessRule>>(
         mut self,
         method_name: &str,
         method_auth: AccessRule,
-        mutability: Mutability,
+        mutability: R,
     ) -> Self {
         let key = AccessRuleKey::ScryptoMethod(method_name.to_string());
-        let mutability = if let MUTABLE(access_rule) = mutability {
-            access_rule
-        } else {
-            AccessRule::DenyAll
-        };
+        let mutability = mutability.into();
 
         self.method_auth
             .insert(key.clone(), AccessRuleEntry::AccessRule(method_auth));
@@ -67,13 +63,13 @@ impl AccessRules {
     }
 
     // TODO: Move into scrypto repo as a builder
-    pub fn default(
+    pub fn default<R: Into<AccessRule>>(
         mut self,
         default_auth: AccessRule,
-        default_auth_mutability: AccessRule,
+        default_auth_mutability: R,
     ) -> Self {
         self.default_auth = default_auth;
-        self.default_auth_mutability = default_auth_mutability;
+        self.default_auth_mutability = default_auth_mutability.into();
         self
     }
 
