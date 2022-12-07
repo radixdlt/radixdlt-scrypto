@@ -100,7 +100,7 @@ pub fn create_genesis() -> SystemTransaction {
             },
             args: scrypto_encode(&ResourceManagerCreateInvocation {
                 resource_type: ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::default(),
+                    id_type: NonFungibleIdType::Bytes,
                 },
                 metadata,
                 access_rules,
@@ -128,7 +128,7 @@ pub fn create_genesis() -> SystemTransaction {
             },
             args: scrypto_encode(&ResourceManagerCreateInvocation {
                 resource_type: ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::default(),
+                    id_type: NonFungibleIdType::Bytes,
                 },
                 metadata,
                 access_rules,
@@ -223,7 +223,7 @@ pub fn create_genesis() -> SystemTransaction {
             },
             args: scrypto_encode(&ResourceManagerCreateInvocation {
                 resource_type: ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::default(),
+                    id_type: NonFungibleIdType::Bytes,
                 },
                 metadata,
                 access_rules,

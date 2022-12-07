@@ -22,8 +22,8 @@ impl ResourceBuilder {
     }
 
     /// Starts a new builder to create non-fungible resource.
-    pub fn new_non_fungible() -> NonFungibleResourceBuilder {
-        NonFungibleResourceBuilder::new()
+    pub fn new_non_fungible(non_fungible_id_type: NonFungibleIdType) -> NonFungibleResourceBuilder {
+        NonFungibleResourceBuilder::new(non_fungible_id_type)
     }
 }
 
@@ -304,10 +304,10 @@ pub struct NonFungibleResourceBuilder {
 }
 
 impl NonFungibleResourceBuilder {
-    pub fn new() -> Self {
+    pub fn new(id_type: NonFungibleIdType) -> Self {
         Self {
             metadata: HashMap::new(),
-            id_type: NonFungibleIdType::default(),
+            id_type
         }
     }
 
@@ -419,12 +419,6 @@ impl NonFungibleResourceBuilder {
             metadata: self.metadata,
             authorization,
         }
-    }
-
-    /// Set ID type to use for this non fungible resource
-    pub fn id_type(mut self, id_type: NonFungibleIdType) -> Self {
-        self.id_type = id_type;
-        self
     }
 
     /// Creates resource with the given initial supply.
