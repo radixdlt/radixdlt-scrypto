@@ -27,7 +27,7 @@ fn mut_reentrancy_should_not_be_possible() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_method(component_address, "call_mut_self", args!())
+        .call_method(component_address, "call_mut_self", args!(component_address))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -66,7 +66,7 @@ fn read_reentrancy_should_be_possible() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_method(component_address, "call_self", args!())
+        .call_method(component_address, "call_self", args!(component_address))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -94,7 +94,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .call_method(component_address, "call_mut_self_2", args!())
+        .call_method(component_address, "call_mut_self_2", args!(component_address))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
