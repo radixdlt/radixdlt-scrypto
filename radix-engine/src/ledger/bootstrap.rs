@@ -4,7 +4,7 @@ use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
-use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     EpochManagerFunction, GlobalAddress, NativeFunctionIdent, RENodeId, ResourceManagerFunction,
     ResourceManagerOffset, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
@@ -280,9 +280,13 @@ pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
     }
 }
 
-pub fn bootstrap<S>(substate_store: &mut S) -> Option<TransactionReceipt>
+pub fn bootstrap<S, W>(
+    substate_store: &mut S,
+    scrypto_interpreter: &ScryptoInterpreter<W>,
+) -> Option<TransactionReceipt>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine,
 {
     if substate_store
         .get_substate(&SubstateId(
@@ -291,20 +295,11 @@ where
         ))
         .is_none()
     {
-        let scrypto_interpreter = ScryptoInterpreter {
-            wasm_engine: DefaultWasmEngine::default(),
-            wasm_instrumenter: WasmInstrumenter::default(),
-            wasm_metering_config: WasmMeteringConfig::new(
-                InstructionCostRules::tiered(1, 5, 10, 5000),
-                1024,
-            ),
-        };
-
         let genesis_transaction = create_genesis();
 
         let transaction_receipt = execute_transaction(
             substate_store,
-            &scrypto_interpreter,
+            scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
             &genesis_transaction.get_executable(),
@@ -322,21 +317,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::ledger::TypedInMemorySubstateStore;
+    use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
 
     use super::*;
 
     #[test]
     fn bootstrap_receipt_should_match_constants() {
-        let wasm_engine = DefaultWasmEngine::default();
-        let wasm_instrumenter = WasmInstrumenter::default();
-        let wasm_metering_config =
-            WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 1024);
-        let scrypto_interpreter = ScryptoInterpreter {
-            wasm_engine,
-            wasm_instrumenter,
-            wasm_metering_config,
-        };
+        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
         let genesis_transaction = create_genesis();
 

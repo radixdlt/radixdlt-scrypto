@@ -89,7 +89,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor(&package.code, args),
+                    api.vm()
+                        .create_executor(package_address, &package.code, args),
                     REActor::Function(ResolvedFunction::Scrypto {
                         package_address,
                         blueprint_name: function_ident.blueprint_name.clone(),
@@ -200,7 +201,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor(&package.code, args),
+                    api.vm()
+                        .create_executor(component_info.package_address, &package.code, args),
                     REActor::Method(
                         ResolvedMethod::Scrypto {
                             package_address: component_info.package_address,
@@ -320,7 +322,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor_to_parsed(&package.code, args),
+                    api.vm()
+                        .create_executor_to_parsed(package_address, &package.code, args),
                     REActor::Function(ResolvedFunction::Scrypto {
                         package_address,
                         blueprint_name: function_ident.blueprint_name.clone(),
@@ -431,7 +434,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor_to_parsed(&package.code, args),
+                    api.vm().create_executor_to_parsed(
+                        component_info.package_address,
+                        &package.code,
+                        args,
+                    ),
                     REActor::Method(
                         ResolvedMethod::Scrypto {
                             package_address: component_info.package_address,

@@ -1,5 +1,3 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -15,8 +13,7 @@ use transaction::validation::{TransactionValidator, ValidationConfig};
 #[test]
 fn test_transaction_preview_cost_estimate() {
     // Arrange
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
+    let mut test_runner = TestRunner::new(true);
     let network = NetworkDefinition::simulator();
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -41,11 +38,8 @@ fn test_transaction_preview_cost_estimate() {
     let preview_receipt = preview_result.unwrap().receipt;
     preview_receipt.expect_commit_success();
 
-    let receipt = test_runner.execute_transaction_with_config(
-        &make_executable(&network, &notarized_transaction),
-        &FeeReserveConfig::default(),
-        &ExecutionConfig::default(),
-    );
+    let receipt =
+        test_runner.execute_transaction(&make_executable(&network, &notarized_transaction));
     receipt.expect_commit_success();
 
     assert_eq!(
@@ -58,8 +52,7 @@ fn test_transaction_preview_cost_estimate() {
 fn test_assume_all_signature_proofs_flag_method_authorization() {
     // Arrange
     // Create an account component that requires a key auth for withdrawal
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
+    let mut test_runner = TestRunner::new(true);
     let network = NetworkDefinition::simulator();
 
     let public_key = EcdsaSecp256k1PrivateKey::from_u64(99).unwrap().public_key();
@@ -100,7 +93,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
 }
 
 fn prepare_matching_test_tx_and_preview_intent(
-    test_runner: &TestRunner<TypedInMemorySubstateStore>,
+    test_runner: &TestRunner,
     network: &NetworkDefinition,
     manifest: TransactionManifest,
     flags: &PreviewFlags,

@@ -1,5 +1,4 @@
 use radix_engine::engine::{CallFrameError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
 use radix_engine_interface::core::NetworkDefinition;
@@ -12,8 +11,7 @@ use transaction::model::*;
 #[test]
 fn manifest_cannot_refer_to_persisted_component_by_id() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (victim_public_key, _, victim_account) = test_runner.new_allocated_account();
     let (_, _, attacker_account) = test_runner.new_allocated_account();
 
@@ -55,8 +53,7 @@ fn manifest_cannot_refer_to_persisted_component_by_id() {
 #[test]
 fn no_visible_component_nodes_on_deref_lock() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/deref");
 
@@ -79,8 +76,7 @@ fn no_visible_component_nodes_on_deref_lock() {
 #[test]
 fn no_visible_component_nodes_after_deref_lock_drop() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/deref");
 

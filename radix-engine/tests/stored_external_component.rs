@@ -1,4 +1,3 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -9,8 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn stored_component_addresses_in_non_globalized_component_are_invokable() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
 
     // Act
@@ -26,8 +24,7 @@ fn stored_component_addresses_in_non_globalized_component_are_invokable() {
 #[test]
 fn stored_component_addresses_are_invokable() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, _) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/stored_external_component");
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())

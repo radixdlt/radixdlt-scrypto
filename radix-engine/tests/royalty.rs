@@ -1,5 +1,4 @@
 use radix_engine::fee::u128_to_decimal;
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_COST_UNIT_PRICE;
 use radix_engine_interface::core::NetworkDefinition;
@@ -11,8 +10,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_component_royalty() {
     // Basic setup
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -51,7 +49,7 @@ fn test_component_royalty() {
 }
 
 fn set_up_package_and_component() -> (
-    TypedInMemorySubstateStore,
+    TestRunner,
     ComponentAddress,
     EcdsaSecp256k1PublicKey,
     PackageAddress,
@@ -59,8 +57,7 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package
@@ -102,7 +99,7 @@ fn set_up_package_and_component() -> (
         scrypto_decode(&receipt.expect_commit_success()[1]).unwrap();
 
     (
-        store,
+        test_runner,
         account,
         public_key,
         package_address,
@@ -114,14 +111,13 @@ fn set_up_package_and_component() -> (
 #[test]
 fn test_package_royalty() {
     let (
-        mut store,
+        mut test_runner,
         account,
         public_key,
         _package_address,
         component_address,
         _owner_badge_resource,
     ) = set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -140,9 +136,14 @@ fn test_package_royalty() {
 
 #[test]
 fn test_royalty_accumulation_when_success() {
-    let (mut store, account, public_key, package_address, component_address, _owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        package_address,
+        component_address,
+        _owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -165,9 +166,14 @@ fn test_royalty_accumulation_when_success() {
 
 #[test]
 fn test_royalty_accumulation_when_failure() {
-    let (mut store, account, public_key, package_address, component_address, _owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        package_address,
+        component_address,
+        _owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -190,9 +196,14 @@ fn test_royalty_accumulation_when_failure() {
 
 #[test]
 fn test_claim_royalty() {
-    let (mut store, account, public_key, package_address, component_address, owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        package_address,
+        component_address,
+        owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())

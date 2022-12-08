@@ -5,9 +5,7 @@ use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::{
-    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
-};
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use rand::Rng;
@@ -29,15 +27,12 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
         .validate(&transaction, &TestIntentHashManager::new())
         .unwrap();
 
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut scrypto_interpreter = ScryptoInterpreter {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_metering_config: WasmMeteringConfig::new(
-            InstructionCostRules::tiered(1, 5, 10, 5000),
-            1024,
-        ),
+        wasm_metering_config: WasmMeteringConfig::V0,
     };
+    let mut store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
     let execution_config = ExecutionConfig::default();
     let fee_reserve_config = FeeReserveConfig::default();
 

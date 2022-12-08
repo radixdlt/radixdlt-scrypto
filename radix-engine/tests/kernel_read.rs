@@ -1,5 +1,4 @@
 use radix_engine::engine::{KernelError, REActor, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
@@ -10,8 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn should_not_be_able_to_read_global_substate() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 

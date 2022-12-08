@@ -1,4 +1,3 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -7,7 +6,7 @@ use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
 fn set_up_package_and_component() -> (
-    TypedInMemorySubstateStore,
+    TestRunner,
     ComponentAddress,
     EcdsaSecp256k1PublicKey,
     PackageAddress,
@@ -15,8 +14,7 @@ fn set_up_package_and_component() -> (
     ResourceAddress,
 ) {
     // Basic setup
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
@@ -82,7 +80,7 @@ fn set_up_package_and_component() -> (
         .new_component_addresses[0];
 
     (
-        store,
+        test_runner,
         account,
         public_key,
         package_address,
@@ -93,9 +91,14 @@ fn set_up_package_and_component() -> (
 
 #[test]
 fn test_only_package_owner_can_set_royalty_config() {
-    let (mut store, account, public_key, package_address, _component_address, owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        package_address,
+        _component_address,
+        owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -140,9 +143,14 @@ fn test_only_package_owner_can_set_royalty_config() {
 
 #[test]
 fn test_only_package_owner_can_claim_royalty() {
-    let (mut store, account, public_key, package_address, _component_address, owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        package_address,
+        _component_address,
+        owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -185,9 +193,14 @@ fn test_only_package_owner_can_claim_royalty() {
 
 #[test]
 fn test_only_component_owner_can_set_royalty_config() {
-    let (mut store, account, public_key, _package_address, component_address, owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        _package_address,
+        component_address,
+        owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -226,9 +239,14 @@ fn test_only_component_owner_can_set_royalty_config() {
 
 #[test]
 fn test_only_component_owner_can_claim_royalty() {
-    let (mut store, account, public_key, _package_address, component_address, owner_badge_resource) =
-        set_up_package_and_component();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let (
+        mut test_runner,
+        account,
+        public_key,
+        _package_address,
+        component_address,
+        owner_badge_resource,
+    ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
