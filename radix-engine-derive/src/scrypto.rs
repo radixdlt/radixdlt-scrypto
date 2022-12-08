@@ -21,38 +21,38 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
         generics,
     } = parse2(item)?;
 
-    let parser = Punctuated::<Path, Comma>::parse_terminated;
-    let paths = parser.parse2(attr)?;
+    let parser = Punctuated::<Ident, Comma>::parse_terminated;
+    let idents = parser.parse2(attr)?;
     let mut derived_attributes = Vec::<Attribute>::new();
     let mut sbor = false;
-    for path in paths {
-        match path.get_ident().unwrap().to_string().as_str() {
-            "::sbor::Encode" => {
+    for ident in idents {
+        match ident.to_string().as_str() {
+            "Encode" => {
                 sbor = true;
                 derived_attributes.push(parse_quote! {
                     #[derive(::sbor::Encode)]
                 })
             }
-            "::sbor::Decode" => {
+            "Decode" => {
                 sbor = true;
                 derived_attributes.push(parse_quote! {
                     #[derive(::sbor::Decode)]
                 })
             }
-            "::sbor::TypeId" => {
+            "TypeId" => {
                 sbor = true;
                 derived_attributes.push(parse_quote! {
                     #[derive(::sbor::TypeId)]
                 })
             }
-            "radix_engine_derive::Describe" => derived_attributes.push(parse_quote! {
+            "Describe" => derived_attributes.push(parse_quote! {
                 #[derive(radix_engine_derive::Describe)]
             }),
-            "::scrypto::NonFungibleData" => derived_attributes.push(parse_quote! {
+            "NonFungibleData" => derived_attributes.push(parse_quote! {
                 #[derive(::scrypto::NonFungibleData)]
             }),
             default => derived_attributes.push(parse_quote! {
-                #[derive(#default)]
+              #[derive(::sbor::#default)]
             }),
         }
     }
