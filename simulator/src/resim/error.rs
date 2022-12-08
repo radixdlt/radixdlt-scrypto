@@ -64,4 +64,6 @@ pub enum Error {
     FailedToBuildArgs(BuildArgsError),
 
     ParseNetworkError(ParseNetworkError),
+
+    OwnerBadgeNotSpecified,
 }

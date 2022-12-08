@@ -573,7 +573,7 @@ mod tests {
     struct BadResourceManagerCreateInput {
         pub resource_type: ResourceType,
         pub metadata: HashMap<String, String>,
-        pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         // pub mint_params: Option<MintParams>,
     }
 
@@ -588,7 +588,7 @@ mod tests {
                 },
                 args: scrypto_encode(&BadResourceManagerCreateInput {
                     resource_type: ResourceType::NonFungible {
-                        id_type: NonFungibleIdType::default(),
+                        id_type: NonFungibleIdType::UUID,
                     },
                     metadata: HashMap::new(),
                     access_rules: HashMap::new(),

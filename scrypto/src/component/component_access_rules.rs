@@ -87,3 +87,19 @@ impl From<ComponentIdentifier> for RENodeId {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+pub enum Mutability {
+    LOCKED,
+    MUTABLE(AccessRule),
+}
+
+impl From<Mutability> for AccessRule {
+    fn from(val: Mutability) -> Self {
+        match val {
+            Mutability::LOCKED => AccessRule::DenyAll,
+            Mutability::MUTABLE(rule) => rule,
+        }
+    }
+}

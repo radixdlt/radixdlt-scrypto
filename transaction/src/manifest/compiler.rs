@@ -166,14 +166,14 @@ mod tests {
                         blueprint_name: "ResourceManager".to_owned(),
                         function_name: ResourceManagerFunction::Create.to_string(),
                     },
-                    args: args!(
-                        ResourceType::Fungible { divisibility: 0 },
-                        HashMap::<String, String>::new(),
-                        HashMap::<ResourceMethodAuthKey, (AccessRule, Mutability)>::new(),
-                        Some(MintParams::Fungible {
+                    args: scrypto_encode(&ResourceManagerCreateInvocation {
+                        resource_type: ResourceType::Fungible { divisibility: 0 },
+                        metadata: HashMap::new(),
+                        access_rules: HashMap::new(),
+                        mint_params: Some(MintParams::Fungible {
                             amount: "1.0".into()
                         })
-                    ),
+                    }).unwrap(),
                 },
                 Instruction::CallMethod {
                     method_ident: ScryptoMethodIdent {
