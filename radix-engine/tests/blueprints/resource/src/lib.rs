@@ -12,10 +12,11 @@ blueprint! {
 
     impl ResourceTest {
         pub fn set_mintable_with_self_resource_address() {
-            let super_admin_badge: ResourceAddress = ResourceBuilder::new_non_fungible()
-                .metadata("name", "Super Admin Badge")
-                .mintable(rule!(allow_all), MUTABLE(rule!(allow_all)))
-                .no_initial_supply();
+            let super_admin_badge: ResourceAddress =
+                ResourceBuilder::new_non_fungible(NonFungibleIdType::UUID)
+                    .metadata("name", "Super Admin Badge")
+                    .mintable(rule!(allow_all), rule!(allow_all))
+                    .no_initial_supply();
 
             let super_admin_manager: &mut ResourceManager =
                 borrow_resource_manager!(super_admin_badge);
@@ -29,8 +30,8 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .mintable(rule!(require(badge.resource_address())), LOCKED)
-                .burnable(rule!(require(badge.resource_address())), LOCKED)
+                .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
+                .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .no_initial_supply();
             (badge, token_address)
         }
@@ -45,8 +46,8 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(divisibility)
                 .metadata("name", "TestToken")
-                .mintable(rule!(require(badge.resource_address())), LOCKED)
-                .burnable(rule!(require(badge.resource_address())), LOCKED)
+                .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
+                .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .no_initial_supply();
             let tokens = badge.authorize(|| borrow_resource_manager!(token_address).mint(amount));
             (badge, tokens, token_address)
@@ -76,8 +77,8 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .mintable(rule!(require(badge.resource_address())), LOCKED)
-                .burnable(rule!(require(badge.resource_address())), LOCKED)
+                .mintable(rule!(require(badge.resource_address())), rule!(deny_all))
+                .burnable(rule!(require(badge.resource_address())), rule!(deny_all))
                 .no_initial_supply();
             (badge, token_address)
         }
@@ -103,9 +104,8 @@ blueprint! {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge = ResourceBuilder::new_non_fungible()
-                .id_type(NonFungibleIdType::U32)
-                .initial_supply(vec![(
+            let badge =
+                ResourceBuilder::new_non_fungible(NonFungibleIdType::U32).initial_supply(vec![(
                     NonFungibleId::U32(0),
                     Sandwich {
                         name: "name".to_string(),

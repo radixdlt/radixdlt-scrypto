@@ -16,7 +16,7 @@ blueprint! {
                 .method("balance", rule!(allow_all), LOCKED)
                 .method("deposit", rule!(allow_all), LOCKED)
                 .method("deposit_batch", rule!(allow_all), LOCKED)
-                .default(withdraw_rule.clone(), withdraw_rule);
+                .default(withdraw_rule.clone(), MUTABLE(withdraw_rule));
             account.add_access_check(access_rules);
 
             account
@@ -37,7 +37,7 @@ blueprint! {
                 .method("balance", rule!(allow_all), LOCKED)
                 .method("deposit", rule!(allow_all), LOCKED)
                 .method("deposit_batch", rule!(allow_all), LOCKED)
-                .default(withdraw_rule.clone(), withdraw_rule);
+                .default(withdraw_rule.clone(), MUTABLE(withdraw_rule));
             account.add_access_check(access_rules);
 
             account.globalize()

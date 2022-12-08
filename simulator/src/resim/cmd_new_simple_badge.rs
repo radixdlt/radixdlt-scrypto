@@ -75,7 +75,10 @@ impl NewSimpleBadge {
         };
 
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
 
         let manifest = ManifestBuilder::new(&network_definition)
             .lock_fee(FAUCET_COMPONENT, 100.into())
@@ -84,22 +87,23 @@ impl NewSimpleBadge {
                     blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
                     function_name: ResourceManagerFunction::Create.to_string(),
                 },
-                args: args!(
-                    ResourceType::NonFungible {
-                        id_type: NonFungibleIdType::U32
+                args: scrypto_encode(&ResourceManagerCreateInvocation {
+                    resource_type: ResourceType::NonFungible {
+                        id_type: NonFungibleIdType::U32,
                     },
                     metadata,
-                    resource_auth,
-                    Option::Some(MintParams::NonFungible {
+                    access_rules: resource_auth,
+                    mint_params: Option::Some(MintParams::NonFungible {
                         entries: HashMap::from([(
                             NonFungibleId::U32(1),
                             (
                                 scrypto_encode(&EmptyStruct).unwrap(),
-                                scrypto_encode(&EmptyStruct).unwrap()
-                            )
-                        )])
-                    })
-                ),
+                                scrypto_encode(&EmptyStruct).unwrap(),
+                            ),
+                        )]),
+                    }),
+                })
+                .unwrap(),
             })
             .0
             .call_method(
