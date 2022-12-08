@@ -24,6 +24,7 @@ members = [
     "package",
     "proof",
     "recursion",
+    "reentrancy",
     "resource",
     "resource_creator",
     "stored_external_component",
