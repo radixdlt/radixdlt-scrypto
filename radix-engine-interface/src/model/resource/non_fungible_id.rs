@@ -26,13 +26,12 @@ pub enum NonFungibleId {
 }
 
 /// Represents type of non-fungible id
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Encode, Decode, Describe, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Encode, Decode, Describe)]
 pub enum NonFungibleIdType {
     String,
     U32,
     U64,
     Bytes,
-    #[default]
     UUID,
 }
 
@@ -417,11 +416,6 @@ mod tests {
             validation_result,
             Err(ParseNonFungibleIdError::InvalidCharacter(char))
         );
-    }
-
-    #[test]
-    fn test_non_fungible_id_type_default() {
-        assert_eq!(NonFungibleIdType::default(), NonFungibleIdType::UUID);
     }
 
     #[test]

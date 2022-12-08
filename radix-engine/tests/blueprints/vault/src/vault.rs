@@ -122,9 +122,8 @@ blueprint! {
         }
 
         fn create_non_fungible_vault() -> Vault {
-            let bucket = ResourceBuilder::new_non_fungible()
+            let bucket = ResourceBuilder::new_non_fungible(NonFungibleIdType::U32)
                 .metadata("name", "TestToken")
-                .id_type(NonFungibleIdType::U32)
                 .initial_supply([(NonFungibleId::U32(1), Data {})]);
             Vault::with_bucket(bucket)
         }
