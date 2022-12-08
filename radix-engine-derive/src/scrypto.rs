@@ -51,8 +51,8 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
             "NonFungibleData" => derived_attributes.push(parse_quote! {
                 #[derive(::scrypto::NonFungibleData)]
             }),
-            default => derived_attributes.push(parse_quote! {
-              #[derive(::sbor::#default)]
+            _ => derived_attributes.push(parse_quote! {
+              #[derive(#ident)]
             }),
         }
     }
