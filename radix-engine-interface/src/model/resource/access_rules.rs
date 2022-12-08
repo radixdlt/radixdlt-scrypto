@@ -4,9 +4,11 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use sbor::*;
 
 use crate::model::*;
 use crate::scrypto;
+use crate::Describe;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode, Describe)]

@@ -106,15 +106,26 @@ pub struct ScryptoInterpreter<W: WasmEngine> {
     pub wasm_metering_config: WasmMeteringConfig,
 }
 
+impl<W: WasmEngine + Default> Default for ScryptoInterpreter<W> {
+    fn default() -> Self {
+        Self {
+            wasm_engine: W::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
+            wasm_metering_config: WasmMeteringConfig::default(),
+        }
+    }
+}
+
 impl<W: WasmEngine> ScryptoInterpreter<W> {
     pub fn create_executor(
         &self,
+        package_address: PackageAddress,
         code: &[u8],
         args: IndexedScryptoValue,
     ) -> ScryptoExecutor<W::WasmInstance> {
-        let instrumented_code = self
-            .wasm_instrumenter
-            .instrument(code, &self.wasm_metering_config);
+        let instrumented_code =
+            self.wasm_instrumenter
+                .instrument(package_address, code, self.wasm_metering_config);
         let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoExecutor {
             instance,
@@ -124,12 +135,13 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
 
     pub fn create_executor_to_parsed(
         &self,
+        package_address: PackageAddress,
         code: &[u8],
         args: IndexedScryptoValue,
     ) -> ScryptoExecutorToParsed<W::WasmInstance> {
-        let instrumented_code = self
-            .wasm_instrumenter
-            .instrument(code, &self.wasm_metering_config);
+        let instrumented_code =
+            self.wasm_instrumenter
+                .instrument(package_address, code, self.wasm_metering_config);
         let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoExecutorToParsed {
             instance,

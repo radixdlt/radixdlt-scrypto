@@ -1,4 +1,3 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -10,8 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account);
     let auth_id = NonFungibleId::U32(1);
@@ -73,8 +71,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 #[test]
 fn can_make_cross_component_call_with_authorization() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::U32(1);
@@ -151,8 +148,7 @@ fn can_make_cross_component_call_with_authorization() {
 #[test]
 fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::U32(1);

@@ -4,6 +4,7 @@ use crate::data::IndexedScryptoValue;
 use crate::scrypto;
 use crate::wasm::{SerializableInvocation, SerializedInvocation};
 use sbor::rust::vec::Vec;
+use sbor::*;
 
 /// Scrypto function/method invocation.
 #[derive(Debug)]

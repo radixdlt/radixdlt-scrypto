@@ -1,10 +1,9 @@
+use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
 use crate::model::{AuthModule, AuthZoneParams, Executable};
 use radix_engine_interface::crypto::Hash;
-
 use radix_engine_interface::scrypto;
+use sbor::*;
 use std::collections::BTreeSet;
-
-use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
