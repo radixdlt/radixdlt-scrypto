@@ -124,12 +124,13 @@ pub fn execute_and_commit_manifests<W: WasmEngine>(
             .into_iter()
             .map(|(manifest, initial_proofs, nonce)| {
                 let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
+                let executable = transaction.get_executable(initial_proofs);
                 execute_and_commit_transaction(
                     staged,
                     scrypto_interpreter,
                     &FeeReserveConfig::default(),
                     &ExecutionConfig::default(),
-                    &transaction.get_executable(initial_proofs),
+                    &executable,
                 )
             })
             .collect()
@@ -139,12 +140,13 @@ pub fn execute_and_commit_manifests<W: WasmEngine>(
             .into_iter()
             .map(|(manifest, initial_proofs, nonce)| {
                 let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
+                let executable = transaction.get_executable(initial_proofs);
                 execute_and_commit_transaction(
                     &mut staged,
                     scrypto_interpreter,
                     &FeeReserveConfig::default(),
                     &ExecutionConfig::default(),
-                    &transaction.get_executable(initial_proofs),
+                    &executable,
                 )
             })
             .collect()
