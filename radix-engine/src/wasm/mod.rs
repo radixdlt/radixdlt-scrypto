@@ -31,3 +31,8 @@ pub type DefaultWasmInstance = WasmerInstance;
 pub type DefaultWasmEngine = WasmiEngine;
 #[cfg(not(feature = "wasmer"))]
 pub type DefaultWasmInstance = WasmiInstance;
+
+// TODO: expand if package is upgradable.
+use radix_engine_interface::model::PackageAddress;
+pub type CodeKey = PackageAddress;
+pub type MeteredCodeKey = (CodeKey, WasmMeteringConfig);

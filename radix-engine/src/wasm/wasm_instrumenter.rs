@@ -1,16 +1,13 @@
-use radix_engine_interface::crypto::hash;
-use sbor::rust::sync::Arc;
-
+use super::{CodeKey, MeteredCodeKey, WasmMeteringParams};
 use crate::types::*;
 use crate::wasm::{WasmMeteringConfig, WasmModule};
-
-use super::WasmMeteringParams;
+use sbor::rust::sync::Arc;
 
 pub struct WasmInstrumenter {
     #[cfg(not(feature = "moka"))]
-    cache: RefCell<lru::LruCache<(Hash, WasmMeteringConfig), Arc<Vec<u8>>>>,
+    cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<Vec<u8>>>>,
     #[cfg(feature = "moka")]
-    cache: moka::sync::Cache<(Hash, WasmMeteringConfig), Arc<Vec<u8>>>,
+    cache: moka::sync::Cache<MeteredCodeKey, Arc<Vec<u8>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -27,8 +24,8 @@ impl Default for WasmInstrumenter {
 }
 
 pub struct InstrumentedCode {
+    pub metered_code_key: MeteredCodeKey,
     pub code: Arc<Vec<u8>>,
-    pub code_hash: Hash,
 }
 
 impl WasmInstrumenter {
@@ -39,15 +36,9 @@ impl WasmInstrumenter {
         ));
         #[cfg(feature = "moka")]
         let cache = moka::sync::Cache::builder()
-            .weigher(
-                |_key: &(Hash, WasmMeteringConfig), value: &Arc<Vec<u8>>| -> u32 {
-                    value
-                        .len()
-                        .checked_add(Hash::LENGTH * 2)
-                        .and_then(|total| total.try_into().ok())
-                        .unwrap_or(u32::MAX)
-                },
-            )
+            .weigher(|_key: &MeteredCodeKey, value: &Arc<Vec<u8>>| -> u32 {
+                value.len().try_into().unwrap_or(u32::MAX)
+            })
             .max_capacity(options.max_cache_size_bytes as u64)
             .build();
 
@@ -56,26 +47,26 @@ impl WasmInstrumenter {
 
     pub fn instrument(
         &self,
+        code_key: CodeKey,
         code: &[u8],
         wasm_metering_config: WasmMeteringConfig,
     ) -> InstrumentedCode {
-        let code_hash = hash(code);
-        let cache_key = (code_hash, wasm_metering_config);
+        let metered_code_key = (code_key, wasm_metering_config);
 
         #[cfg(not(feature = "moka"))]
         {
-            if let Some(cached) = self.cache.borrow_mut().get(&cache_key) {
+            if let Some(cached) = self.cache.borrow_mut().get(&metered_code_key) {
                 return InstrumentedCode {
+                    metered_code_key,
                     code: cached.clone(),
-                    code_hash,
                 };
             }
         }
         #[cfg(feature = "moka")]
-        if let Some(cached) = self.cache.get(&cache_key) {
+        if let Some(cached) = self.cache.get(&metered_code_key) {
             return InstrumentedCode {
+                metered_code_key,
                 code: cached.clone(),
-                code_hash,
             };
         }
 
@@ -85,13 +76,14 @@ impl WasmInstrumenter {
         #[cfg(not(feature = "moka"))]
         self.cache
             .borrow_mut()
-            .put(cache_key, instrumented_ref.clone());
+            .put(metered_code_key, instrumented_ref.clone());
         #[cfg(feature = "moka")]
-        self.cache.insert(cache_key, instrumented_ref.clone());
+        self.cache
+            .insert(metered_code_key, instrumented_ref.clone());
 
         InstrumentedCode {
+            metered_code_key,
             code: instrumented_ref,
-            code_hash,
         }
     }
 

@@ -5,9 +5,7 @@ use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::{
-    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
-};
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use rand::Rng;
