@@ -2,6 +2,7 @@ use super::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
 };
 use crate::scrypto;
+use sbor::*;
 
 /// Represents any natively supported public key.
 #[cfg_attr(

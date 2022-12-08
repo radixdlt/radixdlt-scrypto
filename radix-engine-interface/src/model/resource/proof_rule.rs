@@ -1,16 +1,16 @@
 use crate::data::SchemaPath;
 use crate::math::Decimal;
+use crate::model::AccessRuleNode::{AllOf, AnyOf};
+use crate::model::*;
+use crate::scrypto;
+use crate::Describe;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use sbor::*;
 use scrypto_abi::{Describe, Fields, Type, Variant};
-
-use crate::model::AccessRuleNode::{AllOf, AnyOf};
-use crate::model::*;
-use crate::scrypto;
-use crate::Describe;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode, Describe)]

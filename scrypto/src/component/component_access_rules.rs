@@ -7,6 +7,7 @@ use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRulesSetMethodAccessRuleInvocation,
     AccessRulesSetMethodMutabilityInvocation, ComponentAddress,
 };
+use sbor::*;
 
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?

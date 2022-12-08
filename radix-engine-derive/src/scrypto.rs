@@ -33,9 +33,10 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
             .collect();
 
         // best-effort sbor detection
-        match segments.join(":").as_str() {
-            "TypeId" | "Encode" | "Decode" | "sbor::TypeId" | "sbor::Encode" | "sbor::Decode"
-            | "::sbor::TypeId" | "::sbor::Encode" | "::sbor::Decode" => add_custom_type_id = true,
+        match segments.join("::").as_str() {
+            "TypeId" | "Encode" | "Decode" | "sbor::TypeId" | "sbor::Encode" | "sbor::Decode" => {
+                add_custom_type_id = true
+            }
             _ => {}
         }
 
@@ -99,7 +100,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(::sbor::Encode)]
+                #[derive(Encode)]
                 #[derive(Debug)]
                 #[derive(std::fmt::Debug)]
                 #[derive(::std::fmt::Debug)]
@@ -113,6 +114,9 @@ mod tests {
     #[test]
     fn test_full_paths() {
         for s in [
+            "TypeId",
+            "Encode",
+            "Decode",
             "sbor::TypeId",
             "sbor::Encode",
             "sbor::Decode",
@@ -141,9 +145,9 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(::sbor::Encode)]
-                #[derive(::sbor::Decode)]
-                #[derive(::sbor::TypeId)]
+                #[derive(Encode)]
+                #[derive(Decode)]
+                #[derive(TypeId)]
                 #[derive(Describe)]
                 #[derive(NonFungibleData)]
                 #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
@@ -166,9 +170,9 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(::sbor::Encode)]
-                #[derive(::sbor::Decode)]
-                #[derive(::sbor::TypeId)]
+                #[derive(Encode)]
+                #[derive(Decode)]
+                #[derive(TypeId)]
                 #[derive(Describe)]
                 #[derive(NonFungibleData)]
                 #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
