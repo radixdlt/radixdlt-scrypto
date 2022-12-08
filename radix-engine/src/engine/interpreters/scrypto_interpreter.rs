@@ -106,6 +106,16 @@ pub struct ScryptoInterpreter<W: WasmEngine> {
     pub wasm_metering_config: WasmMeteringConfig,
 }
 
+impl<W: WasmEngine + Default> Default for ScryptoInterpreter<W> {
+    fn default() -> Self {
+        Self {
+            wasm_engine: W::default(),
+            wasm_instrumenter: WasmInstrumenter::default(),
+            wasm_metering_config: WasmMeteringConfig::default(),
+        }
+    }
+}
+
 impl<W: WasmEngine> ScryptoInterpreter<W> {
     pub fn create_executor(
         &self,

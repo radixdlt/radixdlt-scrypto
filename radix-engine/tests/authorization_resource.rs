@@ -1,6 +1,5 @@
 extern crate core;
 
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
@@ -20,8 +19,7 @@ enum Action {
 
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let (token_address, mint_auth, burn_auth, withdraw_auth, recall_auth, admin_auth) =
         test_runner.create_restricted_token(account);

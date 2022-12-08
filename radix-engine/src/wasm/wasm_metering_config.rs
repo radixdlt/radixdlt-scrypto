@@ -7,6 +7,12 @@ pub enum WasmMeteringConfig {
     V0,
 }
 
+impl Default for WasmMeteringConfig {
+    fn default() -> Self {
+        Self::V0
+    }
+}
+
 impl WasmMeteringConfig {
     pub fn parameters(&self) -> WasmMeteringParams {
         match self {

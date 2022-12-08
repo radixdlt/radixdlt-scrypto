@@ -177,13 +177,9 @@ pub fn handle_manifest<O: std::io::Write>(
             Ok(None)
         }
         None => {
-            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-
-            let mut scrypto_interpreter = ScryptoInterpreter {
-                wasm_engine: DefaultWasmEngine::default(),
-                wasm_instrumenter: WasmInstrumenter::default(),
-                wasm_metering_config: WasmMeteringConfig::V0,
-            };
+            let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+            let mut substate_store =
+                RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let sks = get_signing_keys(signing_keys)?;
             let mut initial_proofs = sks
@@ -198,7 +194,7 @@ pub fn handle_manifest<O: std::io::Write>(
 
             let receipt = execute_and_commit_transaction(
                 &mut substate_store,
-                &mut scrypto_interpreter,
+                &scrypto_interpreter,
                 &FeeReserveConfig::default(),
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
@@ -264,7 +260,8 @@ pub fn export_abi(
     package_address: PackageAddress,
     blueprint_name: &str,
 ) -> Result<abi::BlueprintAbi, Error> {
-    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
     radix_engine::model::export_abi(&mut substate_store, package_address, blueprint_name)
         .map_err(Error::AbiExportError)
 }
@@ -272,7 +269,8 @@ pub fn export_abi(
 pub fn export_abi_by_component(
     component_address: ComponentAddress,
 ) -> Result<abi::BlueprintAbi, Error> {
-    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
     radix_engine::model::export_abi_by_component(&mut substate_store, component_address)
         .map_err(Error::AbiExportError)
 }

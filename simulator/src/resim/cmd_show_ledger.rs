@@ -13,7 +13,7 @@ pub struct ShowLedger {}
 
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        let ledger = RadixEngineDB::new(get_data_dir()?);
 
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 

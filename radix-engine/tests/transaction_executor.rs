@@ -42,8 +42,7 @@ fn low_cost_unit_limit_should_result_in_rejection() {
 #[test]
 fn transaction_executed_before_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
+    let mut test_runner = TestRunner::new(true);
 
     const CURRENT_EPOCH: u64 = 150;
     const VALID_FROM_EPOCH: u64 = 151;
@@ -79,8 +78,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
 #[test]
 fn transaction_executed_after_valid_returns_that_rejection_reason() {
     // Arrange
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut substate_store);
+    let mut test_runner = TestRunner::new(true);
 
     const CURRENT_EPOCH: u64 = 157;
     const VALID_FROM_EPOCH: u64 = 151;
@@ -116,13 +114,12 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
 #[test]
 fn test_normal_transaction_flow() {
     // Arrange
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-
     let mut scrypto_interpreter = ScryptoInterpreter {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
+    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
 
     let intent_hash_manager = TestIntentHashManager::new();
     let fee_reserve_config = FeeReserveConfig::default();

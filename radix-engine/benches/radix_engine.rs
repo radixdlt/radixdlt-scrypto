@@ -18,13 +18,12 @@ use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
-    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap();
-
     let mut scrypto_interpreter = ScryptoInterpreter {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
         wasm_metering_config: WasmMeteringConfig::V0,
     };
+    let mut substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
 
     // Create a key pair
     let private_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap();
