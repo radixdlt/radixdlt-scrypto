@@ -34,10 +34,7 @@ impl Runtime {
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        match Self::actor() {
-            ScryptoActor::Blueprint(package_address, _)
-            | ScryptoActor::Component(_, package_address, _) => package_address,
-        }
+        Self::actor().package_address
     }
 
     /// Invokes a function on a blueprint.

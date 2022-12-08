@@ -1,6 +1,6 @@
 use crate::engine::{
     Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
-    ResolvedReceiver, RuntimeError, SystemApi,
+    RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
 use crate::model::{
@@ -156,20 +156,13 @@ where
                     blueprint_name,
                     ..
                 },
-                ResolvedReceiver {
-                    receiver: RENodeId::Component(component_id),
-                    ..
-                },
-            ) => ScryptoActor::Component(
-                *component_id,
-                package_address.clone(),
-                blueprint_name.clone(),
-            ),
+                ..,
+            ) => ScryptoActor::new(package_address.clone(), blueprint_name.clone()),
             REActor::Function(ResolvedFunction::Scrypto {
                 package_address,
                 blueprint_name,
                 ..
-            }) => ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
+            }) => ScryptoActor::new(*package_address, blueprint_name.clone()),
 
             _ => panic!("Should not get here."),
         };
