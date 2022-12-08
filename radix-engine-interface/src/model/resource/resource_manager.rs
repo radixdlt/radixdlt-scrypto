@@ -14,7 +14,8 @@ use crate::model::*;
 use crate::scrypto_type;
 use crate::wasm::*;
 
-use radix_engine_derive::scrypto;
+use crate::scrypto;
+use crate::Describe;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode, Describe)]

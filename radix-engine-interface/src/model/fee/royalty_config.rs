@@ -4,6 +4,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 
 use crate::scrypto;
+use crate::Describe;
 
 /// Royalty rules
 #[derive(Debug, Clone, PartialEq, Eq)]

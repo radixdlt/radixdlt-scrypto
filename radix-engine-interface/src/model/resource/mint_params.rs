@@ -4,6 +4,7 @@ use sbor::rust::vec::Vec;
 use crate::math::*;
 use crate::model::*;
 use crate::scrypto;
+use crate::Describe;
 
 /// Represents the minting config
 #[derive(Debug, Clone)]
