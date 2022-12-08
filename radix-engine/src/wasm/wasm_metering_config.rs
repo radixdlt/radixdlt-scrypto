@@ -1,12 +1,18 @@
 use super::InstructionCostRules;
 use crate::types::*;
-use radix_engine_interface::crypto::hash;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct WasmMeteringConfig {
-    params: WasmMeteringParams,
-    hash: Hash,
+pub enum WasmMeteringConfig {
+    V0,
+}
+
+impl WasmMeteringConfig {
+    pub fn parameters(&self) -> WasmMeteringParams {
+        match self {
+            Self::V0 => WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 1024),
+        }
+    }
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -15,27 +21,19 @@ pub struct WasmMeteringParams {
     max_stack_size: u32,
 }
 
-impl WasmMeteringConfig {
+impl WasmMeteringParams {
     pub fn new(instruction_cost_rules: InstructionCostRules, max_stack_size: u32) -> Self {
-        let params = WasmMeteringParams {
+        Self {
             instruction_cost_rules,
             max_stack_size,
-        };
-        let hash = hash(scrypto_encode(&params).unwrap());
-        Self { params, hash }
-    }
-
-    /// Wasm fee table is statically applied to the wasm code.
-    /// This identifier helps decide whether or not re-instrumentation is required.
-    pub fn identifier(&self) -> &Hash {
-        &self.hash
+        }
     }
 
     pub fn instruction_cost_rules(&self) -> &InstructionCostRules {
-        &self.params.instruction_cost_rules
+        &self.instruction_cost_rules
     }
 
     pub fn max_stack_size(&self) -> u32 {
-        self.params.max_stack_size
+        self.max_stack_size
     }
 }

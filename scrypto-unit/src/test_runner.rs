@@ -16,9 +16,7 @@ use radix_engine::transaction::{
     FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt, TransactionResult,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::{
-    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
-};
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
@@ -52,10 +50,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 {
     pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
         let scrypto_interpreter = ScryptoInterpreter {
-            wasm_metering_config: WasmMeteringConfig::new(
-                InstructionCostRules::tiered(1, 5, 10, 5000),
-                1024,
-            ),
+            wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
         };

@@ -182,10 +182,7 @@ pub fn handle_manifest<O: std::io::Write>(
             let mut scrypto_interpreter = ScryptoInterpreter {
                 wasm_engine: DefaultWasmEngine::default(),
                 wasm_instrumenter: WasmInstrumenter::default(),
-                wasm_metering_config: WasmMeteringConfig::new(
-                    InstructionCostRules::tiered(1, 5, 10, 5000),
-                    1024,
-                ),
+                wasm_metering_config: WasmMeteringConfig::V0,
             };
 
             let sks = get_signing_keys(signing_keys)?;

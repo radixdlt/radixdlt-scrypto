@@ -114,7 +114,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
     ) -> ScryptoExecutor<W::WasmInstance> {
         let instrumented_code = self
             .wasm_instrumenter
-            .instrument(code, &self.wasm_metering_config);
+            .instrument(code, self.wasm_metering_config);
         let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoExecutor {
             instance,
@@ -129,7 +129,7 @@ impl<W: WasmEngine> ScryptoInterpreter<W> {
     ) -> ScryptoExecutorToParsed<W::WasmInstance> {
         let instrumented_code = self
             .wasm_instrumenter
-            .instrument(code, &self.wasm_metering_config);
+            .instrument(code, self.wasm_metering_config);
         let instance = self.wasm_engine.instantiate(&instrumented_code);
         ScryptoExecutorToParsed {
             instance,

@@ -4,7 +4,7 @@ use crate::transaction::{
     execute_transaction, ExecutionConfig, FeeReserveConfig, TransactionReceipt,
 };
 use crate::types::*;
-use crate::wasm::{DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig};
+use crate::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_interface::api::types::{
     EpochManagerFunction, GlobalAddress, NativeFunctionIdent, RENodeId, ResourceManagerFunction,
     ResourceManagerOffset, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
@@ -294,10 +294,7 @@ where
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
-            wasm_metering_config: WasmMeteringConfig::new(
-                InstructionCostRules::tiered(1, 5, 10, 5000),
-                1024,
-            ),
+            wasm_metering_config: WasmMeteringConfig::V0,
         };
 
         let genesis_transaction = create_genesis();
@@ -330,8 +327,7 @@ mod tests {
     fn bootstrap_receipt_should_match_constants() {
         let wasm_engine = DefaultWasmEngine::default();
         let wasm_instrumenter = WasmInstrumenter::default();
-        let wasm_metering_config =
-            WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 1024);
+        let wasm_metering_config = WasmMeteringConfig::V0;
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_engine,
             wasm_instrumenter,

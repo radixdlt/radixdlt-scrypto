@@ -5,7 +5,7 @@ use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
-use radix_engine::wasm::{DefaultWasmEngine, InstructionCostRules, WasmMeteringConfig};
+use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::core::NetworkDefinition;
 use scrypto_unit::*;
@@ -121,10 +121,7 @@ fn test_normal_transaction_flow() {
     let mut scrypto_interpreter = ScryptoInterpreter {
         wasm_engine: DefaultWasmEngine::default(),
         wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_metering_config: WasmMeteringConfig::new(
-            InstructionCostRules::tiered(1, 5, 10, 5000),
-            1024,
-        ),
+        wasm_metering_config: WasmMeteringConfig::V0,
     };
 
     let intent_hash_manager = TestIntentHashManager::new();

@@ -4,11 +4,13 @@ use sbor::rust::sync::Arc;
 use crate::types::*;
 use crate::wasm::{WasmMeteringConfig, WasmModule};
 
+use super::WasmMeteringParams;
+
 pub struct WasmInstrumenter {
     #[cfg(not(feature = "moka"))]
-    cache: RefCell<lru::LruCache<(Hash, Hash), Arc<Vec<u8>>>>,
+    cache: RefCell<lru::LruCache<(Hash, WasmMeteringConfig), Arc<Vec<u8>>>>,
     #[cfg(feature = "moka")]
-    cache: moka::sync::Cache<(Hash, Hash), Arc<Vec<u8>>>,
+    cache: moka::sync::Cache<(Hash, WasmMeteringConfig), Arc<Vec<u8>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -37,13 +39,15 @@ impl WasmInstrumenter {
         ));
         #[cfg(feature = "moka")]
         let cache = moka::sync::Cache::builder()
-            .weigher(|_key: &(Hash, Hash), value: &Arc<Vec<u8>>| -> u32 {
-                value
-                    .len()
-                    .checked_add(Hash::LENGTH * 2)
-                    .and_then(|total| total.try_into().ok())
-                    .unwrap_or(u32::MAX)
-            })
+            .weigher(
+                |_key: &(Hash, WasmMeteringConfig), value: &Arc<Vec<u8>>| -> u32 {
+                    value
+                        .len()
+                        .checked_add(Hash::LENGTH * 2)
+                        .and_then(|total| total.try_into().ok())
+                        .unwrap_or(u32::MAX)
+                },
+            )
             .max_capacity(options.max_cache_size_bytes as u64)
             .build();
 
@@ -53,10 +57,10 @@ impl WasmInstrumenter {
     pub fn instrument(
         &self,
         code: &[u8],
-        wasm_metering_config: &WasmMeteringConfig,
+        wasm_metering_config: WasmMeteringConfig,
     ) -> InstrumentedCode {
         let code_hash = hash(code);
-        let cache_key = (code_hash, *wasm_metering_config.identifier());
+        let cache_key = (code_hash, wasm_metering_config);
 
         #[cfg(not(feature = "moka"))]
         {
@@ -75,7 +79,8 @@ impl WasmInstrumenter {
             };
         }
 
-        let instrumented_ref = Arc::new(self.instrument_no_cache(code, wasm_metering_config));
+        let instrumented_ref =
+            Arc::new(self.instrument_no_cache(code, wasm_metering_config.parameters()));
 
         #[cfg(not(feature = "moka"))]
         self.cache
@@ -90,16 +95,10 @@ impl WasmInstrumenter {
         }
     }
 
-    pub fn instrument_no_cache(
-        &self,
-        code: &[u8],
-        wasm_metering_config: &WasmMeteringConfig,
-    ) -> Vec<u8> {
+    pub fn instrument_no_cache(&self, code: &[u8], metering_params: WasmMeteringParams) -> Vec<u8> {
         WasmModule::init(code)
-            .and_then(|m| {
-                m.inject_instruction_metering(wasm_metering_config.instruction_cost_rules())
-            })
-            .and_then(|m| m.inject_stack_metering(wasm_metering_config.max_stack_size()))
+            .and_then(|m| m.inject_instruction_metering(metering_params.instruction_cost_rules()))
+            .and_then(|m| m.inject_stack_metering(metering_params.max_stack_size()))
             .and_then(|m| m.to_bytes())
             .expect("Failed to instrument WASM module")
             .0

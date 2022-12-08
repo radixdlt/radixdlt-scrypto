@@ -24,9 +24,7 @@ pub fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, Extract
     let wasm_engine = DefaultWasmEngine::default();
     let wasm_instrumenter = WasmInstrumenter::default();
 
-    let metering_params =
-        WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 1024);
-    let instrumented_code = wasm_instrumenter.instrument(code, &metering_params);
+    let instrumented_code = wasm_instrumenter.instrument(code, WasmMeteringConfig::V0);
     let fee_reserve = SystemLoanFeeReserve::no_fee();
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
