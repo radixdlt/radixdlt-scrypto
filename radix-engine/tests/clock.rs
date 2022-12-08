@@ -82,7 +82,7 @@ fn validator_can_set_current_time() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     let time_to_set_ms: u64 = 1669663688996;
-    let expected_unix_time_rounded_to_minutes: u64 = 1669663680;
+    let expected_unix_time_rounded_to_minutes: i64 = 1669663680;
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -107,7 +107,7 @@ fn validator_can_set_current_time() {
 
     // Assert
     let outputs = receipt.expect_commit_success();
-    let current_unix_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[2]).unwrap();
+    let current_unix_time_rounded_to_minutes: i64 = scrypto_decode(&outputs[2]).unwrap();
     assert_eq!(
         current_unix_time_rounded_to_minutes,
         expected_unix_time_rounded_to_minutes
@@ -135,7 +135,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
 
     // Assert
     let outputs = receipt.expect_commit_success();
-    let current_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[1]).unwrap();
+    let current_time_rounded_to_minutes: i64 = scrypto_decode(&outputs[1]).unwrap();
     assert_eq!(current_time_rounded_to_minutes, 0);
 }
 
