@@ -1,6 +1,5 @@
 use radix_engine::engine::ResourceChange;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::ScryptoMethodIdent;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::data::*;
@@ -132,11 +131,9 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
         .lock_fee_and_withdraw(account, 10u32.into(), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::CallMethod {
-                    method_ident: ScryptoMethodIdent {
-                        receiver: ScryptoReceiver::Global(account),
-                        method_name: "deposit".to_string(),
-                    },
+                .add_instruction(BasicInstruction::CallMethod {
+                    component_address: account,
+                    method_name: "deposit".to_string(),
                     args: args!(Bucket(bucket_id)),
                 })
                 .0

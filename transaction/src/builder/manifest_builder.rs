@@ -2,9 +2,7 @@ use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, PackageFunction, ProofId,
-    RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent,
-    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
 };
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -42,11 +40,11 @@ pub struct ManifestBuilder {
     /// The decoder used by the manifest (mainly for the `call_*_with_abi)
     decoder: Bech32Decoder,
     /// ID validator for calculating transaction object id
-    id_validator: IdValidator,
+    id_allocator: IdAllocator,
     /// Instructions generated.
-    instructions: Vec<Instruction>,
+    instructions: Vec<BasicInstruction>,
     /// Blobs
-    blobs: HashMap<Hash, Vec<u8>>,
+    blobs: BTreeMap<Hash, Vec<u8>>,
 }
 
 impl ManifestBuilder {
@@ -54,76 +52,35 @@ impl ManifestBuilder {
     pub fn new(network: &NetworkDefinition) -> Self {
         Self {
             decoder: Bech32Decoder::new(network),
-            id_validator: IdValidator::new(),
+            id_allocator: IdAllocator::new(IdSpace::Transaction),
             instructions: Vec::new(),
-            blobs: HashMap::default(),
+            blobs: BTreeMap::default(),
         }
     }
 
     /// Adds a raw instruction.
     pub fn add_instruction(
         &mut self,
-        inst: Instruction,
+        inst: BasicInstruction,
     ) -> (&mut Self, Option<BucketId>, Option<ProofId>) {
         let mut new_bucket_id: Option<BucketId> = None;
         let mut new_proof_id: Option<ProofId> = None;
 
-        match inst.clone() {
-            Instruction::TakeFromWorktop { .. }
-            | Instruction::TakeFromWorktopByAmount { .. }
-            | Instruction::TakeFromWorktopByIds { .. } => {
-                new_bucket_id = Some(self.id_validator.new_bucket().unwrap());
+        match &inst {
+            BasicInstruction::TakeFromWorktop { .. }
+            | BasicInstruction::TakeFromWorktopByAmount { .. }
+            | BasicInstruction::TakeFromWorktopByIds { .. } => {
+                new_bucket_id = Some(self.id_allocator.new_bucket_id().unwrap());
             }
-            Instruction::ReturnToWorktop { bucket_id } => {
-                self.id_validator.drop_bucket(bucket_id).unwrap();
+            BasicInstruction::PopFromAuthZone { .. }
+            | BasicInstruction::CreateProofFromAuthZone { .. }
+            | BasicInstruction::CreateProofFromAuthZoneByAmount { .. }
+            | BasicInstruction::CreateProofFromAuthZoneByIds { .. }
+            | BasicInstruction::CreateProofFromBucket { .. }
+            | BasicInstruction::CloneProof { .. } => {
+                new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
             }
-            Instruction::AssertWorktopContains { .. }
-            | Instruction::AssertWorktopContainsByAmount { .. }
-            | Instruction::AssertWorktopContainsByIds { .. } => {}
-            Instruction::PopFromAuthZone { .. } => {
-                new_proof_id = Some(
-                    self.id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .unwrap(),
-                );
-            }
-            Instruction::PushToAuthZone { proof_id } => {
-                self.id_validator.drop_proof(proof_id).unwrap();
-            }
-            Instruction::ClearAuthZone => {}
-            Instruction::CreateProofFromAuthZone { .. }
-            | Instruction::CreateProofFromAuthZoneByAmount { .. }
-            | Instruction::CreateProofFromAuthZoneByIds { .. } => {
-                new_proof_id = Some(
-                    self.id_validator
-                        .new_proof(ProofKind::AuthZoneProof)
-                        .unwrap(),
-                );
-            }
-            Instruction::CreateProofFromBucket { bucket_id } => {
-                new_proof_id = Some(
-                    self.id_validator
-                        .new_proof(ProofKind::BucketProof(bucket_id))
-                        .unwrap(),
-                );
-            }
-            Instruction::CloneProof { proof_id } => {
-                new_proof_id = Some(self.id_validator.clone_proof(proof_id).unwrap());
-            }
-            Instruction::DropProof { proof_id } => {
-                self.id_validator.drop_proof(proof_id).unwrap();
-            }
-            Instruction::DropAllProofs => {
-                self.id_validator.drop_all_proofs().unwrap();
-            }
-            Instruction::CallFunction { args, .. }
-            | Instruction::CallMethod { args, .. }
-            | Instruction::CallNativeFunction { args, .. }
-            | Instruction::CallNativeMethod { args, .. } => {
-                let scrypt_value = IndexedScryptoValue::from_slice(&args).unwrap();
-                self.id_validator.move_resources(&scrypt_value).unwrap();
-            }
-            Instruction::PublishPackageWithOwner { .. } => {}
+            _ => {}
         }
 
         self.instructions.push(inst);
@@ -137,7 +94,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, BucketId) -> &mut Self,
     {
         let (builder, bucket_id, _) =
-            self.add_instruction(Instruction::TakeFromWorktop { resource_address });
+            self.add_instruction(BasicInstruction::TakeFromWorktop { resource_address });
         then(builder, bucket_id.unwrap())
     }
 
@@ -151,10 +108,11 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, BucketId) -> &mut Self,
     {
-        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByAmount {
-            amount,
-            resource_address,
-        });
+        let (builder, bucket_id, _) =
+            self.add_instruction(BasicInstruction::TakeFromWorktopByAmount {
+                amount,
+                resource_address,
+            });
         then(builder, bucket_id.unwrap())
     }
 
@@ -168,22 +126,23 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, BucketId) -> &mut Self,
     {
-        let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByIds {
-            ids: ids.clone(),
-            resource_address,
-        });
+        let (builder, bucket_id, _) =
+            self.add_instruction(BasicInstruction::TakeFromWorktopByIds {
+                ids: ids.clone(),
+                resource_address,
+            });
         then(builder, bucket_id.unwrap())
     }
 
     /// Adds a bucket of resource to worktop.
     pub fn return_to_worktop(&mut self, bucket_id: BucketId) -> &mut Self {
-        self.add_instruction(Instruction::ReturnToWorktop { bucket_id })
+        self.add_instruction(BasicInstruction::ReturnToWorktop { bucket_id })
             .0
     }
 
     /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains(&mut self, resource_address: ResourceAddress) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContains { resource_address })
+        self.add_instruction(BasicInstruction::AssertWorktopContains { resource_address })
             .0
     }
 
@@ -193,7 +152,7 @@ impl ManifestBuilder {
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContainsByAmount {
+        self.add_instruction(BasicInstruction::AssertWorktopContainsByAmount {
             amount,
             resource_address,
         })
@@ -206,7 +165,7 @@ impl ManifestBuilder {
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContainsByIds {
+        self.add_instruction(BasicInstruction::AssertWorktopContainsByIds {
             ids: ids.clone(),
             resource_address,
         })
@@ -218,19 +177,19 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::PopFromAuthZone {});
+        let (builder, _, proof_id) = self.add_instruction(BasicInstruction::PopFromAuthZone {});
         then(builder, proof_id.unwrap())
     }
 
     /// Pushes a proof onto the auth zone
     pub fn push_to_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
-        self.add_instruction(Instruction::PushToAuthZone { proof_id });
+        self.add_instruction(BasicInstruction::PushToAuthZone { proof_id });
         self
     }
 
     /// Clears the auth zone.
     pub fn clear_auth_zone(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::ClearAuthZone).0
+        self.add_instruction(BasicInstruction::ClearAuthZone).0
     }
 
     /// Creates proof from the auth zone.
@@ -243,7 +202,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZone { resource_address });
+            self.add_instruction(BasicInstruction::CreateProofFromAuthZone { resource_address });
         then(builder, proof_id.unwrap())
     }
 
@@ -258,7 +217,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZoneByAmount {
+            self.add_instruction(BasicInstruction::CreateProofFromAuthZoneByAmount {
                 amount,
                 resource_address,
             });
@@ -276,7 +235,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZoneByIds {
+            self.add_instruction(BasicInstruction::CreateProofFromAuthZoneByIds {
                 ids: ids.clone(),
                 resource_address,
             });
@@ -289,7 +248,7 @@ impl ManifestBuilder {
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromBucket { bucket_id });
+            self.add_instruction(BasicInstruction::CreateProofFromBucket { bucket_id });
         then(builder, proof_id.unwrap())
     }
 
@@ -298,28 +257,30 @@ impl ManifestBuilder {
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::CloneProof { proof_id });
+        let (builder, _, proof_id) =
+            self.add_instruction(BasicInstruction::CloneProof { proof_id });
         then(builder, proof_id.unwrap())
     }
 
     /// Drops a proof.
     pub fn drop_proof(&mut self, proof_id: ProofId) -> &mut Self {
-        self.add_instruction(Instruction::DropProof { proof_id }).0
+        self.add_instruction(BasicInstruction::DropProof { proof_id })
+            .0
     }
 
     /// Drops all proofs.
     pub fn drop_all_proofs(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::DropAllProofs).0
+        self.add_instruction(BasicInstruction::DropAllProofs).0
     }
 
     pub fn create_resource<R: Into<AccessRule>>(
         &mut self,
         resource_type: ResourceType,
-        metadata: HashMap<String, String>,
-        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, R)>,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         mint_params: Option<MintParams>,
     ) -> &mut Self {
-        let input = ResourceManagerCreateInvocation {
+        self.add_instruction(BasicInstruction::CreateResource {
             resource_type,
             metadata,
             access_rules: access_rules
@@ -327,26 +288,36 @@ impl ManifestBuilder {
                 .map(|(k, v)| (k, (v.0, v.1.into())))
                 .collect(),
             mint_params,
-        };
-
-        self.add_instruction(Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
-                function_name: ResourceManagerFunction::Create.to_string(),
-            },
-            args: scrypto_encode(&input).unwrap(),
         });
 
         self
     }
 
+    // TODO: remove
+    pub fn call_native_method(
+        &mut self,
+        receiver: RENodeId,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallNativeMethod {
+            method_ident: NativeMethodIdent {
+                receiver,
+                method_name: method_name.to_string(),
+            },
+            args,
+        });
+        self
+    }
+
+    // TODO: remove
     pub fn call_native_function(
         &mut self,
         blueprint_name: &str,
         function_name: &str,
         args: Vec<u8>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallNativeFunction {
+        self.add_instruction(BasicInstruction::CallNativeFunction {
             function_ident: NativeFunctionIdent {
                 blueprint_name: blueprint_name.to_string(),
                 function_name: function_name.to_string(),
@@ -364,12 +335,10 @@ impl ManifestBuilder {
         function_name: &str,
         args: Vec<u8>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            function_ident: ScryptoFunctionIdent {
-                package: ScryptoPackage::Global(package_address),
-                blueprint_name: blueprint_name.to_string(),
-                function_name: function_name.to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallFunction {
+            package_address,
+            blueprint_name: blueprint_name.to_string(),
+            function_name: function_name.to_string(),
             args,
         });
         self
@@ -410,12 +379,10 @@ impl ManifestBuilder {
         let bytes = scrypto_encode(&input_struct).unwrap();
 
         Ok(self
-            .add_instruction(Instruction::CallFunction {
-                function_ident: ScryptoFunctionIdent {
-                    package: ScryptoPackage::Global(package_address),
-                    blueprint_name: blueprint_name.to_string(),
-                    function_name: function.to_string(),
-                },
+            .add_instruction(BasicInstruction::CallFunction {
+                package_address,
+                blueprint_name: blueprint_name.to_string(),
+                function_name: function.to_string(),
                 args: bytes,
             })
             .0)
@@ -428,31 +395,60 @@ impl ManifestBuilder {
         method_name: &str,
         args: Vec<u8>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(component_address),
-                method_name: method_name.to_owned(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address,
+            method_name: method_name.to_owned(),
             args,
         });
         self
     }
 
-    /// Calls a native method where the arguments should be an array of encoded Scrypto value.
-    pub fn call_native_method(
+    pub fn set_package_royalty_config(
         &mut self,
-        receiver: RENodeId,
-        method_name: &str,
-        args: Vec<u8>,
+        package_address: PackageAddress,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver,
-                method_name: method_name.to_string(),
-            },
-            args,
-        });
-        self
+        self.add_instruction(BasicInstruction::SetPackageRoyaltyConfig {
+            package_address,
+            royalty_config,
+        })
+        .0
+    }
+
+    pub fn set_component_royalty_config(
+        &mut self,
+        component_address: ComponentAddress,
+        royalty_config: RoyaltyConfig,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::SetComponentRoyaltyConfig {
+            component_address,
+            royalty_config,
+        })
+        .0
+    }
+
+    pub fn claim_package_royalty(&mut self, package_address: PackageAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::ClaimPackageRoyalty { package_address })
+            .0
+    }
+
+    pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::ClaimComponentRoyalty { component_address })
+            .0
+    }
+
+    pub fn set_metadata(
+        &mut self,
+        entity_address: GlobalAddress,
+        key: String,
+        value: String,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::SetMetadata {
+            entity_address,
+            key,
+            value,
+        })
+        .0
     }
 
     /// Calls a method.
@@ -482,11 +478,9 @@ impl ManifestBuilder {
             .map_err(|e| BuildCallWithAbiError::FailedToBuildArgs(e))?;
 
         Ok(self
-            .add_instruction(Instruction::CallMethod {
-                method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(component_address),
-                    method_name: method_name.to_owned(),
-                },
+            .add_instruction(BasicInstruction::CallMethod {
+                component_address,
+                method_name: method_name.to_owned(),
                 args: args_from_bytes_vec!(arguments),
             })
             .0)
@@ -496,9 +490,9 @@ impl ManifestBuilder {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
-        royalty_config: HashMap<String, RoyaltyConfig>,
-        metadata: HashMap<String, String>,
+        abi: BTreeMap<String, BlueprintAbi>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
     ) -> &mut Self {
         let code_hash = hash(&code);
@@ -508,19 +502,12 @@ impl ManifestBuilder {
         let abi_hash = hash(&abi);
         self.blobs.insert(abi_hash, abi);
 
-        self.add_instruction(Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-                function_name: PackageFunction::Publish.to_string(),
-            },
-            args: scrypto_encode(&PackagePublishInvocation {
-                code: Blob(code_hash),
-                abi: Blob(abi_hash),
-                royalty_config,
-                metadata,
-                access_rules,
-            })
-            .unwrap(),
+        self.add_instruction(BasicInstruction::PublishPackage {
+            code: Blob(code_hash),
+            abi: Blob(abi_hash),
+            royalty_config,
+            metadata,
+            access_rules,
         })
         .0
     }
@@ -529,7 +516,7 @@ impl ManifestBuilder {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
+        abi: BTreeMap<String, BlueprintAbi>,
         owner_badge: NonFungibleAddress,
     ) -> &mut Self {
         let code_hash = hash(&code);
@@ -539,7 +526,7 @@ impl ManifestBuilder {
         let abi_hash = hash(&abi);
         self.blobs.insert(abi_hash, abi);
 
-        self.add_instruction(Instruction::PublishPackageWithOwner {
+        self.add_instruction(BasicInstruction::PublishPackageWithOwner {
             code: Blob(code_hash),
             abi: Blob(abi_hash),
             owner_badge,
@@ -559,22 +546,22 @@ impl ManifestBuilder {
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
-        let mut resource_auth = HashMap::new();
-        resource_auth.insert(
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        resource_auth.insert(
+        access_rules.insert(
             Mint,
             (
                 rule!(require(minter_resource_address.clone())),
                 rule!(deny_all),
             ),
         );
-        resource_auth.insert(
+        access_rules.insert(
             Burn,
             (
                 rule!(require(minter_resource_address.clone())),
@@ -583,18 +570,11 @@ impl ManifestBuilder {
         );
 
         let mint_params: Option<MintParams> = Option::None;
-        self.add_instruction(Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::Create.to_string(),
-            },
-            args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::Fungible { divisibility: 18 },
-                metadata,
-                access_rules: resource_auth,
-                mint_params,
-            })
-            .unwrap(),
+        self.add_instruction(BasicInstruction::CreateResource {
+            resource_type: ResourceType::Fungible { divisibility: 18 },
+            metadata,
+            access_rules,
+            mint_params,
         })
         .0
     }
@@ -602,29 +582,22 @@ impl ManifestBuilder {
     /// Creates a token resource with fixed supply.
     pub fn new_token_fixed(
         &mut self,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
         initial_supply: Decimal,
     ) -> &mut Self {
-        let mut resource_auth = HashMap::new();
-        resource_auth.insert(
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.add_instruction(Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::Create.to_string(),
-            },
-            args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::Fungible { divisibility: 18 },
-                metadata,
-                access_rules: resource_auth,
-                mint_params: Option::Some(MintParams::Fungible {
-                    amount: initial_supply.into(),
-                }),
-            })
-            .unwrap(),
+        self.add_instruction(BasicInstruction::CreateResource {
+            resource_type: ResourceType::Fungible { divisibility: 18 },
+            metadata,
+            access_rules,
+            mint_params: Option::Some(MintParams::Fungible {
+                amount: initial_supply.into(),
+            }),
         })
         .0
     }
@@ -632,22 +605,22 @@ impl ManifestBuilder {
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
-        let mut resource_auth = HashMap::new();
-        resource_auth.insert(
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        resource_auth.insert(
+        access_rules.insert(
             Mint,
             (
                 rule!(require(minter_resource_address.clone())),
                 rule!(deny_all),
             ),
         );
-        resource_auth.insert(
+        access_rules.insert(
             Burn,
             (
                 rule!(require(minter_resource_address.clone())),
@@ -657,18 +630,11 @@ impl ManifestBuilder {
 
         let mint_params: Option<MintParams> = Option::None;
 
-        self.add_instruction(Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::Create.to_string(),
-            },
-            args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::Fungible { divisibility: 18 },
-                metadata,
-                access_rules: resource_auth,
-                mint_params,
-            })
-            .unwrap(),
+        self.add_instruction(BasicInstruction::CreateResource {
+            resource_type: ResourceType::Fungible { divisibility: 0 },
+            metadata,
+            access_rules,
+            mint_params,
         })
         .0
     }
@@ -676,45 +642,31 @@ impl ManifestBuilder {
     /// Creates a badge resource with fixed supply.
     pub fn new_badge_fixed(
         &mut self,
-        metadata: HashMap<String, String>,
+        metadata: BTreeMap<String, String>,
         initial_supply: Decimal,
     ) -> &mut Self {
-        let mut resource_auth = HashMap::new();
-        resource_auth.insert(
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.add_instruction(Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                function_name: ResourceManagerFunction::Create.to_string(),
-            },
-            args: scrypto_encode(&ResourceManagerCreateInvocation {
-                resource_type: ResourceType::Fungible { divisibility: 0 },
-                metadata,
-                access_rules: resource_auth,
-                mint_params: Option::Some(MintParams::Fungible {
-                    amount: initial_supply.into(),
-                }),
-            })
-            .unwrap(),
+        self.add_instruction(BasicInstruction::CreateResource {
+            resource_type: ResourceType::Fungible { divisibility: 0 },
+            metadata,
+            access_rules,
+            mint_params: Option::Some(MintParams::Fungible {
+                amount: initial_supply.into(),
+            }),
         })
         .0
     }
 
     /// Mints resource.
     pub fn mint(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
-        self.add_instruction(Instruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
-                method_name: ResourceManagerMethod::Mint.to_string(),
-            },
-            args: scrypto_encode(&ResourceManagerMintInvocation {
-                receiver: resource_address,
-                mint_params: MintParams::Fungible { amount },
-            })
-            .unwrap(),
+        self.add_instruction(BasicInstruction::MintFungible {
+            resource_address,
+            amount,
         });
         self
     }
@@ -723,17 +675,7 @@ impl ManifestBuilder {
     pub fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::CallNativeMethod {
-                    method_ident: NativeMethodIdent {
-                        receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
-                        method_name: ResourceManagerMethod::Burn.to_string(),
-                    },
-                    args: scrypto_encode(&ResourceManagerBurnInvocation {
-                        receiver: resource_address,
-                        bucket: Bucket(bucket_id),
-                    })
-                    .unwrap(),
-                })
+                .add_instruction(BasicInstruction::BurnResource { bucket_id })
                 .0
         })
     }
@@ -746,19 +688,7 @@ impl ManifestBuilder {
             non_fungible_address.resource_address(),
             |builder, bucket_id| {
                 builder
-                    .add_instruction(Instruction::CallNativeMethod {
-                        method_ident: NativeMethodIdent {
-                            receiver: RENodeId::Global(GlobalAddress::Resource(
-                                non_fungible_address.resource_address(),
-                            )),
-                            method_name: ResourceManagerMethod::Burn.to_string(),
-                        },
-                        args: scrypto_encode(&ResourceManagerBurnInvocation {
-                            receiver: non_fungible_address.resource_address(),
-                            bucket: Bucket(bucket_id),
-                        })
-                        .unwrap(),
-                    })
+                    .add_instruction(BasicInstruction::BurnResource { bucket_id })
                     .0
             },
         )
@@ -766,12 +696,10 @@ impl ManifestBuilder {
 
     /// Creates an account.
     pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            function_ident: ScryptoFunctionIdent {
-                package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
-                blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
-                function_name: "new".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallFunction {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
+            function_name: "new".to_string(),
             args: args!(withdraw_auth.clone()),
         })
         .0
@@ -783,12 +711,10 @@ impl ManifestBuilder {
         withdraw_auth: &AccessRule,
         bucket_id: BucketId,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallFunction {
-            function_ident: ScryptoFunctionIdent {
-                package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
-                blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
-                function_name: "new_with_resource".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallFunction {
+            package_address: ACCOUNT_PACKAGE,
+            blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
+            function_name: "new_with_resource".to_string(),
             args: args!(withdraw_auth.clone(), Bucket(bucket_id)),
         })
         .0
@@ -800,11 +726,9 @@ impl ManifestBuilder {
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "lock_fee_and_withdraw".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "lock_fee_and_withdraw".to_string(),
             args: args!(amount, resource_address),
         })
         .0
@@ -817,11 +741,10 @@ impl ManifestBuilder {
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "lock_fee_and_withdraw_by_amount".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "lock_fee_and_withdraw_by_amount".to_string(),
+
             args: args!(amount_to_lock, amount, resource_address),
         })
         .0
@@ -834,11 +757,10 @@ impl ManifestBuilder {
         ids: BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "lock_fee_and_withdraw_by_ids".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "lock_fee_and_withdraw_by_ids".to_string(),
+
             args: args!(amount_to_lock, ids, resource_address),
         })
         .0
@@ -846,22 +768,20 @@ impl ManifestBuilder {
 
     /// Locks a fee from the XRD vault of an account.
     pub fn lock_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "lock_fee".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "lock_fee".to_string(),
+
             args: args!(amount),
         })
         .0
     }
 
     pub fn lock_contingent_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "lock_contingent_fee".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "lock_contingent_fee".to_string(),
+
             args: args!(amount),
         })
         .0
@@ -873,11 +793,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "withdraw".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "withdraw".to_string(),
+
             args: args!(resource_address),
         })
         .0
@@ -890,11 +809,10 @@ impl ManifestBuilder {
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "withdraw_by_amount".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "withdraw_by_amount".to_string(),
+
             args: args!(amount, resource_address),
         })
         .0
@@ -907,11 +825,10 @@ impl ManifestBuilder {
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "withdraw_by_ids".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "withdraw_by_ids".to_string(),
+
             args: args!(ids.clone(), resource_address),
         })
         .0
@@ -923,11 +840,10 @@ impl ManifestBuilder {
         account: ComponentAddress,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "create_proof".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "create_proof".to_string(),
+
             args: args!(resource_address),
         })
         .0
@@ -940,11 +856,10 @@ impl ManifestBuilder {
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "create_proof_by_amount".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "create_proof_by_amount".to_string(),
+
             args: args!(amount, resource_address),
         })
         .0
@@ -957,11 +872,10 @@ impl ManifestBuilder {
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_ident: ScryptoMethodIdent {
-                receiver: ScryptoReceiver::Global(account),
-                method_name: "create_proof_by_ids".to_string(),
-            },
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: account,
+            method_name: "create_proof_by_ids".to_string(),
+
             args: args!(ids.clone(), resource_address),
         })
         .0
@@ -1096,10 +1010,12 @@ impl ManifestBuilder {
                                             resource_address,
                                         );
                                     }
-                                    self.add_instruction(Instruction::TakeFromWorktopByAmount {
-                                        amount,
-                                        resource_address,
-                                    })
+                                    self.add_instruction(
+                                        BasicInstruction::TakeFromWorktopByAmount {
+                                            amount,
+                                            resource_address,
+                                        },
+                                    )
                                     .1
                                     .unwrap()
                                 }
@@ -1111,7 +1027,7 @@ impl ManifestBuilder {
                                             resource_address,
                                         );
                                     }
-                                    self.add_instruction(Instruction::TakeFromWorktopByIds {
+                                    self.add_instruction(BasicInstruction::TakeFromWorktopByIds {
                                         ids,
                                         resource_address,
                                     })
@@ -1134,7 +1050,7 @@ impl ManifestBuilder {
                                             amount,
                                             resource_address,
                                         );
-                                        self.add_instruction(Instruction::PopFromAuthZone)
+                                        self.add_instruction(BasicInstruction::PopFromAuthZone)
                                             .2
                                             .unwrap()
                                     } else {
@@ -1148,7 +1064,7 @@ impl ManifestBuilder {
                                             &ids,
                                             resource_address,
                                         );
-                                        self.add_instruction(Instruction::PopFromAuthZone)
+                                        self.add_instruction(BasicInstruction::PopFromAuthZone)
                                             .2
                                             .unwrap()
                                     } else {

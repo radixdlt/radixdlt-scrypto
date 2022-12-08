@@ -1,5 +1,5 @@
-use super::{ExecutionContext, FeePayment};
-use crate::model::{AuthModule, AuthZoneParams, Executable, TransactionManifest};
+use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
+use crate::model::{AuthModule, AuthZoneParams, Executable};
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::scrypto;
 use sbor::*;
@@ -8,7 +8,8 @@ use std::collections::BTreeSet;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct SystemTransaction {
-    pub manifest: TransactionManifest,
+    pub instructions: Vec<Instruction>,
+    pub blobs: Vec<Vec<u8>>,
 }
 
 impl SystemTransaction {
@@ -21,10 +22,11 @@ impl SystemTransaction {
         };
 
         Executable::new(
-            &self.manifest.instructions,
-            &self.manifest.blobs,
+            InstructionList::Any(&self.instructions),
+            &self.blobs,
             ExecutionContext {
                 transaction_hash,
+                payload_size: 0,
                 auth_zone_params,
                 fee_payment: FeePayment::NoFee,
                 runtime_validations: vec![],

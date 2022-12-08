@@ -1,0 +1,14 @@
+SET_METADATA
+    PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe")
+    "k"
+    "v";
+
+SET_METADATA
+    ComponentAddress("component_sim1qg2jwzl3hxnkqye8tfj5v3p2wp7cv9xdcjv4nl63refs785pvt")
+    "k"
+    "v";
+
+SET_METADATA
+    ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v")
+    "k"
+    "v";

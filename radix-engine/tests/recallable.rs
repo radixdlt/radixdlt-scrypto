@@ -10,7 +10,7 @@ use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::BasicInstruction;
 
 #[test]
 fn non_existing_vault_should_cause_error() {
@@ -23,7 +23,7 @@ fn non_existing_vault_should_cause_error() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(Instruction::CallNativeMethod {
+        .add_instruction(BasicInstruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(non_existing_vault_id),
                 method_name: "recall".to_string(),
@@ -66,7 +66,7 @@ fn cannot_get_amount_on_direct_vault_access() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(Instruction::CallNativeMethod {
+        .add_instruction(BasicInstruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(vault_id),
                 method_name: "get_amount".to_string(),
@@ -98,7 +98,7 @@ fn cannot_take_on_non_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(Instruction::CallNativeMethod {
+        .add_instruction(BasicInstruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(vault_id),
                 method_name: "recall".to_string(),
@@ -151,7 +151,7 @@ fn can_take_on_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(Instruction::CallNativeMethod {
+        .add_instruction(BasicInstruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(vault_id),
                 method_name: "recall".to_string(),

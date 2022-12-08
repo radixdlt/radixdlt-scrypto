@@ -35,19 +35,15 @@ fn set_up_package_and_component() -> (
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 10u32.into())
             .create_proof_from_account(account, owner_badge_resource)
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Package(package_address)),
-                "set_royalty_config",
-                args!(
-                    package_address,
-                    HashMap::from([(
-                        "RoyaltyTest".to_owned(),
-                        RoyaltyConfigBuilder::new()
-                            .add_rule("paid_method", 2)
-                            .add_rule("paid_method_panic", 2)
-                            .default(0),
-                    )])
-                ),
+            .set_package_royalty_config(
+                package_address,
+                BTreeMap::from([(
+                    "RoyaltyTest".to_owned(),
+                    RoyaltyConfigBuilder::new()
+                        .add_rule("paid_method", 2)
+                        .add_rule("paid_method_panic", 2)
+                        .default(0),
+                )]),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
@@ -104,16 +100,12 @@ fn test_only_package_owner_can_set_royalty_config() {
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Package(package_address)),
-                "set_royalty_config",
-                args!(
-                    package_address,
-                    HashMap::from([(
-                        "RoyaltyTest".to_owned(),
-                        RoyaltyConfigBuilder::new().default(0),
-                    )])
-                ),
+            .set_package_royalty_config(
+                package_address,
+                BTreeMap::from([(
+                    "RoyaltyTest".to_owned(),
+                    RoyaltyConfigBuilder::new().default(0),
+                )]),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
@@ -124,16 +116,12 @@ fn test_only_package_owner_can_set_royalty_config() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Package(package_address)),
-                "set_royalty_config",
-                args!(
-                    package_address,
-                    HashMap::from([(
-                        "RoyaltyTest".to_owned(),
-                        RoyaltyConfigBuilder::new().default(0),
-                    )])
-                ),
+            .set_package_royalty_config(
+                package_address,
+                BTreeMap::from([(
+                    "RoyaltyTest".to_owned(),
+                    RoyaltyConfigBuilder::new().default(0),
+                )]),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
@@ -156,11 +144,7 @@ fn test_only_package_owner_can_claim_royalty() {
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Package(package_address)),
-                "claim_royalty",
-                args!(package_address),
-            )
+            .claim_package_royalty(package_address)
             .call_method(
                 account,
                 "deposit_batch",
@@ -175,11 +159,7 @@ fn test_only_package_owner_can_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Package(package_address)),
-                "claim_royalty",
-                args!(package_address),
-            )
+            .claim_package_royalty(package_address)
             .call_method(
                 account,
                 "deposit_batch",
@@ -206,14 +186,7 @@ fn test_only_component_owner_can_set_royalty_config() {
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Component(component_address)),
-                "set_royalty_config",
-                args!(
-                    RENodeId::Global(GlobalAddress::Component(component_address)),
-                    RoyaltyConfigBuilder::new().default(0)
-                ),
-            )
+            .set_component_royalty_config(component_address, RoyaltyConfigBuilder::new().default(0))
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
@@ -223,14 +196,7 @@ fn test_only_component_owner_can_set_royalty_config() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Component(component_address)),
-                "set_royalty_config",
-                args!(
-                    RENodeId::Global(GlobalAddress::Component(component_address)),
-                    RoyaltyConfigBuilder::new().default(0)
-                ),
-            )
+            .set_component_royalty_config(component_address, RoyaltyConfigBuilder::new().default(0))
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
@@ -252,13 +218,7 @@ fn test_only_component_owner_can_claim_royalty() {
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Component(component_address)),
-                "claim_royalty",
-                args!(RENodeId::Global(GlobalAddress::Component(
-                    component_address
-                ))),
-            )
+            .claim_component_royalty(component_address)
             .call_method(
                 account,
                 "deposit_batch",
@@ -273,13 +233,7 @@ fn test_only_component_owner_can_claim_royalty() {
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 100.into())
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Component(component_address)),
-                "claim_royalty",
-                args!(RENodeId::Global(GlobalAddress::Component(
-                    component_address
-                ))),
-            )
+            .claim_component_royalty(component_address)
             .call_method(
                 account,
                 "deposit_batch",

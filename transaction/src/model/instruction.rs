@@ -1,20 +1,22 @@
 use radix_engine_interface::api::types::{
-    BucketId, NativeFunctionIdent, NativeMethodIdent, ProofId, ScryptoFunctionIdent,
-    ScryptoMethodIdent,
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId,
 };
 use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum Instruction {
+pub enum BasicInstruction {
     /// Takes resource from worktop.
-    TakeFromWorktop { resource_address: ResourceAddress },
+    TakeFromWorktop {
+        resource_address: ResourceAddress,
+    },
 
     /// Takes resource from worktop by the given amount.
     TakeFromWorktopByAmount {
@@ -29,10 +31,14 @@ pub enum Instruction {
     },
 
     /// Returns a bucket of resource to worktop.
-    ReturnToWorktop { bucket_id: BucketId },
+    ReturnToWorktop {
+        bucket_id: BucketId,
+    },
 
     /// Asserts worktop contains resource.
-    AssertWorktopContains { resource_address: ResourceAddress },
+    AssertWorktopContains {
+        resource_address: ResourceAddress,
+    },
 
     /// Asserts worktop contains resource by at least the given amount.
     AssertWorktopContainsByAmount {
@@ -50,14 +56,18 @@ pub enum Instruction {
     PopFromAuthZone,
 
     /// Adds a proof to the auth zone.
-    PushToAuthZone { proof_id: ProofId },
+    PushToAuthZone {
+        proof_id: ProofId,
+    },
 
     /// Drops all proofs in the auth zone
     ClearAuthZone,
 
     // TODO: do we need `CreateProofFromWorktop`, to avoid taking resource out and then creating proof?
     /// Creates a proof from the auth zone
-    CreateProofFromAuthZone { resource_address: ResourceAddress },
+    CreateProofFromAuthZone {
+        resource_address: ResourceAddress,
+    },
 
     /// Creates a proof from the auth zone, by the given amount
     CreateProofFromAuthZoneByAmount {
@@ -72,13 +82,19 @@ pub enum Instruction {
     },
 
     /// Creates a proof from a bucket.
-    CreateProofFromBucket { bucket_id: BucketId },
+    CreateProofFromBucket {
+        bucket_id: BucketId,
+    },
 
     /// Clones a proof.
-    CloneProof { proof_id: ProofId },
+    CloneProof {
+        proof_id: ProofId,
+    },
 
     /// Drops a proof.
-    DropProof { proof_id: ProofId },
+    DropProof {
+        proof_id: ProofId,
+    },
 
     /// Drops all of the proofs in the transaction.
     DropAllProofs,
@@ -87,7 +103,9 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        function_ident: ScryptoFunctionIdent,
+        package_address: PackageAddress,
+        blueprint_name: String,
+        function_name: String,
         args: Vec<u8>,
     },
 
@@ -95,10 +113,90 @@ pub enum Instruction {
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
-        method_ident: ScryptoMethodIdent,
+        component_address: ComponentAddress,
+        method_name: String,
         args: Vec<u8>,
     },
 
+    /// Publish a package.
+    PublishPackage {
+        code: Blob,
+        abi: Blob,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
+        access_rules: AccessRules,
+    },
+
+    /// Publishes a package and set up auth rules using the owner badge.
+    PublishPackageWithOwner {
+        code: Blob,
+        abi: Blob,
+        owner_badge: NonFungibleAddress,
+    },
+
+    CreateResource {
+        resource_type: ResourceType,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        mint_params: Option<MintParams>,
+    },
+
+    CreateResourceWithOwner {
+        resource_type: ResourceType,
+        metadata: BTreeMap<String, String>,
+        owner_badge: NonFungibleAddress,
+        mint_params: Option<MintParams>,
+    },
+
+    BurnResource {
+        bucket_id: BucketId,
+    },
+
+    MintFungible {
+        resource_address: ResourceAddress,
+        amount: Decimal,
+    },
+
+    SetMetadata {
+        entity_address: GlobalAddress,
+        key: String,
+        value: String,
+    },
+
+    SetPackageRoyaltyConfig {
+        package_address: PackageAddress,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+    },
+
+    SetComponentRoyaltyConfig {
+        component_address: ComponentAddress,
+        royalty_config: RoyaltyConfig,
+    },
+
+    ClaimPackageRoyalty {
+        package_address: PackageAddress,
+    },
+
+    ClaimComponentRoyalty {
+        component_address: ComponentAddress,
+    },
+
+    // TODO: remove
+    CallNativeFunction {
+        function_ident: NativeFunctionIdent,
+        args: Vec<u8>,
+    },
+
+    // TODO: remove
+    CallNativeMethod {
+        method_ident: NativeMethodIdent,
+        args: Vec<u8>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum SystemInstruction {
     /// Calls a native function.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
@@ -114,12 +212,23 @@ pub enum Instruction {
         method_ident: NativeMethodIdent,
         args: Vec<u8>,
     },
+}
 
-    // TODO: add PublishPackage instruction
-    /// Publishes a package.
-    PublishPackageWithOwner {
-        code: Blob,
-        abi: Blob,
-        owner_badge: NonFungibleAddress,
-    },
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum Instruction {
+    Basic(BasicInstruction),
+    System(SystemInstruction),
+}
+
+impl From<BasicInstruction> for Instruction {
+    fn from(i: BasicInstruction) -> Self {
+        Instruction::Basic(i)
+    }
+}
+
+impl From<SystemInstruction> for Instruction {
+    fn from(i: SystemInstruction) -> Self {
+        Instruction::System(i)
+    }
 }

@@ -58,6 +58,9 @@ impl IdAllocator {
     ) -> Result<PackageAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
+
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
     }
 
@@ -67,6 +70,9 @@ impl IdAllocator {
     ) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis account {:?}", hash(&data).lower_26_bytes());
+
         Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
     }
 
@@ -78,6 +84,8 @@ impl IdAllocator {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
+        // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
+
         Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
     }
 
@@ -87,6 +95,9 @@ impl IdAllocator {
     ) -> Result<SystemAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
+
         Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
@@ -96,6 +107,9 @@ impl IdAllocator {
     ) -> Result<SystemAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis clock {:?}", hash(&data).lower_26_bytes());
+
         Ok(SystemAddress::Clock(hash(data).lower_26_bytes()))
     }
 

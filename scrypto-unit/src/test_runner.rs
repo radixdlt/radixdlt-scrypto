@@ -19,7 +19,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
 use radix_engine_interface::api::api::Invokable;
-use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
@@ -110,7 +110,7 @@ impl TestRunner {
         )
     }
 
-    pub fn get_metadata(&mut self, address: GlobalAddress) -> HashMap<String, String> {
+    pub fn get_metadata(&mut self, address: GlobalAddress) -> BTreeMap<String, String> {
         let node_id = RENodeId::Global(address);
         let global = self
             .substate_store
@@ -326,9 +326,9 @@ impl TestRunner {
     pub fn publish_package(
         &mut self,
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
-        royalty_config: HashMap<String, RoyaltyConfig>,
-        metadata: HashMap<String, String>,
+        abi: BTreeMap<String, BlueprintAbi>,
+        royalty_config: BTreeMap<String, RoyaltyConfig>,
+        metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -344,7 +344,7 @@ impl TestRunner {
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
+        abi: BTreeMap<String, BlueprintAbi>,
         owner_badge: NonFungibleAddress,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -374,8 +374,8 @@ impl TestRunner {
         self.publish_package(
             code,
             abi,
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new(),
         )
     }
@@ -392,7 +392,7 @@ impl TestRunner {
     pub fn compile<P: AsRef<Path>>(
         &mut self,
         package_dir: P,
-    ) -> (Vec<u8>, HashMap<String, BlueprintAbi>) {
+    ) -> (Vec<u8>, BTreeMap<String, BlueprintAbi>) {
         // Build
         let status = Command::new("cargo")
             .current_dir(package_dir.as_ref())
@@ -467,11 +467,9 @@ impl TestRunner {
     ) -> TransactionReceipt {
         manifest.instructions.insert(
             0,
-            transaction::model::Instruction::CallMethod {
-                method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(FAUCET_COMPONENT),
-                    method_name: "lock_fee".to_string(),
-                },
+            transaction::model::BasicInstruction::CallMethod {
+                component_address: FAUCET_COMPONENT,
+                method_name: "lock_fee".to_string(),
                 args: args!(dec!("100")),
             },
         );
@@ -609,14 +607,14 @@ impl TestRunner {
 
     fn create_fungible_resource_and_deposit(
         &mut self,
-        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         to: ComponentAddress,
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility: 0 },
-                HashMap::new(),
+                BTreeMap::new(),
                 access_rules,
                 Some(MintParams::Fungible {
                     amount: 5u32.into(),
@@ -649,7 +647,7 @@ impl TestRunner {
         let recall_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(
             Mint,
             (
@@ -696,7 +694,7 @@ impl TestRunner {
     }
 
     pub fn create_recallable_token(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Recall, (rule!(allow_all), LOCKED));
@@ -710,7 +708,7 @@ impl TestRunner {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(Burn, (rule!(require(auth_resource_address)), LOCKED));
@@ -725,7 +723,7 @@ impl TestRunner {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(require(auth_resource_address)), LOCKED),
@@ -737,11 +735,11 @@ impl TestRunner {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
-        let mut entries = HashMap::new();
+        let mut entries = BTreeMap::new();
         entries.insert(
             NonFungibleId::U32(1),
             (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
@@ -761,7 +759,7 @@ impl TestRunner {
                 ResourceType::NonFungible {
                     id_type: NonFungibleIdType::U32,
                 },
-                HashMap::new(),
+                BTreeMap::new(),
                 access_rules,
                 Some(MintParams::NonFungible { entries }),
             )
@@ -785,14 +783,14 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility },
-                HashMap::new(),
+                BTreeMap::new(),
                 access_rules,
                 Some(MintParams::Fungible { amount }),
             )
@@ -968,8 +966,8 @@ pub fn generate_single_function_abi(
     blueprint_name: &str,
     function_name: &str,
     output_type: Type,
-) -> HashMap<String, BlueprintAbi> {
-    let mut blueprint_abis = HashMap::new();
+) -> BTreeMap<String, BlueprintAbi> {
+    let mut blueprint_abis = BTreeMap::new();
     blueprint_abis.insert(
         blueprint_name.to_string(),
         BlueprintAbi {

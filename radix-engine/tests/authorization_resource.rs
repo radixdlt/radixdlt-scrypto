@@ -7,7 +7,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::BasicInstruction;
 
 enum Action {
     Mint,
@@ -100,7 +100,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             let vault_id = vaults[0];
 
             builder
-                .add_instruction(Instruction::CallNativeMethod {
+                .add_instruction(BasicInstruction::CallNativeMethod {
                     method_ident: NativeMethodIdent {
                         receiver: RENodeId::Vault(vault_id),
                         method_name: "recall".to_string(),

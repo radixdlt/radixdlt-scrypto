@@ -1,0 +1,11 @@
+CALL_FUNCTION
+    PackageAddress("package_sim1qy4hrp8a9apxldp5cazvxgwdj80cxad4u8cpkaqqnhlsa3lfpe")
+    "BlueprintName"
+    "f"
+    "string";
+
+CALL_METHOD
+    ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
+    "complicated_method"
+    Decimal("1")
+    PreciseDecimal("2");

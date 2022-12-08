@@ -8,7 +8,7 @@ use crate::model::{
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
 };
 use crate::model::{MetadataSubstate, Resource};
-use crate::types::HashMap;
+use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
@@ -75,7 +75,7 @@ where
                     royalty_config,
                     royalty_accumulator,
                     MetadataSubstate {
-                        metadata: HashMap::new(),
+                        metadata: BTreeMap::new(),
                     },
                     AccessRulesChainSubstate {
                         access_rules_chain: vec![access_rules],

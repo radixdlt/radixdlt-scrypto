@@ -25,7 +25,7 @@ impl WasmValidator {
     pub fn validate(
         &self,
         code: &[u8],
-        blueprints: &HashMap<String, BlueprintAbi>,
+        blueprints: &BTreeMap<String, BlueprintAbi>,
     ) -> Result<(), PrepareError> {
         // Not all "valid" wasm modules are instrumentable, with the instrumentation library
         // we are using. To deal with this, we attempt to instrument the input module with

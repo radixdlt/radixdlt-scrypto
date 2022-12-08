@@ -13,7 +13,7 @@ pub enum ExtractAbiError {
     InvalidBlueprintAbi,
 }
 
-pub fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiError> {
+pub fn extract_abi(code: &[u8]) -> Result<BTreeMap<String, BlueprintAbi>, ExtractAbiError> {
     let function_exports = WasmModule::init(code)
         .and_then(WasmModule::to_bytes)
         .map_err(ExtractAbiError::InvalidWasm)?
@@ -31,7 +31,7 @@ pub fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, Extract
     let fee_reserve = SystemLoanFeeReserve::no_fee();
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
-    let mut blueprints = HashMap::new();
+    let mut blueprints = BTreeMap::new();
     for method_name in function_exports {
         let rtn = instance
             .invoke_export(&method_name, &IndexedScryptoValue::unit(), &mut runtime)

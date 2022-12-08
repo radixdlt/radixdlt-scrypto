@@ -7,7 +7,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::BasicInstruction;
 use utils::ContextualDisplay;
 
 #[test]
@@ -118,20 +118,12 @@ fn test_non_existent_blob_hash() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(account, dec!("10"))
-        .add_instruction(Instruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
-                function_name: PackageFunction::Publish.to_string(),
-            },
-            args: scrypto_encode(&PackagePublishInvocation {
-                code: Blob(Hash([0; 32])),
-                abi: Blob(Hash([0; 32])),
-                royalty_config: HashMap::new(),
-                metadata: HashMap::new(),
-                access_rules: AccessRules::new()
-                    .default(AccessRule::AllowAll, AccessRule::AllowAll),
-            })
-            .unwrap(),
+        .add_instruction(BasicInstruction::PublishPackage {
+            code: Blob(Hash([0; 32])),
+            abi: Blob(Hash([0; 32])),
+            royalty_config: BTreeMap::new(),
+            metadata: BTreeMap::new(),
+            access_rules: AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
         })
         .0
         .build();

@@ -13,9 +13,9 @@ fn cannot_set_package_metadata_with_no_owner() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new(),
         )
         .build();
@@ -25,15 +25,10 @@ fn cannot_set_package_metadata_with_no_owner() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_native_method(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
-            "set",
-            scrypto_encode(&MetadataSetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
-                key: "name".to_string(),
-                value: "best package ever!".to_string(),
-            })
-            .unwrap(),
+        .set_metadata(
+            GlobalAddress::Package(package_address),
+            "name".to_string(),
+            "best package ever!".to_string(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -59,7 +54,7 @@ fn can_set_package_metadata_with_owner() {
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, HashMap::new(), owner_badge_addr)
+        .publish_package_with_owner(code, BTreeMap::new(), owner_badge_addr)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -69,15 +64,10 @@ fn can_set_package_metadata_with_owner() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
-        .call_native_method(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
-            "set",
-            scrypto_encode(&MetadataSetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
-                key: "name".to_string(),
-                value: "best package ever!".to_string(),
-            })
-            .unwrap(),
+        .set_metadata(
+            GlobalAddress::Package(package_address),
+            "name".to_string(),
+            "best package ever!".to_string(),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -101,7 +91,7 @@ fn can_lock_package_metadata_with_owner() {
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, HashMap::new(), owner_badge_addr)
+        .publish_package_with_owner(code, BTreeMap::new(), owner_badge_addr)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -135,15 +125,10 @@ fn can_lock_package_metadata_with_owner() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
-        .call_native_method(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
-            "set",
-            scrypto_encode(&MetadataSetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
-                key: "name".to_string(),
-                value: "best package ever!".to_string(),
-            })
-            .unwrap(),
+        .set_metadata(
+            GlobalAddress::Package(package_address),
+            "name".to_string(),
+            "best package ever!".to_string(),
         )
         .build();
     let receipt = test_runner.execute_manifest(

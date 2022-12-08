@@ -50,7 +50,7 @@ pub struct NewTokenMutable {
 
 impl NewTokenMutable {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut metadata = HashMap::new();
+        let mut metadata = BTreeMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
         }

@@ -120,8 +120,8 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: u8) -> Transaction
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Any),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
 

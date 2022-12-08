@@ -132,6 +132,6 @@ fn make_executable<'a>(
     transaction: &'a NotarizedTransaction,
 ) -> Executable<'a> {
     NotarizedTransactionValidator::new(ValidationConfig::default(network.id))
-        .validate(transaction, &TestIntentHashManager::new())
+        .validate(transaction, 0, &TestIntentHashManager::new())
         .unwrap()
 }
