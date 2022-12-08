@@ -1,4 +1,5 @@
 use sbor::rust::string::String;
+use sbor::*;
 
 use crate::api::types::ComponentId;
 use crate::model::*;

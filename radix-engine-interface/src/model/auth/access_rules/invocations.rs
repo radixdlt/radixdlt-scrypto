@@ -1,5 +1,6 @@
 use radix_engine_interface::wasm::SerializableInvocation;
 use sbor::rust::fmt::Debug;
+use sbor::*;
 
 use crate::api::{api::*, types::*};
 use crate::scrypto;
