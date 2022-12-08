@@ -2,6 +2,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto_encode;
 use radix_engine_interface::{model::*, scrypto};
 use sbor::rust::vec::Vec;
+use sbor::*;
 use std::collections::BTreeSet;
 
 use crate::model::*;

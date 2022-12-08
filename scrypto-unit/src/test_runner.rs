@@ -15,9 +15,7 @@ use radix_engine::transaction::{
     PreviewError, PreviewResult, TransactionReceipt,
 };
 use radix_engine::types::*;
-use radix_engine::wasm::{
-    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
-};
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
 use radix_engine_interface::api::types::{EpochManagerMethod, NativeMethodIdent, RENodeId};
 use radix_engine_interface::constants::EPOCH_MANAGER;
@@ -36,36 +34,51 @@ use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
 
-/// Note: in the context of TestRunner, `execute` means both executing and committing.
-pub struct TestRunner<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
-    execution_stores: StagedSubstateStoreManager<'s, S>,
+pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
+    substate_store: TypedInMemorySubstateStore,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
     trace: bool,
 }
 
-impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateStore>
-    TestRunner<'s, S>
-{
-    pub fn new(trace: bool, substate_store: &'s mut S) -> Self {
+impl TestRunner {
+    pub fn new(trace: bool) -> Self {
         let scrypto_interpreter = ScryptoInterpreter {
-            wasm_metering_config: WasmMeteringConfig::new(
-                InstructionCostRules::tiered(1, 5, 10, 5000),
-                1024,
-            ),
+            wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
         };
+        let substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
         Self {
-            execution_stores: StagedSubstateStoreManager::new(substate_store),
             scrypto_interpreter,
+            substate_store,
             intent_hash_manager: TestIntentHashManager::new(),
             next_private_key: 1, // 0 is invalid
             next_transaction_nonce: 0,
             trace,
         }
+    }
+
+    pub fn substate_store(&self) -> &TypedInMemorySubstateStore {
+        &self.substate_store
+    }
+
+    pub fn substate_store_mut(&mut self) -> &mut TypedInMemorySubstateStore {
+        &mut self.substate_store
+    }
+
+    pub fn new_staged_substate_store_manager(
+        &mut self,
+    ) -> (
+        StagedSubstateStoreManager<TypedInMemorySubstateStore>,
+        &ScryptoInterpreter<DefaultWasmEngine>,
+    ) {
+        (
+            StagedSubstateStoreManager::new(&mut self.substate_store),
+            &self.scrypto_interpreter,
+        )
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -103,8 +116,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn get_metadata(&mut self, address: GlobalAddress) -> BTreeMap<String, String> {
         let node_id = RENodeId::Global(address);
         let global = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -115,8 +127,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let underlying_node = global.global().node_deref();
 
         let metadata = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 underlying_node,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
@@ -131,8 +142,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let global = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -144,8 +154,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
         let global = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -160,8 +169,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     ) -> Option<Decimal> {
         let node_id = self.deref_component(component_address)?;
 
-        self.execution_stores
-            .get_root_store()
+        self.substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
@@ -178,8 +186,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let node_id = self.deref_package(package_address)?;
 
-        self.execution_stores
-            .get_root_store()
+        self.substate_store
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
@@ -201,11 +208,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let mut vault_finder = VaultFinder::new(resource_address);
 
-        let mut state_tree_visitor = StateTreeTraverser::new(
-            self.execution_stores.get_root_store(),
-            &mut vault_finder,
-            100,
-        );
+        let mut state_tree_visitor =
+            StateTreeTraverser::new(&self.substate_store, &mut vault_finder, 100);
         state_tree_visitor
             .traverse_all_descendents(None, node_id)
             .unwrap();
@@ -217,7 +221,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
-        let mut accounter = ResourceAccounter::new(self.execution_stores.get_root_store());
+        let mut accounter = ResourceAccounter::new(&self.substate_store);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
     }
@@ -270,8 +274,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn deref_component_address(&mut self, component_address: ComponentAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -284,8 +287,7 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
 
     pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .execution_stores
-            .get_root_store()
+            .substate_store
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -473,49 +475,17 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         &mut self,
         manifest: TransactionManifest,
         initial_proofs: Vec<NonFungibleAddress>,
-        limit: u32,
+        cost_unit_limit: u32,
     ) -> TransactionReceipt {
-        let mut receipts =
-            self.execute_manifest_batch_and_merge(vec![(manifest, initial_proofs)], limit);
-        receipts.pop().unwrap()
-    }
+        let transactions =
+            TestTransaction::new(manifest, self.next_transaction_nonce(), cost_unit_limit);
+        let executable = transactions.get_executable(initial_proofs);
 
-    pub fn execute_manifest_batch_and_merge(
-        &mut self,
-        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
-        cost_unit_limit: u32,
-    ) -> Vec<TransactionReceipt> {
-        let node_id = self.create_child_node(0);
-        let receipts = self.execute_manifest_batch(node_id, manifests, cost_unit_limit);
-        self.merge_node(node_id);
-        receipts
-    }
-
-    pub fn execute_manifest_batch(
-        &mut self,
-        node_id: u64,
-        manifests: Vec<(TransactionManifest, Vec<NonFungibleAddress>)>,
-        cost_unit_limit: u32,
-    ) -> Vec<TransactionReceipt> {
-        let transactions: Vec<(TestTransaction, Vec<NonFungibleAddress>)> = manifests
-            .into_iter()
-            .map(|(manifest, initial_proofs)| {
-                (
-                    TestTransaction::new(manifest, self.next_transaction_nonce(), cost_unit_limit),
-                    initial_proofs,
-                )
-            })
-            .collect();
-        let executables = transactions
-            .iter()
-            .map(|(tx, initial_proofs)| tx.get_executable(initial_proofs.clone()))
-            .collect();
-
-        let fee_config = FeeReserveConfig::default();
+        let fee_reserve_config = FeeReserveConfig::default();
         let mut execution_config = ExecutionConfig::default();
         execution_config.trace = self.trace;
 
-        self.execute_batch_on_node(node_id, executables, &fee_config, &execution_config)
+        self.execute_transaction_with_config(executable, &fee_reserve_config, &execution_config)
     }
 
     pub fn execute_transaction(&mut self, executable: Executable) -> TransactionReceipt {
@@ -532,16 +502,13 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let node_id = self.create_child_node(0);
-
-        let receipts = self.execute_batch_on_node(
-            node_id,
-            vec![executable],
+        execute_and_commit_transaction(
+            &mut self.substate_store,
+            &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
-        );
-        self.merge_node(node_id);
-        receipts.into_iter().next().unwrap()
+            &executable,
+        )
     }
 
     pub fn preview(
@@ -549,10 +516,8 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         preview_intent: PreviewIntent,
         network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
-        let node_id = self.create_child_node(0);
-
         execute_preview(
-            &self.execution_stores.get_output_store(node_id),
+            &self.substate_store,
             &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
@@ -560,49 +525,18 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
         )
     }
 
-    pub fn create_child_node(&mut self, parent_id: u64) -> u64 {
-        self.execution_stores.new_child_node(parent_id)
-    }
-
-    pub fn execute_batch_on_node(
-        &mut self,
-        node_id: u64,
-        executables: Vec<Executable>,
-        fee_reserve_config: &FeeReserveConfig,
-        execution_config: &ExecutionConfig,
-    ) -> Vec<TransactionReceipt> {
-        let mut store = self.execution_stores.get_output_store(node_id);
-        let mut receipts = Vec::new();
-        for executable in executables {
-            let receipt = execute_and_commit_transaction(
-                &mut store,
-                &mut self.scrypto_interpreter,
-                fee_reserve_config,
-                execution_config,
-                &executable,
-            );
-            receipts.push(receipt);
-        }
-
-        receipts
-    }
-
-    pub fn merge_node(&mut self, node_id: u64) {
-        self.execution_stores.merge_to_parent(node_id);
-    }
-
     pub fn export_abi(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> BlueprintAbi {
-        let output_store = self.execution_stores.get_root_store();
-        export_abi(output_store, package_address, blueprint_name).expect("Failed to export ABI")
+        export_abi(&self.substate_store, package_address, blueprint_name)
+            .expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(&mut self, component_address: ComponentAddress) -> BlueprintAbi {
-        let output_store = self.execution_stores.get_root_store();
-        export_abi_by_component(output_store, component_address).expect("Failed to export ABI")
+        export_abi_by_component(&self.substate_store, component_address)
+            .expect("Failed to export ABI")
     }
 
     pub fn lock_resource_auth(

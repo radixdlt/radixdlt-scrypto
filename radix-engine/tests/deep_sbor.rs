@@ -1,5 +1,4 @@
 use radix_engine::engine::{KernelError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine::wasm::WasmError;
@@ -11,8 +10,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn deep_auth_rules_on_component_create_creation_fails() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/deep_sbor");
 
     // Act 1 - Small Depth
@@ -54,8 +52,7 @@ fn deep_auth_rules_on_component_create_creation_fails() {
 #[test]
 fn setting_struct_with_deep_recursive_data_panics_inside_component() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/deep_sbor");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -115,8 +112,7 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
 
 fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: u8) -> TransactionReceipt {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     let code = wat2wasm(
         &include_str!("wasm/deep_sbor_response.wat").replace("${depth}", &depth.to_string()),

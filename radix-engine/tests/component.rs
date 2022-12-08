@@ -2,7 +2,6 @@ use radix_engine::engine::{
     ApplicationError, AuthError, InterpreterError, KernelError, LockState, ModuleError,
     RuntimeError, ScryptoFnResolvingError, TrackError,
 };
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::AccessRulesChainError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -18,8 +17,7 @@ use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 #[test]
 fn test_component() {
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
 
@@ -64,8 +62,7 @@ fn test_component() {
 #[test]
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_addr = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Act
@@ -101,8 +98,7 @@ fn invalid_blueprint_name_should_cause_error() {
 #[test]
 fn mut_reentrancy_should_not_be_possible() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
@@ -140,8 +136,7 @@ fn mut_reentrancy_should_not_be_possible() {
 #[test]
 fn read_reentrancy_should_be_possible() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
@@ -168,8 +163,7 @@ fn read_reentrancy_should_be_possible() {
 #[test]
 fn read_then_mut_reentrancy_should_not_be_possible() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
@@ -207,8 +201,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
 #[test]
 fn missing_component_address_in_manifest_should_cause_rejection() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let _ = test_runner.compile_and_publish("./tests/blueprints/component");
     let component_address = Bech32Decoder::new(&NetworkDefinition::simulator())
         .validate_and_decode_component_address(
@@ -569,7 +562,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 }
 
 struct MutableAccessRulesTestRunner {
-    substate_store: TypedInMemorySubstateStore,
+    test_runner: TestRunner,
     package_address: PackageAddress,
     component_address: ComponentAddress,
     initial_proofs: Vec<NonFungibleAddress>,
@@ -579,8 +572,7 @@ impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
     pub fn new(access_rules: Vec<AccessRules>) -> Self {
-        let mut store = TypedInMemorySubstateStore::with_bootstrap();
-        let mut test_runner = TestRunner::new(true, &mut store);
+        let mut test_runner = TestRunner::new(true);
         let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -595,7 +587,7 @@ impl MutableAccessRulesTestRunner {
         let component_address = receipt.new_component_addresses()[0];
 
         Self {
-            substate_store: store,
+            test_runner,
             package_address,
             component_address,
             initial_proofs: Vec::new(),
@@ -684,7 +676,7 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
-        TestRunner::new(true, &mut self.substate_store)
+        self.test_runner
             .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
     }
 }

@@ -2,7 +2,6 @@ use radix_engine::engine::{
     AuthError, KernelError, ModuleError, REActor, RejectionError, ResolvedMethod, ResolvedReceiver,
     RuntimeError,
 };
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::MethodAuthorizationError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::{NativeMethod, RENodeId};
@@ -15,8 +14,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn non_existing_vault_should_cause_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
 
     let non_existing_vault_id = [0; 36];
@@ -46,8 +44,7 @@ fn non_existing_vault_should_cause_error() {
 #[test]
 fn cannot_take_on_non_recallable_vault() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
 
     let resource_address = test_runner.create_fungible_resource(10u32.into(), 0u8, account);
@@ -88,8 +85,7 @@ fn cannot_take_on_non_recallable_vault() {
 #[test]
 fn can_take_on_recallable_vault() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 

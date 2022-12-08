@@ -1,5 +1,4 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::core::NetworkDefinition;
@@ -11,8 +10,7 @@ use transaction::model::{SystemInstruction, SystemTransaction};
 #[test]
 fn get_epoch_should_succeed() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
@@ -31,8 +29,7 @@ fn get_epoch_should_succeed() {
 #[test]
 fn set_epoch_without_supervisor_auth_fails() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
@@ -58,8 +55,7 @@ fn set_epoch_without_supervisor_auth_fails() {
 #[test]
 fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let instructions = vec![SystemInstruction::CallNativeFunction {
@@ -89,8 +85,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
 #[test]
 fn epoch_manager_create_should_succeed_with_system_privilege() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let instructions = vec![SystemInstruction::CallNativeFunction {

@@ -3,6 +3,7 @@ use crate::model::{AuthZoneParams, Executable};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::model::NonFungibleAddress;
 use radix_engine_interface::scrypto;
+use sbor::*;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

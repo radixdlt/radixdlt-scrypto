@@ -1,15 +1,14 @@
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::sync::Arc;
 use wasmi::*;
 
+use super::InstrumentedCode;
+use super::MeteredCodeKey;
 use crate::model::InvokeError;
 use crate::types::*;
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
-
-use super::InstrumentedCode;
 
 pub struct WasmiModule {
     module: Module,
@@ -220,9 +219,9 @@ pub struct EngineOptions {
 
 pub struct WasmiEngine {
     #[cfg(not(feature = "moka"))]
-    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmiModule>>>,
+    modules_cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<WasmiModule>>>,
     #[cfg(feature = "moka")]
-    modules_cache: moka::sync::Cache<Hash, Arc<WasmiModule>>,
+    modules_cache: moka::sync::Cache<MeteredCodeKey, Arc<WasmiModule>>,
 }
 
 impl Default for WasmiEngine {
@@ -241,7 +240,7 @@ impl WasmiEngine {
         ));
         #[cfg(feature = "moka")]
         let modules_cache = moka::sync::Cache::builder()
-            .weigher(|_key: &Hash, value: &Arc<WasmiModule>| -> u32 {
+            .weigher(|_key: &MeteredCodeKey, value: &Arc<WasmiModule>| -> u32 {
                 // Approximate the module entry size by the code size
                 value.code_size_bytes.try_into().unwrap_or(u32::MAX)
             })
@@ -255,16 +254,16 @@ impl WasmEngine for WasmiEngine {
     type WasmInstance = WasmiInstance;
 
     fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
-        let code_hash = &instrumented_code.code_hash;
+        let metered_code_key = &instrumented_code.metered_code_key;
 
         #[cfg(not(feature = "moka"))]
         {
-            if let Some(cached_module) = self.modules_cache.borrow_mut().get(code_hash) {
+            if let Some(cached_module) = self.modules_cache.borrow_mut().get(metered_code_key) {
                 return cached_module.instantiate();
             }
         }
         #[cfg(feature = "moka")]
-        if let Some(cached_module) = self.modules_cache.get(code_hash) {
+        if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
             return cached_module.instantiate();
         }
 
@@ -278,9 +277,10 @@ impl WasmEngine for WasmiEngine {
         #[cfg(not(feature = "moka"))]
         self.modules_cache
             .borrow_mut()
-            .put(*code_hash, new_module.clone());
+            .put(*metered_code_key, new_module.clone());
         #[cfg(feature = "moka")]
-        self.modules_cache.insert(*code_hash, new_module.clone());
+        self.modules_cache
+            .insert(*metered_code_key, new_module.clone());
 
         new_module.instantiate()
     }
