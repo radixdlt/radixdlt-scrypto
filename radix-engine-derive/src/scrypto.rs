@@ -26,48 +26,22 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
     let mut derived_attributes = Vec::<Attribute>::new();
     let mut add_custom_type_id = false;
     for path in paths {
-        if let Some(ident) = path.get_ident() {
-            match ident.to_string().as_str() {
-                "TypeId" => {
-                    add_custom_type_id = true;
-                    derived_attributes.push(parse_quote! {
-                        #[derive(::sbor::TypeId)]
-                    })
-                }
-                "Encode" => {
-                    add_custom_type_id = true;
-                    derived_attributes.push(parse_quote! {
-                        #[derive(::sbor::Encode)]
-                    })
-                }
-                "Decode" => {
-                    add_custom_type_id = true;
-                    derived_attributes.push(parse_quote! {
-                        #[derive(::sbor::Decode)]
-                    })
-                }
-                _ => derived_attributes.push(parse_quote! {
-                  #[derive(#ident)]
-                }),
-            }
-        } else {
-            let segments: Vec<String> = path
-                .segments
-                .iter()
-                .map(|seg| seg.ident.to_string())
-                .collect();
+        let segments: Vec<String> = path
+            .segments
+            .iter()
+            .map(|seg| seg.ident.to_string())
+            .collect();
 
-            // best-effort sbor detection
-            match segments.join(":").as_str() {
-                "sbor::TypeId" | "sbor::Encode" | "sbor::Decode" | "::sbor::TypeId"
-                | "::sbor::Encode" | "::sbor::Decode" => add_custom_type_id = true,
-                _ => {}
-            }
-
-            derived_attributes.push(parse_quote! {
-              #[derive(#path)]
-            });
+        // best-effort sbor detection
+        match segments.join(":").as_str() {
+            "TypeId" | "Encode" | "Decode" | "sbor::TypeId" | "sbor::Encode" | "sbor::Decode"
+            | "::sbor::TypeId" | "::sbor::Encode" | "::sbor::Decode" => add_custom_type_id = true,
+            _ => {}
         }
+
+        derived_attributes.push(parse_quote! {
+          #[derive(#path)]
+        });
     }
     if add_custom_type_id {
         derived_attributes.push(parse_quote! {
