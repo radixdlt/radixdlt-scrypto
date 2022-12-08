@@ -13,12 +13,12 @@ pub struct ShowLedger {}
 
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let ledger = RadixEngineDB::new(get_data_dir()?);
-
+        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+        let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
         let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
-        for (last, package_address) in ledger.list_packages().iter().identify_last() {
+        for (last, package_address) in substate_store.list_packages().iter().identify_last() {
             writeln!(
                 out,
                 "{} {}",
@@ -29,7 +29,7 @@ impl ShowLedger {
         }
 
         writeln!(out, "{}:", "Components".green().bold()).map_err(Error::IOError)?;
-        for (last, component_address) in ledger.list_components().iter().identify_last() {
+        for (last, component_address) in substate_store.list_components().iter().identify_last() {
             writeln!(
                 out,
                 "{} {}",
@@ -40,7 +40,11 @@ impl ShowLedger {
         }
 
         writeln!(out, "{}:", "Resource Managers".green().bold()).map_err(Error::IOError)?;
-        for (last, resource_address) in ledger.list_resource_managers().iter().identify_last() {
+        for (last, resource_address) in substate_store
+            .list_resource_managers()
+            .iter()
+            .identify_last()
+        {
             writeln!(
                 out,
                 "{} {}",
