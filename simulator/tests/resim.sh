@@ -88,3 +88,6 @@ $resim publish ./tests/large_package.wasm --owner-badge $owner_badge
 
 # Test - math types and numbers
 $resim call-function $package "Numbers" test_input 1 2
+
+# Test - set epoch
+$resim set-current-epoch 100

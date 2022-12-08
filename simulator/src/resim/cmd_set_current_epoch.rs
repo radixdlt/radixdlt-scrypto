@@ -25,7 +25,7 @@ impl SetCurrentEpoch {
                 receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
                 method_name: "set_epoch".to_string(),
             },
-            args: args!(self.epoch),
+            args: args!(EPOCH_MANAGER, self.epoch),
         }
         .into()];
         let blobs = vec![];

@@ -153,16 +153,8 @@ pub fn handle_system_transaction<O: std::io::Write>(
     print_receipt: bool,
     out: &mut O,
 ) -> Result<Option<TransactionReceipt>, Error> {
-    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-
-    let mut scrypto_interpreter = ScryptoInterpreter {
-        wasm_engine: DefaultWasmEngine::default(),
-        wasm_instrumenter: WasmInstrumenter::default(),
-        wasm_metering_config: WasmMeteringConfig::new(
-            InstructionCostRules::tiered(1, 5, 10, 5000),
-            1024,
-        ),
-    };
+    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
     let nonce = get_nonce()?;
     let transaction = SystemTransaction {
@@ -173,7 +165,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
 
     let receipt = execute_and_commit_transaction(
         &mut substate_store,
-        &mut scrypto_interpreter,
+        &scrypto_interpreter,
         &FeeReserveConfig::default(),
         &ExecutionConfig {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
