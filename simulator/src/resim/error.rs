@@ -41,7 +41,7 @@ pub enum Error {
 
     TransactionValidationError(TransactionValidationError),
 
-    TransactionExecutionError(RuntimeError),
+    TransactionFailed(RuntimeError),
 
     TransactionRejected(RejectionError),
 

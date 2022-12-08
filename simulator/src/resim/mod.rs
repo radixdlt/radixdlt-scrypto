@@ -54,6 +54,7 @@ use clap::{Parser, Subcommand};
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
 use radix_engine::transaction::execute_and_commit_transaction;
+use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionResult;
@@ -180,22 +181,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
             .map_err(Error::IOError)?;
     }
 
-    if receipt.is_commit() {
-        let mut configs = get_configs()?;
-        configs.nonce = nonce + 1;
-        set_configs(&configs)?;
-        return Ok(Some(receipt));
-    }
-
-    match receipt.result {
-        TransactionResult::Commit(commit) => match commit.outcome {
-            TransactionOutcome::Failure(error) => Err(Error::TransactionExecutionError(error)),
-            TransactionOutcome::Success(..) => {
-                panic!("Success case handled above to appease borrowing rules")
-            }
-        },
-        TransactionResult::Reject(rejection) => Err(Error::TransactionRejected(rejection.error)),
-    }
+    process_receipt(receipt)
 }
 
 pub fn handle_manifest<O: std::io::Write>(
@@ -259,27 +245,32 @@ pub fn handle_manifest<O: std::io::Write>(
                     .map_err(Error::IOError)?;
             }
 
-            if receipt.is_commit() {
-                let mut configs = get_configs()?;
-                configs.nonce = nonce + 1;
-                set_configs(&configs)?;
-                return Ok(Some(receipt));
-            }
+            process_receipt(receipt)
+        }
+    }
+}
 
-            match receipt.result {
-                TransactionResult::Commit(commit) => match commit.outcome {
-                    TransactionOutcome::Failure(error) => {
-                        Err(Error::TransactionExecutionError(error))
-                    }
-                    TransactionOutcome::Success(..) => {
-                        panic!("Success case handled above to appease borrowing rules")
-                    }
-                },
-                TransactionResult::Reject(rejection) => {
-                    Err(Error::TransactionRejected(rejection.error))
-                }
+pub fn process_receipt(receipt: TransactionReceipt) -> Result<Option<TransactionReceipt>, Error> {
+    match receipt.result {
+        TransactionResult::Commit(commit) => {
+            let mut configs = get_configs()?;
+            configs.nonce = get_nonce()? + 1;
+            set_configs(&configs)?;
+
+            match commit.outcome {
+                TransactionOutcome::Failure(error) => Err(Error::TransactionFailed(error)),
+                TransactionOutcome::Success(output) => Ok(Some(TransactionReceipt {
+                    execution: receipt.execution,
+                    result: TransactionResult::Commit(CommitResult {
+                        outcome: TransactionOutcome::Success(output),
+                        state_updates: commit.state_updates,
+                        entity_changes: commit.entity_changes,
+                        resource_changes: commit.resource_changes,
+                    }),
+                })),
             }
         }
+        TransactionResult::Reject(rejection) => Err(Error::TransactionRejected(rejection.error)),
     }
 }
 

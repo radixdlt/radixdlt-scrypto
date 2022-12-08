@@ -30,6 +30,7 @@ CREATE_PROOF_FROM_BUCKET Bucket("xrd") Proof("proof4");
 CLONE_PROOF Proof("proof4") Proof("proof5");
 DROP_PROOF Proof("proof4");
 DROP_PROOF Proof("proof5");
+RETURN_TO_WORKTOP Bucket("xrd");
 
 # Clean up - deposit resources
 CALL_METHOD ComponentAddress("${account}") "deposit_batch" Expression("ENTIRE_WORKTOP");
