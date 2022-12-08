@@ -106,8 +106,8 @@ pub struct SysCallTrace {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum SysCallTraceOrigin {
-    ScryptoFunction(ScryptoFnIdent),
-    ScryptoMethod(ScryptoFnIdent),
+    ScryptoFunction(ScryptoFnIdentifier),
+    ScryptoMethod(ScryptoFnIdentifier),
     NativeFunction(NativeFunction),
     NativeMethod(NativeMethod),
     CreateNode,

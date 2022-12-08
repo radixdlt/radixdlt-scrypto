@@ -206,7 +206,7 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let SysCallTraceOrigin::ScryptoMethod(ScryptoFnIdent {
+        if let SysCallTraceOrigin::ScryptoMethod(ScryptoFnIdentifier {
             ident: method_name, ..
         }) = &free_trace.origin
         {
@@ -334,7 +334,7 @@ fn test_instruction_traces() {
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let SysCallTraceOrigin::ScryptoFunction(ScryptoFnIdent {
+        if let SysCallTraceOrigin::ScryptoFunction(ScryptoFnIdentifier {
             ident: function_name,
             ..
         }) = &call_trace.origin

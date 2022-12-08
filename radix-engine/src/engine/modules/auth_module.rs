@@ -130,7 +130,7 @@ impl AuthModule {
                         auth
                     }
                     (
-                        ResolvedMethod::Scrypto(ScryptoFnIdent {
+                        ResolvedMethod::Scrypto(ScryptoFnIdentifier {
                             package_address,
                             blueprint_name,
                             ident,
@@ -287,8 +287,8 @@ impl AuthModule {
         Y: SystemApi,
     {
         if matches!(
-            system_api.get_actor(),
-            ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
+            system_api.get_fn_identifier(),
+            FnIdentifier::NativeMethod(NativeMethod::AuthZoneStack(..)),
         ) {
             return Ok(());
         }

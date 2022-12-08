@@ -1,4 +1,4 @@
-use crate::engine::{CallFrameUpdate, LockFlags, ModuleError, ResolvedActor, RuntimeError, SystemApi};
+use crate::engine::{CallFrameUpdate, LockFlags, ModuleError, RuntimeError, SystemApi};
 use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
 
@@ -14,20 +14,20 @@ pub struct NodeMoveModule;
 impl NodeMoveModule {
     fn prepare_move_downstream<Y: SystemApi>(
         node_id: RENodeId,
-        to: &ResolvedActor,
-        system_api: &mut Y,
+        to: &FnIdentifier,
+        api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
             RENodeId::Bucket(..) => {
-                let handle = system_api.lock_substate(
+                let handle = api.lock_substate(
                     node_id,
                     SubstateOffset::Bucket(BucketOffset::Bucket),
                     LockFlags::read_only(),
                 )?;
-                let substate_ref = system_api.get_ref(handle)?;
+                let substate_ref = api.get_ref(handle)?;
                 let bucket = substate_ref.bucket();
                 let locked = bucket.is_locked();
-                system_api.drop_lock(handle)?;
+                api.drop_lock(handle)?;
                 if locked {
                     Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                         NodeMoveError::CantMoveDownstream(node_id),
@@ -37,15 +37,15 @@ impl NodeMoveModule {
                 }
             }
             RENodeId::Proof(..) => {
-                let from = system_api.get_actor();
+                let from = api.get_fn_identifier();
 
                 if from.is_scrypto_or_transaction() || to.is_scrypto_or_transaction() {
-                    let handle = system_api.lock_substate(
+                    let handle = api.lock_substate(
                         node_id,
                         SubstateOffset::Proof(ProofOffset::Proof),
                         LockFlags::MUTABLE,
                     )?;
-                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                    let mut substate_ref_mut = api.get_ref_mut(handle)?;
                     let proof = substate_ref_mut.proof();
 
                     let rtn = if proof.is_restricted() {
@@ -57,7 +57,7 @@ impl NodeMoveModule {
                         Ok(())
                     };
 
-                    system_api.drop_lock(handle)?;
+                    api.drop_lock(handle)?;
 
                     rtn
                 } else {
@@ -126,11 +126,11 @@ impl NodeMoveModule {
 
     pub fn on_call_frame_enter<Y: SystemApi>(
         call_frame_update: &mut CallFrameUpdate,
-        actor: &ResolvedActor,
+        fn_identifier: &FnIdentifier,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {
-            Self::prepare_move_downstream(*node_id, actor, system_api)?;
+            Self::prepare_move_downstream(*node_id, fn_identifier, system_api)?;
         }
 
         Ok(())

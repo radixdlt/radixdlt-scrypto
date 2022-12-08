@@ -6,7 +6,7 @@ use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
     AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, GlobalOffset,
     KeyValueStoreOffset, NativeFunction, NativeMethod, PackageOffset, ProofOffset, RENodeId,
-    ResourceManagerOffset, ScryptoFnIdent, SubstateOffset, TransactionProcessorFunction,
+    ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFunction,
     VaultOffset, WorktopOffset,
 };
 
@@ -78,7 +78,7 @@ impl VisibilityProperties {
             (
                 ExecutionMode::Application,
                 ResolvedActor::Method(
-                    ResolvedMethod::Scrypto(ScryptoFnIdent {
+                    ResolvedMethod::Scrypto(ScryptoFnIdentifier {
                         package_address,
                         blueprint_name,
                         ..
@@ -86,7 +86,7 @@ impl VisibilityProperties {
                     ..,
                 )
                 | ResolvedActor::Function(
-                    ResolvedFunction::Scrypto(ScryptoFnIdent {
+                    ResolvedFunction::Scrypto(ScryptoFnIdentifier {
                         package_address,
                         blueprint_name,
                         ..

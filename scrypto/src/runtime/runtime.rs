@@ -1,6 +1,6 @@
 use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{
-    RENodeId, ScryptoFnIdent, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage,
+    RENodeId, ScryptoFnIdentifier, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage,
     ScryptoReceiver,
 };
 use radix_engine_interface::constants::EPOCH_MANAGER;
@@ -28,7 +28,7 @@ impl Runtime {
     }
 
     /// Returns the running entity.
-    pub fn actor() -> ScryptoFnIdent {
+    pub fn actor() -> ScryptoFnIdentifier {
         ScryptoEnv.sys_get_actor().unwrap()
     }
 

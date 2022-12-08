@@ -85,7 +85,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     ));
                 }
 
-                let scrypto_fn_ident = ScryptoFnIdent::new(
+                let scrypto_fn_ident = ScryptoFnIdentifier::new(
                     package_address,
                     function_ident.blueprint_name.clone(),
                     function_ident.function_name.clone(),
@@ -202,7 +202,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     ));
                 }
 
-                let scrypto_fn_ident = ScryptoFnIdent::new(
+                let scrypto_fn_ident = ScryptoFnIdentifier::new(
                     component_info.package_address,
                     component_info.blueprint_name,
                     method_ident.method_name.clone(),
@@ -325,7 +325,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     ));
                 }
 
-                let scrypto_fn_ident = ScryptoFnIdent::new(
+                let scrypto_fn_ident = ScryptoFnIdentifier::new(
                     package_address,
                     function_ident.blueprint_name.clone(),
                     function_ident.function_name.clone(),
@@ -442,7 +442,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     ));
                 }
 
-                let scrypto_fn_ident = ScryptoFnIdent::new(
+                let scrypto_fn_ident = ScryptoFnIdentifier::new(
                     component_info.package_address,
                     component_info.blueprint_name,
                     method_ident.method_name.clone(),

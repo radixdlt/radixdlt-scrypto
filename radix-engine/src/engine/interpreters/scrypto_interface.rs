@@ -1,5 +1,5 @@
 use crate::engine::{
-    Kernel, KernelError, LockFlags, ResolvedActor, RENode, ResolvedFunction, ResolvedMethod,
+    Kernel, KernelError, LockFlags, RENode,
     RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
@@ -11,10 +11,7 @@ use crate::model::{MetadataSubstate, Resource};
 use crate::types::HashMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
-use radix_engine_interface::api::types::{
-    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoFnIdent,
-    ScryptoRENode, SubstateOffset,
-};
+use radix_engine_interface::api::types::{ComponentMethod, FnIdentifier, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoFnIdentifier, ScryptoRENode, SubstateOffset};
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
@@ -148,12 +145,9 @@ where
         self.drop_lock(lock_handle)
     }
 
-    fn sys_get_actor(&mut self) -> Result<ScryptoFnIdent, RuntimeError> {
-        let actor = match self.get_actor() {
-            ResolvedActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), ..)
-            | ResolvedActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)) => {
-                scrypto_fn_ident.clone()
-            }
+    fn sys_get_actor(&mut self) -> Result<ScryptoFnIdentifier, RuntimeError> {
+        let actor = match self.get_fn_identifier() {
+            FnIdentifier::Scrypto(identifier) => identifier.clone(),
             _ => panic!("Should not get here."),
         };
 

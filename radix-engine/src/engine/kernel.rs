@@ -346,7 +346,7 @@ where
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
             self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
-                NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+                NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor.get_fn_identifier(), system_api)
             })?;
             for m in &mut self.modules {
                 m.pre_execute_invocation(
@@ -742,8 +742,8 @@ where
         Ok(fee)
     }
 
-    fn get_actor(&self) -> &ResolvedActor {
-        &self.current_frame.actor
+    fn get_fn_identifier(&self) -> FnIdentifier {
+        self.current_frame.actor.get_fn_identifier()
     }
 
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {

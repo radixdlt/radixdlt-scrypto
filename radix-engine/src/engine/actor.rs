@@ -1,6 +1,6 @@
 use crate::types::*;
 use radix_engine_interface::api::types::{
-    NativeFunction, NativeMethod, RENodeId, TransactionProcessorFunction,
+    NativeFunction, NativeMethod, RENodeId,
 };
 
 /// Resolved receiver including info whether receiver was derefed
@@ -31,14 +31,14 @@ impl ResolvedReceiver {
 #[derive(Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResolvedFunction {
-    Scrypto(ScryptoFnIdent),
+    Scrypto(ScryptoFnIdentifier),
     Native(NativeFunction),
 }
 
 #[derive(Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResolvedMethod {
-    Scrypto(ScryptoFnIdent),
+    Scrypto(ScryptoFnIdentifier),
     Native(NativeMethod),
 }
 
@@ -50,22 +50,26 @@ pub enum ResolvedActor {
 }
 
 impl ResolvedActor {
-    pub fn is_scrypto_or_transaction(&self) -> bool {
-        matches!(
-            self,
-            ResolvedActor::Method(ResolvedMethod::Scrypto { .. }, ..)
-                | ResolvedActor::Function(ResolvedFunction::Scrypto { .. })
-                | ResolvedActor::Function(ResolvedFunction::Native(
-                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
-                ))
-        )
+    pub fn get_fn_identifier(&self) -> FnIdentifier {
+        match self {
+            ResolvedActor::Method(ResolvedMethod::Scrypto(fn_identifier), ..) |
+            ResolvedActor::Function(ResolvedFunction::Scrypto(fn_identifier)) => {
+                FnIdentifier::Scrypto(fn_identifier.clone())
+            }
+            ResolvedActor::Method(ResolvedMethod::Native(native_method), ..) => {
+                FnIdentifier::NativeMethod(native_method.clone())
+            }
+            ResolvedActor::Function(ResolvedFunction::Native(native_function), ..) => {
+                FnIdentifier::NativeFunction(native_function.clone())
+            }
+        }
     }
 }
 
 impl fmt::Debug for ResolvedFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Scrypto(ScryptoFnIdent {
+            Self::Scrypto(ScryptoFnIdentifier {
                 package_address,
                 blueprint_name,
                 ident,
@@ -83,7 +87,7 @@ impl fmt::Debug for ResolvedFunction {
 impl fmt::Debug for ResolvedMethod {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Scrypto(ScryptoFnIdent {
+            Self::Scrypto(ScryptoFnIdentifier {
                 package_address,
                 blueprint_name,
                 ident,
