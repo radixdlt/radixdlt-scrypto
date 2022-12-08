@@ -6,8 +6,8 @@ use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
     AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, GlobalOffset,
     KeyValueStoreOffset, NativeFunction, NativeMethod, PackageOffset, ProofOffset, RENodeId,
-    ResourceManagerOffset, SubstateOffset, TransactionProcessorFunction, VaultOffset,
-    WorktopOffset,
+    ResourceManagerOffset, ScryptoFnIdent, SubstateOffset, TransactionProcessorFunction,
+    VaultOffset, WorktopOffset,
 };
 
 pub struct VisibilityProperties;
@@ -78,19 +78,19 @@ impl VisibilityProperties {
             (
                 ExecutionMode::Application,
                 REActor::Method(
-                    ResolvedMethod::Scrypto {
+                    ResolvedMethod::Scrypto(ScryptoFnIdent {
                         package_address,
                         blueprint_name,
                         ..
-                    },
+                    }),
                     ..,
                 )
                 | REActor::Function(
-                    ResolvedFunction::Scrypto {
+                    ResolvedFunction::Scrypto(ScryptoFnIdent {
                         package_address,
                         blueprint_name,
                         ..
-                    },
+                    }),
                     ..,
                 ),
             ) => match node {

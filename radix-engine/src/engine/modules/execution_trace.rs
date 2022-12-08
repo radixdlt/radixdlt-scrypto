@@ -106,8 +106,8 @@ pub struct SysCallTrace {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum SysCallTraceOrigin {
-    ScryptoFunction(PackageAddress, String, String),
-    ScryptoMethod(PackageAddress, String, String),
+    ScryptoFunction(ScryptoFnIdent),
+    ScryptoMethod(ScryptoFnIdent),
     NativeFunction(NativeFunction),
     NativeMethod(NativeMethod),
     CreateNode,
@@ -147,29 +147,12 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     ) -> Result<(), ModuleError> {
         if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
             let origin = match actor {
-                REActor::Method(
-                    ResolvedMethod::Scrypto {
-                        package_address,
-                        blueprint_name,
-                        ident,
-                        ..
-                    },
-                    ..,
-                ) => SysCallTraceOrigin::ScryptoMethod(
-                    *package_address,
-                    blueprint_name.clone(),
-                    ident.clone(),
-                ),
-                REActor::Function(ResolvedFunction::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                    ..
-                }) => SysCallTraceOrigin::ScryptoFunction(
-                    *package_address,
-                    blueprint_name.clone(),
-                    ident.clone(),
-                ),
+                REActor::Method(ResolvedMethod::Scrypto(scrypto_fn), ..) => {
+                    SysCallTraceOrigin::ScryptoMethod(scrypto_fn.clone())
+                }
+                REActor::Function(ResolvedFunction::Scrypto(scrypto_fn)) => {
+                    SysCallTraceOrigin::ScryptoFunction(scrypto_fn.clone())
+                }
                 REActor::Method(ResolvedMethod::Native(native_method), ..) => {
                     SysCallTraceOrigin::NativeMethod(native_method.clone())
                 }

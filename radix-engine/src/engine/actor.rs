@@ -31,22 +31,14 @@ impl ResolvedReceiver {
 #[derive(Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResolvedFunction {
-    Scrypto {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
-    },
+    Scrypto(ScryptoFnIdent),
     Native(NativeFunction),
 }
 
 #[derive(Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResolvedMethod {
-    Scrypto {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
-    },
+    Scrypto(ScryptoFnIdent),
     Native(NativeMethod),
 }
 
@@ -73,12 +65,11 @@ impl REActor {
 impl fmt::Debug for ResolvedFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Scrypto {
+            Self::Scrypto(ScryptoFnIdent {
                 package_address,
                 blueprint_name,
                 ident,
-                ..
-            } => f
+            }) => f
                 .debug_struct("Scrypto")
                 .field("package_address", package_address)
                 .field("blueprint_name", blueprint_name)
@@ -92,12 +83,11 @@ impl fmt::Debug for ResolvedFunction {
 impl fmt::Debug for ResolvedMethod {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Scrypto {
+            Self::Scrypto(ScryptoFnIdent {
                 package_address,
                 blueprint_name,
                 ident,
-                ..
-            } => f
+            }) => f
                 .debug_struct("Scrypto")
                 .field("package_address", package_address)
                 .field("blueprint_name", blueprint_name)

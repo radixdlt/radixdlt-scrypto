@@ -2,8 +2,8 @@ use crate::engine::*;
 use crate::fee::{FeeReserve, RoyaltyReceiver};
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
-    SubstateOffset,
+    ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, ScryptoFnIdent,
+    SubstateId, SubstateOffset,
 };
 use radix_engine_interface::scrypto;
 
@@ -45,23 +45,21 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
         // Identify the function, and optional component address
         let (package_address, blueprint_name, fn_ident, optional_component_address) = match actor {
             REActor::Function(function) => match function {
-                ResolvedFunction::Scrypto {
+                ResolvedFunction::Scrypto(ScryptoFnIdent {
                     package_address,
                     blueprint_name,
                     ident,
-                    ..
-                } => (package_address, blueprint_name, ident, None),
+                }) => (package_address, blueprint_name, ident, None),
                 ResolvedFunction::Native(_) => {
                     return Ok(());
                 }
             },
             REActor::Method(method, receiver) => match method {
-                ResolvedMethod::Scrypto {
+                ResolvedMethod::Scrypto(ScryptoFnIdent {
                     package_address,
                     blueprint_name,
                     ident,
-                    ..
-                } => {
+                }) => {
                     if let Some(RENodeId::Global(GlobalAddress::Component(component_address))) =
                         receiver.derefed_from.map(|tuple| tuple.0)
                     {

@@ -3,18 +3,20 @@ use sbor::rust::string::String;
 use crate::model::*;
 use crate::scrypto;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ScryptoActor {
+pub struct ScryptoFnIdent {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
+    pub ident: String,
 }
 
-impl ScryptoActor {
-    pub fn new(package_address: PackageAddress, blueprint_name: String) -> Self {
+impl ScryptoFnIdent {
+    pub fn new(package_address: PackageAddress, blueprint_name: String, ident: String) -> Self {
         Self {
             package_address,
             blueprint_name,
+            ident,
         }
     }
 

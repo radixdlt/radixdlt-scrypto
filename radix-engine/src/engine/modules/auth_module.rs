@@ -130,12 +130,11 @@ impl AuthModule {
                         auth
                     }
                     (
-                        ResolvedMethod::Scrypto {
+                        ResolvedMethod::Scrypto(ScryptoFnIdent {
                             package_address,
                             blueprint_name,
                             ident,
-                            ..
-                        },
+                        }),
                         ResolvedReceiver {
                             receiver: RENodeId::Component(component_id),
                             ..

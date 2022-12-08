@@ -12,7 +12,7 @@ use crate::types::HashMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
+    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoFnIdent,
     ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
@@ -148,22 +148,12 @@ where
         self.drop_lock(lock_handle)
     }
 
-    fn sys_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
+    fn sys_get_actor(&mut self) -> Result<ScryptoFnIdent, RuntimeError> {
         let actor = match self.get_actor() {
-            REActor::Method(
-                ResolvedMethod::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ..
-                },
-                ..,
-            ) => ScryptoActor::new(package_address.clone(), blueprint_name.clone()),
-            REActor::Function(ResolvedFunction::Scrypto {
-                package_address,
-                blueprint_name,
-                ..
-            }) => ScryptoActor::new(*package_address, blueprint_name.clone()),
-
+            REActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), ..)
+            | REActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)) => {
+                scrypto_fn_ident.clone()
+            }
             _ => panic!("Should not get here."),
         };
 

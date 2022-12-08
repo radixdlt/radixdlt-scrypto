@@ -1,6 +1,6 @@
 use radix_engine_interface::api::api::{EngineApi, Invokable, LoggerApi};
 use radix_engine_interface::api::types::{
-    Level, LockHandle, RENodeId, ScryptoActor, ScryptoRENode, SubstateOffset,
+    Level, LockHandle, RENodeId, ScryptoFnIdent, ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::wasm::*;
@@ -106,7 +106,7 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         Ok(rtn)
     }
 
-    fn sys_get_actor(&mut self) -> Result<ScryptoActor, EngineApiError> {
+    fn sys_get_actor(&mut self) -> Result<ScryptoFnIdent, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::GetActor());
         Ok(rtn)
     }
