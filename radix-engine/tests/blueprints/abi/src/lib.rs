@@ -14,7 +14,7 @@ blueprint! {
             let mut component = Self {}.instantiate();
             component.add_access_check(
                 AccessRules::new()
-                    .method("no_method", rule!(require("something")), LOCKED)
+                    .method("no_method", rule!(require("something")), rule!(deny_all))
                     .default(rule!(allow_all), AccessRule::DenyAll),
             );
             component.globalize()

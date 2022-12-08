@@ -74,7 +74,10 @@ impl NewSimpleBadge {
         };
 
         let mut resource_auth = BTreeMap::new();
-        resource_auth.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
 
         let manifest = ManifestBuilder::new(&network_definition)
             .lock_fee(FAUCET_COMPONENT, 100.into())

@@ -136,7 +136,7 @@ pub enum BasicInstruction {
     CreateResource {
         resource_type: ResourceType,
         metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         mint_params: Option<MintParams>,
     },
 

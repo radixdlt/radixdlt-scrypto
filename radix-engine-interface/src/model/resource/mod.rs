@@ -19,7 +19,6 @@ pub use non_fungible_data::*;
 pub use non_fungible_id::*;
 pub use proof::*;
 pub use proof_rule::*;
-pub use resource_manager::Mutability::*;
 pub use resource_manager::ResourceMethodAuthKey::*;
 pub use resource_manager::*;
 pub use resource_type::ResourceType;
