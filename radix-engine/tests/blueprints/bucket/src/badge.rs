@@ -7,7 +7,7 @@ blueprint! {
         fn create_test_badge(amount: u32) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .restrict_withdraw(rule!(allow_all), LOCKED)
+                .restrict_withdraw(rule!(allow_all), rule!(deny_all))
                 .metadata("name", "TestBadge")
                 .initial_supply(amount)
         }

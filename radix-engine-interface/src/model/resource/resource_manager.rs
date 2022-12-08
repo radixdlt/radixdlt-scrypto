@@ -36,28 +36,12 @@ pub enum ResourceMethodAuthKey {
     Recall,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-pub enum Mutability {
-    LOCKED,
-    MUTABLE(AccessRule),
-}
-
-impl Into<AccessRule> for Mutability {
-    fn into(self) -> AccessRule {
-        match self {
-            LOCKED => AccessRule::DenyAll,
-            MUTABLE(rule) => rule,
-        }
-    }
-}
-
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
     pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub mint_params: Option<MintParams>,
 }
 

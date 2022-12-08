@@ -73,13 +73,16 @@ pub fn create_genesis() -> SystemTransaction {
     let create_ecdsa_secp256k1_token = {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
         BasicInstruction::CreateResource {
             resource_type: ResourceType::NonFungible {
-                id_type: NonFungibleIdType::default(),
+                id_type: NonFungibleIdType::Bytes,
             },
             metadata,
             access_rules,
@@ -90,15 +93,17 @@ pub fn create_genesis() -> SystemTransaction {
     // TODO: Perhaps combine with ecdsa token?
     let create_system_token = {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
-        let mut access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
-            BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
         BasicInstruction::CreateResource {
             resource_type: ResourceType::NonFungible {
-                id_type: NonFungibleIdType::default(),
+                id_type: NonFungibleIdType::Bytes,
             },
             metadata,
             access_rules,
@@ -114,7 +119,10 @@ pub fn create_genesis() -> SystemTransaction {
         metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
 
         let initial_supply: Option<MintParams> = Option::Some(MintParams::Fungible {
             amount: XRD_MAX_SUPPLY.into(),
@@ -165,13 +173,16 @@ pub fn create_genesis() -> SystemTransaction {
     let create_eddsa_ed25519_token = {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
         let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
         BasicInstruction::CreateResource {
             resource_type: ResourceType::NonFungible {
-                id_type: NonFungibleIdType::default(),
+                id_type: NonFungibleIdType::Bytes,
             },
             metadata,
             access_rules,

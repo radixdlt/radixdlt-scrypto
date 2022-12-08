@@ -19,7 +19,8 @@ pub struct Publish {
     path: PathBuf,
 
     /// The owner badge (hex value).
-    owner_badge: String,
+    #[clap(long)]
+    owner_badge: Option<String>,
 
     /// The address of an existing package to overwrite
     #[clap(long)]
@@ -98,9 +99,13 @@ impl Publish {
             );
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
+            let owner_badge = self
+                .owner_badge
+                .as_ref()
+                .ok_or(Error::OwnerBadgeNotSpecified)?;
             let owner_badge_nf_address = NonFungibleAddress::try_from_canonical_combined_string(
                 &bech32_decoder,
-                &self.owner_badge,
+                owner_badge,
             )
             .map_err(Error::NonFungibleAddressError)?;
 

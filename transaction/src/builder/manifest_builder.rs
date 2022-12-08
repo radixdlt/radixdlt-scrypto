@@ -271,17 +271,20 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::DropAllProofs).0
     }
 
-    pub fn create_resource(
+    pub fn create_resource<R: Into<AccessRule>>(
         &mut self,
         resource_type: ResourceType,
         metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         mint_params: Option<MintParams>,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CreateResource {
             resource_type,
             metadata,
-            access_rules,
+            access_rules: access_rules
+                .into_iter()
+                .map(|(k, v)| (k, (v.0, v.1.into())))
+                .collect(),
             mint_params,
         });
 
@@ -527,14 +530,23 @@ impl ManifestBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
         access_rules.insert(
             Mint,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            (
+                rule!(require(minter_resource_address.clone())),
+                rule!(deny_all),
+            ),
         );
         access_rules.insert(
             Burn,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            (
+                rule!(require(minter_resource_address.clone())),
+                rule!(deny_all),
+            ),
         );
 
         let mint_params: Option<MintParams> = Option::None;
@@ -554,7 +566,10 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
 
         self.add_instruction(BasicInstruction::CreateResource {
             resource_type: ResourceType::Fungible { divisibility: 18 },
@@ -574,14 +589,23 @@ impl ManifestBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
         access_rules.insert(
             Mint,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            (
+                rule!(require(minter_resource_address.clone())),
+                rule!(deny_all),
+            ),
         );
         access_rules.insert(
             Burn,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            (
+                rule!(require(minter_resource_address.clone())),
+                rule!(deny_all),
+            ),
         );
 
         let mint_params: Option<MintParams> = Option::None;
@@ -602,7 +626,10 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
 
         self.add_instruction(BasicInstruction::CreateResource {
             resource_type: ResourceType::Fungible { divisibility: 0 },

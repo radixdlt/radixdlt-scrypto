@@ -28,6 +28,8 @@ use radix_engine_interface::model::{
     AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::{dec, rule};
+use scrypto::component::Mutability;
+use scrypto::component::Mutability::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Executable, SystemInstruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
