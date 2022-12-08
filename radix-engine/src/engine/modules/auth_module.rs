@@ -12,7 +12,7 @@ use radix_engine_interface::data::IndexedScryptoValue;
 pub enum AuthError {
     VisibilityError(RENodeId),
     Unauthorized {
-        actor: REActor,
+        actor: ResolvedActor,
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
     },
@@ -31,7 +31,7 @@ impl AuthModule {
 
     pub fn on_call_frame_enter<Y: SystemApi>(
         call_frame_update: &mut CallFrameUpdate,
-        actor: &REActor,
+        actor: &ResolvedActor,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let refed = system_api.get_visible_node_ids()?;
@@ -43,7 +43,7 @@ impl AuthModule {
 
         if !matches!(
             actor,
-            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
+            ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
         ) {
             let handle = system_api.lock_substate(
                 auth_zone_id,
@@ -62,10 +62,10 @@ impl AuthModule {
         Ok(())
     }
 
-    fn is_barrier(actor: &REActor) -> bool {
+    fn is_barrier(actor: &ResolvedActor) -> bool {
         matches!(
             actor,
-            REActor::Method(
+            ResolvedActor::Method(
                 _,
                 ResolvedReceiver {
                     derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
@@ -75,19 +75,19 @@ impl AuthModule {
         )
     }
 
-    pub fn on_before_frame_start<Y>(actor: &REActor, system_api: &mut Y) -> Result<(), RuntimeError>
+    pub fn on_before_frame_start<Y>(actor: &ResolvedActor, system_api: &mut Y) -> Result<(), RuntimeError>
     where
         Y: SystemApi,
     {
         if matches!(
             actor,
-            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
+            ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
         ) {
             return Ok(());
         }
 
         let method_auths = match actor.clone() {
-            REActor::Function(function_ident) => match function_ident {
+            ResolvedActor::Function(function_ident) => match function_ident {
                 ResolvedFunction::Native(NativeFunction::EpochManager(epoch_manager_func)) => {
                     EpochManager::function_auth(&epoch_manager_func)
                 }
@@ -96,7 +96,7 @@ impl AuthModule {
                 }
                 _ => vec![],
             },
-            REActor::Method(method, resolved_receiver) => {
+            ResolvedActor::Method(method, resolved_receiver) => {
                 match (method, resolved_receiver) {
                     // SetAccessRule auth is done manually within the method
                     (
@@ -288,7 +288,7 @@ impl AuthModule {
     {
         if matches!(
             system_api.get_actor(),
-            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
+            ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
         ) {
             return Ok(());
         }

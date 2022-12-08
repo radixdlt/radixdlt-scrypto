@@ -10,7 +10,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
     fn resolve<D: ResolverApi<W> + SystemApi>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
         let args = IndexedScryptoValue::from_slice(&self.args())
             .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
@@ -102,7 +102,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                         args.raw,
                         fn_abi.output.clone(),
                     ),
-                    REActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)),
+                    ResolvedActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)),
                 )
             }
             ScryptoInvocation::Method(method_ident, _) => {
@@ -219,7 +219,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                         args.raw,
                         fn_abi.output.clone(),
                     ),
-                    REActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), resolved_receiver),
+                    ResolvedActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), resolved_receiver),
                 )
             }
         };
@@ -252,7 +252,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
     fn resolve<D: ResolverApi<W> + SystemApi>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
 
         let nodes_to_move = self.args().node_ids().into_iter().collect();
@@ -342,7 +342,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                         args.raw,
                         fn_abi.output.clone(),
                     ),
-                    REActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)),
+                    ResolvedActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)),
                 )
             }
             ParsedScryptoInvocation::Method(method_ident, args) => {
@@ -459,7 +459,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                         args.raw,
                         fn_abi.output.clone(),
                     ),
-                    REActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), resolved_receiver),
+                    ResolvedActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), resolved_receiver),
                 )
             }
         };

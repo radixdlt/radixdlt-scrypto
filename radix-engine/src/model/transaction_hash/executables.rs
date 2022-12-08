@@ -17,11 +17,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGetInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Method(
+        let actor = ResolvedActor::Method(
             ResolvedMethod::Native(NativeMethod::TransactionHash(TransactionHashMethod::Get)),
             ResolvedReceiver::new(RENodeId::TransactionHash(self.receiver)),
         );
@@ -57,11 +57,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGenerateUuidInvoc
     fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Method(
+        let actor = ResolvedActor::Method(
             ResolvedMethod::Native(NativeMethod::TransactionHash(
                 TransactionHashMethod::GenerateUuid,
             )),

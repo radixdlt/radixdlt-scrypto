@@ -1,5 +1,5 @@
 use crate::engine::{
-    ExecutionMode, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
+    ExecutionMode, KernelError, LockFlags, ResolvedActor, RENode, ResolvedFunction, ResolvedMethod,
     ResolvedReceiver, RuntimeError,
 };
 use crate::model::GlobalAddressSubstate;
@@ -15,7 +15,7 @@ pub struct VisibilityProperties;
 impl VisibilityProperties {
     pub fn check_drop_node_visibility(
         mode: ExecutionMode,
-        actor: &REActor,
+        actor: &ResolvedActor,
         node_id: RENodeId,
     ) -> bool {
         if !mode.eq(&ExecutionMode::Application) {
@@ -25,43 +25,43 @@ impl VisibilityProperties {
         // TODO: Cleanup and reduce to least privilege
         match node_id {
             RENodeId::Worktop => match actor {
-                REActor::Function(
+                ResolvedActor::Function(
                     ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
                     ..,
                 ) => true,
                 _ => false,
             },
             RENodeId::AuthZoneStack(..) => match actor {
-                REActor::Function(
+                ResolvedActor::Function(
                     ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
                     ..,
                 ) => true,
                 _ => false,
             },
             RENodeId::TransactionHash(..) => match actor {
-                REActor::Function(
+                ResolvedActor::Function(
                     ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
                     ..,
                 ) => true,
                 _ => false,
             },
             RENodeId::Bucket(..) => match actor {
-                REActor::Method(ResolvedMethod::Native(NativeMethod::Bucket(..)), ..)
-                | REActor::Method(ResolvedMethod::Native(NativeMethod::Worktop(..)), ..)
-                | REActor::Method(ResolvedMethod::Native(NativeMethod::ResourceManager(..)), ..)
-                | REActor::Method(ResolvedMethod::Native(NativeMethod::Vault(..)), ..) => true,
+                ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::Bucket(..)), ..)
+                | ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::Worktop(..)), ..)
+                | ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::ResourceManager(..)), ..)
+                | ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::Vault(..)), ..) => true,
                 _ => false,
             },
             RENodeId::Proof(..) => match actor {
-                REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..) => {
+                ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..) => {
                     true
                 }
-                REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) => true,
-                REActor::Function(ResolvedFunction::Native(
+                ResolvedActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) => true,
+                ResolvedActor::Function(ResolvedFunction::Native(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
                 )) => true,
-                REActor::Method(ResolvedMethod::Scrypto { .. }, ..) => true,
-                REActor::Function(ResolvedFunction::Scrypto { .. }) => true,
+                ResolvedActor::Method(ResolvedMethod::Scrypto { .. }, ..) => true,
+                ResolvedActor::Function(ResolvedFunction::Scrypto { .. }) => true,
                 _ => false,
             },
             _ => false,
@@ -70,14 +70,14 @@ impl VisibilityProperties {
 
     pub fn check_create_node_visibility(
         mode: ExecutionMode,
-        actor: &REActor,
+        actor: &ResolvedActor,
         node: &RENode,
     ) -> bool {
         // TODO: Cleanup and reduce to least privilege
         match (mode, actor) {
             (
                 ExecutionMode::Application,
-                REActor::Method(
+                ResolvedActor::Method(
                     ResolvedMethod::Scrypto(ScryptoFnIdent {
                         package_address,
                         blueprint_name,
@@ -85,7 +85,7 @@ impl VisibilityProperties {
                     }),
                     ..,
                 )
-                | REActor::Function(
+                | ResolvedActor::Function(
                     ResolvedFunction::Scrypto(ScryptoFnIdent {
                         package_address,
                         blueprint_name,
@@ -108,7 +108,7 @@ impl VisibilityProperties {
 
     pub fn check_substate_visibility(
         mode: ExecutionMode,
-        actor: &REActor,
+        actor: &ResolvedActor,
         node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
@@ -173,11 +173,11 @@ impl VisibilityProperties {
                 if !flags.contains(LockFlags::MUTABLE) {
                     match actor {
                         // Native
-                        REActor::Function(ResolvedFunction::Native(..))
-                        | REActor::Method(ResolvedMethod::Native(..), ..) => true,
+                        ResolvedActor::Function(ResolvedFunction::Native(..))
+                        | ResolvedActor::Method(ResolvedMethod::Native(..), ..) => true,
 
                         // Scrypto
-                        REActor::Function(ResolvedFunction::Scrypto { .. }) => {
+                        ResolvedActor::Function(ResolvedFunction::Scrypto { .. }) => {
                             match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
@@ -190,7 +190,7 @@ impl VisibilityProperties {
                                 _ => false,
                             }
                         }
-                        REActor::Method(
+                        ResolvedActor::Method(
                             ResolvedMethod::Scrypto { .. },
                             ResolvedReceiver {
                                 receiver: RENodeId::Component(component_address),
@@ -216,9 +216,9 @@ impl VisibilityProperties {
                 } else {
                     match actor {
                         // Native
-                        REActor::Function(ResolvedFunction::Native(..))
-                        | REActor::Method(ResolvedMethod::Native(..), ..) => true,
-                        REActor::Function(ResolvedFunction::Scrypto { .. }) => {
+                        ResolvedActor::Function(ResolvedFunction::Native(..))
+                        | ResolvedActor::Method(ResolvedMethod::Native(..), ..) => true,
+                        ResolvedActor::Function(ResolvedFunction::Scrypto { .. }) => {
                             match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
@@ -229,7 +229,7 @@ impl VisibilityProperties {
                         }
 
                         // Scrypto
-                        REActor::Method(
+                        ResolvedActor::Method(
                             ResolvedMethod::Scrypto { .. },
                             ResolvedReceiver {
                                 receiver: RENodeId::Component(component_address),

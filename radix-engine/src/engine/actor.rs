@@ -44,18 +44,18 @@ pub enum ResolvedMethod {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum REActor {
+pub enum ResolvedActor {
     Function(ResolvedFunction),
     Method(ResolvedMethod, ResolvedReceiver),
 }
 
-impl REActor {
+impl ResolvedActor {
     pub fn is_scrypto_or_transaction(&self) -> bool {
         matches!(
             self,
-            REActor::Method(ResolvedMethod::Scrypto { .. }, ..)
-                | REActor::Function(ResolvedFunction::Scrypto { .. })
-                | REActor::Function(ResolvedFunction::Native(
+            ResolvedActor::Method(ResolvedMethod::Scrypto { .. }, ..)
+                | ResolvedActor::Function(ResolvedFunction::Scrypto { .. })
+                | ResolvedActor::Function(ResolvedFunction::Native(
                     NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
                 ))
         )

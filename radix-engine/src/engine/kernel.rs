@@ -311,10 +311,10 @@ where
     fn run<X: Executor>(
         &mut self,
         executor: X,
-        actor: REActor,
+        actor: ResolvedActor,
         mut call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
-        let derefed_lock = if let REActor::Method(
+        let derefed_lock = if let ResolvedActor::Method(
             _,
             ResolvedReceiver {
                 derefed_from: Some((_, derefed_lock)),
@@ -490,7 +490,7 @@ where
     fn invoke_internal<X: Executor>(
         &mut self,
         executor: X,
-        actor: REActor,
+        actor: ResolvedActor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
         // check call depth
@@ -633,7 +633,7 @@ pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
     fn resolve<Y: ResolverApi<W> + SystemApi>(
         self,
         api: &mut Y,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
 impl<'g, 's, W, R, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R>
@@ -742,7 +742,7 @@ where
         Ok(fee)
     }
 
-    fn get_actor(&self) -> &REActor {
+    fn get_actor(&self) -> &ResolvedActor {
         &self.current_frame.actor
     }
 

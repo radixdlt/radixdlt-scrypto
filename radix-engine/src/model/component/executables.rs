@@ -1,6 +1,6 @@
 use crate::engine::{deref_and_update, RENode, ResolvedFunction};
 use crate::engine::{
-    CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor, NativeProcedure, REActor,
+    CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor, NativeProcedure, ResolvedActor,
     ResolvedMethod, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, GlobalAddressSubstate};
@@ -15,11 +15,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Component(
+        let actor = ResolvedActor::Function(ResolvedFunction::Native(NativeFunction::Component(
             ComponentFunction::Globalize,
         )));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
@@ -77,11 +77,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvoc
     fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Component(
+        let actor = ResolvedActor::Function(ResolvedFunction::Native(NativeFunction::Component(
             ComponentFunction::Globalize,
         )));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
@@ -175,7 +175,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocat
     fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
@@ -183,7 +183,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocat
         let receiver = self.receiver;
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
+        let actor = ResolvedActor::Method(
             ResolvedMethod::Native(NativeMethod::Component(ComponentMethod::SetRoyaltyConfig)),
             resolved_receiver,
         );
@@ -223,12 +223,12 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation 
     fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = self.receiver;
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
+        let actor = ResolvedActor::Method(
             ResolvedMethod::Native(NativeMethod::Component(ComponentMethod::ClaimRoyalty)),
             resolved_receiver,
         );

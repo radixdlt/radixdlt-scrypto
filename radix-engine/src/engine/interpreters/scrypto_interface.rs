@@ -1,5 +1,5 @@
 use crate::engine::{
-    Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
+    Kernel, KernelError, LockFlags, ResolvedActor, RENode, ResolvedFunction, ResolvedMethod,
     RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserve;
@@ -150,8 +150,8 @@ where
 
     fn sys_get_actor(&mut self) -> Result<ScryptoFnIdent, RuntimeError> {
         let actor = match self.get_actor() {
-            REActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), ..)
-            | REActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)) => {
+            ResolvedActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), ..)
+            | ResolvedActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)) => {
                 scrypto_fn_ident.clone()
             }
             _ => panic!("Should not get here."),

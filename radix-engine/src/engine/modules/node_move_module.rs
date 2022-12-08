@@ -1,4 +1,4 @@
-use crate::engine::{CallFrameUpdate, LockFlags, ModuleError, REActor, RuntimeError, SystemApi};
+use crate::engine::{CallFrameUpdate, LockFlags, ModuleError, ResolvedActor, RuntimeError, SystemApi};
 use crate::types::*;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
 
@@ -14,7 +14,7 @@ pub struct NodeMoveModule;
 impl NodeMoveModule {
     fn prepare_move_downstream<Y: SystemApi>(
         node_id: RENodeId,
-        to: &REActor,
+        to: &ResolvedActor,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
         match node_id {
@@ -126,7 +126,7 @@ impl NodeMoveModule {
 
     pub fn on_call_frame_enter<Y: SystemApi>(
         call_frame_update: &mut CallFrameUpdate,
-        actor: &REActor,
+        actor: &ResolvedActor,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
         for node_id in &call_frame_update.nodes_to_move {

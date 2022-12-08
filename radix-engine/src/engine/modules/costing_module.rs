@@ -372,14 +372,14 @@ impl<R: FeeReserve> Module<R> for CostingModule {
 
     fn pre_execute_invocation(
         &mut self,
-        actor: &REActor,
+        actor: &ResolvedActor,
         _call_frame_update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         match actor {
-            REActor::Function(ResolvedFunction::Native(native_function)) => track
+            ResolvedActor::Function(ResolvedFunction::Native(native_function)) => track
                 .fee_reserve
                 .consume_execution(
                     track.fee_table.run_native_function_cost(&native_function),
@@ -388,7 +388,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     false,
                 )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
-            REActor::Method(ResolvedMethod::Native(native_method), _) => track
+            ResolvedActor::Method(ResolvedMethod::Native(native_method), _) => track
                 .fee_reserve
                 .consume_execution(
                     track.fee_table.run_native_method_cost(&native_method),

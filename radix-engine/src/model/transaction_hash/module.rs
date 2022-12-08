@@ -1,4 +1,4 @@
-use crate::engine::{CallFrameUpdate, REActor, RuntimeError, SystemApi};
+use crate::engine::{CallFrameUpdate, ResolvedActor, RuntimeError, SystemApi};
 use radix_engine_interface::api::types::RENodeId;
 
 pub struct TransactionHashModule;
@@ -6,7 +6,7 @@ pub struct TransactionHashModule;
 impl TransactionHashModule {
     pub fn on_call_frame_enter<Y: SystemApi>(
         call_frame_update: &mut CallFrameUpdate,
-        _actor: &REActor,
+        _actor: &ResolvedActor,
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let refed = api.get_visible_node_ids()?;

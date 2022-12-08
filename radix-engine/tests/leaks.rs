@@ -1,4 +1,4 @@
-use radix_engine::engine::{ExecutionMode, KernelError, REActor, ResolvedFunction, RuntimeError};
+use radix_engine::engine::{ExecutionMode, KernelError, ResolvedActor, ResolvedFunction, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
@@ -27,7 +27,7 @@ fn dangling_component_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor::Function(ResolvedFunction::Scrypto { .. }),
                 node_id: RENodeId::Component(..)
             })
         )
@@ -54,7 +54,7 @@ fn dangling_bucket_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor::Function(ResolvedFunction::Scrypto { .. }),
                 node_id: RENodeId::Bucket(..)
             })
         )
@@ -81,7 +81,7 @@ fn dangling_vault_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor::Function(ResolvedFunction::Scrypto { .. }),
                 node_id: RENodeId::Vault(..)
             })
         )
@@ -131,7 +131,7 @@ fn dangling_kv_store_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor::Function(ResolvedFunction::Scrypto { .. }),
                 node_id: RENodeId::KeyValueStore(..)
             })
         )
@@ -163,7 +163,7 @@ fn dangling_bucket_with_proof_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor::Function(ResolvedFunction::Scrypto { .. }),
                 node_id: RENodeId::Bucket(..)
             })
         )

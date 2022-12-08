@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, REActor, ResolvedFunction, RuntimeError};
+use radix_engine::engine::{KernelError, ResolvedActor, ResolvedFunction, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -30,7 +30,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidCreateNodeVisibility {
-                actor: REActor::Function(ResolvedFunction::Scrypto(ScryptoFnIdent {
+                actor: ResolvedActor::Function(ResolvedFunction::Scrypto(ScryptoFnIdent {
                     package_address: addr,
                     blueprint_name: blueprint,
                     ident
@@ -65,7 +65,7 @@ fn should_not_be_able_to_node_create_with_invalid_package() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidCreateNodeVisibility {
-                actor: REActor::Function(ResolvedFunction::Scrypto(ScryptoFnIdent {
+                actor: ResolvedActor::Function(ResolvedFunction::Scrypto(ScryptoFnIdent {
                     package_address: addr,
                     blueprint_name: blueprint,
                     ident,

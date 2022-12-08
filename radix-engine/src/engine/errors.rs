@@ -1,5 +1,5 @@
 use crate::engine::node_move_module::NodeMoveError;
-use crate::engine::{ExecutionMode, LockFlags, REActor};
+use crate::engine::{ExecutionMode, LockFlags, ResolvedActor};
 use radix_engine_interface::api::types::{
     GlobalAddress, LockHandle, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
     SubstateOffset,
@@ -110,16 +110,16 @@ pub enum KernelError {
     // Actor Constraints
     InvalidDropNodeVisibility {
         mode: ExecutionMode,
-        actor: REActor,
+        actor: ResolvedActor,
         node_id: RENodeId,
     },
     InvalidCreateNodeVisibility {
         mode: ExecutionMode,
-        actor: REActor,
+        actor: ResolvedActor,
     },
     InvalidSubstateVisibility {
         mode: ExecutionMode,
-        actor: REActor,
+        actor: ResolvedActor,
         node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,

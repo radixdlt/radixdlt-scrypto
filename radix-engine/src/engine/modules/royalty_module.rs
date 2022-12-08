@@ -36,7 +36,7 @@ impl Default for RoyaltyModule {
 impl<R: FeeReserve> Module<R> for RoyaltyModule {
     fn pre_execute_invocation(
         &mut self,
-        actor: &REActor,
+        actor: &ResolvedActor,
         _update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
@@ -44,7 +44,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
     ) -> Result<(), ModuleError> {
         // Identify the function, and optional component address
         let (package_address, blueprint_name, fn_ident, optional_component_address) = match actor {
-            REActor::Function(function) => match function {
+            ResolvedActor::Function(function) => match function {
                 ResolvedFunction::Scrypto(ScryptoFnIdent {
                     package_address,
                     blueprint_name,
@@ -54,7 +54,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
                     return Ok(());
                 }
             },
-            REActor::Method(method, receiver) => match method {
+            ResolvedActor::Method(method, receiver) => match method {
                 ResolvedMethod::Scrypto(ScryptoFnIdent {
                     package_address,
                     blueprint_name,
