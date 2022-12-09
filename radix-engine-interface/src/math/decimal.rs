@@ -13,7 +13,7 @@ use sbor::*;
 use crate::abi::*;
 use crate::data::*;
 use crate::math::*;
-use crate::scrypto_type;
+use crate::{scrypto_type};
 
 /// `Decimal` represents a 256 bit representation of a fixed-scale decimal number.
 ///
@@ -177,24 +177,30 @@ impl Decimal {
 
     /// Calculates power usingexponentiation by squaring".
     pub fn powi(&self, exp: i64) -> Self {
-        let one = Self::ONE.0;
-        let base = self.0;
+        let one_384: I384 = I384::from(Self::ONE.0);
+        let base_384: I384 = I384::from(self.0);
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
         if exp < 0 {
-            return Decimal(&one * &one / base).powi(mul(exp, -1));
+            let dec_256: I256 = I256::try_from(&one_384 * &one_384 / &base_384).expect("Overflow");
+            return Decimal(dec_256).powi(mul(exp, -1));
         }
         if exp == 0 {
             return Self::ONE;
         }
+        if exp == 1 {
+            return Decimal(self.0);
+        }
         if exp % 2 == 0 {
-            return Decimal(&base * &base / &one).powi(div(exp, 2));
-        } else {
-            return Decimal(
-                &base * Decimal(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one,
-            );
+            let dec_256: I256 = I256::try_from(&base_384 * &base_384 / &one_384).expect("Overflow");
+            return Decimal(dec_256).powi(div(exp, 2));
+        }
+        else {
+            let sub_dec_256: I256 = I256::try_from(&base_384 * &base_384 / &one_384).expect("Overflow");
+            let sub_dec = Decimal(sub_dec_256);
+            return Decimal(self.0) * sub_dec.powi(div(sub(exp, 1), 2));
         }
     }
 
@@ -212,7 +218,7 @@ impl Decimal {
         // To get the right precision, we compute : sqrt(i*10^18) = sqrt(d)*10^18
         let self_384: I384 = I384::from(self.0);
         let correct_nb = self_384 * I384::from(Decimal::one().0);
-        let sqrt = I256::try_from(correct_nb.sqrt()).unwrap();
+        let sqrt = I256::try_from(correct_nb.sqrt()).expect("Overflow");
         Some(Decimal(sqrt))
     }
 
@@ -225,7 +231,7 @@ impl Decimal {
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
         let self_384: I384 = I384::from(self.0);
         let correct_nb = self_384 * I384::from(Decimal::one().0).pow(2);
-        let cbrt = I256::try_from(correct_nb.cbrt()).unwrap();
+        let cbrt = I256::try_from(correct_nb.cbrt()).expect("Overflow");
         Decimal(cbrt)
     }
 
@@ -244,7 +250,7 @@ impl Decimal {
             // To not overflow, we use BigInts
             let self_bigint = BigInt::from(self.0);
             let correct_nb = self_bigint * BigInt::from(Decimal::one().0).pow(n - 1);
-            let nth_root = I256::try_from(correct_nb.nth_root(n)).unwrap();
+            let nth_root = I256::try_from(correct_nb.nth_root(n)).expect("Overflow");
             Some(Decimal(nth_root))
         }
     }
@@ -759,6 +765,15 @@ mod tests {
         let a = Decimal::from(1u32);
         let b = i64::MAX - 1;
         assert_eq!(a.powi(b).to_string(), "1");
+    }
+
+    #[test]
+    fn test_powi_max_decimal() {
+        let _max_bug = Decimal::MAX.powi(1);
+        let _max_sqrt = Decimal::MAX.sqrt().unwrap();
+        let _max_cbrt = Decimal::MAX.cbrt();
+        let _max_dec_2 = max_sqrt.powi(2);
+        let _max_dec_3 = max_cbrt.powi(3);
     }
 
     #[test]
