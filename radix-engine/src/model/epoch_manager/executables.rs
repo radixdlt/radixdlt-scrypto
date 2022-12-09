@@ -22,10 +22,7 @@ pub enum EpochManagerError {
     InvalidRequestData(DecodeError),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct EpochManager {
-    pub info: EpochManagerSubstate,
-}
+pub struct EpochManager;
 
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
     type Exec = Self;
@@ -55,7 +52,10 @@ impl Executor for EpochManagerCreateInvocation {
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
 
-        let epoch_manager = EpochManagerSubstate { epoch: 0 };
+        let epoch_manager = EpochManagerSubstate {
+            epoch: 0,
+            validator_set: Vec::new(),
+        };
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
