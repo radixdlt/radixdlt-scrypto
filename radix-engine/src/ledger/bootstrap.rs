@@ -12,6 +12,7 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, SystemInstruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
@@ -204,6 +205,7 @@ pub fn create_genesis() -> SystemTransaction {
             create_eddsa_ed25519_token.into(),
         ],
         blobs,
+        nonce: 0,
     }
 }
 
@@ -257,7 +259,7 @@ where
             scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &genesis_transaction.get_executable(),
+            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
         let commit_result = transaction_receipt.expect_commit();
@@ -287,7 +289,7 @@ mod tests {
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
             &ExecutionConfig::default(),
-            &genesis_transaction.get_executable(),
+            &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
         let commit_result = transaction_receipt.expect_commit();

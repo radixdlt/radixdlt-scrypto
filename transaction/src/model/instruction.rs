@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId,
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, VaultId,
 };
 use radix_engine_interface::data::types::Blob;
 use radix_engine_interface::math::Decimal;
@@ -152,8 +152,13 @@ pub enum BasicInstruction {
         bucket_id: BucketId,
     },
 
-    MintFungible {
+    MintResource {
+        amount: Decimal,
         resource_address: ResourceAddress,
+    },
+
+    RecallResource {
+        vault_id: VaultId,
         amount: Decimal,
     },
 
@@ -181,16 +186,11 @@ pub enum BasicInstruction {
         component_address: ComponentAddress,
     },
 
-    // TODO: remove
-    CallNativeFunction {
-        function_ident: NativeFunctionIdent,
-        args: Vec<u8>,
-    },
-
-    // TODO: remove
-    CallNativeMethod {
-        method_ident: NativeMethodIdent,
-        args: Vec<u8>,
+    SetMethodAccessRule {
+        entity_address: GlobalAddress,
+        index: u32,
+        key: AccessRuleKey,
+        rule: AccessRule,
     },
 }
 

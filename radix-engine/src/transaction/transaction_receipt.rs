@@ -130,6 +130,26 @@ impl TransactionReceipt {
         matches!(self.result, TransactionResult::Commit(_))
     }
 
+    pub fn is_commit_success(&self) -> bool {
+        matches!(
+            self.result,
+            TransactionResult::Commit(CommitResult {
+                outcome: TransactionOutcome::Success(_),
+                ..
+            })
+        )
+    }
+
+    pub fn is_commit_failure(&self) -> bool {
+        matches!(
+            self.result,
+            TransactionResult::Commit(CommitResult {
+                outcome: TransactionOutcome::Failure(_),
+                ..
+            })
+        )
+    }
+
     pub fn is_rejection(&self) -> bool {
         matches!(self.result, TransactionResult::Reject(_))
     }

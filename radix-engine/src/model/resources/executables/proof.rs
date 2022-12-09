@@ -1,7 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
-    SystemApi,
+    NativeProcedure, RENode, ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
@@ -34,11 +33,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetAmount)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Proof(ProofMethod::GetAmount),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -69,11 +68,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetNonFungibleIds)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Proof(ProofMethod::GetNonFungibleIds),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -113,11 +112,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocatio
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::GetResourceAddress)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Proof(ProofMethod::GetResourceAddress),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -153,11 +152,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Proof(ProofMethod::Clone)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Proof(ProofMethod::Clone),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);

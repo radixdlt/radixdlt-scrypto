@@ -69,7 +69,7 @@ pub struct Track<'s, R: FeeReserve> {
     new_global_addresses: Vec<GlobalAddress>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
-    pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
+    pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
     pub events: Vec<TrackedEvent>,
 }
 
@@ -574,7 +574,7 @@ struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     new_global_addresses: Vec<GlobalAddress>,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
-    vault_ops: Vec<(REActor, VaultId, VaultOp)>,
+    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
 impl<'s> FinalizingTrack<'s> {

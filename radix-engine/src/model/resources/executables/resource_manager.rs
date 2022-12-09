@@ -1,7 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags,
-    NativeExecutor, NativeProcedure, REActor, RENode, ResolvedFunction, ResolvedMethod,
-    ResolverApi, RuntimeError, SystemApi,
+    NativeExecutor, NativeProcedure, RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate,
@@ -52,11 +51,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBucketBurnInvocat
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
+        let actor = ResolvedActor::function(NativeFunction::ResourceManager(
             ResourceManagerFunction::BurnBucket,
-        )));
+        ));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
@@ -82,11 +81,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateInvocation 
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
+        let actor = ResolvedActor::function(NativeFunction::ResourceManager(
             ResourceManagerFunction::Create,
-        )));
+        ));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
@@ -98,11 +97,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateWithOwnerIn
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::ResourceManager(
+        let actor = ResolvedActor::function(NativeFunction::ResourceManager(
             ResourceManagerFunction::CreateWithOwner,
-        )));
+        ));
 
         let owner_badge = self.owner_badge;
         let mut access_rules = BTreeMap::new();
@@ -535,15 +534,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBurnInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Burn)),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerBurnExecutable(
@@ -623,17 +622,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateVaultAuthIn
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateVaultAuth,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateVaultAuth),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerUpdateVaultAuthExecutable(
@@ -715,17 +712,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerSetVaultAuthMutab
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::LockAuth,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerLockVaultAuthExecutable(
@@ -808,17 +803,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateVaultInvoca
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::CreateVault,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerCreateVaultExecutable(
@@ -864,17 +857,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateBucketInvoc
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::CreateBucket,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerCreateBucketExecutable(
@@ -920,15 +911,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(ResourceManagerMethod::Mint)),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerMintExecutable(
@@ -1017,17 +1008,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetResourceTypeIn
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetResourceType,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerGetResourceTypeExecutable(
@@ -1065,17 +1054,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetTotalSupplyInv
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetTotalSupply,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerGetTotalSupplyExecutable(
@@ -1109,17 +1096,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateNonFungible
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateNonFungibleData,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerUpdateNonFungibleDataExecutable(
@@ -1186,17 +1171,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerNonFungibleExists
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::NonFungibleExists,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerNonFungibleExistsExecutable(
@@ -1248,17 +1231,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetNonFungibleInv
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let resolved_receiver = deref_and_update(
             RENodeId::Global(GlobalAddress::Resource(self.receiver)),
             &mut call_frame_update,
             api,
         )?;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::ResourceManager(
-                ResourceManagerMethod::GetNonFungible,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
             resolved_receiver,
         );
         let executor = NativeExecutor(ResourceManagerGetNonFungibleExecutable(

@@ -1,4 +1,4 @@
-use radix_engine::engine::{KernelError, REActor, RuntimeError};
+use radix_engine::engine::{KernelError, ResolvedActor, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::*;
@@ -30,7 +30,10 @@ fn should_not_be_able_to_read_global_substate() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidSubstateVisibility {
-                actor: REActor::Function(..),
+                actor: ResolvedActor {
+                    identifier: FnIdentifier::Scrypto(..),
+                    ..
+                },
                 node_id: RENodeId::Global(GlobalAddress::Component(..)),
                 offset: SubstateOffset::Global(GlobalOffset::Global),
                 ..

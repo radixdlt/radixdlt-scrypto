@@ -57,7 +57,7 @@ fn transaction_executed_before_valid_returns_that_rejection_reason() {
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&get_executable(&transaction).unwrap());
+    let receipt = test_runner.execute_transaction(get_executable(&transaction).unwrap());
 
     // Assert
     let rejection_error = receipt.expect_rejection();
@@ -93,7 +93,7 @@ fn transaction_executed_after_valid_returns_that_rejection_reason() {
     });
 
     // Act
-    let receipt = test_runner.execute_transaction(&get_executable(&transaction).unwrap());
+    let receipt = test_runner.execute_transaction(get_executable(&transaction).unwrap());
 
     // Assert
     let rejection_error = receipt.expect_rejection();

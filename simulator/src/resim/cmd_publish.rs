@@ -123,7 +123,6 @@ impl Publish {
                 &self.manifest,
                 self.trace,
                 false,
-                false,
                 out,
             )?;
             if let Some(receipt) = receipt {

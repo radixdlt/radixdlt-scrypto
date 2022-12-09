@@ -1,13 +1,11 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::BasicInstruction;
 
 enum Action {
     Mint,
@@ -62,7 +60,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     match action {
         Action::Mint => builder
-            .mint(token_address, Decimal::from("1.0"))
+            .mint(Decimal::from("1.0"), token_address)
             .call_method(
                 account,
                 "deposit_batch",
@@ -71,7 +69,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         Action::Burn => builder
             .create_proof_from_account(account, withdraw_auth)
             .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
-            .burn(token_address, Decimal::from("1.0"))
+            .burn(Decimal::from("1.0"), token_address)
             .call_method(
                 account,
                 "deposit_batch",
@@ -99,24 +97,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             let vaults = test_runner.get_component_vaults(account, token_address);
             let vault_id = vaults[0];
 
-            builder
-                .add_instruction(BasicInstruction::CallNativeMethod {
-                    method_ident: NativeMethodIdent {
-                        receiver: RENodeId::Vault(vault_id),
-                        method_name: "recall".to_string(),
-                    },
-                    args: scrypto_encode(&VaultRecallInvocation {
-                        receiver: vault_id,
-                        amount: Decimal::from("1.0"),
-                    })
-                    .unwrap(),
-                })
-                .0
-                .call_method(
-                    account,
-                    "deposit_batch",
-                    args!(Expression::entire_worktop()),
-                )
+            builder.recall(vault_id, Decimal::ONE).call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
         }
     };
 

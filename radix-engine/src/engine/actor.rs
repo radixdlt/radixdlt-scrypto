@@ -1,7 +1,5 @@
 use crate::types::*;
-use radix_engine_interface::api::types::{
-    NativeFunction, NativeMethod, RENodeId, TransactionProcessorFunction,
-};
+use radix_engine_interface::api::types::RENodeId;
 
 /// Resolved receiver including info whether receiver was derefed
 /// or not
@@ -28,82 +26,25 @@ impl ResolvedReceiver {
     }
 }
 
-#[derive(Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum ResolvedFunction {
-    Scrypto {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
-    },
-    Native(NativeFunction),
-}
-
-#[derive(Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum ResolvedMethod {
-    Scrypto {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        ident: String,
-    },
-    Native(NativeMethod),
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum REActor {
-    Function(ResolvedFunction),
-    Method(ResolvedMethod, ResolvedReceiver),
+pub struct ResolvedActor {
+    pub identifier: FnIdentifier,
+    pub receiver: Option<ResolvedReceiver>,
 }
 
-impl REActor {
-    pub fn is_scrypto_or_transaction(&self) -> bool {
-        matches!(
-            self,
-            REActor::Method(ResolvedMethod::Scrypto { .. }, ..)
-                | REActor::Function(ResolvedFunction::Scrypto { .. })
-                | REActor::Function(ResolvedFunction::Native(
-                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run)
-                ))
-        )
-    }
-}
-
-impl fmt::Debug for ResolvedFunction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Scrypto {
-                package_address,
-                blueprint_name,
-                ident,
-                ..
-            } => f
-                .debug_struct("Scrypto")
-                .field("package_address", package_address)
-                .field("blueprint_name", blueprint_name)
-                .field("ident", ident)
-                .finish(),
-            Self::Native(arg0) => f.debug_tuple("Native").field(arg0).finish(),
+impl ResolvedActor {
+    pub fn method<I: Into<FnIdentifier>>(identifier: I, receiver: ResolvedReceiver) -> Self {
+        Self {
+            identifier: identifier.into(),
+            receiver: Some(receiver),
         }
     }
-}
 
-impl fmt::Debug for ResolvedMethod {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Scrypto {
-                package_address,
-                blueprint_name,
-                ident,
-                ..
-            } => f
-                .debug_struct("Scrypto")
-                .field("package_address", package_address)
-                .field("blueprint_name", blueprint_name)
-                .field("ident", ident)
-                .finish(),
-            Self::Native(arg0) => f.debug_tuple("Native").field(arg0).finish(),
+    pub fn function<I: Into<FnIdentifier>>(identifier: I) -> Self {
+        Self {
+            identifier: identifier.into(),
+            receiver: None,
         }
     }
 }

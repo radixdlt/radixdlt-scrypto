@@ -120,12 +120,14 @@ pub enum TokenKind {
     CreateResource,
     CreateResourceWithOwner,
     BurnResource,
-    MintFungible,
+    MintResource,
+    RecallResource,
     SetMetadata,
     SetPackageRoyaltyConfig,
     SetComponentRoyaltyConfig,
     ClaimPackageRoyalty,
     ClaimComponentRoyalty,
+    SetMethodAccessRule,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -456,12 +458,14 @@ impl Lexer {
             "CREATE_RESOURCE" => Ok(TokenKind::CreateResource),
             "CREATE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateResourceWithOwner),
             "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
-            "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
+            "MINT_RESOURCE" => Ok(TokenKind::MintResource),
+            "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
             "SET_METADATA" => Ok(TokenKind::SetMetadata),
             "SET_PACKAGE_ROYALTY_CONFIG" => Ok(TokenKind::SetPackageRoyaltyConfig),
             "SET_COMPONENT_ROYALTY_CONFIG" => Ok(TokenKind::SetComponentRoyaltyConfig),
             "CLAIM_PACKAGE_ROYALTY" => Ok(TokenKind::ClaimPackageRoyalty),
             "CLAIM_COMPONENT_ROYALTY" => Ok(TokenKind::ClaimComponentRoyalty),
+            "SET_METHOD_ACCESS_RULE" => Ok(TokenKind::SetMethodAccessRule),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
