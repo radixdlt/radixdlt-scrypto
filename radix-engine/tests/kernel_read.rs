@@ -32,7 +32,10 @@ fn should_not_be_able_to_read_global_substate() {
         matches!(
             e,
             RuntimeError::KernelError(KernelError::InvalidSubstateVisibility {
-                actor: ResolvedActor::Function(..),
+                actor: ResolvedActor {
+                    identifier: FnIdentifier::Scrypto(..),
+                    ..
+                },
                 node_id: RENodeId::Global(GlobalAddress::Component(..)),
                 offset: SubstateOffset::Global(GlobalOffset::Global),
                 ..

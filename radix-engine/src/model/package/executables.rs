@@ -48,9 +48,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::Function(ResolvedFunction::Native(NativeFunction::Package(
-            PackageFunction::Publish,
-        )));
+        let actor = ResolvedActor::function(NativeFunction::Package(PackageFunction::Publish));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
@@ -128,9 +126,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishWithOwnerInvocatio
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::Function(ResolvedFunction::Native(NativeFunction::Package(
-            PackageFunction::PublishWithOwner,
-        )));
+        let actor =
+            ResolvedActor::function(NativeFunction::Package(PackageFunction::PublishWithOwner));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
@@ -242,8 +239,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocatio
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::Package(PackageMethod::SetRoyaltyConfig)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Package(PackageMethod::SetRoyaltyConfig),
             resolved_receiver,
         );
         let executor = NativeExecutor(PackageSetRoyaltyConfigExecutable {
@@ -287,8 +284,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::Package(PackageMethod::ClaimRoyalty)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Package(PackageMethod::ClaimRoyalty),
             resolved_receiver,
         );
         let executor = NativeExecutor(PackageClaimRoyaltyExecutable {

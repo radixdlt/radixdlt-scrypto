@@ -1,11 +1,11 @@
+use crate::api::types::TransactionProcessorFunction;
 use radix_engine_interface::api::types::{NativeFunction, NativeMethod};
 use sbor::rust::string::String;
-use crate::api::types::TransactionProcessorFunction;
 
 use crate::model::*;
 use crate::scrypto;
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
@@ -18,11 +18,12 @@ impl FnIdentifier {
         matches!(
             self,
             FnIdentifier::Scrypto(..)
-                | FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run))
+                | FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(
+                    TransactionProcessorFunction::Run
+                ))
         )
     }
 }
-
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]

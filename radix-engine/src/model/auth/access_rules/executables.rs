@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, InterpreterError,
-    LockFlags, NativeExecutor, NativeProcedure, ResolvedActor, ResolvedMethod, ResolverApi, RuntimeError,
+    LockFlags, NativeExecutor, NativeProcedure, ResolvedActor, ResolverApi, RuntimeError,
     SystemApi,
 };
 use crate::model::{MethodAuthorization, MethodAuthorizationError};
@@ -39,10 +39,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocat
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::AddAccessCheck,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::AddAccessCheck),
             resolved_receiver,
         );
 
@@ -134,10 +132,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleIn
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodAccessRule,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetMethodAccessRule),
             resolved_receiver,
         );
 
@@ -254,10 +250,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInv
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupAccessRule,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetGroupAccessRule),
             resolved_receiver,
         );
 
@@ -346,10 +340,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityIn
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodMutability,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetMethodMutability),
             resolved_receiver,
         );
 
@@ -466,10 +458,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInv
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupMutability,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetGroupMutability),
             resolved_receiver,
         );
 
@@ -558,10 +548,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::GetLength,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::GetLength),
             resolved_receiver,
         );
 

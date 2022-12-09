@@ -146,17 +146,18 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
-            let origin = match actor {
-                ResolvedActor::Method(ResolvedMethod::Scrypto(scrypto_fn), ..) => {
-                    SysCallTraceOrigin::ScryptoMethod(scrypto_fn.clone())
+            let origin = match &actor.identifier {
+                FnIdentifier::Scrypto(scrypto_fn) => {
+                    if actor.receiver.is_some() {
+                        SysCallTraceOrigin::ScryptoMethod(scrypto_fn.clone())
+                    } else {
+                        SysCallTraceOrigin::ScryptoFunction(scrypto_fn.clone())
+                    }
                 }
-                ResolvedActor::Function(ResolvedFunction::Scrypto(scrypto_fn)) => {
-                    SysCallTraceOrigin::ScryptoFunction(scrypto_fn.clone())
-                }
-                ResolvedActor::Method(ResolvedMethod::Native(native_method), ..) => {
+                FnIdentifier::NativeMethod(native_method) => {
                     SysCallTraceOrigin::NativeMethod(native_method.clone())
                 }
-                ResolvedActor::Function(ResolvedFunction::Native(native_function)) => {
+                FnIdentifier::NativeFunction(native_function) => {
                     SysCallTraceOrigin::NativeFunction(native_function.clone())
                 }
             };
@@ -171,18 +172,24 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
         self.current_sys_call_depth += 1;
 
-        if let ResolvedActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = actor {
-            let caller = &call_frame.actor;
-
-            match (native_method, resolved_receiver.receiver) {
-                (NativeMethod::Vault(VaultMethod::Put), RENodeId::Vault(vault_id)) => {
-                    Self::handle_vault_put(update, heap, track, caller, &vault_id)
-                }
-                (NativeMethod::Vault(VaultMethod::LockFee), RENodeId::Vault(vault_id)) => {
-                    Self::handle_vault_lock_fee(track, caller, &vault_id)
-                }
-                _ => {}
-            }
+        match &actor {
+            ResolvedActor {
+                identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(VaultMethod::Put)),
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } => Self::handle_vault_put(update, heap, track, &call_frame.actor, vault_id),
+            ResolvedActor {
+                identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(VaultMethod::LockFee)),
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } => Self::handle_vault_lock_fee(track, &call_frame.actor, vault_id),
+            _ => {}
         }
 
         Ok(())
@@ -196,15 +203,16 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         heap: &mut Heap,
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
-        if let ResolvedActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) =
-            &call_frame.actor
-        {
-            match (native_method, resolved_receiver.receiver) {
-                (NativeMethod::Vault(VaultMethod::Take), RENodeId::Vault(vault_id)) => {
-                    Self::handle_vault_take(update, heap, track, caller, &vault_id)
-                }
-                _ => {}
-            }
+        match &call_frame.actor {
+            ResolvedActor {
+                identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(VaultMethod::Take)),
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } => Self::handle_vault_take(update, heap, track, caller, vault_id),
+            _ => {}
         }
 
         // Important to always update the counter (even if we're over the depth limit).
@@ -574,7 +582,7 @@ impl ExecutionTraceReceipt {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
-            if let ResolvedActor::Method(_, resolved_receiver) = actor {
+            if let Some(resolved_receiver) = actor.receiver {
                 if let RENodeId::Component(component_id) = resolved_receiver.receiver {
                     match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),

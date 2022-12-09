@@ -43,6 +43,12 @@ pub enum NativeMethod {
     TransactionHash(TransactionHashMethod),
 }
 
+impl Into<FnIdentifier> for NativeMethod {
+    fn into(self) -> FnIdentifier {
+        FnIdentifier::NativeMethod(self)
+    }
+}
+
 // Native method enum used by Kernel SystemAPI and WASM
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
@@ -53,6 +59,12 @@ pub enum NativeFunction {
     Package(PackageFunction),
     TransactionProcessor(TransactionProcessorFunction),
     Clock(ClockFunction),
+}
+
+impl Into<FnIdentifier> for NativeFunction {
+    fn into(self) -> FnIdentifier {
+        FnIdentifier::NativeFunction(self)
+    }
 }
 
 #[derive(

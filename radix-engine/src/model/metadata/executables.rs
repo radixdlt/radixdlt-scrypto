@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, InterpreterError, LockFlags,
-    NativeExecutor, NativeProcedure, ResolvedActor, ResolvedMethod, ResolverApi, RuntimeError, SystemApi,
+    NativeExecutor, NativeProcedure, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -30,8 +30,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
         }
 
         self.receiver = resolved_receiver.receiver;
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Set)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Metadata(MetadataMethod::Set),
             resolved_receiver,
         );
 
@@ -80,8 +80,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
         }
 
         self.receiver = resolved_receiver.receiver;
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Get)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Metadata(MetadataMethod::Get),
             resolved_receiver,
         );
 

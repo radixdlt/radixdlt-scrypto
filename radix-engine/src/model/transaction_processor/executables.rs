@@ -129,9 +129,10 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
             .node_refs_to_copy
             .insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        let actor = ResolvedActor::Function(ResolvedFunction::Native(
-            NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+        let actor = ResolvedActor::function(NativeFunction::TransactionProcessor(
+            TransactionProcessorFunction::Run,
         ));
+
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }

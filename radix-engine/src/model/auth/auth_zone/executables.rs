@@ -1,7 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, ResolvedActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
-    SystemApi,
+    NativeProcedure, RENode, ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     convert, InvokeError, MethodAuthorization, MethodAuthorizationError, ProofError,
@@ -40,8 +39,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePopInvocation {
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Pop)),
+        let actor = ResolvedActor::method(
+            NativeMethod::AuthZoneStack(AuthZoneStackMethod::Pop),
             resolved_receiver,
         );
 
@@ -101,8 +100,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePushInvocation {
             .nodes_to_move
             .push(RENodeId::Proof(self.proof.0));
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Push)),
+        let actor = ResolvedActor::method(
+            NativeMethod::AuthZoneStack(AuthZoneStackMethod::Push),
             resolved_receiver,
         );
 
@@ -158,10 +157,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofInvocation {
                 self.resource_address,
             )));
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
-                AuthZoneStackMethod::CreateProof,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AuthZoneStack(AuthZoneStackMethod::CreateProof),
             resolved_receiver,
         );
 
@@ -231,10 +228,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByAmountInvoc
                 self.resource_address,
             )));
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
-                AuthZoneStackMethod::CreateProofByAmount,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AuthZoneStack(AuthZoneStackMethod::CreateProofByAmount),
             resolved_receiver,
         );
 
@@ -305,10 +300,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByIdsInvocati
                 self.resource_address,
             )));
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
-                AuthZoneStackMethod::CreateProofByIds,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AuthZoneStack(AuthZoneStackMethod::CreateProofByIds),
             resolved_receiver,
         );
 
@@ -374,8 +367,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneClearInvocation {
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Clear)),
+        let actor = ResolvedActor::method(
+            NativeMethod::AuthZoneStack(AuthZoneStackMethod::Clear),
             resolved_receiver,
         );
 
@@ -413,8 +406,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneDrainInvocation {
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(AuthZoneStackMethod::Drain)),
+        let actor = ResolvedActor::method(
+            NativeMethod::AuthZoneStack(AuthZoneStackMethod::Drain),
             resolved_receiver,
         );
 
@@ -472,10 +465,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneAssertAccessRuleInvocati
         let resolved_receiver = ResolvedReceiver::new(receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::AuthZoneStack(
-                AuthZoneStackMethod::AssertAccessRule,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AuthZoneStack(AuthZoneStackMethod::AssertAccessRule),
             resolved_receiver,
         );
 

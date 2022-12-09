@@ -1,7 +1,4 @@
-use crate::engine::{
-    Kernel, KernelError, LockFlags, RENode,
-    RuntimeError, SystemApi,
-};
+use crate::engine::{Kernel, KernelError, LockFlags, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
@@ -11,7 +8,10 @@ use crate::model::{MetadataSubstate, Resource};
 use crate::types::HashMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
-use radix_engine_interface::api::types::{ComponentMethod, FnIdentifier, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoFnIdentifier, ScryptoRENode, SubstateOffset};
+use radix_engine_interface::api::types::{
+    ComponentMethod, FnIdentifier, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType,
+    ScryptoFnIdentifier, ScryptoRENode, SubstateOffset,
+};
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,

@@ -1,7 +1,6 @@
 use crate::engine::{
     deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, ResolvedActor, RENode, ResolvedFunction, ResolvedMethod, ResolverApi, RuntimeError,
-    SystemApi,
+    NativeProcedure, RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
@@ -37,9 +36,9 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
     where
         Self: Sized,
     {
-        let actor = ResolvedActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
-            EpochManagerFunction::Create,
-        )));
+        let actor =
+            ResolvedActor::function(NativeFunction::EpochManager(EpochManagerFunction::Create));
+
         let call_frame_update = CallFrameUpdate::empty();
         let executor = NativeExecutor(self);
 
@@ -120,10 +119,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvoc
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::EpochManager(
-                EpochManagerMethod::GetCurrentEpoch,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
             resolved_receiver,
         );
         let executor = NativeExecutor(EpochManagerGetCurrentEpochExecutable(
@@ -165,8 +162,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = ResolvedActor::Method(
-            ResolvedMethod::Native(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)),
+        let actor = ResolvedActor::method(
+            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
             resolved_receiver,
         );
         let executor = NativeExecutor(EpochManagerSetEpochExecutable(

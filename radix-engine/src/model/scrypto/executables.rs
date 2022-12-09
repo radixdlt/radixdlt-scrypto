@@ -102,7 +102,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                         args.raw,
                         fn_abi.output.clone(),
                     ),
-                    ResolvedActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)),
+                    ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
                 )
             }
             ScryptoInvocation::Method(method_ident, _) => {
@@ -219,7 +219,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                         args.raw,
                         fn_abi.output.clone(),
                     ),
-                    ResolvedActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), resolved_receiver),
+                    ResolvedActor::method(
+                        FnIdentifier::Scrypto(scrypto_fn_ident),
+                        resolved_receiver,
+                    ),
                 )
             }
         };
@@ -342,7 +345,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                         args.raw,
                         fn_abi.output.clone(),
                     ),
-                    ResolvedActor::Function(ResolvedFunction::Scrypto(scrypto_fn_ident)),
+                    ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
                 )
             }
             ParsedScryptoInvocation::Method(method_ident, args) => {
@@ -459,7 +462,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                         args.raw,
                         fn_abi.output.clone(),
                     ),
-                    ResolvedActor::Method(ResolvedMethod::Scrypto(scrypto_fn_ident), resolved_receiver),
+                    ResolvedActor::method(
+                        FnIdentifier::Scrypto(scrypto_fn_ident),
+                        resolved_receiver,
+                    ),
                 )
             }
         };
