@@ -1,8 +1,8 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::data::*;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use transaction::model::SystemInstruction;
 
 use crate::resim::*;

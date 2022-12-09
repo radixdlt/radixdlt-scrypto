@@ -14,8 +14,8 @@ use radix_engine_interface::api::types::{
     EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
     NativeMethod, RENodeId, SubstateOffset,
 };
-use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::model::*;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -199,7 +199,7 @@ impl EpochManager {
             EpochManagerFunction::Create => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        AuthAddresses::genesis_role(),
+                        AuthAddresses::system_role(),
                     )),
                 ))]
             }

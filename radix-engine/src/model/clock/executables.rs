@@ -14,8 +14,8 @@ use radix_engine_interface::api::types::{
     ClockFunction, ClockMethod, ClockOffset, GlobalAddress, NativeFunction, NativeMethod, RENodeId,
     SubstateOffset,
 };
-use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::model::*;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 
 const SECONDS_TO_MS_FACTOR: u64 = 1000;
@@ -281,7 +281,7 @@ impl Clock {
             ClockFunction::Create => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        AuthAddresses::genesis_role(),
+                        AuthAddresses::system_role(),
                     )),
                 ))]
             }

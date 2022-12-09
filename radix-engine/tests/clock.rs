@@ -1,8 +1,8 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::types::*;
-use radix_engine_interface::constants::AuthAddresses;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{SystemInstruction, SystemTransaction};
@@ -28,7 +28,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
             blobs,
             nonce: 0,
         }
-        .get_executable(vec![AuthAddresses::genesis_role()]),
+        .get_executable(vec![AuthAddresses::system_role()]),
     );
 
     // Assert

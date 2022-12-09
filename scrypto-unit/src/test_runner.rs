@@ -25,6 +25,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
     AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
 };
+use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
