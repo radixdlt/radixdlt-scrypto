@@ -216,8 +216,8 @@ impl PreciseDecimal {
         // The I512 i associated to a Decimal d is : i = d*10^64.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^64) = sqrt(d)*10^64
-        let self_bigint = BigInt::from(self.0);
-        let correct_nb = self_bigint * BigInt::from(PreciseDecimal::one().0);
+        let self_768 = I768::from(self.0);
+        let correct_nb = self_768 * I768::from(PreciseDecimal::one().0);
         let sqrt = I512::try_from(correct_nb.sqrt()).unwrap();
         Some(PreciseDecimal(sqrt))
     }
@@ -229,8 +229,8 @@ impl PreciseDecimal {
         }
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
-        let self_bigint = BigInt::from(self.0);
-        let correct_nb: BigInt = self_bigint * BigInt::from(PreciseDecimal::one().0).pow(2 as u32);
+        let self_768 = I768::from(self.0);
+        let correct_nb = self_768 * I768::from(PreciseDecimal::one().0).pow(2 as u32);
         let cbrt = I512::try_from(correct_nb.cbrt()).unwrap();
         PreciseDecimal(cbrt)
     }

@@ -210,8 +210,8 @@ impl Decimal {
         // The I256 i associated to a Decimal d is : i = d*10^18.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^9 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^18) = sqrt(d)*10^18
-        let self_512: I512 = I512::from(self.0);
-        let correct_nb = self_512 * I512::from(Decimal::one().0);
+        let self_384: I384 = I384::from(self.0);
+        let correct_nb = self_384 * I384::from(Decimal::one().0);
         let sqrt = I256::try_from(correct_nb.sqrt()).unwrap();
         Some(Decimal(sqrt))
     }
@@ -223,8 +223,8 @@ impl Decimal {
         }
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
-        let self_512: I512 = I512::from(self.0);
-        let correct_nb = self_512 * I512::from(Decimal::one().0).pow(2);
+        let self_384: I384 = I384::from(self.0);
+        let correct_nb = self_384 * I384::from(Decimal::one().0).pow(2);
         let cbrt = I256::try_from(correct_nb.cbrt()).unwrap();
         Decimal(cbrt)
     }
