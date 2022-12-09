@@ -1,7 +1,5 @@
 use radix_engine::engine::ResourceChange;
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::ScryptoMethodIdent;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::data::*;
@@ -12,8 +10,7 @@ use transaction::model::*;
 
 fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let (_, _, other_account) = test_runner.new_account(use_virtual);
 
@@ -58,8 +55,7 @@ fn can_withdraw_from_my_virtual_account() {
 
 fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let (_, _, other_account) = test_runner.new_account(use_virtual);
     let resource_address = test_runner.create_non_fungible_resource(account);
@@ -94,8 +90,7 @@ fn can_withdraw_non_fungible_from_my_virtual_account() {
 
 fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account(is_virtual);
     let (_, _, other_account) = test_runner.new_account(is_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -130,18 +125,15 @@ fn cannot_withdraw_from_other_virtual_account() {
 
 fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee_and_withdraw(account, 10u32.into(), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::CallMethod {
-                    method_ident: ScryptoMethodIdent {
-                        receiver: ScryptoReceiver::Global(account),
-                        method_name: "deposit".to_string(),
-                    },
+                .add_instruction(BasicInstruction::CallMethod {
+                    component_address: account,
+                    method_name: "deposit".to_string(),
                     args: args!(Bucket(bucket_id)),
                 })
                 .0
@@ -171,8 +163,7 @@ fn account_to_bucket_to_virtual_account() {
 
 fn test_account_balance_internal(use_virtual: bool) {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account1) = test_runner.new_account(use_virtual);
     let (_, _, account2) = test_runner.new_account(use_virtual);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())

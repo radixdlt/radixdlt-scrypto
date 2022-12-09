@@ -6,6 +6,7 @@ use radix_engine_interface::api::types::{
     SubstateId, SubstateOffset,
 };
 use radix_engine_interface::scrypto;
+use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]

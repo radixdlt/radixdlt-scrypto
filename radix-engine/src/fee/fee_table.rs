@@ -88,8 +88,7 @@ pub enum SystemApiCostingEntry {
 
 pub struct FeeTable {
     tx_base_fee: u32,
-    tx_manifest_decoding_per_byte: u32,
-    tx_manifest_verification_per_byte: u32,
+    tx_payload_cost_per_byte: u32,
     tx_signature_verification_per_sig: u32,
     tx_blob_price_per_byte: u32,
     fixed_low: u32,
@@ -102,8 +101,7 @@ impl FeeTable {
     pub fn new() -> Self {
         Self {
             tx_base_fee: 10_000,
-            tx_manifest_decoding_per_byte: 3,
-            tx_manifest_verification_per_byte: 1,
+            tx_payload_cost_per_byte: 1,
             tx_signature_verification_per_sig: 3750,
             tx_blob_price_per_byte: 1,
             wasm_instantiation_per_byte: 0, // TODO: Re-enable WASM instantiation cost if it's unavoidable
@@ -117,12 +115,8 @@ impl FeeTable {
         self.tx_base_fee
     }
 
-    pub fn tx_manifest_decoding_per_byte(&self) -> u32 {
-        self.tx_manifest_decoding_per_byte
-    }
-
-    pub fn tx_manifest_verification_per_byte(&self) -> u32 {
-        self.tx_manifest_verification_per_byte
+    pub fn tx_payload_cost_per_byte(&self) -> u32 {
+        self.tx_payload_cost_per_byte
     }
 
     pub fn tx_signature_verification_per_sig(&self) -> u32 {

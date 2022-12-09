@@ -1,4 +1,3 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -16,8 +15,7 @@ fn test_dynamic_auth(
     should_succeed: bool,
 ) {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let key_and_addresses: Vec<(
         EcdsaSecp256k1PublicKey,
         EcdsaSecp256k1PrivateKey,
@@ -86,8 +84,7 @@ fn test_dynamic_authlist(
     signer_public_keys: &[usize],
     should_succeed: bool,
 ) {
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let key_and_addresses: Vec<(
         EcdsaSecp256k1PublicKey,
         EcdsaSecp256k1PrivateKey,
@@ -225,8 +222,7 @@ fn dynamic_any_of_should_fail_if_path_does_not_exist() {
 #[test]
 fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (pk, _, _) = test_runner.new_allocated_account();
     let (other_public_key, _, _) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
@@ -262,8 +258,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
 #[test]
 fn chess_should_allow_second_player_to_move_after_first_player() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, _) = test_runner.new_allocated_account();
     let (other_public_key, _, _) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/component");

@@ -1,6 +1,7 @@
 use crate::api::types::TransactionProcessorFunction;
 use radix_engine_interface::api::types::{NativeFunction, NativeMethod};
 use sbor::rust::string::String;
+use sbor::*;
 
 use crate::model::*;
 use crate::scrypto;

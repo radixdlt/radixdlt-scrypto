@@ -1,5 +1,4 @@
 use radix_engine::engine::{KernelError, ResolvedActor, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -9,8 +8,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 
     // Act
@@ -47,8 +45,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
 #[test]
 fn should_not_be_able_to_node_create_with_invalid_package() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 
     // Act

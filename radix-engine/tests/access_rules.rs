@@ -1,5 +1,4 @@
 use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::AccessRulesChainError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -378,7 +377,6 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 }
 
 struct MutableAccessRulesTestRunner {
-    substate_store: TypedInMemorySubstateStore,
     package_address: PackageAddress,
     component_address: ComponentAddress,
     initial_proofs: Vec<NonFungibleAddress>,
@@ -388,8 +386,7 @@ impl MutableAccessRulesTestRunner {
     const BLUEPRINT_NAME: &'static str = "MutableAccessRulesComponent";
 
     pub fn new(access_rules: Vec<AccessRules>) -> Self {
-        let mut store = TypedInMemorySubstateStore::with_bootstrap();
-        let mut test_runner = TestRunner::new(true, &mut store);
+        let mut test_runner = TestRunner::new(true);
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -405,7 +402,6 @@ impl MutableAccessRulesTestRunner {
         let component_address = receipt.new_component_addresses()[0];
 
         Self {
-            substate_store: store,
             package_address,
             component_address,
             initial_proofs: Vec::new(),
@@ -496,7 +492,7 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
-        TestRunner::new(true, &mut self.substate_store)
+        TestRunner::new(true)
             .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
     }
 }

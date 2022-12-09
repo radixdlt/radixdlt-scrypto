@@ -1,8 +1,10 @@
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::{
     bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
+use radix_engine::wasm::WasmEngine;
 use radix_engine_interface::api::types::RENodeId;
 
 /// A substate store that stores all typed substates in host memory.
@@ -18,9 +20,9 @@ impl SerializedInMemorySubstateStore {
         }
     }
 
-    pub fn with_bootstrap() -> Self {
+    pub fn with_bootstrap<W: WasmEngine>(scrypto_interpreter: &ScryptoInterpreter<W>) -> Self {
         let mut substate_store = Self::new();
-        bootstrap(&mut substate_store);
+        bootstrap(&mut substate_store, scrypto_interpreter);
         substate_store
     }
 }

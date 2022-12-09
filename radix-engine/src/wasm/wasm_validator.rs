@@ -25,13 +25,12 @@ impl WasmValidator {
     pub fn validate(
         &self,
         code: &[u8],
-        blueprints: &HashMap<String, BlueprintAbi>,
+        blueprints: &BTreeMap<String, BlueprintAbi>,
     ) -> Result<(), PrepareError> {
         // Not all "valid" wasm modules are instrumentable, with the instrumentation library
         // we are using. To deal with this, we attempt to instrument the input module with
         // some mocked parameters and reject it if fails to do so.
-        let mocked_wasm_metering_config =
-            WasmMeteringConfig::new(InstructionCostRules::constant(1, 100), 1024);
+        let parameters = WasmMeteringConfig::V0.parameters();
 
         WasmModule::init(code)?
             .enforce_no_floating_point()?
@@ -43,8 +42,8 @@ impl WasmValidator {
             .enforce_function_limit(self.max_number_of_functions)?
             .enforce_global_limit(self.max_number_of_globals)?
             .enforce_export_constraints(blueprints)?
-            .inject_instruction_metering(mocked_wasm_metering_config.instruction_cost_rules())?
-            .inject_stack_metering(mocked_wasm_metering_config.max_stack_size())?
+            .inject_instruction_metering(parameters.instruction_cost_rules())?
+            .inject_stack_metering(parameters.max_stack_size())?
             .ensure_instantiatable()?
             .ensure_compilable()?
             .to_bytes()?;

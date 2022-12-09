@@ -1,5 +1,4 @@
 use radix_engine::engine::{InterpreterError, RuntimeError, ScryptoFnResolvingError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::ScryptoFunctionIdent;
 use radix_engine_interface::core::NetworkDefinition;
@@ -10,8 +9,7 @@ use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_component() {
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
 
@@ -56,8 +54,7 @@ fn test_component() {
 #[test]
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_addr = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Act
@@ -88,27 +85,4 @@ fn invalid_blueprint_name_should_cause_error() {
             false
         }
     });
-}
-
-#[test]
-fn missing_component_address_in_manifest_should_cause_rejection() {
-    // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
-    let _ = test_runner.compile_and_publish("./tests/blueprints/component");
-    let component_address = Bech32Decoder::new(&NetworkDefinition::simulator())
-        .validate_and_decode_component_address(
-            "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
-        )
-        .unwrap();
-
-    // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_method(component_address, "get_component_state", args!())
-        .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
-
-    // Assert
-    receipt.expect_rejection();
 }

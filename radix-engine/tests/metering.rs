@@ -1,4 +1,3 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -9,16 +8,15 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_loop() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -36,16 +34,15 @@ fn test_loop() {
 #[test]
 fn test_loop_out_of_cost_unit() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "200000"));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -61,8 +58,7 @@ fn test_loop_out_of_cost_unit() {
 #[test]
 fn test_recursion() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     // In this test case, each call frame costs 4 stack units
@@ -70,8 +66,8 @@ fn test_recursion() {
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -87,16 +83,15 @@ fn test_recursion() {
 #[test]
 fn test_recursion_stack_overflow() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -112,16 +107,15 @@ fn test_recursion_stack_overflow() {
 #[test]
 fn test_grow_memory() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -137,16 +131,15 @@ fn test_grow_memory() {
 #[test]
 fn test_grow_memory_out_of_cost_unit() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(
         code,
         generate_single_function_abi("Test", "f", Type::Unit),
-        HashMap::new(),
-        HashMap::new(),
+        BTreeMap::new(),
+        BTreeMap::new(),
         AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -162,8 +155,7 @@ fn test_grow_memory_out_of_cost_unit() {
 #[test]
 fn test_basic_transfer() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
 
@@ -188,23 +180,20 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        10000 /* base_fee */
-        + 0 /* blobs */
-        + 2500 /* create_node */
-        + 990 /* decode_manifest */
+        2500 /* create_node */
         + 6600 /* drop_lock */
         + 2500 /* drop_node */
         + 800  /* emit_event */
-        + 0 /* instantiate_wasm */
         + 900 /* invoke */
         + 8400 /* lock_substate */
         + 4000 /* read_owned_nodes */
         + 28500 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 299223 /* run_wasm */
-        + 330 /* verify_manifest */
-        + 3750 /* verify_signatures */
+        + 299148 /* run_wasm */
+        + 10000 /* tx_base_fee */
+        + 302 /* tx_payload_cost */
+        + 3750 /* tx_signature_verification */
         + 17000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
     );
@@ -213,8 +202,7 @@ fn test_basic_transfer() {
 #[test]
 fn test_publish_large_package() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(&format!(
@@ -232,9 +220,9 @@ fn test_publish_large_package() {
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
         )
         .build();
@@ -251,8 +239,7 @@ fn test_publish_large_package() {
 #[test]
 fn should_be_able_run_large_manifest() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -282,8 +269,7 @@ fn should_be_able_run_large_manifest() {
 #[test]
 fn should_be_able_invoke_account_balance_50_times() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
@@ -305,8 +291,7 @@ fn should_be_able_invoke_account_balance_50_times() {
 #[test]
 fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 

@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use radix_engine::ledger::*;
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
+use radix_engine::{ledger::*, wasm::WasmEngine};
 use radix_engine_interface::{api::types::RENodeId, data::ScryptoDecode};
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
 
@@ -17,9 +18,12 @@ impl RadixEngineDB {
         Self { db }
     }
 
-    pub fn with_bootstrap(root: PathBuf) -> Self {
+    pub fn with_bootstrap<W: WasmEngine>(
+        root: PathBuf,
+        scrypto_interpreter: &ScryptoInterpreter<W>,
+    ) -> Self {
         let mut substate_store = Self::new(root);
-        bootstrap(&mut substate_store);
+        bootstrap(&mut substate_store, scrypto_interpreter);
         substate_store
     }
 

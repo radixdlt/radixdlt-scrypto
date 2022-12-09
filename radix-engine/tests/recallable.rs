@@ -2,7 +2,6 @@ use radix_engine::engine::{
     AuthError, KernelError, ModuleError, RejectionError, ResolvedActor, ResolvedReceiver,
     RuntimeError,
 };
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::MethodAuthorizationError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::{NativeMethod, RENodeId};
@@ -11,13 +10,12 @@ use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
+use transaction::model::BasicInstruction;
 
 #[test]
 fn non_existing_vault_should_cause_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
 
     let non_existing_vault_id = [0; 36];
@@ -25,7 +23,7 @@ fn non_existing_vault_should_cause_error() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(Instruction::CallNativeMethod {
+        .add_instruction(BasicInstruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(non_existing_vault_id),
                 method_name: "recall".to_string(),
@@ -58,8 +56,7 @@ fn non_existing_vault_should_cause_error() {
 #[test]
 fn cannot_get_amount_on_direct_vault_access() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
 
     let resource_address = test_runner.create_fungible_resource(10u32.into(), 0u8, account);
@@ -69,7 +66,7 @@ fn cannot_get_amount_on_direct_vault_access() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(Instruction::CallNativeMethod {
+        .add_instruction(BasicInstruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(vault_id),
                 method_name: "get_amount".to_string(),
@@ -91,8 +88,7 @@ fn cannot_get_amount_on_direct_vault_access() {
 #[test]
 fn cannot_take_on_non_recallable_vault() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
 
     let resource_address = test_runner.create_fungible_resource(10u32.into(), 0u8, account);
@@ -102,7 +98,7 @@ fn cannot_take_on_non_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(Instruction::CallNativeMethod {
+        .add_instruction(BasicInstruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(vault_id),
                 method_name: "recall".to_string(),
@@ -146,8 +142,7 @@ fn cannot_take_on_non_recallable_vault() {
 #[test]
 fn can_take_on_recallable_vault() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
     let (_, _, other_account) = test_runner.new_allocated_account();
 
@@ -158,7 +153,7 @@ fn can_take_on_recallable_vault() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
-        .add_instruction(Instruction::CallNativeMethod {
+        .add_instruction(BasicInstruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Vault(vault_id),
                 method_name: "recall".to_string(),

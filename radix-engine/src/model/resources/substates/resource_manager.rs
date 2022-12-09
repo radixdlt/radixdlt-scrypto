@@ -52,7 +52,7 @@ impl ResourceManagerSubstate {
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
-    ) -> Result<(Resource, HashMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
+    ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
     {
         match mint_params {
             MintParams::Fungible { amount } => self.mint_fungible(amount, self_address),
@@ -64,7 +64,7 @@ impl ResourceManagerSubstate {
         &mut self,
         amount: Decimal,
         self_address: ResourceAddress,
-    ) -> Result<(Resource, HashMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
+    ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
     {
         if let ResourceType::Fungible { divisibility } = self.resource_type {
             // check amount
@@ -81,7 +81,7 @@ impl ResourceManagerSubstate {
 
             Ok((
                 Resource::new_fungible(self_address, divisibility, amount),
-                HashMap::new(),
+                BTreeMap::new(),
             ))
         } else {
             Err(InvokeError::Error(
@@ -92,9 +92,9 @@ impl ResourceManagerSubstate {
 
     pub fn mint_non_fungibles(
         &mut self,
-        entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+        entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
-    ) -> Result<(Resource, HashMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
+    ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
     {
         // check resource type
         let this_non_fungible_id_type = match self.resource_type {
@@ -114,7 +114,7 @@ impl ResourceManagerSubstate {
 
         // Allocate non-fungibles
         let mut ids = BTreeSet::new();
-        let mut non_fungibles = HashMap::new();
+        let mut non_fungibles = BTreeMap::new();
         for (id, data) in entries {
             if id.id_type() != this_non_fungible_id_type {
                 return Err(InvokeError::Error(

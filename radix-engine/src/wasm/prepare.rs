@@ -299,7 +299,7 @@ impl WasmModule {
 
     pub fn enforce_export_constraints(
         self,
-        blueprints: &HashMap<String, BlueprintAbi>,
+        blueprints: &BTreeMap<String, BlueprintAbi>,
     ) -> Result<Self, PrepareError> {
         let exports = self
             .module
@@ -615,7 +615,7 @@ mod tests {
 
     #[test]
     fn test_blueprint_constraints() {
-        let mut blueprint_abis = HashMap::new();
+        let mut blueprint_abis = BTreeMap::new();
         blueprint_abis.insert(
             "Test".to_string(),
             BlueprintAbi {

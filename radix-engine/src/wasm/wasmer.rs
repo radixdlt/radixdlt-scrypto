@@ -13,6 +13,7 @@ use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
 use super::InstrumentedCode;
+use super::MeteredCodeKey;
 
 // IMPORTANT:
 // The below integration of Wasmer is not yet checked rigorously enough for production use
@@ -79,9 +80,9 @@ pub struct WasmerInstanceEnv {
 pub struct WasmerEngine {
     store: Store,
     #[cfg(not(feature = "moka"))]
-    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmerModule>>>,
+    modules_cache: RefCell<lru::LruCache<MeteredCodeKey, Arc<WasmerModule>>>,
     #[cfg(feature = "moka")]
-    modules_cache: moka::sync::Cache<Hash, Arc<WasmerModule>>,
+    modules_cache: moka::sync::Cache<MeteredCodeKey, Arc<WasmerModule>>,
 }
 
 pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeError<WasmError>> {
@@ -290,10 +291,12 @@ impl WasmerEngine {
         ));
         #[cfg(feature = "moka")]
         let modules_cache = moka::sync::Cache::builder()
-            .weigher(|_key: &Hash, value: &Arc<WasmerModule>| -> u32 {
-                // Approximate the module entry size by the code size
-                value.code_size_bytes.try_into().unwrap_or(u32::MAX)
-            })
+            .weigher(
+                |_metered_code_key: &MeteredCodeKey, value: &Arc<WasmerModule>| -> u32 {
+                    // Approximate the module entry size by the code size
+                    value.code_size_bytes.try_into().unwrap_or(u32::MAX)
+                },
+            )
             .max_capacity(options.max_cache_size_bytes as u64)
             .build();
         Self {
@@ -307,15 +310,15 @@ impl WasmEngine for WasmerEngine {
     type WasmInstance = WasmerInstance;
 
     fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmerInstance {
-        let code_hash = &instrumented_code.code_hash;
+        let metered_code_key = &instrumented_code.metered_code_key;
         #[cfg(not(feature = "moka"))]
         {
-            if let Some(cached_module) = self.modules_cache.borrow_mut().get(code_hash) {
+            if let Some(cached_module) = self.modules_cache.borrow_mut().get(key) {
                 return cached_module.instantiate();
             }
         }
         #[cfg(feature = "moka")]
-        if let Some(cached_module) = self.modules_cache.get(code_hash) {
+        if let Some(cached_module) = self.modules_cache.get(metered_code_key) {
             return cached_module.instantiate();
         }
 
@@ -329,9 +332,10 @@ impl WasmEngine for WasmerEngine {
         #[cfg(not(feature = "moka"))]
         self.modules_cache
             .borrow_mut()
-            .put(*code_hash, new_module.clone());
+            .put(*metered_code_key, new_module.clone());
         #[cfg(feature = "moka")]
-        self.modules_cache.insert(*code_hash, new_module.clone());
+        self.modules_cache
+            .insert(*metered_code_key, new_module.clone());
 
         new_module.instantiate()
     }
