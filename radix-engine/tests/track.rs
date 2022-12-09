@@ -39,7 +39,9 @@ fn test_simple_deterministic_execution() {
     // Assert
     assert_eq!(public_key0, public_key1);
     assert_eq!(account0, account1);
-    test_runner0.substate_store().assert_eq(test_runner1.substate_store());
+    test_runner0
+        .substate_store()
+        .assert_eq(test_runner1.substate_store());
 }
 
 #[test]

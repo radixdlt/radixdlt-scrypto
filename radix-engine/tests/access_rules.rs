@@ -377,6 +377,7 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
 }
 
 struct MutableAccessRulesTestRunner {
+    test_runner: TestRunner,
     package_address: PackageAddress,
     component_address: ComponentAddress,
     initial_proofs: Vec<NonFungibleAddress>,
@@ -398,10 +399,10 @@ impl MutableAccessRulesTestRunner {
             )
             .build();
         let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![]);
-        receipt.expect_commit_success();
         let component_address = receipt.new_component_addresses()[0];
 
         Self {
+            test_runner,
             package_address,
             component_address,
             initial_proofs: Vec::new(),
@@ -492,7 +493,7 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {
-        TestRunner::new(true)
+        self.test_runner
             .execute_manifest_ignoring_fee(manifest, self.initial_proofs.clone())
     }
 }
