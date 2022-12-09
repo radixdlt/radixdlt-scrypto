@@ -24,9 +24,9 @@ non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
 non_fungible=`echo "$non_fungible_create_receipt" | awk '/NFAddress:/ {print $NF}'`
 non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
 non_fungible_id=`echo "$non_fungible_create_receipt" | awk '/NFID:/ {print $NF}'`
-# The below line looks like this: #U32#1,resource_address
-# You can put multiple ids into a bucket like so: #String#Id1,#String#num2,#String#num3,resource_address
-$resim call-method $account2 deposit "#$non_fungible_id,$non_fungible_resource"
+# The below line looks like this: U32#1,resource_address
+# You can put multiple ids into a bucket like so: String#Id1,String#num2,String#num3,resource_address
+$resim call-method $account2 deposit "$non_fungible_id,$non_fungible_resource"
 
 # Test - mint and transfer
 $resim mint 777 $token_address --proofs 1,$minter_badge
