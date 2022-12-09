@@ -1189,16 +1189,17 @@ fn parse_resource_specifier(
         })?;
 
     // parse non-fungible ids or amount
-    if tokens[0].starts_with('#') {
+    if tokens[0].contains('#') {
         let mut ids = BTreeSet::<NonFungibleId>::new();
-        for id in &tokens[..tokens.len() - 1] {
-            if !id.starts_with('#') {
-                return Err(ParseResourceSpecifierError::InvalidNonFungibleId(
-                    id.to_string(),
-                ));
+        for id in tokens[..tokens.len() - 1].iter() {
+            let mut id = *id;
+            if id.starts_with('#') {
+                // Support the ids optionally starting with a # (which was an old encoding)
+                // EG: #String#123,resource_address
+                id = &id[1..];
             }
             ids.insert(
-                NonFungibleId::try_from_combined_simple_string(&id[1..]).map_err(|_| {
+                NonFungibleId::try_from_combined_simple_string(id).map_err(|_| {
                     ParseResourceSpecifierError::InvalidNonFungibleId(id.to_string())
                 })?,
             );
