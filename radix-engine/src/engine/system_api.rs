@@ -50,9 +50,6 @@ pub trait SystemApi {
         contingent: bool,
     ) -> Result<Resource, RuntimeError>;
 
-    /// Retrieve the running actor for the current frame
-    fn get_fn_identifier(&self) -> FnIdentifier;
-
     /// Retrieves all nodes referenceable by the current frame
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 

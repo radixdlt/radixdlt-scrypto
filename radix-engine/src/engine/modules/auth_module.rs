@@ -1,6 +1,7 @@
 use crate::engine::*;
 use crate::model::*;
 use crate::types::*;
+use radix_engine_interface::api::api::ActorApi;
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod,
     PackageOffset, RENodeId, SubstateOffset, VaultOffset,
@@ -289,33 +290,33 @@ impl AuthModule {
         Ok(())
     }
 
-    pub fn on_call_frame_exit<Y>(system_api: &mut Y) -> Result<(), RuntimeError>
+    pub fn on_call_frame_exit<Y>(api: &mut Y) -> Result<(), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + ActorApi<RuntimeError>,
     {
         if matches!(
-            system_api.get_fn_identifier(),
+            api.fn_identifier()?,
             FnIdentifier::NativeMethod(NativeMethod::AuthZoneStack(..)),
         ) {
             return Ok(());
         }
 
-        let refed = system_api.get_visible_node_ids()?;
+        let refed = api.get_visible_node_ids()?;
         let auth_zone_id = refed
             .into_iter()
             .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
             .unwrap();
-        let handle = system_api.lock_substate(
+        let handle = api.lock_substate(
             auth_zone_id,
             SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
             LockFlags::MUTABLE,
         )?;
         {
-            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+            let mut substate_ref_mut = api.get_ref_mut(handle)?;
             let auth_zone_stack = substate_ref_mut.auth_zone_stack();
             auth_zone_stack.pop_frame();
         }
-        system_api.drop_lock(handle)?;
+        api.drop_lock(handle)?;
 
         Ok(())
     }

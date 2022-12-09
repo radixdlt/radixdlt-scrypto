@@ -1,5 +1,5 @@
 use radix_engine_interface::api::api::{
-    EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
+    ActorApi, EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
 };
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
@@ -625,7 +625,8 @@ pub trait Executor {
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
-            + LoggerApi<RuntimeError>;
+            + LoggerApi<RuntimeError>
+            + ActorApi<RuntimeError>;
 }
 
 pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
@@ -741,10 +742,6 @@ where
         }
 
         Ok(fee)
-    }
-
-    fn get_fn_identifier(&self) -> FnIdentifier {
-        self.current_frame.actor.identifier.clone()
     }
 
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
@@ -1346,5 +1343,15 @@ where
         }
 
         Ok(())
+    }
+}
+
+impl<'g, 's, W, R> ActorApi<RuntimeError> for Kernel<'g, 's, W, R>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+{
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        Ok(self.current_frame.actor.identifier.clone())
     }
 }

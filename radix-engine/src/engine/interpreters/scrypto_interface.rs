@@ -9,8 +9,8 @@ use crate::types::HashMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ComponentMethod, FnIdentifier, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType,
-    ScryptoFnIdentifier, ScryptoRENode, SubstateOffset,
+    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoRENode,
+    SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::model::{
@@ -143,14 +143,5 @@ where
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         self.drop_lock(lock_handle)
-    }
-
-    fn sys_get_actor(&mut self) -> Result<ScryptoFnIdentifier, RuntimeError> {
-        let actor = match self.get_fn_identifier() {
-            FnIdentifier::Scrypto(identifier) => identifier.clone(),
-            _ => panic!("Should not get here."),
-        };
-
-        Ok(actor)
     }
 }

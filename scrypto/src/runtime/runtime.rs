@@ -1,7 +1,7 @@
-use radix_engine_interface::api::api::{EngineApi, Invokable};
+use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable};
 use radix_engine_interface::api::types::{
-    RENodeId, ScryptoFnIdentifier, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage,
-    ScryptoReceiver,
+    FnIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::crypto::*;
@@ -29,7 +29,10 @@ impl Runtime {
 
     /// Returns the running entity.
     pub fn actor() -> ScryptoFnIdentifier {
-        ScryptoEnv.sys_get_actor().unwrap()
+        match ScryptoEnv.fn_identifier().unwrap() {
+            FnIdentifier::Scrypto(identifier) => identifier,
+            _ => panic!("Unexpected actor"),
+        }
     }
 
     /// Returns the current package address.
