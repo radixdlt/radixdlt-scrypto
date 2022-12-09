@@ -55,7 +55,7 @@ pub struct SystemLoanFeeReserve {
     /// The price of cost unit
     cost_unit_price: u128,
     /// The tip percentage
-    tip_percentage: u8,
+    tip_percentage: u16,
 
     /// Payments made during the execution of a transaction.
     payments: Vec<(VaultId, Resource, bool)>,
@@ -112,7 +112,7 @@ impl SystemLoanFeeReserve {
 
     pub fn new(
         cost_unit_price: u128,
-        tip_percentage: u8,
+        tip_percentage: u16,
         cost_unit_limit: u32,
         system_loan: u32,
     ) -> Self {
