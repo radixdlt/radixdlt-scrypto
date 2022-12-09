@@ -1,6 +1,6 @@
 use crate::engine::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
+    ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
@@ -28,7 +28,7 @@ pub struct EpochManager {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -41,16 +41,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
             ResolvedActor::function(NativeFunction::EpochManager(EpochManagerFunction::Create));
 
         let call_frame_update = CallFrameUpdate::empty();
-        let executor = NativeExecutor(self);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for EpochManagerCreateInvocation {
+impl Executor for EpochManagerCreateInvocation {
     type Output = SystemAddress;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
@@ -106,7 +105,7 @@ impl NativeProcedure for EpochManagerCreateInvocation {
 pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvocation {
-    type Exec = NativeExecutor<EpochManagerGetCurrentEpochExecutable>;
+    type Exec = EpochManagerGetCurrentEpochExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -123,18 +122,16 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvoc
             NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
             resolved_receiver,
         );
-        let executor = NativeExecutor(EpochManagerGetCurrentEpochExecutable(
-            resolved_receiver.receiver,
-        ));
+        let executor = EpochManagerGetCurrentEpochExecutable(resolved_receiver.receiver);
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for EpochManagerGetCurrentEpochExecutable {
+impl Executor for EpochManagerGetCurrentEpochExecutable {
     type Output = u64;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -149,7 +146,7 @@ impl NativeProcedure for EpochManagerGetCurrentEpochExecutable {
 pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
-    type Exec = NativeExecutor<EpochManagerSetEpochExecutable>;
+    type Exec = EpochManagerSetEpochExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -166,19 +163,16 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
             NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
             resolved_receiver,
         );
-        let executor = NativeExecutor(EpochManagerSetEpochExecutable(
-            resolved_receiver.receiver,
-            self.epoch,
-        ));
+        let executor = EpochManagerSetEpochExecutable(resolved_receiver.receiver, self.epoch);
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for EpochManagerSetEpochExecutable {
+impl Executor for EpochManagerSetEpochExecutable {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

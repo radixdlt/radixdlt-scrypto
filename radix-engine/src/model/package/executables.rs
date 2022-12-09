@@ -41,7 +41,7 @@ impl Package {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -49,15 +49,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
         let actor = ResolvedActor::function(NativeFunction::Package(PackageFunction::Publish));
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for PackagePublishInvocation {
+impl Executor for PackagePublishInvocation {
     type Output = PackageAddress;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -119,7 +118,7 @@ impl NativeProcedure for PackagePublishInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishWithOwnerInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -128,15 +127,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishWithOwnerInvocatio
         let call_frame_update = CallFrameUpdate::empty();
         let actor =
             ResolvedActor::function(NativeFunction::Package(PackageFunction::PublishWithOwner));
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for PackagePublishWithOwnerInvocation {
+impl Executor for PackagePublishWithOwnerInvocation {
     type Output = PackageAddress;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -226,7 +224,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocation {
-    type Exec = NativeExecutor<PackageSetRoyaltyConfigExecutable>;
+    type Exec = PackageSetRoyaltyConfigExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -243,19 +241,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocatio
             NativeMethod::Package(PackageMethod::SetRoyaltyConfig),
             resolved_receiver,
         );
-        let executor = NativeExecutor(PackageSetRoyaltyConfigExecutable {
+        let executor = PackageSetRoyaltyConfigExecutable {
             receiver: resolved_receiver.receiver,
             royalty_config: self.royalty_config,
-        });
+        };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for PackageSetRoyaltyConfigExecutable {
+impl Executor for PackageSetRoyaltyConfigExecutable {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -274,7 +272,7 @@ impl NativeProcedure for PackageSetRoyaltyConfigExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
-    type Exec = NativeExecutor<PackageClaimRoyaltyExecutable>;
+    type Exec = PackageClaimRoyaltyExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -288,18 +286,18 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
             NativeMethod::Package(PackageMethod::ClaimRoyalty),
             resolved_receiver,
         );
-        let executor = NativeExecutor(PackageClaimRoyaltyExecutable {
+        let executor = PackageClaimRoyaltyExecutable {
             receiver: resolved_receiver.receiver,
-        });
+        };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for PackageClaimRoyaltyExecutable {
+impl Executor for PackageClaimRoyaltyExecutable {
     type Output = Bucket;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

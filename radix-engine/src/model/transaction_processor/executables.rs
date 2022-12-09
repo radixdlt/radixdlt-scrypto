@@ -52,7 +52,7 @@ impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
 }
 
 impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvocation<'a> {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -121,15 +121,14 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
             TransactionProcessorFunction::Run,
         ));
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl<'a> NativeProcedure for TransactionProcessorRunInvocation<'a> {
+impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<Vec<u8>>;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Vec<Vec<u8>>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + Invokable<ScryptoInvocation, RuntimeError>
