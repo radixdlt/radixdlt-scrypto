@@ -76,6 +76,21 @@ pub struct DateTime {
 }
 
 impl DateTime {
+    /// Creates a DateTime from its individual components.
+    ///
+    /// Months and days of month are 1-based.
+    /// Valid year range is: 1-u32::MAX (both inclusive).
+    /// Valid month values are: 1-12 (both inclusive).
+    /// Valid day of month values are: 1-{28, 29, 30 31} (both inclusive).
+    /// The upper limit depends on a month/year.
+    /// Values 28, 30 and 31 correspond to non-leap years months,
+    /// and a value of 29 corresponds to February on a leap year.
+    /// Note that an attempt to create an invalid date (e.g. 2022-04-31 or 2023-02-29)
+    /// will result in an error.
+    ///
+    /// Hour, minute and second constitute a 0-based 24-hour clock.
+    /// With midnight being represented as 00:00:00 and 23:59:59 being the maximum
+    /// correct value (a second before midnight).
     pub fn new(
         year: u32,
         month: u8,
@@ -123,6 +138,12 @@ impl DateTime {
         })
     }
 
+    /// Creates a DateTime from an Instant.
+    ///
+    /// Minimum supported `seconds_since_unix_epoch` value
+    /// is -62135596800 (corresponding to a DateTime of 1-1-1 00:00:00)
+    /// and a maximum value is 135536014634284799 (corresponding
+    /// to a DateTime of u32::Max-12-31 23:59:59).
     pub fn from_instant(instant: &Instant) -> Result<Self, DateTimeError> {
         if instant.seconds_since_unix_epoch < MIN_SUPPORTED_TIMESTAMP
             || instant.seconds_since_unix_epoch > MAX_SUPPORTED_TIMESTAMP
@@ -213,6 +234,7 @@ impl DateTime {
         })
     }
 
+    /// Creates an Instant based on this DateTime
     pub fn to_instant(&self) -> Instant {
         let is_leap_year = Self::is_leap_year(self.year);
 
