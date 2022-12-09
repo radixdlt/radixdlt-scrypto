@@ -17,12 +17,12 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGetInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::TransactionHash(TransactionHashMethod::Get)),
+        let actor = ResolvedActor::method(
+            NativeMethod::TransactionHash(TransactionHashMethod::Get),
             ResolvedReceiver::new(RENodeId::TransactionHash(self.receiver)),
         );
         let call_frame_update = CallFrameUpdate::empty();
@@ -57,16 +57,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGenerateUuidInvoc
     fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::TransactionHash(
-                TransactionHashMethod::GenerateUuid,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::TransactionHash(TransactionHashMethod::GenerateUuid),
             ResolvedReceiver::new(RENodeId::TransactionHash(self.receiver)),
         );
+
         let call_frame_update = CallFrameUpdate::empty();
         let executor = NativeExecutor(self);
 

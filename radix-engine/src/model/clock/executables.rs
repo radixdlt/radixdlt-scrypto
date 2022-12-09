@@ -1,7 +1,6 @@
 use crate::engine::{
     deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolverApi, RuntimeError,
-    SystemApi,
+    NativeProcedure, RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, CurrentTimeRoundedToMinutesSubstate, GlobalAddressSubstate,
@@ -29,13 +28,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCreateInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Clock(
-            ClockFunction::Create,
-        )));
+        let actor = ResolvedActor::function(NativeFunction::Clock(ClockFunction::Create));
         let call_frame_update = CallFrameUpdate::empty();
         let executor = NativeExecutor(self);
 
@@ -112,7 +109,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
@@ -120,8 +117,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::SetCurrentTime)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Clock(ClockMethod::SetCurrentTime),
             resolved_receiver,
         );
         let executor = NativeExecutor(ClockSetCurrentTimeExecutable(
@@ -165,7 +162,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
@@ -173,8 +170,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::GetCurrentTime)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Clock(ClockMethod::GetCurrentTime),
             resolved_receiver,
         );
         let executor = NativeExecutor(ClockGetCurrentTimeExecutable(
@@ -224,7 +221,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocatio
     fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
@@ -232,8 +229,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocatio
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Clock(ClockMethod::CompareCurrentTime)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Clock(ClockMethod::CompareCurrentTime),
             resolved_receiver,
         );
         let executor = NativeExecutor(ClockCompareCurrentTimeExecutable {

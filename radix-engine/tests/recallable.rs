@@ -1,5 +1,5 @@
 use radix_engine::engine::{
-    AuthError, KernelError, ModuleError, REActor, RejectionError, ResolvedMethod, ResolvedReceiver,
+    AuthError, KernelError, ModuleError, RejectionError, ResolvedActor, ResolvedReceiver,
     RuntimeError,
 };
 use radix_engine::model::MethodAuthorizationError;
@@ -123,13 +123,15 @@ fn cannot_take_on_non_recallable_vault() {
         matches!(
             e,
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
-                actor: REActor::Method(
-                    ResolvedMethod::Native(NativeMethod::Vault(VaultMethod::Recall)),
-                    ResolvedReceiver {
+                actor: ResolvedActor {
+                    identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(
+                        VaultMethod::Recall
+                    )),
+                    receiver: Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(..),
                         ..
-                    }
-                ),
+                    })
+                },
                 error: MethodAuthorizationError::NotAuthorized,
                 ..
             },))

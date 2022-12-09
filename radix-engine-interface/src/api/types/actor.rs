@@ -1,59 +1,53 @@
+use crate::api::types::TransactionProcessorFunction;
+use radix_engine_interface::api::types::{NativeFunction, NativeMethod};
 use sbor::rust::string::String;
 use sbor::*;
 
-use crate::api::types::ComponentId;
 use crate::model::*;
 use crate::scrypto;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum ScryptoActor {
-    Blueprint(PackageAddress, String),
-    Component(ComponentId, PackageAddress, String),
+pub enum FnIdentifier {
+    Scrypto(ScryptoFnIdentifier),
+    NativeFunction(NativeFunction),
+    NativeMethod(NativeMethod),
 }
 
-impl ScryptoActor {
-    pub fn blueprint(package_address: PackageAddress, blueprint_name: String) -> Self {
-        Self::Blueprint(package_address, blueprint_name)
+impl FnIdentifier {
+    pub fn is_scrypto_or_transaction(&self) -> bool {
+        matches!(
+            self,
+            FnIdentifier::Scrypto(..)
+                | FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(
+                    TransactionProcessorFunction::Run
+                ))
+        )
     }
+}
 
-    pub fn component(
-        component_id: ComponentId,
-        package_address: PackageAddress,
-        blueprint_name: String,
-    ) -> Self {
-        Self::Component(component_id, package_address, blueprint_name)
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ScryptoFnIdentifier {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub ident: String,
+}
+
+impl ScryptoFnIdentifier {
+    pub fn new(package_address: PackageAddress, blueprint_name: String, ident: String) -> Self {
+        Self {
+            package_address,
+            blueprint_name,
+            ident,
+        }
     }
 
     pub fn package_address(&self) -> &PackageAddress {
-        match self {
-            ScryptoActor::Blueprint(package, _blueprint) => package,
-            ScryptoActor::Component(_address, package, _blueprint) => package,
-        }
+        &self.package_address
     }
 
     pub fn blueprint_name(&self) -> &String {
-        match self {
-            ScryptoActor::Blueprint(_package, blueprint) => blueprint,
-            ScryptoActor::Component(_address, _package, blueprint) => blueprint,
-        }
-    }
-
-    pub fn as_blueprint(&self) -> (PackageAddress, String) {
-        match self {
-            Self::Blueprint(package_address, blueprint_name) => {
-                (*package_address, blueprint_name.clone())
-            }
-            _ => panic!("Not a blueprint"),
-        }
-    }
-
-    pub fn as_component(&self) -> (ComponentId, PackageAddress, String) {
-        match self {
-            Self::Component(component_id, package_address, blueprint) => {
-                (*component_id, *package_address, blueprint.clone())
-            }
-            _ => panic!("Not a component"),
-        }
+        &self.blueprint_name
     }
 }

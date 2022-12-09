@@ -84,7 +84,7 @@ pub struct CallFrame {
     pub depth: usize,
 
     /// The running application actor of this frame
-    pub actor: REActor,
+    pub actor: ResolvedActor,
 
     /// All ref nodes accessible by this call frame (does not include owned nodes).
     node_refs: HashMap<RENodeId, RENodeRefData>,
@@ -277,7 +277,7 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            actor: REActor::Function(ResolvedFunction::Native(
+            actor: ResolvedActor::function(FnIdentifier::NativeFunction(
                 NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
             )),
             node_refs: HashMap::new(),
@@ -290,7 +290,7 @@ impl CallFrame {
 
     pub fn new_child_from_parent(
         parent: &mut CallFrame,
-        actor: REActor,
+        actor: ResolvedActor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<Self, RuntimeError> {
         let mut owned_heap_nodes = HashMap::new();

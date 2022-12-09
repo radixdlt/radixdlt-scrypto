@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "abi",
+    "access_rules",
     "arguments",
     "bucket",
     "component",
@@ -24,6 +25,7 @@ members = [
     "package",
     "proof",
     "recursion",
+    "reentrancy",
     "resource",
     "resource_creator",
     "stored_external_component",

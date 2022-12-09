@@ -20,26 +20,15 @@ blueprint! {
         }
 
         pub fn access_rules_method(&self) -> Vec<ComponentAccessRules> {
-            let component = Component(Runtime::actor().as_component().0);
-            component.access_rules_chain()
+            todo!("Support for self");
         }
 
-        pub fn set_method_auth(&self, index: usize, method_name: String, rule: AccessRule) {
-            let component = Component(Runtime::actor().as_component().0);
-            component
-                .access_rules_chain()
-                .get_mut(index)
-                .unwrap()
-                .set_method_auth(&method_name, rule);
+        pub fn set_method_auth(&self, _index: usize, _method_name: String, _rule: AccessRule) {
+            todo!("Support for self mutable auth");
         }
 
-        pub fn lock_method_auth(&self, index: usize, method_name: String) {
-            let component = Component(Runtime::actor().as_component().0);
-            component
-                .access_rules_chain()
-                .get_mut(index)
-                .unwrap()
-                .lock_method_auth(&method_name);
+        pub fn lock_method_auth(&self, _index: usize, _method_name: String) {
+            todo!("Support for self mutable auth");
         }
 
         // The methods that the access rules will be added to
