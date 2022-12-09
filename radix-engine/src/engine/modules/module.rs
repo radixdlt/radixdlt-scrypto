@@ -42,11 +42,9 @@ pub enum SysCallInput<'a> {
     TakeSubstate {
         substate_id: &'a SubstateId,
     },
-    ReadTransactionHash,
     ReadBlob {
         blob_hash: &'a Hash,
     },
-    GenerateUuid,
     EmitLog {
         level: &'a Level,
         message: &'a String,
@@ -67,7 +65,6 @@ pub enum SysCallOutput<'a> {
     GetRef { lock_handle: LockHandle },
     GetRefMut,
     DropLock,
-    ReadTransactionHash { hash: &'a Hash },
     ReadBlob { blob: &'a [u8] },
     GenerateUuid { uuid: u128 },
     EmitLog,

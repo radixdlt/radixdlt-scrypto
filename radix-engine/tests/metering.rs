@@ -180,17 +180,17 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        2000 /* create_node */
+        2500 /* create_node */
         + 6600 /* drop_lock */
-        + 2000 /* drop_node */
+        + 2500 /* drop_node */
         + 800  /* emit_event */
         + 900 /* invoke */
         + 8400 /* lock_substate */
-        + 3000 /* read_owned_nodes */
+        + 4000 /* read_owned_nodes */
         + 28500 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 320640 /* run_wasm */
+        + 299044 /* run_wasm */
         + 10000 /* tx_base_fee */
         + 318 /* tx_payload_cost */
         + 3750 /* tx_signature_verification */

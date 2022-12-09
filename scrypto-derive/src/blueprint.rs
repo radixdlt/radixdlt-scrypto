@@ -235,14 +235,13 @@ fn generate_dispatcher(
                     let input: #input_struct_name = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
                 });
 
+                let is_method = get_state.is_some();
+
                 // load state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(parse_quote! {
-                        let actor = ::scrypto::runtime::Runtime::actor();
-                    });
-                    stmts.push(parse_quote! {
-                        let (component_id, ..) = actor.as_component();
+                        let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::buffer::scrypto_decode_from_buffer(id_ptr).unwrap();
                     });
                     stmts.push(parse_quote! {
                         let mut component_data = ::scrypto::runtime::DataPointer::new(
@@ -266,19 +265,39 @@ fn generate_dispatcher(
                 stmts.push(Stmt::Expr(parse_quote! { rtn }));
 
                 let fn_ident = format_ident!("{}_{}", bp_ident, ident);
-                let extern_function = quote! {
-                    #[no_mangle]
-                    pub extern "C" fn #fn_ident(args: *mut u8) -> *mut u8 {
-                        use ::sbor::rust::ops::{Deref, DerefMut};
+                let extern_function = {
+                    if is_method {
+                        quote! {
+                            #[no_mangle]
+                            pub extern "C" fn #fn_ident(id_ptr: *mut u8, args: *mut u8) -> *mut u8 {
+                                use ::sbor::rust::ops::{Deref, DerefMut};
 
-                        // Set up panic hook
-                        ::scrypto::set_up_panic_hook();
+                                // Set up panic hook
+                                ::scrypto::set_up_panic_hook();
 
-                        // Set up component and resource subsystems;
-                        ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
-                        ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+                                // Set up component and resource subsystems;
+                                ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+                                ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                        #(#stmts)*
+                                #(#stmts)*
+                            }
+                        }
+                    } else {
+                        quote! {
+                            #[no_mangle]
+                            pub extern "C" fn #fn_ident(args: *mut u8) -> *mut u8 {
+                                use ::sbor::rust::ops::{Deref, DerefMut};
+
+                                // Set up panic hook
+                                ::scrypto::set_up_panic_hook();
+
+                                // Set up component and resource subsystems;
+                                ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+                                ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+
+                                #(#stmts)*
+                            }
+                        }
                     }
                 };
                 functions.push(extern_function);
@@ -597,7 +616,7 @@ mod tests {
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_x(args: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_x(id_ptr: *mut u8, args: *mut u8) -> *mut u8 {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
@@ -608,8 +627,7 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(args).unwrap();
-                    let actor = ::scrypto::runtime::Runtime::actor();
-                    let (component_id, ..) = actor.as_component();
+                    let component_id: radix_engine_interface::api::types::ComponentId = ::scrypto::buffer::scrypto_decode_from_buffer(id_ptr).unwrap();
                     let mut component_data = ::scrypto::runtime::DataPointer::new(
                         radix_engine_interface::api::types::RENodeId::Component(component_id),
                         radix_engine_interface::api::types::SubstateOffset::Component(radix_engine_interface::api::types::ComponentOffset::State),

@@ -183,7 +183,7 @@ impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: &IndexedScryptoValue,
+        args: Vec<Vec<u8>>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         let mut externals = WasmiExternals {
@@ -191,11 +191,15 @@ impl WasmInstance for WasmiInstance {
             runtime,
         };
 
-        let pointer = externals.send_value(&args.raw)?;
+        let mut pointers = Vec::new();
+        for arg in args {
+            let pointer = externals.send_value(&arg)?;
+            pointers.push(pointer);
+        }
         let result = self
             .module_ref
             .clone()
-            .invoke_export(func_name, &[pointer], &mut externals);
+            .invoke_export(func_name, &pointers, &mut externals);
 
         let rtn = result
             .map_err(|e| {

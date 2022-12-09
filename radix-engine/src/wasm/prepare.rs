@@ -311,12 +311,21 @@ impl WasmModule {
                 if !exports.entries().iter().any(|x| {
                     x.field().eq(func_name) && {
                         if let Internal::Function(func_index) = x.internal() {
-                            Self::function_matches(
-                                &self.module,
-                                *func_index as usize,
-                                vec![ValueType::I32],
-                                vec![ValueType::I32],
-                            )
+                            if func.mutability.is_some() {
+                                Self::function_matches(
+                                    &self.module,
+                                    *func_index as usize,
+                                    vec![ValueType::I32, ValueType::I32],
+                                    vec![ValueType::I32],
+                                )
+                            } else {
+                                Self::function_matches(
+                                    &self.module,
+                                    *func_index as usize,
+                                    vec![ValueType::I32],
+                                    vec![ValueType::I32],
+                                )
+                            }
                         } else {
                             false
                         }

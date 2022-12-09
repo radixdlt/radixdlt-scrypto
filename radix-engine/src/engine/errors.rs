@@ -210,6 +210,8 @@ pub enum ApplicationError {
 
     AccessRulesChainError(AccessRulesChainError),
 
+    TransactionHashError(TransactionHashError),
+
     BucketError(BucketError),
 
     ProofError(ProofError),

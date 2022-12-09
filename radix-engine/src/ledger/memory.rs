@@ -26,6 +26,31 @@ impl TypedInMemorySubstateStore {
         bootstrap(&mut substate_store, scrypto_interpreter);
         substate_store
     }
+
+    pub fn assert_eq(&self, other: &TypedInMemorySubstateStore) {
+        for (id, val) in &self.substates {
+            let maybe_val = other.substates.get(id);
+            match maybe_val {
+                None => panic!("Right missing substate: {:?}", id),
+                Some(right_val) => {
+                    if !val.eq(right_val) {
+                        panic!(
+                            "Substates not equal.\nLeft: {:?}\nRight: {:?}",
+                            val, right_val
+                        );
+                    }
+                }
+            }
+        }
+
+        for (id, _) in &other.substates {
+            let maybe_val = self.substates.get(id);
+            match maybe_val {
+                None => panic!("Left missing substate: {:?}", id),
+                Some(..) => {}
+            }
+        }
+    }
 }
 
 impl Default for TypedInMemorySubstateStore {

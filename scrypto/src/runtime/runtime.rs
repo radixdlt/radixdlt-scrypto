@@ -1,6 +1,7 @@
 use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{
-    ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+    RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage,
+    ScryptoReceiver,
 };
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::crypto::*;
@@ -19,17 +20,16 @@ pub struct Runtime {}
 impl Runtime {
     /// Returns the current epoch
     pub fn current_epoch() -> u64 {
-        let mut env = ScryptoEnv;
-        env.invoke(EpochManagerGetCurrentEpochInvocation {
-            receiver: EPOCH_MANAGER,
-        })
-        .unwrap()
+        ScryptoEnv
+            .invoke(EpochManagerGetCurrentEpochInvocation {
+                receiver: EPOCH_MANAGER,
+            })
+            .unwrap()
     }
 
     /// Returns the running entity.
     pub fn actor() -> ScryptoActor {
-        let mut env = ScryptoEnv;
-        env.sys_get_actor().unwrap()
+        ScryptoEnv.sys_get_actor().unwrap()
     }
 
     /// Returns the current package address.
@@ -40,12 +40,6 @@ impl Runtime {
         }
     }
 
-    /// Generates a UUID.
-    pub fn generate_uuid() -> u128 {
-        let mut env = ScryptoEnv;
-        env.sys_generate_uuid().unwrap()
-    }
-
     /// Invokes a function on a blueprint.
     pub fn call_function<S1: AsRef<str>, S2: AsRef<str>, T: ScryptoDecode>(
         package_address: PackageAddress,
@@ -53,8 +47,7 @@ impl Runtime {
         function_name: S2,
         args: Vec<u8>,
     ) -> T {
-        let mut env = ScryptoEnv;
-        let buffer = env
+        let buffer = ScryptoEnv
             .invoke(ScryptoInvocation::Function(
                 ScryptoFunctionIdent {
                     package: ScryptoPackage::Global(package_address),
@@ -73,8 +66,7 @@ impl Runtime {
         method: S,
         args: Vec<u8>,
     ) -> T {
-        let mut env = ScryptoEnv;
-        let buffer = env
+        let buffer = ScryptoEnv
             .invoke(ScryptoInvocation::Method(
                 ScryptoMethodIdent {
                     receiver: ScryptoReceiver::Global(component_address),
@@ -88,7 +80,31 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let mut env = ScryptoEnv;
-        env.sys_get_transaction_hash().unwrap()
+        let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
+        let node_id = visible_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::TransactionHash(..)))
+            .expect("TransactionHash does not exist");
+
+        ScryptoEnv
+            .invoke(TransactionHashGetInvocation {
+                receiver: node_id.into(),
+            })
+            .unwrap()
+    }
+
+    /// Generates a UUID.
+    pub fn generate_uuid() -> u128 {
+        let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
+        let node_id = visible_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::TransactionHash(..)))
+            .expect("TransactionHash does not exist");
+
+        ScryptoEnv
+            .invoke(TransactionHashGenerateUuidInvocation {
+                receiver: node_id.into(),
+            })
+            .unwrap()
     }
 }

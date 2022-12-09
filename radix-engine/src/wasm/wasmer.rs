@@ -230,7 +230,7 @@ impl WasmInstance for WasmerInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: &IndexedScryptoValue,
+        args: Vec<Vec<u8>>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         {
@@ -242,13 +242,17 @@ impl WasmInstance for WasmerInstance {
             *guard = runtime as *mut _ as usize;
         }
 
-        let pointer = send_value(&self.instance, &args.raw)?;
+        let mut pointers = Vec::new();
+        for arg in args {
+            let pointer = send_value(&self.instance, &arg)?;
+            pointers.push(Val::I32(pointer as i32));
+        }
         let result = self
             .instance
             .exports
             .get_function(func_name)
             .map_err(|_| InvokeError::Error(WasmError::FunctionNotFound))?
-            .call(&[Val::I32(pointer as i32)]);
+            .call(&pointers);
 
         match result {
             Ok(return_data) => {

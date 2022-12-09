@@ -8,6 +8,7 @@ mod package;
 mod resource;
 mod scrypto;
 mod system;
+mod transaction_hash;
 
 pub use auth::*;
 pub use clock::*;
@@ -19,3 +20,4 @@ pub use package::*;
 pub use resource::*;
 pub use scrypto::*;
 pub use system::*;
+pub use transaction_hash::*;
