@@ -261,16 +261,16 @@ impl Parser {
             TokenKind::SystemAddress |
             TokenKind::ComponentAddress |
             TokenKind::ResourceAddress |
-            /* RE Nodes */
+            /* RE types */
+            TokenKind::Ownership |
             TokenKind::Component |
             TokenKind::KeyValueStore |
+            TokenKind::NonFungibleAddress |
+            TokenKind::Blob |
+            /* TX types */
             TokenKind::Bucket |
             TokenKind::Proof |
-            TokenKind::Vault |
-            /* Other interpreted */
             TokenKind::Expression |
-            TokenKind::Blob |
-            TokenKind::NonFungibleAddress |
             /* Uninterpreted */
             TokenKind::Hash |
             TokenKind::EcdsaSecp256k1PublicKey |
@@ -340,14 +340,17 @@ impl Parser {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
 
-            // RE Interpreted
+            // RE interpreted types
+            TokenKind::Ownership => Ok(Value::Ownership(self.parse_values_one()?.into())),
+            TokenKind::Component => Ok(Value::Component(self.parse_values_one()?.into())),
+            TokenKind::KeyValueStore => Ok(Value::KeyValueStore(self.parse_values_one()?.into())),
             TokenKind::NonFungibleAddress => {
                 let values = self.parse_values_two()?;
                 Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
             }
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
 
-            // TX Interpreted
+            // TX interpreted types
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
@@ -466,6 +469,9 @@ impl Parser {
             TokenKind::SystemAddress => Ok(Type::SystemAddress),
 
             // RE interpreted types
+            TokenKind::Ownership => Ok(Type::Ownership),
+            TokenKind::Component => Ok(Type::Component),
+            TokenKind::KeyValueStore => Ok(Type::KeyValueStore),
             TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
             TokenKind::Blob => Ok(Type::Blob),
 

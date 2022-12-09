@@ -18,9 +18,9 @@ pub enum ScryptoCustomValue {
 
     // RE interpreted types
     Ownership(Ownership),
-    NonFungibleAddress(NonFungibleAddress),
     Component(ComponentId),
     KeyValueStore(KeyValueStoreId),
+    NonFungibleAddress(NonFungibleAddress),
     Blob(Blob),
 
     // TX interpreted types

@@ -1,18 +1,19 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
+use radix_engine_interface::api::types::{
+    BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId,
+};
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash,
 };
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, types::Blob, IndexedScryptoValue, ScryptoCustomTypeId,
-    ScryptoCustomValue, ScryptoDecode, ScryptoSborTypeId, ScryptoValue, ScryptoValueDecodeError,
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
+    ScryptoDecode, ScryptoSborTypeId, ScryptoValue, ScryptoValueDecodeError,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
-
-use radix_engine_interface::data::types::Expression;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
@@ -708,6 +709,36 @@ fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
     }
 }
 
+fn generate_component_id(value: &ast::Value) -> Result<ComponentId, GeneratorError> {
+    match value {
+        ast::Value::Component(inner) => match &**inner {
+            ast::Value::String(s) => hex::decode(s)
+                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
+                .and_then(|x| {
+                    x.try_into()
+                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
+                }),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::Component),
+    }
+}
+
+fn generate_key_value_store_id(value: &ast::Value) -> Result<KeyValueStoreId, GeneratorError> {
+    match value {
+        ast::Value::KeyValueStore(inner) => match &**inner {
+            ast::Value::String(s) => hex::decode(s)
+                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
+                .and_then(|x| {
+                    x.try_into()
+                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
+                }),
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::KeyValueStore),
+    }
+}
+
 fn declare_bucket(
     value: &ast::Value,
     resolver: &mut NameResolver,
@@ -769,6 +800,18 @@ fn generate_proof(
             v => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::Proof),
+    }
+}
+
+fn generate_ownership(value: &ast::Value) -> Result<Ownership, GeneratorError> {
+    match value {
+        ast::Value::Ownership(inner) => match &**inner {
+            ast::Value::String(s) => {
+                Ownership::from_str(s).map_err(|_| GeneratorError::InvalidVault(s.into()))
+            }
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::Ownership),
     }
 }
 
@@ -994,13 +1037,23 @@ pub fn generate_value(
             })
         }
 
+        ast::Value::Ownership(_) => generate_ownership(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Ownership(v),
+        }),
+        ast::Value::Component(_) => generate_component_id(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Component(v),
+        }),
+        ast::Value::KeyValueStore(_) => {
+            generate_key_value_store_id(value).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::KeyValueStore(v),
+            })
+        }
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Bucket(v),
         }),
         ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Proof(v),
         }),
-
         ast::Value::Expression(_) => generate_expression(value).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Expression(v),
         }),
@@ -1098,12 +1151,15 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::SystemAddress => SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress),
 
         // RE interpreted types
+        ast::Type::Ownership => SborTypeId::Custom(ScryptoCustomTypeId::Ownership),
+        ast::Type::Component => SborTypeId::Custom(ScryptoCustomTypeId::Component),
+        ast::Type::KeyValueStore => SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore),
+        ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),
         ast::Type::NonFungibleAddress => {
             SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress)
         }
-        ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),
 
-        // TX interpreted types
+        // Tx interpreted types
         ast::Type::Bucket => SborTypeId::Custom(ScryptoCustomTypeId::Bucket),
         ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
         ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),

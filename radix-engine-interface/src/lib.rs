@@ -24,8 +24,9 @@ pub mod data;
 pub mod math;
 /// RE node models.
 pub mod model;
-/// RE core abstractions.
+/// RE network abstractions.
 pub mod node;
+/// RE wasm interface
 pub mod wasm;
 
 mod macros;

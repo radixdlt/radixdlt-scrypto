@@ -39,9 +39,9 @@ pub enum ScryptoCustomTypeId {
 
     // RE interpreted types
     Ownership,
-    NonFungibleAddress, // for resource address contained
     Component,
     KeyValueStore,
+    NonFungibleAddress, // for resource address contained
     Blob,
 
     // TX interpreted types
