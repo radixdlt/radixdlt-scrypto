@@ -1,5 +1,4 @@
 use radix_engine::engine::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
@@ -10,8 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -38,8 +36,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
@@ -70,8 +67,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
 #[test]
 fn non_existent_vault_in_kv_store_creation_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -98,8 +94,7 @@ fn non_existent_vault_in_kv_store_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_kv_store_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
@@ -134,8 +129,7 @@ fn non_existent_vault_in_committed_kv_store_should_fail() {
 #[test]
 fn create_mutable_vault_into_map() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -152,8 +146,7 @@ fn create_mutable_vault_into_map() {
 #[test]
 fn invalid_double_ownership_of_vault() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -180,8 +173,7 @@ fn invalid_double_ownership_of_vault() {
 #[test]
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -203,8 +195,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 #[test]
 fn cannot_overwrite_vault_in_map() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
@@ -235,8 +226,7 @@ fn cannot_overwrite_vault_in_map() {
 #[test]
 fn create_mutable_vault_into_vector() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -258,8 +248,7 @@ fn create_mutable_vault_into_vector() {
 #[test]
 fn cannot_remove_vaults() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
@@ -295,8 +284,7 @@ fn cannot_remove_vaults() {
 #[test]
 fn can_push_vault_into_vector() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -327,8 +315,7 @@ fn can_push_vault_into_vector() {
 #[test]
 fn create_mutable_vault_with_take() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -345,8 +332,7 @@ fn create_mutable_vault_with_take() {
 #[test]
 fn create_mutable_vault_with_take_non_fungible() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -368,8 +354,7 @@ fn create_mutable_vault_with_take_non_fungible() {
 #[test]
 fn create_mutable_vault_with_get_nonfungible_ids() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -391,8 +376,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 #[test]
 fn create_mutable_vault_with_get_nonfungible_id() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -414,8 +398,7 @@ fn create_mutable_vault_with_get_nonfungible_id() {
 #[test]
 fn create_mutable_vault_with_get_amount() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act
@@ -437,8 +420,7 @@ fn create_mutable_vault_with_get_amount() {
 #[test]
 fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/vault");
 
     // Act

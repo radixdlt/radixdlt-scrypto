@@ -2,7 +2,6 @@ use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
 use radix_engine::engine::{
     ApplicationError, InterpreterError, KernelError, RuntimeError, ScryptoFnResolvingError,
 };
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::AccessRulesChainError;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -13,8 +12,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_invalid_access_rule_methods() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
@@ -48,8 +46,7 @@ enum ExpectedResult {
 
 fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act

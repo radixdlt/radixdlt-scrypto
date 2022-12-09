@@ -5,6 +5,7 @@ use crate::scrypto;
 use crate::wasm::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
+use sbor::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

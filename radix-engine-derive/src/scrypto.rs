@@ -21,40 +21,30 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
         generics,
     } = parse2(item)?;
 
-    let parser = Punctuated::<Ident, Comma>::parse_terminated;
-    let idents = parser.parse2(attr)?;
+    let parser = Punctuated::<Path, Comma>::parse_terminated;
+    let paths = parser.parse2(attr)?;
     let mut derived_attributes = Vec::<Attribute>::new();
-    let mut sbor = false;
-    for ident in idents {
-        match ident.to_string().as_str() {
-            "Encode" => {
-                sbor = true;
-                derived_attributes.push(parse_quote! {
-                    #[derive(::sbor::Encode)]
-                })
+    let mut add_custom_type_id = false;
+    for path in paths {
+        let segments: Vec<String> = path
+            .segments
+            .iter()
+            .map(|seg| seg.ident.to_string())
+            .collect();
+
+        // best-effort sbor detection
+        match segments.join("::").as_str() {
+            "TypeId" | "Encode" | "Decode" | "sbor::TypeId" | "sbor::Encode" | "sbor::Decode" => {
+                add_custom_type_id = true
             }
-            "Decode" => {
-                sbor = true;
-                derived_attributes.push(parse_quote! {
-                    #[derive(::sbor::Decode)]
-                })
-            }
-            "TypeId" => {
-                sbor = true;
-                derived_attributes.push(parse_quote! {
-                    #[derive(::sbor::TypeId)]
-                })
-            }
-            "Describe" => derived_attributes.push(parse_quote! {
-                #[derive(radix_engine_derive::Describe)]
-            }),
-            "NonFungibleData" => derived_attributes.push(parse_quote! {
-                #[derive(::scrypto::NonFungibleData)]
-            }),
             _ => {}
         }
+
+        derived_attributes.push(parse_quote! {
+          #[derive(#path)]
+        });
     }
-    if sbor {
+    if add_custom_type_id {
         derived_attributes.push(parse_quote! {
             #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
         })
@@ -101,6 +91,48 @@ mod tests {
     }
 
     #[test]
+    fn test_variant_paths() {
+        let attr =
+            TokenStream::from_str("Encode, Debug, std::fmt::Debug, ::std::fmt::Debug").unwrap();
+        let item = TokenStream::from_str("pub struct MyStruct { }").unwrap();
+        let output = handle_scrypto(attr, item).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                #[derive(Encode)]
+                #[derive(Debug)]
+                #[derive(std::fmt::Debug)]
+                #[derive(::std::fmt::Debug)]
+                #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
+                pub struct MyStruct {
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_full_paths() {
+        for s in [
+            "TypeId",
+            "Encode",
+            "Decode",
+            "sbor::TypeId",
+            "sbor::Encode",
+            "sbor::Decode",
+            "::sbor::TypeId",
+            "::sbor::Encode",
+            "::sbor::Decode",
+        ] {
+            let attr = TokenStream::from_str(s).unwrap();
+            let item = TokenStream::from_str("pub struct MyStruct { }").unwrap();
+            let output = handle_scrypto(attr, item).unwrap();
+
+            assert!(output.to_string().contains("ScryptoCustomTypeId"));
+        }
+    }
+
+    #[test]
     fn test_scrypto_data_with_struct() {
         let attr =
             TokenStream::from_str("Encode, Decode, TypeId, Describe, NonFungibleData").unwrap();
@@ -113,11 +145,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(::sbor::Encode)]
-                #[derive(::sbor::Decode)]
-                #[derive(::sbor::TypeId)]
-                #[derive(radix_engine_derive::Describe)]
-                #[derive(::scrypto::NonFungibleData)]
+                #[derive(Encode)]
+                #[derive(Decode)]
+                #[derive(TypeId)]
+                #[derive(Describe)]
+                #[derive(NonFungibleData)]
                 #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
                 pub struct MyStruct<T: Bound> {
                     pub field_1: T,
@@ -138,11 +170,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(::sbor::Encode)]
-                #[derive(::sbor::Decode)]
-                #[derive(::sbor::TypeId)]
-                #[derive(radix_engine_derive::Describe)]
-                #[derive(::scrypto::NonFungibleData)]
+                #[derive(Encode)]
+                #[derive(Decode)]
+                #[derive(TypeId)]
+                #[derive(Describe)]
+                #[derive(NonFungibleData)]
                 #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
                 enum MyEnum<T: Bound> {
                     A { named: T },

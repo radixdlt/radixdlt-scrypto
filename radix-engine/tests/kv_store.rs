@@ -1,5 +1,4 @@
 use radix_engine::engine::{CallFrameError, KernelError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
@@ -10,8 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn can_insert_in_child_nodes() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -28,8 +26,7 @@ fn can_insert_in_child_nodes() {
 #[test]
 fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -51,8 +48,7 @@ fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
 #[test]
 fn cyclic_map_fails_execution() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -74,8 +70,7 @@ fn cyclic_map_fails_execution() {
 #[test]
 fn self_cyclic_map_fails_execution() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -97,8 +92,7 @@ fn self_cyclic_map_fails_execution() {
 #[test]
 fn cannot_remove_kv_stores() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -134,8 +128,7 @@ fn cannot_remove_kv_stores() {
 #[test]
 fn cannot_overwrite_kv_stores() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -171,8 +164,7 @@ fn cannot_overwrite_kv_stores() {
 #[test]
 fn create_kv_store_and_get() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -194,8 +186,7 @@ fn create_kv_store_and_get() {
 #[test]
 fn create_kv_store_and_put() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -217,8 +208,7 @@ fn create_kv_store_and_put() {
 #[test]
 fn can_reference_in_memory_vault() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -240,8 +230,7 @@ fn can_reference_in_memory_vault() {
 #[test]
 fn can_reference_deep_in_memory_value() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -263,8 +252,7 @@ fn can_reference_deep_in_memory_value() {
 #[test]
 fn can_reference_deep_in_memory_vault() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -286,8 +274,7 @@ fn can_reference_deep_in_memory_vault() {
 #[test]
 fn cannot_directly_reference_inserted_vault() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -314,8 +301,7 @@ fn cannot_directly_reference_inserted_vault() {
 #[test]
 fn cannot_directly_reference_vault_after_container_moved() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -342,8 +328,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
 #[test]
 fn cannot_directly_reference_vault_after_container_stored() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
@@ -370,8 +355,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
 #[test]
 fn multiple_reads_should_work() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act

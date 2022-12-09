@@ -1,7 +1,9 @@
+use crate::engine::ScryptoInterpreter;
 use crate::ledger::*;
 use crate::ledger::{OutputValue, WriteableSubstateStore};
 use crate::model::PersistedSubstate;
 use crate::types::*;
+use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
 };
@@ -19,9 +21,9 @@ impl TypedInMemorySubstateStore {
         }
     }
 
-    pub fn with_bootstrap() -> Self {
+    pub fn with_bootstrap<W: WasmEngine>(scrypto_interpreter: &ScryptoInterpreter<W>) -> Self {
         let mut substate_store = Self::new();
-        bootstrap(&mut substate_store);
+        bootstrap(&mut substate_store, scrypto_interpreter);
         substate_store
     }
 

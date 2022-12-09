@@ -95,7 +95,7 @@ impl NativeProcedure for TransactionHashGenerateUuidInvocation {
 
         let mut data = transaction_hash_substate.hash.to_vec();
         data.extend(transaction_hash_substate.next_id.to_le_bytes());
-        let uuid = u128::from_le_bytes(hash(data).lower_16_bytes()); // TODO: Remove hash?
+        let uuid = u128::from_le_bytes(hash(data).lower_16_bytes()); // TODO: Remove hash
 
         transaction_hash_substate.next_id = transaction_hash_substate.next_id + 1;
 

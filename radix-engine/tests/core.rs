@@ -1,4 +1,3 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -8,8 +7,7 @@ use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_process_and_transaction() {
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
 
     let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -22,8 +20,7 @@ fn test_process_and_transaction() {
 
 #[test]
 fn test_call() {
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/core");
 

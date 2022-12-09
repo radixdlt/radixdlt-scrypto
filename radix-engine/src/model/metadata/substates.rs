@@ -4,7 +4,7 @@ use crate::types::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct MetadataSubstate {
-    pub metadata: HashMap<String, String>,
+    pub metadata: BTreeMap<String, String>,
 }
 
 impl MetadataSubstate {

@@ -1,4 +1,3 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -10,8 +9,7 @@ use utils::ContextualDisplay;
 #[test]
 fn test_integer_basic_ops() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/math-ops-check");
 
@@ -41,8 +39,7 @@ fn test_integer_basic_ops() {
 #[test]
 fn test_native_and_safe_integer_interop() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/math-ops-check");
 
     // Act

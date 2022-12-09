@@ -5,6 +5,7 @@ use crate::api::api::*;
 use crate::api::types::TransactionHashId;
 use crate::scrypto;
 use crate::wasm::*;
+use sbor::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]

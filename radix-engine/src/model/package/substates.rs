@@ -6,13 +6,13 @@ use sbor::rust::fmt::{Debug, Formatter};
 #[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PackageInfoSubstate {
     pub code: Vec<u8>,
-    pub blueprint_abis: HashMap<String, BlueprintAbi>,
+    pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageRoyaltyConfigSubstate {
-    pub royalty_config: HashMap<String, RoyaltyConfig>,
+    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
 impl Debug for PackageInfoSubstate {
