@@ -726,10 +726,10 @@ mod tests {
         use crate::{
             constants::{ACCOUNT_PACKAGE, EPOCH_MANAGER, FAUCET_COMPONENT},
             crypto::{
-                Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
+                EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
                 EddsaEd25519Signature,
             },
-            data::types::Expression,
+            data::types::{Blob, Expression},
             math::{Decimal, PreciseDecimal},
         };
 

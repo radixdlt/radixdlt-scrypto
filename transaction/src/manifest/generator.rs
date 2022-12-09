@@ -3,12 +3,12 @@ use radix_engine_interface::api::types::{
     BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId,
 };
 use radix_engine_interface::crypto::{
-    Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
-    EddsaEd25519Signature, Hash,
+    EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
+    Hash,
 };
 use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
-    ScryptoDecode, ScryptoSborTypeId, ScryptoValue, ScryptoValueDecodeError,
+    scrypto_decode, scrypto_encode, types::Blob, IndexedScryptoValue, ScryptoCustomTypeId,
+    ScryptoCustomValue, ScryptoDecode, ScryptoSborTypeId, ScryptoValue, ScryptoValueDecodeError,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;

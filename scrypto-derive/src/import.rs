@@ -347,7 +347,7 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::Proof => parse_quote! { ::scrypto::engine_lib::resource::Proof},
         SchemaType::Vault => parse_quote! { ::scrypto::engine_lib::resource::Vault},
         SchemaType::Expression => parse_quote! {::scrypto::runtime::Expression },
-        SchemaType::Blob => parse_quote! { ::scrypto::engine_lib::crypto::Blob},
+        SchemaType::Blob => parse_quote! { ::scrypto::engine_lib::data::types::Blob},
         SchemaType::NonFungibleAddress => {
             parse_quote! { ::scrypto::engine_lib::resource::NonFungibleAddress}
         }

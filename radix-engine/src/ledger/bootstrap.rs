@@ -9,6 +9,7 @@ use radix_engine_interface::api::types::{
     GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;

@@ -16,17 +16,17 @@ pub enum ScryptoCustomValue {
     ResourceAddress(ResourceAddress),
     SystemAddress(SystemAddress),
 
-    // RE nodes types
+    // RE interpreted types
+    NonFungibleAddress(NonFungibleAddress), // for resource address contained
     Component(ComponentId),
     KeyValueStore(KeyValueStoreId),
-    Bucket(BucketId),
-    Proof(ProofId),
     Vault(VaultId),
-
-    // Other interpreted types
-    Expression(Expression),
     Blob(Blob),
-    NonFungibleAddress(NonFungibleAddress), // for resource address contained
+
+    // TX interpreted types
+    Bucket(BucketId),       // super::types::ManifestBucket
+    Proof(ProofId),         // super::types::ManifestProof
+    Expression(Expression), // super::types::Expression
 
     // Uninterpreted
     Hash(Hash),

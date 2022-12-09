@@ -2,6 +2,7 @@ use radix_engine::engine::KernelError;
 use radix_engine::engine::RejectionError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::types::*;
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::node::NetworkDefinition;

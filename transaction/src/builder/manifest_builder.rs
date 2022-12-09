@@ -5,8 +5,8 @@ use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
 };
 use radix_engine_interface::constants::*;
-use radix_engine_interface::crypto::{hash, Blob, Hash};
-use radix_engine_interface::data::*;
+use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::data::{types::Blob, *};
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 use radix_engine_interface::node::NetworkDefinition;

@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId,
 };
-use radix_engine_interface::crypto::Blob;
+use radix_engine_interface::data::types::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
