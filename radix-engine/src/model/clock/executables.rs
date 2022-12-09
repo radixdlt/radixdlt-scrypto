@@ -263,10 +263,7 @@ impl NativeProcedure for ClockCompareCurrentTimeExecutable {
                 let substate_ref = system_api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let current_time_instant = Instant::new(
-                    i64::try_from(
-                        substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
-                    )
-                    .expect("i64 overflow on current_time_rounded_to_minutes_ms"),
+                    substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );
                 let other_instant_rounded = Instant::new(
                     (self.instant.seconds_since_unix_epoch / MINUTES_TO_SECONDS_FACTOR)
