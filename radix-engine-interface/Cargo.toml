@@ -14,9 +14,9 @@ sbor = { path = "../sbor", default-features = false }
 radix-engine-derive = { path = "../radix-engine-derive", default-features = false }
 scrypto-abi = { path = "../scrypto-abi", default-features = false }
 utils = { path = "../utils", default-features = false }
-forward_ref = { version = "1.0.0"}
 paste = { version = "1.0.7"}
 serde = { version = "1.0.144", default-features = false, optional = true }
+serde_with = { version = "2.0.1", optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
@@ -32,4 +32,4 @@ alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/al
 trace = ["radix-engine-derive/trace"]
 
 # Enable serde derives
-serde = ["utils/serde", "sbor/serde", "scrypto-abi/serde", "serde/derive"]
+serde = ["utils/serde", "sbor/serde", "scrypto-abi/serde", "serde/derive", "hex/serde", "serde_with"]

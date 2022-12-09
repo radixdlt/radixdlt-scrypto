@@ -343,9 +343,9 @@ dependencies = [
 
 [[package]]
 name = "cxx"
-version = "1.0.82"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4a41a86530d0fe7f5d9ea779916b7cadd2d4f9add748b99c2c029cbbdfaf453"
+checksum = "bdf07d07d6531bfcdbe9b8b739b104610c6508dcc4d63b410585faf338241daf"
 dependencies = [
  "cc",
  "cxxbridge-flags",
@@ -355,9 +355,9 @@ dependencies = [
 
 [[package]]
 name = "cxx-build"
-version = "1.0.82"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06416d667ff3e3ad2df1cd8cd8afae5da26cf9cec4d0825040f88b5ca659a2f0"
+checksum = "d2eb5b96ecdc99f72657332953d4d9c50135af1bac34277801cc3937906ebd39"
 dependencies = [
  "cc",
  "codespan-reporting",
@@ -370,15 +370,15 @@ dependencies = [
 
 [[package]]
 name = "cxxbridge-flags"
-version = "1.0.82"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "820a9a2af1669deeef27cb271f476ffd196a2c4b6731336011e0ba63e2c7cf71"
+checksum = "ac040a39517fd1674e0f32177648334b0f4074625b5588a64519804ba0553b12"
 
 [[package]]
 name = "cxxbridge-macro"
-version = "1.0.82"
+version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a08a6e2fcc370a089ad3b4aaf54db3b1b4cee38ddabce5896b33eb693275f470"
+checksum = "1362b0ddcfc4eb0a1f57b68bd77dd99f0e826958a96abd0ae9bd092e114ffed6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -511,12 +511,6 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
-
-[[package]]
-name = "forward_ref"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8cbd1169bd7b4a0a20d92b9af7a7e0422888bd38a6f5ec29c1fd8c1558a272e"
 
 [[package]]
 name = "generic-array"
@@ -756,12 +750,6 @@ checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
 ]
-
-[[package]]
-name = "lru"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6e8aaa3f231bb4bd57b84b2d5dc3ae7f350265df8aa96492e0bc394a1571909"
 
 [[package]]
 name = "memchr"
@@ -1016,7 +1004,6 @@ dependencies = [
  "colored",
  "hex",
  "indexmap",
- "lru",
  "moka",
  "native-sdk",
  "parity-wasm",
@@ -1040,10 +1027,7 @@ version = "0.7.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "sbor",
- "scrypto-abi",
  "syn",
- "uuid",
 ]
 
 [[package]]
@@ -1051,7 +1035,6 @@ name = "radix-engine-interface"
 version = "0.7.0"
 dependencies = [
  "bech32",
- "forward_ref",
  "hex",
  "num-bigint",
  "num-traits",
@@ -1060,6 +1043,7 @@ dependencies = [
  "sbor",
  "scrypto-abi",
  "serde",
+ "serde_with",
  "sha2 0.10.6",
  "sha3",
  "strum",
@@ -1243,7 +1227,6 @@ dependencies = [
 name = "sbor"
 version = "0.7.0"
 dependencies = [
- "hex",
  "indexmap",
  "sbor-derive",
  "serde",
@@ -1256,7 +1239,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
- "uuid",
 ]
 
 [[package]]
@@ -1626,14 +1608,12 @@ dependencies = [
 name = "transaction"
 version = "0.7.0"
 dependencies = [
- "clap",
  "ed25519-dalek",
  "hex",
  "radix-engine-constants",
  "radix-engine-interface",
  "sbor",
  "secp256k1",
- "serde_with",
  "utils",
 ]
 
