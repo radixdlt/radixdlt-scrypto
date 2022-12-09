@@ -179,28 +179,29 @@ impl PreciseDecimal {
 
     /// Calculates power usingexponentiation by squaring.
     pub fn powi(&self, exp: i64) -> Self {
-        let one = Self::ONE.0;
-        let base = self.0;
+        let one_768 = I768::from(Self::ONE.0);
+        let base_768 = I768::from(self.0);
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
         if exp < 0 {
-            return PreciseDecimal(&one * &one / base).powi(mul(exp, -1));
+            let pdec_512: I512 = I512::try_from(&one_768 * &one_768 / base_768).expect("Overflow");
+            return PreciseDecimal(pdec_512).powi(mul(exp, -1));
         }
         if exp == 0 {
             return Self::ONE;
         }
+        if exp == 1 {
+            return PreciseDecimal(self.0)
+        }
         if exp % 2 == 0 {
-            return PreciseDecimal(&base * &base / &one).powi(div(exp, 2));
+            let pdec_512: I512 = I512::try_from(&base_768 * &base_768 / &one_768).expect("Overflow");
+            return PreciseDecimal(pdec_512).powi(div(exp, 2));
         } else {
-            return PreciseDecimal(
-                &base
-                    * PreciseDecimal(&base * &base / &one)
-                        .powi(div(sub(exp, 1), 2))
-                        .0
-                    / &one,
-            );
+            let sub_pdec_512: I512 = I512::try_from(&base_768 * &base_768 / &one_768).expect("Overflow");
+            let sub_pdec = PreciseDecimal(sub_pdec_512);
+            return PreciseDecimal(self.0) * sub_pdec.powi(div(sub(exp, 1), 2));
         }
     }
 
@@ -229,8 +230,8 @@ impl PreciseDecimal {
         }
 
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
-        let self_768 = I768::from(self.0);
-        let correct_nb = self_768 * I768::from(PreciseDecimal::one().0).pow(2 as u32);
+        let self_bigint = BigInt::from(self.0);
+        let correct_nb: BigInt = self_bigint * BigInt::from(PreciseDecimal::one().0).pow(2 as u32);
         let cbrt = I512::try_from(correct_nb.cbrt()).unwrap();
         PreciseDecimal(cbrt)
     }
@@ -798,6 +799,15 @@ mod tests {
         let a = PreciseDecimal::from(1u32);
         let b = i64::MAX - 1;
         assert_eq!(a.powi(b).to_string(), "1");
+    }
+
+    #[test]
+    fn test_powi_max_precise_decimal() {
+        let _max = PreciseDecimal::MAX.powi(1);
+        let _max_sqrt = PreciseDecimal::MAX.sqrt().unwrap();
+        let _max_cbrt = PreciseDecimal::MAX.cbrt();
+        let _max_dec_2 = _max_sqrt.powi(2);
+        let _max_dec_3 = _max_cbrt.powi(3);
     }
 
     #[test]
