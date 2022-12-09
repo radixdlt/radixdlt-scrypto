@@ -158,12 +158,12 @@ where
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
             if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
+                modules.push(Box::new(ExecutionTraceModule::new(
+                    execution_config.max_sys_call_trace_depth,
+                )));
             }
             modules.push(Box::new(CostingModule::default()));
             modules.push(Box::new(RoyaltyModule::default()));
-            modules.push(Box::new(ExecutionTraceModule::new(
-                execution_config.max_sys_call_trace_depth,
-            )));
 
             let mut kernel = Kernel::new(
                 transaction_hash.clone(),
