@@ -330,7 +330,7 @@ impl Parser {
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            // Global address types
+            // RE global address types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
             TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
@@ -462,7 +462,7 @@ impl Parser {
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
 
-            // Globals
+            // RE global address types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),

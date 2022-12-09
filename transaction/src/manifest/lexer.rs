@@ -59,7 +59,7 @@ pub enum TokenKind {
     // SBOR custom types
     // ==============
 
-    /* Global address */
+    /* RE global address types */
     PackageAddress,
     SystemAddress,
     ComponentAddress,

@@ -184,7 +184,7 @@ pub enum Type {
     // Custom Types
     // ==============
 
-    // Globals
+    // RE global address types
     PackageAddress,
     ComponentAddress,
     ResourceAddress,

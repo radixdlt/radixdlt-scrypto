@@ -31,7 +31,7 @@ pub const TYPE_NON_FUNGIBLE_ID: u8 = 0xb7;
 )]
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomTypeId {
-    // Global address types
+    // RE global address types
     PackageAddress,
     ComponentAddress,
     ResourceAddress,

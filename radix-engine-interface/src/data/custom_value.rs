@@ -10,7 +10,7 @@ use utils::copy_u8_array;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
-    // Global address types
+    // RE global address types
     PackageAddress(PackageAddress),
     ComponentAddress(ComponentAddress),
     ResourceAddress(ResourceAddress),

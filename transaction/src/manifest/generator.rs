@@ -1144,7 +1144,7 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::Array => SborTypeId::Array,
         ast::Type::Tuple => SborTypeId::Tuple,
 
-        // Globals
+        // RE global address types
         ast::Type::PackageAddress => SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress),
         ast::Type::ComponentAddress => SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress),
         ast::Type::ResourceAddress => SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress),
@@ -1164,7 +1164,7 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
         ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),
 
-        // Uninterpreted=> SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
+        // Uninterpreted
         ast::Type::Hash => SborTypeId::Custom(ScryptoCustomTypeId::Hash),
         ast::Type::EcdsaSecp256k1PublicKey => {
             SborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey)
