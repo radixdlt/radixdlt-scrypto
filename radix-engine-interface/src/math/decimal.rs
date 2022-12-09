@@ -769,11 +769,11 @@ mod tests {
 
     #[test]
     fn test_powi_max_decimal() {
-        let _max_bug = Decimal::MAX.powi(1);
+        let _max = Decimal::MAX.powi(1);
         let _max_sqrt = Decimal::MAX.sqrt().unwrap();
         let _max_cbrt = Decimal::MAX.cbrt();
-        let _max_dec_2 = max_sqrt.powi(2);
-        let _max_dec_3 = max_cbrt.powi(3);
+        let _max_dec_2 = _max_sqrt.powi(2);
+        let _max_dec_3 = _max_cbrt.powi(3);
     }
 
     #[test]
