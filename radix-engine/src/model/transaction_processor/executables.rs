@@ -73,8 +73,8 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
             match instruction {
                 Instruction::Basic(BasicInstruction::CallFunction { args, .. })
                 | Instruction::Basic(BasicInstruction::CallMethod { args, .. })
-                | Instruction::Basic(BasicInstruction::CallNativeFunction { args, .. })
-                | Instruction::System(SystemInstruction::CallNativeFunction { args, .. }) => {
+                | Instruction::System(SystemInstruction::CallNativeFunction { args, .. })
+                | Instruction::System(SystemInstruction::CallNativeMethod { args, .. }) => {
                     let scrypto_value =
                         IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
                     for global_address in scrypto_value.global_references() {
@@ -83,28 +83,13 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
                             .insert(RENodeId::Global(global_address));
                     }
                 }
-                Instruction::Basic(BasicInstruction::CallNativeMethod { args, method_ident })
-                | Instruction::System(SystemInstruction::CallNativeMethod { args, method_ident }) =>
-                {
-                    let scrypto_value =
-                        IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
-                    for global_address in scrypto_value.global_references() {
-                        call_frame_update
-                            .node_refs_to_copy
-                            .insert(RENodeId::Global(global_address));
-                    }
-
+                Instruction::Basic(BasicInstruction::RecallResource { vault_id, .. }) => {
                     // TODO: This needs to be cleaned up
                     // TODO: How does this relate to newly created vaults in the transaction frame?
                     // TODO: Will probably want different spacing for refed vs. owned nodes
-                    match method_ident.receiver {
-                        RENodeId::Vault(..) => {
-                            call_frame_update
-                                .node_refs_to_copy
-                                .insert(method_ident.receiver);
-                        }
-                        _ => {}
-                    }
+                    call_frame_update
+                        .node_refs_to_copy
+                        .insert(RENodeId::Vault(*vault_id));
                 }
                 _ => {}
             }
@@ -697,15 +682,30 @@ impl TransactionProcessor {
                             .map_err(InvokeError::Downstream)
                         })
                 }
-                Instruction::Basic(BasicInstruction::MintFungible {
-                    resource_address,
+                Instruction::Basic(BasicInstruction::MintResource {
                     amount,
+                    resource_address,
                 }) => api
                     .invoke(ResourceManagerMintInvocation {
                         receiver: resource_address.clone(),
                         mint_params: MintParams::Fungible {
                             amount: amount.clone(),
                         },
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|result| {
+                        // Auto move into worktop
+                        for (bucket_id, _) in &result.bucket_ids {
+                            Worktop::sys_put(Bucket(*bucket_id), api)
+                                .map_err(InvokeError::downstream)?;
+                        }
+                        Ok(result)
+                    }),
+                Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => api
+                    .invoke(VaultRecallInvocation {
+                        receiver: vault_id.clone(),
+                        amount: amount.clone(),
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream)
@@ -784,11 +784,21 @@ impl TransactionProcessor {
                         }
                         Ok(result)
                     }),
-                Instruction::Basic(BasicInstruction::CallNativeFunction {
-                    function_ident,
-                    args,
-                })
-                | Instruction::System(SystemInstruction::CallNativeFunction {
+                Instruction::Basic(BasicInstruction::SetMethodAccessRule {
+                    entity_address,
+                    index,
+                    key,
+                    rule,
+                }) => api
+                    .invoke(AccessRulesSetMethodAccessRuleInvocation {
+                        receiver: RENodeId::Global(entity_address.clone()),
+                        index: index.clone(),
+                        key: key.clone(),
+                        rule: rule.clone(),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
+                Instruction::System(SystemInstruction::CallNativeFunction {
                     function_ident,
                     args,
                 }) => {
@@ -831,9 +841,7 @@ impl TransactionProcessor {
                         Ok(result)
                     })
                 }
-                Instruction::Basic(BasicInstruction::CallNativeMethod { method_ident, args })
-                | Instruction::System(SystemInstruction::CallNativeMethod { method_ident, args }) =>
-                {
+                Instruction::System(SystemInstruction::CallNativeMethod { method_ident, args }) => {
                     Self::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,

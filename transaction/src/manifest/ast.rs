@@ -124,8 +124,14 @@ pub enum Instruction {
     },
 
     // TODO: Dedicated bucket for this?
-    MintFungible {
+    MintResource {
+        amount: Value,
         resource_address: Value,
+    },
+
+    // TODO: Dedicated bucket for this?
+    RecallResource {
+        vault_id: Value,
         amount: Value,
     },
 
@@ -153,6 +159,13 @@ pub enum Instruction {
     // TODO: Dedicated bucket for this?
     ClaimComponentRoyalty {
         component_address: Value,
+    },
+
+    SetMethodAccessRule {
+        entity_address: Value,
+        index: Value,
+        key: Value,
+        rule: Value,
     },
 }
 

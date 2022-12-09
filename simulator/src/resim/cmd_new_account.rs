@@ -7,7 +7,7 @@ use radix_engine_interface::rule;
 use rand::Rng;
 use utils::ContextualDisplay;
 
-use crate::resim::Error::TransactionExecutionError;
+use crate::resim::Error::TransactionFailed;
 use crate::resim::*;
 
 /// Create an account
@@ -48,7 +48,6 @@ impl NewAccount {
             &self.manifest,
             self.trace,
             false,
-            false,
             out,
         )?;
 
@@ -58,7 +57,7 @@ impl NewAccount {
             let commit_result = receipt.result.expect_commit();
             commit_result
                 .outcome
-                .success_or_else(|err| TransactionExecutionError(err.clone()))?;
+                .success_or_else(|err| TransactionFailed(err.clone()))?;
 
             let account = commit_result.entity_changes.new_component_addresses[0];
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;

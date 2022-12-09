@@ -2,7 +2,6 @@ use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeErro
 use radix_engine::model::AccessRulesChainError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::{data::*, rule};
@@ -291,18 +290,11 @@ fn component_access_rules_can_be_mutated_through_manifest_native_call() {
     // Act
     let receipt = test_runner.execute_manifest(
         MutableAccessRulesTestRunner::manifest_builder()
-            .call_native_method(
-                RENodeId::Global(GlobalAddress::Component(test_runner.component_address)),
-                &AccessRulesChainMethod::SetMethodAccessRule.to_string(),
-                scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
-                    receiver: RENodeId::Global(GlobalAddress::Component(
-                        test_runner.component_address,
-                    )),
-                    index: 1,
-                    key: AccessRuleKey::ScryptoMethod("borrow_funds".to_string()),
-                    rule: rule!(deny_all),
-                })
-                .unwrap(),
+            .set_method_access_rule(
+                GlobalAddress::Component(test_runner.component_address),
+                1,
+                AccessRuleKey::ScryptoMethod("borrow_funds".to_string()),
+                rule!(deny_all),
             )
             .build(),
     );
@@ -348,20 +340,11 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
         // Act
         let receipt = test_runner.execute_manifest(
             MutableAccessRulesTestRunner::manifest_builder()
-                .call_native_method(
-                    RENodeId::Global(GlobalAddress::Component(test_runner.component_address)),
-                    &AccessRulesChainMethod::SetMethodAccessRule.to_string(),
-                    scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
-                        receiver: RENodeId::Global(GlobalAddress::Component(
-                            test_runner.component_address,
-                        )),
-                        index: 1,
-                        key: AccessRuleKey::Native(NativeFn::Method(
-                            NativeMethod::AccessRulesChain(method),
-                        )),
-                        rule: rule!(deny_all),
-                    })
-                    .unwrap(),
+                .set_method_access_rule(
+                    GlobalAddress::Component(test_runner.component_address),
+                    1,
+                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(method))),
+                    rule!(deny_all),
                 )
                 .build(),
         );

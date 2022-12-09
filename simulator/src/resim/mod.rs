@@ -54,6 +54,7 @@ use clap::{Parser, Subcommand};
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
 use radix_engine::transaction::execute_and_commit_transaction;
+use radix_engine::transaction::CommitResult;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionResult;
@@ -71,7 +72,8 @@ use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
-use transaction::model::AuthModule;
+use transaction::model::Instruction;
+use transaction::model::SystemTransaction;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
@@ -144,6 +146,44 @@ pub fn run() -> Result<(), Error> {
     }
 }
 
+pub fn handle_system_transaction<O: std::io::Write>(
+    instructions: Vec<Instruction>,
+    blobs: Vec<Vec<u8>>,
+    initial_proofs: Vec<NonFungibleAddress>,
+    trace: bool,
+    print_receipt: bool,
+    out: &mut O,
+) -> Result<Option<TransactionReceipt>, Error> {
+    let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+
+    let nonce = get_nonce()?;
+    let transaction = SystemTransaction {
+        instructions,
+        blobs,
+        nonce,
+    };
+
+    let receipt = execute_and_commit_transaction(
+        &mut substate_store,
+        &scrypto_interpreter,
+        &FeeReserveConfig::default(),
+        &ExecutionConfig {
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            trace,
+            max_sys_call_trace_depth: 1,
+        },
+        &transaction.get_executable(initial_proofs),
+    );
+
+    if print_receipt {
+        writeln!(out, "{}", receipt.display(&Bech32Encoder::for_simulator()))
+            .map_err(Error::IOError)?;
+    }
+
+    process_receipt(receipt)
+}
+
 pub fn handle_manifest<O: std::io::Write>(
     manifest: TransactionManifest,
     signing_keys: &Option<String>,
@@ -151,7 +191,6 @@ pub fn handle_manifest<O: std::io::Write>(
     write_manifest: &Option<PathBuf>,
     trace: bool,
     print_receipt: bool,
-    with_system_privilege: bool,
     out: &mut O,
 ) -> Result<Option<TransactionReceipt>, Error> {
     let network = match network {
@@ -182,13 +221,10 @@ pub fn handle_manifest<O: std::io::Write>(
                 RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let sks = get_signing_keys(signing_keys)?;
-            let mut initial_proofs = sks
+            let initial_proofs = sks
                 .into_iter()
                 .map(|e| NonFungibleAddress::from_public_key(&e.public_key()))
                 .collect::<Vec<NonFungibleAddress>>();
-            if with_system_privilege {
-                initial_proofs.push(AuthModule::system_role_non_fungible_address());
-            }
             let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
 
@@ -209,27 +245,32 @@ pub fn handle_manifest<O: std::io::Write>(
                     .map_err(Error::IOError)?;
             }
 
-            if receipt.is_commit() {
-                let mut configs = get_configs()?;
-                configs.nonce = nonce + 1;
-                set_configs(&configs)?;
-                return Ok(Some(receipt));
-            }
+            process_receipt(receipt)
+        }
+    }
+}
 
-            match receipt.result {
-                TransactionResult::Commit(commit) => match commit.outcome {
-                    TransactionOutcome::Failure(error) => {
-                        Err(Error::TransactionExecutionError(error))
-                    }
-                    TransactionOutcome::Success(..) => {
-                        panic!("Success case handled above to appease borrowing rules")
-                    }
-                },
-                TransactionResult::Reject(rejection) => {
-                    Err(Error::TransactionRejected(rejection.error))
-                }
+pub fn process_receipt(receipt: TransactionReceipt) -> Result<Option<TransactionReceipt>, Error> {
+    match receipt.result {
+        TransactionResult::Commit(commit) => {
+            let mut configs = get_configs()?;
+            configs.nonce = get_nonce()? + 1;
+            set_configs(&configs)?;
+
+            match commit.outcome {
+                TransactionOutcome::Failure(error) => Err(Error::TransactionFailed(error)),
+                TransactionOutcome::Success(output) => Ok(Some(TransactionReceipt {
+                    execution: receipt.execution,
+                    result: TransactionResult::Commit(CommitResult {
+                        outcome: TransactionOutcome::Success(output),
+                        state_updates: commit.state_updates,
+                        entity_changes: commit.entity_changes,
+                        resource_changes: commit.resource_changes,
+                    }),
+                })),
             }
         }
+        TransactionResult::Reject(rejection) => Err(Error::TransactionRejected(rejection.error)),
     }
 }
 

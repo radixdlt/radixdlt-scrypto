@@ -1,5 +1,5 @@
 use crate::engine::{
-    deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
     NativeProcedure, RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
@@ -14,6 +14,7 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use radix_engine_interface::model::*;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 
 const SECONDS_TO_MS_FACTOR: u64 = 1000;
@@ -49,13 +50,12 @@ impl NativeProcedure for ClockCreateInvocation {
     {
         let underlying_node_id = system_api.allocate_node_id(RENodeType::Clock)?;
 
-        let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
                 ClockMethod::SetCurrentTime,
             ))),
-            rule!(require(auth_non_fungible)),
+            rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
@@ -278,7 +278,7 @@ impl Clock {
             ClockFunction::Create => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::system_id()),
+                        AuthAddresses::system_role(),
                     )),
                 ))]
             }

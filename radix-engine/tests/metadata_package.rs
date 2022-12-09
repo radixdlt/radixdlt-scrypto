@@ -101,18 +101,13 @@ fn can_lock_package_metadata_with_owner() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
-        .call_native_method(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
-            &AccessRulesChainMethod::SetMethodAccessRule.to_string(),
-            scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                    MetadataMethod::Set,
-                ))),
-                rule: AccessRule::DenyAll,
-            })
-            .unwrap(),
+        .set_method_access_rule(
+            GlobalAddress::Package(package_address),
+            0,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            AccessRule::DenyAll,
         )
         .build();
     let receipt = test_runner.execute_manifest(

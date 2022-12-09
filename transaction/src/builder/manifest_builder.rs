@@ -1,9 +1,7 @@
 use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, RENodeId,
-};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId, VaultId};
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Blob, Hash};
@@ -293,40 +291,6 @@ impl ManifestBuilder {
         self
     }
 
-    // TODO: remove
-    pub fn call_native_method(
-        &mut self,
-        receiver: RENodeId,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver,
-                method_name: method_name.to_string(),
-            },
-            args,
-        });
-        self
-    }
-
-    // TODO: remove
-    pub fn call_native_function(
-        &mut self,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<u8>,
-    ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: blueprint_name.to_string(),
-                function_name: function_name.to_string(),
-            },
-            args,
-        });
-        self
-    }
-
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
     pub fn call_function(
         &mut self,
@@ -435,6 +399,22 @@ impl ManifestBuilder {
     pub fn claim_component_royalty(&mut self, component_address: ComponentAddress) -> &mut Self {
         self.add_instruction(BasicInstruction::ClaimComponentRoyalty { component_address })
             .0
+    }
+
+    pub fn set_method_access_rule(
+        &mut self,
+        entity_address: GlobalAddress,
+        index: u32,
+        key: AccessRuleKey,
+        rule: AccessRule,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::SetMethodAccessRule {
+            entity_address,
+            index,
+            key,
+            rule,
+        })
+        .0
     }
 
     pub fn set_metadata(
@@ -662,22 +642,25 @@ impl ManifestBuilder {
         .0
     }
 
-    /// Mints resource.
-    pub fn mint(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
-        self.add_instruction(BasicInstruction::MintFungible {
-            resource_address,
-            amount,
-        });
-        self
-    }
-
-    /// Burns a resource.
-    pub fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
+    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(BasicInstruction::BurnResource { bucket_id })
                 .0
         })
+    }
+
+    pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::MintResource {
+            amount,
+            resource_address,
+        });
+        self
+    }
+
+    pub fn recall(&mut self, vault_id: VaultId, amount: Decimal) -> &mut Self {
+        self.add_instruction(BasicInstruction::RecallResource { vault_id, amount });
+        self
     }
 
     pub fn burn_non_fungible(&mut self, non_fungible_address: NonFungibleAddress) -> &mut Self {

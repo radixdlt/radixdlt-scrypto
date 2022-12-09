@@ -60,7 +60,6 @@ impl Run {
             &None,
             self.trace,
             true,
-            false,
             out,
         )
         .map(|_| ())

@@ -185,8 +185,12 @@ impl Parser {
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
             },
-            TokenKind::MintFungible => Instruction::MintFungible {
+            TokenKind::MintResource => Instruction::MintResource {
+                amount: self.parse_value()?,
                 resource_address: self.parse_value()?,
+            },
+            TokenKind::RecallResource => Instruction::RecallResource {
+                vault_id: self.parse_value()?,
                 amount: self.parse_value()?,
             },
             TokenKind::SetMetadata => Instruction::SetMetadata {
@@ -207,6 +211,12 @@ impl Parser {
             },
             TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
                 component_address: self.parse_value()?,
+            },
+            TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
+                entity_address: self.parse_value()?,
+                index: self.parse_value()?,
+                key: self.parse_value()?,
+                rule: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));

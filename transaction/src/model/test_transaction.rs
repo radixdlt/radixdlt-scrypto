@@ -1,11 +1,13 @@
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::model::*;
+use radix_engine_interface::{model::*, scrypto};
 use sbor::rust::vec::Vec;
+use sbor::*;
 use std::collections::BTreeSet;
 
 use crate::model::*;
 
+#[scrypto(TypeId, Encode, Decode)]
 pub struct TestTransaction {
     nonce: u64,
     cost_unit_limit: u32,
@@ -22,8 +24,9 @@ impl TestTransaction {
     }
 
     pub fn get_executable<'a>(&'a self, initial_proofs: Vec<NonFungibleAddress>) -> Executable<'a> {
-        let transaction_hash = hash(self.nonce.to_le_bytes());
-        let payload_size = scrypto_encode(&self.manifest).unwrap().len();
+        let payload = scrypto_encode(self).unwrap();
+        let payload_size = payload.len();
+        let transaction_hash = hash(payload);
 
         Executable::new(
             InstructionList::Basic(&self.manifest.instructions),
