@@ -15,8 +15,8 @@ pub use num_traits::{
 pub use radix_engine_derive::*;
 pub use radix_engine_interface::constants::*;
 pub use radix_engine_interface::crypto::*;
-pub use radix_engine_interface::data::*;
 pub use radix_engine_interface::data::types::*;
+pub use radix_engine_interface::data::*;
 pub use radix_engine_interface::math::integer::{
     CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedPow, CheckedRem, CheckedSub, Min,
 };

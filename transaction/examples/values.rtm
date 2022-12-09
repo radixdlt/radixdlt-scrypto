@@ -32,21 +32,18 @@ CALL_METHOD
     ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v")
     SystemAddress("system_sim1qne8qu4seyvzfgd94p3z8rjcdl3v0nfhv84judpum2lq7x4635")
 
-    # RE nodes types
-    Component("000000000000000000000000000000000000000000000000000000000000000005000000")
-    KeyValueStore("000000000000000000000000000000000000000000000000000000000000000005000000")
-    Bucket("temp1")
-    Proof("temp2")
-    Vault("000000000000000000000000000000000000000000000000000000000000000005000000")
-
-    # Other interpreted types
-    Expression("ALL_WORKTOP_RESOURCES")
-    Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
+    # RE interpreted types
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value")
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 123u32)
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 456u64)
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"))
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 1234567890u128)
+    Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
+
+    # TX interpreted types
+    Bucket("temp1")
+    Proof("temp2")
+    Expression("ALL_WORKTOP_RESOURCES")
 
     # Uninterpreted
     Hash("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")
