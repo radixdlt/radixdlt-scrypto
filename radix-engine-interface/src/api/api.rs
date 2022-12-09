@@ -1,4 +1,3 @@
-use crate::api::types::ScryptoActor;
 use crate::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
@@ -27,7 +26,10 @@ pub trait EngineApi<E: Debug> {
     fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, E>;
     fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
-    fn sys_get_actor(&mut self) -> Result<ScryptoActor, E>;
+}
+
+pub trait ActorApi<E: Debug> {
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
 }
 
 pub trait LoggerApi<E: Debug> {

@@ -1,5 +1,5 @@
 use radix_engine_interface::api::api::{
-    EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
+    ActorApi, EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
 };
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
@@ -311,16 +311,13 @@ where
     fn run<X: Executor>(
         &mut self,
         executor: X,
-        actor: REActor,
+        actor: ResolvedActor,
         mut call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
-        let derefed_lock = if let REActor::Method(
-            _,
-            ResolvedReceiver {
-                derefed_from: Some((_, derefed_lock)),
-                ..
-            },
-        ) = &actor
+        let derefed_lock = if let Some(ResolvedReceiver {
+            derefed_from: Some((_, derefed_lock)),
+            ..
+        }) = &actor.receiver
         {
             Some(*derefed_lock)
         } else {
@@ -346,7 +343,11 @@ where
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
             self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
-                NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+                NodeMoveModule::on_call_frame_enter(
+                    &mut call_frame_update,
+                    &actor.identifier,
+                    system_api,
+                )
             })?;
             for m in &mut self.modules {
                 m.pre_execute_invocation(
@@ -490,7 +491,7 @@ where
     fn invoke_internal<X: Executor>(
         &mut self,
         executor: X,
-        actor: REActor,
+        actor: ResolvedActor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
         // check call depth
@@ -624,7 +625,8 @@ pub trait Executor {
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
-            + LoggerApi<RuntimeError>;
+            + LoggerApi<RuntimeError>
+            + ActorApi<RuntimeError>;
 }
 
 pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
@@ -633,7 +635,7 @@ pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
     fn resolve<Y: ResolverApi<W> + SystemApi>(
         self,
         api: &mut Y,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
 impl<'g, 's, W, R, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R>
@@ -740,10 +742,6 @@ where
         }
 
         Ok(fee)
-    }
-
-    fn get_actor(&self) -> &REActor {
-        &self.current_frame.actor
     }
 
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
@@ -1345,5 +1343,15 @@ where
         }
 
         Ok(())
+    }
+}
+
+impl<'g, 's, W, R> ActorApi<RuntimeError> for Kernel<'g, 's, W, R>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+{
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        Ok(self.current_frame.actor.identifier.clone())
     }
 }

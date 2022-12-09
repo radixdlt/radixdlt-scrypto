@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, InterpreterError,
-    LockFlags, NativeExecutor, NativeProcedure, REActor, ResolvedMethod, ResolverApi, RuntimeError,
+    LockFlags, NativeExecutor, NativeProcedure, ResolvedActor, ResolverApi, RuntimeError,
     SystemApi,
 };
 use crate::model::{MethodAuthorization, MethodAuthorizationError};
@@ -27,7 +27,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocat
     fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -39,10 +39,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocat
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::AddAccessCheck,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::AddAccessCheck),
             resolved_receiver,
         );
 
@@ -120,7 +118,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleIn
     fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -134,10 +132,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleIn
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodAccessRule,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetMethodAccessRule),
             resolved_receiver,
         );
 
@@ -240,7 +236,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInv
     fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -254,10 +250,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInv
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupAccessRule,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetGroupAccessRule),
             resolved_receiver,
         );
 
@@ -332,7 +326,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityIn
     fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -346,10 +340,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityIn
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodMutability,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetMethodMutability),
             resolved_receiver,
         );
 
@@ -452,7 +444,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInv
     fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -466,10 +458,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInv
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupMutability,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetGroupMutability),
             resolved_receiver,
         );
 
@@ -544,7 +534,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
     fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -558,10 +548,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
         }
         self.receiver = resolved_receiver.receiver;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::GetLength,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::AccessRulesChain(AccessRulesChainMethod::GetLength),
             resolved_receiver,
         );
 

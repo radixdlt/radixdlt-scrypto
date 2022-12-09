@@ -1,6 +1,6 @@
 use crate::engine::{
     deref_and_update, CallFrameUpdate, ExecutableInvocation, InterpreterError, LockFlags,
-    NativeExecutor, NativeProcedure, REActor, ResolvedMethod, ResolverApi, RuntimeError, SystemApi,
+    NativeExecutor, NativeProcedure, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -14,7 +14,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
     fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -30,8 +30,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
         }
 
         self.receiver = resolved_receiver.receiver;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Set)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Metadata(MetadataMethod::Set),
             resolved_receiver,
         );
 
@@ -64,7 +64,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
     fn resolve<D: ResolverApi<W>>(
         mut self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
 
         let resolved_receiver = deref_and_update(self.receiver, &mut call_frame_update, deref)?;
@@ -80,8 +80,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
         }
 
         self.receiver = resolved_receiver.receiver;
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Metadata(MetadataMethod::Get)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Metadata(MetadataMethod::Get),
             resolved_receiver,
         );
 

@@ -1,7 +1,7 @@
-use radix_engine_interface::api::api::{EngineApi, Invokable};
+use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable};
 use radix_engine_interface::api::types::{
-    RENodeId, ScryptoActor, ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoPackage,
-    ScryptoReceiver,
+    FnIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoFunctionIdent, ScryptoMethodIdent,
+    ScryptoPackage, ScryptoReceiver,
 };
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::crypto::*;
@@ -28,16 +28,16 @@ impl Runtime {
     }
 
     /// Returns the running entity.
-    pub fn actor() -> ScryptoActor {
-        ScryptoEnv.sys_get_actor().unwrap()
+    pub fn actor() -> ScryptoFnIdentifier {
+        match ScryptoEnv.fn_identifier().unwrap() {
+            FnIdentifier::Scrypto(identifier) => identifier,
+            _ => panic!("Unexpected actor"),
+        }
     }
 
     /// Returns the current package address.
     pub fn package_address() -> PackageAddress {
-        match Self::actor() {
-            ScryptoActor::Blueprint(package_address, _)
-            | ScryptoActor::Component(_, package_address, _) => package_address,
-        }
+        Self::actor().package_address
     }
 
     /// Invokes a function on a blueprint.

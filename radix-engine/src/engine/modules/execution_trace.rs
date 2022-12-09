@@ -95,7 +95,7 @@ impl TracedSysCallData {
 pub struct SysCallTrace {
     pub origin: SysCallTraceOrigin,
     pub sys_call_depth: usize,
-    pub call_frame_actor: REActor,
+    pub call_frame_actor: ResolvedActor,
     pub call_frame_depth: usize,
     pub instruction_index: Option<usize>,
     pub input: TracedSysCallData,
@@ -106,8 +106,8 @@ pub struct SysCallTrace {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum SysCallTraceOrigin {
-    ScryptoFunction(PackageAddress, String, String),
-    ScryptoMethod(PackageAddress, String, String),
+    ScryptoFunction(ScryptoFnIdentifier),
+    ScryptoMethod(ScryptoFnIdentifier),
     NativeFunction(NativeFunction),
     NativeMethod(NativeMethod),
     CreateNode,
@@ -139,41 +139,25 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn pre_execute_invocation(
         &mut self,
-        actor: &REActor,
+        actor: &ResolvedActor,
         update: &CallFrameUpdate,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
-            let origin = match actor {
-                REActor::Method(
-                    ResolvedMethod::Scrypto {
-                        package_address,
-                        blueprint_name,
-                        ident,
-                        ..
-                    },
-                    ..,
-                ) => SysCallTraceOrigin::ScryptoMethod(
-                    *package_address,
-                    blueprint_name.clone(),
-                    ident.clone(),
-                ),
-                REActor::Function(ResolvedFunction::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                    ..
-                }) => SysCallTraceOrigin::ScryptoFunction(
-                    *package_address,
-                    blueprint_name.clone(),
-                    ident.clone(),
-                ),
-                REActor::Method(ResolvedMethod::Native(native_method), ..) => {
+            let origin = match &actor.identifier {
+                FnIdentifier::Scrypto(scrypto_fn) => {
+                    if actor.receiver.is_some() {
+                        SysCallTraceOrigin::ScryptoMethod(scrypto_fn.clone())
+                    } else {
+                        SysCallTraceOrigin::ScryptoFunction(scrypto_fn.clone())
+                    }
+                }
+                FnIdentifier::NativeMethod(native_method) => {
                     SysCallTraceOrigin::NativeMethod(native_method.clone())
                 }
-                REActor::Function(ResolvedFunction::Native(native_function)) => {
+                FnIdentifier::NativeFunction(native_function) => {
                     SysCallTraceOrigin::NativeFunction(native_function.clone())
                 }
             };
@@ -188,18 +172,24 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
         self.current_sys_call_depth += 1;
 
-        if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = actor {
-            let caller = &call_frame.actor;
-
-            match (native_method, resolved_receiver.receiver) {
-                (NativeMethod::Vault(VaultMethod::Put), RENodeId::Vault(vault_id)) => {
-                    Self::handle_vault_put(update, heap, track, caller, &vault_id)
-                }
-                (NativeMethod::Vault(VaultMethod::LockFee), RENodeId::Vault(vault_id)) => {
-                    Self::handle_vault_lock_fee(track, caller, &vault_id)
-                }
-                _ => {}
-            }
+        match &actor {
+            ResolvedActor {
+                identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(VaultMethod::Put)),
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } => Self::handle_vault_put(update, heap, track, &call_frame.actor, vault_id),
+            ResolvedActor {
+                identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(VaultMethod::LockFee)),
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } => Self::handle_vault_lock_fee(track, &call_frame.actor, vault_id),
+            _ => {}
         }
 
         Ok(())
@@ -207,21 +197,22 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn post_execute_invocation(
         &mut self,
-        caller: &REActor,
+        caller: &ResolvedActor,
         update: &CallFrameUpdate,
         call_frame: &CallFrame,
         heap: &mut Heap,
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
-        if let REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) =
-            &call_frame.actor
-        {
-            match (native_method, resolved_receiver.receiver) {
-                (NativeMethod::Vault(VaultMethod::Take), RENodeId::Vault(vault_id)) => {
-                    Self::handle_vault_take(update, heap, track, caller, &vault_id)
-                }
-                _ => {}
-            }
+        match &call_frame.actor {
+            ResolvedActor {
+                identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(VaultMethod::Take)),
+                receiver:
+                    Some(ResolvedReceiver {
+                        receiver: RENodeId::Vault(vault_id),
+                        ..
+                    }),
+            } => Self::handle_vault_take(update, heap, track, caller, vault_id),
+            _ => {}
         }
 
         // Important to always update the counter (even if we're over the depth limit).
@@ -519,7 +510,7 @@ impl ExecutionTraceModule {
         call_frame_update: &CallFrameUpdate,
         heap: &mut Heap,
         track: &mut Track<'s, R>,
-        actor: &REActor,
+        actor: &ResolvedActor,
         vault_id: &VaultId,
     ) {
         for node_id in &call_frame_update.nodes_to_move {
@@ -545,7 +536,7 @@ impl ExecutionTraceModule {
         update: &CallFrameUpdate,
         heap: &mut Heap,
         track: &mut Track<'s, R>,
-        actor: &REActor,
+        actor: &ResolvedActor,
         vault_id: &VaultId,
     ) {
         for node_id in &update.nodes_to_move {
@@ -569,7 +560,7 @@ impl ExecutionTraceModule {
 
     fn handle_vault_lock_fee<'s, R: FeeReserve>(
         track: &mut Track<'s, R>,
-        actor: &REActor,
+        actor: &ResolvedActor,
         vault_id: &VaultId,
     ) {
         track
@@ -583,7 +574,7 @@ impl ExecutionTraceReceipt {
     // The current approach relies on various runtime invariants.
 
     pub fn new(
-        ops: Vec<(REActor, VaultId, VaultOp)>,
+        ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
         actual_fee_payments: &IndexMap<VaultId, Decimal>,
         to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
@@ -591,7 +582,7 @@ impl ExecutionTraceReceipt {
         let mut vault_changes = HashMap::<ComponentId, HashMap<VaultId, Decimal>>::new();
         let mut vault_locked_by = HashMap::<VaultId, ComponentId>::new();
         for (actor, vault_id, vault_op) in ops {
-            if let REActor::Method(_, resolved_receiver) = actor {
+            if let Some(resolved_receiver) = actor.receiver {
                 if let RENodeId::Component(component_id) = resolved_receiver.receiver {
                     match vault_op {
                         VaultOp::Create(_) => todo!("Not supported yet!"),

@@ -94,7 +94,7 @@ pub trait Module<R: FeeReserve> {
 
     fn pre_execute_invocation(
         &mut self,
-        _actor: &REActor,
+        _actor: &ResolvedActor,
         _call_frame_update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
@@ -105,7 +105,7 @@ pub trait Module<R: FeeReserve> {
 
     fn post_execute_invocation(
         &mut self,
-        _caller: &REActor,
+        _caller: &ResolvedActor,
         _update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,

@@ -1,7 +1,4 @@
-use crate::engine::{
-    Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
-    ResolvedReceiver, RuntimeError, SystemApi,
-};
+use crate::engine::{Kernel, KernelError, LockFlags, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
@@ -12,8 +9,8 @@ use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
-    ScryptoRENode, SubstateOffset,
+    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoRENode,
+    SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::model::{
@@ -146,34 +143,5 @@ where
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         self.drop_lock(lock_handle)
-    }
-
-    fn sys_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
-        let actor = match self.get_actor() {
-            REActor::Method(
-                ResolvedMethod::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ..
-                },
-                ResolvedReceiver {
-                    receiver: RENodeId::Component(component_id),
-                    ..
-                },
-            ) => ScryptoActor::Component(
-                *component_id,
-                package_address.clone(),
-                blueprint_name.clone(),
-            ),
-            REActor::Function(ResolvedFunction::Scrypto {
-                package_address,
-                blueprint_name,
-                ..
-            }) => ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
-
-            _ => panic!("Should not get here."),
-        };
-
-        Ok(actor)
     }
 }

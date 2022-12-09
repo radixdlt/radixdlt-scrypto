@@ -1,7 +1,6 @@
 use crate::engine::{
     ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolvedMethod, ResolvedReceiver, ResolverApi, RuntimeError,
-    SystemApi,
+    NativeProcedure, RENode, ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
@@ -31,14 +30,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopPutInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
             .nodes_to_move
             .push(RENodeId::Bucket(self.bucket.0));
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::Put)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Worktop(WorktopMethod::Put),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -78,7 +77,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAmountInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -86,8 +85,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAmountInvocation {
             .insert(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             )));
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::TakeAmount)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Worktop(WorktopMethod::TakeAmount),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -154,7 +153,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAllInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -162,8 +161,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAllInvocation {
             .insert(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             )));
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::TakeAll)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Worktop(WorktopMethod::TakeAll),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -229,7 +228,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeNonFungiblesInvocatio
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -237,8 +236,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeNonFungiblesInvocatio
             .insert(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             )));
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::TakeNonFungibles)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Worktop(WorktopMethod::TakeNonFungibles),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -306,7 +305,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsInvocation 
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -314,8 +313,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsInvocation 
             .insert(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             )));
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::AssertContains)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Worktop(WorktopMethod::AssertContains),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -352,7 +351,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsAmountInvoc
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -360,8 +359,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsAmountInvoc
             .insert(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             )));
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::AssertContainsAmount)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Worktop(WorktopMethod::AssertContainsAmount),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -398,7 +397,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsNonFungible
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let mut call_frame_update = CallFrameUpdate::copy_ref(receiver);
         call_frame_update
@@ -406,10 +405,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsNonFungible
             .insert(RENodeId::Global(GlobalAddress::Resource(
                 self.resource_address,
             )));
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Worktop(
-                WorktopMethod::AssertContainsNonFungibles,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);
@@ -454,11 +451,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopDrainInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let receiver = RENodeId::Worktop;
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Worktop(WorktopMethod::Drain)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Worktop(WorktopMethod::Drain),
             ResolvedReceiver::new(receiver),
         );
         let executor = NativeExecutor(self);

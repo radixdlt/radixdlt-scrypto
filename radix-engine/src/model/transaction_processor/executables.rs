@@ -57,7 +57,7 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
 
@@ -117,9 +117,10 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
             .node_refs_to_copy
             .insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        let actor = REActor::Function(ResolvedFunction::Native(
-            NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+        let actor = ResolvedActor::function(NativeFunction::TransactionProcessor(
+            TransactionProcessorFunction::Run,
         ));
+
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
