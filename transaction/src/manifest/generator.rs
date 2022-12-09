@@ -14,7 +14,7 @@ use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
 
-use radix_engine_interface::core::Expression;
+use radix_engine_interface::data::types::Expression;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
@@ -1194,7 +1194,7 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::args;
-    use radix_engine_interface::core::NetworkDefinition;
+    use radix_engine_interface::node::NetworkDefinition;
     use radix_engine_interface::pdec;
 
     #[macro_export]

@@ -20,13 +20,13 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig
 use radix_engine_constants::*;
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
     AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
 };
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;

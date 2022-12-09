@@ -1,7 +1,7 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
+use radix_engine_interface::node::NetworkDefinition;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::*;
@@ -546,7 +546,7 @@ pub fn format_args<F: fmt::Write>(
 mod tests {
     use super::*;
     use crate::manifest::*;
-    use radix_engine_interface::core::NetworkDefinition;
+    use radix_engine_interface::node::NetworkDefinition;
 
     #[test]
     fn test_resource_move() {

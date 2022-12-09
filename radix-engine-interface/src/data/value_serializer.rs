@@ -725,11 +725,11 @@ mod tests {
     fn test_complex_encoding_with_network() {
         use crate::{
             constants::{ACCOUNT_PACKAGE, EPOCH_MANAGER, FAUCET_COMPONENT},
-            core::Expression,
             crypto::{
                 Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
                 EddsaEd25519Signature,
             },
+            data::types::Expression,
             math::{Decimal, PreciseDecimal},
         };
 

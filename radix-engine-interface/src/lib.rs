@@ -16,8 +16,6 @@ pub mod address;
 pub mod api;
 /// RE constants
 pub mod constants;
-/// RE core abstractions.
-pub mod core;
 /// RE crypto library
 pub mod crypto;
 /// RE data model.
@@ -26,6 +24,8 @@ pub mod data;
 pub mod math;
 /// RE node models.
 pub mod model;
+/// RE core abstractions.
+pub mod node;
 pub mod wasm;
 
 mod macros;

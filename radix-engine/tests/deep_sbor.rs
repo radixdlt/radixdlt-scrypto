@@ -2,8 +2,8 @@ use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine::wasm::WasmError;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
+use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

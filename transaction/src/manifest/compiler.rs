@@ -1,6 +1,6 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::node::NetworkDefinition;
 
 use sbor::rust::collections::BTreeMap;
 
@@ -37,7 +37,7 @@ pub fn compile(
 mod tests {
     use super::*;
     use crate::model::BasicInstruction;
-    use radix_engine_interface::core::Expression;
+    use radix_engine_interface::data::types::Expression;
     use radix_engine_interface::data::*;
     use radix_engine_interface::math::Decimal;
     use radix_engine_interface::model::*;
