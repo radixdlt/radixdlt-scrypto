@@ -17,6 +17,7 @@ use radix_engine_interface::api::types::{
     RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
     SubstateOffset,
 };
+use radix_engine_interface::data::types::Ownership;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
@@ -830,9 +831,9 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateVaultInvoca
 pub struct ResourceManagerCreateVaultExecutable(RENodeId);
 
 impl NativeProcedure for ResourceManagerCreateVaultExecutable {
-    type Output = Vault;
+    type Output = Ownership;
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<(Vault, CallFrameUpdate), RuntimeError>
+    fn main<'a, Y>(self, api: &mut Y) -> Result<(Ownership, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -851,7 +852,7 @@ impl NativeProcedure for ResourceManagerCreateVaultExecutable {
         let vault_id = node_id.into();
 
         Ok((
-            Vault(vault_id),
+            Ownership::Vault(vault_id),
             CallFrameUpdate::move_node(RENodeId::Vault(vault_id)),
         ))
     }

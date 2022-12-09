@@ -8,6 +8,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::address::*;
 use crate::api::api::*;
+use crate::data::types::Ownership;
 use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
 use crate::model::*;
@@ -193,11 +194,11 @@ pub struct ResourceManagerCreateVaultInvocation {
 }
 
 impl Invocation for ResourceManagerCreateVaultInvocation {
-    type Output = Vault;
+    type Output = Ownership;
 }
 
 impl SerializableInvocation for ResourceManagerCreateVaultInvocation {
-    type ScryptoOutput = Vault;
+    type ScryptoOutput = Ownership;
 }
 
 impl Into<SerializedInvocation> for ResourceManagerCreateVaultInvocation {

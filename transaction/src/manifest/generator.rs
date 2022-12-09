@@ -1,7 +1,5 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{
-    BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId,
-};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
 use radix_engine_interface::crypto::{
     EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
     Hash,
@@ -710,36 +708,6 @@ fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
     }
 }
 
-fn generate_component_id(value: &ast::Value) -> Result<ComponentId, GeneratorError> {
-    match value {
-        ast::Value::Component(inner) => match &**inner {
-            ast::Value::String(s) => hex::decode(s)
-                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                .and_then(|x| {
-                    x.try_into()
-                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                }),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::Component),
-    }
-}
-
-fn generate_key_value_store_id(value: &ast::Value) -> Result<KeyValueStoreId, GeneratorError> {
-    match value {
-        ast::Value::KeyValueStore(inner) => match &**inner {
-            ast::Value::String(s) => hex::decode(s)
-                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                .and_then(|x| {
-                    x.try_into()
-                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                }),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::KeyValueStore),
-    }
-}
-
 fn declare_bucket(
     value: &ast::Value,
     resolver: &mut NameResolver,
@@ -801,18 +769,6 @@ fn generate_proof(
             v => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::Proof),
-    }
-}
-
-fn generate_vault(value: &ast::Value) -> Result<Vault, GeneratorError> {
-    match value {
-        ast::Value::Vault(inner) => match &**inner {
-            ast::Value::String(s) => {
-                Vault::from_str(s).map_err(|_| GeneratorError::InvalidVault(s.into()))
-            }
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::Vault),
     }
 }
 
@@ -1038,22 +994,11 @@ pub fn generate_value(
             })
         }
 
-        ast::Value::Component(_) => generate_component_id(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Component(v),
-        }),
-        ast::Value::KeyValueStore(_) => {
-            generate_key_value_store_id(value).map(|v| SborValue::Custom {
-                value: ScryptoCustomValue::KeyValueStore(v),
-            })
-        }
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Bucket(v),
         }),
         ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Proof(v),
-        }),
-        ast::Value::Vault(_) => generate_vault(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Vault(v.0),
         }),
 
         ast::Value::Expression(_) => generate_expression(value).map(|v| SborValue::Custom {
@@ -1152,19 +1097,16 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::ResourceAddress => SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress),
         ast::Type::SystemAddress => SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress),
 
-        // RE Nodes
-        ast::Type::Component => SborTypeId::Custom(ScryptoCustomTypeId::Component),
-        ast::Type::KeyValueStore => SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore),
-        ast::Type::Bucket => SborTypeId::Custom(ScryptoCustomTypeId::Bucket),
-        ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
-        ast::Type::Vault => SborTypeId::Custom(ScryptoCustomTypeId::Vault),
-
-        // Other interpreted types
-        ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),
-        ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),
+        // RE interpreted types
         ast::Type::NonFungibleAddress => {
             SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress)
         }
+        ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),
+
+        // TX interpreted types
+        ast::Type::Bucket => SborTypeId::Custom(ScryptoCustomTypeId::Bucket),
+        ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
+        ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),
 
         // Uninterpreted=> SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
         ast::Type::Hash => SborTypeId::Custom(ScryptoCustomTypeId::Hash),

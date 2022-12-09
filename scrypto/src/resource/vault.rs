@@ -1,13 +1,37 @@
 use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::data::types::Ownership;
+use radix_engine_interface::data::types::ParseOwnershipError;
+use radix_engine_interface::data::ScryptoCustomTypeId;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use radix_engine_interface::scrypto_type;
+use radix_engine_interface::TypeId;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
+use scrypto_abi::Type;
 
 use crate::resource::*;
 use crate::scrypto;
+
+pub struct Vault(pub Ownership); // scrypto stub
+
+impl TryFrom<&[u8]> for Vault {
+    type Error = ParseOwnershipError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        Ownership::try_from(slice).map(|o| Self(o))
+    }
+}
+
+impl Vault {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+scrypto_type!(Vault, ScryptoCustomTypeId::Ownership, Type::Vault, 36);
 
 pub trait ScryptoVault {
     fn with_bucket(bucket: Bucket) -> Self;
@@ -46,27 +70,34 @@ impl ScryptoVault for Vault {
 
     fn amount(&self) -> Decimal {
         let mut env = ScryptoEnv;
-        env.invoke(VaultGetAmountInvocation { receiver: self.0 })
-            .unwrap()
+        env.invoke(VaultGetAmountInvocation {
+            receiver: self.0.vault_id(),
+        })
+        .unwrap()
+    }
+
+    fn new(resource_address: ResourceAddress) -> Self {
+        let mut env = ScryptoEnv;
+        Self(
+            env.invoke(ResourceManagerCreateVaultInvocation {
+                receiver: resource_address,
+            })
+            .unwrap(),
+        )
     }
 
     scrypto_env_native_fn! {
-        fn new(resource_address: ResourceAddress) -> Self {
-            ResourceManagerCreateVaultInvocation {
-                receiver: resource_address,
-            }
-        }
 
         fn take_internal(&mut self, amount: Decimal) -> Bucket {
             VaultTakeInvocation {
-                receiver: self.0,
+                receiver: self.0.vault_id(),
                 amount,
             }
         }
 
         fn lock_fee_internal(&mut self, amount: Decimal) -> () {
             VaultLockFeeInvocation {
-                receiver: self.0,
+                receiver: self.0.vault_id(),
                 amount,
                 contingent: false,
             }
@@ -74,7 +105,7 @@ impl ScryptoVault for Vault {
 
         fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> () {
             VaultLockFeeInvocation {
-                receiver: self.0,
+                receiver: self.0.vault_id(),
                 amount,
                 contingent: true,
             }
@@ -83,42 +114,42 @@ impl ScryptoVault for Vault {
 
         fn put(&mut self, bucket: Bucket) -> () {
             VaultPutInvocation {
-                receiver: self.0,
+                receiver: self.0.vault_id(),
                 bucket: Bucket(bucket.0),
             }
         }
 
         fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
             VaultTakeNonFungiblesInvocation {
-                receiver: self.0,
+                receiver: self.0.vault_id(),
                 non_fungible_ids: non_fungible_ids.clone(),
             }
         }
 
         fn resource_address(&self) -> ResourceAddress {
             VaultGetResourceAddressInvocation {
-                receiver: self.0,
+                receiver: self.0.vault_id(),
             }
         }
 
         fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
             VaultGetNonFungibleIdsInvocation {
-                receiver: self.0,
+                receiver: self.0.vault_id(),
             }
         }
 
         fn create_proof(&self) -> Proof {
             VaultCreateProofInvocation {
-                receiver: self.0,
+                receiver: self.0.vault_id(),
             }
         }
 
         fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-            VaultCreateProofByAmountInvocation { amount, receiver: self.0, }
+            VaultCreateProofByAmountInvocation {  receiver: self.0.vault_id(),amount }
         }
 
         fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-            VaultCreateProofByIdsInvocation { ids: ids.clone(), receiver: self.0 }
+            VaultCreateProofByIdsInvocation {  receiver: self.0.vault_id(), ids: ids.clone(), }
         }
     }
 

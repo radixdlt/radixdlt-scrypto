@@ -268,6 +268,13 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
             }
 
             // RE nodes & references
+            ScryptoCustomValue::Ownership(value) => match value {
+                Ownership::Vault(v) => {
+                    if !self.vaults.insert(v.clone()) {
+                        return Err(ValueIndexingError::DuplicateOwnership);
+                    }
+                }
+            },
             ScryptoCustomValue::Component(value) => {
                 if !self.components.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
@@ -296,12 +303,6 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
             }
-            ScryptoCustomValue::Vault(value) => {
-                if !self.vaults.insert(value.clone()) {
-                    return Err(ValueIndexingError::DuplicateOwnership);
-                }
-            }
-
             // Other interpreted
             ScryptoCustomValue::Expression(value) => {
                 self.expressions.push((value.clone(), path.clone().into()));

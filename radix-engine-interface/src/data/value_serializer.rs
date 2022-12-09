@@ -386,6 +386,13 @@ pub fn serialize_custom_value<S: Serializer>(
             )
         }
         // RE node types
+        ScryptoCustomValue::Ownership(value) => serialize_value(
+            ValueEncoding::WithType,
+            serializer,
+            context,
+            ScryptoCustomTypeId::Ownership,
+            &hex::encode(value.to_vec()),
+        ),
         ScryptoCustomValue::Component(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
@@ -438,13 +445,6 @@ pub fn serialize_custom_value<S: Serializer>(
                 )
             }
         }
-        ScryptoCustomValue::Vault(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomTypeId::Vault,
-            &hex::encode(value),
-        ),
         // Other interpreted types
         ScryptoCustomValue::Expression(value) => serialize_value(
             // The fact it's an expression isn't so relevant, so favour simplicity over verbosity
@@ -729,7 +729,7 @@ mod tests {
                 EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
                 EddsaEd25519Signature,
             },
-            data::types::{Blob, Expression},
+            data::types::{Blob, Expression, Ownership},
             math::{Decimal, PreciseDecimal},
         };
 
@@ -793,6 +793,9 @@ mod tests {
                             value: ScryptoCustomValue::SystemAddress(EPOCH_MANAGER),
                         },
                         SborValue::Custom {
+                            value: ScryptoCustomValue::Ownership(Ownership::Vault([0; 36])),
+                        },
+                        SborValue::Custom {
                             value: ScryptoCustomValue::Component([0; 36]),
                         },
                         SborValue::Custom {
@@ -806,9 +809,6 @@ mod tests {
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Proof(2),
-                        },
-                        SborValue::Custom {
-                            value: ScryptoCustomValue::Vault([0; 36]),
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Expression(Expression::entire_worktop()),

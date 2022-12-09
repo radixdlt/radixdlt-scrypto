@@ -340,20 +340,17 @@ impl Parser {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
 
-            // RE nodes
-            TokenKind::Component => Ok(Value::Component(self.parse_values_one()?.into())),
-            TokenKind::KeyValueStore => Ok(Value::KeyValueStore(self.parse_values_one()?.into())),
-            TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
-            TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
-            TokenKind::Vault => Ok(Value::Vault(self.parse_values_one()?.into())),
-
-            // Interpreted
-            TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
-            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
+            // RE Interpreted
             TokenKind::NonFungibleAddress => {
                 let values = self.parse_values_two()?;
                 Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
             }
+            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
+
+            // TX Interpreted
+            TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
+            TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
+            TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
@@ -468,17 +465,14 @@ impl Parser {
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
             TokenKind::SystemAddress => Ok(Type::SystemAddress),
 
-            // RE Nodes
-            TokenKind::Component => Ok(Type::Component),
-            TokenKind::KeyValueStore => Ok(Type::KeyValueStore),
+            // RE interpreted types
+            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+            TokenKind::Blob => Ok(Type::Blob),
+
+            // TX interpreted types
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
-            TokenKind::Vault => Ok(Type::Vault),
-
-            // Other interpreted types
             TokenKind::Expression => Ok(Type::Expression),
-            TokenKind::Blob => Ok(Type::Blob),
-            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Type::Hash),

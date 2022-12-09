@@ -2,6 +2,8 @@ use crate::data::*;
 use sbor::*;
 use scrypto_abi::{Fields, Type};
 
+use super::types::Ownership;
+
 pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
     match ty {
         Type::Unit => Some(SborTypeId::Unit),
@@ -32,11 +34,11 @@ pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
         Type::ComponentAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress)),
         Type::ResourceAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress)),
         Type::SystemAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress)),
+        Type::Vault => Some(SborTypeId::Custom(ScryptoCustomTypeId::Ownership)),
         Type::Component => Some(SborTypeId::Custom(ScryptoCustomTypeId::Component)),
         Type::KeyValueStore { .. } => Some(SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore)),
         Type::Bucket => Some(SborTypeId::Custom(ScryptoCustomTypeId::Bucket)),
         Type::Proof => Some(SborTypeId::Custom(ScryptoCustomTypeId::Proof)),
-        Type::Vault => Some(SborTypeId::Custom(ScryptoCustomTypeId::Vault)),
         Type::Expression => Some(SborTypeId::Custom(ScryptoCustomTypeId::Expression)),
         Type::Blob => Some(SborTypeId::Custom(ScryptoCustomTypeId::Blob)),
         Type::NonFungibleAddress => {
@@ -282,6 +284,13 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
+        Type::Vault => {
+            if let SborValue::Custom { value } = value {
+                matches!(value, ScryptoCustomValue::Ownership(Ownership::Vault(_)))
+            } else {
+                false
+            }
+        }
         Type::Component => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Component(_))
@@ -309,13 +318,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         Type::Proof => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Proof(_))
-            } else {
-                false
-            }
-        }
-        Type::Vault => {
-            if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Vault(_))
             } else {
                 false
             }
