@@ -76,12 +76,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "forward_ref"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8cbd1169bd7b4a0a20d92b9af7a7e0422888bd38a6f5ec29c1fd8c1558a272e"
-
-[[package]]
 name = "generic-array"
 version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -122,9 +116,6 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "itoa"
@@ -228,10 +219,7 @@ version = "0.7.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "sbor",
- "scrypto-abi",
  "syn",
- "uuid",
 ]
 
 [[package]]
@@ -239,7 +227,6 @@ name = "radix-engine-interface"
 version = "0.7.0"
 dependencies = [
  "bech32",
- "forward_ref",
  "hex",
  "num-bigint",
  "num-traits",
@@ -270,7 +257,6 @@ name = "sbor"
 version = "0.7.0"
 dependencies = [
  "hashbrown",
- "hex",
  "sbor-derive",
  "serde",
 ]
@@ -282,7 +268,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
- "uuid",
 ]
 
 [[package]]
@@ -290,7 +275,6 @@ name = "scrypto"
 version = "0.7.0"
 dependencies = [
  "bech32",
- "forward_ref",
  "hex",
  "num-bigint",
  "num-traits",
@@ -325,7 +309,6 @@ dependencies = [
  "serde",
  "serde_json",
  "syn",
- "uuid",
 ]
 
 [[package]]
@@ -430,15 +413,6 @@ name = "utils"
 version = "0.7.0"
 dependencies = [
  "sbor",
-]
-
-[[package]]
-name = "uuid"
-version = "1.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "422ee0de9031b5b948b97a8fc04e3aa35230001a722ddd27943e0be31564ce4c"
-dependencies = [
- "getrandom",
 ]
 
 [[package]]
