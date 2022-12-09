@@ -1,7 +1,7 @@
 use crate::time::constants::*;
 use crate::time::Instant;
+use sbor::rust::fmt;
 use sbor::*;
-use std::fmt;
 
 const UNIX_EPOCH_YEAR: u32 = 1970;
 
