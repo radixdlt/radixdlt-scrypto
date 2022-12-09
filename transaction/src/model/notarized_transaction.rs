@@ -21,7 +21,7 @@ pub struct TransactionHeader {
     pub notary_public_key: PublicKey,
     pub notary_as_signatory: bool,
     pub cost_unit_limit: u32,
-    pub tip_percentage: u8,
+    pub tip_percentage: u16,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

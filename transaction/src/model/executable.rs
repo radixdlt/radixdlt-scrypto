@@ -28,7 +28,7 @@ pub struct ExecutionContext {
 pub enum FeePayment {
     User {
         cost_unit_limit: u32,
-        tip_percentage: u8,
+        tip_percentage: u16,
     },
     NoFee,
 }

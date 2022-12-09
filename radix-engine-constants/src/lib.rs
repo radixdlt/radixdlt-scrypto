@@ -19,10 +19,10 @@ pub const DEFAULT_MIN_COST_UNIT_LIMIT: u32 = 1_000_000;
 pub const DEFAULT_MAX_COST_UNIT_LIMIT: u32 = 100_000_000;
 
 /// The minimum value of tip percentage
-pub const DEFAULT_MIN_TIP_PERCENTAGE: u8 = 0;
+pub const DEFAULT_MIN_TIP_PERCENTAGE: u16 = 0;
 
 /// The maximum value of tip percentage
-pub const DEFAULT_MAX_TIP_PERCENTAGE: u8 = u8::MAX;
+pub const DEFAULT_MAX_TIP_PERCENTAGE: u16 = u16::MAX;
 
 /// The max epoch range
 pub const DEFAULT_MAX_EPOCH_RANGE: u64 = 100;
