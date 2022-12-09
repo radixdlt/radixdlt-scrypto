@@ -125,6 +125,13 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateWithOwnerIn
                 rule!(require(owner_badge.clone())),
             ),
         );
+        access_rules.insert(
+            UpdateMetadata,
+            (
+                rule!(require(owner_badge.clone())),
+                rule!(require(owner_badge.clone())),
+            ),
+        );
 
         let invocation = ResourceManagerCreateInvocation {
             resource_type: self.resource_type,
@@ -262,8 +269,6 @@ where
 
 fn build_substates(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    metadata_access_rule: AccessRule,
-    metadata_mutability: AccessRule,
 ) -> (AccessRulesChainSubstate, AccessRulesChainSubstate) {
     let (mint_access_rule, mint_mutability) = access_rules_map
         .remove(&Mint)
@@ -275,8 +280,25 @@ fn build_substates(
         access_rules_map
             .remove(&UpdateNonFungibleData)
             .unwrap_or((AllowAll, rule!(deny_all)));
+    let (update_metadata_access_rule, update_metadata_mutability) = access_rules_map
+        .remove(&UpdateMetadata)
+        .unwrap_or((DenyAll, rule!(deny_all)));
 
     let mut access_rules = AccessRules::new();
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Set,
+        ))),
+        update_metadata_access_rule,
+        update_metadata_mutability,
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Get,
+        ))),
+        AllowAll,
+        DenyAll,
+    );
     access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
             ResourceManagerMethod::Mint,
@@ -292,25 +314,11 @@ fn build_substates(
         burn_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-            MetadataMethod::Set,
-        ))),
-        metadata_access_rule,
-        metadata_mutability,
-    );
-    access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
             ResourceManagerMethod::UpdateNonFungibleData,
         ))),
         update_non_fungible_data_access_rule,
         update_non_fungible_data_mutability,
-    );
-    access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-            MetadataMethod::Get,
-        ))),
-        AllowAll,
-        DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
         AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
@@ -486,7 +494,7 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
             self.mint_params,
             api,
         )?;
-        let (substate, vault_substate) = build_substates(self.access_rules, AllowAll, DenyAll);
+        let (substate, vault_substate) = build_substates(self.access_rules);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
