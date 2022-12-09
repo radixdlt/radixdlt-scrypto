@@ -38,6 +38,13 @@ impl VisibilityProperties {
                 ) => true,
                 _ => false,
             },
+            RENodeId::TransactionHash(..) => match actor {
+                REActor::Function(
+                    ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
+                    ..,
+                ) => true,
+                _ => false,
+            },
             RENodeId::Bucket(..) => match actor {
                 REActor::Method(ResolvedMethod::Native(NativeMethod::Bucket(..)), ..)
                 | REActor::Method(ResolvedMethod::Native(NativeMethod::Worktop(..)), ..)
@@ -122,6 +129,7 @@ impl VisibilityProperties {
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 _ => false,
             },
+            (ExecutionMode::TransactionModule, _offset) => false,
             (ExecutionMode::MoveUpstream, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
                 _ => false,

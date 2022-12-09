@@ -135,6 +135,13 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                                     loaded: false,
                                     size: 0,
                                 },
+                                RENodeId::TransactionHash(..) => {
+                                    SystemApiCostingEntry::BorrowNode {
+                                        // TODO: figure out loaded state and size
+                                        loaded: false,
+                                        size: 0,
+                                    }
+                                }
                             }
                         }),
                         1,
@@ -250,19 +257,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::ReadTransactionHash => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
-                        1,
-                        "read_transaction_hash",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
             SysCallInput::ReadBlob { .. } => {
                 track
                     .fee_reserve
@@ -272,19 +266,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::ReadBlob { size: 0 }), // TODO pass the right size
                         1,
                         "read_blob",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
-            SysCallInput::GenerateUuid => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::GenerateUuid),
-                        1,
-                        "generate_uuid",
                         false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;

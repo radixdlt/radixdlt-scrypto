@@ -75,14 +75,8 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                     substate_id
                 );
             }
-            SysCallInput::ReadTransactionHash => {
-                log!(call_frame, "Reading transaction hash");
-            }
             SysCallInput::ReadBlob { blob_hash } => {
                 log!(call_frame, "Reading blob: hash = {}", blob_hash);
-            }
-            SysCallInput::GenerateUuid => {
-                log!(call_frame, "Generating UUID");
             }
             SysCallInput::EmitLog { .. } => {
                 log!(call_frame, "Emitting application log");
@@ -120,7 +114,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::GetRef { .. } => {}
             SysCallOutput::GetRefMut { .. } => {}
             SysCallOutput::DropLock { .. } => {}
-            SysCallOutput::ReadTransactionHash { .. } => {}
             SysCallOutput::ReadBlob { .. } => {}
             SysCallOutput::GenerateUuid { .. } => {}
             SysCallOutput::EmitLog { .. } => {}

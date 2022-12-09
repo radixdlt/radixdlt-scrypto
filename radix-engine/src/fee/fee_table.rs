@@ -2,8 +2,8 @@ use radix_engine_interface::api::types::{
     AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
     ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
     NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
-    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
-    WorktopMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionHashMethod,
+    TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
 
 pub enum SystemApiCostingEntry {
@@ -70,16 +70,10 @@ pub enum SystemApiCostingEntry {
     /*
      * Misc
      */
-    /// Reads the current epoch.
-    ReadEpoch,
-    /// Reads the transaction hash.
-    ReadTransactionHash,
     /// Reads blob in transaction
     ReadBlob {
         size: u32,
     },
-    /// Generates a UUID.
-    GenerateUuid,
     /// Emits a log.
     EmitLog {
         size: u32,
@@ -265,6 +259,10 @@ impl FeeTable {
                     VaultMethod::RecallNonFungibles => self.fixed_low,
                 }
             }
+            NativeMethod::TransactionHash(ident) => match ident {
+                TransactionHashMethod::Get => self.fixed_low,
+                TransactionHashMethod::GenerateUuid => self.fixed_low,
+            },
         }
     }
 
@@ -303,10 +301,7 @@ impl FeeTable {
             SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropLock => self.fixed_low,
 
-            SystemApiCostingEntry::ReadEpoch => self.fixed_low,
-            SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
-            SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
             SystemApiCostingEntry::EmitEvent {
                 native,
