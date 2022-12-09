@@ -26,6 +26,14 @@ blueprint! {
                 .set_depositable(rule!(require(auth_address)));
         }
 
+        pub fn set_updateable_metadata(
+            resource_address: ResourceAddress,
+            auth_address: ResourceAddress,
+        ) {
+            borrow_resource_manager!(resource_address)
+                .set_updateable_metadata(rule!(require(auth_address)));
+        }
+
         pub fn lock_recallable(resource_address: ResourceAddress) {
             borrow_resource_manager!(resource_address).lock_recallable();
         }
@@ -44,6 +52,10 @@ blueprint! {
 
         pub fn lock_depositable(resource_address: ResourceAddress) {
             borrow_resource_manager!(resource_address).lock_depositable();
+        }
+
+        pub fn lock_metadata_updateable(resource_address: ResourceAddress) {
+            borrow_resource_manager!(resource_address).lock_updateable_metadata();
         }
     }
 }
