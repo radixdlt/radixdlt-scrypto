@@ -65,6 +65,14 @@ impl fmt::Display for DateTimeError {
     }
 }
 
+/// A simple date/time convenience struct, that can represent any date between
+/// 1-1-1 00:00:00 and u32::MAX-12-31 23:59:59 (inclusive).
+/// Months and days of month are 1-based (i.e. Dec 15th 2022 corresponds to 2022-12-15).
+///
+/// Hour, minute and second constitute a 0-based 24-hour clock.
+/// With midnight being represented as 00:00:00 and 23:59:59 being the maximum
+/// correct value (a second before midnight).
+/// This struct isn't timezone-aware (but can be considered UTC when converting from an Instant).
 #[derive(Encode, Decode, TypeId, PartialEq, Eq, Copy, Clone, Debug)]
 pub struct DateTime {
     year: u32,
