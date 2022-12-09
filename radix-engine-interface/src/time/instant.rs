@@ -27,21 +27,21 @@ impl Instant {
 
     pub fn add_days(&self, days_to_add: i64) -> Option<Instant> {
         days_to_add
-            .checked_mul(SECONDS_IN_A_DAY as i64)
+            .checked_mul(SECONDS_IN_A_DAY)
             .and_then(|to_add| self.seconds_since_unix_epoch.checked_add(to_add))
             .map(Instant::new)
     }
 
     pub fn add_hours(&self, hours_to_add: i64) -> Option<Instant> {
         hours_to_add
-            .checked_mul(SECONDS_IN_AN_HOUR as i64)
+            .checked_mul(SECONDS_IN_AN_HOUR)
             .and_then(|to_add| self.seconds_since_unix_epoch.checked_add(to_add))
             .map(Instant::new)
     }
 
     pub fn add_minutes(&self, minutes_to_add: i64) -> Option<Instant> {
         minutes_to_add
-            .checked_mul(SECONDS_IN_A_MINUTE as i64)
+            .checked_mul(SECONDS_IN_A_MINUTE)
             .and_then(|to_add| self.seconds_since_unix_epoch.checked_add(to_add))
             .map(Instant::new)
     }

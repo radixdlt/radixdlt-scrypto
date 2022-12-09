@@ -1,16 +1,19 @@
 use crate::time::constants::*;
 use crate::time::Instant;
 use sbor::*;
-use sbor::rust::format;
-use sbor::rust::string::{String, ToString};
+use std::fmt;
 
 const UNIX_EPOCH_YEAR: u32 = 1970;
-const SECONDS_IN_A_NON_LEAP_YEAR: u64 = 365 * 24 * 60 * 60;
-const SECONDS_IN_A_LEAP_YEAR: u64 = 366 * 24 * 60 * 60;
+
+const SECONDS_IN_A_NON_LEAP_YEAR: i64 = 365 * 24 * 60 * 60;
+const SECONDS_IN_A_LEAP_YEAR: i64 = 366 * 24 * 60 * 60;
+
 const DAYS_PER_4Y: i64 = 365 * 4 + 1;
 const DAYS_PER_100Y: i64 = 365 * 100 + 24;
 const DAYS_PER_400Y: i64 = 365 * 400 + 97;
+
 const LEAP_YEAR_DAYS_IN_MONTHS: [u8; 12] = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
 // A shift (in seconds) from the Unix epoch (1970-01-01 00:00:00)
 // to a base date that is a multiple of a 400-year leap cycle.
 // Used in Instant -> DateTime conversion.
@@ -20,8 +23,47 @@ const LEAP_YEAR_DAYS_IN_MONTHS: [u8; 12] = [31, 29, 31, 30, 31, 30, 31, 31, 30, 
 //    the extra day on leap years is added to the last month (Feb),
 //    not in the middle of a year (makes some calculations easier)
 const SHIFT_FROM_UNIX_TIME_TO_MARCH_Y2K: i64 = 946684800 + 86400 * (31 + 29);
+
+// A minimum Unix timestamp value that is supported by DateTime.
+// This value corresponds to a date of 1-1-1 00:00:00. Year 0 isn't allowed.
 const MIN_SUPPORTED_TIMESTAMP: i64 = -62135596800;
+
+// A maximum Unix timestamp value that is supported by DateTime.
+// This value corresponds to a date of 4294967295-12-31 23:59:59,
+// where year 4294967295 equals u32::MAX.
 const MAX_SUPPORTED_TIMESTAMP: i64 = 135536014634284799;
+
+#[derive(Encode, Decode, TypeId, PartialEq, Eq, Copy, Clone, Debug)]
+pub enum DateTimeError {
+    InvalidYear,
+    InvalidMonth,
+    InvalidDayOfMonth,
+    InvalidHour,
+    InvalidMinute,
+    InvalidSecond,
+    InstantIsOutOfRange,
+}
+
+impl fmt::Display for DateTimeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            DateTimeError::InvalidYear =>
+                write!(f, "Invalid year. Expected a value strictly greater than 0"),
+            DateTimeError::InvalidMonth =>
+                write!(f, "Invalid month. Expected a value between 1 (inclusive) and 12 (inclusive)"),
+            DateTimeError::InvalidDayOfMonth =>
+                write!(f, "Invalid day of month. Expected a value between 1 (inclusive) and, depending on a month, 28, 29 (Feb on a leap year), 30 or 31 (inclusive)"),
+            DateTimeError::InvalidHour =>
+                write!(f, "Invalid hour. Expected a value between 0 (inclusive) and 23 (inclusive)"),
+            DateTimeError::InvalidMinute =>
+                write!(f, "Invalid minute. Expected a value between 0 (inclusive) and 59 (inclusive)"),
+            DateTimeError::InvalidSecond =>
+                write!(f, "Invalid second. Expected a value between 0 (inclusive) and 59 (inclusive)"),
+            DateTimeError::InstantIsOutOfRange =>
+                write!(f, "Instant out of supported range [{}, {}]", MIN_SUPPORTED_TIMESTAMP, MAX_SUPPORTED_TIMESTAMP),
+        }
+    }
+}
 
 #[derive(Encode, Decode, TypeId, PartialEq, Eq, Copy, Clone, Debug)]
 pub struct DateTime {
@@ -41,16 +83,13 @@ impl DateTime {
         hour: u8,
         minute: u8,
         second: u8,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, DateTimeError> {
         if year <= 0 {
-            return Err("Invalid year. Expected a value strictly greater than 0".to_string());
+            return Err(DateTimeError::InvalidYear);
         }
 
         if month < 1 || month > 12 {
-            return Err(
-                "Invalid month. Expected a value between 1 (inclusive) and 12 (inclusive)"
-                    .to_string(),
-            );
+            return Err(DateTimeError::InvalidMonth);
         }
 
         if day_of_month < 1 ||
@@ -59,31 +98,19 @@ impl DateTime {
             // Check Feb on non-leap years
             (!Self::is_leap_year(year) && month == 2 && day_of_month > 28)
         {
-            return Err("Invalid day of month.\
-                Expected a value between 1 (inclusive)\
-                and, depending on a month, 28, 29 (Feb on a leap year), 30 or 31 (inclusive)"
-                .to_string());
+            return Err(DateTimeError::InvalidDayOfMonth);
         }
 
         if hour > 23 {
-            return Err(
-                "Invalid hour. Expected a value between 0 (inclusive) and 23 (inclusive)"
-                    .to_string(),
-            );
+            return Err(DateTimeError::InvalidHour);
         }
 
         if minute > 59 {
-            return Err(
-                "Invalid minute. Expected a value between 0 (inclusive) and 59 (inclusive)"
-                    .to_string(),
-            );
+            return Err(DateTimeError::InvalidMinute);
         }
 
         if second > 59 {
-            return Err(
-                "Invalid second. Expected a value between 0 (inclusive) and 59 (inclusive)"
-                    .to_string(),
-            );
+            return Err(DateTimeError::InvalidSecond);
         }
 
         Ok(Self {
@@ -96,24 +123,21 @@ impl DateTime {
         })
     }
 
-    pub fn from_instant(instant: &Instant) -> Result<Self, String> {
+    pub fn from_instant(instant: &Instant) -> Result<Self, DateTimeError> {
         if instant.seconds_since_unix_epoch < MIN_SUPPORTED_TIMESTAMP
             || instant.seconds_since_unix_epoch > MAX_SUPPORTED_TIMESTAMP
         {
-            return Err(format!(
-                "Instant out of supported range [{}, {}]",
-                MIN_SUPPORTED_TIMESTAMP, MAX_SUPPORTED_TIMESTAMP
-            ));
+            return Err(DateTimeError::InstantIsOutOfRange);
         }
 
         // First, convert the base to 1 Mar 2000 for easier leap year calculation
-        let secs_since_march_y2k: i64 =
+        let secs_since_march_y2k =
             instant.seconds_since_unix_epoch - SHIFT_FROM_UNIX_TIME_TO_MARCH_Y2K;
 
-        let mut days_since_march_y2k = secs_since_march_y2k / SECONDS_IN_A_DAY as i64;
-        let mut remaining_secs = secs_since_march_y2k % SECONDS_IN_A_DAY as i64;
+        let mut days_since_march_y2k = secs_since_march_y2k / SECONDS_IN_A_DAY;
+        let mut remaining_secs = secs_since_march_y2k % SECONDS_IN_A_DAY;
         if remaining_secs < 0 {
-            remaining_secs += SECONDS_IN_A_DAY as i64;
+            remaining_secs += SECONDS_IN_A_DAY;
             days_since_march_y2k -= 1;
         }
 
@@ -175,21 +199,21 @@ impl DateTime {
         // Shift 0-based day of month to 1-based
         let day_of_month = remaining_days + 1;
 
-        let hour = remaining_secs / SECONDS_IN_AN_HOUR as i64;
-        let minute = remaining_secs / SECONDS_IN_A_MINUTE as i64 % SECONDS_IN_A_MINUTE as i64;
-        let second = remaining_secs % SECONDS_IN_A_MINUTE as i64;
+        let hour = remaining_secs / SECONDS_IN_AN_HOUR;
+        let minute = remaining_secs / SECONDS_IN_A_MINUTE % SECONDS_IN_A_MINUTE;
+        let second = remaining_secs % SECONDS_IN_A_MINUTE;
 
         Ok(Self {
-            year: u32::try_from(year).map_err(|_| "year overflow")?,
-            month: u8::try_from(month).map_err(|_| "month overflow")?,
-            day_of_month: u8::try_from(day_of_month).map_err(|_| "day_of_month overflow")?,
-            hour: u8::try_from(hour).map_err(|_| "hour overflow")?,
-            minute: u8::try_from(minute).map_err(|_| "minute overflow")?,
-            second: u8::try_from(second).map_err(|_| "second overflow")?,
+            year: u32::try_from(year).expect("year overflow"),
+            month: u8::try_from(month).expect("month overflow"),
+            day_of_month: u8::try_from(day_of_month).expect("day_of_month overflow"),
+            hour: u8::try_from(hour).expect("hour overflow"),
+            minute: u8::try_from(minute).expect("minute overflow"),
+            second: u8::try_from(second).expect("second overflow"),
         })
     }
 
-    pub fn to_instant(&self) -> Result<Instant, String> {
+    pub fn to_instant(&self) -> Instant {
         let is_leap_year = Self::is_leap_year(self.year);
 
         // Separating pre-1970 (negative) and 1970 onward (non-negative)
@@ -197,86 +221,85 @@ impl DateTime {
         if self.year >= UNIX_EPOCH_YEAR {
             // Count ended leap and non-leap years between Unix epoch and dt
             let num_leap_years_between_self_and_epoch =
-                Self::num_leap_years_up_to_exclusive(self.year)
-                    - Self::num_leap_years_up_to_exclusive(UNIX_EPOCH_YEAR + 1);
+                (Self::num_leap_years_up_to_exclusive(self.year)
+                    - Self::num_leap_years_up_to_exclusive(UNIX_EPOCH_YEAR + 1))
+                    as i64;
 
             let num_non_leap_years_between_self_and_epoch =
-                (self.year - UNIX_EPOCH_YEAR) - num_leap_years_between_self_and_epoch;
+                (self.year - UNIX_EPOCH_YEAR) as i64 - num_leap_years_between_self_and_epoch;
 
             // Given the number of ended leap and non-leap years, count the elapsed seconds
-            let seconds_up_to_the_beginning_of_the_year =
-                (num_non_leap_years_between_self_and_epoch as u64 * SECONDS_IN_A_NON_LEAP_YEAR)
-                    + (num_leap_years_between_self_and_epoch as u64 * SECONDS_IN_A_LEAP_YEAR);
+            let seconds_up_to_the_beginning_of_the_year = (num_non_leap_years_between_self_and_epoch
+                * SECONDS_IN_A_NON_LEAP_YEAR)
+                + (num_leap_years_between_self_and_epoch * SECONDS_IN_A_LEAP_YEAR);
 
             // Count the seconds for ended months
-            let mut seconds_in_ended_months: u64 = 0;
+            let mut seconds_in_ended_months = 0;
             for n in 0..self.month - 1 {
                 seconds_in_ended_months +=
-                    LEAP_YEAR_DAYS_IN_MONTHS[n as usize] as u64 * SECONDS_IN_A_DAY as u64;
+                    LEAP_YEAR_DAYS_IN_MONTHS[n as usize] as i64 * SECONDS_IN_A_DAY;
                 // Subtract one day for any non-leap Feb
                 if !is_leap_year && n == 1 {
-                    seconds_in_ended_months -= SECONDS_IN_A_DAY as u64;
+                    seconds_in_ended_months -= SECONDS_IN_A_DAY;
                 }
             }
 
             // Sum it all together and add remaining days, hours, minutes and seconds
             let total_seconds_since_unix_epoch = seconds_up_to_the_beginning_of_the_year
                 + seconds_in_ended_months
-                + (self.day_of_month - 1) as u64 * SECONDS_IN_A_DAY as u64
-                + self.hour as u64 * SECONDS_IN_AN_HOUR as u64
-                + self.minute as u64 * SECONDS_IN_A_MINUTE as u64
-                + self.second as u64;
+                + (self.day_of_month - 1) as i64 * SECONDS_IN_A_DAY
+                + self.hour as i64 * SECONDS_IN_AN_HOUR
+                + self.minute as i64 * SECONDS_IN_A_MINUTE
+                + self.second as i64;
 
-            Ok(Instant::new(
-                total_seconds_since_unix_epoch as i64, /* guaranteed to fit in i64 */
-            ))
+            Instant::new(total_seconds_since_unix_epoch)
         } else {
             // Similarly, count the number of leap and non-leap years...
             let num_leap_years_between_epoch_and_self =
-                Self::num_leap_years_up_to_exclusive(UNIX_EPOCH_YEAR)
-                    - Self::num_leap_years_up_to_exclusive(self.year + 1);
+                (Self::num_leap_years_up_to_exclusive(UNIX_EPOCH_YEAR)
+                    - Self::num_leap_years_up_to_exclusive(self.year + 1)) as i64;
 
             let num_non_leap_days_between_epoch_and_self =
-                (UNIX_EPOCH_YEAR - self.year - 1) - num_leap_years_between_epoch_and_self;
+                (UNIX_EPOCH_YEAR - self.year - 1) as i64 - num_leap_years_between_epoch_and_self;
 
             // ...and use it to count the number of seconds up (down?) to the end of year,
             // remember, we're counting backwards!
-            let seconds_up_to_the_end_of_the_year =
-                (num_non_leap_days_between_epoch_and_self as u64 * SECONDS_IN_A_NON_LEAP_YEAR)
-                    + (num_leap_years_between_epoch_and_self as u64 * SECONDS_IN_A_LEAP_YEAR);
+            let seconds_up_to_the_end_of_the_year = (num_non_leap_days_between_epoch_and_self
+                * SECONDS_IN_A_NON_LEAP_YEAR)
+                + (num_leap_years_between_epoch_and_self * SECONDS_IN_A_LEAP_YEAR);
 
             // We're counting backwards so add seconds for any non-started months
-            let mut seconds_in_non_started_months: u64 = 0;
+            let mut seconds_in_non_started_months = 0;
             let mut curr_month = 11;
             while curr_month > self.month - 1 {
                 seconds_in_non_started_months +=
-                    LEAP_YEAR_DAYS_IN_MONTHS[curr_month as usize] as u64 * SECONDS_IN_A_DAY as u64;
+                    LEAP_YEAR_DAYS_IN_MONTHS[curr_month as usize] as i64 * SECONDS_IN_A_DAY;
                 // Subtract one day for any non-leap Feb
                 if !is_leap_year && curr_month == 1 {
-                    seconds_in_non_started_months -= SECONDS_IN_A_DAY as u64;
+                    seconds_in_non_started_months -= SECONDS_IN_A_DAY;
                 }
                 curr_month -= 1;
             }
 
-            let mut days_in_month = LEAP_YEAR_DAYS_IN_MONTHS[self.month as usize - 1];
+            let mut days_in_month = LEAP_YEAR_DAYS_IN_MONTHS[self.month as usize - 1] as i64;
             if !is_leap_year && curr_month == 1 {
                 days_in_month -= 1;
             }
 
             // Add the remaining days of the current month
-            let remaining_days_in_month = days_in_month - self.day_of_month;
+            let remaining_days_in_month = days_in_month - self.day_of_month as i64;
 
             let total_seconds_since_unix_epoch = seconds_up_to_the_end_of_the_year
                 + seconds_in_non_started_months
-                + remaining_days_in_month as u64 * SECONDS_IN_A_DAY as u64
-                + (23 - self.hour) as u64 * SECONDS_IN_AN_HOUR as u64
-                + (59 - self.minute) as u64 * SECONDS_IN_A_MINUTE as u64
-                + (59 - self.second) as u64;
+                + remaining_days_in_month * SECONDS_IN_A_DAY
+                + (23 - self.hour) as i64 * SECONDS_IN_AN_HOUR
+                + (59 - self.minute) as i64 * SECONDS_IN_A_MINUTE
+                + (59 - self.second) as i64;
 
-            Ok(Instant::new(
+            Instant::new(
                 // Pre-1970 timestamps are negative
-                -(total_seconds_since_unix_epoch as i64) - 1,
-            ))
+                -total_seconds_since_unix_epoch - 1,
+            )
         }
     }
 
@@ -315,43 +338,38 @@ impl DateTime {
 
     pub fn add_days(&self, days_to_add: i64) -> Option<DateTime> {
         self.to_instant()
-            .ok()
-            .and_then(|i| i.add_days(days_to_add))
+            .add_days(days_to_add)
             .and_then(|i| Self::from_instant(&i).ok())
     }
 
     pub fn add_hours(&self, hours_to_add: i64) -> Option<DateTime> {
         self.to_instant()
-            .ok()
-            .and_then(|i| i.add_hours(hours_to_add))
+            .add_hours(hours_to_add)
             .and_then(|i| Self::from_instant(&i).ok())
     }
 
     pub fn add_minutes(&self, minutes_to_add: i64) -> Option<DateTime> {
         self.to_instant()
-            .ok()
-            .and_then(|i| i.add_minutes(minutes_to_add))
+            .add_minutes(minutes_to_add)
             .and_then(|i| Self::from_instant(&i).ok())
     }
 
     pub fn add_seconds(&self, seconds_to_add: i64) -> Option<DateTime> {
         self.to_instant()
-            .ok()
-            .and_then(|i| i.add_seconds(seconds_to_add))
+            .add_seconds(seconds_to_add)
             .and_then(|i| Self::from_instant(&i).ok())
     }
 }
 
 impl TryFrom<Instant> for DateTime {
-    type Error = String;
+    type Error = DateTimeError;
     fn try_from(instant: Instant) -> Result<Self, Self::Error> {
         DateTime::from_instant(&instant)
     }
 }
 
-impl TryFrom<DateTime> for Instant {
-    type Error = String;
-    fn try_from(dt: DateTime) -> Result<Self, Self::Error> {
+impl From<DateTime> for Instant {
+    fn from(dt: DateTime) -> Self {
         (&dt).to_instant()
     }
 }
@@ -386,13 +404,16 @@ mod tests {
             (194476271, [1976, 2, 29, 21, 11, 11]),
             (446947199, [1984, 2, 29, 23, 59, 59]),
             (447012859, [1984, 3, 1, 18, 14, 19]),
+            (951865200, [2000, 2, 29, 23, 0, 0]),
             (951868800, [2000, 3, 1, 0, 0, 0]),
+            (1109548800, [2005, 2, 28, 0, 0, 0]),
             (1670420819, [2022, 12, 7, 13, 46, 59]),
             (1835395199, [2028, 2, 28, 23, 59, 59]),
             (1835395200, [2028, 2, 29, 00, 00, 00]),
             (1835481599, [2028, 2, 29, 23, 59, 59]),
             (1835481600, [2028, 3, 1, 00, 00, 00]),
             (51442991999, [3600, 2, 29, 23, 59, 59]),
+            (64065686400, [4000, 2, 29, 0, 0, 0]),
             (569034205384, [20001, 12, 23, 1, 3, 4]),
             (MAX_SUPPORTED_TIMESTAMP, [u32::MAX, 12, 31, 23, 59, 59]),
         ];
@@ -401,7 +422,7 @@ mod tests {
             let expected_dt = DateTime::from(dt_components);
             let expected_instant = Instant::new(timestamp);
 
-            assert_eq!(expected_dt.to_instant().unwrap(), expected_instant);
+            assert_eq!(expected_dt.to_instant(), expected_instant);
             assert_eq!(
                 DateTime::from_instant(&expected_instant).unwrap(),
                 expected_dt

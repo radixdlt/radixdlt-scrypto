@@ -63,7 +63,7 @@ fn set_current_time_should_fail_without_validator_auth() {
             package_address,
             "ClockTest",
             "set_current_time",
-            args!(CLOCK, 123 as u64),
+            args!(CLOCK, 123 as i64),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -81,7 +81,7 @@ fn validator_can_set_current_time() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
-    let time_to_set_ms: u64 = 1669663688996;
+    let time_to_set_ms: i64 = 1669663688996;
     let expected_unix_time_rounded_to_minutes: i64 = 1669663680;
 
     // Act
@@ -153,7 +153,7 @@ fn test_clock_comparison_methods_against_the_current_time() {
             package_address,
             "ClockTest",
             "set_current_time",
-            args!(CLOCK, 1669663688996 as u64),
+            args!(CLOCK, 1669663688996 as i64),
         )
         .call_function(
             package_address,

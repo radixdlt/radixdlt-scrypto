@@ -99,11 +99,11 @@ blueprint! {
         pub fn test_date_time_conversions() {
             let now = Clock::current_time_rounded_to_minutes();
             let dt = DateTime::try_from(now).unwrap();
-            assert!(dt.to_instant().unwrap() == now);
+            assert!(dt.to_instant() == now);
 
             let now_plus_2d = now.add_days(2).unwrap();
             let dt_plus_2d = dt.add_days(2).unwrap();
-            let dt_instant_plus_2d = dt_plus_2d.to_instant().unwrap();
+            let dt_instant_plus_2d = dt_plus_2d.to_instant();
 
             assert!(dt_instant_plus_2d == Instant::new(now.seconds_since_unix_epoch + 172800));
             assert!(now_plus_2d == Instant::new(now.seconds_since_unix_epoch + 172800));
@@ -113,7 +113,7 @@ blueprint! {
             Clock::current_time_rounded_to_minutes().seconds_since_unix_epoch
         }
 
-        pub fn set_current_time(clock: SystemAddress, current_time_ms: u64) {
+        pub fn set_current_time(clock: SystemAddress, current_time_ms: i64) {
             let input = RadixEngineInput::Invoke(SerializedInvocation::Native(
                 NativeFnInvocation::Method(NativeMethodInvocation::Clock(
                     ClockMethodInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {

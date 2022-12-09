@@ -82,7 +82,7 @@ impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockSetCurrentTimeInvocation {
     pub receiver: SystemAddress,
-    pub current_time_ms: u64,
+    pub current_time_ms: i64,
 }
 
 impl Invocation for ClockSetCurrentTimeInvocation {

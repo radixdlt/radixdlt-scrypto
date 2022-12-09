@@ -18,9 +18,9 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
 use radix_engine_interface::time::*;
 
-const SECONDS_TO_MS_FACTOR: u64 = 1000;
-const MINUTES_TO_SECONDS_FACTOR: u64 = 60;
-const MINUTES_TO_MS_FACTOR: u64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
+const SECONDS_TO_MS_FACTOR: i64 = 1000;
+const MINUTES_TO_SECONDS_FACTOR: i64 = 60;
+const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
 
 pub struct Clock;
 
@@ -105,7 +105,7 @@ impl NativeProcedure for ClockCreateInvocation {
     }
 }
 
-pub struct ClockSetCurrentTimeExecutable(RENodeId, u64);
+pub struct ClockSetCurrentTimeExecutable(RENodeId, i64);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
     type Exec = NativeExecutor<ClockSetCurrentTimeExecutable>;
@@ -204,10 +204,7 @@ impl NativeProcedure for ClockGetCurrentTimeExecutable {
                 let substate_ref = system_api.get_ref(handle)?;
                 let substate = substate_ref.current_time_rounded_to_minutes();
                 let instant = Instant::new(
-                    i64::try_from(
-                        substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
-                    )
-                    .expect("i64 overflow on current_time_rounded_to_minutes_ms"),
+                    substate.current_time_rounded_to_minutes_ms / SECONDS_TO_MS_FACTOR,
                 );
                 Ok((instant, CallFrameUpdate::empty()))
             }
@@ -272,8 +269,8 @@ impl NativeProcedure for ClockCompareCurrentTimeExecutable {
                     .expect("i64 overflow on current_time_rounded_to_minutes_ms"),
                 );
                 let other_instant_rounded = Instant::new(
-                    (self.instant.seconds_since_unix_epoch / MINUTES_TO_SECONDS_FACTOR as i64)
-                        * MINUTES_TO_SECONDS_FACTOR as i64,
+                    (self.instant.seconds_since_unix_epoch / MINUTES_TO_SECONDS_FACTOR)
+                        * MINUTES_TO_SECONDS_FACTOR,
                 );
                 let result = current_time_instant.compare(other_instant_rounded, self.operator);
                 Ok((result, CallFrameUpdate::empty()))
