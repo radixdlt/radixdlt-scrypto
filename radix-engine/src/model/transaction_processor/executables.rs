@@ -156,245 +156,210 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
             let result = match inst {
                 Instruction::Basic(BasicInstruction::TakeFromWorktop { resource_address }) => {
-                    let new_id = id_allocator
-                        .new_bucket_id()
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(
-                                    TransactionProcessorError::IdAllocationError(e),
-                                ),
-                            )
-                        })?;
-
-                    Worktop::sys_take_all(*resource_address, api).map(|bucket| {
-                        bucket_id_mapping.insert(new_id, bucket.0);
-                        IndexedScryptoValue::from_typed(&bucket)
-                    })?
+                    let bucket = Worktop::sys_take_all(*resource_address, api)?;
+                    let new_id = id_allocator.new_bucket_id().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::IdAllocationError(e),
+                        ))
+                    })?;
+                    bucket_id_mapping.insert(new_id, bucket.0);
+                    IndexedScryptoValue::from_typed(&bucket)
                 }
                 Instruction::Basic(BasicInstruction::TakeFromWorktopByAmount {
                     amount,
                     resource_address,
                 }) => {
-                    let new_id =
-                    id_allocator
-                        .new_bucket_id()
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::IdAllocationError(e),
-                            ))
-                        })?;
-
-                    Worktop::sys_take_amount(*resource_address, *amount, api).map(|bucket| {
-                        bucket_id_mapping.insert(new_id, bucket.0);
-                        IndexedScryptoValue::from_typed(&bucket)
-                    })?
-                },
+                    let bucket = Worktop::sys_take_amount(*resource_address, *amount, api)?;
+                    let new_id = id_allocator.new_bucket_id().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::IdAllocationError(e),
+                        ))
+                    })?;
+                    bucket_id_mapping.insert(new_id, bucket.0);
+                    IndexedScryptoValue::from_typed(&bucket)
+                }
                 Instruction::Basic(BasicInstruction::TakeFromWorktopByIds {
                     ids,
                     resource_address,
                 }) => {
-                    let new_id =
-                    id_allocator
-                        .new_bucket_id()
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::IdAllocationError(e),
-                            ))
-                        })?;
-
-                    Worktop::sys_take_non_fungibles(*resource_address, ids.clone(), api).map(
-                        |bucket| {
-                            bucket_id_mapping.insert(new_id, bucket.0);
-                            IndexedScryptoValue::from_typed(&bucket)
-                        },
-                    )?
-                },
+                    let bucket =
+                        Worktop::sys_take_non_fungibles(*resource_address, ids.clone(), api)?;
+                    let new_id = id_allocator.new_bucket_id().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::IdAllocationError(e),
+                        ))
+                    })?;
+                    bucket_id_mapping.insert(new_id, bucket.0);
+                    IndexedScryptoValue::from_typed(&bucket)
+                }
                 Instruction::Basic(BasicInstruction::ReturnToWorktop { bucket_id }) => {
-                    let real_id = bucket_id_mapping
-                        .remove(bucket_id)
-                        .unwrap_or(Err(RuntimeError::ApplicationError(
+                    let real_id = bucket_id_mapping.remove(bucket_id).ok_or(
+                        RuntimeError::ApplicationError(
                             ApplicationError::TransactionProcessorError(
                                 TransactionProcessorError::BucketNotFound(*bucket_id),
                             ),
-                        )))?;
+                        ),
+                    )?;
 
-                    Worktop::sys_put(Bucket(real_id), api)
-                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
+                    let rtn = Worktop::sys_put(Bucket(real_id), api)?;
+                    IndexedScryptoValue::from_typed(&rtn)
                 }
                 Instruction::Basic(BasicInstruction::AssertWorktopContains {
                     resource_address,
                 }) => {
-                    Worktop::sys_assert_contains(*resource_address, api)
-                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
-                },
+                    let rtn = Worktop::sys_assert_contains(*resource_address, api)?;
+                    IndexedScryptoValue::from_typed(&rtn)
+                }
                 Instruction::Basic(BasicInstruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
                 }) => {
-                    Worktop::sys_assert_contains_amount(*resource_address, *amount, api)
-                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
-                },
+                    let rtn = Worktop::sys_assert_contains_amount(*resource_address, *amount, api)?;
+                    IndexedScryptoValue::from_typed(&rtn)
+                }
                 Instruction::Basic(BasicInstruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
                 }) => {
-                    Worktop::sys_assert_contains_non_fungibles(*resource_address, ids.clone(), api)
-                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
+                    let rtn = Worktop::sys_assert_contains_non_fungibles(
+                        *resource_address,
+                        ids.clone(),
+                        api,
+                    )?;
+                    IndexedScryptoValue::from_typed(&rtn)
                 }
-
                 Instruction::Basic(BasicInstruction::PopFromAuthZone {}) => {
-                    let new_id = id_allocator
-                        .new_proof_id()
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::IdAllocationError(e),
-                            ))
-                        })?;
-                    ComponentAuthZone::sys_pop(api).map(|proof| {
-                        proof_id_mapping.insert(new_id, proof.0);
-                        IndexedScryptoValue::from_typed(&proof)
-                    })?
-                },
+                    let proof = ComponentAuthZone::sys_pop(api)?;
+                    let new_id = id_allocator.new_proof_id().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::IdAllocationError(e),
+                        ))
+                    })?;
+                    proof_id_mapping.insert(new_id, proof.0);
+                    IndexedScryptoValue::from_typed(&proof)
+                }
                 Instruction::Basic(BasicInstruction::ClearAuthZone) => {
                     proof_id_mapping.clear();
-                    ComponentAuthZone::sys_clear(api)
-                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
+                    let rtn = ComponentAuthZone::sys_clear(api)?;
+                    IndexedScryptoValue::from_typed(&rtn)
                 }
                 Instruction::Basic(BasicInstruction::PushToAuthZone { proof_id }) => {
-                    let real_id = proof_id_mapping
-                        .remove(proof_id)
-                        .ok_or(RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::ProofNotFound(*proof_id),
-                            ),
-                        ))?;
+                    let real_id =
+                        proof_id_mapping
+                            .remove(proof_id)
+                            .ok_or(RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(
+                                    TransactionProcessorError::ProofNotFound(*proof_id),
+                                ),
+                            ))?;
                     let proof = Proof(real_id);
-                    ComponentAuthZone::sys_push(proof, api)
-                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
+                    let rtn = ComponentAuthZone::sys_push(proof, api)?;
+                    IndexedScryptoValue::from_typed(&rtn)
                 }
                 Instruction::Basic(BasicInstruction::CreateProofFromAuthZone {
                     resource_address,
                 }) => {
-                    let new_id =
-                    id_allocator
-                        .new_proof_id()
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::IdAllocationError(e),
-                            ))
-                        })?;
+                    let proof = ComponentAuthZone::sys_create_proof(*resource_address, api)?;
 
-                    ComponentAuthZone::sys_create_proof(*resource_address, api).map(|proof| {
-                        proof_id_mapping.insert(new_id, proof.0);
-                        IndexedScryptoValue::from_typed(&proof)
-                    })?
-                },
+                    let new_id = id_allocator.new_proof_id().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::IdAllocationError(e),
+                        ))
+                    })?;
+                    proof_id_mapping.insert(new_id, proof.0);
+                    IndexedScryptoValue::from_typed(&proof)
+                }
                 Instruction::Basic(BasicInstruction::CreateProofFromAuthZoneByAmount {
                     amount,
                     resource_address,
                 }) => {
-                    let new_id = id_allocator
-                        .new_proof_id()
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::IdAllocationError(e),
-                            ))
-                        })?;
-                    ComponentAuthZone::sys_create_proof_by_amount(
+                    let proof = ComponentAuthZone::sys_create_proof_by_amount(
                         *amount,
                         *resource_address,
                         api,
-                    )
-                        .map(|proof| {
-                            proof_id_mapping.insert(new_id, proof.0);
-                            IndexedScryptoValue::from_typed(&proof)
-                        })?
-                },
+                    )?;
+                    let new_id = id_allocator.new_proof_id().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::IdAllocationError(e),
+                        ))
+                    })?;
+                    proof_id_mapping.insert(new_id, proof.0);
+                    IndexedScryptoValue::from_typed(&proof)
+                }
                 Instruction::Basic(BasicInstruction::CreateProofFromAuthZoneByIds {
                     ids,
                     resource_address,
                 }) => {
-                    let new_id = id_allocator
-                        .new_proof_id()
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::IdAllocationError(e),
-                            ))
-                        })?;
-                    ComponentAuthZone::sys_create_proof_by_ids(ids, *resource_address, api).map(
-                        |proof| {
-                            proof_id_mapping.insert(new_id, proof.0);
-                            IndexedScryptoValue::from_typed(&proof)
-                        },
-                    )?
-                },
+                    let proof =
+                        ComponentAuthZone::sys_create_proof_by_ids(ids, *resource_address, api)?;
+                    let new_id = id_allocator.new_proof_id().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::IdAllocationError(e),
+                        ))
+                    })?;
+                    proof_id_mapping.insert(new_id, proof.0);
+                    IndexedScryptoValue::from_typed(&proof)
+                }
                 Instruction::Basic(BasicInstruction::CreateProofFromBucket { bucket_id }) => {
-                    let new_id = id_allocator
-                        .new_proof_id()
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(
-                                    TransactionProcessorError::IdAllocationError(e),
-                                ),
-                            )
-                        })?;
-                    let real_bucket_id = bucket_id_mapping
-                        .get(bucket_id)
-                        .cloned()
-                        .ok_or(RuntimeError::ApplicationError(
+                    let real_bucket_id = bucket_id_mapping.get(bucket_id).cloned().ok_or(
+                        RuntimeError::ApplicationError(
                             ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BucketNotFound(new_id),
+                                TransactionProcessorError::BucketNotFound(*bucket_id),
                             ),
-                        ))?;
+                        ),
+                    )?;
 
                     let bucket = Bucket(real_bucket_id);
-                    bucket.sys_create_proof(api).map(|proof| {
-                        proof_id_mapping.insert(new_id, proof.0);
-                        IndexedScryptoValue::from_typed(&proof)
-                    })?
+                    let proof = bucket.sys_create_proof(api)?;
+                    let new_id = id_allocator.new_proof_id().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::IdAllocationError(e),
+                        ))
+                    })?;
+                    proof_id_mapping.insert(new_id, proof.0);
+                    IndexedScryptoValue::from_typed(&proof)
                 }
                 Instruction::Basic(BasicInstruction::CloneProof { proof_id }) => {
-                    let new_id = id_allocator
-                        .new_proof_id()
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::IdAllocationError(e),
-                            ))
-                        })?;
-                    proof_id_mapping
-                        .get(proof_id)
-                        .cloned()
-                        .map(|real_id| {
-                            let proof = Proof(real_id);
-                            proof.sys_clone(api).map(|proof| {
-                                proof_id_mapping.insert(new_id, proof.0);
-                                IndexedScryptoValue::from_typed(&proof)
-                            })
-                        })
-                        .unwrap_or(Err(RuntimeError::ApplicationError(
+                    let real_id = proof_id_mapping.get(proof_id).cloned().ok_or(
+                        RuntimeError::ApplicationError(
                             ApplicationError::TransactionProcessorError(
                                 TransactionProcessorError::ProofNotFound(*proof_id),
                             ),
-                        )))?
-                },
-                Instruction::Basic(BasicInstruction::DropProof { proof_id }) => proof_id_mapping
-                    .remove(proof_id)
-                    .map(|real_id| {
-                        let proof = Proof(real_id);
-                        proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())
-                    })
-                    .unwrap_or(Err(RuntimeError::ApplicationError(
-                        ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::ProofNotFound(*proof_id),
                         ),
-                    ))),
+                    )?;
+
+                    let proof = Proof(real_id);
+                    let proof = proof.sys_clone(api)?;
+
+                    let new_id = id_allocator.new_proof_id().map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::IdAllocationError(e),
+                        ))
+                    })?;
+                    proof_id_mapping.insert(new_id, proof.0);
+                    IndexedScryptoValue::from_typed(&proof)
+                }
+                Instruction::Basic(BasicInstruction::DropProof { proof_id }) => {
+                    let real_id =
+                        proof_id_mapping
+                            .remove(proof_id)
+                            .ok_or(RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(
+                                    TransactionProcessorError::ProofNotFound(*proof_id),
+                                ),
+                            ))?;
+                    let proof = Proof(real_id);
+                    proof.sys_drop(api)?;
+
+                    IndexedScryptoValue::unit()
+                }
                 Instruction::Basic(BasicInstruction::DropAllProofs) => {
                     for (_, real_id) in proof_id_mapping.drain() {
                         let proof = Proof(real_id);
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
                     ComponentAuthZone::sys_clear(api)
-                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
                 }
                 Instruction::Basic(BasicInstruction::CallFunction {
                     package_address,
@@ -424,16 +389,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         args,
                     ))?;
 
-                    // Auto move into auth_zone
-                    for (proof_id, _) in &result.proof_ids {
-                        let proof = Proof(*proof_id);
-                        ComponentAuthZone::sys_push(proof, api)?;
-                    }
-                    // Auto move into worktop
-                    for (bucket_id, _) in &result.bucket_ids {
-                        Worktop::sys_put(Bucket(*bucket_id), api)?;
-                    }
-                    
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
                     result
                 }
                 Instruction::Basic(BasicInstruction::CallMethod {
@@ -441,7 +400,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     method_name,
                     args,
                 }) => {
-                    TransactionProcessor::replace_ids(
+                    let args = TransactionProcessor::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,
                         IndexedScryptoValue::from_slice(args)
@@ -452,28 +411,21 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             e,
                         ))
                     })
-                    .and_then(|args| TransactionProcessor::process_expressions(args, api))
-                    .and_then(|args| {
-                        api.invoke(ParsedScryptoInvocation::Method(
-                            ScryptoMethodIdent {
-                                receiver: ScryptoReceiver::Global(component_address.clone()),
-                                method_name: method_name.clone(),
-                            },
-                            args,
-                        ))
-                    })
-                    .and_then(|result| {
-                        // Auto move into auth_zone
-                        for (proof_id, _) in &result.proof_ids {
-                            let proof = Proof(*proof_id);
-                            ComponentAuthZone::sys_push(proof, api)?;
-                        }
-                        // Auto move into worktop
-                        for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), api)?;
-                        }
-                        Ok(result)
-                    })
+                    .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+
+                    let result = api.invoke(ParsedScryptoInvocation::Method(
+                        ScryptoMethodIdent {
+                            receiver: ScryptoReceiver::Global(component_address.clone()),
+                            method_name: method_name.clone(),
+                        },
+                        args,
+                    ))?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    result
                 }
                 Instruction::Basic(BasicInstruction::PublishPackage {
                     code,
@@ -489,7 +441,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         metadata: metadata.clone(),
                         access_rules: access_rules.clone(),
                     })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn)),
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?,
                 Instruction::Basic(BasicInstruction::PublishPackageWithOwner {
                     code,
                     abi,
@@ -502,94 +454,96 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         metadata: BTreeMap::new(),
                         owner_badge: owner_badge.clone(),
                     })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn)),
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?,
                 Instruction::Basic(BasicInstruction::CreateResource {
                     resource_type,
                     metadata,
                     access_rules,
                     mint_params,
-                }) => api
-                    .invoke(ResourceManagerCreateInvocation {
-                        resource_type: resource_type.clone(),
-                        metadata: metadata.clone(),
-                        access_rules: access_rules.clone(),
-                        mint_params: mint_params.clone(),
-                    })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .and_then(|result| {
-                        // Auto move into worktop
-                        for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), api)?;
-                        }
-                        Ok(result)
-                    }),
+                }) => {
+                    let result = api
+                        .invoke(ResourceManagerCreateInvocation {
+                            resource_type: resource_type.clone(),
+                            metadata: metadata.clone(),
+                            access_rules: access_rules.clone(),
+                            mint_params: mint_params.clone(),
+                        })
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    result
+                }
                 Instruction::Basic(BasicInstruction::CreateResourceWithOwner {
                     resource_type,
                     metadata,
                     owner_badge,
                     mint_params,
-                }) => api
-                    .invoke(ResourceManagerCreateWithOwnerInvocation {
-                        resource_type: resource_type.clone(),
-                        metadata: metadata.clone(),
-                        owner_badge: owner_badge.clone(),
-                        mint_params: mint_params.clone(),
-                    })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .and_then(|result| {
-                        // Auto move into worktop
-                        for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), api)?;
-                        }
-                        Ok(result)
-                    }),
+                }) => {
+                    let result = api
+                        .invoke(ResourceManagerCreateWithOwnerInvocation {
+                            resource_type: resource_type.clone(),
+                            metadata: metadata.clone(),
+                            owner_badge: owner_badge.clone(),
+                            mint_params: mint_params.clone(),
+                        })
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    result
+                }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
-                    bucket_id_mapping
-                        .get(bucket_id)
-                        .cloned()
-                        .ok_or(RuntimeError::ApplicationError(
+                    let bucket_id = bucket_id_mapping.get(bucket_id).cloned().ok_or(
+                        RuntimeError::ApplicationError(
                             ApplicationError::TransactionProcessorError(
                                 TransactionProcessorError::BucketNotFound(*bucket_id),
                             ),
-                        ))
-                        .and_then(|bucket_id| {
-                            api.invoke(ResourceManagerBucketBurnInvocation {
-                                bucket: Bucket(bucket_id.clone()),
-                            })
-                            .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                        })
+                        ),
+                    )?;
+
+                    api.invoke(ResourceManagerBucketBurnInvocation {
+                        bucket: Bucket(bucket_id.clone()),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
                 }
                 Instruction::Basic(BasicInstruction::MintResource {
                     amount,
                     resource_address,
-                }) => api
-                    .invoke(ResourceManagerMintInvocation {
-                        receiver: resource_address.clone(),
-                        mint_params: MintParams::Fungible {
+                }) => {
+                    let result = api
+                        .invoke(ResourceManagerMintInvocation {
+                            receiver: resource_address.clone(),
+                            mint_params: MintParams::Fungible {
+                                amount: amount.clone(),
+                            },
+                        })
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    result
+                }
+                Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => {
+                    let result = api
+                        .invoke(VaultRecallInvocation {
+                            receiver: vault_id.clone(),
                             amount: amount.clone(),
-                        },
-                    })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .and_then(|result| {
-                        // Auto move into worktop
-                        for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), api)?;
-                        }
-                        Ok(result)
-                    }),
-                Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => api
-                    .invoke(VaultRecallInvocation {
-                        receiver: vault_id.clone(),
-                        amount: amount.clone(),
-                    })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .and_then(|result| {
-                        // Auto move into worktop
-                        for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), api)?;
-                        }
-                        Ok(result)
-                    }),
+                        })
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    result
+                }
                 Instruction::Basic(BasicInstruction::SetMetadata {
                     entity_address,
                     key,
@@ -600,7 +554,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         key: key.clone(),
                         value: value.clone(),
                     })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn)),
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?,
                 Instruction::Basic(BasicInstruction::SetPackageRoyaltyConfig {
                     package_address,
                     royalty_config,
@@ -609,7 +563,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: package_address.clone(),
                         royalty_config: royalty_config.clone(),
                     })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn)),
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?,
                 Instruction::Basic(BasicInstruction::SetComponentRoyaltyConfig {
                     component_address,
                     royalty_config,
@@ -620,36 +574,37 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         )),
                         royalty_config: royalty_config.clone(),
                     })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn)),
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?,
                 Instruction::Basic(BasicInstruction::ClaimPackageRoyalty { package_address }) => {
-                    api.invoke(PackageClaimRoyaltyInvocation {
-                        receiver: package_address.clone(),
-                    })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .and_then(|result| {
-                        // Auto move into worktop
-                        for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), api)?;
-                        }
-                        Ok(result)
-                    })
+                    let result = api
+                        .invoke(PackageClaimRoyaltyInvocation {
+                            receiver: package_address.clone(),
+                        })
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    result
                 }
                 Instruction::Basic(BasicInstruction::ClaimComponentRoyalty {
                     component_address,
-                }) => api
-                    .invoke(ComponentClaimRoyaltyInvocation {
-                        receiver: RENodeId::Global(GlobalAddress::Component(
-                            component_address.clone(),
-                        )),
-                    })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .and_then(|result| {
-                        // Auto move into worktop
-                        for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), api)?;
-                        }
-                        Ok(result)
-                    }),
+                }) => {
+                    let result = api
+                        .invoke(ComponentClaimRoyaltyInvocation {
+                            receiver: RENodeId::Global(GlobalAddress::Component(
+                                component_address.clone(),
+                            )),
+                        })
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    result
+                }
                 Instruction::Basic(BasicInstruction::SetMethodAccessRule {
                     entity_address,
                     index,
@@ -662,12 +617,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         key: key.clone(),
                         rule: rule.clone(),
                     })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn)),
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?,
                 Instruction::System(SystemInstruction::CallNativeFunction {
                     function_ident,
                     args,
                 }) => {
-                    TransactionProcessor::replace_ids(
+                    let args = TransactionProcessor::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,
                         IndexedScryptoValue::from_slice(args)
@@ -678,40 +633,34 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             e,
                         ))
                     })
-                    .and_then(|args| TransactionProcessor::process_expressions(args, api))
-                    .and_then(|args| {
-                        let native_function = resolve_native_function(
-                            &function_ident.blueprint_name,
-                            &function_ident.function_name,
-                        )
-                        .ok_or(RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::NativeFunctionNotFound(
-                                    function_ident.clone(),
-                                ),
+                    .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+
+                    let native_function = resolve_native_function(
+                        &function_ident.blueprint_name,
+                        &function_ident.function_name,
+                    )
+                    .ok_or(RuntimeError::ApplicationError(
+                        ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::NativeFunctionNotFound(
+                                function_ident.clone(),
                             ),
-                        ))?;
-                        parse_and_invoke_native_fn(
-                            NativeFn::Function(native_function),
-                            args.raw,
-                            api,
-                        )
-                    })
-                    .and_then(|result| {
-                        // Auto move into auth_zone
-                        for (proof_id, _) in &result.proof_ids {
-                            let proof = Proof(*proof_id);
-                            ComponentAuthZone::sys_push(proof, api)?;
-                        }
-                        // Auto move into worktop
-                        for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), api)?;
-                        }
-                        Ok(result)
-                    })
+                        ),
+                    ))?;
+
+                    let result = parse_and_invoke_native_fn(
+                        NativeFn::Function(native_function),
+                        args.raw,
+                        api,
+                    )?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    result
                 }
                 Instruction::System(SystemInstruction::CallNativeMethod { method_ident, args }) => {
-                    TransactionProcessor::replace_ids(
+                    let args = TransactionProcessor::replace_ids(
                         &mut proof_id_mapping,
                         &mut bucket_id_mapping,
                         IndexedScryptoValue::from_slice(args)
@@ -722,34 +671,28 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             e,
                         ))
                     })
-                    .and_then(|args| TransactionProcessor::process_expressions(args, api))
-                    .and_then(|args| {
-                        let native_method =
-                            resolve_native_method(method_ident.receiver, &method_ident.method_name)
-                                .ok_or(RuntimeError::ApplicationError(
-                                    ApplicationError::TransactionProcessorError(
-                                        TransactionProcessorError::NativeMethodNotFound(
-                                            method_ident.clone(),
-                                        ),
-                                    ),
-                                ))?;
+                    .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
 
-                        parse_and_invoke_native_fn(NativeFn::Method(native_method), args.raw, api)
-                    })
-                    .and_then(|result| {
-                        // Auto move into auth_zone
-                        for (proof_id, _) in &result.proof_ids {
-                            let proof = Proof(*proof_id);
-                            ComponentAuthZone::sys_push(proof, api)?;
-                        }
-                        // Auto move into worktop
-                        for (bucket_id, _) in &result.bucket_ids {
-                            Worktop::sys_put(Bucket(*bucket_id), api)?;
-                        }
-                        Ok(result)
-                    })
+                    let native_method =
+                        resolve_native_method(method_ident.receiver, &method_ident.method_name)
+                            .ok_or(RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(
+                                    TransactionProcessorError::NativeMethodNotFound(
+                                        method_ident.clone(),
+                                    ),
+                                ),
+                            ))?;
+
+                    let result =
+                        parse_and_invoke_native_fn(NativeFn::Method(native_method), args.raw, api)?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    result
                 }
-            }?;
+            };
             outputs.push(result);
 
             api.emit_event(Event::Runtime(RuntimeEvent::PostExecuteInstruction {
@@ -772,6 +715,29 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 pub struct TransactionProcessor {}
 
 impl TransactionProcessor {
+    fn move_proofs_to_authzone_and_buckets_to_worktop<Y>(
+        value: &IndexedScryptoValue,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError>
+    where
+        Y: SystemApi
+            + Invokable<ScryptoInvocation, RuntimeError>
+            + EngineApi<RuntimeError>
+            + InvokableModel<RuntimeError>,
+    {
+        // Auto move into auth_zone
+        for (proof_id, _) in &value.proof_ids {
+            let proof = Proof(*proof_id);
+            ComponentAuthZone::sys_push(proof, api)?;
+        }
+        // Auto move into worktop
+        for (bucket_id, _) in &value.bucket_ids {
+            Worktop::sys_put(Bucket(*bucket_id), api)?;
+        }
+
+        Ok(())
+    }
+
     fn replace_ids(
         proof_id_mapping: &mut HashMap<ProofId, ProofId>,
         bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
