@@ -119,12 +119,12 @@ pub enum SysCallTraceOrigin {
 impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
         &mut self,
-        _call_frame: &CallFrame,
+        call_frame: &CallFrame,
         heap: &mut Heap,
         _track: &mut Track<R>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
-        self.handle_pre_sys_call(heap, input)
+        self.handle_pre_sys_call(call_frame, heap, input)
     }
 
     fn post_sys_call(
@@ -281,6 +281,7 @@ impl ExecutionTraceModule {
 
     fn handle_pre_sys_call(
         &mut self,
+        call_frame: &CallFrame,
         heap: &mut Heap,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
