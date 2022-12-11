@@ -1,4 +1,4 @@
-use crate::engine::{Kernel, KernelError, LockFlags, RENode, RuntimeError, SystemApi};
+use crate::engine::{Kernel, KernelError, LockFlags, Module, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
@@ -20,10 +20,11 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
-impl<'g, 's, W, R> EngineApi<RuntimeError> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R, M> EngineApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
+    M: Module<R>,
 {
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {
