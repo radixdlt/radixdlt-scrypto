@@ -1,6 +1,6 @@
 use crate::engine::*;
 use crate::fee::{FeeReserve, RoyaltyReceiver};
-use crate::model::GlobalAddressSubstate;
+use crate::model::{CostingError, GlobalAddressSubstate};
 use radix_engine_interface::api::types::{
     ComponentOffset, FnIdentifier, GlobalAddress, GlobalOffset, PackageOffset, RENodeId,
     SubstateId, SubstateOffset,

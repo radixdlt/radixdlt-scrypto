@@ -1,6 +1,6 @@
-use crate::engine::ProofSnapshot;
 use crate::model::{
-    InvokeError, LockableResource, LockedAmountOrIds, ProofError, ResourceContainerId,
+    InvokeError, LockableResource, LockedAmountOrIds, ProofError, ProofSnapshot,
+    ResourceContainerId,
 };
 use crate::types::*;
 
