@@ -8,6 +8,7 @@ use radix_engine_interface::api::types::{
 };
 use sbor::rust::fmt::Debug;
 
+#[derive(Clone)]
 pub enum SysCallInput<'a> {
     Invoke {
         invocation: &'a dyn Debug,
@@ -54,7 +55,7 @@ pub enum SysCallInput<'a> {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SysCallOutput<'a> {
     Invoke { rtn: &'a dyn Debug },
     ReadOwnedNodes,
@@ -151,6 +152,62 @@ pub trait Module<R: FeeReserve> {
         _heap: &mut Heap,
         _track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+}
+
+pub struct KernelModule {
+    trace: bool,
+    execution_trace: ExecutionTraceModule,
+    costing: CostingModule,
+    royalty: RoyaltyModule,
+}
+
+impl KernelModule {
+    fn new(trace: bool, max_sys_call_trace_depth: usize) -> Self {
+        Self {
+            trace,
+            execution_trace: ExecutionTraceModule::new(
+                max_sys_call_trace_depth,
+            ),
+            royalty: RoyaltyModule::default(),
+            costing: CostingModule::default(),
+        }
+    }
+}
+
+impl<R: FeeReserve> Module<R> for KernelModule {
+    fn pre_sys_call(
+        &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+        input: SysCallInput,
+    ) -> Result<(), ModuleError> {
+        if self.trace {
+            LoggerModule.pre_sys_call(call_frame, heap, track, input.clone())?;
+        }
+        self.costing.pre_sys_call(call_frame, heap, track, input.clone())?;
+        self.royalty.pre_sys_call(call_frame, heap, track, input.clone())?;
+        self.execution_trace.pre_sys_call(call_frame, heap, track, input.clone())?;
+
+        Ok(())
+    }
+
+    fn post_sys_call(
+        &mut self,
+        call_frame: &CallFrame,
+        heap: &mut Heap,
+        track: &mut Track<R>,
+        output: SysCallOutput,
+    ) -> Result<(), ModuleError> {
+        if self.trace {
+            LoggerModule.post_sys_call(call_frame, heap, track, output.clone())?;
+        }
+        self.costing.post_sys_call(call_frame, heap, track, output.clone())?;
+        self.royalty.post_sys_call(call_frame, heap, track, output.clone())?;
+        self.execution_trace.post_sys_call(call_frame, heap, track, output.clone())?;
+
         Ok(())
     }
 }
