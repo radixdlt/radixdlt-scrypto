@@ -138,11 +138,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
         }
-        let mut proof_id_mapping = HashMap::new();
-        let mut bucket_id_mapping = HashMap::new();
+        let mut processor = TransactionProcessor::new();
         let mut outputs = Vec::new();
-        let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
-
         let node_id = api.allocate_node_id(RENodeType::Worktop)?;
         let _worktop_id = api.create_node(node_id, RENode::Worktop(WorktopSubstate::new()))?;
 
@@ -157,12 +154,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             let result = match inst {
                 Instruction::Basic(BasicInstruction::TakeFromWorktop { resource_address }) => {
                     let bucket = Worktop::sys_take_all(*resource_address, api)?;
-                    let new_id = id_allocator.new_bucket_id().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::IdAllocationError(e),
-                        ))
-                    })?;
-                    bucket_id_mapping.insert(new_id, bucket.0);
+                    let bucket = processor.next_static_bucket(bucket)?;
                     IndexedScryptoValue::from_typed(&bucket)
                 }
                 Instruction::Basic(BasicInstruction::TakeFromWorktopByAmount {
@@ -170,12 +162,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                 }) => {
                     let bucket = Worktop::sys_take_amount(*resource_address, *amount, api)?;
-                    let new_id = id_allocator.new_bucket_id().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::IdAllocationError(e),
-                        ))
-                    })?;
-                    bucket_id_mapping.insert(new_id, bucket.0);
+                    let bucket = processor.next_static_bucket(bucket)?;
                     IndexedScryptoValue::from_typed(&bucket)
                 }
                 Instruction::Basic(BasicInstruction::TakeFromWorktopByIds {
@@ -184,24 +171,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }) => {
                     let bucket =
                         Worktop::sys_take_non_fungibles(*resource_address, ids.clone(), api)?;
-                    let new_id = id_allocator.new_bucket_id().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::IdAllocationError(e),
-                        ))
-                    })?;
-                    bucket_id_mapping.insert(new_id, bucket.0);
+                    let bucket = processor.next_static_bucket(bucket)?;
                     IndexedScryptoValue::from_typed(&bucket)
                 }
                 Instruction::Basic(BasicInstruction::ReturnToWorktop { bucket_id }) => {
-                    let real_id = bucket_id_mapping.remove(bucket_id).ok_or(
-                        RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BucketNotFound(*bucket_id),
-                            ),
-                        ),
-                    )?;
-
-                    let rtn = Worktop::sys_put(Bucket(real_id), api)?;
+                    let bucket = processor.take_bucket(bucket_id)?;
+                    let rtn = Worktop::sys_put(bucket, api)?;
                     IndexedScryptoValue::from_typed(&rtn)
                 }
                 Instruction::Basic(BasicInstruction::AssertWorktopContains {
@@ -230,29 +205,16 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::PopFromAuthZone {}) => {
                     let proof = ComponentAuthZone::sys_pop(api)?;
-                    let new_id = id_allocator.new_proof_id().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::IdAllocationError(e),
-                        ))
-                    })?;
-                    proof_id_mapping.insert(new_id, proof.0);
+                    let proof = processor.next_static_proof(proof)?;
                     IndexedScryptoValue::from_typed(&proof)
                 }
                 Instruction::Basic(BasicInstruction::ClearAuthZone) => {
-                    proof_id_mapping.clear();
+                    processor.proof_id_mapping.clear();
                     let rtn = ComponentAuthZone::sys_clear(api)?;
                     IndexedScryptoValue::from_typed(&rtn)
                 }
                 Instruction::Basic(BasicInstruction::PushToAuthZone { proof_id }) => {
-                    let real_id =
-                        proof_id_mapping
-                            .remove(proof_id)
-                            .ok_or(RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(
-                                    TransactionProcessorError::ProofNotFound(*proof_id),
-                                ),
-                            ))?;
-                    let proof = Proof(real_id);
+                    let proof = processor.take_proof(proof_id)?;
                     let rtn = ComponentAuthZone::sys_push(proof, api)?;
                     IndexedScryptoValue::from_typed(&rtn)
                 }
@@ -260,13 +222,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                 }) => {
                     let proof = ComponentAuthZone::sys_create_proof(*resource_address, api)?;
-
-                    let new_id = id_allocator.new_proof_id().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::IdAllocationError(e),
-                        ))
-                    })?;
-                    proof_id_mapping.insert(new_id, proof.0);
+                    let proof = processor.next_static_proof(proof)?;
                     IndexedScryptoValue::from_typed(&proof)
                 }
                 Instruction::Basic(BasicInstruction::CreateProofFromAuthZoneByAmount {
@@ -278,12 +234,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         *resource_address,
                         api,
                     )?;
-                    let new_id = id_allocator.new_proof_id().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::IdAllocationError(e),
-                        ))
-                    })?;
-                    proof_id_mapping.insert(new_id, proof.0);
+                    let proof = processor.next_static_proof(proof)?;
                     IndexedScryptoValue::from_typed(&proof)
                 }
                 Instruction::Basic(BasicInstruction::CreateProofFromAuthZoneByIds {
@@ -292,69 +243,28 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }) => {
                     let proof =
                         ComponentAuthZone::sys_create_proof_by_ids(ids, *resource_address, api)?;
-                    let new_id = id_allocator.new_proof_id().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::IdAllocationError(e),
-                        ))
-                    })?;
-                    proof_id_mapping.insert(new_id, proof.0);
+                    let proof = processor.next_static_proof(proof)?;
                     IndexedScryptoValue::from_typed(&proof)
                 }
                 Instruction::Basic(BasicInstruction::CreateProofFromBucket { bucket_id }) => {
-                    let real_bucket_id = bucket_id_mapping.get(bucket_id).cloned().ok_or(
-                        RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BucketNotFound(*bucket_id),
-                            ),
-                        ),
-                    )?;
-
-                    let bucket = Bucket(real_bucket_id);
+                    let bucket = processor.get_bucket(bucket_id)?;
                     let proof = bucket.sys_create_proof(api)?;
-                    let new_id = id_allocator.new_proof_id().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::IdAllocationError(e),
-                        ))
-                    })?;
-                    proof_id_mapping.insert(new_id, proof.0);
+                    let proof = processor.next_static_proof(proof)?;
                     IndexedScryptoValue::from_typed(&proof)
                 }
                 Instruction::Basic(BasicInstruction::CloneProof { proof_id }) => {
-                    let real_id = proof_id_mapping.get(proof_id).cloned().ok_or(
-                        RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::ProofNotFound(*proof_id),
-                            ),
-                        ),
-                    )?;
-
-                    let proof = Proof(real_id);
+                    let proof = processor.get_proof(proof_id)?;
                     let proof = proof.sys_clone(api)?;
-
-                    let new_id = id_allocator.new_proof_id().map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::IdAllocationError(e),
-                        ))
-                    })?;
-                    proof_id_mapping.insert(new_id, proof.0);
+                    let proof = processor.next_static_proof(proof)?;
                     IndexedScryptoValue::from_typed(&proof)
                 }
                 Instruction::Basic(BasicInstruction::DropProof { proof_id }) => {
-                    let real_id =
-                        proof_id_mapping
-                            .remove(proof_id)
-                            .ok_or(RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(
-                                    TransactionProcessorError::ProofNotFound(*proof_id),
-                                ),
-                            ))?;
-                    let proof = Proof(real_id);
+                    let proof = processor.take_proof(proof_id)?;
                     proof.sys_drop(api)?;
-
                     IndexedScryptoValue::unit()
                 }
                 Instruction::Basic(BasicInstruction::DropAllProofs) => {
-                    for (_, real_id) in proof_id_mapping.drain() {
+                    for (_, real_id) in processor.proof_id_mapping.drain() {
                         let proof = Proof(real_id);
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
@@ -367,18 +277,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     function_name,
                     args,
                 }) => {
-                    let args = TransactionProcessor::replace_ids(
-                        &mut proof_id_mapping,
-                        &mut bucket_id_mapping,
-                        IndexedScryptoValue::from_slice(args)
-                            .expect("Invalid CALL_FUNCTION arguments"),
-                    )
-                    .map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            e,
-                        ))
-                    })
-                    .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor
+                        .replace_ids(
+                            IndexedScryptoValue::from_slice(args)
+                                .expect("Invalid CALL_FUNCTION arguments"),
+                        )
+                        .map_err(|e| {
+                            RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(e),
+                            )
+                        })
+                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
 
                     let result = api.invoke(ParsedScryptoInvocation::Function(
                         ScryptoFunctionIdent {
@@ -400,18 +309,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     method_name,
                     args,
                 }) => {
-                    let args = TransactionProcessor::replace_ids(
-                        &mut proof_id_mapping,
-                        &mut bucket_id_mapping,
-                        IndexedScryptoValue::from_slice(args)
-                            .expect("Invalid CALL_METHOD arguments"),
-                    )
-                    .map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            e,
-                        ))
-                    })
-                    .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor
+                        .replace_ids(
+                            IndexedScryptoValue::from_slice(args)
+                                .expect("Invalid CALL_METHOD arguments"),
+                        )
+                        .map_err(|e| {
+                            RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(e),
+                            )
+                        })
+                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
 
                     let result = api.invoke(ParsedScryptoInvocation::Method(
                         ScryptoMethodIdent {
@@ -498,18 +406,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     result
                 }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
-                    let bucket_id = bucket_id_mapping.get(bucket_id).cloned().ok_or(
-                        RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::BucketNotFound(*bucket_id),
-                            ),
-                        ),
-                    )?;
-
-                    api.invoke(ResourceManagerBucketBurnInvocation {
-                        bucket: Bucket(bucket_id.clone()),
-                    })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
+                    let bucket = processor.take_bucket(bucket_id)?;
+                    api.invoke(ResourceManagerBucketBurnInvocation { bucket })
+                        .map(|rtn| IndexedScryptoValue::from_typed(&rtn))?
                 }
                 Instruction::Basic(BasicInstruction::MintResource {
                     amount,
@@ -622,18 +521,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     function_ident,
                     args,
                 }) => {
-                    let args = TransactionProcessor::replace_ids(
-                        &mut proof_id_mapping,
-                        &mut bucket_id_mapping,
-                        IndexedScryptoValue::from_slice(args)
-                            .expect("Invalid CALL_NATIVE_FUNCTION arguments"),
-                    )
-                    .map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            e,
-                        ))
-                    })
-                    .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor
+                        .replace_ids(
+                            IndexedScryptoValue::from_slice(args)
+                                .expect("Invalid CALL_NATIVE_FUNCTION arguments"),
+                        )
+                        .map_err(|e| {
+                            RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(e),
+                            )
+                        })
+                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
 
                     let native_function = resolve_native_function(
                         &function_ident.blueprint_name,
@@ -660,18 +558,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     result
                 }
                 Instruction::System(SystemInstruction::CallNativeMethod { method_ident, args }) => {
-                    let args = TransactionProcessor::replace_ids(
-                        &mut proof_id_mapping,
-                        &mut bucket_id_mapping,
-                        IndexedScryptoValue::from_slice(args)
-                            .expect("Invalid CALL_NATIVE_METHOD arguments"),
-                    )
-                    .map_err(|e| {
-                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                            e,
-                        ))
-                    })
-                    .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor
+                        .replace_ids(
+                            IndexedScryptoValue::from_slice(args)
+                                .expect("Invalid CALL_NATIVE_METHOD arguments"),
+                        )
+                        .map_err(|e| {
+                            RuntimeError::ApplicationError(
+                                ApplicationError::TransactionProcessorError(e),
+                            )
+                        })
+                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
 
                     let native_method =
                         resolve_native_method(method_ident.receiver, &method_ident.method_name)
@@ -712,9 +609,87 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     }
 }
 
-pub struct TransactionProcessor {}
+struct TransactionProcessor {
+    proof_id_mapping: HashMap<ProofId, ProofId>,
+    bucket_id_mapping: HashMap<BucketId, BucketId>,
+    id_allocator: IdAllocator,
+}
 
 impl TransactionProcessor {
+    fn new() -> Self {
+        Self {
+            proof_id_mapping: HashMap::new(),
+            bucket_id_mapping: HashMap::new(),
+            id_allocator: IdAllocator::new(IdSpace::Transaction),
+        }
+    }
+
+    fn get_bucket(&mut self, bucket_id: &BucketId) -> Result<Bucket, RuntimeError> {
+        let real_id = self.bucket_id_mapping.get(bucket_id).cloned().ok_or(
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::BucketNotFound(*bucket_id),
+            )),
+        )?;
+        Ok(Bucket(real_id))
+    }
+
+    fn take_bucket(&mut self, bucket_id: &BucketId) -> Result<Bucket, RuntimeError> {
+        let real_id =
+            self.bucket_id_mapping
+                .remove(bucket_id)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::BucketNotFound(*bucket_id),
+                    ),
+                ))?;
+        Ok(Bucket(real_id))
+    }
+
+    fn get_proof(&mut self, proof_id: &ProofId) -> Result<Proof, RuntimeError> {
+        let real_id =
+            self.proof_id_mapping
+                .get(proof_id)
+                .cloned()
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::ProofNotFound(*proof_id),
+                    ),
+                ))?;
+        Ok(Proof(real_id))
+    }
+
+    fn take_proof(&mut self, proof_id: &ProofId) -> Result<Proof, RuntimeError> {
+        let real_id =
+            self.proof_id_mapping
+                .remove(proof_id)
+                .ok_or(RuntimeError::ApplicationError(
+                    ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::ProofNotFound(*proof_id),
+                    ),
+                ))?;
+        Ok(Proof(real_id))
+    }
+
+    fn next_static_bucket(&mut self, bucket: Bucket) -> Result<Bucket, RuntimeError> {
+        let new_id = self.id_allocator.new_bucket_id().map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::IdAllocationError(e),
+            ))
+        })?;
+        self.bucket_id_mapping.insert(new_id, bucket.0);
+        Ok(Bucket(new_id))
+    }
+
+    fn next_static_proof(&mut self, proof: Proof) -> Result<Proof, RuntimeError> {
+        let new_id = self.id_allocator.new_proof_id().map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::IdAllocationError(e),
+            ))
+        })?;
+        self.proof_id_mapping.insert(new_id, proof.0);
+        Ok(Proof(new_id))
+    }
+
     fn move_proofs_to_authzone_and_buckets_to_worktop<Y>(
         value: &IndexedScryptoValue,
         api: &mut Y,
@@ -739,12 +714,11 @@ impl TransactionProcessor {
     }
 
     fn replace_ids(
-        proof_id_mapping: &mut HashMap<ProofId, ProofId>,
-        bucket_id_mapping: &mut HashMap<BucketId, BucketId>,
+        &mut self,
         mut value: IndexedScryptoValue,
     ) -> Result<IndexedScryptoValue, TransactionProcessorError> {
         value
-            .replace_ids(proof_id_mapping, bucket_id_mapping)
+            .replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
             .map_err(|e| match e {
                 ValueReplacingError::BucketIdNotFound(bucket_id) => {
                     TransactionProcessorError::BucketNotFound(bucket_id)
