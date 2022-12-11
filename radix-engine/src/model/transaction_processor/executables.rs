@@ -442,7 +442,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         },
                     })?;
 
-
                     Worktop::sys_put(Bucket(rtn.0), api)?;
 
                     InstructionOutput::Native(Box::new(rtn))

@@ -1,8 +1,8 @@
-use native_sdk::resource::{ComponentAuthZone, Worktop};
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::model::NativeOutput;
 use crate::types::*;
+use native_sdk::resource::{ComponentAuthZone, Worktop};
 use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::api::types::{
     AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, EpochManagerFunction,
@@ -20,9 +20,9 @@ pub fn parse_and_invoke_native_fn<'a, Y>(
 ) -> Result<Box<dyn NativeOutput>, RuntimeError>
 where
     Y: SystemApi
-    + Invokable<ScryptoInvocation, RuntimeError>
-    + EngineApi<RuntimeError>
-    + InvokableModel<RuntimeError>,
+        + Invokable<ScryptoInvocation, RuntimeError>
+        + EngineApi<RuntimeError>
+        + InvokableModel<RuntimeError>,
 {
     match native_fn {
         NativeFn::Function(native_function) => match native_function {

@@ -572,6 +572,7 @@ where
         Ok(output)
     }
 
+    // TODO: Remove
     pub fn finalize(
         mut self,
         result: Result<Vec<InstructionOutput>, RuntimeError>,
