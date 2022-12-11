@@ -191,7 +191,7 @@ impl Decimal {
             return Self::ONE;
         }
         if exp == 1 {
-            return Decimal(self.0);
+            return *self;
         }
         if exp % 2 == 0 {
             let dec_256: I256 = I256::try_from(&base_384 * &base_384 / &one_384).expect("Overflow");
@@ -200,7 +200,7 @@ impl Decimal {
         else {
             let sub_dec_256: I256 = I256::try_from(&base_384 * &base_384 / &one_384).expect("Overflow");
             let sub_dec = Decimal(sub_dec_256);
-            return Decimal(self.0) * sub_dec.powi(div(sub(exp, 1), 2));
+            return *self * sub_dec.powi(div(sub(exp, 1), 2));
         }
     }
 

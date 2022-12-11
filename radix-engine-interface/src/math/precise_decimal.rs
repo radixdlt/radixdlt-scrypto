@@ -193,7 +193,7 @@ impl PreciseDecimal {
             return Self::ONE;
         }
         if exp == 1 {
-            return PreciseDecimal(self.0)
+            return *self
         }
         if exp % 2 == 0 {
             let pdec_512: I512 = I512::try_from(&base_768 * &base_768 / &one_768).expect("Overflow");
@@ -201,7 +201,7 @@ impl PreciseDecimal {
         } else {
             let sub_pdec_512: I512 = I512::try_from(&base_768 * &base_768 / &one_768).expect("Overflow");
             let sub_pdec = PreciseDecimal(sub_pdec_512);
-            return PreciseDecimal(self.0) * sub_pdec.powi(div(sub(exp, 1), 2));
+            return *self * sub_pdec.powi(div(sub(exp, 1), 2));
         }
     }
 
