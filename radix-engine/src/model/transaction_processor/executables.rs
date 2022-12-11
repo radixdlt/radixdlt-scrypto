@@ -401,11 +401,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         mint_params: mint_params.clone(),
                     })?;
 
-                    // TODO: Cleanup
-                    let value = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &value, api,
-                    )?;
+                    if let (_, Some(bucket)) = &rtn {
+                        Worktop::sys_put(Bucket(bucket.0), api)?;
+                    }
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
@@ -422,11 +420,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         mint_params: mint_params.clone(),
                     })?;
 
-                    // TODO: Cleanup
-                    let value = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &value, api,
-                    )?;
+                    if let (_, Some(bucket)) = &rtn {
+                        Worktop::sys_put(Bucket(bucket.0), api)?;
+                    }
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
@@ -446,11 +442,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         },
                     })?;
 
-                    // TODO: Cleanup
-                    let value = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &value, api,
-                    )?;
+
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
@@ -460,11 +453,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         amount: amount.clone(),
                     })?;
 
-                    // TODO: Cleanup
-                    let value = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &value, api,
-                    )?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
@@ -509,11 +498,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: package_address.clone(),
                     })?;
 
-                    // TODO: Cleanup
-                    let value = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &value, api,
-                    )?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
@@ -526,11 +511,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         )),
                     })?;
 
-                    // TODO: Cleanup
-                    let value = IndexedScryptoValue::from_typed(&rtn);
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &value, api,
-                    )?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
@@ -583,12 +564,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    // TODO: Cleanup
-                    let value = IndexedScryptoValue::from_typed(rtn.as_ref());
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &value, api,
-                    )?;
-
                     InstructionOutput::Native(rtn)
                 }
                 Instruction::System(SystemInstruction::CallNativeMethod { method_ident, args }) => {
@@ -616,12 +591,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     let rtn =
                         parse_and_invoke_native_fn(NativeFn::Method(native_method), args.raw, api)?;
-
-                    // TODO: Cleanup
-                    let value = IndexedScryptoValue::from_typed(rtn.as_ref());
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &value, api,
-                    )?;
 
                     InstructionOutput::Native(rtn)
                 }

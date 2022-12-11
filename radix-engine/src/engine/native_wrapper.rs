@@ -1,8 +1,9 @@
+use native_sdk::resource::{ComponentAuthZone, Worktop};
 use crate::engine::errors::KernelError;
 use crate::engine::*;
 use crate::model::NativeOutput;
 use crate::types::*;
-use radix_engine_interface::api::api::InvokableModel;
+use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::api::types::{
     AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, EpochManagerFunction,
     EpochManagerMethod, NativeFn, NativeFunction, NativeMethod, PackageFunction, ProofMethod,
@@ -18,7 +19,10 @@ pub fn parse_and_invoke_native_fn<'a, Y>(
     api: &mut Y,
 ) -> Result<Box<dyn NativeOutput>, RuntimeError>
 where
-    Y: InvokableModel<RuntimeError>,
+    Y: SystemApi
+    + Invokable<ScryptoInvocation, RuntimeError>
+    + EngineApi<RuntimeError>
+    + InvokableModel<RuntimeError>,
 {
     match native_fn {
         NativeFn::Function(native_function) => match native_function {
@@ -55,6 +59,9 @@ where
                     let invocation: ResourceManagerCreateInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    if let (_, Some(bucket)) = &rtn {
+                        Worktop::sys_put(Bucket(bucket.0), api)?;
+                    }
                     Ok(Box::new(rtn))
                 }
                 ResourceManagerFunction::CreateWithOwner => {
@@ -63,6 +70,9 @@ where
                             RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                         })?;
                     let rtn = api.invoke(invocation)?;
+                    if let (_, Some(bucket)) = &rtn {
+                        Worktop::sys_put(Bucket(bucket.0), api)?;
+                    }
                     Ok(Box::new(rtn))
                 }
             },
@@ -98,18 +108,21 @@ where
                     let invocation: BucketTakeInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 BucketMethod::CreateProof => {
                     let invocation: BucketCreateProofInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    ComponentAuthZone::sys_push(Proof(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 BucketMethod::TakeNonFungibles => {
                     let invocation: BucketTakeNonFungiblesInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 BucketMethod::GetNonFungibleIds => {
@@ -137,6 +150,7 @@ where
                     Ok(Box::new(rtn))
                 }
             },
+            // TODO: Integrate with static ids
             NativeMethod::AuthZoneStack(auth_zone_method) => match auth_zone_method {
                 AuthZoneStackMethod::Pop => {
                     let invocation: AuthZonePopInvocation = scrypto_decode(&args)
@@ -220,6 +234,7 @@ where
                     let invocation: VaultTakeInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 VaultMethod::Put => {
@@ -238,6 +253,7 @@ where
                     let invocation: VaultTakeNonFungiblesInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 VaultMethod::GetAmount => {
@@ -262,30 +278,35 @@ where
                     let invocation: VaultCreateProofInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    ComponentAuthZone::sys_push(Proof(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 VaultMethod::CreateProofByAmount => {
                     let invocation: VaultCreateProofByAmountInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    ComponentAuthZone::sys_push(Proof(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 VaultMethod::CreateProofByIds => {
                     let invocation: VaultCreateProofByIdsInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    ComponentAuthZone::sys_push(Proof(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 VaultMethod::Recall => {
                     let invocation: VaultRecallInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 VaultMethod::RecallNonFungibles => {
                     let invocation: VaultRecallNonFungiblesInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
             },
@@ -380,12 +401,14 @@ where
                         RuntimeError::KernelError(KernelError::InvalidSborValue(e))
                     })?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 ResourceManagerMethod::Mint => {
                     let invocation: ResourceManagerMintInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
                 ResourceManagerMethod::GetResourceType => {
@@ -461,6 +484,7 @@ where
                     Ok(Box::new(rtn))
                 }
             },
+            // TODO: Integrate with static ids
             NativeMethod::Worktop(worktop_method) => match worktop_method {
                 WorktopMethod::TakeNonFungibles => {
                     let invocation: WorktopTakeNonFungiblesInvocation = scrypto_decode(&args)
@@ -526,6 +550,7 @@ where
                     let invocation: ComponentClaimRoyaltyInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
             },
@@ -540,6 +565,7 @@ where
                     let invocation: PackageClaimRoyaltyInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     Ok(Box::new(rtn))
                 }
             },
