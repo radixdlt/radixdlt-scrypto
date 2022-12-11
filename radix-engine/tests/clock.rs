@@ -117,8 +117,8 @@ fn validator_can_set_current_time() {
     let receipt = test_runner.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
 
     // Assert
-    let outputs = receipt.expect_commit_success();
-    let current_unix_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[2]).unwrap();
+    receipt.expect_commit_success();
+    let current_unix_time_rounded_to_minutes: u64 = receipt.output(2);
     assert_eq!(
         current_unix_time_rounded_to_minutes,
         expected_unix_time_rounded_to_minutes
@@ -144,8 +144,8 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let outputs = receipt.expect_commit_success();
-    let current_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[1]).unwrap();
+    receipt.expect_commit_success();
+    let current_time_rounded_to_minutes: u64 = receipt.output(1);
     assert_eq!(current_time_rounded_to_minutes, 0);
 }
 

@@ -577,9 +577,7 @@ where
         result: Result<Vec<InstructionOutput>, RuntimeError>,
     ) -> TrackReceipt {
         let final_result = match result {
-            Ok(res) => self
-                .finalize_modules()
-                .map(|_| res.into_iter().map(InstructionOutput::to_vec).collect()),
+            Ok(res) => self.finalize_modules().map(|_| res),
             Err(err) => {
                 // If there was an error, we still try to finalize the modules,
                 // but forward the original error (even if module finalizer also errors).

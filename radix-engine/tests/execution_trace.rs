@@ -32,12 +32,11 @@ fn test_trace_resource_transfers() {
     );
 
     // Assert
-    let output = receipt.expect_commit_success();
     let (resource_address, source_component, target_component): (
         ResourceAddress,
         ComponentAddress,
         ComponentAddress,
-    ) = scrypto_decode(&output.get(1).unwrap()[..]).unwrap();
+    ) = receipt.output(1);
 
     let account_component_id: ComponentId = test_runner.deref_component(account).unwrap().into();
     let source_component_id: ComponentId = test_runner

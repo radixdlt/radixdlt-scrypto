@@ -57,12 +57,11 @@ pub enum InstructionOutput {
 }
 
 impl InstructionOutput {
-    pub fn to_vec(self) -> Vec<u8> {
-        let value = match self {
-            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()),
-            InstructionOutput::Scrypto(value) => value,
-        };
-        value.raw
+    pub fn as_vec(&self) -> Vec<u8> {
+        match self {
+            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).raw,
+            InstructionOutput::Scrypto(value) => value.raw.clone(),
+        }
     }
 }
 
