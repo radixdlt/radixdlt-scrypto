@@ -289,9 +289,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 let (native, tracked, size) = match event {
                     Event::Runtime(_) => (true, false, 0),
                     Event::Tracked(TrackedEvent::Native(..)) => (true, true, 0),
-                    Event::Tracked(TrackedEvent::Scrypto(value)) => {
-                        (false, true, value.len() as u32)
-                    }
                 };
                 track
                     .fee_reserve

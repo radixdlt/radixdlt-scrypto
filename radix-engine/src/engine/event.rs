@@ -26,7 +26,6 @@ pub enum RuntimeEvent<'a> {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum TrackedEvent {
     Native(NativeEvent),
-    Scrypto(Vec<u8>),
 }
 
 #[derive(Debug, Clone)]
