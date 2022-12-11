@@ -1,5 +1,5 @@
-use crate::model::resolve_native_function;
 use crate::model::resolve_native_method;
+use crate::model::{parse_and_invoke_native_fn, resolve_native_function};
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};

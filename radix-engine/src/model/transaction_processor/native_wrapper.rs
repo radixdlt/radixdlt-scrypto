@@ -1,4 +1,4 @@
-use crate::engine::errors::KernelError;
+use crate::engine::KernelError;
 use crate::engine::*;
 use crate::model::NativeOutput;
 use crate::types::*;
