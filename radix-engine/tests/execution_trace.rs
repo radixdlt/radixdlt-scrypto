@@ -1,4 +1,4 @@
-use radix_engine::engine::{NativeEvent, SysCallTrace, SysCallTraceOrigin, TrackedEvent};
+use radix_engine::engine::{SysCallTrace, SysCallTraceOrigin, TrackedEvent};
 use radix_engine::model::LockedAmountOrIds;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::NativeMethod;
@@ -176,8 +176,7 @@ fn test_instruction_traces() {
         .events
         .into_iter()
         .filter_map(|e| match e {
-            TrackedEvent::Native(NativeEvent::SysCallTrace(trace)) => Some(trace),
-            _ => None,
+            TrackedEvent::SysCallTrace(trace) => Some(trace),
         })
         .collect();
 

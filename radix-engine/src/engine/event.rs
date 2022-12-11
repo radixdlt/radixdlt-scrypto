@@ -25,11 +25,5 @@ pub enum RuntimeEvent<'a> {
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum TrackedEvent {
-    Native(NativeEvent),
-}
-
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum NativeEvent {
     SysCallTrace(SysCallTrace),
 }

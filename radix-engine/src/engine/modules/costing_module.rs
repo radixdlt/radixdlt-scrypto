@@ -288,7 +288,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
             SysCallInput::EmitEvent { event } => {
                 let (native, tracked, size) = match event {
                     Event::Runtime(_) => (true, false, 0),
-                    Event::Tracked(TrackedEvent::Native(..)) => (true, true, 0),
+                    Event::Tracked(TrackedEvent::SysCallTrace(..)) => (true, true, 0),
                 };
                 track
                     .fee_reserve

@@ -452,7 +452,7 @@ impl ExecutionTraceModule {
         for (_, traces) in self.sys_call_traces_stacks.drain() {
             // Emit an output event for each "root" sys call trace
             for trace in traces {
-                track.add_event(TrackedEvent::Native(NativeEvent::SysCallTrace(trace)));
+                track.add_event(TrackedEvent::SysCallTrace(trace));
             }
         }
 
