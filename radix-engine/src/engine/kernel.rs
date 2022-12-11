@@ -23,16 +23,6 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::*;
 
-#[macro_export]
-macro_rules! trace {
-    ( $self: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
-        #[cfg(not(feature = "alloc"))]
-        if $self.trace {
-            println!("{}[{:5}] {}", "  ".repeat($self.current_frame.depth) , $level, sbor::rust::format!($msg, $( $arg ),*));
-        }
-    };
-}
-
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
@@ -70,9 +60,6 @@ pub struct Kernel<
 
     /// Kernel module
     module: M,
-
-    /// The max call depth, TODO: Move into costing module
-    max_depth: usize,
 }
 
 impl<'g, 's, W, R, M> Kernel<'g, 's, W, R, M>
@@ -85,7 +72,6 @@ where
         transaction_hash: Hash,
         auth_zone_params: AuthZoneParams,
         blobs: &'g HashMap<Hash, &'g [u8]>,
-        max_depth: usize,
         track: Track<'s, R>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: M,
@@ -94,7 +80,6 @@ where
             execution_mode: ExecutionMode::Kernel,
             transaction_hash,
             blobs,
-            max_depth,
             heap: Heap::new(),
             track,
             scrypto_interpreter,
@@ -497,14 +482,7 @@ where
         actor: ResolvedActor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
-        // check call depth
         let depth = self.current_frame.depth;
-        if depth == self.max_depth {
-            return Err(RuntimeError::KernelError(
-                KernelError::MaxCallDepthLimitReached,
-            ));
-        }
-
         // TODO: Move to higher layer
         if depth == 0 {
             for node_id in &call_frame_update.node_refs_to_copy {

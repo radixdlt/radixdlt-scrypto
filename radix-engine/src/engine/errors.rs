@@ -77,7 +77,6 @@ pub enum KernelError {
 
     RENodeNotFound(RENodeId),
 
-    MaxCallDepthLimitReached,
     InvalidScryptoFnOutput,
     MethodReceiverNotMatch(NativeMethod, RENodeId),
 

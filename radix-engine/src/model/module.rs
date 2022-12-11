@@ -1,6 +1,7 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
+use crate::transaction::ExecutionConfig;
 use radix_engine_interface::api::types::VaultId;
 
 pub struct KernelModule {
@@ -11,12 +12,12 @@ pub struct KernelModule {
 }
 
 impl KernelModule {
-    pub fn new(trace: bool, max_sys_call_trace_depth: usize) -> Self {
+    pub fn new(config: &ExecutionConfig) -> Self {
         Self {
-            trace,
-            execution_trace: ExecutionTraceModule::new(max_sys_call_trace_depth),
+            trace: config.trace,
+            execution_trace: ExecutionTraceModule::new(config.max_sys_call_trace_depth),
             royalty: RoyaltyModule::default(),
-            costing: CostingModule::default(),
+            costing: CostingModule::new(config.max_call_depth),
         }
     }
 }
