@@ -1,5 +1,5 @@
-use crate::model::{resolve_native_function, TransactionHashSubstate};
 use crate::model::resolve_native_method;
+use crate::model::{resolve_native_function, TransactionRuntimeSubstate};
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
@@ -161,15 +161,19 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             TransactionProcessor::perform_validation(request, api)?;
         }
 
-        let transaction_hash_substate = TransactionHashSubstate {
-            hash: self.transaction_hash,
-            next_id: 0u32,
-        };
-        let node_id = api.allocate_node_id(RENodeType::TransactionHash)?;
-        api.create_node(node_id, RENode::TransactionHash(transaction_hash_substate))?;
-
         let node_id = api.allocate_node_id(RENodeType::Worktop)?;
         let _worktop_id = api.create_node(node_id, RENode::Worktop(WorktopSubstate::new()))?;
+
+        let runtime_substate = TransactionRuntimeSubstate {
+            hash: self.transaction_hash,
+            next_id: 0u32,
+            instruction_index: 0u32,
+        };
+        let runtime_node_id = api.allocate_node_id(RENodeType::TransactionRuntime)?;
+        api.create_node(
+            runtime_node_id,
+            RENode::TransactionRuntime(runtime_substate),
+        )?;
 
         api.emit_event(Event::Runtime(RuntimeEvent::PreExecuteManifest))?;
 
@@ -609,7 +613,23 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 instruction_index: idx,
                 instruction: &inst,
             }))?;
+
+            {
+                let handle = api.lock_substate(
+                    runtime_node_id,
+                    SubstateOffset::TransactionRuntime(
+                        TransactionRuntimeOffset::TransactionRuntime,
+                    ),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut substate_mut = api.get_ref_mut(handle)?;
+                let runtime = substate_mut.transaction_runtime();
+                runtime.instruction_index = runtime.instruction_index + 1;
+                api.drop_lock(handle)?;
+            }
         }
+
+        api.drop_node(runtime_node_id)?;
 
         api.emit_event(Event::Runtime(RuntimeEvent::PostExecuteManifest))?;
 

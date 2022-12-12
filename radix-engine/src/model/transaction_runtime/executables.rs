@@ -38,13 +38,14 @@ impl Executor for TransactionHashGetInvocation {
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
-        let offset = SubstateOffset::TransactionHash(TransactionHashOffset::TransactionHash);
+        let offset =
+            SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
         let node_id = RENodeId::TransactionHash(self.receiver);
         let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate = api.get_ref(handle)?;
-        let transaction_hash_substate = substate.transaction_hash();
+        let transaction_runtime_substate = substate.transaction_runtime();
         Ok((
-            transaction_hash_substate.hash.clone(),
+            transaction_runtime_substate.hash.clone(),
             CallFrameUpdate::empty(),
         ))
     }
@@ -78,11 +79,12 @@ impl Executor for TransactionHashGenerateUuidInvocation {
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
-        let offset = SubstateOffset::TransactionHash(TransactionHashOffset::TransactionHash);
+        let offset =
+            SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
         let node_id = RENodeId::TransactionHash(self.receiver);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = api.get_ref_mut(handle)?;
-        let transaction_hash_substate = substate_mut.transaction_hash();
+        let transaction_hash_substate = substate_mut.transaction_runtime();
 
         if transaction_hash_substate.next_id == u32::MAX {
             return Err(RuntimeError::ApplicationError(

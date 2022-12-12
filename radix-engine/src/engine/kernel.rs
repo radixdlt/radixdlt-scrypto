@@ -808,7 +808,7 @@ where
                 .id_allocator
                 .new_proof_id()
                 .map(|id| RENodeId::Proof(id)),
-            RENodeType::TransactionHash => self
+            RENodeType::TransactionRuntime => self
                 .id_allocator
                 .new_transaction_hash_id()
                 .map(|id| RENodeId::TransactionHash(id)),
@@ -967,7 +967,7 @@ where
                 }
             }
             (RENodeId::Bucket(..), RENode::Bucket(..)) => {}
-            (RENodeId::TransactionHash(..), RENode::TransactionHash(..)) => {}
+            (RENodeId::TransactionHash(..), RENode::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENode::Proof(..)) => {}
             (RENodeId::AuthZoneStack(..), RENode::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENode::Vault(..)) => {}

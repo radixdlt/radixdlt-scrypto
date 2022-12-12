@@ -32,7 +32,7 @@ pub enum RENodeType {
     Package,
     EpochManager,
     Clock,
-    TransactionHash,
+    TransactionRuntime,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -243,8 +243,8 @@ pub enum ClockOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum TransactionHashOffset {
-    TransactionHash,
+pub enum TransactionRuntimeOffset {
+    TransactionRuntime,
 }
 
 /// Specifies a specific Substate into a given RENode
@@ -268,7 +268,7 @@ pub enum SubstateOffset {
     Proof(ProofOffset),
     Worktop(WorktopOffset),
     Clock(ClockOffset),
-    TransactionHash(TransactionHashOffset),
+    TransactionRuntime(TransactionRuntimeOffset),
 }
 
 /// TODO: separate space addresses?
