@@ -183,7 +183,6 @@ fn test_basic_transfer() {
         2500 /* create_node */
         + 6900 /* drop_lock */
         + 2500 /* drop_node */
-        + 800  /* emit_event */
         + 900 /* invoke */
         + 8700 /* lock_substate */
         + 4000 /* read_owned_nodes */

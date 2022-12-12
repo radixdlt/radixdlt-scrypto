@@ -160,11 +160,8 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
             let instruction_index = Self::get_instruction_index(call_frame, heap);
 
             let trace_data = Self::extract_trace_data(update, heap)?;
-            self.traced_sys_call_inputs_stack.push((
-                trace_data,
-                origin,
-                instruction_index,
-            ));
+            self.traced_sys_call_inputs_stack
+                .push((trace_data, origin, instruction_index));
         }
 
         self.current_sys_call_depth += 1;
@@ -276,11 +273,19 @@ impl ExecutionTraceModule {
     }
 
     fn get_instruction_index(call_frame: &CallFrame, heap: &mut Heap) -> Option<u32> {
-        let maybe_runtime_id = call_frame.get_visible_nodes()
+        let maybe_runtime_id = call_frame
+            .get_visible_nodes()
             .into_iter()
             .find(|e| matches!(e, RENodeId::TransactionHash(..)));
         maybe_runtime_id.map(|runtime_id| {
-            let substate_ref = heap.get_substate(runtime_id, &SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime)).unwrap();
+            let substate_ref = heap
+                .get_substate(
+                    runtime_id,
+                    &SubstateOffset::TransactionRuntime(
+                        TransactionRuntimeOffset::TransactionRuntime,
+                    ),
+                )
+                .unwrap();
             substate_ref.transaction_runtime().instruction_index
         })
     }
@@ -313,11 +318,7 @@ impl ExecutionTraceModule {
                         TracedSysCallData::new_empty()
                     };
 
-                    (
-                        data,
-                        SysCallTraceOrigin::DropNode,
-                        instruction_index
-                    )
+                    (data, SysCallTraceOrigin::DropNode, instruction_index)
                 }
                 SysCallInput::CreateNode { .. } => (
                     TracedSysCallData::new_empty(),

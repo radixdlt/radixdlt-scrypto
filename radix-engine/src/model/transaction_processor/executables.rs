@@ -175,16 +175,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             RENode::TransactionRuntime(runtime_substate),
         )?;
 
-        api.emit_event(Event::Runtime(RuntimeEvent::PreExecuteManifest))?;
-
         let mut processor = TransactionProcessor::new();
         let mut outputs = Vec::new();
-        for (idx, inst) in self.instructions.into_iter().enumerate() {
-            api.emit_event(Event::Runtime(RuntimeEvent::PreExecuteInstruction {
-                instruction_index: idx,
-                instruction: &inst,
-            }))?;
-
+        for inst in self.instructions.into_iter() {
             let result = match inst {
                 Instruction::Basic(BasicInstruction::TakeFromWorktop { resource_address }) => {
                     let bucket = Worktop::sys_take_all(*resource_address, api)?;
@@ -609,11 +602,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             };
             outputs.push(result);
 
-            api.emit_event(Event::Runtime(RuntimeEvent::PostExecuteInstruction {
-                instruction_index: idx,
-                instruction: &inst,
-            }))?;
-
             {
                 let handle = api.lock_substate(
                     runtime_node_id,
@@ -630,8 +618,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         }
 
         api.drop_node(runtime_node_id)?;
-
-        api.emit_event(Event::Runtime(RuntimeEvent::PostExecuteManifest))?;
 
         Ok((outputs, CallFrameUpdate::empty()))
     }

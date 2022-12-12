@@ -51,7 +51,7 @@ pub enum SysCallInput<'a> {
         message: &'a String,
     },
     EmitEvent {
-        event: &'a Event<'a>,
+        event: &'a Event,
     },
 }
 
