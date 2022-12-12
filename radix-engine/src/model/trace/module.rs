@@ -36,7 +36,6 @@ pub enum VaultOp {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ExecutionTraceError {
-    InvalidState(String),
     CallFrameError(CallFrameError),
 }
 
@@ -253,9 +252,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         Ok(fee)
     }
 
-    fn on_finished_processing(&mut self, track: &mut Track<R>) -> Result<(), ModuleError> {
-        self.handle_processing_completed(track)
-    }
+
 }
 
 impl ExecutionTraceModule {
@@ -419,32 +416,17 @@ impl ExecutionTraceModule {
         Ok(())
     }
 
-    fn handle_processing_completed<R: FeeReserve>(
-        &mut self,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        // Some sanity checks
-        // No leftover inputs
-        if !self.traced_sys_call_inputs_stack.is_empty() {
-            return Err(ModuleError::ExecutionTraceError(
-                ExecutionTraceError::InvalidState("Leftover sys call inputs on stack".to_string()),
-            ));
-        }
-        // At most one entry in call traces mapping (the root level)
-        if self.sys_call_traces_stacks.len() > 1 {
-            return Err(ModuleError::ExecutionTraceError(
-                ExecutionTraceError::InvalidState("Leftover sys call traces on stack".to_string()),
-            ));
-        }
 
+    pub fn collect_events(&mut self) -> Vec<TrackedEvent> {
+        let mut events = Vec::new();
         for (_, traces) in self.sys_call_traces_stacks.drain() {
             // Emit an output event for each "root" sys call trace
             for trace in traces {
-                track.add_event(TrackedEvent::SysCallTrace(trace));
+                events.push(TrackedEvent::SysCallTrace(trace));
             }
         }
 
-        Ok(())
+        events
     }
 
     fn extract_trace_data(

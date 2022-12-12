@@ -176,22 +176,8 @@ where
                 },
             });
 
-            let finalized_result = match invoke_result {
-                Ok(res) => module
-                    .on_finished_processing(&mut track)
-                    .map(|_| res)
-                    .map_err(RuntimeError::ModuleError),
-                Err(err) => {
-                    // If there was an error, we still try to finalize the modules,
-                    // but forward the original error (even if module finalizer also errors).
-                    let _silently_ignored = module
-                        .on_finished_processing(&mut track)
-                        .map_err(RuntimeError::ModuleError);
-                    Err(err)
-                }
-            };
-
-            track.finalize(finalized_result)
+            let events = module.collect_events();
+            track.finalize(invoke_result, events)
         };
 
         let receipt = TransactionReceipt {

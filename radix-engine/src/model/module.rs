@@ -22,6 +22,12 @@ impl KernelModule {
     }
 }
 
+impl KernelModule {
+    pub fn collect_events(&mut self) -> Vec<TrackedEvent> {
+        self.execution_trace.collect_events()
+    }
+}
+
 impl<R: FeeReserve> Module<R> for KernelModule {
     fn pre_sys_call(
         &mut self,
@@ -179,16 +185,5 @@ impl<R: FeeReserve> Module<R> for KernelModule {
             .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
 
         Ok(fee)
-    }
-
-    fn on_finished_processing(&mut self, track: &mut Track<R>) -> Result<(), ModuleError> {
-        if self.trace {
-            LoggerModule.on_finished_processing(track)?;
-        }
-        self.costing.on_finished_processing(track)?;
-        self.royalty.on_finished_processing(track)?;
-        self.execution_trace.on_finished_processing(track)?;
-
-        Ok(())
     }
 }
