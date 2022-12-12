@@ -52,14 +52,13 @@ pub struct Kernel<
     prev_frame_stack: Vec<CallFrame>,
     /// Heap
     heap: Heap,
-    /// Store
-    track: Track<'s, R>,
 
+    /// Store
+    track: &'g mut Track<'s, R>,
     /// Interpreter capable of running scrypto programs
     scrypto_interpreter: &'g ScryptoInterpreter<W>,
-
     /// Kernel module
-    module: M,
+    module: &'g mut M,
 }
 
 impl<'g, 's, W, R, M> Kernel<'g, 's, W, R, M>
@@ -72,9 +71,9 @@ where
         transaction_hash: Hash,
         auth_zone_params: AuthZoneParams,
         blobs: &'g HashMap<Hash, &'g [u8]>,
-        track: Track<'s, R>,
+        track: &'g mut Track<'s, R>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
-        module: M,
+        module: &'g mut M,
     ) -> Self {
         let mut kernel = Self {
             execution_mode: ExecutionMode::Kernel,
@@ -540,30 +539,6 @@ where
         }
 
         Ok(output)
-    }
-
-    // TODO: Remove
-    pub fn finalize(
-        mut self,
-        result: Result<Vec<InstructionOutput>, RuntimeError>,
-    ) -> TrackReceipt {
-        let final_result = match result {
-            Ok(res) => self.finalize_modules().map(|_| res),
-            Err(err) => {
-                // If there was an error, we still try to finalize the modules,
-                // but forward the original error (even if module finalizer also errors).
-                let _silently_ignored = self.finalize_modules();
-                Err(err)
-            }
-        };
-        self.track.finalize(final_result)
-    }
-
-    fn finalize_modules(&mut self) -> Result<(), RuntimeError> {
-        self.module
-            .on_finished_processing(&mut self.track)
-            .map_err(RuntimeError::ModuleError)?;
-        Ok(())
     }
 }
 

@@ -135,7 +135,7 @@ where
 
         // Apply pre execution costing
         let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let track = match pre_execution_result {
+        let mut track = match pre_execution_result {
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
@@ -155,14 +155,14 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let module = KernelModule::new(execution_config);
+            let mut module = KernelModule::new(execution_config);
             let mut kernel = Kernel::new(
                 transaction_hash.clone(),
                 auth_zone_params.clone(),
                 blobs,
-                track,
+                &mut track,
                 self.scrypto_interpreter,
-                module,
+                &mut module,
             );
 
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
@@ -176,7 +176,22 @@ where
                 },
             });
 
-            kernel.finalize(invoke_result)
+            let finalized_result = match invoke_result {
+                Ok(res) => module
+                    .on_finished_processing(&mut track)
+                    .map(|_| res)
+                    .map_err(RuntimeError::ModuleError),
+                Err(err) => {
+                    // If there was an error, we still try to finalize the modules,
+                    // but forward the original error (even if module finalizer also errors).
+                    let _silently_ignored = module
+                        .on_finished_processing(&mut track)
+                        .map_err(RuntimeError::ModuleError);
+                    Err(err)
+                }
+            };
+
+            track.finalize(finalized_result)
         };
 
         let receipt = TransactionReceipt {

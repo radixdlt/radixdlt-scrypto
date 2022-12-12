@@ -253,10 +253,7 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
         Ok(fee)
     }
 
-    fn on_finished_processing(
-        &mut self,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
+    fn on_finished_processing(&mut self, track: &mut Track<R>) -> Result<(), ModuleError> {
         self.handle_processing_completed(track)
     }
 }

@@ -181,10 +181,7 @@ impl<R: FeeReserve> Module<R> for KernelModule {
         Ok(fee)
     }
 
-    fn on_finished_processing(
-        &mut self,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
+    fn on_finished_processing(&mut self, track: &mut Track<R>) -> Result<(), ModuleError> {
         if self.trace {
             LoggerModule.on_finished_processing(track)?;
         }
