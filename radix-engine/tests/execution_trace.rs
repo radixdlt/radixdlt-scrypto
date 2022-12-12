@@ -348,7 +348,7 @@ fn test_instruction_traces() {
 
 fn traces_for_instruction(
     traces: &Vec<SysCallTrace>,
-    instruction_index: usize,
+    instruction_index: u32,
 ) -> Vec<&SysCallTrace> {
     traces
         .iter()

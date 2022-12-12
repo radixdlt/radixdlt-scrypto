@@ -49,13 +49,8 @@ pub struct ExecutionTraceModule {
     /// (e.g. lock_substate call inside drop_node).
     current_sys_call_depth: usize,
 
-    /// The index of the manifest instruction currently being executed.
-    /// None for any sys calls that happen before transaction processor
-    /// starts processing instructions.
-    current_instruction_index: Option<usize>,
-
     /// A stack of traced sys call inputs, their origin, and the instruction index.
-    traced_sys_call_inputs_stack: Vec<(TracedSysCallData, SysCallTraceOrigin, Option<usize>)>,
+    traced_sys_call_inputs_stack: Vec<(TracedSysCallData, SysCallTraceOrigin, Option<u32>)>,
 
     /// A mapping of complete SysCallTrace stacks (\w both inputs and outputs), indexed by depth.
     sys_call_traces_stacks: HashMap<usize, Vec<SysCallTrace>>,
@@ -97,7 +92,7 @@ pub struct SysCallTrace {
     pub sys_call_depth: usize,
     pub call_frame_actor: ResolvedActor,
     pub call_frame_depth: usize,
-    pub instruction_index: Option<usize>,
+    pub instruction_index: Option<u32>,
     pub input: TracedSysCallData,
     pub output: TracedSysCallData,
     pub children: Vec<SysCallTrace>,
@@ -119,12 +114,12 @@ pub enum SysCallTraceOrigin {
 impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     fn pre_sys_call(
         &mut self,
-        _call_frame: &CallFrame,
+        call_frame: &CallFrame,
         heap: &mut Heap,
         _track: &mut Track<R>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
-        self.handle_pre_sys_call(heap, input)
+        self.handle_pre_sys_call(call_frame, heap, input)
     }
 
     fn post_sys_call(
@@ -162,11 +157,13 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
                 }
             };
 
+            let instruction_index = Self::get_instruction_index(call_frame, heap);
+
             let trace_data = Self::extract_trace_data(update, heap)?;
             self.traced_sys_call_inputs_stack.push((
                 trace_data,
                 origin,
-                self.current_instruction_index,
+                instruction_index,
             ));
         }
 
@@ -273,14 +270,24 @@ impl ExecutionTraceModule {
         Self {
             max_sys_call_trace_depth,
             current_sys_call_depth: 0,
-            current_instruction_index: None,
             traced_sys_call_inputs_stack: vec![],
             sys_call_traces_stacks: HashMap::new(),
         }
     }
 
+    fn get_instruction_index(call_frame: &CallFrame, heap: &mut Heap) -> Option<u32> {
+        let maybe_runtime_id = call_frame.get_visible_nodes()
+            .into_iter()
+            .find(|e| matches!(e, RENodeId::TransactionHash(..)));
+        maybe_runtime_id.map(|runtime_id| {
+            let substate_ref = heap.get_substate(runtime_id, &SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime)).unwrap();
+            substate_ref.transaction_runtime().instruction_index
+        })
+    }
+
     fn handle_pre_sys_call(
         &mut self,
+        call_frame: &CallFrame,
         heap: &mut Heap,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
@@ -290,23 +297,7 @@ impl ExecutionTraceModule {
         }
 
         if self.current_sys_call_depth <= self.max_sys_call_trace_depth {
-            // Handle transaction processor events
-            match input {
-                SysCallInput::EmitEvent {
-                    event:
-                        Event::Runtime(RuntimeEvent::PreExecuteInstruction {
-                            instruction_index, ..
-                        }),
-                } => {
-                    self.current_instruction_index = Some(instruction_index.clone());
-                }
-                SysCallInput::EmitEvent {
-                    event: Event::Runtime(RuntimeEvent::PostExecuteManifest),
-                } => {
-                    self.current_instruction_index = None;
-                }
-                _ => {}
-            };
+            let instruction_index = Self::get_instruction_index(call_frame, heap);
 
             let traced_input = match input {
                 SysCallInput::DropNode { node_id } => {
@@ -325,18 +316,18 @@ impl ExecutionTraceModule {
                     (
                         data,
                         SysCallTraceOrigin::DropNode,
-                        self.current_instruction_index,
+                        instruction_index
                     )
                 }
                 SysCallInput::CreateNode { .. } => (
                     TracedSysCallData::new_empty(),
                     SysCallTraceOrigin::CreateNode,
-                    self.current_instruction_index,
+                    instruction_index,
                 ),
                 _ => (
                     TracedSysCallData::new_empty(),
                     SysCallTraceOrigin::Opaque,
-                    self.current_instruction_index,
+                    instruction_index,
                 ),
             };
             self.traced_sys_call_inputs_stack.push(traced_input);
