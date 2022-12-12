@@ -7,11 +7,11 @@ use radix_engine_interface::crypto::hash;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum TransactionHashError {
+pub enum TransactionRuntimeError {
     OutOfUUid,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGetInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGetHashInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
@@ -31,7 +31,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGetInvocation {
     }
 }
 
-impl Executor for TransactionHashGetInvocation {
+impl Executor for TransactionRuntimeGetHashInvocation {
     type Output = Hash;
 
     fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
@@ -51,7 +51,7 @@ impl Executor for TransactionHashGetInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGenerateUuidInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGenerateUuidInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
@@ -72,7 +72,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGenerateUuidInvoc
     }
 }
 
-impl Executor for TransactionHashGenerateUuidInvocation {
+impl Executor for TransactionRuntimeGenerateUuidInvocation {
     type Output = u128;
 
     fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
@@ -88,7 +88,7 @@ impl Executor for TransactionHashGenerateUuidInvocation {
 
         if transaction_hash_substate.next_id == u32::MAX {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::TransactionHashError(TransactionHashError::OutOfUUid),
+                ApplicationError::TransactionHashError(TransactionRuntimeError::OutOfUUid),
             ));
         }
 

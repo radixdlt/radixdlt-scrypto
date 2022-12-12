@@ -75,8 +75,8 @@ pub enum NativeFunctionInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum TransactionHashMethodInvocation {
-    Get(TransactionHashGetInvocation),
-    GenerateUuid(TransactionHashGenerateUuidInvocation),
+    Get(TransactionRuntimeGetHashInvocation),
+    GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
 
 #[derive(Debug)]

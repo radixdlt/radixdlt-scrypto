@@ -9,19 +9,19 @@ use sbor::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct TransactionHashGetInvocation {
+pub struct TransactionRuntimeGetHashInvocation {
     pub receiver: TransactionHashId,
 }
 
-impl Invocation for TransactionHashGetInvocation {
+impl Invocation for TransactionRuntimeGetHashInvocation {
     type Output = Hash;
 }
 
-impl SerializableInvocation for TransactionHashGetInvocation {
+impl SerializableInvocation for TransactionRuntimeGetHashInvocation {
     type ScryptoOutput = Hash;
 }
 
-impl Into<SerializedInvocation> for TransactionHashGetInvocation {
+impl Into<SerializedInvocation> for TransactionRuntimeGetHashInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::TransactionHash(
             TransactionHashMethodInvocation::Get(self),
@@ -32,19 +32,19 @@ impl Into<SerializedInvocation> for TransactionHashGetInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct TransactionHashGenerateUuidInvocation {
+pub struct TransactionRuntimeGenerateUuidInvocation {
     pub receiver: TransactionHashId,
 }
 
-impl Invocation for TransactionHashGenerateUuidInvocation {
+impl Invocation for TransactionRuntimeGenerateUuidInvocation {
     type Output = u128;
 }
 
-impl SerializableInvocation for TransactionHashGenerateUuidInvocation {
+impl SerializableInvocation for TransactionRuntimeGenerateUuidInvocation {
     type ScryptoOutput = u128;
 }
 
-impl Into<SerializedInvocation> for TransactionHashGenerateUuidInvocation {
+impl Into<SerializedInvocation> for TransactionRuntimeGenerateUuidInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::TransactionHash(
             TransactionHashMethodInvocation::GenerateUuid(self),

@@ -571,16 +571,16 @@ where
             },
             NativeMethod::TransactionHash(method) => match method {
                 TransactionHashMethod::Get => {
-                    let invocation: TransactionHashGetInvocation = scrypto_decode(&args)
+                    let invocation: TransactionRuntimeGetHashInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
                 TransactionHashMethod::GenerateUuid => {
-                    let invocation: TransactionHashGenerateUuidInvocation = scrypto_decode(&args)
-                        .map_err(|e| {
-                        RuntimeError::KernelError(KernelError::InvalidSborValue(e))
-                    })?;
+                    let invocation: TransactionRuntimeGenerateUuidInvocation =
+                        scrypto_decode(&args).map_err(|e| {
+                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                        })?;
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }

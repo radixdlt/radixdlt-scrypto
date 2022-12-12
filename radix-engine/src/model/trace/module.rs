@@ -251,8 +251,6 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
     ) -> Result<Resource, ModuleError> {
         Ok(fee)
     }
-
-
 }
 
 impl ExecutionTraceModule {
@@ -415,7 +413,6 @@ impl ExecutionTraceModule {
 
         Ok(())
     }
-
 
     pub fn collect_events(&mut self) -> Vec<TrackedEvent> {
         let mut events = Vec::new();

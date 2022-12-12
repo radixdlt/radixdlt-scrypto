@@ -87,7 +87,7 @@ impl Runtime {
             .expect("TransactionHash does not exist");
 
         ScryptoEnv
-            .invoke(TransactionHashGetInvocation {
+            .invoke(TransactionRuntimeGetHashInvocation {
                 receiver: node_id.into(),
             })
             .unwrap()
@@ -102,7 +102,7 @@ impl Runtime {
             .expect("TransactionHash does not exist");
 
         ScryptoEnv
-            .invoke(TransactionHashGenerateUuidInvocation {
+            .invoke(TransactionRuntimeGenerateUuidInvocation {
                 receiver: node_id.into(),
             })
             .unwrap()
