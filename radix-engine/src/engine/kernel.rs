@@ -561,7 +561,7 @@ where
 
     fn finalize_modules(&mut self) -> Result<(), RuntimeError> {
         self.module
-            .on_finished_processing(&mut self.heap, &mut self.track)
+            .on_finished_processing(&mut self.track)
             .map_err(RuntimeError::ModuleError)?;
         Ok(())
     }

@@ -255,7 +255,6 @@ impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
 
     fn on_finished_processing(
         &mut self,
-        _heap: &mut Heap,
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         self.handle_processing_completed(track)

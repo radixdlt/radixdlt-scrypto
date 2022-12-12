@@ -135,7 +135,6 @@ pub trait Module<R: FeeReserve> {
 
     fn on_finished_processing(
         &mut self,
-        _heap: &mut Heap,
         _track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         Ok(())

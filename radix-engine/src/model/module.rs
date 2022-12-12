@@ -183,15 +183,14 @@ impl<R: FeeReserve> Module<R> for KernelModule {
 
     fn on_finished_processing(
         &mut self,
-        heap: &mut Heap,
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         if self.trace {
-            LoggerModule.on_finished_processing(heap, track)?;
+            LoggerModule.on_finished_processing(track)?;
         }
-        self.costing.on_finished_processing(heap, track)?;
-        self.royalty.on_finished_processing(heap, track)?;
-        self.execution_trace.on_finished_processing(heap, track)?;
+        self.costing.on_finished_processing(track)?;
+        self.royalty.on_finished_processing(track)?;
+        self.execution_trace.on_finished_processing(track)?;
 
         Ok(())
     }
