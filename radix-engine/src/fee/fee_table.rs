@@ -27,15 +27,6 @@ pub enum SystemApiCostingEntry {
     DropNode {
         size: u32,
     },
-    /// Globalizes a RENode.
-    GlobalizeNode {
-        size: u32,
-    },
-    /// Borrows a RENode.
-    BorrowNode {
-        loaded: bool,
-        size: u32,
-    },
 
     /*
      * Substate
@@ -43,14 +34,6 @@ pub enum SystemApiCostingEntry {
     /// Borrows a substate
     BorrowSubstate {
         loaded: bool,
-        size: u32,
-    },
-    /// Returns a substate.
-    ReturnSubstate {
-        size: u32,
-    },
-    /// Takes a substate
-    TakeSubstate {
         size: u32,
     },
     LockSubstate {
@@ -64,7 +47,6 @@ pub enum SystemApiCostingEntry {
     WriteSubstate {
         size: u32,
     },
-
     DropLock,
 
     /*
@@ -76,12 +58,6 @@ pub enum SystemApiCostingEntry {
     },
     /// Emits a log.
     EmitLog {
-        size: u32,
-    },
-
-    EmitEvent {
-        native: bool,
-        tracked: bool,
         size: u32,
     },
 }
@@ -277,14 +253,6 @@ impl FeeTable {
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
-            SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,
-            SystemApiCostingEntry::BorrowNode { loaded, size } => {
-                if loaded {
-                    self.fixed_high
-                } else {
-                    self.fixed_low + 100 * size
-                }
-            }
 
             SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {
@@ -293,26 +261,13 @@ impl FeeTable {
                     self.fixed_low + 100 * size
                 }
             }
-            SystemApiCostingEntry::ReturnSubstate { size } => self.fixed_low + 100 * size,
-
             SystemApiCostingEntry::LockSubstate { .. } => self.fixed_low,
-            SystemApiCostingEntry::TakeSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropLock => self.fixed_low,
 
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
-            SystemApiCostingEntry::EmitEvent {
-                native,
-                tracked,
-                size,
-            } => match (native, tracked) {
-                (true, true) => self.fixed_high,
-                (true, false) => self.fixed_low,
-                (false, true) => self.fixed_low + 10 * size,
-                (false, false) => todo!("No such events yet"),
-            },
         }
     }
 }

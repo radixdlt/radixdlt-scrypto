@@ -88,8 +88,6 @@ pub trait SystemApi {
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError>;
-
-    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError>;
 }
 
 // TODO: Clean this up

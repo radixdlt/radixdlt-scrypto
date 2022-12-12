@@ -1236,32 +1236,6 @@ where
 
         Ok(blob)
     }
-
-    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError> {
-        self.module
-            .pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::EmitEvent { event: &event },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        if let Event::Tracked(tracked_event) = event {
-            self.track.add_event(tracked_event);
-        }
-
-        self.module
-            .post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::EmitEvent,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(())
-    }
 }
 
 impl<'g, 's, W, R, M> LoggerApi<RuntimeError> for Kernel<'g, 's, W, R, M>
