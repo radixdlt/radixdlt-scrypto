@@ -1,4 +1,4 @@
-use crate::engine::SysCallTrace;
+use crate::model::SysCallTrace;
 use crate::types::*;
 use transaction::model::Instruction;
 

@@ -23,24 +23,16 @@ use crate::model::*;
 use crate::types::*;
 use crate::wasm::*;
 
-#[macro_export]
-macro_rules! trace {
-    ( $self: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
-        #[cfg(not(feature = "alloc"))]
-        if $self.trace {
-            println!("{}[{:5}] {}", "  ".repeat($self.current_frame.depth) , $level, sbor::rust::format!($msg, $( $arg ),*));
-        }
-    };
-}
-
 pub struct Kernel<
     'g, // Lifetime of values outliving all frames
     's, // Substate store lifetime
     W,  // WASM engine type
     R,  // Fee reserve type
+    M,
 > where
     W: WasmEngine,
     R: FeeReserve,
+    M: Module<R>,
 {
     /// Current execution mode, specifies permissions into state/invocations
     execution_mode: ExecutionMode,
@@ -66,38 +58,35 @@ pub struct Kernel<
     /// Interpreter capable of running scrypto programs
     scrypto_interpreter: &'g ScryptoInterpreter<W>,
 
-    /// Kernel modules
-    modules: Vec<Box<dyn Module<R>>>,
-    /// The max call depth, TODO: Move into costing module
-    max_depth: usize,
+    /// Kernel module
+    module: M,
 }
 
-impl<'g, 's, W, R> Kernel<'g, 's, W, R>
+impl<'g, 's, W, R, M> Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
+    M: Module<R>,
 {
     pub fn new(
         transaction_hash: Hash,
         auth_zone_params: AuthZoneParams,
         blobs: &'g HashMap<Hash, &'g [u8]>,
-        max_depth: usize,
         track: Track<'s, R>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
-        modules: Vec<Box<dyn Module<R>>>,
+        module: M,
     ) -> Self {
         let mut kernel = Self {
             execution_mode: ExecutionMode::Kernel,
             transaction_hash,
             blobs,
-            max_depth,
             heap: Heap::new(),
             track,
             scrypto_interpreter,
             id_allocator: IdAllocator::new(IdSpace::Application),
             current_frame: CallFrame::new_root(),
             prev_frame_stack: vec![],
-            modules,
+            module,
         };
 
         // Initial authzone
@@ -349,8 +338,9 @@ where
                     system_api,
                 )
             })?;
-            for m in &mut self.modules {
-                m.pre_execute_invocation(
+
+            self.module
+                .pre_execute_invocation(
                     &actor,
                     &call_frame_update,
                     &mut self.current_frame,
@@ -358,7 +348,6 @@ where
                     &mut self.track,
                 )
                 .map_err(RuntimeError::ModuleError)?;
-            }
         }
 
         // Call Frame Push
@@ -383,8 +372,8 @@ where
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
 
-            for m in &mut self.modules {
-                m.post_execute_invocation(
+            self.module
+                .post_execute_invocation(
                     &self.prev_frame_stack.last().unwrap().actor,
                     &update,
                     &mut self.current_frame,
@@ -392,7 +381,6 @@ where
                     &mut self.track,
                 )
                 .map_err(RuntimeError::ModuleError)?;
-            }
 
             // TODO: Abstract these away
             self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
@@ -494,14 +482,7 @@ where
         actor: ResolvedActor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
-        // check call depth
         let depth = self.current_frame.depth;
-        if depth == self.max_depth {
-            return Err(RuntimeError::KernelError(
-                KernelError::MaxCallDepthLimitReached,
-            ));
-        }
-
         // TODO: Move to higher layer
         if depth == 0 {
             for node_id in &call_frame_update.node_refs_to_copy {
@@ -590,18 +571,18 @@ where
     }
 
     fn finalize_modules(&mut self) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.on_finished_processing(&mut self.heap, &mut self.track)
-                .map_err(RuntimeError::ModuleError)?;
-        }
+        self.module
+            .on_finished_processing(&mut self.heap, &mut self.track)
+            .map_err(RuntimeError::ModuleError)?;
         Ok(())
     }
 }
 
-impl<'g, 's, W, R> ResolverApi<W> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R, M> ResolverApi<W> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
+    M: Module<R>,
 {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         self.node_method_deref(node_id)
@@ -612,10 +593,9 @@ where
     }
 
     fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.on_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
-                .map_err(RuntimeError::ModuleError)?;
-        }
+        self.module
+            .on_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
+            .map_err(RuntimeError::ModuleError)?;
 
         Ok(())
     }
@@ -642,15 +622,16 @@ pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
-impl<'g, 's, W, R, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R, N, M> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
+    M: Module<R>,
     N: ExecutableInvocation<W>,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
@@ -662,7 +643,6 @@ where
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
@@ -675,24 +655,24 @@ where
         // Restore previous mode
         self.execution_mode = saved_mode;
 
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::Invoke { rtn: &rtn },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         Ok(rtn)
     }
 }
 
-impl<'g, 's, W, R> SystemApi for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R, M> SystemApi for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
+    M: Module<R>,
 {
     fn execute_in_mode<X, RTN, E>(
         &mut self,
@@ -718,10 +698,9 @@ where
     }
 
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
-                .map_err(RuntimeError::ModuleError)?;
-        }
+        self.module
+            .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
+            .map_err(RuntimeError::ModuleError)?;
 
         Ok(())
     }
@@ -732,44 +711,41 @@ where
         mut fee: Resource,
         contingent: bool,
     ) -> Result<Resource, RuntimeError> {
-        for m in &mut self.modules {
-            fee = m
-                .on_lock_fee(
-                    &self.current_frame,
-                    &mut self.heap,
-                    &mut self.track,
-                    vault_id,
-                    fee,
-                    contingent,
-                )
-                .map_err(RuntimeError::ModuleError)?;
-        }
+        fee = self
+            .module
+            .on_lock_fee(
+                &self.current_frame,
+                &mut self.heap,
+                &mut self.track,
+                vault_id,
+                fee,
+                contingent,
+            )
+            .map_err(RuntimeError::ModuleError)?;
 
         Ok(fee)
     }
 
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::ReadOwnedNodes,
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         let node_ids = self.current_frame.get_visible_nodes();
 
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::ReadOwnedNodes,
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         Ok(node_ids)
     }
@@ -783,15 +759,14 @@ where
     }
 
     fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::DropNode { node_id: &node_id },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -816,15 +791,14 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::DropNode { node: &node },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         Ok(node)
     }
@@ -917,15 +891,14 @@ where
     }
 
     fn create_node(&mut self, node_id: RENodeId, re_node: RENode) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::CreateNode { node: &re_node },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -1035,15 +1008,14 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::CreateNode { node_id: &node_id },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         Ok(())
     }
@@ -1054,8 +1026,8 @@ where
         offset: SubstateOffset,
         flags: LockFlags,
     ) -> Result<LockHandle, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
@@ -1066,7 +1038,6 @@ where
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         // Change to kernel mode
         let current_mode = self.execution_mode;
@@ -1138,15 +1109,14 @@ where
         // Restore current mode
         self.execution_mode = current_mode;
 
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::LockSubstate { lock_handle },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         Ok(lock_handle)
     }
@@ -1156,8 +1126,8 @@ where
     }
 
     fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
@@ -1166,27 +1136,25 @@ where
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         self.current_frame
             .drop_lock(&mut self.heap, &mut self.track, lock_handle)?;
 
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::DropLock,
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         Ok(())
     }
 
     fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
@@ -1195,7 +1163,6 @@ where
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
@@ -1203,15 +1170,14 @@ where
         // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::GetRef { lock_handle },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         let substate_ref =
             self.current_frame
@@ -1221,8 +1187,8 @@ where
     }
 
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
@@ -1231,7 +1197,6 @@ where
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         // A little hacky: this post sys call is called before the sys call happens due to
         // a mutable borrow conflict for substate ref.
@@ -1239,15 +1204,14 @@ where
         // pre/post callbacks are balanced.
         // TODO: Move post sys call to substate_ref drop() so that it's actually
         // after the sys call processing, not before.
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::GetRefMut,
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         let substate_ref_mut =
             self.current_frame
@@ -1257,15 +1221,14 @@ where
     }
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::ReadBlob { blob_hash },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         let blob = self
             .blobs
@@ -1273,56 +1236,54 @@ where
             .ok_or(KernelError::BlobNotFound(blob_hash.clone()))
             .map_err(RuntimeError::KernelError)?;
 
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::ReadBlob { blob: &blob },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         Ok(blob)
     }
 
     fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::EmitEvent { event: &event },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         if let Event::Tracked(tracked_event) = event {
             self.track.add_event(tracked_event);
         }
 
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::EmitEvent,
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         Ok(())
     }
 }
 
-impl<'g, 's, W, R> LoggerApi<RuntimeError> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R, M> LoggerApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
+    M: Module<R>,
 {
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
+        self.module
+            .pre_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
@@ -1332,28 +1293,27 @@ where
                 },
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         self.track.add_log(level, message);
 
-        for m in &mut self.modules {
-            m.post_sys_call(
+        self.module
+            .post_sys_call(
                 &self.current_frame,
                 &mut self.heap,
                 &mut self.track,
                 SysCallOutput::EmitLog,
             )
             .map_err(RuntimeError::ModuleError)?;
-        }
 
         Ok(())
     }
 }
 
-impl<'g, 's, W, R> ActorApi<RuntimeError> for Kernel<'g, 's, W, R>
+impl<'g, 's, W, R, M> ActorApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
+    M: Module<R>,
 {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
         Ok(self.current_frame.actor.identifier.clone())

@@ -7,10 +7,18 @@ use radix_engine_interface::api::types::{RENodeId, VaultId};
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum CostingError {
     FeeReserveError(FeeReserveError),
+    MaxCallDepthLimitReached,
 }
 
-#[derive(Default)]
-pub struct CostingModule;
+pub struct CostingModule {
+    max_depth: usize,
+}
+
+impl CostingModule {
+    pub fn new(max_depth: usize) -> Self {
+        Self { max_depth }
+    }
+}
 
 impl<R: FeeReserve> Module<R> for CostingModule {
     fn pre_sys_call(
@@ -27,6 +35,12 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                 value_count,
                 ..
             } => {
+                if depth == self.max_depth {
+                    return Err(ModuleError::CostingError(
+                        CostingError::MaxCallDepthLimitReached,
+                    ));
+                }
+
                 if depth > 0 {
                     track
                         .fee_reserve
