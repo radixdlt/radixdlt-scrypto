@@ -1,4 +1,4 @@
-use crate::model::resolve_native_function;
+use crate::model::{resolve_native_function, TransactionHashSubstate};
 use crate::model::resolve_native_method;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
@@ -22,6 +22,7 @@ use crate::wasm::WasmEngine;
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInvocation<'a> {
+    pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
     pub instructions: Cow<'a, [Instruction]>,
 }
@@ -159,13 +160,21 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
         }
-        let mut processor = TransactionProcessor::new();
-        let mut outputs = Vec::new();
+
+        let transaction_hash_substate = TransactionHashSubstate {
+            hash: self.transaction_hash,
+            next_id: 0u32,
+        };
+        let node_id = api.allocate_node_id(RENodeType::TransactionHash)?;
+        api.create_node(node_id, RENode::TransactionHash(transaction_hash_substate))?;
+
         let node_id = api.allocate_node_id(RENodeType::Worktop)?;
         let _worktop_id = api.create_node(node_id, RENode::Worktop(WorktopSubstate::new()))?;
 
         api.emit_event(Event::Runtime(RuntimeEvent::PreExecuteManifest))?;
 
+        let mut processor = TransactionProcessor::new();
+        let mut outputs = Vec::new();
         for (idx, inst) in self.instructions.into_iter().enumerate() {
             api.emit_event(Event::Runtime(RuntimeEvent::PreExecuteInstruction {
                 instruction_index: idx,

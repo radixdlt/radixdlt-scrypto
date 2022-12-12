@@ -20,7 +20,7 @@ mod royalty;
 mod scrypto;
 mod substates;
 mod trace;
-mod transaction_hash;
+mod transaction_runtime;
 mod transaction_processor;
 
 pub use self::scrypto::*;
@@ -45,5 +45,5 @@ pub use package_extractor::{extract_abi, ExtractAbiError};
 pub use resources::*;
 pub use royalty::*;
 pub use trace::*;
-pub use transaction_hash::*;
+pub use transaction_runtime::*;
 pub use transaction_processor::*;

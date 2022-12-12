@@ -166,6 +166,7 @@ where
             );
 
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+                transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
                 instructions: match instructions {
                     InstructionList::Basic(instructions) => {
