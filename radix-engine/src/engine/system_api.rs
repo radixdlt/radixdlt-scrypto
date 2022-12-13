@@ -77,8 +77,6 @@ pub trait SystemApi {
 
     /// Get a mutable reference to a locked substate
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
-
-    fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError>;
 }
 
 // TODO: Clean this up

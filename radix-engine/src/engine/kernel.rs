@@ -1,5 +1,5 @@
 use radix_engine_interface::api::api::{
-    ActorApi, EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
+    ActorApi, BlobApi, EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
 };
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
@@ -541,15 +541,14 @@ where
         Ok(output)
     }
 
-
     fn execute_in_mode<X, RTN, E>(
         &mut self,
         execution_mode: ExecutionMode,
         execute: X,
     ) -> Result<RTN, RuntimeError>
-        where
-            RuntimeError: From<E>,
-            X: FnOnce(&mut Self) -> Result<RTN, E>,
+    where
+        RuntimeError: From<E>,
+        X: FnOnce(&mut Self) -> Result<RTN, E>,
     {
         Self::verify_valid_mode_transition(&self.execution_mode, &execution_mode)?;
 
@@ -564,7 +563,6 @@ where
 
         Ok(rtn)
     }
-
 }
 
 impl<'g, 's, W, R, M> ResolverApi<W> for Kernel<'g, 's, W, R, M>
@@ -599,7 +597,8 @@ pub trait Executor {
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
             + LoggerApi<RuntimeError>
-            + ActorApi<RuntimeError>;
+            + ActorApi<RuntimeError>
+            + BlobApi<RuntimeError>;
 }
 
 pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
@@ -656,7 +655,6 @@ where
 
         Ok(rtn)
     }
-
 }
 
 impl<'g, 's, W, R, M> SystemApi for Kernel<'g, 's, W, R, M>
@@ -1187,8 +1185,15 @@ where
 
         Ok(substate_ref_mut)
     }
+}
 
-    fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
+impl<'g, 's, W, R, M> BlobApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: Module<R>,
+{
+    fn get_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
         self.module
             .pre_sys_call(
                 &self.current_frame,
