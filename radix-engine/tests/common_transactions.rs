@@ -64,7 +64,7 @@ fn creating_a_non_virtual_account_succeeds() {
             "free";
 
         # Take the XRD from the worktop and into a bucket. In this case, we would like to deposit 
-        # these funds into the account as soon as it's created (in the same method call).
+        # these funds into the account as soon as it's created (in the same function call).
         TAKE_FROM_WORKTOP 
             ResourceAddress("{xrd_resource_address}") 
             Bucket("bucket1");
@@ -118,9 +118,9 @@ fn transfer_of_funds_to_another_account_succeeds() {
 
         let manifest = format!(
             r#"
-        # The account component has a number of withdraw methods which have been optimized to also 
-        # allow for the locking of fees in a single call. In this call, we lock a fee of 10 XRD and 
-        # also withdraw 100 XRD from the account.
+        # The account component withdraw methods which have been optimized to also lock a fee in a 
+        # single call. In this call, we lock a fee of 10 XRD and also withdraw 100 XRD from the 
+        # account.
         CALL_METHOD 
             ComponentAddress("{this_account_component_address}") 
             "lock_fee_and_withdraw_by_amount"
