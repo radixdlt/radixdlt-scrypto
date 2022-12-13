@@ -1,5 +1,5 @@
-use radix_engine::engine::{NativeEvent, SysCallTrace, SysCallTraceOrigin, TrackedEvent};
-use radix_engine::model::LockedAmountOrIds;
+use radix_engine::engine::{NativeEvent, TrackedEvent};
+use radix_engine::model::{LockedAmountOrIds, SysCallTrace, SysCallTraceOrigin};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::NativeMethod;
 use radix_engine_interface::core::NetworkDefinition;

@@ -6,8 +6,9 @@ use radix_engine_interface::model::*;
 use transaction::manifest::decompiler::DecompilationContext;
 use utils::ContextualDisplay;
 
-use crate::engine::{RejectionError, ResourceChange, RuntimeError, TrackedEvent};
+use crate::engine::{RejectionError, RuntimeError, TrackedEvent};
 use crate::fee::FeeSummary;
+use crate::model::ResourceChange;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
