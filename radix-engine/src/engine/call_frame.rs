@@ -37,6 +37,10 @@ impl CallFrameUpdate {
             node_refs_to_copy,
         }
     }
+
+    pub fn add_ref(&mut self, node_id: RENodeId) {
+        self.node_refs_to_copy.insert(node_id);
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

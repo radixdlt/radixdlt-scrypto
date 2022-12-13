@@ -69,6 +69,116 @@ impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
 }
 
+fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdate) {
+    match instruction {
+        Instruction::Basic(basic_function) => match basic_function {
+            BasicInstruction::CallFunction {
+                args,
+                package_address,
+                ..
+            } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::Package(*package_address)));
+                for node_id in slice_to_global_references(args) {
+                    update.add_ref(node_id);
+                }
+            }
+            BasicInstruction::CallMethod {
+                args,
+                component_address,
+                ..
+            } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::Component(
+                    *component_address,
+                )));
+                for node_id in slice_to_global_references(args) {
+                    update.add_ref(node_id);
+                }
+            }
+            BasicInstruction::SetMetadata { entity_address, .. }
+            | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
+                update.add_ref(RENodeId::Global(*entity_address));
+            }
+            BasicInstruction::RecallResource { vault_id, .. } => {
+                // TODO: This needs to be cleaned up
+                // TODO: How does this relate to newly created vaults in the transaction frame?
+                // TODO: Will probably want different spacing for refed vs. owned nodes
+                update.add_ref(RENodeId::Vault(*vault_id));
+            }
+
+            BasicInstruction::SetPackageRoyaltyConfig {
+                package_address, ..
+            }
+            | BasicInstruction::ClaimPackageRoyalty {
+                package_address, ..
+            } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::Package(*package_address)));
+            }
+            BasicInstruction::SetComponentRoyaltyConfig {
+                component_address, ..
+            }
+            | BasicInstruction::ClaimComponentRoyalty {
+                component_address, ..
+            } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::Component(
+                    *component_address,
+                )));
+            }
+            BasicInstruction::TakeFromWorktop {
+                resource_address, ..
+            }
+            | BasicInstruction::TakeFromWorktopByAmount {
+                resource_address, ..
+            }
+            | BasicInstruction::TakeFromWorktopByIds {
+                resource_address, ..
+            }
+            | BasicInstruction::AssertWorktopContains {
+                resource_address, ..
+            }
+            | BasicInstruction::AssertWorktopContainsByAmount {
+                resource_address, ..
+            }
+            | BasicInstruction::AssertWorktopContainsByIds {
+                resource_address, ..
+            }
+            | BasicInstruction::CreateProofFromAuthZone {
+                resource_address, ..
+            }
+            | BasicInstruction::CreateProofFromAuthZoneByAmount {
+                resource_address, ..
+            }
+            | BasicInstruction::CreateProofFromAuthZoneByIds {
+                resource_address, ..
+            }
+            | BasicInstruction::MintResource {
+                resource_address, ..
+            } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::Resource(*resource_address)));
+            }
+            _ => {}
+        },
+        Instruction::System(SystemInstruction::CallNativeFunction { args, .. }) => {
+            for node_id in slice_to_global_references(args) {
+                update.add_ref(node_id);
+            }
+        }
+        Instruction::System(SystemInstruction::CallNativeMethod { args, .. }) => {
+            for node_id in slice_to_global_references(args) {
+                update.add_ref(node_id);
+            }
+        }
+    }
+}
+
+fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
+    let scrypto_value = IndexedScryptoValue::from_slice(slice).expect("Invalid CALL arguments");
+    scrypto_value
+        .global_references()
+        .into_iter()
+        .map(|addr| RENodeId::Global(addr))
+        .collect()
+}
+
 impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvocation<'a> {
     type Exec = Self;
 
@@ -76,64 +186,21 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let input = IndexedScryptoValue::from_typed(&self);
         let mut call_frame_update = CallFrameUpdate::empty();
-
-        // TODO: Remove serialization
-        for global_address in input.global_references() {
-            call_frame_update
-                .node_refs_to_copy
-                .insert(RENodeId::Global(global_address));
-        }
-
         // TODO: This can be refactored out once any type in sbor is implemented
         for instruction in self.instructions.as_ref() {
-            match instruction {
-                Instruction::Basic(BasicInstruction::CallFunction { args, .. })
-                | Instruction::Basic(BasicInstruction::CallMethod { args, .. })
-                | Instruction::System(SystemInstruction::CallNativeFunction { args, .. })
-                | Instruction::System(SystemInstruction::CallNativeMethod { args, .. }) => {
-                    let scrypto_value =
-                        IndexedScryptoValue::from_slice(&args).expect("Invalid CALL arguments");
-                    for global_address in scrypto_value.global_references() {
-                        call_frame_update
-                            .node_refs_to_copy
-                            .insert(RENodeId::Global(global_address));
-                    }
-                }
-                Instruction::Basic(BasicInstruction::RecallResource { vault_id, .. }) => {
-                    // TODO: This needs to be cleaned up
-                    // TODO: How does this relate to newly created vaults in the transaction frame?
-                    // TODO: Will probably want different spacing for refed vs. owned nodes
-                    call_frame_update
-                        .node_refs_to_copy
-                        .insert(RENodeId::Vault(*vault_id));
-                }
-                _ => {}
-            }
+            instruction_get_update(instruction, &mut call_frame_update);
         }
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::System(CLOCK)));
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                ECDSA_SECP256K1_TOKEN,
-            )));
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Resource(
-                EDDSA_ED25519_TOKEN,
-            )));
-        call_frame_update
-            .node_refs_to_copy
-            .insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::System(CLOCK)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
         let actor = ResolvedActor::function(NativeFunction::TransactionProcessor(
             TransactionProcessorFunction::Run,
