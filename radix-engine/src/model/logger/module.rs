@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::{RENodeId, RENodeType};
+use radix_engine_interface::api::types::RENodeType;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::LoggerSubstate;
@@ -22,13 +22,6 @@ impl LoggerModule {
         };
         let node_id = api.allocate_node_id(RENodeType::Logger)?;
         api.create_node(node_id, RENode::Logger(logger))?;
-        Ok(())
-    }
-
-    pub fn finalize<Y: SystemApi>(
-        api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        let _node = api.drop_node(RENodeId::Logger)?;
         Ok(())
     }
 }

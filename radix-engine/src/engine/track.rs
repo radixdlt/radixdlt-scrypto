@@ -583,6 +583,7 @@ impl<'s> FinalizingTrack<'s> {
 
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
+        let mut event_substates = HashMap::new();
         let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
                 let old_version = match &loaded.metastate {
@@ -590,7 +591,14 @@ impl<'s> FinalizingTrack<'s> {
                     SubstateMetaState::Existing { old_version, .. } => Option::Some(*old_version),
                 };
 
-                to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+                match id.0 {
+                    RENodeId::Logger => {
+                        event_substates.insert(id, loaded.substate);
+                    },
+                    _ => {
+                        to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+                    },
+                }
             }
 
             self.new_global_addresses

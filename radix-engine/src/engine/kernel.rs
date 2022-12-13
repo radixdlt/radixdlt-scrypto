@@ -540,13 +540,6 @@ where
         if depth == 0 {
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
-
-            // TODO: Abstract away
-            self
-                .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::LoggerModule, |api| {
-                    LoggerModule::finalize(api)
-                })?;
-
             self.drop_nodes_in_frame()?;
         }
 
@@ -973,7 +966,11 @@ where
 
         // TODO: For Scrypto components, check state against blueprint schema
 
-        let push_to_store = matches!(re_node, RENode::Global(..));
+        let push_to_store = match re_node {
+            RENode::Global(..) | RENode::Logger(..) => true,
+            _ => false,
+        };
+
         self.current_frame.create_node(
             node_id,
             re_node,
