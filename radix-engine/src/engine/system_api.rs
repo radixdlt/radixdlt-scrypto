@@ -32,15 +32,6 @@ pub struct LockInfo {
 }
 
 pub trait SystemApi {
-    fn execute_in_mode<X, RTN, E>(
-        &mut self,
-        execution_mode: ExecutionMode,
-        execute: X,
-    ) -> Result<RTN, RuntimeError>
-    where
-        RuntimeError: From<E>,
-        X: FnOnce(&mut Self) -> Result<RTN, E>;
-
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 
     fn lock_fee(

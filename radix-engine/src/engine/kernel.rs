@@ -457,7 +457,7 @@ where
     ) -> Result<(), RuntimeError> {
         match (cur, next) {
             (ExecutionMode::Kernel, ..) => Ok(()),
-            (ExecutionMode::ScryptoInterpreter, ExecutionMode::Application) => Ok(()),
+            (ExecutionMode::Resolver, ExecutionMode::Deref) => Ok(()),
             _ => Err(RuntimeError::KernelError(
                 KernelError::InvalidModeTransition(*cur, *next),
             )),
@@ -540,6 +540,31 @@ where
 
         Ok(output)
     }
+
+
+    fn execute_in_mode<X, RTN, E>(
+        &mut self,
+        execution_mode: ExecutionMode,
+        execute: X,
+    ) -> Result<RTN, RuntimeError>
+        where
+            RuntimeError: From<E>,
+            X: FnOnce(&mut Self) -> Result<RTN, E>,
+    {
+        Self::verify_valid_mode_transition(&self.execution_mode, &execution_mode)?;
+
+        // Save and replace kernel actor
+        let saved = self.execution_mode;
+        self.execution_mode = execution_mode;
+
+        let rtn = execute(self)?;
+
+        // Restore old kernel actor
+        self.execution_mode = saved;
+
+        Ok(rtn)
+    }
+
 }
 
 impl<'g, 's, W, R, M> ResolverApi<W> for Kernel<'g, 's, W, R, M>
@@ -610,10 +635,11 @@ where
 
         // Change to kernel mode
         let saved_mode = self.execution_mode;
-        self.execution_mode = ExecutionMode::Kernel;
 
+        self.execution_mode = ExecutionMode::Resolver;
         let (actor, call_frame_update, executor) = invocation.resolve(self)?;
 
+        self.execution_mode = ExecutionMode::Kernel;
         let rtn = self.invoke_internal(executor, actor, call_frame_update)?;
 
         // Restore previous mode
@@ -630,6 +656,7 @@ where
 
         Ok(rtn)
     }
+
 }
 
 impl<'g, 's, W, R, M> SystemApi for Kernel<'g, 's, W, R, M>
@@ -638,29 +665,6 @@ where
     R: FeeReserve,
     M: Module<R>,
 {
-    fn execute_in_mode<X, RTN, E>(
-        &mut self,
-        execution_mode: ExecutionMode,
-        execute: X,
-    ) -> Result<RTN, RuntimeError>
-    where
-        RuntimeError: From<E>,
-        X: FnOnce(&mut Self) -> Result<RTN, E>,
-    {
-        Self::verify_valid_mode_transition(&self.execution_mode, &execution_mode)?;
-
-        // Save and replace kernel actor
-        let saved = self.execution_mode;
-        self.execution_mode = execution_mode;
-
-        let rtn = execute(self)?;
-
-        // Restore old kernel actor
-        self.execution_mode = saved;
-
-        Ok(rtn)
-    }
-
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError> {
         self.module
             .on_wasm_costing(&self.current_frame, &mut self.heap, &mut self.track, units)
