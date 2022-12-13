@@ -1,4 +1,4 @@
-# This transaction manifest shows how a mintable fungible resource may be minted through the 
+# This transaction manifest shows how a mintable non-fungible resource may be minted through the 
 # transaction manifest. Most mint operations will typically require you to produce a badge before 
 # being allowed to mint a resource. This example is no different. In this example, there is a minter
 # badge which we have in our account which allows us to mint this resource

@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::{
     hash, require, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey,
     NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
-    ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN,
+    ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN, HashMap
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::rule;
