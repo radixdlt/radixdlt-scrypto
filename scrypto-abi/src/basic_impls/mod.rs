@@ -40,7 +40,9 @@ macro_rules! use_same_generic_schema {
 
 macro_rules! use_same_double_generic_schema {
     ($key_generic:ident, $value_generic:ident, $type:ty, $other_type:ty) => {
-        impl<X: ::sbor::CustomTypeId, $key_generic: Schema<X>, $value_generic: Schema<X>> Schema<X> for $type {
+        impl<X: ::sbor::CustomTypeId, $key_generic: Schema<X>, $value_generic: Schema<X>> Schema<X>
+            for $type
+        {
             const SCHEMA_TYPE_REF: TypeRef = <$other_type>::SCHEMA_TYPE_REF;
 
             fn get_local_type_data() -> Option<LocalTypeData<TypeRef>> {
@@ -57,9 +59,9 @@ macro_rules! use_same_double_generic_schema {
 mod array;
 mod boolean;
 mod collection;
+mod enums;
 mod integer;
 mod misc;
-mod enums;
 mod string;
 mod tuple;
 mod unit;
@@ -67,9 +69,9 @@ mod unit;
 pub use array::*;
 pub use boolean::*;
 pub use collection::*;
+pub use enums::*;
 pub use integer::*;
 pub use misc::*;
-pub use enums::*;
 pub use string::*;
 pub use tuple::*;
 pub use unit::*;

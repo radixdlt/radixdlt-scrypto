@@ -4,10 +4,14 @@ use crate::v2::*;
 use indexmap::{IndexMap, IndexSet};
 use sbor::{rust::collections::*, CustomTypeId};
 
-pub fn generate_full_linear_schema<T: Schema<X>, X: CustomTypeId>() -> FullTypeSchema {
+pub fn generate_full_schema_from_single_type<T: Schema<X>, X: CustomTypeId>(
+) -> (isize, FullTypeSchema) {
     let mut aggregator = SchemaAggregator::new();
-    aggregator.attempt_add_schema_and_descendents::<T>();
+    let type_index = aggregator.add_child_type_and_descendents::<T>();
+    (type_index, generate_full_schema(aggregator))
+}
 
+pub fn generate_full_schema<X: CustomTypeId>(aggregator: SchemaAggregator<X>) -> FullTypeSchema {
     let schema_lookup = IndexSet::from_iter(aggregator.schemas.keys().map(|k| k.clone()));
 
     let mapped = aggregator
@@ -123,37 +127,59 @@ impl<X: CustomTypeId> SchemaAggregator<X> {
         }
     }
 
-
-    /// Adds the dependent type (and its dependencies) to the SchemaAggregator.
-    pub fn attempt_add_schema_and_descendents<T: Schema<X>>(&mut self) {
-        self.attempt_add_local_schema(T::SCHEMA_TYPE_REF, || T::get_local_type_data());
-        self.attempt_add_schema_descendents::<T>();
+    /// Adds the dependent type (and its dependencies) to the `SchemaAggregator`.
+    pub fn add_child_type_and_descendents<T: Schema<X>>(&mut self) -> isize {
+        let schema_type_index =
+            self.add_child_type(T::SCHEMA_TYPE_REF, || T::get_local_type_data());
+        self.add_schema_descendents::<T>();
+        schema_type_index
     }
 
-    /// Adds the non-well-known type's `LocalTypeData` to the SchemaAggregator.
+    /// Adds the type's `LocalTypeData` to the `SchemaAggregator`.
     ///
-    /// Typically you should use `attempt_add_schema_and_descendents`, unless the local schema has been mutated.
-    pub fn attempt_add_local_schema(
+    /// If the type is well known or already in the aggregator, this returns early with the existing index.
+    ///
+    /// Typically you should use [`add_schema_and_descendents`], unless you're customising the schemas you add -
+    /// in which case, you likely wish to call [`add_child_type`] and [`add_schema_descendents`] separately.
+    ///
+    /// [`add_child_type`]: #method.add_child_type
+    /// [`add_schema_descendents`]: #method.add_schema_descendents
+    /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
+    pub fn add_child_type(
         &mut self,
-        type_hash: TypeRef,
-        get_schema: impl FnOnce() -> Option<LocalTypeData<TypeRef>>,
-    ) -> bool {
-        let TypeRef::Complex(complex_type_hash) = type_hash else {
-            return false;
+        type_ref: TypeRef,
+        get_type_data: impl FnOnce() -> Option<LocalTypeData<TypeRef>>,
+    ) -> isize {
+        let complex_type_hash = match type_ref {
+            TypeRef::WellKnownType([well_known_type_index]) => {
+                return well_known_index_to_isize(well_known_type_index);
+            }
+            TypeRef::Complex(complex_type_hash) => complex_type_hash,
         };
 
-        if self.schemas.contains_key(&complex_type_hash) {
-            return false;
+        if let Some(index) = self.schemas.get_index_of(&complex_type_hash) {
+            return index.try_into().expect("Index too large");
         }
-        let schema = get_schema().expect("Schema with a complex TypeRef did not have a LocalTypeData");
+
+        let schema =
+            get_type_data().expect("Schema with a complex TypeRef did not have a LocalTypeData");
         self.schemas.insert(complex_type_hash, schema);
-        return true;
+        self.schemas
+            .get_index_of(&complex_type_hash)
+            .expect("Schema that was just inserted isn't in map")
+            .try_into()
+            .expect("Index too large")
     }
 
-    /// Adds the type's descendent types to the SchemaAggregator.
+    /// Adds the type's descendent types to the `SchemaAggregator`, if they've not already been added.
     ///
-    /// Typically you should use `attempt_add_schema_and_descendents`, unless the local schema has been mutated.
-    pub fn attempt_add_schema_descendents<T: Schema<X>>(&mut self) -> bool {
+    /// Typically you should use [`add_schema_and_descendents`], unless you're customising the schemas you add -
+    /// in which case, you likely wish to call [`add_child_type`] and [`add_schema_descendents`] separately.
+    ///
+    /// [`add_child_type`]: #method.add_child_type
+    /// [`add_schema_descendents`]: #method.add_schema_descendents
+    /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
+    pub fn add_schema_descendents<T: Schema<X>>(&mut self) -> bool {
         let TypeRef::Complex(complex_type_hash) = T::SCHEMA_TYPE_REF else {
             return false;
         };

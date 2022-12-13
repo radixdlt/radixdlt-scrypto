@@ -1,5 +1,5 @@
-use sbor::*;
 use crate::v2::*;
+use sbor::*;
 
 macro_rules! tuple_schema {
     ($n:tt $($idx:tt $name:ident)+) => {

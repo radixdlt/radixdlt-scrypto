@@ -11,11 +11,11 @@ mod schema_type;
 pub use blueprint_abi::*;
 pub use schema_type::*;
 
+mod basic_impls;
 mod schema;
 mod schema_aggregator;
 mod type_ref;
 mod type_schema;
-mod basic_impls;
 
 pub mod v2 {
     use super::*;

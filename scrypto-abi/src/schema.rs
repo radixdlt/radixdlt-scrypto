@@ -1,10 +1,11 @@
 use crate::v2::*;
-use sbor::CustomTypeId;
 use sbor::rust::borrow::Cow;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use sbor::CustomTypeId;
 pub use well_known::*;
 
+#[allow(unused_variables)]
 pub trait Schema<X: CustomTypeId> {
     /// The `TYPE_REF` should denote a unique identifier for this type (once turned into a payload)
     ///
@@ -26,19 +27,25 @@ pub trait Schema<X: CustomTypeId> {
     const SCHEMA_TYPE_REF: TypeRef;
 
     /// Returns the local schema for the given type, if the TypeRef is Custom
-    fn get_local_type_data() -> Option<LocalTypeData<TypeRef>> { None }
+    fn get_local_type_data() -> Option<LocalTypeData<TypeRef>> {
+        None
+    }
 
     /// Should add all the dependent schemas, if the type depends on any.
     ///
-    /// The algorithm should be:
+    /// For direct/simple type dependencies, simply call `aggregator.add_child_type_and_descendents::<D>()`
+    /// for each dependency.
     ///
-    /// - For each (POSSIBLY MUTATED) type dependency needed by this type
-    ///   - Get its type id and local schema, and mutate (both!) if needed
-    ///   - Do aggregator.attempt_add_schema() to the (mutated) hash and (mutated) local schema
+    /// For more complicated type dependencies, where new types are being created (EG enum variants, or
+    /// where a dependent type ie being customised/mutated via annotations), then the algorithm should be:
     ///
-    /// - For each (BASE/UNMUTATED) type dependency `D`:
-    ///   - If aggregator.should_read_descendents() then call `D::add_all_dependencies`
-    fn add_all_dependencies(_aggregator: &mut SchemaAggregator<X>) {}
+    /// - For each (possibly customised) type dependency needed directly by this type
+    ///   - Ensure that if it's customised, then its `type_ref` is mutated from its underlying type
+    ///   - Do `aggregator.add_child_type(type_ref, local_type_data)`
+    ///
+    /// - For each (base/unmutated) type dependency `D`:
+    ///   - Call `aggregator.add_schema_descendents::<D>()`
+    fn add_all_dependencies(aggregator: &mut SchemaAggregator<X>) {}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,7 +85,11 @@ impl<T> LocalTypeData<T> {
         }
     }
 
-    pub fn named_tuple_named_fields(name: &'static str, element_types: Vec<T>, field_names: &[&'static str]) -> Self {
+    pub fn named_tuple_named_fields(
+        name: &'static str,
+        element_types: Vec<T>,
+        field_names: &[&'static str],
+    ) -> Self {
         Self {
             schema: TypeSchema::Tuple { element_types },
             naming: TypeNaming {
