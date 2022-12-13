@@ -15,6 +15,7 @@ mod schema;
 mod schema_aggregator;
 mod type_ref;
 mod type_schema;
+mod basic_impls;
 
 pub mod v2 {
     use super::*;

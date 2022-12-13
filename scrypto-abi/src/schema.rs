@@ -1,10 +1,11 @@
 use crate::v2::*;
+use sbor::CustomTypeId;
 use sbor::rust::borrow::Cow;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 pub use well_known::*;
 
-pub trait Schema {
+pub trait Schema<X: CustomTypeId> {
     /// The `TYPE_REF` should denote a unique identifier for this type (once turned into a payload)
     ///
     /// In particular, it should capture the uniqueness of anything relevant to the codec/payload, for example:
@@ -24,8 +25,8 @@ pub trait Schema {
     /// ```
     const SCHEMA_TYPE_REF: TypeRef;
 
-    /// Returns the local schema for the given type
-    fn get_local_type_data() -> LocalTypeData<TypeRef>;
+    /// Returns the local schema for the given type, if the TypeRef is Custom
+    fn get_local_type_data() -> Option<LocalTypeData<TypeRef>> { None }
 
     /// Should add all the dependent schemas, if the type depends on any.
     ///
@@ -37,7 +38,7 @@ pub trait Schema {
     ///
     /// - For each (BASE/UNMUTATED) type dependency `D`:
     ///   - If aggregator.should_read_descendents() then call `D::add_all_dependencies`
-    fn add_all_dependencies(_aggregator: &mut SchemaAggregator) {}
+    fn add_all_dependencies(_aggregator: &mut SchemaAggregator<X>) {}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -52,8 +53,37 @@ impl<T> LocalTypeData<T> {
             schema,
             naming: TypeNaming {
                 type_name: Cow::Borrowed(name),
-                generic_type_names: None,
                 field_names: None,
+            },
+        }
+    }
+
+    pub const fn named_unit(name: &'static str) -> Self {
+        Self {
+            schema: TypeSchema::Unit,
+            naming: TypeNaming {
+                type_name: Cow::Borrowed(name),
+                field_names: None,
+            },
+        }
+    }
+
+    pub const fn named_tuple(name: &'static str, element_types: Vec<T>) -> Self {
+        Self {
+            schema: TypeSchema::Tuple { element_types },
+            naming: TypeNaming {
+                type_name: Cow::Borrowed(name),
+                field_names: None,
+            },
+        }
+    }
+
+    pub fn named_tuple_named_fields(name: &'static str, element_types: Vec<T>, field_names: &[&'static str]) -> Self {
+        Self {
+            schema: TypeSchema::Tuple { element_types },
+            naming: TypeNaming {
+                type_name: Cow::Borrowed(name),
+                field_names: Some(field_names.iter().map(|x| x.to_string()).collect()),
             },
         }
     }
@@ -64,8 +94,16 @@ impl<T> LocalTypeData<T> {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TypeNaming {
     pub type_name: Cow<'static, str>,
-    pub generic_type_names: Option<Vec<String>>,
     pub field_names: Option<Vec<String>>,
+}
+
+impl TypeNaming {
+    pub const fn named(name: &'static str) -> Self {
+        Self {
+            type_name: Cow::Borrowed(name),
+            field_names: None,
+        }
+    }
 }
 
 /// An array of custom types, and associated extra information.
@@ -114,7 +152,7 @@ mod scrypto_custom_type_ids {
     pub const TYPE_NON_FUNGIBLE_ID: u8 = 0xb7;
 }
 
-mod well_known {
+pub mod well_known {
     use super::scrypto_custom_type_ids::*;
     use super::*;
 

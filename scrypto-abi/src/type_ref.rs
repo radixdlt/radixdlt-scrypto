@@ -10,8 +10,16 @@ pub enum TypeRef {
 pub type ComplexTypeHash = [u8; 20];
 
 impl TypeRef {
-    pub const fn complex(name: &str, dependencies: &[TypeRef], code: &[u8]) -> Self {
+    pub const fn complex(name: &str, dependencies: &[TypeRef]) -> Self {
+        generate_type_ref(name, &[], dependencies)
+    }
+
+    pub const fn complex_with_code(name: &str, dependencies: &[TypeRef], code: &[u8]) -> Self {
         generate_type_ref(name, code, dependencies)
+    }
+
+    pub const fn complex_sized(name: &str, dependencies: &[TypeRef], size: usize) -> Self {
+        generate_type_ref(name, &size.to_le_bytes(), dependencies)
     }
 
     pub const fn well_known(type_id: u8) -> Self {
@@ -33,8 +41,8 @@ impl TypeRef {
     }
 }
 
-const fn generate_type_ref(name: &str, code: &[u8], dependencies: &[TypeRef]) -> TypeRef {
-    let buffer = const_sha1::ConstBuffer::from_slice(name.as_bytes()).push_slice(&code);
+const fn generate_type_ref(name: &str, type_data: &[u8], dependencies: &[TypeRef]) -> TypeRef {
+    let buffer = const_sha1::ConstBuffer::from_slice(name.as_bytes()).push_slice(&type_data);
 
     // Const looping isn't allowed - but we can use recursion instead
     let buffer = capture_dependent_type_ids(buffer, 0, dependencies);

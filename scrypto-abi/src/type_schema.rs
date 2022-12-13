@@ -63,10 +63,6 @@ pub enum TypeSchema<T> {
         element_types: Vec<T>,
     },
 
-    Struct {
-        element_types: Vec<T>,
-    },
-
     Enum {
         variants: IndexMap<String, T>,
     },

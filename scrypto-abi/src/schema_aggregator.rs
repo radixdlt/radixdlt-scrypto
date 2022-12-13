@@ -1,11 +1,12 @@
+use core::marker::PhantomData;
+
 use crate::v2::*;
 use indexmap::{IndexMap, IndexSet};
-use sbor::rust::collections::*;
+use sbor::{rust::collections::*, CustomTypeId};
 
-pub fn generate_full_linear_schema<T: Schema>() -> FullTypeSchema {
+pub fn generate_full_linear_schema<T: Schema<X>, X: CustomTypeId>() -> FullTypeSchema {
     let mut aggregator = SchemaAggregator::new();
-    aggregator.attempt_add_schema(T::SCHEMA_TYPE_REF, T::get_local_type_data());
-    T::add_all_dependencies(&mut aggregator);
+    aggregator.attempt_add_schema_and_descendents::<T>();
 
     let schema_lookup = IndexSet::from_iter(aggregator.schemas.keys().map(|k| k.clone()));
 
@@ -53,12 +54,6 @@ fn linearize(
             length_validation,
         },
         TypeSchema::Tuple { element_types } => TypeSchema::Tuple {
-            element_types: element_types
-                .into_iter()
-                .map(|t| resolve(schemas, &t))
-                .collect(),
-        },
-        TypeSchema::Struct { element_types } => TypeSchema::Struct {
             element_types: element_types
                 .into_iter()
                 .map(|t| resolve(schemas, &t))
@@ -113,23 +108,35 @@ fn resolve_index(schemas: &IndexSet<ComplexTypeHash>, type_hash: &ComplexTypeHas
         .unwrap_or_else(|err| panic!("Too many types to map usize into isize: {:?}", err))
 }
 
-pub struct SchemaAggregator {
+pub struct SchemaAggregator<X: CustomTypeId> {
     pub already_read_descendents: HashSet<ComplexTypeHash>,
     pub schemas: IndexMap<ComplexTypeHash, LocalTypeData<TypeRef>>,
+    custom_type_id: PhantomData<X>,
 }
 
-impl SchemaAggregator {
+impl<X: CustomTypeId> SchemaAggregator<X> {
     pub fn new() -> Self {
         Self {
             schemas: IndexMap::new(),
             already_read_descendents: HashSet::new(),
+            custom_type_id: PhantomData,
         }
     }
 
-    pub fn attempt_add_schema(
+
+    /// Adds the dependent type (and its dependencies) to the SchemaAggregator.
+    pub fn attempt_add_schema_and_descendents<T: Schema<X>>(&mut self) {
+        self.attempt_add_local_schema(T::SCHEMA_TYPE_REF, || T::get_local_type_data());
+        self.attempt_add_schema_descendents::<T>();
+    }
+
+    /// Adds the non-well-known type's `LocalTypeData` to the SchemaAggregator.
+    ///
+    /// Typically you should use `attempt_add_schema_and_descendents`, unless the local schema has been mutated.
+    pub fn attempt_add_local_schema(
         &mut self,
         type_hash: TypeRef,
-        schema: LocalTypeData<TypeRef>,
+        get_schema: impl FnOnce() -> Option<LocalTypeData<TypeRef>>,
     ) -> bool {
         let TypeRef::Complex(complex_type_hash) = type_hash else {
             return false;
@@ -138,12 +145,16 @@ impl SchemaAggregator {
         if self.schemas.contains_key(&complex_type_hash) {
             return false;
         }
+        let schema = get_schema().expect("Schema with a complex TypeRef did not have a LocalTypeData");
         self.schemas.insert(complex_type_hash, schema);
         return true;
     }
 
-    pub fn should_read_descendents(&mut self, type_hash: TypeRef) -> bool {
-        let TypeRef::Complex(complex_type_hash) = type_hash else {
+    /// Adds the type's descendent types to the SchemaAggregator.
+    ///
+    /// Typically you should use `attempt_add_schema_and_descendents`, unless the local schema has been mutated.
+    pub fn attempt_add_schema_descendents<T: Schema<X>>(&mut self) -> bool {
+        let TypeRef::Complex(complex_type_hash) = T::SCHEMA_TYPE_REF else {
             return false;
         };
 
@@ -152,6 +163,9 @@ impl SchemaAggregator {
         }
 
         self.already_read_descendents.insert(complex_type_hash);
+
+        T::add_all_dependencies(self);
+
         return true;
     }
 }
