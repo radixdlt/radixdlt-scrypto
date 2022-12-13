@@ -50,10 +50,10 @@ mod tests {
     #[test]
     fn test_compile() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
-        let manifest = include_str!("../../examples/complex.rtm");
+        let manifest = include_str!("../../examples/test-cases/complex.rtm");
         let blobs = vec![
-            include_bytes!("../../examples/code.blob").to_vec(),
-            include_bytes!("../../examples/abi.blob").to_vec(),
+            include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+            include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
         ];
         let code_hash = hash(&blobs[0]);
         let abi_hash = hash(&blobs[1]);
@@ -210,13 +210,13 @@ mod tests {
 
     #[test]
     fn test_call_method() {
-        let manifest = include_str!("../../examples/call_method.rtm");
+        let manifest = include_str!("../../examples/test-cases/call_method.rtm");
         crate::manifest::compile(manifest, &NetworkDefinition::simulator(), Vec::new()).unwrap();
     }
 
     #[test]
     fn test_call_function() {
-        let manifest = include_str!("../../examples/call_function.rtm");
+        let manifest = include_str!("../../examples/test-cases/call_function.rtm");
         crate::manifest::compile(manifest, &NetworkDefinition::simulator(), Vec::new()).unwrap();
     }
 }

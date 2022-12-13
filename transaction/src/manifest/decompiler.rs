@@ -627,11 +627,11 @@ mod tests {
     #[test]
     fn test_decompile_complex() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/complex.rtm"),
+            include_str!("../../examples/test-cases/complex.rtm"),
             &NetworkDefinition::simulator(),
             vec![
-                include_bytes!("../../examples/code.blob").to_vec(),
-                include_bytes!("../../examples/abi.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
             ],
         );
 
@@ -664,7 +664,7 @@ PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e
     #[test]
     fn test_decompile_call_function() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/call_function.rtm"),
+            include_str!("../../examples/test-cases/call_function.rtm"),
             &NetworkDefinition::simulator(),
             vec![],
         );
@@ -685,7 +685,7 @@ CALL_NATIVE_FUNCTION "TransactionProcessor" "run";
         let network = NetworkDefinition::simulator();
 
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/call_method.rtm"),
+            include_str!("../../examples/test-cases/call_method.rtm"),
             &network,
             vec![],
         );
@@ -716,9 +716,9 @@ CALL_NATIVE_METHOD Global("resource_sim1qrc4s082h9trka3yrghwragylm3sdne0u668h2sy
     #[test]
     fn test_decompile_any_value() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/any_value.rtm"),
+            include_str!("../../examples/test-cases/any_value.rtm"),
             &NetworkDefinition::simulator(),
-            vec![include_bytes!("../../examples/code.blob").to_vec()],
+            vec![include_bytes!("../../examples/test-cases/code.blob").to_vec()],
         );
 
         assert_eq!(
@@ -734,7 +734,7 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
     #[test]
     fn test_decompile_non_fungible_ids() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/non_fungible_ids_canonical.rtm"),
+            include_str!("../../examples/test-cases/non_fungible_ids_canonical.rtm"),
             &NetworkDefinition::simulator(),
             vec![],
         );
