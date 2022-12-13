@@ -1,10 +1,10 @@
 use radix_engine_interface::api::api::{
-    ActorApi, EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
+    ActorApi, EngineApi, Invocation, Invokable, InvokableModel,
 };
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
-    ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
-    VaultId, WorktopOffset,
+    AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
+    RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset, VaultId,
+    WorktopOffset,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
@@ -321,6 +321,9 @@ where
                     system_api,
                 )
             })?;
+            self.execute_in_mode(ExecutionMode::LoggerModule, |system_api| {
+                LoggerModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+            })?;
             self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
@@ -578,7 +581,6 @@ pub trait Executor {
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
-            + LoggerApi<RuntimeError>
             + ActorApi<RuntimeError>;
 }
 
@@ -1221,40 +1223,6 @@ where
             .map_err(RuntimeError::ModuleError)?;
 
         Ok(blob)
-    }
-}
-
-impl<'g, 's, W, R, M> LoggerApi<RuntimeError> for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: Module<R>,
-{
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.module
-            .pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::EmitLog {
-                    level: &level,
-                    message: &message,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        self.track.add_log(level, message);
-
-        self.module
-            .post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::EmitLog,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(())
     }
 }
 

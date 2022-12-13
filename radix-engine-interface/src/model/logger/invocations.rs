@@ -1,9 +1,10 @@
+use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use std::fmt;
 
 use crate::api::api::*;
 use crate::scrypto;
 use crate::wasm::*;
+use sbor::rust::string::String;
 use sbor::*;
 
 /// Represents the level of a log message.

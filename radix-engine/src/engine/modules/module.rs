@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
-use radix_engine_interface::api::types::{Level, LockHandle, RENodeId, SubstateOffset, VaultId};
+use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
 use sbor::rust::fmt::Debug;
 
 #[derive(Clone)]
@@ -37,10 +37,6 @@ pub enum SysCallInput<'a> {
     ReadBlob {
         blob_hash: &'a Hash,
     },
-    EmitLog {
-        level: &'a Level,
-        message: &'a String,
-    },
 }
 
 #[derive(Debug, Clone)]
@@ -54,8 +50,6 @@ pub enum SysCallOutput<'a> {
     GetRefMut,
     DropLock,
     ReadBlob { blob: &'a [u8] },
-    GenerateUuid { uuid: u128 },
-    EmitLog,
 }
 
 pub trait Module<R: FeeReserve> {

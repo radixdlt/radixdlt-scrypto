@@ -590,8 +590,8 @@ impl<'s> FinalizingTrack<'s> {
                     SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
 
-                match id.0 {
-                    RENodeId::Logger => {
+                match id.1 {
+                    SubstateOffset::Logger(LoggerOffset::Logger) => {
                         let logger: LoggerSubstate = loaded.substate.into();
                         application_logs.extend(logger.logs);
                     }

@@ -3,7 +3,6 @@ use crate::scrypto;
 use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug)]
@@ -21,7 +20,6 @@ pub enum RadixEngineInput {
     Write(LockHandle, Vec<u8>),
 
     GetActor(),
-    EmitLog(Level, String),
 }
 
 #[derive(Debug)]

@@ -56,10 +56,6 @@ pub enum SystemApiCostingEntry {
     ReadBlob {
         size: u32,
     },
-    /// Emits a log.
-    EmitLog {
-        size: u32,
-    },
 }
 
 pub struct FeeTable {
@@ -270,7 +266,6 @@ impl FeeTable {
             SystemApiCostingEntry::DropLock => self.fixed_low,
 
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
-            SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
         }
     }
 }
