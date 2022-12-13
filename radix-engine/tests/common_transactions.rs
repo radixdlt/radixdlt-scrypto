@@ -1,8 +1,8 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::{
-    hash, require, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey,
+    hash, require, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey, HashMap,
     NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
-    ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN, HashMap
+    ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::rule;
