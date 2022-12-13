@@ -1,10 +1,15 @@
+use std::collections::HashMap;
+
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::{
-    hash, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey, NonFungibleAddress,
-    NonFungibleId, ResourceAddress, ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN,
+    hash, require, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey,
+    NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
+    ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::rule;
 use scrypto_unit::TestRunner;
+use transaction::builder::ManifestBuilder;
 use transaction::manifest::compile;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use utils::ContextualDisplay;
@@ -180,15 +185,45 @@ fn publish_package_with_owner_succeeds() {
 /// A sample manifest for minting of a fungible resource
 #[test]
 fn minting_of_fungible_resource_succeeds() {
-    test_manifest_with_mintable_resource(
-        |account_component_address, mintable_resource_address, bech32_encoder| {
+    test_manifest_with_restricted_minting_resource(
+        ResourceType::Fungible { divisibility: 18 },
+        |account_component_address,
+         minter_badge_resource_address,
+         mintable_resource_address,
+         bech32_encoder| {
             let mint_amount = Decimal::from("800");
 
             let manifest = format!(
-                include_str!("../../transaction/examples/resources/mint_fungible.rtm"),
+                include_str!("../../transaction/examples/resources/mint/fungible/mint.rtm"),
                 account_component_address = account_component_address.display(bech32_encoder),
                 mintable_resource_address = mintable_resource_address.display(bech32_encoder),
+                minter_badge_resource_address =
+                    minter_badge_resource_address.display(bech32_encoder),
                 mint_amount = mint_amount
+            );
+            (manifest, Vec::new())
+        },
+    );
+}
+
+/// A sample manifest for minting of a non-fungible resource
+#[test]
+fn minting_of_non_fungible_resource_succeeds() {
+    test_manifest_with_restricted_minting_resource(
+        ResourceType::NonFungible {
+            id_type: radix_engine::types::NonFungibleIdType::U32,
+        },
+        |account_component_address,
+         minter_badge_resource_address,
+         mintable_resource_address,
+         bech32_encoder| {
+            let manifest = format!(
+                include_str!("../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
+                account_component_address = account_component_address.display(bech32_encoder),
+                mintable_resource_address = mintable_resource_address.display(bech32_encoder),
+                minter_badge_resource_address =
+                    minter_badge_resource_address.display(bech32_encoder),
+                non_fungible_id = "1u32"
             );
             (manifest, Vec::new())
         },
@@ -221,6 +256,71 @@ where
         .expect_commit_success();
 }
 
+fn test_manifest_with_restricted_minting_resource<F>(
+    resource_type: ResourceType,
+    string_manifest_builder: F,
+) where
+    F: Fn(
+        &ComponentAddress,
+        &ResourceAddress,
+        &ResourceAddress,
+        &Bech32Encoder,
+    ) -> (String, Vec<Vec<u8>>),
+{
+    // Creating the test runner and the substate store
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(false, &mut store);
+
+    // Creating the account component required for this test
+    let (public_key, _, component_address) = test_runner.new_account(false);
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    // Defining the network and the bech32 encoder to use
+    let network = NetworkDefinition::simulator();
+    let bech32_encoder = Bech32Encoder::new(&network);
+
+    // Creating the minter badge and the requested resource
+    let minter_badge_resource_address =
+        test_runner.create_fungible_resource("1".into(), 0, component_address);
+    let mintable_resource_address = test_runner
+        .execute_manifest_ignoring_fee(
+            ManifestBuilder::new(&network)
+                .create_resource(
+                    resource_type,
+                    HashMap::from([
+                        (String::from("name"), String::from("Mintable Resource")),
+                        (String::from("symbol"), String::from("MINT")),
+                    ]),
+                    HashMap::from([(
+                        ResourceMethodAuthKey::Mint,
+                        (
+                            rule!(require(minter_badge_resource_address)),
+                            rule!(deny_all),
+                        ),
+                    )]),
+                    None,
+                )
+                .build(),
+            vec![],
+        )
+        .new_resource_addresses()[0]
+        .clone();
+
+    // Run the function and get the manifest string
+    let (manifest_string, blobs) = string_manifest_builder(
+        &component_address,
+        &minter_badge_resource_address,
+        &mintable_resource_address,
+        &bech32_encoder,
+    );
+    let manifest = compile(&manifest_string, &network, blobs)
+        .expect("Failed to compile manifest from manifest string");
+
+    test_runner
+        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .expect_commit_success();
+}
+
 fn test_manifest_with_additional_accounts<F>(accounts_required: u16, string_manifest_builder: F)
 where
     F: Fn(&ComponentAddress, &[ComponentAddress], &Bech32Encoder) -> (String, Vec<Vec<u8>>),
@@ -245,40 +345,6 @@ where
     // Run the function and get the manifest string
     let (manifest_string, blobs) =
         string_manifest_builder(&component_address, &accounts, &bech32_encoder);
-    let manifest = compile(&manifest_string, &network, blobs)
-        .expect("Failed to compile manifest from manifest string");
-
-    test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
-        .expect_commit_success();
-}
-
-fn test_manifest_with_mintable_resource<F>(string_manifest_builder: F)
-where
-    F: Fn(&ComponentAddress, &ResourceAddress, &Bech32Encoder) -> (String, Vec<Vec<u8>>),
-{
-    // Creating the test runner and the substate store
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(false, &mut store);
-
-    // Creating the account component required for this test
-    let (public_key, _, component_address) = test_runner.new_account(false);
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
-
-    // Defining the network and the bech32 encoder to use
-    let network = NetworkDefinition::simulator();
-    let bech32_encoder = Bech32Encoder::new(&network);
-
-    // Creating a new mintable resource.
-    let mintable_resource_address =
-        test_runner.create_mintable_fungible_resource(Decimal::from("0"), 18, component_address);
-
-    // Run the function and get the manifest string
-    let (manifest_string, blobs) = string_manifest_builder(
-        &component_address,
-        &mintable_resource_address,
-        &bech32_encoder,
-    );
     let manifest = compile(&manifest_string, &network, blobs)
         .expect("Failed to compile manifest from manifest string");
 
