@@ -1,0 +1,46 @@
+# This transaction shows how funds can be transferred from one account into multiple accounts all 
+# in a single transaction. In this example, imagine that we would like to send XRD to three accounts
+# in the following quantities:
+# Account A: 150 XRD
+# Account B: 130 XRD
+# Account C: 50 XRD
+# Which is a total of 330 XRD. 
+
+# The account component withdraw methods which have been optimized to also lock a fee in a single 
+# call. In this call, we lock a fee of 10 XRD and also withdraw 330 XRD from the account.
+CALL_METHOD 
+    ComponentAddress("{this_account_component_address}") 
+    "lock_fee_and_withdraw_by_amount"
+    Decimal("10")                                   # Amount of XRD to lock for fees
+    Decimal("330")                                  # Amount of XRD to withdraw
+    ResourceAddress("{xrd_resource_address}");
+
+# Taking 150 XRD from the worktop and depositing them into Account A
+TAKE_FROM_WORKTOP_BY_AMOUNT
+    Decimal("150")
+    ResourceAddress("{xrd_resource_address}")
+    Bucket("account_a_bucket");
+CALL_METHOD
+    ComponentAddress("{account_a_component_address}")
+    "deposit"
+    Bucket("account_a_bucket");
+
+# Taking 130 XRD from the worktop and depositing them into Account B
+TAKE_FROM_WORKTOP_BY_AMOUNT
+    Decimal("130")
+    ResourceAddress("{xrd_resource_address}")
+    Bucket("account_b_bucket");
+CALL_METHOD
+    ComponentAddress("{account_b_component_address}")
+    "deposit"
+    Bucket("account_b_bucket");
+
+# Taking 50 XRD from the worktop and depositing them into Account C
+TAKE_FROM_WORKTOP_BY_AMOUNT
+    Decimal("50")
+    ResourceAddress("{xrd_resource_address}")
+    Bucket("account_c_bucket");
+CALL_METHOD
+    ComponentAddress("{account_c_component_address}")
+    "deposit"
+    Bucket("account_c_bucket");
