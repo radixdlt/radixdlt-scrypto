@@ -594,10 +594,10 @@ impl<'s> FinalizingTrack<'s> {
                     RENodeId::Logger => {
                         let logger: LoggerSubstate = loaded.substate.into();
                         application_logs.extend(logger.logs);
-                    },
+                    }
                     _ => {
                         to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
-                    },
+                    }
                 }
             }
 

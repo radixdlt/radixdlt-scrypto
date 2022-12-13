@@ -485,6 +485,12 @@ where
                 }
             },
             NativeMethod::Logger(logger_method) => match logger_method {
+                LoggerMethod::Log => {
+                    let invocation: LoggerLogInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
             },
             // TODO: Integrate with static ids
             NativeMethod::Worktop(worktop_method) => match worktop_method {

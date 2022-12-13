@@ -60,6 +60,7 @@ pub enum NativeMethodInvocation {
     Proof(ProofMethodInvocation),
     Worktop(WorktopMethodInvocation),
     TransactionHash(TransactionHashMethodInvocation),
+    Logger(LoggerInvocation),
 }
 
 #[derive(Debug)]
@@ -70,6 +71,12 @@ pub enum NativeFunctionInvocation {
     Clock(ClockFunctionInvocation),
     ResourceManager(ResourceManagerFunctionInvocation),
     Package(PackageFunctionInvocation),
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum LoggerInvocation {
+    Log(LoggerLogInvocation),
 }
 
 #[derive(Debug)]
@@ -519,6 +526,11 @@ impl NativeFnInvocation {
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                     TransactionHashMethodInvocation::GenerateUuid(invocation) => api
+                        .invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                },
+                NativeMethodInvocation::Logger(method) => match method {
+                    LoggerInvocation::Log(invocation) => api
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

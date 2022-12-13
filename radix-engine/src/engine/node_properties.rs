@@ -21,8 +21,8 @@ impl VisibilityProperties {
             ExecutionMode::LoggerModule => match node_id {
                 RENodeId::Logger => return true,
                 _ => return false,
-            }
-            ExecutionMode::Application => {},
+            },
+            ExecutionMode::Application => {}
             _ => return false,
         }
 

@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{
     AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
-    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
-    NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
+    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, LoggerMethod,
+    MetadataMethod, NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
     ResourceManagerFunction, ResourceManagerMethod, TransactionHashMethod,
     TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
@@ -200,7 +200,7 @@ impl FeeTable {
                 WorktopMethod::Drain => self.fixed_low,
             },
             NativeMethod::Logger(logger_method) => match logger_method {
-                _ => todo!(),
+                LoggerMethod::Log => self.fixed_low,
             },
             NativeMethod::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainMethod::AddAccessCheck => self.fixed_low,

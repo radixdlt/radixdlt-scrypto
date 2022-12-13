@@ -1130,6 +1130,13 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
+    pub fn logger(&mut self) -> &mut LoggerSubstate {
+        match self {
+            SubstateRefMut::Logger(value) => *value,
+            _ => panic!("Not a logger"),
+        }
+    }
+
     pub fn access_rules_chain(&mut self) -> &mut AccessRulesChainSubstate {
         match self {
             SubstateRefMut::AccessRulesChain(value) => *value,

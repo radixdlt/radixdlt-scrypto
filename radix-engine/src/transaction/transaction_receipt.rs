@@ -320,7 +320,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             execution.fee_summary.tip_percentage
         )?;
 
-
         if let TransactionResult::Commit(c) = &result {
             write!(
                 f,
@@ -336,13 +335,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                     Level::Debug => ("DEBUG".cyan(), msg.cyan()),
                     Level::Trace => ("TRACE".normal(), msg.normal()),
                 };
-                write!(
-                    f,
-                    "\n{} [{:5}] {}",
-                    prefix!(i, c.application_logs),
-                    l,
-                    m
-                )?;
+                write!(f, "\n{} [{:5}] {}", prefix!(i, c.application_logs), l, m)?;
             }
         }
 

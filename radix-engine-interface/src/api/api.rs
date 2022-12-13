@@ -119,5 +119,6 @@ pub trait InvokableModel<E>:
     + Invokable<WorktopDrainInvocation, E>
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
+    + Invokable<LoggerLogInvocation, E>
 {
 }
