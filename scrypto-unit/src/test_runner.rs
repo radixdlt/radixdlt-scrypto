@@ -807,7 +807,7 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let mut access_rules = HashMap::new();
+        let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
@@ -815,7 +815,7 @@ impl TestRunner {
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_resource(
                 ResourceType::Fungible { divisibility },
-                HashMap::new(),
+                BTreeMap::new(),
                 access_rules,
                 Some(MintParams::Fungible { amount }),
             )

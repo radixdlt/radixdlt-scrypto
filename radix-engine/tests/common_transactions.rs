@@ -1,8 +1,7 @@
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::{
-    hash, require, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey, HashMap,
+    require, BTreeMap, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey,
     NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
-    ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN,
+    FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::rule;
@@ -20,29 +19,6 @@ fn free_funds_from_faucet_succeeds() {
             include_str!("../../transaction/examples/faucet/free_funds.rtm"),
             faucet_component_address = FAUCET_COMPONENT.display(bech32_encoder),
             account_component_address = account_component_address.display(bech32_encoder)
-        );
-        (manifest, Vec::new())
-    });
-}
-
-/// An example manifest for the creation of non-virtual (physical?) accounts
-#[test]
-fn creating_a_non_virtual_account_succeeds() {
-    test_manifest(|_, bech32_encoder| {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(12).unwrap();
-        let public_key = private_key.public_key();
-        let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
-
-        let manifest = format!(
-            include_str!("../../transaction/examples/account/account_creation.rtm"),
-            faucet_component_address = FAUCET_COMPONENT.display(bech32_encoder),
-            xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            account_package_address = ACCOUNT_PACKAGE.display(bech32_encoder),
-            virtual_badge_resource_address = virtual_badge_non_fungible_address
-                .resource_address()
-                .display(bech32_encoder),
-            virtual_badge_non_fungible_id =
-                hex::encode(&hash(public_key.to_vec()).lower_26_bytes())
         );
         (manifest, Vec::new())
     });
@@ -204,37 +180,37 @@ fn minting_of_fungible_resource_succeeds() {
     );
 }
 
-/// A sample manifest for minting of a non-fungible resource
-#[test]
-fn minting_of_non_fungible_resource_succeeds() {
-    test_manifest_with_restricted_minting_resource(
-        ResourceType::NonFungible {
-            id_type: radix_engine::types::NonFungibleIdType::U32,
-        },
-        |account_component_address,
-         minter_badge_resource_address,
-         mintable_resource_address,
-         bech32_encoder| {
-            let manifest = format!(
-                include_str!("../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
-                account_component_address = account_component_address.display(bech32_encoder),
-                mintable_resource_address = mintable_resource_address.display(bech32_encoder),
-                minter_badge_resource_address =
-                    minter_badge_resource_address.display(bech32_encoder),
-                non_fungible_id = "1u32"
-            );
-            (manifest, Vec::new())
-        },
-    );
-}
+// TODO: Add back once we have an instruction for that
+// /// A sample manifest for minting of a non-fungible resource
+// #[test]
+// fn minting_of_non_fungible_resource_succeeds() {
+//     test_manifest_with_restricted_minting_resource(
+//         ResourceType::NonFungible {
+//             id_type: radix_engine::types::NonFungibleIdType::U32,
+//         },
+//         |account_component_address,
+//          minter_badge_resource_address,
+//          mintable_resource_address,
+//          bech32_encoder| {
+//             let manifest = format!(
+//                 include_str!("../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
+//                 account_component_address = account_component_address.display(bech32_encoder),
+//                 mintable_resource_address = mintable_resource_address.display(bech32_encoder),
+//                 minter_badge_resource_address =
+//                     minter_badge_resource_address.display(bech32_encoder),
+//                 non_fungible_id = "1u32"
+//             );
+//             (manifest, Vec::new())
+//         },
+//     );
+// }
 
 fn test_manifest<F>(string_manifest_builder: F)
 where
     F: Fn(&ComponentAddress, &Bech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating the test runner and the substate store
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(false, &mut store);
+    let mut test_runner = TestRunner::new(false);
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
@@ -266,8 +242,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
     ) -> (String, Vec<Vec<u8>>),
 {
     // Creating the test runner and the substate store
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(false, &mut store);
+    let mut test_runner = TestRunner::new(false);
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
@@ -285,11 +260,11 @@ fn test_manifest_with_restricted_minting_resource<F>(
             ManifestBuilder::new(&network)
                 .create_resource(
                     resource_type,
-                    HashMap::from([
+                    BTreeMap::from([
                         (String::from("name"), String::from("Mintable Resource")),
                         (String::from("symbol"), String::from("MINT")),
                     ]),
-                    HashMap::from([(
+                    BTreeMap::from([(
                         ResourceMethodAuthKey::Mint,
                         (
                             rule!(require(minter_badge_resource_address)),
@@ -324,8 +299,7 @@ where
     F: Fn(&ComponentAddress, &[ComponentAddress], &Bech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating the test runner and the substate store
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(false, &mut store);
+    let mut test_runner = TestRunner::new(false);
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);
@@ -356,8 +330,7 @@ where
     F: Fn(&ComponentAddress, &NonFungibleAddress, &Bech32Encoder) -> (String, Vec<Vec<u8>>),
 {
     // Creating the test runner and the substate store
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(false, &mut store);
+    let mut test_runner = TestRunner::new(false);
 
     // Creating the account component required for this test
     let (public_key, _, component_address) = test_runner.new_account(false);

@@ -566,7 +566,7 @@ mod tests {
     #[test]
     fn test_resource_move() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/resource_move.rtm"),
+            include_str!("../../examples/test-cases/resource_move.rtm"),
             &NetworkDefinition::simulator(),
             vec![
                 include_bytes!("../../examples/test-cases/code.blob").to_vec(),
@@ -600,11 +600,11 @@ CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pn
     #[test]
     fn test_resource_manipulate() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/resource_manipulate.rtm"),
+            include_str!("../../examples/test-cases/resource_manipulate.rtm"),
             &NetworkDefinition::simulator(),
             vec![
-                include_bytes!("../../examples/code.blob").to_vec(),
-                include_bytes!("../../examples/abi.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
             ],
         );
 
@@ -623,11 +623,11 @@ RECALL_RESOURCE Bytes("49cd9235ba62b2c217e32e5b4754c08219ef16389761356eaccbf6f6b
     #[test]
     fn test_publish_package() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/publish_package.rtm"),
+            include_str!("../../examples/test-cases/publish_package.rtm"),
             &NetworkDefinition::simulator(),
             vec![
-                include_bytes!("../../examples/code.blob").to_vec(),
-                include_bytes!("../../examples/abi.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
             ],
         );
 
@@ -642,11 +642,11 @@ PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e
     #[test]
     fn test_invocation() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/invocation.rtm"),
+            include_str!("../../examples/test-cases/invocation.rtm"),
             &NetworkDefinition::simulator(),
             vec![
-                include_bytes!("../../examples/code.blob").to_vec(),
-                include_bytes!("../../examples/abi.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
             ],
         );
 
@@ -661,11 +661,11 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
     #[test]
     fn test_royalty() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/royalty.rtm"),
+            include_str!("../../examples/test-cases/royalty.rtm"),
             &NetworkDefinition::simulator(),
             vec![
-                include_bytes!("../../examples/code.blob").to_vec(),
-                include_bytes!("../../examples/abi.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
             ],
         );
 
@@ -682,11 +682,11 @@ CLAIM_COMPONENT_ROYALTY ComponentAddress("component_sim1qg2jwzl3hxnkqye8tfj5v3p2
     #[test]
     fn test_metadata() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/metadata.rtm"),
+            include_str!("../../examples/test-cases/metadata.rtm"),
             &NetworkDefinition::simulator(),
             vec![
-                include_bytes!("../../examples/code.blob").to_vec(),
-                include_bytes!("../../examples/abi.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
             ],
         );
 
@@ -702,11 +702,11 @@ SET_METADATA ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk
     #[test]
     fn test_values() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/values.rtm"),
+            include_str!("../../examples/test-cases/values.rtm"),
             &NetworkDefinition::simulator(),
             vec![
-                include_bytes!("../../examples/code.blob").to_vec(),
-                include_bytes!("../../examples/abi.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
             ],
         );
 
@@ -723,10 +723,9 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
     #[test]
     fn test_access_rule() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
-            include_str!("../../examples/access_rule.rtm"),
+            include_str!("../../examples/test-cases/access_rule.rtm"),
             &NetworkDefinition::simulator(),
-            vec![
-            ],
+            vec![],
         );
 
         assert_eq!(
