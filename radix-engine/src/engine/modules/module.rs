@@ -58,7 +58,7 @@ pub enum SysCallOutput<'a> {
     EmitLog,
 }
 
-pub trait Module<R: FeeReserve> {
+pub trait BaseModule<R: FeeReserve> {
     fn pre_sys_call(
         &mut self,
         _call_frame: &CallFrame,

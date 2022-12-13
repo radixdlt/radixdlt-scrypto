@@ -28,7 +28,7 @@ impl KernelModule {
     }
 }
 
-impl<R: FeeReserve> Module<R> for KernelModule {
+impl<R: FeeReserve> BaseModule<R> for KernelModule {
     fn pre_sys_call(
         &mut self,
         call_frame: &CallFrame,
