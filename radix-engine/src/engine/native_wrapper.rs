@@ -484,6 +484,8 @@ where
                     Ok(Box::new(rtn))
                 }
             },
+            NativeMethod::Logger(logger_method) => match logger_method {
+            },
             // TODO: Integrate with static ids
             NativeMethod::Worktop(worktop_method) => match worktop_method {
                 WorktopMethod::TakeNonFungibles => {

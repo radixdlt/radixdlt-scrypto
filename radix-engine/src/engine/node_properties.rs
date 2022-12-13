@@ -17,8 +17,13 @@ impl VisibilityProperties {
         actor: &ResolvedActor,
         node_id: RENodeId,
     ) -> bool {
-        if !mode.eq(&ExecutionMode::Application) {
-            return false;
+        match mode {
+            ExecutionMode::LoggerModule => match node_id {
+                RENodeId::Logger => return true,
+                _ => return false,
+            }
+            ExecutionMode::Application => {},
+            _ => return false,
         }
 
         // TODO: Cleanup and reduce to least privilege
@@ -100,6 +105,7 @@ impl VisibilityProperties {
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 _ => false,
             },
+            (ExecutionMode::LoggerModule, ..) => false,
             (ExecutionMode::NodeMoveModule, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
                 SubstateOffset::Proof(ProofOffset::Proof) => true,

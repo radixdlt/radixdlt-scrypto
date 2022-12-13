@@ -180,9 +180,9 @@ fn test_basic_transfer() {
     // Or you can run just this test with the below:
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
-        2500 /* create_node */
+        3000 /* create_node */
         + 6900 /* drop_lock */
-        + 2500 /* drop_node */
+        + 3000 /* drop_node */
         + 900 /* invoke */
         + 8700 /* lock_substate */
         + 4000 /* read_owned_nodes */

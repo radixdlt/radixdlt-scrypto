@@ -199,6 +199,9 @@ impl FeeTable {
                 WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
                 WorktopMethod::Drain => self.fixed_low,
             },
+            NativeMethod::Logger(logger_method) => match logger_method {
+                _ => todo!(),
+            },
             NativeMethod::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainMethod::AddAccessCheck => self.fixed_low,
                 AccessRulesChainMethod::SetMethodAccessRule => self.fixed_low,

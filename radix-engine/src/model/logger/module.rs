@@ -1,5 +1,7 @@
+use radix_engine_interface::api::types::{RENodeId, RENodeType};
 use crate::engine::*;
 use crate::fee::FeeReserve;
+use crate::model::LoggerSubstate;
 
 pub struct LoggerModule;
 
@@ -9,6 +11,26 @@ macro_rules! log {
         #[cfg(not(feature = "alloc"))]
         println!("{}[{}] {}", "    ".repeat($call_frame.depth), $call_frame.depth, sbor::rust::format!($msg, $( $arg ),*));
     };
+}
+
+impl LoggerModule {
+    pub fn initialize<Y: SystemApi>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let logger = LoggerSubstate {
+            logs: Vec::new(),
+        };
+        let node_id = api.allocate_node_id(RENodeType::Logger)?;
+        api.create_node(node_id, RENode::Logger(logger))?;
+        Ok(())
+    }
+
+    pub fn finalize<Y: SystemApi>(
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let _node = api.drop_node(RENodeId::Logger)?;
+        Ok(())
+    }
 }
 
 #[allow(unused_variables)] // for no_std

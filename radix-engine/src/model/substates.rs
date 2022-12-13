@@ -127,6 +127,7 @@ pub enum RuntimeSubstate {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
+    Logger(LoggerSubstate),
     FeeReserve(FeeReserveSubstate),
     TransactionRuntime(TransactionRuntimeSubstate),
 }
@@ -177,6 +178,7 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::Logger(..)
             | RuntimeSubstate::FeeReserve(..)
             | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
@@ -223,6 +225,7 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::Logger(..)
             | RuntimeSubstate::FeeReserve(..)
             | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
@@ -292,6 +295,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
+            RuntimeSubstate::Logger(value) => SubstateRefMut::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRefMut::FeeReserve(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
         }
@@ -329,6 +333,7 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
+            RuntimeSubstate::Logger(value) => SubstateRef::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRef::FeeReserve(value),
             RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
         }
@@ -387,6 +392,14 @@ impl RuntimeSubstate {
             kv_store_entry
         } else {
             panic!("Not a KVEntry");
+        }
+    }
+
+    pub fn logger(&self) -> &LoggerSubstate {
+        if let RuntimeSubstate::Logger(logger) = self {
+            logger
+        } else {
+            panic!("Not a logger");
         }
     }
 
@@ -674,6 +687,7 @@ impl Into<MetadataSubstate> for RuntimeSubstate {
 pub enum SubstateRef<'a> {
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
+    Logger(&'a LoggerSubstate),
     FeeReserve(&'a FeeReserveSubstate),
     Proof(&'a ProofSubstate),
     Bucket(&'a BucketSubstate),
@@ -972,6 +986,7 @@ pub enum SubstateRefMut<'a> {
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
+    Logger(&'a mut LoggerSubstate),
     FeeReserve(&'a mut FeeReserveSubstate),
     TransactionRuntime(&'a mut TransactionRuntimeSubstate),
     AuthZoneStack(&'a mut AuthZoneStackSubstate),

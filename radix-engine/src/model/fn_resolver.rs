@@ -74,6 +74,10 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
             .ok()
             .map(NativeMethod::Worktop),
 
+        RENodeId::Logger => LoggerMethod::from_str(method_name)
+            .ok()
+            .map(NativeMethod::Logger),
+
         RENodeId::Vault(_) => VaultMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::Vault),

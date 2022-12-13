@@ -33,6 +33,7 @@ pub enum RENodeType {
     EpochManager,
     Clock,
     TransactionRuntime,
+    Logger,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -43,6 +44,7 @@ pub enum RENodeId {
     AuthZoneStack(AuthZoneStackId),
     FeeReserve(FeeReserveId),
     Worktop,
+    Logger,
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
@@ -238,6 +240,11 @@ pub enum WorktopOffset {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum LoggerOffset {
+    Logger,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum ClockOffset {
     CurrentTimeRoundedToMinutes,
 }
@@ -267,6 +274,7 @@ pub enum SubstateOffset {
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
+    Logger(LoggerOffset),
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
 }

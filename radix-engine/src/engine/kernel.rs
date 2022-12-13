@@ -97,13 +97,17 @@ where
                     auth_zone_params.virtualizable_proofs_resource_addresses,
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
-
                 let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
                 api.create_node(node_id, RENode::AuthZoneStack(auth_zone))?;
-
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
+
+        kernel
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::LoggerModule, |api| {
+                LoggerModule::initialize(api)
+            })
+            .expect("Logger failed to initialize");
 
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
@@ -226,6 +230,7 @@ where
                     system_api.drop_lock(handle)?;
                     Ok(())
                 }
+                RENodeId::Logger => Ok(()),
                 RENodeId::Worktop => {
                     let handle = system_api.lock_substate(
                         node_id,
@@ -535,6 +540,13 @@ where
         if depth == 0 {
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
+
+            // TODO: Abstract away
+            self
+                .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::LoggerModule, |api| {
+                    LoggerModule::finalize(api)
+                })?;
+
             self.drop_nodes_in_frame()?;
         }
 
@@ -788,6 +800,7 @@ where
                 .new_transaction_hash_id()
                 .map(|id| RENodeId::TransactionHash(id)),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
+            RENodeType::Logger => Ok(RENodeId::Logger),
             RENodeType::Vault => self
                 .id_allocator
                 .new_vault_id(self.transaction_hash)
@@ -948,6 +961,7 @@ where
             (RENodeId::Vault(..), RENode::Vault(..)) => {}
             (RENodeId::Component(..), RENode::Component(..)) => {}
             (RENodeId::Worktop, RENode::Worktop(..)) => {}
+            (RENodeId::Logger, RENode::Logger(..)) => {}
             (RENodeId::Package(..), RENode::Package(..)) => {}
             (RENodeId::KeyValueStore(..), RENode::KeyValueStore(..)) => {}
             (RENodeId::NonFungibleStore(..), RENode::NonFungibleStore(..)) => {}

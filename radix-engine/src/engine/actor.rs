@@ -53,12 +53,13 @@ impl ResolvedActor {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum ExecutionMode {
     Kernel,
-    Globalize,
     MoveUpstream,
     Deref,
+    Globalize,
     ScryptoInterpreter,
     NodeMoveModule,
     AuthModule,
+    LoggerModule,
     EntityModule,
     TransactionModule,
     Application,

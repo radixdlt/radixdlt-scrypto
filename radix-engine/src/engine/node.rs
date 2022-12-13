@@ -44,6 +44,7 @@ pub enum RENode {
         AccessRulesChainSubstate,
     ),
     TransactionRuntime(TransactionRuntimeSubstate),
+    Logger(LoggerSubstate),
 }
 
 impl RENode {
@@ -122,6 +123,12 @@ impl RENode {
                 substates.insert(
                     SubstateOffset::Worktop(WorktopOffset::Worktop),
                     RuntimeSubstate::Worktop(worktop),
+                );
+            }
+            RENode::Logger(logger) => {
+                substates.insert(
+                    SubstateOffset::Logger(LoggerOffset::Logger),
+                    RuntimeSubstate::Logger(logger),
                 );
             }
             RENode::Package(

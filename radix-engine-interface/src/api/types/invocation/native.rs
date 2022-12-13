@@ -40,6 +40,7 @@ pub enum NativeMethod {
     Vault(VaultMethod),
     Proof(ProofMethod),
     Worktop(WorktopMethod),
+    Logger(LoggerMethod),
     Clock(ClockMethod),
     TransactionHash(TransactionHashMethod),
 }
@@ -416,6 +417,26 @@ pub enum WorktopMethod {
     AssertContainsAmount,
     AssertContainsNonFungibles,
     Drain,
+}
+
+#[derive(
+Debug,
+Clone,
+Copy,
+PartialEq,
+Eq,
+Hash,
+PartialOrd,
+Ord,
+EnumString,
+EnumVariantNames,
+IntoStaticStr,
+AsRefStr,
+Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum LoggerMethod {
 }
 
 #[derive(
