@@ -137,9 +137,9 @@ fn publish_package_with_owner_succeeds() {
                 panic!("expected a u32 non-fungible-id");
             };
 
-            // TODO: Update the complex.abi and complex.code files that are used for testing.
+            // TODO: Update the code.blob and abi.blob files that are used for testing.
             // Using the WASM and ABI from the account blueprint here as they are up to date. The
-            // complex.code and complex.abi files from the transaction crate are not.
+            // abi.blob and code.blob files from the transaction crate are not.
             let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
             let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
 
