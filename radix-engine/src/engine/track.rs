@@ -83,7 +83,7 @@ pub enum TrackError {
 
 pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
-    pub application_logs: Vec<(Level, String)>,
+    //pub application_logs: Vec<(Level, String)>,
     pub result: TransactionResult,
     pub events: Vec<TrackedEvent>,
 }
@@ -515,7 +515,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         TrackReceipt {
             fee_summary,
-            application_logs: self.application_logs,
             result,
             events,
         }
@@ -583,17 +582,18 @@ impl<'s> FinalizingTrack<'s> {
 
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
-        let mut event_substates = HashMap::new();
+        let mut application_logs = Vec::new();
         let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
                 let old_version = match &loaded.metastate {
-                    SubstateMetaState::New => Option::None,
-                    SubstateMetaState::Existing { old_version, .. } => Option::Some(*old_version),
+                    SubstateMetaState::New => None,
+                    SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
 
                 match id.0 {
                     RENodeId::Logger => {
-                        event_substates.insert(id, loaded.substate);
+                        let logger: LoggerSubstate = loaded.substate.into();
+                        application_logs.extend(logger.logs);
                     },
                     _ => {
                         to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
@@ -729,6 +729,7 @@ impl<'s> FinalizingTrack<'s> {
             state_updates: Self::generate_diff(self.substate_store, to_persist),
             entity_changes: EntityChanges::new(new_global_addresses),
             resource_changes: execution_trace_receipt.resource_changes,
+            application_logs,
         })
     }
 

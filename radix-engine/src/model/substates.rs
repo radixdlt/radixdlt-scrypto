@@ -514,6 +514,16 @@ impl Into<RuntimeSubstate> for TransactionRuntimeSubstate {
     }
 }
 
+impl Into<LoggerSubstate> for RuntimeSubstate {
+    fn into(self) -> LoggerSubstate {
+        if let RuntimeSubstate::Logger(logger) = self {
+            logger
+        } else {
+            panic!("Not a logger");
+        }
+    }
+}
+
 impl Into<ComponentInfoSubstate> for RuntimeSubstate {
     fn into(self) -> ComponentInfoSubstate {
         if let RuntimeSubstate::ComponentInfo(component) = self {

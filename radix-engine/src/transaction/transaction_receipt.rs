@@ -16,7 +16,6 @@ use crate::types::*;
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
-    pub application_logs: Vec<(Level, String)>,
     pub events: Vec<TrackedEvent>,
 }
 
@@ -42,6 +41,7 @@ pub struct CommitResult {
     pub state_updates: StateDiff,
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
+    pub application_logs: Vec<(Level, String)>,
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
@@ -320,27 +320,30 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             execution.fee_summary.tip_percentage
         )?;
 
-        write!(
-            f,
-            "\n{} {}",
-            "Logs:".bold().green(),
-            execution.application_logs.len()
-        )?;
-        for (i, (level, msg)) in execution.application_logs.iter().enumerate() {
-            let (l, m) = match level {
-                Level::Error => ("ERROR".red(), msg.red()),
-                Level::Warn => ("WARN".yellow(), msg.yellow()),
-                Level::Info => ("INFO".green(), msg.green()),
-                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-                Level::Trace => ("TRACE".normal(), msg.normal()),
-            };
+
+        if let TransactionResult::Commit(c) = &result {
             write!(
                 f,
-                "\n{} [{:5}] {}",
-                prefix!(i, execution.application_logs),
-                l,
-                m
+                "\n{} {}",
+                "Logs:".bold().green(),
+                c.application_logs.len()
             )?;
+            for (i, (level, msg)) in c.application_logs.iter().enumerate() {
+                let (l, m) = match level {
+                    Level::Error => ("ERROR".red(), msg.red()),
+                    Level::Warn => ("WARN".yellow(), msg.yellow()),
+                    Level::Info => ("INFO".green(), msg.green()),
+                    Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+                    Level::Trace => ("TRACE".normal(), msg.normal()),
+                };
+                write!(
+                    f,
+                    "\n{} [{:5}] {}",
+                    prefix!(i, c.application_logs),
+                    l,
+                    m
+                )?;
+            }
         }
 
         let decompilation_context = DecompilationContext::new_with_optional_network(bech32_encoder);
