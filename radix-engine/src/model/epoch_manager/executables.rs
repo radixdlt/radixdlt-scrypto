@@ -54,7 +54,7 @@ impl Executor for EpochManagerCreateInvocation {
 
         let epoch_manager = EpochManagerSubstate {
             epoch: 0,
-            validator_set: Vec::new(),
+            validator_set: self.validator_set,
         };
 
         let mut access_rules = AccessRules::new();

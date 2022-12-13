@@ -62,7 +62,10 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_owned(),
             function_name: EpochManagerFunction::Create.as_ref().to_owned(),
         },
-        args: args!(),
+        args: scrypto_encode(&EpochManagerCreateInvocation {
+            validator_set: Vec::new(),
+        })
+        .unwrap(),
     }
     .into()];
     let blobs = vec![];
@@ -92,7 +95,10 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_owned(),
             function_name: EpochManagerFunction::Create.as_ref().to_owned(),
         },
-        args: args!(),
+        args: scrypto_encode(&EpochManagerCreateInvocation {
+            validator_set: Vec::new(),
+        })
+        .unwrap(),
     }
     .into()];
     let blobs = vec![];

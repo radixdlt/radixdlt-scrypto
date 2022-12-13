@@ -34,7 +34,7 @@ pub struct GenesisReceipt {
     pub eddsa_ed25519_token: ResourceAddress,
 }
 
-pub fn create_genesis() -> SystemTransaction {
+pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTransaction {
     let mut blobs = Vec::new();
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
     let create_faucet_package = {
@@ -156,7 +156,7 @@ pub fn create_genesis() -> SystemTransaction {
                 blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
                 function_name: EpochManagerFunction::Create.to_string(),
             },
-            args: args!(),
+            args: scrypto_encode(&EpochManagerCreateInvocation { validator_set }).unwrap(),
         }
     };
 
@@ -240,6 +240,18 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
+    bootstrap_with_validator_set(substate_store, scrypto_interpreter, Vec::new())
+}
+
+pub fn bootstrap_with_validator_set<S, W>(
+    substate_store: &mut S,
+    scrypto_interpreter: &ScryptoInterpreter<W>,
+    validator_set: Vec<EcdsaSecp256k1PublicKey>,
+) -> Option<TransactionReceipt>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine,
+{
     if substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
@@ -247,7 +259,7 @@ where
         ))
         .is_none()
     {
-        let genesis_transaction = create_genesis();
+        let genesis_transaction = create_genesis(validator_set);
 
         let transaction_receipt = execute_transaction(
             substate_store,
@@ -277,7 +289,8 @@ mod tests {
     fn bootstrap_receipt_should_match_constants() {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
-        let genesis_transaction = create_genesis();
+        let initial_validator_set = vec![EcdsaSecp256k1PublicKey([0; 33])];
+        let genesis_transaction = create_genesis(initial_validator_set.clone());
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -287,12 +300,13 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
-        transaction_receipt
+        let validator_set = transaction_receipt
             .result
             .expect_commit()
             .next_validator_set
             .as_ref()
             .expect("Should contain validator set");
+        assert_eq!(validator_set, &initial_validator_set);
 
         let genesis_receipt = genesis_result(&transaction_receipt);
 
