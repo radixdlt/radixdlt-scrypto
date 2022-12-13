@@ -25,29 +25,6 @@ fn free_funds_from_faucet_succeeds() {
     });
 }
 
-/// An example manifest for the creation of non-virtual (physical?) accounts
-#[test]
-fn creating_a_non_virtual_account_succeeds() {
-    test_manifest(|_, bech32_encoder| {
-        let private_key = EcdsaSecp256k1PrivateKey::from_u64(12).unwrap();
-        let public_key = private_key.public_key();
-        let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
-
-        let manifest = format!(
-            include_str!("../../transaction/examples/account/account_creation.rtm"),
-            faucet_component_address = FAUCET_COMPONENT.display(bech32_encoder),
-            xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            account_package_address = ACCOUNT_PACKAGE.display(bech32_encoder),
-            virtual_badge_resource_address = virtual_badge_non_fungible_address
-                .resource_address()
-                .display(bech32_encoder),
-            virtual_badge_non_fungible_id =
-                hex::encode(&hash(public_key.to_vec()).lower_26_bytes())
-        );
-        (manifest, Vec::new())
-    });
-}
-
 /// An example manifest for transfer of funds between accounts
 #[test]
 fn transfer_of_funds_to_another_account_succeeds() {
