@@ -7,6 +7,7 @@ use radix_engine_interface::core::NetworkDefinition;
 use scrypto_unit::TestRunner;
 use transaction::manifest::compile;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
+use utils::ContextualDisplay;
 
 /// An example manifest for freeing some funds from the faucet
 #[test]
@@ -14,10 +15,8 @@ fn free_funds_from_faucet_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
         let manifest = format!(
             include_str!("../../transaction/examples/faucet/free_funds.rtm"),
-            faucet_component_address =
-                bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
-            account_component_address =
-                bech32_encoder.encode_component_address_to_string(&account_component_address)
+            faucet_component_address = FAUCET_COMPONENT.display(bech32_encoder),
+            account_component_address = account_component_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
     });
@@ -33,14 +32,12 @@ fn creating_a_non_virtual_account_succeeds() {
 
         let manifest = format!(
             include_str!("../../transaction/examples/account/account_creation.rtm"),
-            faucet_component_address =
-                bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
-            xrd_resource_address = bech32_encoder.encode_resource_address_to_string(&RADIX_TOKEN),
-            account_package_address =
-                bech32_encoder.encode_package_address_to_string(&ACCOUNT_PACKAGE),
-            virtual_badge_resource_address = bech32_encoder.encode_resource_address_to_string(
-                &virtual_badge_non_fungible_address.resource_address()
-            ),
+            faucet_component_address = FAUCET_COMPONENT.display(bech32_encoder),
+            xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
+            account_package_address = ACCOUNT_PACKAGE.display(bech32_encoder),
+            virtual_badge_resource_address = virtual_badge_non_fungible_address
+                .resource_address()
+                .display(bech32_encoder),
             virtual_badge_non_fungible_id =
                 hex::encode(&hash(public_key.to_vec()).lower_26_bytes())
         );
@@ -59,11 +56,10 @@ fn transfer_of_funds_to_another_account_succeeds() {
 
         let manifest = format!(
             include_str!("../../transaction/examples/account/resource_transfer.rtm"),
-            xrd_resource_address = bech32_encoder.encode_resource_address_to_string(&RADIX_TOKEN),
-            this_account_component_address =
-                bech32_encoder.encode_component_address_to_string(&this_account_component_address),
+            xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
+            this_account_component_address = this_account_component_address.display(bech32_encoder),
             other_account_component_address =
-                bech32_encoder.encode_component_address_to_string(&other_account_component_address),
+                other_account_component_address.display(bech32_encoder),
         );
         (manifest, Vec::new())
     });
@@ -78,16 +74,12 @@ fn multi_account_fund_transfer_succeeds() {
                 include_str!(
                     "../../transaction/examples/account/multi_account_resource_transfer.rtm"
                 ),
-                xrd_resource_address =
-                    bech32_encoder.encode_resource_address_to_string(&RADIX_TOKEN),
+                xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
                 this_account_component_address = bech32_encoder
                     .encode_component_address_to_string(&this_account_component_address),
-                account_a_component_address =
-                    bech32_encoder.encode_component_address_to_string(&other_accounts[0]),
-                account_b_component_address =
-                    bech32_encoder.encode_component_address_to_string(&other_accounts[1]),
-                account_c_component_address =
-                    bech32_encoder.encode_component_address_to_string(&other_accounts[2]),
+                account_a_component_address = other_accounts[0].display(bech32_encoder),
+                account_b_component_address = other_accounts[1].display(bech32_encoder),
+                account_c_component_address = other_accounts[2].display(bech32_encoder),
             );
             (manifest, Vec::new())
         },
@@ -102,8 +94,7 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
             include_str!(
                 "../../transaction/examples/resources/creation/fungible/no_initial_supply.rtm"
             ),
-            account_component_address =
-                bech32_encoder.encode_component_address_to_string(&account_component_address)
+            account_component_address = account_component_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
     });
@@ -120,8 +111,7 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
                 "../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
             ),
             initial_supply = initial_supply,
-            account_component_address =
-                bech32_encoder.encode_component_address_to_string(&account_component_address)
+            account_component_address = account_component_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
     });
@@ -135,8 +125,7 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
             include_str!(
                 "../../transaction/examples/resources/creation/non_fungible/no_initial_supply.rtm"
             ),
-            account_component_address =
-                bech32_encoder.encode_component_address_to_string(&account_component_address)
+            account_component_address = account_component_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
     });
@@ -149,7 +138,7 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
         let manifest = format!(
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
             account_component_address =
-                bech32_encoder.encode_component_address_to_string(&account_component_address)
+                account_component_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
     });
@@ -177,13 +166,11 @@ fn publish_package_with_owner_succeeds() {
 
             let manifest = format!(
                 include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
-                owner_badge_resource_address =
-                    bech32_encoder.encode_resource_address_to_string(&owner_badge_resource_address),
+                owner_badge_resource_address = owner_badge_resource_address.display(bech32_encoder),
                 owner_badge_non_fungible_id = owner_badge_non_fungible_id,
                 code_blob_hash = Blob::new(&code_blob),
                 abi_blob_hash = Blob::new(&abi_blob),
-                account_component_address =
-                    bech32_encoder.encode_component_address_to_string(&account_component_address)
+                account_component_address = account_component_address.display(bech32_encoder)
             );
             (manifest, vec![code_blob, abi_blob])
         },
@@ -199,10 +186,8 @@ fn minting_of_fungible_resource_succeeds() {
 
             let manifest = format!(
                 include_str!("../../transaction/examples/resources/mint_fungible.rtm"),
-                account_component_address =
-                    bech32_encoder.encode_component_address_to_string(&account_component_address),
-                mintable_resource_address =
-                    bech32_encoder.encode_resource_address_to_string(&mintable_resource_address),
+                account_component_address = account_component_address.display(bech32_encoder),
+                mintable_resource_address = mintable_resource_address.display(bech32_encoder),
                 mint_amount = mint_amount
             );
             (manifest, Vec::new())
