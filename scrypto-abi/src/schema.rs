@@ -182,28 +182,74 @@ mod well_known {
         pub static BOOL_TYPE_DATA: LocalTypeData<isize> =
             LocalTypeData::named("Bool", TypeSchema::Bool);
 
-        pub static I8_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named("I8", TypeSchema::I8);
-        pub static I16_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("I16", TypeSchema::I16);
-        pub static I32_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("I32", TypeSchema::I32);
-        pub static I64_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("I64", TypeSchema::I64);
-        pub static I128_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("I128", TypeSchema::I128);
+        pub static I8_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "I8",
+            TypeSchema::I8 {
+                validation: NumericValidation::none(),
+            },
+        );
+        pub static I16_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "I16",
+            TypeSchema::I16 {
+                validation: NumericValidation::none(),
+            },
+        );
+        pub static I32_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "I32",
+            TypeSchema::I32 {
+                validation: NumericValidation::none(),
+            },
+        );
+        pub static I64_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "I64",
+            TypeSchema::I64 {
+                validation: NumericValidation::none(),
+            },
+        );
+        pub static I128_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "I128",
+            TypeSchema::I128 {
+                validation: NumericValidation::none(),
+            },
+        );
 
-        pub static U8_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named("U8", TypeSchema::U8);
-        pub static U16_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("U16", TypeSchema::U16);
-        pub static U32_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("U32", TypeSchema::U32);
-        pub static U64_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("U64", TypeSchema::U64);
-        pub static U128_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("U128", TypeSchema::U128);
+        pub static U8_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "U8",
+            TypeSchema::U8 {
+                validation: NumericValidation::none(),
+            },
+        );
+        pub static U16_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "U16",
+            TypeSchema::U16 {
+                validation: NumericValidation::none(),
+            },
+        );
+        pub static U32_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "U32",
+            TypeSchema::U32 {
+                validation: NumericValidation::none(),
+            },
+        );
+        pub static U64_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "U64",
+            TypeSchema::U64 {
+                validation: NumericValidation::none(),
+            },
+        );
+        pub static U128_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "U128",
+            TypeSchema::U128 {
+                validation: NumericValidation::none(),
+            },
+        );
 
-        pub static STRING_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("String", TypeSchema::String);
+        pub static STRING_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
+            "String",
+            TypeSchema::String {
+                length_validation: LengthValidation::none(),
+            },
+        );
 
         // RADIX ENGINE TYPES
         pub static PACKAGE_ADDRESS_TYPE_DATA: LocalTypeData<isize> =

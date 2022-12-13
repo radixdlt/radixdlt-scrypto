@@ -18,17 +18,39 @@ pub enum TypeSchema<T> {
     // Simple Types
     Unit,
     Bool,
-    I8,
-    I16,
-    I32,
-    I64,
-    I128,
-    U8,
-    U16,
-    U32,
-    U64,
-    U128,
-    String,
+    I8 {
+        validation: NumericValidation<i8>,
+    },
+    I16 {
+        validation: NumericValidation<i16>,
+    },
+    I32 {
+        validation: NumericValidation<i32>,
+    },
+    I64 {
+        validation: NumericValidation<i64>,
+    },
+    I128 {
+        validation: NumericValidation<i128>,
+    },
+    U8 {
+        validation: NumericValidation<u8>,
+    },
+    U16 {
+        validation: NumericValidation<u16>,
+    },
+    U32 {
+        validation: NumericValidation<u32>,
+    },
+    U64 {
+        validation: NumericValidation<u64>,
+    },
+    U128 {
+        validation: NumericValidation<u128>,
+    },
+    String {
+        length_validation: LengthValidation,
+    },
 
     // Composite Types
     Array {
@@ -87,11 +109,28 @@ pub enum TypeSchema<T> {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode, Default)]
 pub struct LengthValidation {
-    min: Option<u32>,
-    max: Option<u32>,
+    pub min: Option<u32>,
+    pub max: Option<u32>,
 }
 
 impl LengthValidation {
+    pub const fn none() -> Self {
+        Self {
+            min: None,
+            max: None,
+        }
+    }
+}
+
+/// Represents additional validation that should be performed on the numeric value.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct NumericValidation<T: Clone + PartialEq + Eq> {
+    pub min: Option<T>,
+    pub max: Option<T>,
+}
+
+impl<T: Clone + PartialEq + Eq> NumericValidation<T> {
     pub const fn none() -> Self {
         Self {
             min: None,
