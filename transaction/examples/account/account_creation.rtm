@@ -1,0 +1,43 @@
+# This transaction manifest shows how a non-virtual (physical?) account is created through the 
+# transaction manifest. 
+
+# Locking 10 XRD in fees from the testnet's faucet
+CALL_METHOD 
+    ComponentAddress("{faucet_component_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# Calling the "free" method on the faucet component which is the method responsible for 
+# dispensing funds from the faucet. 
+CALL_METHOD 
+    ComponentAddress("{faucet_component_address}") 
+    "free";
+
+# Take the XRD from the worktop and into a bucket. In this case, we would like to deposit these 
+# funds into the account as soon as it's created (in the same function call).
+TAKE_FROM_WORKTOP 
+    ResourceAddress("{xrd_resource_address}") 
+    Bucket("bucket1");
+
+# Creating a new account
+CALL_FUNCTION 
+    PackageAddress("{account_package_address}") 
+    "Account" 
+    "new_with_resource" 
+    Enum(
+        "Protected", 
+        Enum(
+            "ProofRule", 
+            Enum(
+                "Require", 
+                Enum(
+                    "StaticNonFungible", 
+                    NonFungibleAddress(
+                        "{virtual_badge_resource_address}", 
+                        Bytes("{virtual_badge_non_fungible_id}")
+                    )
+                )
+            )
+        )
+    )
+    Bucket("bucket1");

@@ -13,25 +13,7 @@ use transaction::signing::EcdsaSecp256k1PrivateKey;
 fn free_funds_from_faucet_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
         let manifest = format!(
-            r#"
-        # Locking 10 XRD in fees from the account component. 
-        CALL_METHOD 
-            ComponentAddress("{account_component_address}") 
-            "lock_fee"
-            Decimal("10");
-    
-        # Calling the "free" method on the faucet component which is the method responsible for 
-        # dispensing funds from the faucet.
-        CALL_METHOD 
-            ComponentAddress("{faucet_component_address}") 
-            "free";
-    
-        # Depositing all of the XRD dispensed from the faucet into our account component.
-        CALL_METHOD
-            ComponentAddress("{account_component_address}") 
-            "deposit_batch"
-            Expression("ENTIRE_WORKTOP");
-        "#,
+            include_str!("../../transaction/examples/faucet/free_funds.rtm"),
             faucet_component_address =
                 bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
             account_component_address =
@@ -50,48 +32,7 @@ fn creating_a_non_virtual_account_succeeds() {
         let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
 
         let manifest = format!(
-            r#"
-        # Locking 10 XRD in fees from the testnet's faucet
-        CALL_METHOD 
-            ComponentAddress("{faucet_component_address}") 
-            "lock_fee"
-            Decimal("10");
-    
-        # Calling the "free" method on the faucet component which is the method responsible for 
-        # dispensing funds from the faucet. 
-        CALL_METHOD 
-            ComponentAddress("{faucet_component_address}") 
-            "free";
-
-        # Take the XRD from the worktop and into a bucket. In this case, we would like to deposit 
-        # these funds into the account as soon as it's created (in the same function call).
-        TAKE_FROM_WORKTOP 
-            ResourceAddress("{xrd_resource_address}") 
-            Bucket("bucket1");
-    
-        # Creating a new account
-        CALL_FUNCTION 
-            PackageAddress("{account_package_address}") 
-            "Account" 
-            "new_with_resource" 
-            Enum(
-                "Protected", 
-                Enum(
-                    "ProofRule", 
-                    Enum(
-                        "Require", 
-                        Enum(
-                            "StaticNonFungible", 
-                            NonFungibleAddress(
-                                "{virtual_badge_resource_address}", 
-                                Bytes("{virtual_badge_non_fungible_id}")
-                            )
-                        )
-                    )
-                )
-            )
-            Bucket("bucket1");
-        "#,
+            include_str!("../../transaction/examples/account/account_creation.rtm"),
             faucet_component_address =
                 bech32_encoder.encode_component_address_to_string(&FAUCET_COMPONENT),
             xrd_resource_address = bech32_encoder.encode_resource_address_to_string(&RADIX_TOKEN),
@@ -117,23 +58,7 @@ fn transfer_of_funds_to_another_account_succeeds() {
             ComponentAddress::virtual_account_from_public_key(&public_key);
 
         let manifest = format!(
-            r#"
-        # The account component withdraw methods which have been optimized to also lock a fee in a 
-        # single call. In this call, we lock a fee of 10 XRD and also withdraw 100 XRD from the 
-        # account.
-        CALL_METHOD 
-            ComponentAddress("{this_account_component_address}") 
-            "lock_fee_and_withdraw_by_amount"
-            Decimal("10")                                   # Amount of XRD to lock for fees
-            Decimal("100")                                  # Amount of XRD to withdraw
-            ResourceAddress("{xrd_resource_address}");
-    
-        # Depositing all of the XRD withdrawn from the account into the other account
-        CALL_METHOD
-            ComponentAddress("{other_account_component_address}") 
-            "deposit_batch"
-            Expression("ENTIRE_WORKTOP");
-        "#,
+            include_str!("../../transaction/examples/account/resource_transfer.rtm"),
             xrd_resource_address = bech32_encoder.encode_resource_address_to_string(&RADIX_TOKEN),
             this_account_component_address =
                 bech32_encoder.encode_component_address_to_string(&this_account_component_address),
@@ -144,33 +69,39 @@ fn transfer_of_funds_to_another_account_succeeds() {
     });
 }
 
+#[test]
+fn multi_account_fund_transfer_succeeds() {
+    test_manifest_with_additional_accounts(
+        3,
+        |this_account_component_address, other_accounts, bech32_encoder| {
+            let manifest = format!(
+                include_str!(
+                    "../../transaction/examples/account/multi_account_resource_transfer.rtm"
+                ),
+                xrd_resource_address =
+                    bech32_encoder.encode_resource_address_to_string(&RADIX_TOKEN),
+                this_account_component_address = bech32_encoder
+                    .encode_component_address_to_string(&this_account_component_address),
+                account_a_component_address =
+                    bech32_encoder.encode_component_address_to_string(&other_accounts[0]),
+                account_b_component_address =
+                    bech32_encoder.encode_component_address_to_string(&other_accounts[1]),
+                account_c_component_address =
+                    bech32_encoder.encode_component_address_to_string(&other_accounts[2]),
+            );
+            (manifest, Vec::new())
+        },
+    )
+}
+
 /// An example manifest for creating a new fungible resource with no initial supply
 #[test]
 fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
         let manifest = format!(
-            r#"
-        # Locking 10 XRD in fees from the account component. 
-        CALL_METHOD 
-            ComponentAddress("{account_component_address}") 
-            "lock_fee"
-            Decimal("10");
-    
-        # Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource
-        # has default resource behavior where it can be withdrawn and deposited by anybody.
-        CREATE_RESOURCE 
-            Enum("Fungible", 18u8) 
-            Array<Tuple>(
-                Tuple("name", "MyResource"), 
-                Tuple("symbol", "RSRC"),
-                Tuple("description", "A very innovative and important resource")
-            ) 
-            Array<Tuple>(
-                Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))),
-                Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
-            )
-            None;
-        "#,
+            include_str!(
+                "../../transaction/examples/resources/creation/fungible/no_initial_supply.rtm"
+            ),
             account_component_address =
                 bech32_encoder.encode_component_address_to_string(&account_component_address)
         );
@@ -185,35 +116,9 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
         let initial_supply = Decimal::from("10000000");
 
         let manifest = format!(
-            r#"
-        # Locking 10 XRD in fees from the account component. 
-        CALL_METHOD 
-            ComponentAddress("{account_component_address}") 
-            "lock_fee"
-            Decimal("10");
-    
-        # Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource
-        # has default resource behavior where it can be withdrawn and deposited by anybody.
-        CREATE_RESOURCE 
-            Enum("Fungible", 18u8) 
-            Array<Tuple>(
-                Tuple("name", "MyResource"), 
-                Tuple("symbol", "RSRC"),
-                Tuple("description", "A very innovative and important resource")
-            ) 
-            Array<Tuple>(
-                Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))),
-                Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
-            )
-            Some(Enum("Fungible", Decimal("{initial_supply}")));
-    
-        # Depositing the entirety of the initial supply of the newly created resource into our 
-        # account component.
-        CALL_METHOD
-            ComponentAddress("{account_component_address}") 
-            "deposit_batch"
-            Expression("ENTIRE_WORKTOP");
-        "#,
+            include_str!(
+                "../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
+            ),
             initial_supply = initial_supply,
             account_component_address =
                 bech32_encoder.encode_component_address_to_string(&account_component_address)
@@ -227,30 +132,9 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
 fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
         let manifest = format!(
-            r#"
-        # Locking 10 XRD in fees from the account component. 
-        CALL_METHOD 
-            ComponentAddress("{account_component_address}") 
-            "lock_fee"
-            Decimal("10");
-    
-        # Creating a new resource 
-        CREATE_RESOURCE 
-            Enum(
-                "NonFungible", 
-                Enum("U32")
-            ) 
-            Array<Tuple>(
-                Tuple("name", "MyResource"), 
-                Tuple("symbol", "RSRC"),
-                Tuple("description", "A very innovative and important resource"), 
-            ) 
-            Array<Tuple>(
-                Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))),
-                Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
-            )
-            None;
-        "#,
+            include_str!(
+                "../../transaction/examples/resources/creation/non_fungible/no_initial_supply.rtm"
+            ),
             account_component_address =
                 bech32_encoder.encode_component_address_to_string(&account_component_address)
         );
@@ -263,44 +147,7 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
 fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
         let manifest = format!(
-            r#"
-        # Locking 10 XRD in fees from the account component. 
-        CALL_METHOD 
-            ComponentAddress("{account_component_address}") 
-            "lock_fee"
-            Decimal("10");
-    
-        # Creating a new resource 
-        CREATE_RESOURCE 
-            Enum(
-                "NonFungible", 
-                Enum("U32")
-            ) 
-            Array<Tuple>(
-                Tuple("name", "MyResource"), 
-                Tuple("symbol", "RSRC"),
-                Tuple("description", "A very innovative and important resource"), 
-            ) 
-            Array<Tuple>(
-                Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))),
-                Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
-            )
-            Some(
-                Enum(
-                    "NonFungible", 
-                    Array<Tuple>(
-                        Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100")))
-                    )
-                )
-            );
-    
-        # Depositing the entirety of the initial supply of the newly created resource into our 
-        # account component.
-        CALL_METHOD
-            ComponentAddress("{account_component_address}") 
-            "deposit_batch"
-            Expression("ENTIRE_WORKTOP");
-        "#,
+            include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
             account_component_address =
                 bech32_encoder.encode_component_address_to_string(&account_component_address)
         );
@@ -329,19 +176,7 @@ fn publish_package_with_owner_succeeds() {
             let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
 
             let manifest = format!(
-                r#"
-            # Locking 10 XRD in fees from the account component. 
-            CALL_METHOD 
-                ComponentAddress("{account_component_address}") 
-                "lock_fee"
-                Decimal("10");
-        
-            # Publishing a new package with an owner badge
-            PUBLISH_PACKAGE_WITH_OWNER 
-                Blob("{code_blob_hash}")
-                Blob("{abi_blob_hash}")
-                NonFungibleAddress("{owner_badge_resource_address}", {owner_badge_non_fungible_id}u32);
-            "#,
+                include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
                 owner_badge_resource_address =
                     bech32_encoder.encode_resource_address_to_string(&owner_badge_resource_address),
                 owner_badge_non_fungible_id = owner_badge_non_fungible_id,
@@ -363,24 +198,7 @@ fn minting_of_fungible_resource_succeeds() {
             let mint_amount = Decimal::from("800");
 
             let manifest = format!(
-                r#"
-            # Locking 10 XRD in fees from the account component. 
-            CALL_METHOD 
-                ComponentAddress("{account_component_address}") 
-                "lock_fee"
-                Decimal("10");
-        
-            # Minting 800 tokens from the mintable fungible resource
-            MINT_FUNGIBLE 
-                ResourceAddress("{mintable_resource_address}")
-                Decimal("{mint_amount}");
-
-            # Depositing the entirety of the newly minted tokens into out account
-            CALL_METHOD
-                ComponentAddress("{account_component_address}") 
-                "deposit_batch"
-                Expression("ENTIRE_WORKTOP");
-            "#,
+                include_str!("../../transaction/examples/resources/mint_fungible.rtm"),
                 account_component_address =
                     bech32_encoder.encode_component_address_to_string(&account_component_address),
                 mintable_resource_address =
@@ -410,6 +228,38 @@ where
 
     // Run the function and get the manifest string
     let (manifest_string, blobs) = string_manifest_builder(&component_address, &bech32_encoder);
+    let manifest = compile(&manifest_string, &network, blobs)
+        .expect("Failed to compile manifest from manifest string");
+
+    test_runner
+        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .expect_commit_success();
+}
+
+fn test_manifest_with_additional_accounts<F>(accounts_required: u16, string_manifest_builder: F)
+where
+    F: Fn(&ComponentAddress, &[ComponentAddress], &Bech32Encoder) -> (String, Vec<Vec<u8>>),
+{
+    // Creating the test runner and the substate store
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(false, &mut store);
+
+    // Creating the account component required for this test
+    let (public_key, _, component_address) = test_runner.new_account(false);
+    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
+
+    // Creating the required accounts
+    let accounts = (0..accounts_required)
+        .map(|_| test_runner.new_account(false).2)
+        .collect::<Vec<ComponentAddress>>();
+
+    // Defining the network and the bech32 encoder to use
+    let network = NetworkDefinition::simulator();
+    let bech32_encoder = Bech32Encoder::new(&network);
+
+    // Run the function and get the manifest string
+    let (manifest_string, blobs) =
+        string_manifest_builder(&component_address, &accounts, &bech32_encoder);
     let manifest = compile(&manifest_string, &network, blobs)
         .expect("Failed to compile manifest from manifest string");
 

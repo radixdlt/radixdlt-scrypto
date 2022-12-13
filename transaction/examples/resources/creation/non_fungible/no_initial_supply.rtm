@@ -1,0 +1,25 @@
+# This transaction manifest creates a new non-fungible resource with no initial supply and with the 
+# default auth.
+
+# Locking 10 XRD in fees from the account component. 
+CALL_METHOD 
+    ComponentAddress("{account_component_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# Creating a new resource 
+CREATE_RESOURCE 
+    Enum(
+        "NonFungible", 
+        Enum("U32")
+    ) 
+    Array<Tuple>(
+        Tuple("name", "MyResource"), 
+        Tuple("symbol", "RSRC"),
+        Tuple("description", "A very innovative and important resource"), 
+    ) 
+    Array<Tuple>(
+        Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))),
+        Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
+    )
+    None;

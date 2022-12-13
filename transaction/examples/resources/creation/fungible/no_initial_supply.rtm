@@ -1,0 +1,23 @@
+# This transaction manifest creates a new fungible resource with no initial supply and with the 
+# default auth.
+
+# Locking 10 XRD in fees from the account component. 
+CALL_METHOD 
+    ComponentAddress("{account_component_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource has 
+# default resource behavior where it can be withdrawn and deposited by anybody.
+CREATE_RESOURCE 
+    Enum("Fungible", 18u8) 
+    Array<Tuple>(
+        Tuple("name", "MyResource"),                                        # Resource Name
+        Tuple("symbol", "RSRC"),                                            # Resource Symbol
+        Tuple("description", "A very innovative and important resource")    # Resource Description
+    ) 
+    Array<Tuple>(
+        Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))),
+        Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
+    )
+    None;
