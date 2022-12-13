@@ -21,6 +21,11 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
+criterion = { version = "0.3", features = ["html_reports"] }
+
+[[bench]]
+name = "math"
+harness = false
 
 [features]
 # You should enable either `std` or `alloc`
