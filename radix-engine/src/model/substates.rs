@@ -410,6 +410,14 @@ impl RuntimeSubstate {
             panic!("Not metadata");
         }
     }
+
+    pub fn epoch_manager(&self) -> &EpochManagerSubstate {
+        if let RuntimeSubstate::EpochManager(epoch_manager) = self {
+            epoch_manager
+        } else {
+            panic!("Not epoch manager");
+        }
+    }
 }
 
 impl Into<RuntimeSubstate> for AccessRulesChainSubstate {

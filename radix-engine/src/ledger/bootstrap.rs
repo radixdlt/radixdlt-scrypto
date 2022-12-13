@@ -287,6 +287,13 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
+        transaction_receipt
+            .result
+            .expect_commit()
+            .next_validator_set
+            .as_ref()
+            .expect("Should contain validator set");
+
         let genesis_receipt = genesis_result(&transaction_receipt);
 
         assert_eq!(genesis_receipt.faucet_package, FAUCET_PACKAGE);
