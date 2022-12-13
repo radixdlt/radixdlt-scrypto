@@ -53,7 +53,7 @@ impl Mint {
 
         let manifest = manifest_builder
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .mint(self.resource_address.0, self.amount)
+            .mint(self.amount, self.resource_address.0)
             .call_method(
                 default_account,
                 "deposit_batch",
@@ -67,7 +67,6 @@ impl Mint {
             &self.manifest,
             self.trace,
             true,
-            false,
             out,
         )
         .map(|_| ())

@@ -59,16 +59,33 @@ Release workflow:
    * [Radix Transaction Manifest Support](https://marketplace.visualstudio.com/items?itemName=RadixPublishing.radix-transaction-manifest-support)
    * [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
 6. (Optional) Install `cargo nextest` to speedup test execution time
-    Installation method
+    Installation
     ```
     cargo install cargo-nextest
     ```
     more details: [cargo-nextest](https://nexte.st/index.html)
 7. (Optional) Install `sccache` to speedup compilation times.
-    Recommended installation method
+    * Installation
     ```
     cargo install sccache
     ```
+    * Configuration\
+      Two options available:
+      - via environmental variable:\
+        bash:
+        ```bash
+        echo 'export RUSTC_WRAPPER=sccache' >> ~/.profile
+        ```
+        zsh:
+        ```zsh
+        echo 'export RUSTC_WRAPPER=sccache' >> ~/.zshrc
+        ```
+      - via cargo configuration file
+        define `build.rustc-wrapper` in the cargo configuration file. For example, you can set it globally in `$HOME/.cargo/config.toml` by adding:
+        ```
+        [build]
+        rustc-wrapper = "/path/to/sccache"
+        ```
     more details: [sccache - Shared Compilation Cache](https://github.com/mozilla/sccache)
 
 

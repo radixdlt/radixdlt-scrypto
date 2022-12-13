@@ -18,6 +18,7 @@ pub struct AuthZoneParams {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
+    pub payload_size: usize,
     pub auth_zone_params: AuthZoneParams,
     pub fee_payment: FeePayment,
     pub runtime_validations: Vec<RuntimeValidationRequest>,
@@ -27,15 +28,20 @@ pub struct ExecutionContext {
 pub enum FeePayment {
     User {
         cost_unit_limit: u32,
-        tip_percentage: u8,
+        tip_percentage: u16,
     },
     NoFee,
 }
 
-/// Represents a validated transaction
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InstructionList<'a> {
+    Basic(&'a [BasicInstruction]),
+    Any(&'a [Instruction]),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Executable<'a> {
-    instructions: &'a [Instruction],
+    instructions: InstructionList<'a>,
     blobs: HashMap<Hash, &'a [u8]>,
     context: ExecutionContext,
 }
@@ -80,7 +86,7 @@ impl RuntimeValidation {
 
 impl<'a> Executable<'a> {
     pub fn new(
-        instructions: &'a [Instruction],
+        instructions: InstructionList<'a>,
         blobs: &'a [Vec<u8>],
         context: ExecutionContext,
     ) -> Self {
@@ -100,7 +106,7 @@ impl<'a> Executable<'a> {
         &self.context.fee_payment
     }
 
-    pub fn instructions(&self) -> &[Instruction] {
+    pub fn instructions(&self) -> &InstructionList {
         &self.instructions
     }
 
@@ -110,6 +116,10 @@ impl<'a> Executable<'a> {
 
     pub fn blobs(&self) -> &HashMap<Hash, &[u8]> {
         &self.blobs
+    }
+
+    pub fn payload_size(&self) -> usize {
+        self.context.payload_size
     }
 
     pub fn runtime_validations(&self) -> &[RuntimeValidationRequest] {

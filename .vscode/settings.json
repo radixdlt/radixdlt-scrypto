@@ -7,6 +7,7 @@
         "bech",
         "Decompilation",
         "decompile",
+        "decompiled",
         "eddsa",
         "instantiatable",
         "Instrumenter",
@@ -16,6 +17,7 @@
         "Secp",
         "Substate",
         "substates",
+        "virtualizable",
         "Wasmer",
         "Wasmi"
     ]

@@ -1,5 +1,4 @@
 use radix_engine::engine::{NativeEvent, SysCallTrace, SysCallTraceOrigin, TrackedEvent};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::LockedAmountOrIds;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::NativeMethod;
@@ -12,8 +11,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_trace_resource_transfers() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
     let transfer_amount = 10u8;
@@ -91,8 +89,7 @@ fn test_trace_resource_transfers() {
 #[test]
 fn test_trace_fee_payments() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     // Prepare the component that will pay the fee
@@ -150,8 +147,7 @@ fn test_trace_fee_payments() {
 #[test]
 fn test_instruction_traces() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     let manfiest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -206,8 +202,9 @@ fn test_instruction_traces() {
         // followed by a single input (auto-add to worktop) - in this order.
         assert_eq!(2, traces.len());
         let free_trace = traces.get(0).unwrap();
-        if let SysCallTraceOrigin::ScryptoMethod(_package_address, _blueprint_name, method_name) =
-            &free_trace.origin
+        if let SysCallTraceOrigin::ScryptoMethod(ScryptoFnIdentifier {
+            ident: method_name, ..
+        }) = &free_trace.origin
         {
             assert_eq!("free", method_name);
         } else {
@@ -333,11 +330,10 @@ fn test_instruction_traces() {
         );
 
         let call_trace = traces.get(1).unwrap();
-        if let SysCallTraceOrigin::ScryptoFunction(
-            _package_address,
-            _blueprint_name,
-            function_name,
-        ) = &call_trace.origin
+        if let SysCallTraceOrigin::ScryptoFunction(ScryptoFnIdentifier {
+            ident: function_name,
+            ..
+        }) = &call_trace.origin
         {
             assert_eq!("create_and_fund_a_component", function_name);
         } else {

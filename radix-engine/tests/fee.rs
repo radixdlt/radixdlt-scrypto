@@ -1,6 +1,5 @@
 use radix_engine::engine::{ApplicationError, KernelError, TrackError};
 use radix_engine::engine::{RejectionError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
@@ -16,8 +15,7 @@ where
     F: FnOnce(ComponentAddress) -> TransactionManifest,
 {
     // Basic setup
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Publish package and instantiate component
@@ -182,8 +180,7 @@ fn should_succeed_when_lock_fee_and_query_vault() {
 #[test]
 fn test_fee_accounting_success() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -238,8 +235,7 @@ fn test_fee_accounting_success() {
 #[test]
 fn test_fee_accounting_failure() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let (_, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -301,8 +297,7 @@ fn test_fee_accounting_failure() {
 #[test]
 fn test_fee_accounting_rejection() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key, _, account1) = test_runner.new_allocated_account();
     let account1_balance = test_runner
         .get_component_resources(account1)
@@ -332,8 +327,7 @@ fn test_fee_accounting_rejection() {
 #[test]
 fn test_contingent_fee_accounting_success() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner
@@ -386,8 +380,7 @@ fn test_contingent_fee_accounting_success() {
 #[test]
 fn test_contingent_fee_accounting_failure() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let (public_key1, _, account1) = test_runner.new_allocated_account();
     let (public_key2, _, account2) = test_runner.new_allocated_account();
     let account1_balance = test_runner

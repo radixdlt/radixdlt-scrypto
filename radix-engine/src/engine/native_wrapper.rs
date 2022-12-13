@@ -619,6 +619,24 @@ where
                         .map(|a| IndexedScryptoValue::from_typed(&a))
                 }
             },
+            NativeMethod::TransactionHash(method) => match method {
+                TransactionHashMethod::Get => {
+                    let invocation: TransactionHashGetInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    system_api
+                        .invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+                TransactionHashMethod::GenerateUuid => {
+                    let invocation: TransactionHashGenerateUuidInvocation = scrypto_decode(&args)
+                        .map_err(|e| {
+                        RuntimeError::KernelError(KernelError::InvalidSborValue(e))
+                    })?;
+                    system_api
+                        .invoke(invocation)
+                        .map(|a| IndexedScryptoValue::from_typed(&a))
+                }
+            },
         },
     }
 }

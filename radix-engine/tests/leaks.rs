@@ -1,5 +1,4 @@
-use radix_engine::engine::{ExecutionMode, KernelError, REActor, ResolvedFunction, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
+use radix_engine::engine::{ExecutionMode, KernelError, ResolvedActor, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::core::NetworkDefinition;
@@ -10,8 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn dangling_component_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -27,7 +25,10 @@ fn dangling_component_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor {
+                    identifier: FnIdentifier::Scrypto(..),
+                    receiver: None,
+                },
                 node_id: RENodeId::Component(..)
             })
         )
@@ -37,8 +38,7 @@ fn dangling_component_should_fail() {
 #[test]
 fn dangling_bucket_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -54,7 +54,10 @@ fn dangling_bucket_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor {
+                    identifier: FnIdentifier::Scrypto(..),
+                    receiver: None,
+                },
                 node_id: RENodeId::Bucket(..)
             })
         )
@@ -64,8 +67,7 @@ fn dangling_bucket_should_fail() {
 #[test]
 fn dangling_vault_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -81,7 +83,10 @@ fn dangling_vault_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor {
+                    identifier: FnIdentifier::Scrypto(..),
+                    receiver: None,
+                },
                 node_id: RENodeId::Vault(..)
             })
         )
@@ -91,8 +96,7 @@ fn dangling_vault_should_fail() {
 #[test]
 fn dangling_worktop_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -114,8 +118,7 @@ fn dangling_worktop_should_fail() {
 #[test]
 fn dangling_kv_store_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -131,7 +134,10 @@ fn dangling_kv_store_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor {
+                    identifier: FnIdentifier::Scrypto(..),
+                    receiver: None,
+                },
                 node_id: RENodeId::KeyValueStore(..)
             })
         )
@@ -141,8 +147,7 @@ fn dangling_kv_store_should_fail() {
 #[test]
 fn dangling_bucket_with_proof_should_fail() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
@@ -163,7 +168,10 @@ fn dangling_bucket_with_proof_should_fail() {
             e,
             RuntimeError::KernelError(KernelError::InvalidDropNodeVisibility {
                 mode: ExecutionMode::Application,
-                actor: REActor::Function(ResolvedFunction::Scrypto { .. }),
+                actor: ResolvedActor {
+                    identifier: FnIdentifier::Scrypto(..),
+                    receiver: None,
+                },
                 node_id: RENodeId::Bucket(..)
             })
         )

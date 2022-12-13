@@ -81,7 +81,6 @@ impl CallFunction {
             &self.manifest,
             self.trace,
             true,
-            false,
             out,
         )
         .map(|_| ())

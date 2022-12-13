@@ -10,7 +10,7 @@ pub struct FeeSummary {
     /// The cost unit price in XRD.
     pub cost_unit_price: Decimal,
     /// The tip percentage
-    pub tip_percentage: u8,
+    pub tip_percentage: u16,
     /// The specified max cost units can be consumed.
     pub cost_unit_limit: u32,
     /// The total number of cost units consumed.

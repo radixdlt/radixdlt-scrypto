@@ -1,5 +1,4 @@
 use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::model::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
@@ -11,8 +10,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(
@@ -28,9 +26,9 @@ fn missing_memory_should_cause_error() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
         )
         .build();
@@ -52,8 +50,7 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -76,8 +73,7 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -100,8 +96,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
@@ -121,8 +116,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
@@ -130,9 +124,9 @@ fn test_basic_package() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
         )
         .build();
@@ -145,9 +139,8 @@ fn test_basic_package() {
 #[test]
 fn test_basic_package_missing_export() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
-    let mut blueprints = HashMap::new();
+    let mut test_runner = TestRunner::new(true);
+    let mut blueprints = BTreeMap::new();
     blueprints.insert(
         "some_blueprint".to_string(),
         BlueprintAbi {
@@ -169,8 +162,8 @@ fn test_basic_package_missing_export() {
         .publish_package(
             code,
             blueprints,
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
         )
         .build();

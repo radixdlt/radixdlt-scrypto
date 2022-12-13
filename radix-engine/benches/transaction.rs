@@ -92,7 +92,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
                 .check_length_and_decode_from_slice(&transaction_bytes)
                 .unwrap();
             validator
-                .validate(&transaction, &intent_hash_manager)
+                .validate(&transaction, 0, &intent_hash_manager)
                 .unwrap();
         })
     });

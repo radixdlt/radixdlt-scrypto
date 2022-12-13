@@ -2,8 +2,8 @@ use radix_engine_interface::api::types::{
     AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
     ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
     NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
-    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
-    WorktopMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionHashMethod,
+    TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
 
 pub enum SystemApiCostingEntry {
@@ -70,16 +70,10 @@ pub enum SystemApiCostingEntry {
     /*
      * Misc
      */
-    /// Reads the current epoch.
-    ReadEpoch,
-    /// Reads the transaction hash.
-    ReadTransactionHash,
     /// Reads blob in transaction
     ReadBlob {
         size: u32,
     },
-    /// Generates a UUID.
-    GenerateUuid,
     /// Emits a log.
     EmitLog {
         size: u32,
@@ -94,8 +88,7 @@ pub enum SystemApiCostingEntry {
 
 pub struct FeeTable {
     tx_base_fee: u32,
-    tx_manifest_decoding_per_byte: u32,
-    tx_manifest_verification_per_byte: u32,
+    tx_payload_cost_per_byte: u32,
     tx_signature_verification_per_sig: u32,
     tx_blob_price_per_byte: u32,
     fixed_low: u32,
@@ -108,8 +101,7 @@ impl FeeTable {
     pub fn new() -> Self {
         Self {
             tx_base_fee: 10_000,
-            tx_manifest_decoding_per_byte: 3,
-            tx_manifest_verification_per_byte: 1,
+            tx_payload_cost_per_byte: 1,
             tx_signature_verification_per_sig: 3750,
             tx_blob_price_per_byte: 1,
             wasm_instantiation_per_byte: 0, // TODO: Re-enable WASM instantiation cost if it's unavoidable
@@ -123,12 +115,8 @@ impl FeeTable {
         self.tx_base_fee
     }
 
-    pub fn tx_manifest_decoding_per_byte(&self) -> u32 {
-        self.tx_manifest_decoding_per_byte
-    }
-
-    pub fn tx_manifest_verification_per_byte(&self) -> u32 {
-        self.tx_manifest_verification_per_byte
+    pub fn tx_payload_cost_per_byte(&self) -> u32 {
+        self.tx_payload_cost_per_byte
     }
 
     pub fn tx_signature_verification_per_sig(&self) -> u32 {
@@ -271,6 +259,10 @@ impl FeeTable {
                     VaultMethod::RecallNonFungibles => self.fixed_low,
                 }
             }
+            NativeMethod::TransactionHash(ident) => match ident {
+                TransactionHashMethod::Get => self.fixed_low,
+                TransactionHashMethod::GenerateUuid => self.fixed_low,
+            },
         }
     }
 
@@ -309,10 +301,7 @@ impl FeeTable {
             SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropLock => self.fixed_low,
 
-            SystemApiCostingEntry::ReadEpoch => self.fixed_low,
-            SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
-            SystemApiCostingEntry::GenerateUuid => self.fixed_low,
             SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
             SystemApiCostingEntry::EmitEvent {
                 native,

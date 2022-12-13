@@ -3,7 +3,7 @@ use crate::fee::*;
 use crate::model::InvokeError;
 use crate::types::{scrypto_decode, scrypto_encode, ScryptoInvocation};
 use crate::wasm::*;
-use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel, LoggerApi};
+use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable, InvokableModel, LoggerApi};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
 use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
@@ -38,7 +38,11 @@ fn encode<T: ScryptoEncode>(output: T) -> Result<Vec<u8>, InvokeError<WasmError>
 
 impl<'y, Y> WasmRuntime for RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError> + LoggerApi<RuntimeError>,
+    Y: SystemApi
+        + EngineApi<RuntimeError>
+        + InvokableModel<RuntimeError>
+        + LoggerApi<RuntimeError>
+        + ActorApi<RuntimeError>,
 {
     // TODO: expose API for reading blobs
     // TODO: do we want to allow dynamic creation of blobs?
@@ -69,9 +73,7 @@ where
             RadixEngineInput::DropLock(lock_handle) => {
                 encode(self.api.sys_drop_lock(lock_handle)?)?
             }
-            RadixEngineInput::GetActor() => encode(self.api.sys_get_actor()?)?,
-            RadixEngineInput::GetTransactionHash() => encode(self.api.sys_get_transaction_hash()?)?,
-            RadixEngineInput::GenerateUuid() => encode(self.api.sys_generate_uuid()?)?,
+            RadixEngineInput::GetActor() => encode(self.api.fn_identifier()?)?,
             RadixEngineInput::EmitLog(level, message) => {
                 encode(self.api.emit_log(level, message)?)?
             }

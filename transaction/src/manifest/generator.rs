@@ -1,8 +1,6 @@
 use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::{
-    BucketId, ComponentId, GlobalAddress, KeyValueStoreId, NativeFunctionIdent, NativeMethodIdent,
-    ProofId, RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent,
-    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+    BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId,
 };
 use radix_engine_interface::crypto::{
     Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
@@ -10,15 +8,15 @@ use radix_engine_interface::crypto::{
 };
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
-    ScryptoSborTypeId, ScryptoValue,
+    ScryptoDecode, ScryptoSborTypeId, ScryptoValue, ScryptoValueDecodeError,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
+use sbor::rust::borrow::Borrow;
 
 use radix_engine_interface::core::Expression;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::collections::HashMap;
-use sbor::rust::collections::IndexMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use sbor::*;
@@ -27,14 +25,6 @@ use crate::errors::*;
 use crate::manifest::ast;
 use crate::model::*;
 use crate::validation::*;
-
-#[macro_export]
-macro_rules! args_from_value_vec {
-    ($args: expr) => {{
-        let input_struct = ::sbor::SborValue::Tuple { fields: $args };
-        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
-    }};
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -66,16 +56,16 @@ pub enum GeneratorError {
     InvalidEcdsaSecp256k1Signature(String),
     InvalidEddsaEd25519PublicKey(String),
     InvalidEddsaEd25519Signature(String),
+    InvalidBlobHash,
+    BlobNotFound(String),
     InvalidBytesHex(String),
     SborEncodeError(EncodeError),
-    BlobNotFound(String),
     NameResolverError(NameResolverError),
     IdValidationError(IdValidationError),
-    InvalidBlobHash,
-    ArgumentsDoNotMatchAbi,
-    UnknownNativeFunction(String, String),
-    UnknownMethod(String),
-    InvalidGlobal(String),
+    ArgumentEncodingError(EncodeError),
+    ArgumentDecodingError(DecodeError),
+    ArgumentIndexingError(ScryptoValueDecodeError),
+    InvalidEntityAddress(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -86,15 +76,15 @@ pub enum NameResolverError {
 }
 
 pub struct NameResolver {
-    named_buckets: HashMap<String, BucketId>,
-    named_proofs: HashMap<String, ProofId>,
+    named_buckets: BTreeMap<String, BucketId>,
+    named_proofs: BTreeMap<String, ProofId>,
 }
 
 impl NameResolver {
     pub fn new() -> Self {
         Self {
-            named_buckets: HashMap::new(),
-            named_proofs: HashMap::new(),
+            named_buckets: BTreeMap::new(),
+            named_proofs: BTreeMap::new(),
         }
     }
 
@@ -142,7 +132,7 @@ impl NameResolver {
 pub fn generate_manifest(
     instructions: &[ast::Instruction],
     bech32_decoder: &Bech32Decoder,
-    blobs: IndexMap<Hash, Vec<u8>>,
+    blobs: BTreeMap<Hash, Vec<u8>>,
 ) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
@@ -169,8 +159,8 @@ pub fn generate_instruction(
     id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &IndexMap<Hash, Vec<u8>>,
-) -> Result<Instruction, GeneratorError> {
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<BasicInstruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
             resource_address,
@@ -181,7 +171,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeFromWorktop {
+            BasicInstruction::TakeFromWorktop {
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
@@ -195,7 +185,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeFromWorktopByAmount {
+            BasicInstruction::TakeFromWorktopByAmount {
                 amount: generate_decimal(amount)?,
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
@@ -210,7 +200,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
-            Instruction::TakeFromWorktopByIds {
+            BasicInstruction::TakeFromWorktopByIds {
                 ids: generate_non_fungible_ids(ids)?,
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
@@ -220,24 +210,24 @@ pub fn generate_instruction(
             id_validator
                 .drop_bucket(bucket_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::ReturnToWorktop { bucket_id }
+            BasicInstruction::ReturnToWorktop { bucket_id }
         }
         ast::Instruction::AssertWorktopContains { resource_address } => {
-            Instruction::AssertWorktopContains {
+            BasicInstruction::AssertWorktopContains {
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::AssertWorktopContainsByAmount {
             amount,
             resource_address,
-        } => Instruction::AssertWorktopContainsByAmount {
+        } => BasicInstruction::AssertWorktopContainsByAmount {
             amount: generate_decimal(amount)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
         ast::Instruction::AssertWorktopContainsByIds {
             ids,
             resource_address,
-        } => Instruction::AssertWorktopContainsByIds {
+        } => BasicInstruction::AssertWorktopContainsByIds {
             ids: generate_non_fungible_ids(ids)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
@@ -247,16 +237,16 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::PopFromAuthZone
+            BasicInstruction::PopFromAuthZone
         }
         ast::Instruction::PushToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::PushToAuthZone { proof_id }
+            BasicInstruction::PushToAuthZone { proof_id }
         }
-        ast::Instruction::ClearAuthZone => Instruction::ClearAuthZone,
+        ast::Instruction::ClearAuthZone => BasicInstruction::ClearAuthZone,
 
         ast::Instruction::CreateProofFromAuthZone {
             resource_address,
@@ -268,7 +258,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZone { resource_address }
+            BasicInstruction::CreateProofFromAuthZone { resource_address }
         }
         ast::Instruction::CreateProofFromAuthZoneByAmount {
             amount,
@@ -282,7 +272,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZoneByAmount {
+            BasicInstruction::CreateProofFromAuthZoneByAmount {
                 amount,
                 resource_address,
             }
@@ -299,7 +289,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZoneByIds {
+            BasicInstruction::CreateProofFromAuthZoneByIds {
                 ids,
                 resource_address,
             }
@@ -311,7 +301,7 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromBucket { bucket_id }
+            BasicInstruction::CreateProofFromBucket { bucket_id }
         }
         ast::Instruction::CloneProof { proof, new_proof } => {
             let proof_id = generate_proof(proof, resolver)?;
@@ -320,20 +310,20 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id2)?;
 
-            Instruction::CloneProof { proof_id }
+            BasicInstruction::CloneProof { proof_id }
         }
         ast::Instruction::DropProof { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::DropProof { proof_id }
+            BasicInstruction::DropProof { proof_id }
         }
         ast::Instruction::DropAllProofs => {
             id_validator
                 .drop_all_proofs()
                 .map_err(GeneratorError::IdValidationError)?;
-            Instruction::DropAllProofs
+            BasicInstruction::DropAllProofs
         }
         ast::Instruction::CallFunction {
             package_address,
@@ -345,105 +335,63 @@ pub fn generate_instruction(
             let blueprint_name = generate_string(&blueprint_name)?;
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
-            let mut fields = Vec::new();
-            for arg in &args {
-                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
-                id_validator
-                    .move_resources(&validated_arg)
-                    .map_err(GeneratorError::IdValidationError)?;
-                fields.push(validated_arg.dom);
-            }
 
-            Instruction::CallFunction {
-                function_ident: ScryptoFunctionIdent {
-                    package: ScryptoPackage::Global(package_address),
-                    blueprint_name,
-                    function_name,
-                },
-                args: args_from_value_vec!(fields),
+            let args_encoded =
+                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
+            let args_indexed = IndexedScryptoValue::from_value(args.clone())
+                .map_err(GeneratorError::ArgumentIndexingError)?;
+            id_validator
+                .move_resources(&args_indexed)
+                .map_err(GeneratorError::IdValidationError)?;
+
+            BasicInstruction::CallFunction {
+                package_address,
+                blueprint_name,
+                function_name,
+                args: args_encoded,
             }
         }
         ast::Instruction::CallMethod {
-            receiver,
-            method,
+            component_address,
+            method_name,
             args,
         } => {
-            let receiver = generate_scrypto_receiver(receiver, bech32_decoder)?;
-            let method_name = generate_string(&method)?;
+            let component_address = generate_component_address(component_address, bech32_decoder)?;
+            let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
-            let mut fields = Vec::new();
-            for arg in &args {
-                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
-                id_validator
-                    .move_resources(&validated_arg)
-                    .map_err(GeneratorError::IdValidationError)?;
-                fields.push(validated_arg.dom);
-            }
 
-            Instruction::CallMethod {
-                method_ident: ScryptoMethodIdent {
-                    receiver,
-                    method_name,
-                },
-                args: args_from_value_vec!(fields),
+            let args_encoded =
+                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
+            let args_indexed = IndexedScryptoValue::from_value(args.clone())
+                .map_err(GeneratorError::ArgumentIndexingError)?;
+            id_validator
+                .move_resources(&args_indexed)
+                .map_err(GeneratorError::IdValidationError)?;
+
+            BasicInstruction::CallMethod {
+                component_address,
+                method_name,
+                args: args_encoded,
             }
         }
-        ast::Instruction::CallNativeFunction {
-            blueprint_name,
-            function_name,
-            args,
-        } => {
-            let blueprint_name = generate_string(&blueprint_name)?;
-            let function_name = generate_string(&function_name)?;
-            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
-            let mut fields = Vec::new();
-            for arg in &args {
-                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
-                id_validator
-                    .move_resources(&validated_arg)
-                    .map_err(GeneratorError::IdValidationError)?;
-                fields.push(validated_arg.dom);
-            }
-
-            Instruction::CallNativeFunction {
-                function_ident: NativeFunctionIdent {
-                    blueprint_name,
-                    function_name,
-                },
-                args: args_from_value_vec!(fields),
-            }
-        }
-        ast::Instruction::CallNativeMethod {
-            receiver,
-            method,
-            args,
-        } => {
-            let receiver = generate_receiver(receiver, bech32_decoder, resolver)?;
-            let method_name = generate_string(&method)?;
-            let args = generate_args(args, resolver, bech32_decoder, blobs)?;
-            let mut fields = Vec::new();
-            for arg in &args {
-                let validated_arg = IndexedScryptoValue::from_slice(arg).unwrap();
-                id_validator
-                    .move_resources(&validated_arg)
-                    .map_err(GeneratorError::IdValidationError)?;
-                fields.push(validated_arg.dom);
-            }
-
-            Instruction::CallNativeMethod {
-                method_ident: NativeMethodIdent {
-                    receiver,
-                    method_name,
-                },
-                args: args_from_value_vec!(fields),
-            }
-        }
-
+        ast::Instruction::PublishPackage {
+            code,
+            abi,
+            royalty_config,
+            metadata,
+            access_rules,
+        } => BasicInstruction::PublishPackage {
+            code: generate_blob(code, blobs)?,
+            abi: generate_blob(abi, blobs)?,
+            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+        },
         ast::Instruction::PublishPackageWithOwner {
             code,
             abi,
             owner_badge,
-        } => Instruction::PublishPackageWithOwner {
+        } => BasicInstruction::PublishPackageWithOwner {
             code: generate_blob(code, blobs)?,
             abi: generate_blob(abi, blobs)?,
             owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
@@ -453,70 +401,85 @@ pub fn generate_instruction(
             metadata,
             access_rules,
             mint_params,
-        } => {
-            // Generates call data
-            let mut args = Vec::new();
-            for arg in [
-                generate_value(resource_type, None, resolver, bech32_decoder, blobs)?,
-                generate_value(metadata, None, resolver, bech32_decoder, blobs)?,
-                generate_value(access_rules, None, resolver, bech32_decoder, blobs)?,
-                generate_value(mint_params, None, resolver, bech32_decoder, blobs)?,
-            ] {
-                let validated_arg = IndexedScryptoValue::from_value(arg)
-                    .expect("Failed to convert value into IndexedScryptoValue");
-                id_validator
-                    .move_resources(&validated_arg)
-                    .map_err(GeneratorError::IdValidationError)?;
-                args.push(validated_arg.dom);
-            }
-            let args = args_from_value_vec!(args);
-
-            // Check if call data matches ABI
-            if scrypto_decode::<ResourceManagerCreateInvocation>(&args).is_err() {
-                return Err(GeneratorError::ArgumentsDoNotMatchAbi);
-            }
-
-            Instruction::CallNativeFunction {
-                function_ident: NativeFunctionIdent {
-                    blueprint_name: "ResourceManager".to_owned(),
-                    function_name: ResourceManagerFunction::Create.to_string(),
-                },
-                args,
-            }
-        }
-        ast::Instruction::BurnBucket { bucket } => {
+        } => BasicInstruction::CreateResource {
+            resource_type: generate_typed_value(resource_type, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            mint_params: generate_typed_value(mint_params, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateResourceWithOwner {
+            resource_type,
+            metadata,
+            owner_badge,
+            mint_params,
+        } => BasicInstruction::CreateResourceWithOwner {
+            resource_type: generate_typed_value(resource_type, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+            mint_params: generate_typed_value(mint_params, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
-            Instruction::CallNativeFunction {
-                function_ident: NativeFunctionIdent {
-                    blueprint_name: "ResourceManager".to_owned(),
-                    function_name: ResourceManagerFunction::BurnBucket.to_string(),
-                },
-                args: scrypto_encode(&ResourceManagerBucketBurnInvocation {
-                    bucket: Bucket(bucket_id),
-                })
-                .unwrap(),
-            }
+            id_validator
+                .drop_bucket(bucket_id)
+                .map_err(GeneratorError::IdValidationError)?;
+            BasicInstruction::BurnResource { bucket_id }
         }
-        ast::Instruction::MintFungible {
-            resource_address,
+        ast::Instruction::MintResource {
             amount,
-        } => {
-            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
-            let input = ResourceManagerMintInvocation {
-                receiver: resource_address,
-                mint_params: MintParams::Fungible {
-                    amount: generate_decimal(amount)?,
-                },
-            };
-
-            Instruction::CallNativeMethod {
-                method_ident: NativeMethodIdent {
-                    receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
-                    method_name: ResourceManagerMethod::Mint.to_string(),
-                },
-                args: scrypto_encode(&input).unwrap(),
+            resource_address,
+        } => BasicInstruction::MintResource {
+            amount: generate_decimal(amount)?,
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+        },
+        ast::Instruction::RecallResource { vault_id, amount } => BasicInstruction::RecallResource {
+            vault_id: generate_typed_value(vault_id, resolver, bech32_decoder, blobs)?,
+            amount: generate_decimal(amount)?,
+        },
+        ast::Instruction::SetMetadata {
+            entity_address,
+            key,
+            value,
+        } => BasicInstruction::SetMetadata {
+            entity_address: generate_entity_address(entity_address, bech32_decoder)?,
+            key: generate_string(key)?,
+            value: generate_string(value)?,
+        },
+        ast::Instruction::SetPackageRoyaltyConfig {
+            package_address,
+            royalty_config,
+        } => BasicInstruction::SetPackageRoyaltyConfig {
+            package_address: generate_package_address(package_address, bech32_decoder)?,
+            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::SetComponentRoyaltyConfig {
+            component_address,
+            royalty_config,
+        } => BasicInstruction::SetComponentRoyaltyConfig {
+            component_address: generate_component_address(component_address, bech32_decoder)?,
+            royalty_config: generate_typed_value(royalty_config, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::ClaimPackageRoyalty { package_address } => {
+            BasicInstruction::ClaimPackageRoyalty {
+                package_address: generate_package_address(package_address, bech32_decoder)?,
             }
         }
+        ast::Instruction::ClaimComponentRoyalty { component_address } => {
+            BasicInstruction::ClaimComponentRoyalty {
+                component_address: generate_component_address(component_address, bech32_decoder)?,
+            }
+        }
+        ast::Instruction::SetMethodAccessRule {
+            entity_address,
+            index,
+            key,
+            rule,
+        } => BasicInstruction::SetMethodAccessRule {
+            entity_address: generate_entity_address(entity_address, bech32_decoder)?,
+            index: generate_typed_value(index, resolver, bech32_decoder, blobs)?,
+            key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
+            rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
+        },
     })
 }
 
@@ -530,19 +493,30 @@ macro_rules! invalid_type {
     };
 }
 
+fn generate_typed_value<T: ScryptoDecode>(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<T, GeneratorError> {
+    let value = generate_value(value, None, resolver, bech32_decoder, blobs)?;
+    let encoded = scrypto_encode(&value).map_err(GeneratorError::ArgumentEncodingError)?;
+    let decoded: T = scrypto_decode(&encoded).map_err(GeneratorError::ArgumentDecodingError)?;
+    Ok(decoded)
+}
+
 fn generate_args(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &IndexMap<Hash, Vec<u8>>,
-) -> Result<Vec<Vec<u8>>, GeneratorError> {
-    let mut result = Vec::new();
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<ScryptoValue, GeneratorError> {
+    let mut fields = Vec::new();
     for v in values {
-        let value = generate_value(v, None, resolver, bech32_decoder, blobs)?;
-
-        result.push(scrypto_encode(&value).map_err(|err| GeneratorError::SborEncodeError(err))?);
+        fields.push(generate_value(v, None, resolver, bech32_decoder, blobs)?);
     }
-    Ok(result)
+
+    Ok(ScryptoValue::Tuple { fields })
 }
 
 fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
@@ -696,117 +670,46 @@ fn generate_resource_address(
     }
 }
 
-fn generate_scrypto_receiver(
-    receiver: &ast::ScryptoReceiver,
+fn generate_entity_address(
+    value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
-) -> Result<ScryptoReceiver, GeneratorError> {
-    match receiver {
-        ast::ScryptoReceiver::Global(v) => match v {
-            ast::Value::String(s) => Ok(ScryptoReceiver::Global(
-                bech32_decoder
-                    .validate_and_decode_component_address(&s)
-                    .map_err(|_| GeneratorError::InvalidResourceAddress(s.to_owned()))?,
-            )),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        ast::ScryptoReceiver::Component(v) => Ok(ScryptoReceiver::Component(generate_node_id(v)?)),
-    }
-}
-
-fn generate_receiver(
-    receiver: &ast::Receiver,
-    bech32_decoder: &Bech32Decoder,
-    resolver: &mut NameResolver,
-) -> Result<RENodeId, GeneratorError> {
-    match receiver {
-        ast::Receiver::Ref(re_node) => Ok(generate_re_node_id(re_node, bech32_decoder, resolver)?),
-    }
-}
-
-fn generate_re_node_id(
-    re_node: &ast::RENode,
-    bech32_decoder: &Bech32Decoder,
-    resolver: &mut NameResolver,
-) -> Result<RENodeId, GeneratorError> {
-    match re_node {
-        ast::RENode::Bucket(value) => {
-            let bucket_id = match value {
-                ast::Value::U32(n) => Ok(*n),
-                ast::Value::String(s) => resolver
-                    .resolve_bucket(&s)
-                    .map_err(GeneratorError::NameResolverError),
-                v => invalid_type!(v, ast::Type::U32, ast::Type::String),
-            }?;
-
-            Ok(RENodeId::Bucket(bucket_id))
-        }
-        ast::RENode::Proof(value) => {
-            let bucket_id = match value {
-                ast::Value::U32(n) => Ok(*n),
-                ast::Value::String(s) => resolver
-                    .resolve_proof(&s)
-                    .map_err(GeneratorError::NameResolverError),
-                v => invalid_type!(v, ast::Type::U32, ast::Type::String),
-            }?;
-
-            Ok(RENodeId::Bucket(bucket_id))
-        }
-        ast::RENode::AuthZoneStack(value) => {
-            let auth_zone_id = match value {
-                ast::Value::U32(v) => Ok(*v),
-                v => invalid_type!(v, ast::Type::U32),
-            }?;
-            Ok(RENodeId::AuthZoneStack(auth_zone_id))
-        }
-        ast::RENode::Worktop => Ok(RENodeId::Worktop),
-        ast::RENode::KeyValueStore(node_id) => {
-            Ok(RENodeId::KeyValueStore(generate_node_id(node_id)?))
-        }
-        ast::RENode::NonFungibleStore(node_id) => {
-            Ok(RENodeId::NonFungibleStore(generate_node_id(node_id)?))
-        }
-        ast::RENode::Component(node_id) => Ok(RENodeId::Component(generate_node_id(node_id)?)),
-        ast::RENode::EpochManager(node_id) => {
-            Ok(RENodeId::EpochManager(generate_node_id(node_id)?))
-        }
-        ast::RENode::Clock(node_id) => Ok(RENodeId::Clock(generate_node_id(node_id)?)),
-        ast::RENode::Vault(node_id) => Ok(RENodeId::Vault(generate_node_id(node_id)?)),
-        ast::RENode::ResourceManager(node_id) => {
-            Ok(RENodeId::ResourceManager(generate_node_id(node_id)?))
-        }
-        ast::RENode::Package(node_id) => Ok(RENodeId::Package(generate_node_id(node_id)?)),
-        ast::RENode::Global(value) => match value {
+) -> Result<GlobalAddress, GeneratorError> {
+    match value {
+        ast::Value::PackageAddress(value) => match value.borrow() {
             ast::Value::String(s) => bech32_decoder
                 .validate_and_decode_package_address(s)
-                .map(|a| RENodeId::Global(GlobalAddress::Package(a)))
-                .or_else(|_| {
-                    bech32_decoder
-                        .validate_and_decode_component_address(s)
-                        .map(|a| RENodeId::Global(GlobalAddress::Component(a)))
-                })
-                .or_else(|_| {
-                    bech32_decoder
-                        .validate_and_decode_resource_address(s)
-                        .map(|a| RENodeId::Global(GlobalAddress::Resource(a)))
-                })
-                .map_err(|_| GeneratorError::InvalidGlobal(s.into())),
+                .map(|a| GlobalAddress::Package(a))
+                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
             v => return invalid_type!(v, ast::Type::String),
         },
-    }
-}
-
-fn generate_node_id(node_id: &ast::Value) -> Result<[u8; 36], GeneratorError> {
-    match node_id {
-        ast::Value::String(s) => {
-            if s.len() != 72 {
-                return Err(GeneratorError::InvalidNodeId(s.into()));
-            }
-            let mut buf = [0u8; 36];
-            hex::decode_to_slice(s, &mut buf)
-                .map_err(|_| GeneratorError::InvalidNodeId(s.into()))?;
-            Ok(buf)
-        }
-        v => invalid_type!(v, ast::Type::String),
+        ast::Value::ComponentAddress(value) => match value.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_component_address(s)
+                .map(|a| GlobalAddress::Component(a))
+                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+            v => return invalid_type!(v, ast::Type::String),
+        },
+        ast::Value::ResourceAddress(value) => match value.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_resource_address(s)
+                .map(|a| GlobalAddress::Resource(a))
+                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+            v => return invalid_type!(v, ast::Type::String),
+        },
+        ast::Value::SystemAddress(value) => match value.borrow() {
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_system_address(s)
+                .map(|a| GlobalAddress::System(a))
+                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
+            v => return invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(
+            v,
+            ast::Type::PackageAddress,
+            ast::Type::ResourceAddress,
+            ast::Type::ComponentAddress,
+            ast::Type::SystemAddress
+        ),
     }
 }
 
@@ -985,7 +888,7 @@ fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError>
 
 fn generate_blob(
     value: &ast::Value,
-    blobs: &IndexMap<Hash, Vec<u8>>,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Blob, GeneratorError> {
     match value {
         ast::Value::Blob(inner) => match &**inner {
@@ -1035,7 +938,7 @@ pub fn generate_value(
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &IndexMap<Hash, Vec<u8>>,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<ScryptoValue, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
@@ -1224,7 +1127,7 @@ fn generate_singletons(
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
-    blobs: &IndexMap<Hash, Vec<u8>>,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<Vec<ScryptoValue>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
@@ -1320,7 +1223,7 @@ mod tests {
                     None,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut IndexMap::new()
+                    &mut BTreeMap::new()
                 ),
                 Ok($expected)
             );
@@ -1341,7 +1244,7 @@ mod tests {
                     &mut id_validator,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut IndexMap::new()
+                    &mut BTreeMap::new()
                 ),
                 Ok($expected)
             );
@@ -1357,7 +1260,7 @@ mod tests {
                 None,
                 &mut NameResolver::new(),
                 &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                &mut IndexMap::new(),
+                &mut BTreeMap::new(),
             ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
@@ -1472,66 +1375,50 @@ mod tests {
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromWorktopByAmount {
+            BasicInstruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             }
         );
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromWorktop {
+            BasicInstruction::TakeFromWorktop {
                 resource_address: resource
             }
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
-            Instruction::AssertWorktopContainsByAmount {
+            BasicInstruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
             }
         );
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
-            Instruction::CallFunction {
-                function_ident: ScryptoFunctionIdent {
-                    package: ScryptoPackage::Global(
-                        Bech32Decoder::for_simulator()
-                            .validate_and_decode_package_address(
-                                "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7"
-                                    .into()
-                            )
-                            .unwrap()
-                    ),
-                    blueprint_name: "Airdrop".into(),
-                    function_name: "new".to_string(),
-                },
+            BasicInstruction::CallFunction {
+                package_address: Bech32Decoder::for_simulator()
+                    .validate_and_decode_package_address(
+                        "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
+                    )
+                    .unwrap(),
+                blueprint_name: "Airdrop".into(),
+                function_name: "new".to_string(),
                 args: args!(500u32, pdec!("120"))
             }
         );
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
-            Instruction::CallMethod {
-                method_ident: ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(component),
-                    method_name: "refill".to_string(),
-                },
+            BasicInstruction::CallMethod {
+                component_address: component,
+                method_name: "refill".to_string(),
                 args: args!()
             }
         );
         generate_instruction_ok!(
-            r#"MINT_FUNGIBLE  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Decimal("100");"#,
-            Instruction::CallNativeMethod {
-                method_ident: NativeMethodIdent {
-                    receiver: RENodeId::Global(GlobalAddress::Resource(resource)),
-                    method_name: ResourceManagerMethod::Mint.to_string(),
-                },
-                args: scrypto_encode(&ResourceManagerMintInvocation {
-                    receiver: resource,
-                    mint_params: MintParams::Fungible {
-                        amount: Decimal::from_str("100").unwrap(),
-                    },
-                })
-                .unwrap(),
+            r#"MINT_RESOURCE Decimal("100") ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
+            BasicInstruction::MintResource {
+                resource_address: resource,
+                amount: Decimal::from_str("100").unwrap()
             }
         );
     }

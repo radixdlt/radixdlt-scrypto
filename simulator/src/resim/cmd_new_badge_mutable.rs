@@ -50,7 +50,7 @@ pub struct NewBadgeMutable {
 
 impl NewBadgeMutable {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut metadata = HashMap::new();
+        let mut metadata = BTreeMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
         }
@@ -78,7 +78,6 @@ impl NewBadgeMutable {
             &self.manifest,
             self.trace,
             true,
-            false,
             out,
         )
         .map(|_| ())

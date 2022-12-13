@@ -10,7 +10,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
     fn resolve<D: ResolverApi<W> + SystemApi>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
         let args = IndexedScryptoValue::from_slice(&self.args())
             .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
@@ -85,18 +85,25 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     ));
                 }
 
+                let scrypto_fn_ident = ScryptoFnIdentifier::new(
+                    package_address,
+                    function_ident.blueprint_name.clone(),
+                    function_ident.function_name.clone(),
+                );
+
                 // Emit event
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor(&package.code, args),
-                    REActor::Function(ResolvedFunction::Scrypto {
+                    api.vm().create_executor(
                         package_address,
-                        blueprint_name: function_ident.blueprint_name.clone(),
-                        ident: function_ident.function_name.clone(),
-                        export_name: fn_abi.export_name.clone(),
-                        return_type: fn_abi.output.clone(),
-                    }),
+                        &package.code,
+                        fn_abi.export_name.clone(),
+                        None,
+                        args.raw,
+                        fn_abi.output.clone(),
+                    ),
+                    ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
                 )
             }
             ScryptoInvocation::Method(method_ident, _) => {
@@ -196,19 +203,26 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     ));
                 }
 
+                let scrypto_fn_ident = ScryptoFnIdentifier::new(
+                    component_info.package_address,
+                    component_info.blueprint_name,
+                    method_ident.method_name.clone(),
+                );
+
                 // Emit event
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor(&package.code, args),
-                    REActor::Method(
-                        ResolvedMethod::Scrypto {
-                            package_address: component_info.package_address,
-                            blueprint_name: component_info.blueprint_name,
-                            ident: method_ident.method_name.clone(),
-                            export_name: fn_abi.export_name.clone(),
-                            return_type: fn_abi.output.clone(),
-                        },
+                    api.vm().create_executor(
+                        component_info.package_address,
+                        &package.code,
+                        fn_abi.export_name.clone(),
+                        Some(component_node_id.into()),
+                        args.raw,
+                        fn_abi.output.clone(),
+                    ),
+                    ResolvedActor::method(
+                        FnIdentifier::Scrypto(scrypto_fn_ident),
                         resolved_receiver,
                     ),
                 )
@@ -243,7 +257,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
     fn resolve<D: ResolverApi<W> + SystemApi>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
 
         let nodes_to_move = self.args().node_ids().into_iter().collect();
@@ -316,18 +330,25 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     ));
                 }
 
+                let scrypto_fn_ident = ScryptoFnIdentifier::new(
+                    package_address,
+                    function_ident.blueprint_name.clone(),
+                    function_ident.function_name.clone(),
+                );
+
                 // Emit event
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor_to_parsed(&package.code, args),
-                    REActor::Function(ResolvedFunction::Scrypto {
+                    api.vm().create_executor_to_parsed(
                         package_address,
-                        blueprint_name: function_ident.blueprint_name.clone(),
-                        ident: function_ident.function_name.clone(),
-                        export_name: fn_abi.export_name.clone(),
-                        return_type: fn_abi.output.clone(),
-                    }),
+                        &package.code,
+                        fn_abi.export_name.clone(),
+                        None,
+                        args.raw,
+                        fn_abi.output.clone(),
+                    ),
+                    ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
                 )
             }
             ParsedScryptoInvocation::Method(method_ident, args) => {
@@ -427,19 +448,26 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     ));
                 }
 
+                let scrypto_fn_ident = ScryptoFnIdentifier::new(
+                    component_info.package_address,
+                    component_info.blueprint_name,
+                    method_ident.method_name.clone(),
+                );
+
                 // Emit event
                 api.on_wasm_instantiation(package.code())?;
 
                 (
-                    api.vm().create_executor_to_parsed(&package.code, args),
-                    REActor::Method(
-                        ResolvedMethod::Scrypto {
-                            package_address: component_info.package_address,
-                            blueprint_name: component_info.blueprint_name,
-                            ident: method_ident.method_name.clone(),
-                            export_name: fn_abi.export_name.clone(),
-                            return_type: fn_abi.output.clone(),
-                        },
+                    api.vm().create_executor_to_parsed(
+                        component_info.package_address,
+                        &package.code,
+                        fn_abi.export_name.clone(),
+                        Some(component_node_id.into()),
+                        args.raw,
+                        fn_abi.output.clone(),
+                    ),
+                    ResolvedActor::method(
+                        FnIdentifier::Scrypto(scrypto_fn_ident),
                         resolved_receiver,
                     ),
                 )

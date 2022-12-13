@@ -29,7 +29,7 @@ pub enum PackageError {
 impl Package {
     fn new(
         code: Vec<u8>,
-        abi: HashMap<String, BlueprintAbi>,
+        abi: BTreeMap<String, BlueprintAbi>,
     ) -> Result<PackageInfoSubstate, PrepareError> {
         WasmValidator::default().validate(&code, &abi)?;
 
@@ -46,11 +46,9 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
-            PackageFunction::Publish,
-        )));
+        let actor = ResolvedActor::function(NativeFunction::Package(PackageFunction::Publish));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
@@ -65,7 +63,7 @@ impl NativeProcedure for PackagePublishInvocation {
     {
         let code = api.read_blob(&self.code.0)?.to_vec();
         let blob = api.read_blob(&self.abi.0)?;
-        let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
+        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
             ))
@@ -126,11 +124,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishWithOwnerInvocatio
     fn resolve<D: ResolverApi<W>>(
         self,
         _api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::Package(
-            PackageFunction::PublishWithOwner,
-        )));
+        let actor =
+            ResolvedActor::function(NativeFunction::Package(PackageFunction::PublishWithOwner));
         let executor = NativeExecutor(self);
         Ok((actor, call_frame_update, executor))
     }
@@ -145,7 +142,7 @@ impl NativeProcedure for PackagePublishWithOwnerInvocation {
     {
         let code = api.read_blob(&self.code.0)?.to_vec();
         let blob = api.read_blob(&self.abi.0)?;
-        let abi = scrypto_decode::<HashMap<String, BlueprintAbi>>(blob).map_err(|e| {
+        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
             ))
@@ -234,7 +231,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocatio
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
@@ -242,8 +239,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocatio
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Package(PackageMethod::SetRoyaltyConfig)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Package(PackageMethod::SetRoyaltyConfig),
             resolved_receiver,
         );
         let executor = NativeExecutor(PackageSetRoyaltyConfigExecutable {
@@ -282,13 +279,13 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         api: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::Package(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::Package(PackageMethod::ClaimRoyalty)),
+        let actor = ResolvedActor::method(
+            NativeMethod::Package(PackageMethod::ClaimRoyalty),
             resolved_receiver,
         );
         let executor = NativeExecutor(PackageClaimRoyaltyExecutable {

@@ -1,5 +1,4 @@
-use super::ast::ScryptoReceiver;
-use crate::manifest::ast::{Instruction, RENode, Receiver, Type, Value};
+use crate::manifest::ast::{Instruction, Type, Value};
 use crate::manifest::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -148,30 +147,8 @@ impl Parser {
                 },
             },
             TokenKind::CallMethod => Instruction::CallMethod {
-                receiver: self.parse_scrypto_receiver()?,
-                method: self.parse_value()?,
-                args: {
-                    let mut values = vec![];
-                    while self.peek()?.kind != TokenKind::Semicolon {
-                        values.push(self.parse_value()?);
-                    }
-                    values
-                },
-            },
-            TokenKind::CallNativeFunction => Instruction::CallNativeFunction {
-                blueprint_name: self.parse_value()?,
-                function_name: self.parse_value()?,
-                args: {
-                    let mut values = vec![];
-                    while self.peek()?.kind != TokenKind::Semicolon {
-                        values.push(self.parse_value()?);
-                    }
-                    values
-                },
-            },
-            TokenKind::CallNativeMethod => Instruction::CallNativeMethod {
-                receiver: self.parse_receiver()?,
-                method: self.parse_value()?,
+                component_address: self.parse_value()?,
+                method_name: self.parse_value()?,
                 args: {
                     let mut values = vec![];
                     while self.peek()?.kind != TokenKind::Semicolon {
@@ -181,6 +158,13 @@ impl Parser {
                 },
             },
 
+            TokenKind::PublishPackage => Instruction::PublishPackage {
+                code: self.parse_value()?,
+                abi: self.parse_value()?,
+                royalty_config: self.parse_value()?,
+                metadata: self.parse_value()?,
+                access_rules: self.parse_value()?,
+            },
             TokenKind::PublishPackageWithOwner => Instruction::PublishPackageWithOwner {
                 code: self.parse_value()?,
                 abi: self.parse_value()?,
@@ -192,12 +176,47 @@ impl Parser {
                 access_rules: self.parse_value()?,
                 mint_params: self.parse_value()?,
             },
-            TokenKind::BurnBucket => Instruction::BurnBucket {
+            TokenKind::CreateResourceWithOwner => Instruction::CreateResourceWithOwner {
+                resource_type: self.parse_value()?,
+                metadata: self.parse_value()?,
+                owner_badge: self.parse_value()?,
+                mint_params: self.parse_value()?,
+            },
+            TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
             },
-            TokenKind::MintFungible => Instruction::MintFungible {
-                resource_address: self.parse_value()?,
+            TokenKind::MintResource => Instruction::MintResource {
                 amount: self.parse_value()?,
+                resource_address: self.parse_value()?,
+            },
+            TokenKind::RecallResource => Instruction::RecallResource {
+                vault_id: self.parse_value()?,
+                amount: self.parse_value()?,
+            },
+            TokenKind::SetMetadata => Instruction::SetMetadata {
+                entity_address: self.parse_value()?,
+                key: self.parse_value()?,
+                value: self.parse_value()?,
+            },
+            TokenKind::SetPackageRoyaltyConfig => Instruction::SetPackageRoyaltyConfig {
+                package_address: self.parse_value()?,
+                royalty_config: self.parse_value()?,
+            },
+            TokenKind::SetComponentRoyaltyConfig => Instruction::SetComponentRoyaltyConfig {
+                component_address: self.parse_value()?,
+                royalty_config: self.parse_value()?,
+            },
+            TokenKind::ClaimPackageRoyalty => Instruction::ClaimPackageRoyalty {
+                package_address: self.parse_value()?,
+            },
+            TokenKind::ClaimComponentRoyalty => Instruction::ClaimComponentRoyalty {
+                component_address: self.parse_value()?,
+            },
+            TokenKind::SetMethodAccessRule => Instruction::SetMethodAccessRule {
+                entity_address: self.parse_value()?,
+                index: self.parse_value()?,
+                key: self.parse_value()?,
+                rule: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
@@ -205,53 +224,6 @@ impl Parser {
         };
         advance_match!(self, TokenKind::Semicolon);
         Ok(instruction)
-    }
-
-    pub fn parse_scrypto_receiver(&mut self) -> Result<ScryptoReceiver, ParserError> {
-        let token = self.advance()?;
-        match token.kind {
-            TokenKind::ComponentAddress => Ok(ScryptoReceiver::Global(self.parse_values_one()?)),
-            TokenKind::Component => Ok(ScryptoReceiver::Component(self.parse_values_one()?)),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
-    }
-
-    pub fn parse_receiver(&mut self) -> Result<Receiver, ParserError> {
-        let token = self.peek()?;
-        match token.kind {
-            TokenKind::Bucket
-            | TokenKind::Proof
-            | TokenKind::AuthZoneStack
-            | TokenKind::Worktop
-            | TokenKind::Global
-            | TokenKind::KeyValueStore
-            | TokenKind::NonFungibleStore
-            | TokenKind::Component
-            | TokenKind::EpochManager
-            | TokenKind::Vault
-            | TokenKind::ResourceManager
-            | TokenKind::Package => Ok(Receiver::Ref(self.parse_re_node()?)),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
-    }
-
-    pub fn parse_re_node(&mut self) -> Result<RENode, ParserError> {
-        let token = self.advance()?;
-        match token.kind {
-            TokenKind::Bucket => Ok(RENode::Bucket(self.parse_values_one()?)),
-            TokenKind::Proof => Ok(RENode::Proof(self.parse_values_one()?)),
-            TokenKind::AuthZoneStack => Ok(RENode::AuthZoneStack(self.parse_values_one()?)),
-            TokenKind::Worktop => Ok(RENode::Worktop),
-            TokenKind::Global => Ok(RENode::Global(self.parse_values_one()?)),
-            TokenKind::KeyValueStore => Ok(RENode::KeyValueStore(self.parse_values_one()?)),
-            TokenKind::NonFungibleStore => Ok(RENode::NonFungibleStore(self.parse_values_one()?)),
-            TokenKind::Component => Ok(RENode::Component(self.parse_values_one()?)),
-            TokenKind::EpochManager => Ok(RENode::EpochManager(self.parse_values_one()?)),
-            TokenKind::Vault => Ok(RENode::Vault(self.parse_values_one()?)),
-            TokenKind::ResourceManager => Ok(RENode::ResourceManager(self.parse_values_one()?)),
-            TokenKind::Package => Ok(RENode::Package(self.parse_values_one()?)),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
     }
 
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
@@ -716,11 +688,11 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                receiver: ScryptoReceiver::Global(
+                component_address: Value::ComponentAddress(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
-                method: Value::String("refill".into()),
+                method_name: Value::String("refill".into()),
                 args: vec![
                     Value::Bucket(Value::String("xrd_bucket".into()).into()),
                     Value::Proof(Value::String("admin_auth".into()).into())
@@ -730,11 +702,11 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleId("00")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                receiver: ScryptoReceiver::Global(
+                component_address: Value::ComponentAddress(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
-                method: Value::String("withdraw_non_fungible".into()),
+                method_name: Value::String("withdraw_non_fungible".into()),
                 args: vec![
                     Value::NonFungibleId(Value::String("00".into()).into()),
                     Value::Proof(Value::String("admin_auth".into()).into())

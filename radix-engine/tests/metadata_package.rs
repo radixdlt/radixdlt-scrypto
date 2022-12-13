@@ -1,5 +1,4 @@
 use radix_engine::engine::{AuthError, ModuleError, RuntimeError};
-use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use scrypto_unit::*;
@@ -8,16 +7,15 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn cannot_set_package_metadata_with_no_owner() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            HashMap::new(),
-            HashMap::new(),
-            HashMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
+            BTreeMap::new(),
             AccessRules::new(),
         )
         .build();
@@ -27,15 +25,10 @@ fn cannot_set_package_metadata_with_no_owner() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_native_method(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
-            "set",
-            scrypto_encode(&MetadataSetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
-                key: "name".to_string(),
-                value: "best package ever!".to_string(),
-            })
-            .unwrap(),
+        .set_metadata(
+            GlobalAddress::Package(package_address),
+            "name".to_string(),
+            "best package ever!".to_string(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -54,15 +47,14 @@ fn cannot_set_package_metadata_with_no_owner() {
 #[test]
 fn can_set_package_metadata_with_owner() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, HashMap::new(), owner_badge_addr)
+        .publish_package_with_owner(code, BTreeMap::new(), owner_badge_addr)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -72,15 +64,10 @@ fn can_set_package_metadata_with_owner() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
-        .call_native_method(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
-            "set",
-            scrypto_encode(&MetadataSetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
-                key: "name".to_string(),
-                value: "best package ever!".to_string(),
-            })
-            .unwrap(),
+        .set_metadata(
+            GlobalAddress::Package(package_address),
+            "name".to_string(),
+            "best package ever!".to_string(),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -97,15 +84,14 @@ fn can_set_package_metadata_with_owner() {
 #[test]
 fn can_lock_package_metadata_with_owner() {
     // Arrange
-    let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(true, &mut store);
+    let mut test_runner = TestRunner::new(true);
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let (public_key, _, account) = test_runner.new_account(false);
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .publish_package_with_owner(code, HashMap::new(), owner_badge_addr)
+        .publish_package_with_owner(code, BTreeMap::new(), owner_badge_addr)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.expect_commit_success();
@@ -115,18 +101,13 @@ fn can_lock_package_metadata_with_owner() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
-        .call_native_method(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
-            &AccessRulesChainMethod::SetMethodAccessRule.to_string(),
-            scrypto_encode(&AccessRulesSetMethodAccessRuleInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
-                index: 0,
-                key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                    MetadataMethod::Set,
-                ))),
-                rule: AccessRule::DenyAll,
-            })
-            .unwrap(),
+        .set_method_access_rule(
+            GlobalAddress::Package(package_address),
+            0,
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            AccessRule::DenyAll,
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -139,15 +120,10 @@ fn can_lock_package_metadata_with_owner() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
-        .call_native_method(
-            RENodeId::Global(GlobalAddress::Package(package_address)),
-            "set",
-            scrypto_encode(&MetadataSetInvocation {
-                receiver: RENodeId::Global(GlobalAddress::Package(package_address)),
-                key: "name".to_string(),
-                value: "best package ever!".to_string(),
-            })
-            .unwrap(),
+        .set_metadata(
+            GlobalAddress::Package(package_address),
+            "name".to_string(),
+            "best package ever!".to_string(),
         )
         .build();
     let receipt = test_runner.execute_manifest(

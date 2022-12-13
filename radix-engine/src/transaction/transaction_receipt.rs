@@ -3,20 +3,13 @@ use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
 use radix_engine_interface::api::types::{GlobalAddress, Level};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
 use radix_engine_interface::model::*;
-use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
-use transaction::model::*;
+use transaction::manifest::decompiler::DecompilationContext;
 use utils::ContextualDisplay;
 
 use crate::engine::{RejectionError, ResourceChange, RuntimeError, TrackedEvent};
 use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
 use crate::types::*;
-
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct TransactionContents {
-    pub instructions: Vec<Instruction>,
-}
 
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -128,7 +121,6 @@ pub struct RejectResult {
 #[derive(Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionReceipt {
-    pub contents: TransactionContents,
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
 }
@@ -136,6 +128,26 @@ pub struct TransactionReceipt {
 impl TransactionReceipt {
     pub fn is_commit(&self) -> bool {
         matches!(self.result, TransactionResult::Commit(_))
+    }
+
+    pub fn is_commit_success(&self) -> bool {
+        matches!(
+            self.result,
+            TransactionResult::Commit(CommitResult {
+                outcome: TransactionOutcome::Success(_),
+                ..
+            })
+        )
+    }
+
+    pub fn is_commit_failure(&self) -> bool {
+        matches!(
+            self.result,
+            TransactionResult::Commit(CommitResult {
+                outcome: TransactionOutcome::Failure(_),
+                ..
+            })
+        )
     }
 
     pub fn is_rejection(&self) -> bool {
@@ -267,7 +279,6 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
         f: &mut F,
         context: &AddressDisplayContext<'a>,
     ) -> Result<(), Self::Error> {
-        let contents = &self.contents;
         let execution = &self.execution;
         let result = &self.result;
 
@@ -328,21 +339,11 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
             )?;
         }
 
-        let mut decompilation_context =
-            DecompilationContext::new_with_optional_network(bech32_encoder);
-
-        write!(f, "\n{}", "Instructions:".bold().green())?;
-        for (i, inst) in contents.instructions.iter().enumerate() {
-            write!(f, "\n{} ", prefix!(i, contents.instructions))?;
-            let res = decompile_instruction(f, inst, &mut decompilation_context);
-            if let Err(err) = res {
-                write!(f, "[INVALID_INSTRUCTION({:?})]", err)?
-            }
-        }
+        let decompilation_context = DecompilationContext::new_with_optional_network(bech32_encoder);
 
         if let TransactionResult::Commit(c) = &result {
             if let TransactionOutcome::Success(outputs) = &c.outcome {
-                write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
+                write!(f, "\n{}", "Outputs:".bold().green())?;
                 for (i, output) in outputs.iter().enumerate() {
                     write!(
                         f,

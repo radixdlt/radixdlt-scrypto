@@ -2,8 +2,8 @@ use crate::engine::*;
 use crate::fee::{FeeReserve, RoyaltyReceiver};
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
-    ComponentOffset, GlobalAddress, GlobalOffset, PackageOffset, RENodeId, SubstateId,
-    SubstateOffset,
+    ComponentOffset, FnIdentifier, GlobalAddress, GlobalOffset, PackageOffset, RENodeId,
+    SubstateId, SubstateOffset,
 };
 use radix_engine_interface::scrypto;
 use sbor::*;
@@ -37,49 +37,29 @@ impl Default for RoyaltyModule {
 impl<R: FeeReserve> Module<R> for RoyaltyModule {
     fn pre_execute_invocation(
         &mut self,
-        actor: &REActor,
+        actor: &ResolvedActor,
         _update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         // Identify the function, and optional component address
-        let (package_address, blueprint_name, fn_ident, optional_component_address) = match actor {
-            REActor::Function(function) => match function {
-                ResolvedFunction::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                    ..
-                } => (package_address, blueprint_name, ident, None),
-                ResolvedFunction::Native(_) => {
-                    return Ok(());
-                }
-            },
-            REActor::Method(method, receiver) => match method {
-                ResolvedMethod::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                    ..
-                } => {
-                    if let Some(RENodeId::Global(GlobalAddress::Component(component_address))) =
-                        receiver.derefed_from.map(|tuple| tuple.0)
-                    {
-                        (
-                            package_address,
-                            blueprint_name,
-                            ident,
-                            Some(component_address),
-                        )
-                    } else {
-                        (package_address, blueprint_name, ident, None)
-                    }
-                }
-                ResolvedMethod::Native(_) => {
-                    return Ok(());
-                }
-            },
+        let (scrypto_fn_identifier, optional_component_address) = match &actor.identifier {
+            FnIdentifier::Scrypto(scrypto_fn_identifier) => {
+                let maybe_component = match &actor.receiver {
+                    Some(ResolvedReceiver {
+                        derefed_from:
+                            Some((RENodeId::Global(GlobalAddress::Component(component_address)), ..)),
+                        ..
+                    }) => Some(*component_address),
+                    _ => None,
+                };
+
+                (scrypto_fn_identifier, maybe_component)
+            }
+            _ => {
+                return Ok(());
+            }
         };
 
         //========================
@@ -87,7 +67,9 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
         //========================
 
         let package_id = {
-            let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
+            let node_id = RENodeId::Global(GlobalAddress::Package(
+                scrypto_fn_identifier.package_address,
+            ));
             let offset = SubstateOffset::Global(GlobalOffset::Global);
             track
                 .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::read_only())
@@ -112,12 +94,15 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
         let royalty = substate
             .package_royalty_config()
             .royalty_config
-            .get(blueprint_name)
-            .map(|x| x.get_rule(fn_ident).clone())
+            .get(&scrypto_fn_identifier.blueprint_name)
+            .map(|x| x.get_rule(&scrypto_fn_identifier.ident).clone())
             .unwrap_or(0);
         track
             .fee_reserve
-            .consume_royalty(RoyaltyReceiver::Package(*package_address, node_id), royalty)
+            .consume_royalty(
+                RoyaltyReceiver::Package(scrypto_fn_identifier.package_address, node_id),
+                royalty,
+            )
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
         track
             .release_lock(SubstateId(node_id, offset.clone()), false)
@@ -162,7 +147,7 @@ impl<R: FeeReserve> Module<R> for RoyaltyModule {
             let royalty = substate
                 .component_royalty_config()
                 .royalty_config
-                .get_rule(fn_ident)
+                .get_rule(&scrypto_fn_identifier.ident)
                 .clone();
             track
                 .fee_reserve

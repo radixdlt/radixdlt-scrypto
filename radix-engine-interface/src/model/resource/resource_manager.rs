@@ -1,4 +1,4 @@
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -41,8 +41,8 @@ pub enum ResourceMethodAuthKey {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
-    pub metadata: HashMap<String, String>,
-    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub mint_params: Option<MintParams>,
 }
 
@@ -67,7 +67,7 @@ impl Into<SerializedInvocation> for ResourceManagerCreateInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateWithOwnerInvocation {
     pub resource_type: ResourceType,
-    pub metadata: HashMap<String, String>,
+    pub metadata: BTreeMap<String, String>,
     pub owner_badge: NonFungibleAddress,
     pub mint_params: Option<MintParams>,
 }

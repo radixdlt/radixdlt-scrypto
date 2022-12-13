@@ -1,13 +1,12 @@
 use crate::engine::{
-    ExecutionMode, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
-    ResolvedReceiver, RuntimeError,
+    ExecutionMode, KernelError, LockFlags, RENode, ResolvedActor, ResolvedReceiver, RuntimeError,
 };
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
-    AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, GlobalOffset,
-    KeyValueStoreOffset, NativeFunction, NativeMethod, PackageOffset, ProofOffset, RENodeId,
-    ResourceManagerOffset, SubstateOffset, TransactionProcessorFunction, VaultOffset,
-    WorktopOffset,
+    AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
+    GlobalOffset, KeyValueStoreOffset, NativeFunction, NativeMethod, PackageOffset, ProofOffset,
+    RENodeId, ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset,
+    TransactionProcessorFunction, VaultOffset, WorktopOffset,
 };
 
 pub struct VisibilityProperties;
@@ -15,7 +14,7 @@ pub struct VisibilityProperties;
 impl VisibilityProperties {
     pub fn check_drop_node_visibility(
         mode: ExecutionMode,
-        actor: &REActor,
+        actor: &ResolvedActor,
         node_id: RENodeId,
     ) -> bool {
         if !mode.eq(&ExecutionMode::Application) {
@@ -24,37 +23,32 @@ impl VisibilityProperties {
 
         // TODO: Cleanup and reduce to least privilege
         match node_id {
-            RENodeId::Worktop => match actor {
-                REActor::Function(
-                    ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
-                    ..,
-                ) => true,
+            RENodeId::Worktop => match &actor.identifier {
+                FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
                 _ => false,
             },
-            RENodeId::AuthZoneStack(..) => match actor {
-                REActor::Function(
-                    ResolvedFunction::Native(NativeFunction::TransactionProcessor(..)),
-                    ..,
-                ) => true,
+            RENodeId::AuthZoneStack(..) => match &actor.identifier {
+                FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
                 _ => false,
             },
-            RENodeId::Bucket(..) => match actor {
-                REActor::Method(ResolvedMethod::Native(NativeMethod::Bucket(..)), ..)
-                | REActor::Method(ResolvedMethod::Native(NativeMethod::Worktop(..)), ..)
-                | REActor::Method(ResolvedMethod::Native(NativeMethod::ResourceManager(..)), ..)
-                | REActor::Method(ResolvedMethod::Native(NativeMethod::Vault(..)), ..) => true,
+            RENodeId::TransactionHash(..) => match &actor.identifier {
+                FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
                 _ => false,
             },
-            RENodeId::Proof(..) => match actor {
-                REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..) => {
-                    true
-                }
-                REActor::Method(ResolvedMethod::Native(NativeMethod::Proof(..)), ..) => true,
-                REActor::Function(ResolvedFunction::Native(
-                    NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+            RENodeId::Bucket(..) => match &actor.identifier {
+                FnIdentifier::NativeMethod(NativeMethod::Bucket(..))
+                | FnIdentifier::NativeMethod(NativeMethod::Worktop(..))
+                | FnIdentifier::NativeMethod(NativeMethod::ResourceManager(..))
+                | FnIdentifier::NativeMethod(NativeMethod::Vault(..)) => true,
+                _ => false,
+            },
+            RENodeId::Proof(..) => match &actor.identifier {
+                FnIdentifier::NativeMethod(NativeMethod::AuthZoneStack(..)) => true,
+                FnIdentifier::NativeMethod(NativeMethod::Proof(..)) => true,
+                FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(
+                    TransactionProcessorFunction::Run,
                 )) => true,
-                REActor::Method(ResolvedMethod::Scrypto { .. }, ..) => true,
-                REActor::Function(ResolvedFunction::Scrypto { .. }) => true,
+                FnIdentifier::Scrypto(..) => true,
                 _ => false,
             },
             _ => false,
@@ -63,29 +57,18 @@ impl VisibilityProperties {
 
     pub fn check_create_node_visibility(
         mode: ExecutionMode,
-        actor: &REActor,
+        actor: &ResolvedActor,
         node: &RENode,
     ) -> bool {
         // TODO: Cleanup and reduce to least privilege
-        match (mode, actor) {
+        match (mode, &actor.identifier) {
             (
                 ExecutionMode::Application,
-                REActor::Method(
-                    ResolvedMethod::Scrypto {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    },
-                    ..,
-                )
-                | REActor::Function(
-                    ResolvedFunction::Scrypto {
-                        package_address,
-                        blueprint_name,
-                        ..
-                    },
-                    ..,
-                ),
+                FnIdentifier::Scrypto(ScryptoFnIdentifier {
+                    package_address,
+                    blueprint_name,
+                    ..
+                }),
             ) => match node {
                 RENode::Component(info, ..) => {
                     blueprint_name.eq(&info.blueprint_name)
@@ -101,7 +84,7 @@ impl VisibilityProperties {
 
     pub fn check_substate_visibility(
         mode: ExecutionMode,
-        actor: &REActor,
+        actor: &ResolvedActor,
         node_id: RENodeId,
         offset: SubstateOffset,
         flags: LockFlags,
@@ -122,6 +105,7 @@ impl VisibilityProperties {
                 SubstateOffset::Proof(ProofOffset::Proof) => true,
                 _ => false,
             },
+            (ExecutionMode::TransactionModule, _offset) => false,
             (ExecutionMode::MoveUpstream, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
                 _ => false,
@@ -163,14 +147,12 @@ impl VisibilityProperties {
             },
             (ExecutionMode::Application, offset) => {
                 if !flags.contains(LockFlags::MUTABLE) {
-                    match actor {
+                    match &actor.identifier {
                         // Native
-                        REActor::Function(ResolvedFunction::Native(..))
-                        | REActor::Method(ResolvedMethod::Native(..), ..) => true,
-
+                        FnIdentifier::NativeMethod(..) | FnIdentifier::NativeFunction(..) => true,
                         // Scrypto
-                        REActor::Function(ResolvedFunction::Scrypto { .. }) => {
-                            match (node_id, offset) {
+                        FnIdentifier::Scrypto(..) => match &actor.receiver {
+                            None => match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
@@ -180,65 +162,59 @@ impl VisibilityProperties {
                                     SubstateOffset::Component(ComponentOffset::Info),
                                 ) => true,
                                 _ => false,
-                            }
-                        }
-                        REActor::Method(
-                            ResolvedMethod::Scrypto { .. },
-                            ResolvedReceiver {
+                            },
+                            Some(ResolvedReceiver {
                                 receiver: RENodeId::Component(component_address),
                                 ..
+                            }) => match (node_id, offset) {
+                                (
+                                    RENodeId::KeyValueStore(_),
+                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                                ) => true,
+                                (
+                                    RENodeId::Component(_),
+                                    SubstateOffset::Component(ComponentOffset::Info),
+                                ) => true,
+                                (
+                                    RENodeId::Component(addr),
+                                    SubstateOffset::Component(ComponentOffset::State),
+                                ) => addr.eq(component_address),
+                                _ => false,
                             },
-                        ) => match (node_id, offset) {
-                            (
-                                RENodeId::KeyValueStore(_),
-                                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                            ) => true,
-                            (
-                                RENodeId::Component(_),
-                                SubstateOffset::Component(ComponentOffset::Info),
-                            ) => true,
-                            (
-                                RENodeId::Component(addr),
-                                SubstateOffset::Component(ComponentOffset::State),
-                            ) => addr.eq(component_address),
                             _ => false,
                         },
-                        _ => false,
                     }
                 } else {
-                    match actor {
+                    match &actor.identifier {
                         // Native
-                        REActor::Function(ResolvedFunction::Native(..))
-                        | REActor::Method(ResolvedMethod::Native(..), ..) => true,
-                        REActor::Function(ResolvedFunction::Scrypto { .. }) => {
-                            match (node_id, offset) {
+                        FnIdentifier::NativeMethod(..) | FnIdentifier::NativeFunction(..) => true,
+
+                        // Scrypto
+                        FnIdentifier::Scrypto(..) => match &actor.receiver {
+                            None => match (node_id, offset) {
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
                                 ) => true,
                                 _ => false,
-                            }
-                        }
+                            },
 
-                        // Scrypto
-                        REActor::Method(
-                            ResolvedMethod::Scrypto { .. },
-                            ResolvedReceiver {
+                            Some(ResolvedReceiver {
                                 receiver: RENodeId::Component(component_address),
                                 ..
+                            }) => match (node_id, offset) {
+                                (
+                                    RENodeId::KeyValueStore(_),
+                                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
+                                ) => true,
+                                (
+                                    RENodeId::Component(addr),
+                                    SubstateOffset::Component(ComponentOffset::State),
+                                ) => addr.eq(component_address),
+                                _ => false,
                             },
-                        ) => match (node_id, offset) {
-                            (
-                                RENodeId::KeyValueStore(_),
-                                SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
-                            ) => true,
-                            (
-                                RENodeId::Component(addr),
-                                SubstateOffset::Component(ComponentOffset::State),
-                            ) => addr.eq(component_address),
                             _ => false,
                         },
-                        _ => false,
                     }
                 }
             }

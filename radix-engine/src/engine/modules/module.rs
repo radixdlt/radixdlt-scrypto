@@ -42,11 +42,9 @@ pub enum SysCallInput<'a> {
     TakeSubstate {
         substate_id: &'a SubstateId,
     },
-    ReadTransactionHash,
     ReadBlob {
         blob_hash: &'a Hash,
     },
-    GenerateUuid,
     EmitLog {
         level: &'a Level,
         message: &'a String,
@@ -67,7 +65,6 @@ pub enum SysCallOutput<'a> {
     GetRef { lock_handle: LockHandle },
     GetRefMut,
     DropLock,
-    ReadTransactionHash { hash: &'a Hash },
     ReadBlob { blob: &'a [u8] },
     GenerateUuid { uuid: u128 },
     EmitLog,
@@ -97,7 +94,7 @@ pub trait Module<R: FeeReserve> {
 
     fn pre_execute_invocation(
         &mut self,
-        _actor: &REActor,
+        _actor: &ResolvedActor,
         _call_frame_update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,
@@ -108,7 +105,7 @@ pub trait Module<R: FeeReserve> {
 
     fn post_execute_invocation(
         &mut self,
-        _caller: &REActor,
+        _caller: &ResolvedActor,
         _update: &CallFrameUpdate,
         _call_frame: &CallFrame,
         _heap: &mut Heap,

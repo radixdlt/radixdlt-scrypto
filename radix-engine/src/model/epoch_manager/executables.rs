@@ -1,7 +1,6 @@
 use crate::engine::{
-    deref_and_update, AuthModule, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, REActor, RENode, ResolvedFunction, ResolvedMethod, ResolverApi, RuntimeError,
-    SystemApi,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
+    NativeProcedure, RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
@@ -15,6 +14,7 @@ use radix_engine_interface::api::types::{
     NativeMethod, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
+use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -33,13 +33,13 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         _deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
-        let actor = REActor::Function(ResolvedFunction::Native(NativeFunction::EpochManager(
-            EpochManagerFunction::Create,
-        )));
+        let actor =
+            ResolvedActor::function(NativeFunction::EpochManager(EpochManagerFunction::Create));
+
         let call_frame_update = CallFrameUpdate::empty();
         let executor = NativeExecutor(self);
 
@@ -58,13 +58,12 @@ impl NativeProcedure for EpochManagerCreateInvocation {
 
         let epoch_manager = EpochManagerSubstate { epoch: 0 };
 
-        let auth_non_fungible = NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::supervisor_id());
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
                 EpochManagerMethod::SetEpoch,
             ))),
-            rule!(require(auth_non_fungible)),
+            rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
@@ -112,7 +111,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvoc
     fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
@@ -120,10 +119,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvoc
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::EpochManager(
-                EpochManagerMethod::GetCurrentEpoch,
-            )),
+        let actor = ResolvedActor::method(
+            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
             resolved_receiver,
         );
         let executor = NativeExecutor(EpochManagerGetCurrentEpochExecutable(
@@ -157,7 +154,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
     fn resolve<D: ResolverApi<W>>(
         self,
         deref: &mut D,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
     where
         Self: Sized,
     {
@@ -165,8 +162,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = REActor::Method(
-            ResolvedMethod::Native(NativeMethod::EpochManager(EpochManagerMethod::SetEpoch)),
+        let actor = ResolvedActor::method(
+            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
             resolved_receiver,
         );
         let executor = NativeExecutor(EpochManagerSetEpochExecutable(
@@ -199,7 +196,7 @@ impl EpochManager {
             EpochManagerFunction::Create => {
                 vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
                     HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        NonFungibleAddress::new(SYSTEM_TOKEN, AuthModule::system_id()),
+                        AuthAddresses::system_role(),
                     )),
                 ))]
             }

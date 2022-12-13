@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::{
     AuthZoneStackId, BucketId, ComponentId, FeeReserveId, KeyValueStoreId, NonFungibleStoreId,
-    PackageId, ProofId, ResourceManagerId, VaultId,
+    PackageId, ProofId, ResourceManagerId, TransactionHashId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
@@ -58,6 +58,9 @@ impl IdAllocator {
     ) -> Result<PackageAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
+
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
     }
 
@@ -67,6 +70,9 @@ impl IdAllocator {
     ) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis account {:?}", hash(&data).lower_26_bytes());
+
         Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
     }
 
@@ -78,6 +84,8 @@ impl IdAllocator {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
+        // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
+
         Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
     }
 
@@ -87,6 +95,9 @@ impl IdAllocator {
     ) -> Result<SystemAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
+
         Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
@@ -96,6 +107,9 @@ impl IdAllocator {
     ) -> Result<SystemAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis clock {:?}", hash(&data).lower_26_bytes());
+
         Ok(SystemAddress::Clock(hash(data).lower_26_bytes()))
     }
 
@@ -110,13 +124,6 @@ impl IdAllocator {
         // println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
 
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
-    }
-
-    /// Creates a new UUID.
-    pub fn new_uuid(&mut self, transaction_hash: Hash) -> Result<u128, IdAllocationError> {
-        let mut data = transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
-        Ok(u128::from_le_bytes(hash(data).lower_16_bytes()))
     }
 
     pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneStackId, IdAllocationError> {
@@ -140,6 +147,10 @@ impl IdAllocator {
     /// Creates a new vault ID.
     pub fn new_vault_id(&mut self, transaction_hash: Hash) -> Result<VaultId, IdAllocationError> {
         self.next_id(transaction_hash)
+    }
+
+    pub fn new_transaction_hash_id(&mut self) -> Result<TransactionHashId, IdAllocationError> {
+        self.next()
     }
 
     pub fn new_component_id(

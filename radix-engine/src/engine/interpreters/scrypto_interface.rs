@@ -1,22 +1,18 @@
-use crate::engine::{
-    Kernel, KernelError, LockFlags, REActor, RENode, ResolvedFunction, ResolvedMethod,
-    ResolvedReceiver, RuntimeError, SystemApi,
-};
+use crate::engine::{Kernel, KernelError, LockFlags, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
 };
 use crate::model::{MetadataSubstate, Resource};
-use crate::types::HashMap;
+use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoActor,
-    ScryptoRENode, SubstateOffset,
+    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoRENode,
+    SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
 };
@@ -75,7 +71,7 @@ where
                     royalty_config,
                     royalty_accumulator,
                     MetadataSubstate {
-                        metadata: HashMap::new(),
+                        metadata: BTreeMap::new(),
                     },
                     AccessRulesChainSubstate {
                         access_rules_chain: vec![access_rules],
@@ -147,42 +143,5 @@ where
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError> {
         self.drop_lock(lock_handle)
-    }
-
-    fn sys_get_actor(&mut self) -> Result<ScryptoActor, RuntimeError> {
-        let actor = match self.get_actor() {
-            REActor::Method(
-                ResolvedMethod::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ..
-                },
-                ResolvedReceiver {
-                    receiver: RENodeId::Component(component_id),
-                    ..
-                },
-            ) => ScryptoActor::Component(
-                *component_id,
-                package_address.clone(),
-                blueprint_name.clone(),
-            ),
-            REActor::Function(ResolvedFunction::Scrypto {
-                package_address,
-                blueprint_name,
-                ..
-            }) => ScryptoActor::blueprint(*package_address, blueprint_name.clone()),
-
-            _ => panic!("Should not get here."),
-        };
-
-        Ok(actor)
-    }
-
-    fn sys_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
-        self.generate_uuid()
-    }
-
-    fn sys_get_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        self.read_transaction_hash()
     }
 }

@@ -16,6 +16,7 @@ mod package_extractor;
 mod resources;
 mod scrypto;
 mod substates;
+mod transaction_hash;
 mod transaction_processor;
 
 pub use self::scrypto::*;
@@ -36,4 +37,5 @@ pub use method_authorization::*;
 pub use package::*;
 pub use package_extractor::{extract_abi, ExtractAbiError};
 pub use resources::*;
+pub use transaction_hash::*;
 pub use transaction_processor::*;

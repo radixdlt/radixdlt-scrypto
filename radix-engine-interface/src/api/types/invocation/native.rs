@@ -41,6 +41,13 @@ pub enum NativeMethod {
     Proof(ProofMethod),
     Worktop(WorktopMethod),
     Clock(ClockMethod),
+    TransactionHash(TransactionHashMethod),
+}
+
+impl Into<FnIdentifier> for NativeMethod {
+    fn into(self) -> FnIdentifier {
+        FnIdentifier::NativeMethod(self)
+    }
 }
 
 // Native method enum used by Kernel SystemAPI and WASM
@@ -53,6 +60,12 @@ pub enum NativeFunction {
     Package(PackageFunction),
     TransactionProcessor(TransactionProcessorFunction),
     Clock(ClockFunction),
+}
+
+impl Into<FnIdentifier> for NativeFunction {
+    fn into(self) -> FnIdentifier {
+        FnIdentifier::NativeFunction(self)
+    }
 }
 
 #[derive(
@@ -447,6 +460,28 @@ pub enum ClockMethod {
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum TransactionHashMethod {
+    Get,
+    GenerateUuid,
 }
 
 #[derive(

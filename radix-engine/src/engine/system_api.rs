@@ -50,9 +50,6 @@ pub trait SystemApi {
         contingent: bool,
     ) -> Result<Resource, RuntimeError>;
 
-    /// Retrieve the running actor for the current frame
-    fn get_actor(&self) -> &REActor;
-
     /// Retrieves all nodes referenceable by the current frame
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
 
@@ -90,11 +87,7 @@ pub trait SystemApi {
     /// Get a mutable reference to a locked substate
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
 
-    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
-
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError>;
-
-    fn generate_uuid(&mut self) -> Result<u128, RuntimeError>;
 
     fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError>;
 }

@@ -69,7 +69,7 @@ pub struct Track<'s, R: FeeReserve> {
     new_global_addresses: Vec<GlobalAddress>,
     pub fee_reserve: R,
     pub fee_table: FeeTable,
-    pub vault_ops: Vec<(REActor, VaultId, VaultOp)>,
+    pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
     pub events: Vec<TrackedEvent>,
 }
 
@@ -476,55 +476,23 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
     fn attempt_apply_pre_execution_costs(
         &mut self,
-        transaction: &Executable,
+        executable: &Executable,
     ) -> Result<(), FeeReserveError> {
-        let encoded_instructions_byte_length = scrypto_encode(transaction.instructions())
-            .expect("Valid transaction had instructions which couldn't be encoded")
-            .len();
-        let blobs_size = {
-            let mut total_size: usize = 0;
-            for blob in transaction.blobs() {
-                total_size = total_size
-                    .checked_add(Hash::LENGTH)
-                    .ok_or(FeeReserveError::Overflow)?;
-                total_size = total_size
-                    .checked_add(blob.1.len())
-                    .ok_or(FeeReserveError::Overflow)?;
-            }
-            total_size
-        };
-
         self.fee_reserve
-            .consume_execution(self.fee_table.tx_base_fee(), 1, "base_fee", true)
+            .consume_execution(self.fee_table.tx_base_fee(), 1, "tx_base_fee", true)
             .and_then(|()| {
                 self.fee_reserve.consume_execution(
-                    self.fee_table.tx_manifest_decoding_per_byte(),
-                    encoded_instructions_byte_length,
-                    "decode_manifest",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume_execution(
-                    self.fee_table.tx_manifest_verification_per_byte(),
-                    encoded_instructions_byte_length,
-                    "verify_manifest",
+                    self.fee_table.tx_payload_cost_per_byte(),
+                    executable.payload_size(),
+                    "tx_payload_cost",
                     true,
                 )
             })
             .and_then(|()| {
                 self.fee_reserve.consume_execution(
                     self.fee_table.tx_signature_verification_per_sig(),
-                    transaction.auth_zone_params().initial_proofs.len(),
-                    "verify_signatures",
-                    true,
-                )
-            })
-            .and_then(|()| {
-                self.fee_reserve.consume_execution(
-                    self.fee_table.tx_blob_price_per_byte(),
-                    blobs_size,
-                    "blobs",
+                    executable.auth_zone_params().initial_proofs.len(),
+                    "tx_signature_verification",
                     true,
                 )
             })
@@ -606,7 +574,7 @@ struct FinalizingTrack<'s> {
     substate_store: &'s dyn ReadableSubstateStore,
     new_global_addresses: Vec<GlobalAddress>,
     loaded_substates: BTreeMap<SubstateId, LoadedSubstate>,
-    vault_ops: Vec<(REActor, VaultId, VaultOp)>,
+    vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
 impl<'s> FinalizingTrack<'s> {

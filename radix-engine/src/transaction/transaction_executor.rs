@@ -139,9 +139,6 @@ where
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
-                    contents: TransactionContents {
-                        instructions: instructions.to_vec(),
-                    },
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         application_logs: vec![],
@@ -180,16 +177,18 @@ where
 
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
-                instructions: Cow::Borrowed(instructions),
+                instructions: match instructions {
+                    InstructionList::Basic(instructions) => {
+                        Cow::Owned(instructions.iter().map(|e| e.clone().into()).collect())
+                    }
+                    InstructionList::Any(instructions) => Cow::Borrowed(instructions),
+                },
             });
 
             kernel.finalize(invoke_result)
         };
 
         let receipt = TransactionReceipt {
-            contents: TransactionContents {
-                instructions: instructions.to_vec(),
-            },
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 application_logs: track_receipt.application_logs,

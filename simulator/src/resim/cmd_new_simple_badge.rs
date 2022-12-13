@@ -6,7 +6,6 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::NonFungibleAddress;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
-use transaction::model::Instruction;
 
 use crate::resim::*;
 
@@ -57,7 +56,7 @@ impl NewSimpleBadge {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let network_definition = NetworkDefinition::simulator();
         let default_account = get_default_account()?;
-        let mut metadata = HashMap::new();
+        let mut metadata = BTreeMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
         }
@@ -74,7 +73,7 @@ impl NewSimpleBadge {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let mut resource_auth = HashMap::new();
+        let mut resource_auth = BTreeMap::new();
         resource_auth.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
@@ -82,30 +81,22 @@ impl NewSimpleBadge {
 
         let manifest = ManifestBuilder::new(&network_definition)
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .add_instruction(Instruction::CallNativeFunction {
-                function_ident: NativeFunctionIdent {
-                    blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
-                    function_name: ResourceManagerFunction::Create.to_string(),
+            .create_resource(
+                ResourceType::NonFungible {
+                    id_type: NonFungibleIdType::U32,
                 },
-                args: scrypto_encode(&ResourceManagerCreateInvocation {
-                    resource_type: ResourceType::NonFungible {
-                        id_type: NonFungibleIdType::U32,
-                    },
-                    metadata,
-                    access_rules: resource_auth,
-                    mint_params: Option::Some(MintParams::NonFungible {
-                        entries: HashMap::from([(
-                            NonFungibleId::U32(1),
-                            (
-                                scrypto_encode(&EmptyStruct).unwrap(),
-                                scrypto_encode(&EmptyStruct).unwrap(),
-                            ),
-                        )]),
-                    }),
-                })
-                .unwrap(),
-            })
-            .0
+                metadata,
+                resource_auth,
+                Option::Some(MintParams::NonFungible {
+                    entries: BTreeMap::from([(
+                        NonFungibleId::U32(1),
+                        (
+                            scrypto_encode(&EmptyStruct).unwrap(),
+                            scrypto_encode(&EmptyStruct).unwrap(),
+                        ),
+                    )]),
+                }),
+            )
             .call_method(
                 default_account,
                 "deposit_batch",
@@ -118,7 +109,6 @@ impl NewSimpleBadge {
             &self.network,
             &self.manifest,
             self.trace,
-            false,
             false,
             out,
         )

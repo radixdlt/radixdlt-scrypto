@@ -1,5 +1,5 @@
 use radix_engine_interface::api::api::{
-    EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
+    ActorApi, EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
 };
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
@@ -12,7 +12,6 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
-use transaction::errors::IdAllocationError;
 use transaction::model::AuthZoneParams;
 use transaction::validation::*;
 
@@ -104,19 +103,30 @@ where
         // Initial authzone
         // TODO: Move into module initialization
         kernel
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |system_api| {
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::AuthModule, |api| {
                 let auth_zone = AuthZoneStackSubstate::new(
                     vec![],
                     auth_zone_params.virtualizable_proofs_resource_addresses,
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
 
-                let node_id = system_api.allocate_node_id(RENodeType::AuthZoneStack)?;
-                system_api.create_node(node_id, RENode::AuthZoneStack(auth_zone))?;
+                let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
+                api.create_node(node_id, RENode::AuthZoneStack(auth_zone))?;
 
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
+        kernel
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::TransactionModule, |api| {
+                let transaction_hash_substate = TransactionHashSubstate {
+                    hash: transaction_hash,
+                    next_id: 0u32,
+                };
+                let node_id = api.allocate_node_id(RENodeType::TransactionHash)?;
+                api.create_node(node_id, RENode::TransactionHash(transaction_hash_substate))?;
+                Ok(())
+            })
+            .expect("TransactionModule failed to initialize");
 
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
@@ -152,13 +162,6 @@ where
         );
 
         kernel
-    }
-
-    fn new_uuid(
-        id_allocator: &mut IdAllocator,
-        transaction_hash: Hash,
-    ) -> Result<u128, IdAllocationError> {
-        id_allocator.new_uuid(transaction_hash)
     }
 
     fn try_virtualize(
@@ -261,6 +264,7 @@ where
                     Ok(())
                 }
                 RENodeId::Bucket(..) => Ok(()),
+                RENodeId::TransactionHash(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                     node_id,
                 ))),
@@ -307,16 +311,13 @@ where
     fn run<X: Executor>(
         &mut self,
         executor: X,
-        actor: REActor,
+        actor: ResolvedActor,
         mut call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
-        let derefed_lock = if let REActor::Method(
-            _,
-            ResolvedReceiver {
-                derefed_from: Some((_, derefed_lock)),
-                ..
-            },
-        ) = &actor
+        let derefed_lock = if let Some(ResolvedReceiver {
+            derefed_from: Some((_, derefed_lock)),
+            ..
+        }) = &actor.receiver
         {
             Some(*derefed_lock)
         } else {
@@ -331,11 +332,22 @@ where
         // New Call Frame pre-processing
         {
             // TODO: Abstract these away
+            self.execute_in_mode(ExecutionMode::TransactionModule, |system_api| {
+                TransactionHashModule::on_call_frame_enter(
+                    &mut call_frame_update,
+                    &actor,
+                    system_api,
+                )
+            })?;
             self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
             self.execute_in_mode(ExecutionMode::NodeMoveModule, |system_api| {
-                NodeMoveModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
+                NodeMoveModule::on_call_frame_enter(
+                    &mut call_frame_update,
+                    &actor.identifier,
+                    system_api,
+                )
             })?;
             for m in &mut self.modules {
                 m.pre_execute_invocation(
@@ -479,7 +491,7 @@ where
     fn invoke_internal<X: Executor>(
         &mut self,
         executor: X,
-        actor: REActor,
+        actor: ResolvedActor,
         call_frame_update: CallFrameUpdate,
     ) -> Result<X::Output, RuntimeError> {
         // check call depth
@@ -613,7 +625,8 @@ pub trait Executor {
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
-            + LoggerApi<RuntimeError>;
+            + LoggerApi<RuntimeError>
+            + ActorApi<RuntimeError>;
 }
 
 pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
@@ -622,7 +635,7 @@ pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
     fn resolve<Y: ResolverApi<W> + SystemApi>(
         self,
         api: &mut Y,
-    ) -> Result<(REActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
 }
 
 impl<'g, 's, W, R, N> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R>
@@ -731,10 +744,6 @@ where
         Ok(fee)
     }
 
-    fn get_actor(&self) -> &REActor {
-        &self.current_frame.actor
-    }
-
     fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -832,6 +841,10 @@ where
                 .id_allocator
                 .new_proof_id()
                 .map(|id| RENodeId::Proof(id)),
+            RENodeType::TransactionHash => self
+                .id_allocator
+                .new_transaction_hash_id()
+                .map(|id| RENodeId::TransactionHash(id)),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
             RENodeType::Vault => self
                 .id_allocator
@@ -988,6 +1001,7 @@ where
                 }
             }
             (RENodeId::Bucket(..), RENode::Bucket(..)) => {}
+            (RENodeId::TransactionHash(..), RENode::TransactionHash(..)) => {}
             (RENodeId::Proof(..), RENode::Proof(..)) => {}
             (RENodeId::AuthZoneStack(..), RENode::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENode::Vault(..)) => {}
@@ -1238,32 +1252,6 @@ where
         Ok(substate_ref_mut)
     }
 
-    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::ReadTransactionHash,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::ReadTransactionHash {
-                    hash: &self.transaction_hash,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(self.transaction_hash)
-    }
-
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
         for m in &mut self.modules {
             m.pre_sys_call(
@@ -1292,33 +1280,6 @@ where
         }
 
         Ok(blob)
-    }
-
-    fn generate_uuid(&mut self) -> Result<u128, RuntimeError> {
-        for m in &mut self.modules {
-            m.pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::GenerateUuid,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        let uuid = Self::new_uuid(&mut self.id_allocator, self.transaction_hash)
-            .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-
-        for m in &mut self.modules {
-            m.post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::GenerateUuid { uuid },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-        }
-
-        Ok(uuid)
     }
 
     fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError> {
@@ -1382,5 +1343,15 @@ where
         }
 
         Ok(())
+    }
+}
+
+impl<'g, 's, W, R> ActorApi<RuntimeError> for Kernel<'g, 's, W, R>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+{
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, RuntimeError> {
+        Ok(self.current_frame.actor.identifier.clone())
     }
 }

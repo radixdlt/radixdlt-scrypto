@@ -60,7 +60,9 @@ impl Publish {
         .map_err(Error::DataError)?;
 
         if let Some(package_address) = self.package_address.clone() {
-            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+            let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
+            let mut substate_store =
+                RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
 
             let global: GlobalAddressSubstate = substate_store
                 .get_substate(&SubstateId(
@@ -120,7 +122,6 @@ impl Publish {
                 &self.network,
                 &self.manifest,
                 self.trace,
-                false,
                 false,
                 out,
             )?;

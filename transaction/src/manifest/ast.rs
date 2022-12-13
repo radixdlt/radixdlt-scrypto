@@ -86,21 +86,17 @@ pub enum Instruction {
     },
 
     CallMethod {
-        receiver: ScryptoReceiver,
-        method: Value,
+        component_address: Value,
+        method_name: Value,
         args: Vec<Value>,
     },
 
-    CallNativeFunction {
-        blueprint_name: Value,
-        function_name: Value,
-        args: Vec<Value>,
-    },
-
-    CallNativeMethod {
-        receiver: Receiver,
-        method: Value,
-        args: Vec<Value>,
+    PublishPackage {
+        code: Value,
+        abi: Value,
+        royalty_config: Value,
+        metadata: Value,
+        access_rules: Value,
     },
 
     PublishPackageWithOwner {
@@ -116,42 +112,61 @@ pub enum Instruction {
         mint_params: Value,
     },
 
-    BurnBucket {
+    CreateResourceWithOwner {
+        resource_type: Value,
+        metadata: Value,
+        owner_badge: Value,
+        mint_params: Value,
+    },
+
+    BurnResource {
         bucket: Value,
     },
 
-    MintFungible {
+    // TODO: Dedicated bucket for this?
+    MintResource {
+        amount: Value,
         resource_address: Value,
+    },
+
+    // TODO: Dedicated bucket for this?
+    RecallResource {
+        vault_id: Value,
         amount: Value,
     },
-}
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScryptoReceiver {
-    Global(Value),
-    Component(Value),
-}
+    SetMetadata {
+        entity_address: Value,
+        key: Value,
+        value: Value,
+    },
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Receiver {
-    Ref(RENode),
-}
+    SetPackageRoyaltyConfig {
+        package_address: Value,
+        royalty_config: Value,
+    },
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RENode {
-    Bucket(Value),
-    Proof(Value),
-    AuthZoneStack(Value),
-    Worktop,
-    Global(Value),
-    KeyValueStore(Value),
-    NonFungibleStore(Value),
-    Component(Value),
-    Vault(Value),
-    ResourceManager(Value),
-    Package(Value),
-    EpochManager(Value),
-    Clock(Value),
+    SetComponentRoyaltyConfig {
+        component_address: Value,
+        royalty_config: Value,
+    },
+
+    // TODO: Dedicated bucket for this?
+    ClaimPackageRoyalty {
+        package_address: Value,
+    },
+
+    // TODO: Dedicated bucket for this?
+    ClaimComponentRoyalty {
+        component_address: Value,
+    },
+
+    SetMethodAccessRule {
+        entity_address: Value,
+        index: Value,
+        key: Value,
+        rule: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
