@@ -801,6 +801,38 @@ impl TestRunner {
             .new_resource_addresses[0]
     }
 
+    pub fn create_mintable_fungible_resource(
+        &mut self,
+        amount: Decimal,
+        divisibility: u8,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .create_resource(
+                ResourceType::Fungible { divisibility },
+                BTreeMap::new(),
+                access_rules,
+                Some(MintParams::Fungible { amount }),
+            )
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
+            )
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        receipt
+            .expect_commit()
+            .entity_changes
+            .new_resource_addresses[0]
+    }
+
     pub fn instantiate_component(
         &mut self,
         package_address: PackageAddress,
