@@ -1,0 +1,56 @@
+# This transaction manifest creates a new fungible resource with initial supply and with the default
+# auth.
+
+# Locking 10 XRD in fees from the account component. 
+CALL_METHOD 
+    ComponentAddress("{account_component_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource has 
+# default resource behavior where it can be withdrawn and deposited by anybody.
+CREATE_RESOURCE 
+    Enum("Fungible", 18u8) 
+    Array<Tuple>(
+        Tuple("name", "MyResource"), 
+        Tuple("symbol", "RSRC"),
+        Tuple("description", "A very innovative and important resource")
+    ) 
+    Array<Tuple>(
+        # This array of tuples defines the behavior of the resource. Each element in the array 
+        # defines different resource behaviors. As an example, the first element in this array
+        # defines the withdraw behavior while the second element in the array defines the deposit
+        # behavior.
+        # 
+        # Each tuple of the array is made up of two elements: 
+        # 1. An enum of the `ResourceMethodAuthKey` or the method that we would like to define the
+        #    behavior of. 
+        # 2. A tuple of two elements: 
+        #       a. The current behaviour. 
+        #       b. The mutability of the behaviour. As in, who can change the current behavior in 
+        #          the future.
+        # 
+        # Lets take `Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll")))` as an 
+        # example. This means that anybody who is in possession of the resource may withdraw it from
+        # a vault that they control. This behavior is permanent and can not be changed by anybody
+        # as the mutability is a `Enum("DenyAll")`.
+        # 
+        #              ┌ We Are customizing the "Withdraw" behavior of the resource
+        #              │                       
+        #              │                       ┌ The resource may be withdrawn by anybody who has it
+        #              │                       │                 
+        #              │                       │                 ┌ The withdraw behavior (the resource is withdrawable by
+        #              │                       │                 │ by anybody who has the resource) is permanent and can't 
+        #              │                       │                 │ be changed in the future.
+        #              │                       │                 │
+        Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))),
+        Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
+    )
+    Some(Enum("Fungible", Decimal("{initial_supply}")));
+
+# Depositing the entirety of the initial supply of the newly created resource into our account 
+# component.
+CALL_METHOD
+    ComponentAddress("{account_component_address}") 
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");

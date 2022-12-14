@@ -1,13 +1,7 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
 
-pub struct LoggerModule {}
-
-impl LoggerModule {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+pub struct LoggerModule;
 
 #[macro_export]
 macro_rules! log {

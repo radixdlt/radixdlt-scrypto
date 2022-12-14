@@ -155,24 +155,14 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let mut modules = Vec::<Box<dyn Module<R>>>::new();
-            if execution_config.trace {
-                modules.push(Box::new(LoggerModule::new()));
-                modules.push(Box::new(ExecutionTraceModule::new(
-                    execution_config.max_sys_call_trace_depth,
-                )));
-            }
-            modules.push(Box::new(CostingModule::default()));
-            modules.push(Box::new(RoyaltyModule::default()));
-
+            let module = KernelModule::new(execution_config);
             let mut kernel = Kernel::new(
                 transaction_hash.clone(),
                 auth_zone_params.clone(),
                 blobs,
-                execution_config.max_call_depth,
                 track,
                 self.scrypto_interpreter,
-                modules,
+                module,
             );
 
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {

@@ -16,7 +16,7 @@ use crate::ledger::*;
 use crate::model::RuntimeSubstate;
 use crate::model::SubstateRef;
 use crate::model::TransactionProcessorError;
-use crate::model::{InstructionOutput, Resource};
+use crate::model::*;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::model::{NonFungibleSubstate, SubstateRefMut};
 use crate::state_manager::StateDiff;
