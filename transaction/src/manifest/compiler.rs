@@ -46,10 +46,10 @@ mod tests {
     #[test]
     fn test_compile() {
         let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
-        let manifest = include_str!("../../examples/resource_move.rtm");
+        let manifest = include_str!("../../examples/test-cases/resource_move.rtm");
         let blobs = vec![
-            include_bytes!("../../examples/code.blob").to_vec(),
-            include_bytes!("../../examples/abi.blob").to_vec(),
+            include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+            include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
         ];
 
         let component1 = bech32_decoder
