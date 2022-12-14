@@ -2,11 +2,14 @@ use crate::v2::*;
 use sbor::rust::borrow::Cow;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::CustomTypeId;
 pub use well_known::*;
 
+/// The `Schema` trait allows a type to describe how to interpret and validate a corresponding SBOR payload.
+///
+/// Each unique interpretation/validation of a type should have its own distinct type in the schema.
+/// Uniqueness of a type in the schema is defined by its TypeRef.
 #[allow(unused_variables)]
-pub trait Schema<X: CustomTypeId> {
+pub trait Schema<C: CustomTypeSchema> {
     /// The `TYPE_REF` should denote a unique identifier for this type (once turned into a payload)
     ///
     /// In particular, it should capture the uniqueness of anything relevant to the codec/payload, for example:
@@ -20,14 +23,14 @@ pub trait Schema<X: CustomTypeId> {
     /// If needing to generate a new type id, this can be generated via something like:
     /// ```
     /// impl Schema for MyType {
-    ///     const SCHEMA_TYPE_REF: TypeRef = TypeRef::complex(stringify!(MyType), &[], &[]);
+    ///     const SCHEMA_TYPE_REF: GlobalTypeRef = GlobalTypeRef::complex(stringify!(MyType), &[], &[]);
     /// #   fn get_local_type_data() { todo!() }
     /// }
     /// ```
-    const SCHEMA_TYPE_REF: TypeRef;
+    const SCHEMA_TYPE_REF: GlobalTypeRef;
 
     /// Returns the local schema for the given type, if the TypeRef is Custom
-    fn get_local_type_data() -> Option<LocalTypeData<TypeRef>> {
+    fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
         None
     }
 
@@ -45,17 +48,17 @@ pub trait Schema<X: CustomTypeId> {
     ///
     /// - For each (base/unmutated) type dependency `D`:
     ///   - Call `aggregator.add_schema_descendents::<D>()`
-    fn add_all_dependencies(aggregator: &mut SchemaAggregator<X>) {}
+    fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {}
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LocalTypeData<T> {
-    pub schema: TypeSchema<T>,
+pub struct LocalTypeData<C: CustomTypeSchema, L: TypeLink> {
+    pub schema: TypeSchema<C, L>,
     pub naming: TypeNaming,
 }
 
-impl<T> LocalTypeData<T> {
-    pub const fn named(name: &'static str, schema: TypeSchema<T>) -> Self {
+impl<C: CustomTypeSchema, L: TypeLink> LocalTypeData<C, L> {
+    pub const fn named(name: &'static str, schema: TypeSchema<C, L>) -> Self {
         Self {
             schema,
             naming: TypeNaming {
@@ -75,7 +78,7 @@ impl<T> LocalTypeData<T> {
         }
     }
 
-    pub const fn named_tuple(name: &'static str, element_types: Vec<T>) -> Self {
+    pub const fn named_tuple(name: &'static str, element_types: Vec<L>) -> Self {
         Self {
             schema: TypeSchema::Tuple { element_types },
             naming: TypeNaming {
@@ -87,7 +90,7 @@ impl<T> LocalTypeData<T> {
 
     pub fn named_tuple_named_fields(
         name: &'static str,
-        element_types: Vec<T>,
+        element_types: Vec<L>,
         field_names: &[&'static str],
     ) -> Self {
         Self {
@@ -118,23 +121,41 @@ impl TypeNaming {
 }
 
 /// An array of custom types, and associated extra information.
-///
-/// When it comes to referencing other types in the schema:
-/// - Non-negative numbers refer to custom types.
-/// - Negative numbers map to well-known types.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FullTypeSchema {
-    pub custom_types: Vec<TypeSchema<isize>>,
+pub struct FullTypeSchema<C: CustomTypeSchema> {
+    pub custom_types: Vec<TypeSchema<C, SchemaLocalTypeRef>>,
     pub naming: Vec<TypeNaming>,
 }
 
-impl FullTypeSchema {
-    pub fn get_schema(&self, index: isize) -> Option<&TypeSchema<isize>> {
-        if index < 0 {
-            let well_known_index = isize_to_well_known_index(index)?;
-            well_known::look_up_type(well_known_index).map(|t| &t.schema)
-        } else {
-            self.custom_types.get(index as usize)
+pub struct ResolvedLocalTypeData<'a, C: CustomTypeSchema> {
+    pub schema: Cow<'a, TypeSchema<C, SchemaLocalTypeRef>>,
+    pub naming: Cow<'a, TypeNaming>,
+}
+
+impl<C: CustomTypeSchema> FullTypeSchema<C> {
+    pub fn resolve<'a, W: CustomWellKnownType<CustomTypeSchema = C>>(
+        &'a self,
+        type_ref: SchemaLocalTypeRef,
+    ) -> Option<ResolvedLocalTypeData<'a, C>> {
+        match type_ref {
+            SchemaLocalTypeRef::WellKnown(index) => {
+                resolve_well_known_type_data::<W>(index).map(|local_type_data| {
+                    ResolvedLocalTypeData {
+                        schema: Cow::Owned(local_type_data.schema),
+                        naming: Cow::Owned(local_type_data.naming),
+                    }
+                })
+            }
+            SchemaLocalTypeRef::SchemaLocal(index) => {
+                match (self.custom_types.get(index), self.naming.get(index)) {
+                    (Some(schema), Some(naming)) => Some(ResolvedLocalTypeData {
+                        schema: Cow::Borrowed(schema),
+                        naming: Cow::Borrowed(naming),
+                    }),
+                    (None, None) => None,
+                    _ => panic!("Index existed in exactly one of schema and naming"),
+                }
+            }
         }
     }
 }
@@ -167,14 +188,18 @@ pub mod well_known {
     use super::scrypto_custom_type_ids::*;
     use super::*;
 
-    pub use indices::*;
-    pub use type_data::*;
+    pub use basic_indices::*;
+    pub use scrypto_indices::*;
 
-    mod indices {
-        use super::*;
+    pub const CUSTOM_WELL_KNOWN_TYPE_START: u8 = 0x80;
+
+    mod basic_indices {
         use sbor::*;
 
-        pub const UNIT_INDEX: u8 = 0xff; // Can't use 0
+        // These must be usable in a const context
+        pub const ANY_INDEX: u8 = 0x40;
+
+        pub const UNIT_INDEX: u8 = TYPE_UNIT;
         pub const BOOL_INDEX: u8 = TYPE_BOOL;
 
         pub const I8_INDEX: u8 = TYPE_I8;
@@ -190,6 +215,137 @@ pub mod well_known {
         pub const U128_INDEX: u8 = TYPE_U128;
 
         pub const STRING_INDEX: u8 = TYPE_STRING;
+
+        pub const BYTES_INDEX: u8 = 0x41;
+    }
+
+    pub enum WellKnownType<X: CustomWellKnownType> {
+        // Any
+        Any,
+        // Basic, limitless
+        Unit,
+        Bool,
+        I8,
+        I16,
+        I32,
+        I64,
+        I128,
+        U8,
+        U16,
+        U32,
+        U64,
+        U128,
+        String,
+        // Common aliases
+        Bytes,
+        // Custom
+        Custom(X),
+    }
+
+    pub fn resolve_well_known_type_data<W: CustomWellKnownType>(
+        well_known_index: u8,
+    ) -> Option<LocalTypeData<W::CustomTypeSchema, SchemaLocalTypeRef>> {
+        let type_data = match well_known_index {
+            ANY_INDEX => LocalTypeData::named("Any", TypeSchema::Any),
+
+            UNIT_INDEX => LocalTypeData::named("-", TypeSchema::Unit),
+            BOOL_INDEX => LocalTypeData::named("Bool", TypeSchema::Bool),
+
+            I8_INDEX => LocalTypeData::named(
+                "I8",
+                TypeSchema::I8 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+            I16_INDEX => LocalTypeData::named(
+                "I16",
+                TypeSchema::I16 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+            I32_INDEX => LocalTypeData::named(
+                "I32",
+                TypeSchema::I32 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+            I64_INDEX => LocalTypeData::named(
+                "I64",
+                TypeSchema::I64 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+            I128_INDEX => LocalTypeData::named(
+                "I128",
+                TypeSchema::I128 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+
+            U8_INDEX => LocalTypeData::named(
+                "U8",
+                TypeSchema::U8 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+            U16_INDEX => LocalTypeData::named(
+                "U16",
+                TypeSchema::U16 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+            U32_INDEX => LocalTypeData::named(
+                "U32",
+                TypeSchema::U32 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+            U64_INDEX => LocalTypeData::named(
+                "U64",
+                TypeSchema::U64 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+            U128_INDEX => LocalTypeData::named(
+                "U128",
+                TypeSchema::U128 {
+                    validation: NumericValidation::none(),
+                },
+            ),
+
+            STRING_INDEX => LocalTypeData::named(
+                "String",
+                TypeSchema::String {
+                    length_validation: LengthValidation::none(),
+                },
+            ),
+
+            BYTES_INDEX => LocalTypeData::named(
+                "Bytes",
+                TypeSchema::Array {
+                    element_sbor_type_id: sbor::TYPE_U8,
+                    element_type: SchemaLocalTypeRef::WellKnown(U8_INDEX),
+                    length_validation: LengthValidation::none(),
+                },
+            ),
+            index if index >= CUSTOM_WELL_KNOWN_TYPE_START => {
+                return W::from_well_known_index(index)
+            }
+            _ => return None,
+        };
+        Some(type_data)
+    }
+
+    pub trait CustomWellKnownType {
+        type CustomTypeSchema: CustomTypeSchema;
+
+        fn from_well_known_index(
+            well_known_index: u8,
+        ) -> Option<LocalTypeData<Self::CustomTypeSchema, SchemaLocalTypeRef>>;
+    }
+
+    mod scrypto_indices {
+        use super::*;
 
         pub const PACKAGE_ADDRESS_INDEX: u8 = TYPE_PACKAGE_ADDRESS;
         pub const COMPONENT_ADDRESS_INDEX: u8 = TYPE_COMPONENT_ADDRESS;
@@ -213,210 +369,70 @@ pub mod well_known {
         pub const DECIMAL_INDEX: u8 = TYPE_DECIMAL;
         pub const PRECISE_DECIMAL_INDEX: u8 = TYPE_PRECISE_DECIMAL;
         pub const NON_FUNGIBLE_ID_INDEX: u8 = TYPE_NON_FUNGIBLE_ID;
-
-        pub const ANY_INDEX: u8 = 0xf0;
-        pub const BYTES_INDEX: u8 = 0xf1;
     }
 
-    mod type_data {
-        use super::*;
-        use sbor::*;
+    pub enum ScryptoCustomWellKnownType {}
 
-        // BASIC TYPES
-        pub static ANY_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Any", TypeSchema::Any);
+    impl CustomWellKnownType for ScryptoCustomWellKnownType {
+        type CustomTypeSchema = ScryptoCustomTypeSchema<SchemaLocalTypeRef>;
 
-        pub static UNIT_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("-", TypeSchema::Unit);
-        pub static BOOL_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Bool", TypeSchema::Bool);
+        fn from_well_known_index(
+            well_known_index: u8,
+        ) -> Option<LocalTypeData<Self::CustomTypeSchema, SchemaLocalTypeRef>> {
+            let (name, custom_type_schema) = match well_known_index {
+                PACKAGE_ADDRESS_INDEX => {
+                    ("PackageAddress", ScryptoCustomTypeSchema::PackageAddress)
+                }
+                COMPONENT_ADDRESS_INDEX => (
+                    "ComponentAddress",
+                    ScryptoCustomTypeSchema::ComponentAddress,
+                ),
+                RESOURCE_ADDRESS_INDEX => {
+                    ("ResourceAddress", ScryptoCustomTypeSchema::ResourceAddress)
+                }
+                SYSTEM_ADDRESS_INDEX => ("SystemAddress", ScryptoCustomTypeSchema::SystemAddress),
 
-        pub static I8_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "I8",
-            TypeSchema::I8 {
-                validation: NumericValidation::none(),
-            },
-        );
-        pub static I16_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "I16",
-            TypeSchema::I16 {
-                validation: NumericValidation::none(),
-            },
-        );
-        pub static I32_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "I32",
-            TypeSchema::I32 {
-                validation: NumericValidation::none(),
-            },
-        );
-        pub static I64_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "I64",
-            TypeSchema::I64 {
-                validation: NumericValidation::none(),
-            },
-        );
-        pub static I128_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "I128",
-            TypeSchema::I128 {
-                validation: NumericValidation::none(),
-            },
-        );
+                COMPONENT_INDEX => ("Component", ScryptoCustomTypeSchema::Component),
+                BUCKET_INDEX => ("Bucket", ScryptoCustomTypeSchema::Bucket),
+                PROOF_INDEX => ("Proof", ScryptoCustomTypeSchema::Proof),
+                VAULT_INDEX => ("Vault", ScryptoCustomTypeSchema::Vault),
 
-        pub static U8_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "U8",
-            TypeSchema::U8 {
-                validation: NumericValidation::none(),
-            },
-        );
-        pub static U16_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "U16",
-            TypeSchema::U16 {
-                validation: NumericValidation::none(),
-            },
-        );
-        pub static U32_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "U32",
-            TypeSchema::U32 {
-                validation: NumericValidation::none(),
-            },
-        );
-        pub static U64_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "U64",
-            TypeSchema::U64 {
-                validation: NumericValidation::none(),
-            },
-        );
-        pub static U128_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "U128",
-            TypeSchema::U128 {
-                validation: NumericValidation::none(),
-            },
-        );
+                EXPRESSION_INDEX => ("Expression", ScryptoCustomTypeSchema::Expression),
+                BLOB_INDEX => ("Blob", ScryptoCustomTypeSchema::Blob),
+                NON_FUNGIBLE_ADDRESS_INDEX => (
+                    "NonFungibleAddress",
+                    ScryptoCustomTypeSchema::NonFungibleAddress,
+                ),
 
-        pub static STRING_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "String",
-            TypeSchema::String {
-                length_validation: LengthValidation::none(),
-            },
-        );
+                HASH_INDEX => ("Hash", ScryptoCustomTypeSchema::Hash),
+                ECDSA_SECP256K1_PUBLIC_KEY_INDEX => (
+                    "EcdsaSecp256k1PublicKey",
+                    ScryptoCustomTypeSchema::EcdsaSecp256k1PublicKey,
+                ),
+                ECDSA_SECP256K1_SIGNATURE_INDEX => (
+                    "EcdsaSecp256k1Signature",
+                    ScryptoCustomTypeSchema::EcdsaSecp256k1Signature,
+                ),
+                EDDSA_ED25519_PUBLIC_KEY_INDEX => (
+                    "EddsaEd25519PublicKey",
+                    ScryptoCustomTypeSchema::EddsaEd25519PublicKey,
+                ),
+                EDDSA_ED25519_SIGNATURE_INDEX => (
+                    "EddsaEd25519Signature",
+                    ScryptoCustomTypeSchema::EddsaEd25519Signature,
+                ),
+                DECIMAL_INDEX => ("Decimal", ScryptoCustomTypeSchema::Decimal),
+                PRECISE_DECIMAL_INDEX => {
+                    ("PreciseDecimal", ScryptoCustomTypeSchema::PreciseDecimal)
+                }
+                NON_FUNGIBLE_ID_INDEX => ("NonFungibleId", ScryptoCustomTypeSchema::NonFungibleId),
+                _ => return None,
+            };
 
-        // RADIX ENGINE TYPES
-        pub static PACKAGE_ADDRESS_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("PackageAddress", TypeSchema::PackageAddress);
-        pub static COMPONENT_ADDRESS_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("ComponentAddress", TypeSchema::ComponentAddress);
-        pub static RESOURCE_ADDRESS_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("ResourceAddress", TypeSchema::ResourceAddress);
-        pub static SYSTEM_ADDRESS_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("SystemAddress", TypeSchema::SystemAddress);
-
-        pub static COMPONENT_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Component", TypeSchema::Component);
-        pub static BUCKET_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Bucket", TypeSchema::Bucket);
-        pub static PROOF_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Proof", TypeSchema::Proof);
-        pub static VAULT_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Vault", TypeSchema::Vault);
-
-        pub static EXPRESSION_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Expression", TypeSchema::Expression);
-        pub static BLOB_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Blob", TypeSchema::Blob);
-        pub static NON_FUNGIBLE_ADDRESS_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("NonFungibleAddress", TypeSchema::NonFungibleAddress);
-
-        pub static HASH_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Hash", TypeSchema::Hash);
-        pub static ECDSA_SECP256K1_PUBLIC_KEY_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named(
-                "EcdsaSecp256k1PublicKey",
-                TypeSchema::EcdsaSecp256k1PublicKey,
-            );
-        pub static ECDSA_SECP256K1_SIGNATURE_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "EcdsaSecp256k1Signature",
-            TypeSchema::EcdsaSecp256k1Signature,
-        );
-        pub static EDDSA_ED25519_PUBLIC_KEY_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("EddsaEd25519PublicKey", TypeSchema::EddsaEd25519PublicKey);
-        pub static EDDSA_ED25519_SIGNATURE_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("EddsaEd25519Signature", TypeSchema::EddsaEd25519Signature);
-        pub static DECIMAL_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("Decimal", TypeSchema::Decimal);
-        pub static PRECISE_DECIMAL_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("PreciseDecimal", TypeSchema::PreciseDecimal);
-        pub static NON_FUNGIBLE_ID_TYPE_DATA: LocalTypeData<isize> =
-            LocalTypeData::named("NonFungibleId", TypeSchema::NonFungibleId);
-
-        pub static BYTES_TYPE_DATA: LocalTypeData<isize> = LocalTypeData::named(
-            "Bytes",
-            TypeSchema::Array {
-                element_sbor_type_id: TYPE_U8,
-                element_type: well_known_index_to_isize(U8_INDEX),
-                length_validation: LengthValidation::none(),
-            },
-        );
-    }
-
-    pub const fn well_known_index_to_isize(index: u8) -> isize {
-        -(index as isize)
-    }
-
-    pub const fn isize_to_well_known_index(numeric_type_ref: isize) -> Option<u8> {
-        if numeric_type_ref < 0 && numeric_type_ref >= -255 {
-            Some((-numeric_type_ref) as u8)
-        } else {
-            None
-        }
-    }
-
-    pub fn look_up_type(index: u8) -> Option<&'static LocalTypeData<isize>> {
-        match index {
-            ANY_INDEX => Some(&ANY_TYPE_DATA),
-
-            UNIT_INDEX => Some(&UNIT_TYPE_DATA),
-            BOOL_INDEX => Some(&BOOL_TYPE_DATA),
-
-            I8_INDEX => Some(&I8_TYPE_DATA),
-            I16_INDEX => Some(&I16_TYPE_DATA),
-            I32_INDEX => Some(&I32_TYPE_DATA),
-            I64_INDEX => Some(&I64_TYPE_DATA),
-            I128_INDEX => Some(&I128_TYPE_DATA),
-
-            U8_INDEX => Some(&U8_TYPE_DATA),
-            U16_INDEX => Some(&U16_TYPE_DATA),
-            U32_INDEX => Some(&U32_TYPE_DATA),
-            U64_INDEX => Some(&U64_TYPE_DATA),
-            U128_INDEX => Some(&U128_TYPE_DATA),
-
-            STRING_INDEX => Some(&STRING_TYPE_DATA),
-
-            PACKAGE_ADDRESS_INDEX => Some(&PACKAGE_ADDRESS_TYPE_DATA),
-            COMPONENT_ADDRESS_INDEX => Some(&COMPONENT_ADDRESS_TYPE_DATA),
-            RESOURCE_ADDRESS_INDEX => Some(&RESOURCE_ADDRESS_TYPE_DATA),
-            SYSTEM_ADDRESS_INDEX => Some(&SYSTEM_ADDRESS_TYPE_DATA),
-
-            COMPONENT_INDEX => Some(&COMPONENT_TYPE_DATA),
-            BUCKET_INDEX => Some(&BUCKET_TYPE_DATA),
-            PROOF_INDEX => Some(&PROOF_TYPE_DATA),
-            VAULT_INDEX => Some(&VAULT_TYPE_DATA),
-
-            EXPRESSION_INDEX => Some(&EXPRESSION_TYPE_DATA),
-            BLOB_INDEX => Some(&BLOB_TYPE_DATA),
-            NON_FUNGIBLE_ADDRESS_INDEX => Some(&NON_FUNGIBLE_ADDRESS_TYPE_DATA),
-
-            HASH_INDEX => Some(&HASH_TYPE_DATA),
-            ECDSA_SECP256K1_PUBLIC_KEY_INDEX => Some(&ECDSA_SECP256K1_PUBLIC_KEY_TYPE_DATA),
-            ECDSA_SECP256K1_SIGNATURE_INDEX => Some(&ECDSA_SECP256K1_SIGNATURE_TYPE_DATA),
-            EDDSA_ED25519_PUBLIC_KEY_INDEX => Some(&EDDSA_ED25519_PUBLIC_KEY_TYPE_DATA),
-            EDDSA_ED25519_SIGNATURE_INDEX => Some(&EDDSA_ED25519_SIGNATURE_TYPE_DATA),
-            DECIMAL_INDEX => Some(&DECIMAL_TYPE_DATA),
-            PRECISE_DECIMAL_INDEX => Some(&PRECISE_DECIMAL_TYPE_DATA),
-            NON_FUNGIBLE_ID_INDEX => Some(&NON_FUNGIBLE_ID_TYPE_DATA),
-
-            BYTES_INDEX => Some(&BYTES_TYPE_DATA),
-
-            _ => None,
+            Some(LocalTypeData::named(
+                name,
+                TypeSchema::Custom(custom_type_schema),
+            ))
         }
     }
 }

@@ -1,33 +1,49 @@
-use sbor::{CustomTypeId, TypeId};
+use sbor::{SborTypeId, TypeId};
 
 use crate::v2::*;
 
-impl<X: CustomTypeId, T: Schema<X> + TypeId<X>> Schema<X> for [T] {
-    const SCHEMA_TYPE_REF: TypeRef = TypeRef::complex("Array", &[T::SCHEMA_TYPE_REF]);
+impl<C: CustomTypeSchema, T: Schema<C> + TypeId<C::CustomTypeId>> Schema<C> for [T] {
+    const SCHEMA_TYPE_REF: GlobalTypeRef = if T::IS_U8 {
+        GlobalTypeRef::well_known(well_known::BYTES_INDEX)
+    } else {
+        GlobalTypeRef::complex("Array", &[T::SCHEMA_TYPE_REF])
+    };
 
-    fn get_local_type_data() -> Option<LocalTypeData<TypeRef>> {
-        Some(LocalTypeData {
-            schema: TypeSchema::Array {
-                element_sbor_type_id: T::type_id().as_u8(),
-                element_type: T::SCHEMA_TYPE_REF,
-                length_validation: LengthValidation::none(),
-            },
-            naming: TypeNaming::named("Array"),
-        })
+    fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
+        if T::IS_U8 {
+            None
+        } else {
+            Some(LocalTypeData {
+                schema: TypeSchema::Array {
+                    element_sbor_type_id: T::type_id().as_u8(),
+                    element_type: T::SCHEMA_TYPE_REF,
+                    length_validation: LengthValidation::none(),
+                },
+                naming: TypeNaming::named("Array"),
+            })
+        }
     }
 
-    fn add_all_dependencies(aggregator: &mut SchemaAggregator<X>) {
+    fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {
         aggregator.add_child_type_and_descendents::<T>();
     }
 }
 
-impl<X: CustomTypeId, T: Schema<X> + TypeId<X>, const N: usize> Schema<X> for [T; N] {
-    const SCHEMA_TYPE_REF: TypeRef = TypeRef::complex_sized("Array", &[T::SCHEMA_TYPE_REF], N);
+impl<C: CustomTypeSchema, T: Schema<C> + TypeId<C::CustomTypeId>, const N: usize> Schema<C>
+    for [T; N]
+{
+    const SCHEMA_TYPE_REF: GlobalTypeRef =
+        GlobalTypeRef::complex_sized("Array", &[T::SCHEMA_TYPE_REF], N);
 
-    fn get_local_type_data() -> Option<LocalTypeData<TypeRef>> {
+    fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
         let size = N
             .try_into()
             .expect("The array length is too large for a u32 for the SBOR schema");
+        let type_name = if T::type_id() == SborTypeId::U8 {
+            "Bytes"
+        } else {
+            "Array"
+        };
         Some(LocalTypeData {
             schema: TypeSchema::Array {
                 element_sbor_type_id: T::type_id().as_u8(),
@@ -37,11 +53,11 @@ impl<X: CustomTypeId, T: Schema<X> + TypeId<X>, const N: usize> Schema<X> for [T
                     max: Some(size),
                 },
             },
-            naming: TypeNaming::named("Array"),
+            naming: TypeNaming::named(type_name),
         })
     }
 
-    fn add_all_dependencies(aggregator: &mut SchemaAggregator<X>) {
+    fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {
         aggregator.add_child_type_and_descendents::<T>();
     }
 }
