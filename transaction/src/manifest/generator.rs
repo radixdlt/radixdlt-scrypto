@@ -396,28 +396,6 @@ pub fn generate_instruction(
             abi: generate_blob(abi, blobs)?,
             owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
         },
-        ast::Instruction::CreateResource {
-            resource_type,
-            metadata,
-            access_rules,
-            mint_params,
-        } => BasicInstruction::CreateResource {
-            resource_type: generate_typed_value(resource_type, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            mint_params: generate_typed_value(mint_params, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateResourceWithOwner {
-            resource_type,
-            metadata,
-            owner_badge,
-            mint_params,
-        } => BasicInstruction::CreateResourceWithOwner {
-            resource_type: generate_typed_value(resource_type, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
-            mint_params: generate_typed_value(mint_params, resolver, bech32_decoder, blobs)?,
-        },
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
@@ -425,13 +403,6 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::BurnResource { bucket_id }
         }
-        ast::Instruction::MintResource {
-            amount,
-            resource_address,
-        } => BasicInstruction::MintResource {
-            amount: generate_decimal(amount)?,
-            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-        },
         ast::Instruction::RecallResource { vault_id, amount } => BasicInstruction::RecallResource {
             vault_id: generate_typed_value(vault_id, resolver, bech32_decoder, blobs)?,
             amount: generate_decimal(amount)?,
@@ -480,6 +451,67 @@ pub fn generate_instruction(
             key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
         },
+
+        ast::Instruction::MintFungible {
+            resource_address,
+            amount,
+        } => BasicInstruction::MintFungible {
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            amount: generate_decimal(amount)?,
+        },
+        ast::Instruction::MintNonFungible {
+            resource_address,
+            entries,
+        } => BasicInstruction::MintNonFungible {
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            entries: generate_typed_value(entries, resolver, bech32_decoder, blobs)?,
+        },
+
+        ast::Instruction::CreateFungibleResource {
+            divisibility,
+            metadata,
+            access_rules,
+            initial_supply
+        } => BasicInstruction::CreateFungibleResource { 
+            divisibility: generate_u8(divisibility)?, 
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateFungibleResourceWithOwner {
+            divisibility,
+            metadata,
+            owner_badge,
+            initial_supply
+        } => BasicInstruction::CreateFungibleResourceWithOwner { 
+            divisibility: generate_u8(divisibility)?, 
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+        },
+
+        ast::Instruction::CreateNonFungibleResource {
+            id_type,
+            metadata,
+            access_rules,
+            initial_supply
+        } => BasicInstruction::CreateNonFungibleResource { 
+            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateNonFungibleResourceWithOwner {
+            id_type,
+            metadata,
+            owner_badge,
+            initial_supply
+        } => BasicInstruction::CreateNonFungibleResourceWithOwner { 
+            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+        },
     })
 }
 
@@ -523,6 +555,13 @@ fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
         v => invalid_type!(v, ast::Type::String),
+    }
+}
+
+fn generate_u8(value: &ast::Value) -> Result<u8, GeneratorError> {
+    match value {
+        ast::Value::U8(inner) => Ok(*inner),
+        v => invalid_type!(v, ast::Type::U8),
     }
 }
 
@@ -1415,8 +1454,8 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"MINT_RESOURCE Decimal("100") ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
-            BasicInstruction::MintResource {
+            r#"MINT_FUNGIBLE Decimal("100") ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
+            BasicInstruction::MintFungible {
                 resource_address: resource,
                 amount: Decimal::from_str("100").unwrap()
             }
