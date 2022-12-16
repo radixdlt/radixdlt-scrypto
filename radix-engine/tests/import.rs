@@ -1,6 +1,5 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use scrypto_unit::*;
-use transaction::builder::ManifestBuilder;
 
 // TODO: Test should be moved to a higher level package (e.g. scrypto-tests)
 #[test]
