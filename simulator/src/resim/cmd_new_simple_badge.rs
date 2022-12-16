@@ -122,36 +122,38 @@ impl NewSimpleBadge {
             false,
             out,
         )
-        .unwrap()
         .unwrap();
 
-        let resource_address = receipt
-            .expect_commit()
-            .entity_changes
-            .new_resource_addresses[0];
+        if let Some(receipt) = receipt {
+            let resource_address = receipt
+                .expect_commit()
+                .entity_changes
+                .new_resource_addresses[0];
 
-        let bech32_encoder = Bech32Encoder::new(&network_definition);
-        writeln!(
-            out,
-            "NFAddress: {}",
-            NonFungibleAddress::new(resource_address, NonFungibleId::U32(1))
-                // This should be the opposite of parse_args in the manifest builder
-                .to_canonical_combined_string(&bech32_encoder)
-                .green()
-        )
-        .map_err(Error::IOError)?;
-        writeln!(
-            out,
-            "Resource: {}",
-            resource_address.to_string(&bech32_encoder).green()
-        )
-        .map_err(Error::IOError)?;
-        writeln!(
-            out,
-            "NFID: {}",
-            NonFungibleId::U32(1).to_combined_simple_string()
-        )
-        .map_err(Error::IOError)?;
+            let bech32_encoder = Bech32Encoder::new(&network_definition);
+            writeln!(
+                out,
+                "NFAddress: {}",
+                NonFungibleAddress::new(resource_address, NonFungibleId::U32(1))
+                    // This should be the opposite of parse_args in the manifest builder
+                    .to_canonical_combined_string(&bech32_encoder)
+                    .green()
+            )
+            .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "Resource: {}",
+                resource_address.to_string(&bech32_encoder).green()
+            )
+            .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "NFID: {}",
+                NonFungibleId::U32(1).to_combined_simple_string()
+            )
+            .map_err(Error::IOError)?;
+        };
+
         Ok(())
     }
 }
