@@ -156,7 +156,7 @@ impl NativeProcedure for BucketTakeNonFungiblesInvocation {
             ))
         })?;
 
-        let node_id = api.allocate_node_id(RENodeType::Proof)?;
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
         api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
         let bucket_id = node_id.into();
         Ok((
