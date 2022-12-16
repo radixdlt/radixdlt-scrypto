@@ -1,6 +1,12 @@
 # This transaction manifest creates a new non-fungible resource with initial supply and with the 
 # default auth.
 
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
     ComponentAddress("{account_component_address}") 
@@ -15,7 +21,6 @@ CREATE_RESOURCE
     ) 
     Array<Tuple>(
         Tuple("name", "MyResource"), 
-        Tuple("symbol", "RSRC"),
         Tuple("description", "A very innovative and important resource"), 
     ) 
     Array<Tuple>(
