@@ -5,6 +5,7 @@ use radix_engine::types::{
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::rule;
+use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::compile;
@@ -180,30 +181,29 @@ fn minting_of_fungible_resource_succeeds() {
     );
 }
 
-// TODO: Add back once we have an instruction for that
-// /// A sample manifest for minting of a non-fungible resource
-// #[test]
-// fn minting_of_non_fungible_resource_succeeds() {
-//     test_manifest_with_restricted_minting_resource(
-//         ResourceType::NonFungible {
-//             id_type: radix_engine::types::NonFungibleIdType::U32,
-//         },
-//         |account_component_address,
-//          minter_badge_resource_address,
-//          mintable_resource_address,
-//          bech32_encoder| {
-//             let manifest = format!(
-//                 include_str!("../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
-//                 account_component_address = account_component_address.display(bech32_encoder),
-//                 mintable_resource_address = mintable_resource_address.display(bech32_encoder),
-//                 minter_badge_resource_address =
-//                     minter_badge_resource_address.display(bech32_encoder),
-//                 non_fungible_id = "1u32"
-//             );
-//             (manifest, Vec::new())
-//         },
-//     );
-// }
+/// A sample manifest for minting of a non-fungible resource
+#[test]
+fn minting_of_non_fungible_resource_succeeds() {
+    test_manifest_with_restricted_minting_resource(
+        ResourceType::NonFungible {
+            id_type: radix_engine::types::NonFungibleIdType::U32,
+        },
+        |account_component_address,
+         minter_badge_resource_address,
+         mintable_resource_address,
+         bech32_encoder| {
+            let manifest = format!(
+                include_str!("../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
+                account_component_address = account_component_address.display(bech32_encoder),
+                mintable_resource_address = mintable_resource_address.display(bech32_encoder),
+                minter_badge_resource_address =
+                    minter_badge_resource_address.display(bech32_encoder),
+                non_fungible_id = "1u32"
+            );
+            (manifest, Vec::new())
+        },
+    );
+}
 
 fn test_manifest<F>(string_manifest_builder: F)
 where
@@ -255,27 +255,30 @@ fn test_manifest_with_restricted_minting_resource<F>(
     // Creating the minter badge and the requested resource
     let minter_badge_resource_address =
         test_runner.create_fungible_resource("1".into(), 0, component_address);
+
+    let access_rules = BTreeMap::from([(
+        ResourceMethodAuthKey::Mint,
+        (
+            rule!(require(minter_badge_resource_address)),
+            rule!(deny_all),
+        ),
+    )]);
+
+    let manifest = match resource_type {
+        ResourceType::Fungible { divisibility } => ManifestBuilder::new(&network)
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, None)
+            .build(),
+        ResourceType::NonFungible { id_type } => ManifestBuilder::new(&network)
+            .create_non_fungible_resource(
+                id_type,
+                BTreeMap::new(),
+                access_rules,
+                None::<BTreeMap<NonFungibleId, SampleNonFungibleData>>,
+            )
+            .build(),
+    };
     let mintable_resource_address = test_runner
-        .execute_manifest_ignoring_fee(
-            ManifestBuilder::new(&network)
-                .create_resource(
-                    resource_type,
-                    BTreeMap::from([
-                        (String::from("name"), String::from("Mintable Resource")),
-                        (String::from("symbol"), String::from("MINT")),
-                    ]),
-                    BTreeMap::from([(
-                        ResourceMethodAuthKey::Mint,
-                        (
-                            rule!(require(minter_badge_resource_address)),
-                            rule!(deny_all),
-                        ),
-                    )]),
-                    None,
-                )
-                .build(),
-            vec![],
-        )
+        .execute_manifest_ignoring_fee(manifest, vec![])
         .new_resource_addresses()[0]
         .clone();
 
@@ -358,3 +361,6 @@ where
         .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
         .expect_commit_success();
 }
+
+#[derive(NonFungibleData)]
+struct SampleNonFungibleData {}

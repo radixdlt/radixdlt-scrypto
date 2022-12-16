@@ -8,11 +8,8 @@ CALL_METHOD
     Decimal("10");
 
 # Creating a new resource 
-CREATE_RESOURCE 
-    Enum(
-        "NonFungible", 
-        Enum("U32")
-    ) 
+CREATE_NON_FUNGIBLE_RESOURCE
+    Enum("U32")
     Array<Tuple>(
         Tuple("name", "MyResource"), 
         Tuple("symbol", "RSRC"),
