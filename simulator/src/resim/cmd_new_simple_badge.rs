@@ -13,7 +13,7 @@ use crate::resim::*;
 #[scrypto(TypeId, Encode, Decode)]
 struct EmptyStruct;
 
-/// Create a badge with fixed supply
+/// Create a non-fungible badge with fixed supply
 #[derive(Parser, Debug)]
 pub struct NewSimpleBadge {
     /// The symbol

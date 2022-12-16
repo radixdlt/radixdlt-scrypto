@@ -5,7 +5,7 @@ use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 
-/// Create a badge with mutable supply
+/// Create a fungible badge with mutable supply
 #[derive(Parser, Debug)]
 pub struct NewBadgeMutable {
     /// The minter resource address

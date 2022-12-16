@@ -5,7 +5,7 @@ use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 
-/// Create a token with mutable supply
+/// Create a fungible token with mutable supply
 #[derive(Parser, Debug)]
 pub struct NewTokenMutable {
     /// The minter resource address
