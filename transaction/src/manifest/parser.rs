@@ -717,12 +717,8 @@ mod tests {
                 ]
             }
         );
-    }
-
-    #[test]
-    fn test_create_resource() {
         parse_instruction_ok!(
-            r#"CREATE_RESOURCE 0u8 Array<Tuple>() Array<Tuple>() Some(Decimal("1.0"));"#,
+            r#"CREATE_FUNGIBLE_RESOURCE 0u8 Array<Tuple>() Array<Tuple>() Some(Decimal("1.0"));"#,
             Instruction::CreateFungibleResource {
                 divisibility: Value::U8(0),
                 metadata: Value::Array(Type::Tuple, vec![]),

@@ -1432,7 +1432,7 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"MINT_FUNGIBLE Decimal("100") ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
+            r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
             BasicInstruction::MintFungible {
                 resource_address: resource,
                 amount: Decimal::from_str("100").unwrap()

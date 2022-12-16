@@ -613,11 +613,10 @@ CALL_METHOD ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pn
 
         assert_eq!(
             canonical_manifest,
-            r#"CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Some(Enum("Fungible", Decimal("1")));
-CREATE_RESOURCE_WITH_OWNER Enum("Fungible", 0u8) Array<Tuple>() NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value") None;
+            r#"CREATE_FUNGIBLE_RESOURCE 0u8 Array<Tuple>() Array<Tuple>() Some(Decimal("1"));
 TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
 BURN_RESOURCE Bucket("bucket1");
-MINT_RESOURCE Decimal("5") ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag");
+MINT_FUNGIBLE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Decimal("5");
 RECALL_RESOURCE Bytes("49cd9235ba62b2c217e32e5b4754c08219ef16389761356eaccbf6f6bdbfa44d00000000") Decimal("1.2");
 "#
         );
