@@ -15,7 +15,6 @@ CREATE_RESOURCE
     ) 
     Array<Tuple>(
         Tuple("name", "MyResource"), 
-        Tuple("symbol", "RSRC"),
         Tuple("description", "A very innovative and important resource"), 
     ) 
     Array<Tuple>(
