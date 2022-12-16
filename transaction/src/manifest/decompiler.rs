@@ -374,32 +374,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, owner_badge)?;
             f.write_str(";")?;
         }
-        BasicInstruction::CreateResource {
-            resource_type,
-            metadata,
-            access_rules,
-            mint_params,
-        } => {
-            f.write_str("CREATE_RESOURCE")?;
-            format_typed_value(f, context, resource_type)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, access_rules)?;
-            format_typed_value(f, context, mint_params)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::CreateResourceWithOwner {
-            resource_type,
-            metadata,
-            owner_badge,
-            mint_params,
-        } => {
-            f.write_str("CREATE_RESOURCE_WITH_OWNER")?;
-            format_typed_value(f, context, resource_type)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, owner_badge)?;
-            format_typed_value(f, context, mint_params)?;
-            f.write_str(";")?;
-        }
         BasicInstruction::BurnResource { bucket_id } => {
             write!(
                 f,
@@ -410,15 +384,6 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id)),
             )?;
-        }
-        BasicInstruction::MintResource {
-            amount,
-            resource_address,
-        } => {
-            f.write_str("MINT_RESOURCE")?;
-            format_typed_value(f, context, amount)?;
-            format_typed_value(f, context, resource_address)?;
-            f.write_str(";")?;
         }
         BasicInstruction::RecallResource { vault_id, amount } => {
             f.write_str("RECALL_RESOURCE")?;
@@ -478,6 +443,70 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, rule)?;
             f.write_str(";")?;
         }
+        BasicInstruction::MintFungible { resource_address, amount } => {
+            f.write_str("MINT_FUNGIBLE")?;
+            format_typed_value(f, context, resource_address)?;
+            format_typed_value(f, context, amount)?;
+            f.write_str(";")?;
+        },
+        BasicInstruction::MintNonFungible { resource_address, entries } => {
+            f.write_str("MINT_NON_FUNGIBLE")?;
+            format_typed_value(f, context, resource_address)?;
+            format_typed_value(f, context, entries)?;
+            f.write_str(";")?;
+        },
+        BasicInstruction::CreateFungibleResource {
+            divisibility,
+            metadata,
+            access_rules,
+            initial_supply
+        } => {
+            f.write_str("CREATE_FUNGIBLE_RESOURCE")?;
+            format_typed_value(f, context, divisibility)?;
+            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, access_rules)?;
+            format_typed_value(f, context, initial_supply)?;
+            f.write_str(";")?;
+        },
+        BasicInstruction::CreateFungibleResourceWithOwner {
+            divisibility,
+            metadata,
+            owner_badge,
+            initial_supply
+        } => {
+            f.write_str("CREATE_FUNGIBLE_RESOURCE")?;
+            format_typed_value(f, context, divisibility)?;
+            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, owner_badge)?;
+            format_typed_value(f, context, initial_supply)?;
+            f.write_str(";")?;
+        },
+        BasicInstruction::CreateNonFungibleResource {
+            id_type,
+            metadata,
+            access_rules,
+            initial_supply
+        } => {
+            f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
+            format_typed_value(f, context, id_type,)?;
+            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, access_rules)?;
+            format_typed_value(f, context, initial_supply)?;
+            f.write_str(";")?;
+        },
+        BasicInstruction::CreateNonFungibleResourceWithOwner {
+            id_type,
+            metadata,
+            owner_badge,
+            initial_supply
+        } => {
+            f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
+            format_typed_value(f, context, id_type,)?;
+            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, owner_badge)?;
+            format_typed_value(f, context, initial_supply)?;
+            f.write_str(";")?;
+        },
     }
     Ok(())
 }
