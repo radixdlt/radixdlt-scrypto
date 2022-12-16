@@ -134,27 +134,8 @@ pub enum BasicInstruction {
         owner_badge: NonFungibleAddress,
     },
 
-    CreateResource {
-        resource_type: ResourceType,
-        metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        mint_params: Option<MintParams>,
-    },
-
-    CreateResourceWithOwner {
-        resource_type: ResourceType,
-        metadata: BTreeMap<String, String>,
-        owner_badge: NonFungibleAddress,
-        mint_params: Option<MintParams>,
-    },
-
     BurnResource {
         bucket_id: BucketId,
-    },
-
-    MintResource {
-        amount: Decimal,
-        resource_address: ResourceAddress,
     },
 
     RecallResource {
@@ -191,6 +172,44 @@ pub enum BasicInstruction {
         index: u32,
         key: AccessRuleKey,
         rule: AccessRule,
+    },
+
+    MintFungible {
+        resource_address: ResourceAddress,
+        amount: Decimal,
+    },
+
+    MintNonFungible {
+        resource_address: ResourceAddress,
+        entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+    },
+
+    CreateFungibleResource {
+        divisibility: u8,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        initial_supply: Option<Decimal>,
+    },
+
+    CreateFungibleResourceWithOwner {
+        divisibility: u8,
+        metadata: BTreeMap<String, String>,
+        owner_badge: NonFungibleAddress,
+        initial_supply: Option<Decimal>,
+    },
+
+    CreateNonFungibleResource {
+        id_type: NonFungibleIdType,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+    },
+
+    CreateNonFungibleResourceWithOwner {
+        id_type: NonFungibleIdType,
+        metadata: BTreeMap<String, String>,
+        owner_badge: NonFungibleAddress,
+        initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 }
 

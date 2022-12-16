@@ -162,28 +162,28 @@ pub enum Instruction {
         divisibility: Value,
         metadata: Value,
         access_rules: Value,
-        mint_params: Value,
+        initial_supply: Value,
     },
 
     CreateFungibleResourceWithOwner {
         divisibility: Value,
         metadata: Value,
         owner_badge: Value,
-        mint_params: Value,
+        initial_supply: Value,
     },
 
     CreateNonFungibleResource {
         id_type: Value,
         metadata: Value,
         access_rules: Value,
-        mint_params: Value,
+        initial_supply: Value,
     },
 
     CreateNonFungibleResourceWithOwner {
         id_type: Value,
         metadata: Value,
         owner_badge: Value,
-        mint_params: Value,
+        initial_supply: Value,
     },
 }
 
