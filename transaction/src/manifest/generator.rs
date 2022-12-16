@@ -471,9 +471,9 @@ pub fn generate_instruction(
             divisibility,
             metadata,
             access_rules,
-            initial_supply
-        } => BasicInstruction::CreateFungibleResource { 
-            divisibility: generate_u8(divisibility)?, 
+            initial_supply,
+        } => BasicInstruction::CreateFungibleResource {
+            divisibility: generate_u8(divisibility)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
             initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
@@ -483,8 +483,8 @@ pub fn generate_instruction(
             id_type,
             metadata,
             access_rules,
-            initial_supply
-        } => BasicInstruction::CreateNonFungibleResource { 
+            initial_supply,
+        } => BasicInstruction::CreateNonFungibleResource {
             id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,

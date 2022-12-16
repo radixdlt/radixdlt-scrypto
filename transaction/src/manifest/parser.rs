@@ -202,25 +202,25 @@ impl Parser {
                 key: self.parse_value()?,
                 rule: self.parse_value()?,
             },
-            TokenKind::MintFungible => Instruction::MintFungible { 
-                resource_address: self.parse_value()?, 
-                amount: self.parse_value()? 
+            TokenKind::MintFungible => Instruction::MintFungible {
+                resource_address: self.parse_value()?,
+                amount: self.parse_value()?,
             },
             TokenKind::MintNonFungible => Instruction::MintNonFungible {
-                resource_address: self.parse_value()?, 
-                entries: self.parse_value()? 
+                resource_address: self.parse_value()?,
+                entries: self.parse_value()?,
             },
-            TokenKind::CreateFungibleResource => Instruction::CreateFungibleResource { 
-                divisibility: self.parse_value()?, 
-                metadata: self.parse_value()?, 
-                access_rules: self.parse_value()?, 
-                initial_supply: self.parse_value()? 
+            TokenKind::CreateFungibleResource => Instruction::CreateFungibleResource {
+                divisibility: self.parse_value()?,
+                metadata: self.parse_value()?,
+                access_rules: self.parse_value()?,
+                initial_supply: self.parse_value()?,
             },
-            TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource { 
-                id_type: self.parse_value()?, 
-                metadata: self.parse_value()?, 
-                access_rules: self.parse_value()?, 
-                initial_supply: self.parse_value()? 
+            TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource {
+                id_type: self.parse_value()?,
+                metadata: self.parse_value()?,
+                access_rules: self.parse_value()?,
+                initial_supply: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
@@ -723,9 +723,9 @@ mod tests {
                 divisibility: Value::U8(0),
                 metadata: Value::Array(Type::Tuple, vec![]),
                 access_rules: Value::Array(Type::Tuple, vec![]),
-                initial_supply: Value::Some(
-                    Box::new(Value::Decimal(Value::String("1.0".into()).into()))
-                ),
+                initial_supply: Value::Some(Box::new(Value::Decimal(
+                    Value::String("1.0".into()).into()
+                ))),
             }
         );
     }

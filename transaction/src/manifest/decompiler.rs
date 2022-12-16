@@ -443,23 +443,29 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, rule)?;
             f.write_str(";")?;
         }
-        BasicInstruction::MintFungible { resource_address, amount } => {
+        BasicInstruction::MintFungible {
+            resource_address,
+            amount,
+        } => {
             f.write_str("MINT_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
             format_typed_value(f, context, amount)?;
             f.write_str(";")?;
-        },
-        BasicInstruction::MintNonFungible { resource_address, entries } => {
+        }
+        BasicInstruction::MintNonFungible {
+            resource_address,
+            entries,
+        } => {
             f.write_str("MINT_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
             format_typed_value(f, context, entries)?;
             f.write_str(";")?;
-        },
+        }
         BasicInstruction::CreateFungibleResource {
             divisibility,
             metadata,
             access_rules,
-            initial_supply
+            initial_supply,
         } => {
             f.write_str("CREATE_FUNGIBLE_RESOURCE")?;
             format_typed_value(f, context, divisibility)?;
@@ -467,20 +473,20 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, access_rules)?;
             format_typed_value(f, context, initial_supply)?;
             f.write_str(";")?;
-        },
+        }
         BasicInstruction::CreateNonFungibleResource {
             id_type,
             metadata,
             access_rules,
-            initial_supply
+            initial_supply,
         } => {
             f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
-            format_typed_value(f, context, id_type,)?;
+            format_typed_value(f, context, id_type)?;
             format_typed_value(f, context, metadata)?;
             format_typed_value(f, context, access_rules)?;
             format_typed_value(f, context, initial_supply)?;
             f.write_str(";")?;
-        },
+        }
     }
     Ok(())
 }

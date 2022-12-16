@@ -84,18 +84,19 @@ impl NewSimpleBadge {
 
         let manifest = ManifestBuilder::new(&network_definition)
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .add_instruction(BasicInstruction::CreateNonFungibleResource { 
-                id_type: NonFungibleIdType::U32, 
-                metadata: metadata, 
-                access_rules: resource_auth, 
+            .add_instruction(BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::U32,
+                metadata: metadata,
+                access_rules: resource_auth,
                 initial_supply: Some(BTreeMap::from([(
                     NonFungibleId::U32(1),
                     (
                         scrypto_encode(&EmptyStruct).unwrap(),
                         scrypto_encode(&EmptyStruct).unwrap(),
                     ),
-                )]))
-            }).0
+                )])),
+            })
+            .0
             .call_method(
                 default_account,
                 "deposit_batch",

@@ -27,9 +27,9 @@ use radix_engine_interface::model::{
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::{dec, rule};
-use scrypto::NonFungibleData;
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
+use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Executable, SystemInstruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
@@ -727,18 +727,9 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(
-            NonFungibleId::U32(1),
-            SampleNonFungibleData{},
-        );
-        entries.insert(
-            NonFungibleId::U32(2),
-            SampleNonFungibleData{},
-        );
-        entries.insert(
-            NonFungibleId::U32(3),
-            SampleNonFungibleData{},
-        );
+        entries.insert(NonFungibleId::U32(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::U32(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::U32(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
@@ -973,4 +964,4 @@ pub fn generate_single_function_abi(
 }
 
 #[derive(NonFungibleData)]
-struct SampleNonFungibleData{}
+struct SampleNonFungibleData {}

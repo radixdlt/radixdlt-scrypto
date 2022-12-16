@@ -658,7 +658,8 @@ impl TransactionProcessor {
                         resource_type: ResourceType::NonFungible { id_type: *id_type },
                         metadata: metadata.clone(),
                         access_rules: access_rules.clone(),
-                        mint_params: initial_supply.as_ref()
+                        mint_params: initial_supply
+                            .as_ref()
                             .map(|e| MintParams::NonFungible { entries: e.clone() }),
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
@@ -693,7 +694,9 @@ impl TransactionProcessor {
                 }) => api
                     .invoke(ResourceManagerMintInvocation {
                         receiver: resource_address.clone(),
-                        mint_params: MintParams::Fungible { amount: amount.clone() }
+                        mint_params: MintParams::Fungible {
+                            amount: amount.clone(),
+                        },
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream)
@@ -705,13 +708,15 @@ impl TransactionProcessor {
                         }
                         Ok(result)
                     }),
-                Instruction::Basic(BasicInstruction::MintNonFungible { 
-                    resource_address, 
-                    entries 
+                Instruction::Basic(BasicInstruction::MintNonFungible {
+                    resource_address,
+                    entries,
                 }) => api
                     .invoke(ResourceManagerMintInvocation {
                         receiver: resource_address.clone(),
-                        mint_params: MintParams::NonFungible { entries: entries.clone() }
+                        mint_params: MintParams::NonFungible {
+                            entries: entries.clone(),
+                        },
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream)
@@ -723,7 +728,7 @@ impl TransactionProcessor {
                         }
                         Ok(result)
                     }),
-                
+
                 Instruction::Basic(BasicInstruction::RecallResource { vault_id, amount }) => api
                     .invoke(VaultRecallInvocation {
                         receiver: vault_id.clone(),
