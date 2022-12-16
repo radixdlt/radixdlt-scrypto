@@ -97,6 +97,64 @@ fn can_burn_non_fungible() {
 }
 
 #[test]
+fn test_take_non_fungible() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "take_non_fungible_and_put_bucket",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_take_non_fungibles() {
+    // Arrange
+    let mut store = TypedInMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(true, &mut store);
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "take_non_fungibles_and_put_bucket",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
 fn test_non_fungible() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
