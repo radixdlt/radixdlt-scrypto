@@ -84,7 +84,7 @@ pub fn create_genesis() -> SystemTransaction {
             metadata,
             access_rules,
             initial_supply: None,
-        };
+        }
     };
 
     // TODO: Perhaps combine with ecdsa token?
