@@ -99,4 +99,3 @@ token_address=`$resim new-token-mutable $non_fungible | awk '/Resource:/ {print 
 
 # Test - mint and transfer (Mintable that requires a `NonFungibleAddress`)
 $resim mint 777 $token_address --proofs "$non_fungible_id,$non_fungible_resource"
-resim show $token_address
