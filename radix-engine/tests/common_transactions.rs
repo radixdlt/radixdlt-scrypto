@@ -1,8 +1,8 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::{
-    hash, require, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey, HashMap,
+    require, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey, HashMap,
     NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
-    ACCOUNT_PACKAGE, FAUCET_COMPONENT, RADIX_TOKEN,
+    FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::rule;
@@ -69,13 +69,11 @@ fn multi_account_fund_transfer_succeeds() {
 /// An example manifest for creating a new fungible resource with no initial supply
 #[test]
 fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = format!(
-            include_str!(
-                "../../transaction/examples/resources/creation/fungible/no_initial_supply.rtm"
-            ),
-            account_component_address = account_component_address.display(bech32_encoder)
-        );
+    test_manifest(|_, _| {
+        let manifest = include_str!(
+            "../../transaction/examples/resources/creation/fungible/no_initial_supply.rtm"
+        )
+        .to_string();
         (manifest, Vec::new())
     });
 }
@@ -100,13 +98,11 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
 /// An example manifest for creating a new non-fungible resource with no supply
 #[test]
 fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
-    test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = format!(
-            include_str!(
-                "../../transaction/examples/resources/creation/non_fungible/no_initial_supply.rtm"
-            ),
-            account_component_address = account_component_address.display(bech32_encoder)
-        );
+    test_manifest(|_, _| {
+        let manifest = include_str!(
+            "../../transaction/examples/resources/creation/non_fungible/no_initial_supply.rtm"
+        )
+        .to_string();
         (manifest, Vec::new())
     });
 }
@@ -127,34 +123,31 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 /// A sample manifest that publishes a package.
 #[test]
 fn publish_package_with_owner_succeeds() {
-    test_manifest_with_owner_badge(
-        |account_component_address, owner_badge_non_fungible_address, bech32_encoder| {
-            let owner_badge_resource_address = owner_badge_non_fungible_address.resource_address();
-            let owner_badge_non_fungible_id = if let NonFungibleId::U32(non_fungible_id) =
-                owner_badge_non_fungible_address.non_fungible_id()
-            {
-                *non_fungible_id
-            } else {
-                panic!("expected a u32 non-fungible-id");
-            };
+    test_manifest_with_owner_badge(|_, owner_badge_non_fungible_address, bech32_encoder| {
+        let owner_badge_resource_address = owner_badge_non_fungible_address.resource_address();
+        let owner_badge_non_fungible_id = if let NonFungibleId::U32(non_fungible_id) =
+            owner_badge_non_fungible_address.non_fungible_id()
+        {
+            *non_fungible_id
+        } else {
+            panic!("expected a u32 non-fungible-id");
+        };
 
-            // TODO: Update the complex.abi and complex.code files that are used for testing.
-            // Using the WASM and ABI from the account blueprint here as they are up to date. The
-            // complex.code and complex.abi files from the transaction crate are not.
-            let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
-            let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
+        // TODO: Update the complex.abi and complex.code files that are used for testing.
+        // Using the WASM and ABI from the account blueprint here as they are up to date. The
+        // complex.code and complex.abi files from the transaction crate are not.
+        let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
+        let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
 
-            let manifest = format!(
-                include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
-                owner_badge_resource_address = owner_badge_resource_address.display(bech32_encoder),
-                owner_badge_non_fungible_id = owner_badge_non_fungible_id,
-                code_blob_hash = Blob::new(&code_blob),
-                abi_blob_hash = Blob::new(&abi_blob),
-                account_component_address = account_component_address.display(bech32_encoder)
-            );
-            (manifest, vec![code_blob, abi_blob])
-        },
-    );
+        let manifest = format!(
+            include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
+            owner_badge_resource_address = owner_badge_resource_address.display(bech32_encoder),
+            owner_badge_non_fungible_id = owner_badge_non_fungible_id,
+            code_blob_hash = Blob::new(&code_blob),
+            abi_blob_hash = Blob::new(&abi_blob),
+        );
+        (manifest, vec![code_blob, abi_blob])
+    });
 }
 
 /// A sample manifest for minting of a fungible resource
@@ -227,7 +220,7 @@ where
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest_ignoring_fee(manifest, vec![virtual_badge_non_fungible_address])
         .expect_commit_success();
 }
 
@@ -292,7 +285,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest_ignoring_fee(manifest, vec![virtual_badge_non_fungible_address])
         .expect_commit_success();
 }
 
@@ -324,7 +317,7 @@ where
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest_ignoring_fee(manifest, vec![virtual_badge_non_fungible_address])
         .expect_commit_success();
 }
 
@@ -359,6 +352,6 @@ where
         .expect("Failed to compile manifest from manifest string");
 
     test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
+        .execute_manifest_ignoring_fee(manifest, vec![virtual_badge_non_fungible_address])
         .expect_commit_success();
 }

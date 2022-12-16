@@ -2,13 +2,16 @@
 # transaction. We will be withdrawing 100 XRD from our account component and depositing them in 
 # another account component. 
 
+# Note: This manifest does not have a "lock_fee" instruction as this instruction will be added
+# automatically by the wallet. If all you intend to do is run this manifest in resim then you can
+# add this instruction.
+
 # The account component withdraw methods which have been optimized to also lock a fee in a single 
 # call. In this call, we lock a fee of 10 XRD and also withdraw 100 XRD from the account.
 CALL_METHOD 
     ComponentAddress("{this_account_component_address}") 
-    "lock_fee_and_withdraw_by_amount"
-    Decimal("10")                                   # Amount of XRD to lock for fees
-    Decimal("100")                                  # Amount of XRD to withdraw
+    "withdraw_by_amount"
+    Decimal("100")
     ResourceAddress("{xrd_resource_address}");
 
 # Depositing all of the XRD withdrawn from the account into the other account

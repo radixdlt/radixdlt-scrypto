@@ -1,10 +1,8 @@
 # This transaction manifest shows how a package that has an owner badge can be published. 
 
-# Locking 10 XRD in fees from the account component. 
-CALL_METHOD 
-    ComponentAddress("{account_component_address}") 
-    "lock_fee"
-    Decimal("10");
+# Note: This manifest does not have a "lock_fee" instruction as this instruction will be added
+# automatically by the wallet. If all you intend to do is run this manifest in resim then you can
+# add this instruction.
 
 # Publishing a new package with an owner badge
 PUBLISH_PACKAGE_WITH_OWNER 

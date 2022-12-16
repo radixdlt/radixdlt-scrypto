@@ -1,11 +1,9 @@
 # This transaction manifest creates a new non-fungible resource with initial supply and with the 
 # default auth.
 
-# Locking 10 XRD in fees from the account component. 
-CALL_METHOD 
-    ComponentAddress("{account_component_address}") 
-    "lock_fee"
-    Decimal("10");
+# Note: This manifest does not have a "lock_fee" instruction as this instruction will be added
+# automatically by the wallet. If all you intend to do is run this manifest in resim then you can
+# add this instruction.
 
 # Creating a new resource 
 CREATE_RESOURCE 
