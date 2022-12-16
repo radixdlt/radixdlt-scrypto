@@ -99,6 +99,17 @@ impl<'a> Executable<'a> {
         }
     }
 
+    pub fn new_no_blobs(
+        instructions: InstructionList<'a>,
+        context: ExecutionContext,
+    ) -> Self {
+        Self {
+            instructions,
+            blobs: HashMap::new(),
+            context,
+        }
+    }
+
     pub fn transaction_hash(&self) -> &Hash {
         &self.context.transaction_hash
     }
