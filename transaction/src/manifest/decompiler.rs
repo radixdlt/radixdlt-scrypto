@@ -468,19 +468,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, initial_supply)?;
             f.write_str(";")?;
         },
-        BasicInstruction::CreateFungibleResourceWithOwner {
-            divisibility,
-            metadata,
-            owner_badge,
-            initial_supply
-        } => {
-            f.write_str("CREATE_FUNGIBLE_RESOURCE")?;
-            format_typed_value(f, context, divisibility)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, owner_badge)?;
-            format_typed_value(f, context, initial_supply)?;
-            f.write_str(";")?;
-        },
         BasicInstruction::CreateNonFungibleResource {
             id_type,
             metadata,
@@ -491,19 +478,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, id_type,)?;
             format_typed_value(f, context, metadata)?;
             format_typed_value(f, context, access_rules)?;
-            format_typed_value(f, context, initial_supply)?;
-            f.write_str(";")?;
-        },
-        BasicInstruction::CreateNonFungibleResourceWithOwner {
-            id_type,
-            metadata,
-            owner_badge,
-            initial_supply
-        } => {
-            f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
-            format_typed_value(f, context, id_type,)?;
-            format_typed_value(f, context, metadata)?;
-            format_typed_value(f, context, owner_badge)?;
             format_typed_value(f, context, initial_supply)?;
             f.write_str(";")?;
         },

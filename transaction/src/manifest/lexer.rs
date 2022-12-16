@@ -136,9 +136,7 @@ pub enum TokenKind {
     MintFungible,
     MintNonFungible,
     CreateFungibleResource,
-    CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
-    CreateNonFungibleResourceWithOwner,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -485,11 +483,7 @@ impl Lexer {
             "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
             "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
             "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
-            "CREATE_FUNGIBLE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateFungibleResourceWithOwner),
             "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
-            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
-                Ok(TokenKind::CreateNonFungibleResourceWithOwner)
-            }
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
