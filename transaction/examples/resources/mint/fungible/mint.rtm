@@ -3,9 +3,19 @@
 # being allowed to mint a resource. This example is no different. In this example, there is a minter
 # badge which we have in our account which allows us to mint this resource
 
-# Note: This manifest does not have a "lock_fee" instruction as this instruction will be added
-# automatically by the wallet. If all you intend to do is run this manifest in resim then you can
-# add this instruction.
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+
+# Locking 10 XRD in fees from the account component - Currently, the account component does not have
+# a method for creating a proof and locking a fee at the same time. Therefore, locking a fee will be
+# its own method call and creating a proof will be its own method call.
+CALL_METHOD 
+    ComponentAddress("{account_component_address}") 
+    "lock_fee"
+    Decimal("10");
 
 # We have a badge in our account component which allows us to mint this resource. So, we create a 
 # proof from this badge which will allow us to mint the resource

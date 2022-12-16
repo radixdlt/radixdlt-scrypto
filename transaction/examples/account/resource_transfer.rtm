@@ -2,12 +2,17 @@
 # transaction. We will be withdrawing 100 XRD from our account component and depositing them in 
 # another account component. 
 
-# Note: This manifest does not have a "lock_fee" instruction as this instruction will be added
-# automatically by the wallet. If all you intend to do is run this manifest in resim then you can
-# add this instruction.
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+CALL_METHOD 
+    ComponentAddress("{this_account_component_address}") 
+    "lock_fee"
+    Decimal("10");
 
-# The account component withdraw methods which have been optimized to also lock a fee in a single 
-# call. In this call, we lock a fee of 10 XRD and also withdraw 100 XRD from the account.
+# Withdrawing 100 XRD from the account component
 CALL_METHOD 
     ComponentAddress("{this_account_component_address}") 
     "withdraw_by_amount"
