@@ -165,24 +165,10 @@ pub enum Instruction {
         initial_supply: Value,
     },
 
-    CreateFungibleResourceWithOwner {
-        divisibility: Value,
-        metadata: Value,
-        owner_badge: Value,
-        initial_supply: Value,
-    },
-
     CreateNonFungibleResource {
         id_type: Value,
         metadata: Value,
         access_rules: Value,
-        initial_supply: Value,
-    },
-
-    CreateNonFungibleResourceWithOwner {
-        id_type: Value,
-        metadata: Value,
-        owner_badge: Value,
         initial_supply: Value,
     },
 }
