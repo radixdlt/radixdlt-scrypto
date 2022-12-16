@@ -9,7 +9,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct NewBadgeMutable {
     /// The minter resource address
-    minter_resource_address: SimulatorResourceAddress,
+    minter_badge: SimulatorResourceOrNonFungibleAddress,
 
     /// The symbol
     #[clap(long)]
@@ -69,7 +69,7 @@ impl NewBadgeMutable {
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .new_badge_mutable(metadata, self.minter_resource_address.0)
+            .new_badge_mutable(metadata, self.minter_badge.clone().into())
             .build();
         handle_manifest(
             manifest,
