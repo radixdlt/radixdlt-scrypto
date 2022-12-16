@@ -172,6 +172,7 @@ where
                         Cow::Owned(instructions.iter().map(|e| e.clone().into()).collect())
                     }
                     InstructionList::Any(instructions) => Cow::Borrowed(instructions),
+                    InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
                 },
             });
 

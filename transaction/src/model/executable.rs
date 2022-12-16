@@ -37,6 +37,7 @@ pub enum FeePayment {
 pub enum InstructionList<'a> {
     Basic(&'a [BasicInstruction]),
     Any(&'a [Instruction]),
+    AnyOwned(Vec<Instruction>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
