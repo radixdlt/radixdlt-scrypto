@@ -170,24 +170,8 @@ impl Parser {
                 abi: self.parse_value()?,
                 owner_badge: self.parse_value()?,
             },
-            TokenKind::CreateResource => Instruction::CreateResource {
-                resource_type: self.parse_value()?,
-                metadata: self.parse_value()?,
-                access_rules: self.parse_value()?,
-                mint_params: self.parse_value()?,
-            },
-            TokenKind::CreateResourceWithOwner => Instruction::CreateResourceWithOwner {
-                resource_type: self.parse_value()?,
-                metadata: self.parse_value()?,
-                owner_badge: self.parse_value()?,
-                mint_params: self.parse_value()?,
-            },
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
-            },
-            TokenKind::MintResource => Instruction::MintResource {
-                amount: self.parse_value()?,
-                resource_address: self.parse_value()?,
             },
             TokenKind::RecallResource => Instruction::RecallResource {
                 vault_id: self.parse_value()?,
@@ -217,6 +201,38 @@ impl Parser {
                 index: self.parse_value()?,
                 key: self.parse_value()?,
                 rule: self.parse_value()?,
+            },
+            TokenKind::MintFungible => Instruction::MintFungible { 
+                resource_address: self.parse_value()?, 
+                amount: self.parse_value()? 
+            },
+            TokenKind::MintNonFungible => Instruction::MintNonFungible {
+                resource_address: self.parse_value()?, 
+                entries: self.parse_value()? 
+            },
+            TokenKind::CreateFungibleResource => Instruction::CreateFungibleResource { 
+                divisibility: self.parse_value()?, 
+                metadata: self.parse_value()?, 
+                access_rules: self.parse_value()?, 
+                initial_supply: self.parse_value()? 
+            },
+            TokenKind::CreateFungibleResourceWithOwner => Instruction::CreateFungibleResourceWithOwner { 
+                divisibility: self.parse_value()?, 
+                metadata: self.parse_value()?, 
+                owner_badge: self.parse_value()?, 
+                initial_supply: self.parse_value()? 
+            },
+            TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource { 
+                id_type: self.parse_value()?, 
+                metadata: self.parse_value()?, 
+                access_rules: self.parse_value()?, 
+                initial_supply: self.parse_value()? 
+            },
+            TokenKind::CreateNonFungibleResourceWithOwner => Instruction::CreateNonFungibleResourceWithOwner { 
+                id_type: self.parse_value()?, 
+                metadata: self.parse_value()?, 
+                owner_badge: self.parse_value()?, 
+                initial_supply: self.parse_value()? 
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
@@ -718,17 +734,13 @@ mod tests {
     #[test]
     fn test_create_resource() {
         parse_instruction_ok!(
-            r#"CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Enum("Some", Enum("Fungible", Decimal("1.0")));"#,
-            Instruction::CreateResource {
-                resource_type: Value::Enum("Fungible".to_string(), vec![Value::U8(0)]),
+            r#"CREATE_RESOURCE 0u8 Array<Tuple>() Array<Tuple>() Some(Decimal("1.0"));"#,
+            Instruction::CreateFungibleResource {
+                divisibility: Value::U8(0),
                 metadata: Value::Array(Type::Tuple, vec![]),
                 access_rules: Value::Array(Type::Tuple, vec![]),
-                mint_params: Value::Enum(
-                    "Some".to_string(),
-                    vec![Value::Enum(
-                        "Fungible".to_string(),
-                        vec![Value::Decimal(Value::String("1.0".into()).into())]
-                    )]
+                initial_supply: Value::Some(
+                    Box::new(Value::Decimal(Value::String("1.0".into()).into()))
                 ),
             }
         );
