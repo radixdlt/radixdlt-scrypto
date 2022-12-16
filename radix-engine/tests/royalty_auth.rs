@@ -22,7 +22,7 @@ fn set_up_package_and_component() -> (
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
 
     // Publish package
-    let (code, abi) = test_runner.compile("./tests/blueprints/royalty-auth");
+    let (code, abi) = Compile::compile("./tests/blueprints/royalty-auth");
     let receipt = test_runner.execute_manifest(
         ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(account, 10u32.into())

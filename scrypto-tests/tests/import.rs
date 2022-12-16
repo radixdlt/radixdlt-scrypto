@@ -7,6 +7,7 @@ use sbor::rust::vec::Vec;
 use scrypto::component::*;
 use scrypto::prelude::*;
 use scrypto::{blueprint, import};
+use scrypto_unit::Compile;
 
 // base directory: `scrypto-derive`
 import! {
@@ -194,4 +195,9 @@ fn test_import_from_abi() {
     let arg6 = ["a".to_owned(), "b".to_owned()];
 
     instance.calculate_volume(arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+#[test]
+fn import_blueprint_can_be_compiled() {
+    Compile::compile("./tests/blueprints/import");
 }

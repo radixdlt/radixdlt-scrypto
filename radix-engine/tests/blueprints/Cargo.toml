@@ -13,7 +13,6 @@ members = [
     "execution_trace",
     "external_blueprint_caller",
     "fee",
-    "import",
     "kernel",
     "kv_store",
     "leaks",
