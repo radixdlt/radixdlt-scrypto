@@ -1,6 +1,9 @@
 use crate::time::constants::*;
 use sbor::*;
 
+/// Represents a Unix timestamp, capturing the seconds since the unix epoch.
+///
+/// See also the [`UtcDateTime`](super::UtcDateTime) type which supports conversion to/from `Instant`.
 #[derive(Encode, Decode, TypeId, Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Instant {
     pub seconds_since_unix_epoch: i64,

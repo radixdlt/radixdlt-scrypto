@@ -65,16 +65,20 @@ impl fmt::Display for DateTimeError {
     }
 }
 
-/// A simple date/time convenience struct, that can represent any date between
-/// 1-1-1 00:00:00 and u32::MAX-12-31 23:59:59 (inclusive).
-/// Months and days of month are 1-based (i.e. Dec 15th 2022 corresponds to 2022-12-15).
+/// A `UtcDateTime` represents a Unix timestamp on the UTC Calendar.
 ///
-/// Hour, minute and second constitute a 0-based 24-hour clock.
-/// With midnight being represented as 00:00:00 and 23:59:59 being the maximum
-/// correct value (a second before midnight).
-/// This struct isn't timezone-aware (but can be considered UTC when converting from an Instant).
+/// It can represent any date between `1-1-1 00:00:00` and `[u32::MAX]-12-31 23:59:59` (inclusive).
+///
+/// In terms of indexing:
+/// * Months and days of month are 1-based (i.e. `Dec 15th 2022` corresponds to `2022-12-15`).
+/// * Hour, minute and second are 0-based, based on the 24-hour clock.
+///   Midnight is represented as `00:00:00` and `23:59:59` is the last second before midnight.
+///   Following Unix timstamp conventions, leap seconds are not supported.
+///
+/// `UtcDateTime` supports methods for easy conversion to and from the [`Instant`](super::Instant) type, which
+/// can be queried from the Radix Engine.
 #[derive(Encode, Decode, TypeId, PartialEq, Eq, Copy, Clone, Debug)]
-pub struct DateTime {
+pub struct UtcDateTime {
     year: u32,
     month: u8,
     day_of_month: u8,
@@ -83,22 +87,21 @@ pub struct DateTime {
     second: u8,
 }
 
-impl DateTime {
-    /// Creates a DateTime from its individual components.
+impl UtcDateTime {
+    /// Creates a `UtcDateTime` from its individual components.
     ///
-    /// Months and days of month are 1-based.
-    /// Valid year range is: 1-u32::MAX (both inclusive).
-    /// Valid month values are: 1-12 (both inclusive).
-    /// Valid day of month values are: 1-{28, 29, 30 31} (both inclusive).
-    /// The upper limit depends on a month/year.
-    /// Values 28, 30 and 31 correspond to non-leap years months,
-    /// and a value of 29 corresponds to February on a leap year.
-    /// Note that an attempt to create an invalid date (e.g. 2022-04-31 or 2023-02-29)
-    /// will result in an error.
+    /// Months and days of month are 1-based, with the following limits:
+    /// * Valid year range is: `1` to `u32::MAX`inclusive.
+    /// * Valid month values are: `1` to `12` inclusive.
+    /// * Valid day of month values are: `1` to `{28, 29, 30, 31}` inclusive.
+    ///   The upper limit depends on the month and year, as per the Gregorian calendar.
+    ///
+    /// An attempt to create an invalid date (e.g. `2022-04-31` or `2023-02-29`)
+    /// will result in a corresponding `Err(DateTimeError)`.
     ///
     /// Hour, minute and second constitute a 0-based 24-hour clock.
-    /// With midnight being represented as 00:00:00 and 23:59:59 being the maximum
-    /// correct value (a second before midnight).
+    /// Midnight is represented as `00:00:00` and `23:59:59` is the maximum possible time (a second before midnight).
+    /// Following Unix time conventions, leap seconds are not represented in this system.
     pub fn new(
         year: u32,
         month: u8,
@@ -146,12 +149,10 @@ impl DateTime {
         })
     }
 
-    /// Creates a DateTime from an Instant.
+    /// Creates a `UtcDateTime` from an [`Instant`](super::Instant).
     ///
-    /// Minimum supported `seconds_since_unix_epoch` value
-    /// is -62135596800 (corresponding to a DateTime of 1-1-1 00:00:00)
-    /// and a maximum value is 135536014634284799 (corresponding
-    /// to a DateTime of u32::Max-12-31 23:59:59).
+    /// The minimum supported `seconds_since_unix_epoch` value is `-62135596800` (corresponding to `1-1-1 00:00:00`)
+    /// and the maximum value is `135536014634284799` (corresponding to `[u32::Max]-12-31 23:59:59`).
     pub fn from_instant(instant: &Instant) -> Result<Self, DateTimeError> {
         if instant.seconds_since_unix_epoch < MIN_SUPPORTED_TIMESTAMP
             || instant.seconds_since_unix_epoch > MAX_SUPPORTED_TIMESTAMP
@@ -242,7 +243,7 @@ impl DateTime {
         })
     }
 
-    /// Creates an Instant based on this DateTime
+    /// Creates an [`Instant`](super::Instant) from this `UtcDateTime`
     pub fn to_instant(&self) -> Instant {
         let is_leap_year = Self::is_leap_year(self.year);
 
@@ -366,47 +367,47 @@ impl DateTime {
         self.second
     }
 
-    pub fn add_days(&self, days_to_add: i64) -> Option<DateTime> {
+    pub fn add_days(&self, days_to_add: i64) -> Option<UtcDateTime> {
         self.to_instant()
             .add_days(days_to_add)
             .and_then(|i| Self::from_instant(&i).ok())
     }
 
-    pub fn add_hours(&self, hours_to_add: i64) -> Option<DateTime> {
+    pub fn add_hours(&self, hours_to_add: i64) -> Option<UtcDateTime> {
         self.to_instant()
             .add_hours(hours_to_add)
             .and_then(|i| Self::from_instant(&i).ok())
     }
 
-    pub fn add_minutes(&self, minutes_to_add: i64) -> Option<DateTime> {
+    pub fn add_minutes(&self, minutes_to_add: i64) -> Option<UtcDateTime> {
         self.to_instant()
             .add_minutes(minutes_to_add)
             .and_then(|i| Self::from_instant(&i).ok())
     }
 
-    pub fn add_seconds(&self, seconds_to_add: i64) -> Option<DateTime> {
+    pub fn add_seconds(&self, seconds_to_add: i64) -> Option<UtcDateTime> {
         self.to_instant()
             .add_seconds(seconds_to_add)
             .and_then(|i| Self::from_instant(&i).ok())
     }
 }
 
-impl TryFrom<Instant> for DateTime {
+impl TryFrom<Instant> for UtcDateTime {
     type Error = DateTimeError;
     fn try_from(instant: Instant) -> Result<Self, Self::Error> {
-        DateTime::from_instant(&instant)
+        UtcDateTime::from_instant(&instant)
     }
 }
 
-impl From<DateTime> for Instant {
-    fn from(dt: DateTime) -> Self {
+impl From<UtcDateTime> for Instant {
+    fn from(dt: UtcDateTime) -> Self {
         (&dt).to_instant()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{DateTime, Instant};
+    use super::{Instant, UtcDateTime};
     use crate::time::date_time::MAX_SUPPORTED_TIMESTAMP;
     use radix_engine_interface::time::date_time::MIN_SUPPORTED_TIMESTAMP;
 
@@ -449,21 +450,21 @@ mod tests {
         ];
 
         for (timestamp, dt_components) in test_data {
-            let expected_dt = DateTime::from(dt_components);
+            let expected_dt = UtcDateTime::from(dt_components);
             let expected_instant = Instant::new(timestamp);
 
             assert_eq!(expected_dt.to_instant(), expected_instant);
             assert_eq!(
-                DateTime::from_instant(&expected_instant).unwrap(),
+                UtcDateTime::from_instant(&expected_instant).unwrap(),
                 expected_dt
             );
         }
 
         // Some error assertions (no unexpected panics)
-        assert!(DateTime::from_instant(&Instant::new(MAX_SUPPORTED_TIMESTAMP + 1)).is_err());
-        assert!(DateTime::from_instant(&Instant::new(MIN_SUPPORTED_TIMESTAMP - 1)).is_err());
-        assert!(DateTime::from_instant(&Instant::new(i64::MIN)).is_err());
-        assert!(DateTime::from_instant(&Instant::new(i64::MAX)).is_err());
+        assert!(UtcDateTime::from_instant(&Instant::new(MAX_SUPPORTED_TIMESTAMP + 1)).is_err());
+        assert!(UtcDateTime::from_instant(&Instant::new(MIN_SUPPORTED_TIMESTAMP - 1)).is_err());
+        assert!(UtcDateTime::from_instant(&Instant::new(i64::MIN)).is_err());
+        assert!(UtcDateTime::from_instant(&Instant::new(i64::MAX)).is_err());
     }
 
     #[test]
@@ -532,24 +533,24 @@ mod tests {
         assert_fails([2000, 12, 31, 23, 59, 59], |dt| dt.add_seconds(i64::MIN));
     }
 
-    fn assert_dates<F: FnOnce(DateTime) -> Option<DateTime>>(
+    fn assert_dates<F: FnOnce(UtcDateTime) -> Option<UtcDateTime>>(
         start: [u32; 6],
         op: F,
         expected_end: [u32; 6],
     ) {
-        let start_dt = DateTime::from(start);
-        let expected_end_dt = DateTime::from(expected_end);
+        let start_dt = UtcDateTime::from(start);
+        let expected_end_dt = UtcDateTime::from(expected_end);
         assert_eq!(op(start_dt).unwrap(), expected_end_dt);
     }
 
-    fn assert_fails<F: FnOnce(DateTime) -> Option<DateTime>>(start: [u32; 6], op: F) {
-        let start_dt = DateTime::from(start);
+    fn assert_fails<F: FnOnce(UtcDateTime) -> Option<UtcDateTime>>(start: [u32; 6], op: F) {
+        let start_dt = UtcDateTime::from(start);
         assert!(op(start_dt).is_none());
     }
 
-    impl From<[u32; 6]> for DateTime {
-        fn from(dt: [u32; 6]) -> DateTime {
-            DateTime::new(
+    impl From<[u32; 6]> for UtcDateTime {
+        fn from(dt: [u32; 6]) -> UtcDateTime {
+            UtcDateTime::new(
                 dt[0] as u32,
                 dt[1] as u8,
                 dt[2] as u8,
