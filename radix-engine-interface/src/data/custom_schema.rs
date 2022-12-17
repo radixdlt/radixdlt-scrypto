@@ -3,7 +3,8 @@ use sbor::rust::collections::IndexSet;
 use sbor::*;
 
 #[allow(dead_code)]
-type ScryptoTypeSchema<TypeLink> = TypeSchema<ScryptoCustomTypeId, ScryptoCustomTypeSchema<TypeLink>, TypeLink>;
+type ScryptoTypeSchema<TypeLink> =
+    TypeSchema<ScryptoCustomTypeId, ScryptoCustomTypeSchema<TypeLink>, TypeLink>;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -157,7 +158,7 @@ impl CustomWellKnownType for ScryptoCustomWellKnownType {
             _ => return None,
         };
 
-        Some(LocalTypeData::named(
+        Some(LocalTypeData::named_no_child_names(
             name,
             TypeSchema::Custom(custom_type_schema),
         ))

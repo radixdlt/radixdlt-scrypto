@@ -60,12 +60,12 @@ impl<C: CustomTypeSchema, T: Schema<C>, E: Schema<C>> Schema<C> for Result<T, E>
     fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
         Some(LocalTypeData {
             schema: TypeSchema::Enum {
-                variants: crate::rust::collections::indexmap::indexmap![
+                variants: crate::rust::collections::btree_map::btreemap![
                     "Ok".to_owned() => GlobalTypeRef::complex("Ok", &[T::SCHEMA_TYPE_REF]),
                     "Err".to_owned() => GlobalTypeRef::complex("Err", &[E::SCHEMA_TYPE_REF]),
                 ],
             },
-            naming: TypeNaming::named("Set"),
+            naming: TypeNaming::named_no_child_names("Set"),
         })
     }
 

@@ -1,5 +1,6 @@
 use crate::*;
 use sbor::rust::borrow::Cow;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
@@ -57,48 +58,50 @@ pub struct LocalTypeData<C: CustomTypeSchema, L: TypeLink + TypeId<C::CustomType
 }
 
 impl<C: CustomTypeSchema, L: TypeLink + TypeId<C::CustomTypeId>> LocalTypeData<C, L> {
-    pub const fn named(name: &'static str, schema: TypeSchema<C::CustomTypeId, C, L>) -> Self {
-        Self {
-            schema,
-            naming: TypeNaming {
-                type_name: Cow::Borrowed(name),
-                field_names: None,
-            },
-        }
+    pub const fn new(naming: TypeNaming, schema: TypeSchema<C::CustomTypeId, C, L>) -> Self {
+        Self { schema, naming }
+    }
+
+    pub const fn named_no_child_names(
+        name: &'static str,
+        schema: TypeSchema<C::CustomTypeId, C, L>,
+    ) -> Self {
+        Self::new(TypeNaming::named_no_child_names(name), schema)
     }
 
     pub const fn named_unit(name: &'static str) -> Self {
-        Self {
-            schema: TypeSchema::Unit,
-            naming: TypeNaming {
-                type_name: Cow::Borrowed(name),
-                field_names: None,
-            },
-        }
+        Self::new(TypeNaming::named_no_child_names(name), TypeSchema::Unit)
     }
 
     pub const fn named_tuple(name: &'static str, element_types: Vec<L>) -> Self {
-        Self {
-            schema: TypeSchema::Tuple { element_types },
-            naming: TypeNaming {
-                type_name: Cow::Borrowed(name),
-                field_names: None,
-            },
-        }
+        Self::new(
+            TypeNaming::named_no_child_names(name),
+            TypeSchema::Tuple { element_types },
+        )
     }
 
-    pub fn named_tuple_named_fields(
+    pub const fn named_fields_tuple(
         name: &'static str,
         element_types: Vec<L>,
-        field_names: &[&'static str],
+        field_names: Vec<String>,
     ) -> Self {
-        Self {
-            schema: TypeSchema::Tuple { element_types },
-            naming: TypeNaming {
-                type_name: Cow::Borrowed(name),
-                field_names: Some(field_names.iter().map(|x| x.to_string()).collect()),
+        Self::new(
+            TypeNaming::named_with_fields(name, field_names),
+            TypeSchema::Tuple { element_types },
+        )
+    }
+
+    pub const fn named_enum(
+        name: &'static str,
+        variant_names: BTreeMap<String, String>,
+        variant_types: BTreeMap<String, L>,
+    ) -> Self {
+        Self::new(
+            TypeNaming::named_with_variants(name, variant_names),
+            TypeSchema::Enum {
+                variants: variant_types,
             },
-        }
+        )
     }
 }
 
@@ -107,16 +110,41 @@ impl<C: CustomTypeSchema, L: TypeLink + TypeId<C::CustomTypeId>> LocalTypeData<C
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct TypeNaming {
     pub type_name: Cow<'static, str>,
-    pub field_names: Option<Vec<String>>,
+    pub child_names: ChildNames,
 }
 
 impl TypeNaming {
-    pub const fn named(name: &'static str) -> Self {
+    pub const fn named_no_child_names(name: &'static str) -> Self {
         Self {
             type_name: Cow::Borrowed(name),
-            field_names: None,
+            child_names: ChildNames::None,
         }
     }
+
+    pub const fn named_with_fields(name: &'static str, field_names: Vec<String>) -> Self {
+        Self {
+            type_name: Cow::Borrowed(name),
+            child_names: ChildNames::FieldNames(field_names),
+        }
+    }
+
+    pub const fn named_with_variants(
+        name: &'static str,
+        variant_names: BTreeMap<String, String>,
+    ) -> Self {
+        Self {
+            type_name: Cow::Borrowed(name),
+            child_names: ChildNames::VariantNames(variant_names),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum ChildNames {
+    #[default]
+    None,
+    FieldNames(Vec<String>),
+    VariantNames(BTreeMap<String, String>),
 }
 
 /// An array of custom types, and associated extra information.
@@ -126,6 +154,8 @@ pub struct FullTypeSchema<C: CustomTypeSchema> {
     pub naming: Vec<TypeNaming>,
 }
 
+// TODO: Could get rid of the Cow by using some per-custom type once_cell to cache basic well-known-types,
+//       and return references to the static cached values
 pub struct ResolvedLocalTypeData<'a, C: CustomTypeSchema> {
     pub schema: Cow<'a, TypeSchema<C::CustomTypeId, C, SchemaLocalTypeRef>>,
     pub naming: Cow<'a, TypeNaming>,

@@ -57,81 +57,81 @@ pub fn resolve_well_known_type_data<W: CustomWellKnownType>(
     well_known_index: u8,
 ) -> Option<LocalTypeData<W::CustomTypeSchema, SchemaLocalTypeRef>> {
     let type_data = match well_known_index {
-        ANY_INDEX => LocalTypeData::named("Any", TypeSchema::Any),
+        ANY_INDEX => LocalTypeData::named_no_child_names("Any", TypeSchema::Any),
 
-        UNIT_INDEX => LocalTypeData::named("-", TypeSchema::Unit),
-        BOOL_INDEX => LocalTypeData::named("Bool", TypeSchema::Bool),
+        UNIT_INDEX => LocalTypeData::named_no_child_names("-", TypeSchema::Unit),
+        BOOL_INDEX => LocalTypeData::named_no_child_names("Bool", TypeSchema::Bool),
 
-        I8_INDEX => LocalTypeData::named(
+        I8_INDEX => LocalTypeData::named_no_child_names(
             "I8",
             TypeSchema::I8 {
                 validation: NumericValidation::none(),
             },
         ),
-        I16_INDEX => LocalTypeData::named(
+        I16_INDEX => LocalTypeData::named_no_child_names(
             "I16",
             TypeSchema::I16 {
                 validation: NumericValidation::none(),
             },
         ),
-        I32_INDEX => LocalTypeData::named(
+        I32_INDEX => LocalTypeData::named_no_child_names(
             "I32",
             TypeSchema::I32 {
                 validation: NumericValidation::none(),
             },
         ),
-        I64_INDEX => LocalTypeData::named(
+        I64_INDEX => LocalTypeData::named_no_child_names(
             "I64",
             TypeSchema::I64 {
                 validation: NumericValidation::none(),
             },
         ),
-        I128_INDEX => LocalTypeData::named(
+        I128_INDEX => LocalTypeData::named_no_child_names(
             "I128",
             TypeSchema::I128 {
                 validation: NumericValidation::none(),
             },
         ),
 
-        U8_INDEX => LocalTypeData::named(
+        U8_INDEX => LocalTypeData::named_no_child_names(
             "U8",
             TypeSchema::U8 {
                 validation: NumericValidation::none(),
             },
         ),
-        U16_INDEX => LocalTypeData::named(
+        U16_INDEX => LocalTypeData::named_no_child_names(
             "U16",
             TypeSchema::U16 {
                 validation: NumericValidation::none(),
             },
         ),
-        U32_INDEX => LocalTypeData::named(
+        U32_INDEX => LocalTypeData::named_no_child_names(
             "U32",
             TypeSchema::U32 {
                 validation: NumericValidation::none(),
             },
         ),
-        U64_INDEX => LocalTypeData::named(
+        U64_INDEX => LocalTypeData::named_no_child_names(
             "U64",
             TypeSchema::U64 {
                 validation: NumericValidation::none(),
             },
         ),
-        U128_INDEX => LocalTypeData::named(
+        U128_INDEX => LocalTypeData::named_no_child_names(
             "U128",
             TypeSchema::U128 {
                 validation: NumericValidation::none(),
             },
         ),
 
-        STRING_INDEX => LocalTypeData::named(
+        STRING_INDEX => LocalTypeData::named_no_child_names(
             "String",
             TypeSchema::String {
                 length_validation: LengthValidation::none(),
             },
         ),
 
-        BYTES_INDEX => LocalTypeData::named(
+        BYTES_INDEX => LocalTypeData::named_no_child_names(
             "Bytes",
             TypeSchema::Array {
                 element_sbor_type_id: sbor::TYPE_U8,

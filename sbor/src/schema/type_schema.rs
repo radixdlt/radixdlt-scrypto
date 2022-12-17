@@ -1,5 +1,5 @@
 use super::*;
-use sbor::rust::collections::{IndexMap, IndexSet};
+use sbor::rust::collections::{BTreeMap, IndexSet};
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -60,7 +60,7 @@ pub enum TypeSchema<X: CustomTypeId, C: CustomTypeSchema<CustomTypeId = X>, L: T
     },
 
     Enum {
-        variants: IndexMap<String, L>,
+        variants: BTreeMap<String, L>,
     },
 
     // Custom Types

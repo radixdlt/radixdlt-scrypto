@@ -97,7 +97,7 @@ mod schema {
                         element_type: T::SCHEMA_TYPE_REF,
                         length_validation: LengthValidation::none(),
                     },
-                    naming: TypeNaming::named("Array"),
+                    naming: TypeNaming::named_no_child_names("Array"),
                 })
             }
         }
@@ -132,7 +132,7 @@ mod schema {
                         max: Some(size),
                     },
                 },
-                naming: TypeNaming::named(type_name),
+                naming: TypeNaming::named_no_child_names(type_name),
             })
         }
 

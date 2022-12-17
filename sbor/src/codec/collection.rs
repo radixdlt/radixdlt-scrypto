@@ -272,7 +272,7 @@ mod schema {
                     element_type: T::SCHEMA_TYPE_REF,
                     length_validation: LengthValidation::none(),
                 },
-                naming: TypeNaming::named("Set"),
+                naming: TypeNaming::named_no_child_names("Set"),
             })
         }
 
@@ -296,7 +296,7 @@ mod schema {
                     element_type: <(K, V)>::SCHEMA_TYPE_REF,
                     length_validation: LengthValidation::none(),
                 },
-                naming: TypeNaming::named("Map"),
+                naming: TypeNaming::named_no_child_names("Map"),
             })
         }
 
