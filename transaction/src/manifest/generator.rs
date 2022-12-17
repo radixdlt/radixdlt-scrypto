@@ -1670,14 +1670,8 @@ mod tests {
                 initial_supply: Some(BTreeMap::from([(
                     NonFungibleId::U32(1),
                     (
-                        args!(
-                            String::from("Hello World"),
-                            Decimal::from("12")
-                        ), 
-                        args!(
-                            12u8,
-                            19u128
-                        )
+                        args!(String::from("Hello World"), Decimal::from("12")),
+                        args!(12u8, 19u128)
                     )
                 )]))
             },
@@ -1727,14 +1721,8 @@ mod tests {
                 entries: BTreeMap::from([(
                     NonFungibleId::U32(1),
                     (
-                        args!(
-                            String::from("Hello World"),
-                            Decimal::from("12")
-                        ), 
-                        args!(
-                            12u8,
-                            19u128
-                        )
+                        args!(String::from("Hello World"), Decimal::from("12")),
+                        args!(12u8, 19u128)
                     )
                 )])
             },
