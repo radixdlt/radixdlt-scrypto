@@ -512,6 +512,14 @@ fn generate_stubs(
             pub component: ::scrypto::component::GlobalComponentRef,
         }
 
+        impl From<ComponentAddress> for #component_ref_ident {
+            fn from(component: ComponentAddress) -> Self {
+                Self {
+                    component: ::scrypto::component::GlobalComponentRef(component)
+                }
+            }
+        }
+
         impl ::scrypto::component::GlobalComponent for #component_ref_ident {
             fn package_address(&self) -> ::scrypto::model::PackageAddress {
                 self.component.package_address()
@@ -753,6 +761,14 @@ mod tests {
                     pub component: ::scrypto::component::GlobalComponentRef,
                 }
 
+                impl From<ComponentAddress> for TestGlobalComponentRef {
+                    fn from(component: ComponentAddress) -> Self {
+                        Self {
+                            component: ::scrypto::component::GlobalComponentRef(component)
+                        }
+                    }
+                }
+
                 impl ::scrypto::component::GlobalComponent for TestGlobalComponentRef {
                     fn package_address(&self) -> ::scrypto::model::PackageAddress {
                         self.component.package_address()
@@ -877,6 +893,14 @@ mod tests {
                 #[allow(non_camel_case_types)]
                 pub struct TestGlobalComponentRef {
                     pub component: ::scrypto::component::GlobalComponentRef,
+                }
+
+                impl From<ComponentAddress> for TestGlobalComponentRef {
+                    fn from(component: ComponentAddress) -> Self {
+                        Self {
+                            component: ::scrypto::component::GlobalComponentRef(component)
+                        }
+                    }
                 }
 
                 impl ::scrypto::component::GlobalComponent for TestGlobalComponentRef {

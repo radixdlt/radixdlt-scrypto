@@ -34,7 +34,7 @@ pub trait ComponentState<C: LocalComponent>: ScryptoEncode + ScryptoDecode {
 
 /// A separate trait for standardized calls so that component methods don't
 /// name clash
-/// TODO: unify with LocalComponent
+/// TODO: unify with LocalComponent and use Own<C> and GlobalRef<C> Deref structures
 pub trait GlobalComponent {
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
