@@ -8,11 +8,9 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
 use radix_engine_interface::model::*;
-use radix_engine_interface::rule;
 
 pub struct Package;
 
@@ -82,8 +80,19 @@ impl NativeProcedure for PackagePublishInvocation {
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
-        let access_rules = AccessRulesChainSubstate {
-            access_rules_chain: vec![self.access_rules],
+        let access_rules = {
+            let mut access_rules = AccessRules::new();
+            for (auth_key, (access_rule, mutability)) in self.access_rules.into_iter() {
+                access_rules.set_access_rule_and_mutability(
+                    auth_key.into(),
+                    access_rule,
+                    mutability,
+                );
+            }
+
+            AccessRulesChainSubstate {
+                access_rules_chain: vec![access_rules],
+            }
         };
 
         // TODO: Can we trust developers enough to add protection for
@@ -115,113 +124,6 @@ impl NativeProcedure for PackagePublishInvocation {
 
         let package_address: PackageAddress = global_node_id.into();
         Ok((package_address, CallFrameUpdate::empty()))
-    }
-}
-
-impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishWithOwnerInvocation {
-    type Exec = NativeExecutor<Self>;
-
-    fn resolve<D: ResolverApi<W>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
-        let actor =
-            ResolvedActor::function(NativeFunction::Package(PackageFunction::PublishWithOwner));
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl NativeProcedure for PackagePublishWithOwnerInvocation {
-    type Output = PackageAddress;
-
-    fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + InvokableModel<RuntimeError>,
-    {
-        let code = api.read_blob(&self.code.0)?.to_vec();
-        let blob = api.read_blob(&self.abi.0)?;
-        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidAbi(e),
-            ))
-        })?;
-        let package = Package::new(code, abi).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidWasm(e),
-            ))
-        })?;
-        let package_royalty_config = PackageRoyaltyConfigSubstate {
-            royalty_config: self.royalty_config,
-        };
-        let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
-            royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
-        };
-        let metadata_substate = MetadataSubstate {
-            metadata: self.metadata,
-        };
-
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
-        let package_address: PackageAddress = global_node_id.into();
-
-        // Add protection for metadata/royalties
-        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Get,
-            ))),
-            AccessRule::AllowAll,
-            rule!(require(self.owner_badge.clone())),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
-            rule!(require(self.owner_badge.clone())),
-            rule!(require(self.owner_badge.clone())),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-                PackageMethod::SetRoyaltyConfig,
-            ))),
-            rule!(require(self.owner_badge.clone())),
-            rule!(require(self.owner_badge.clone())),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-                PackageMethod::ClaimRoyalty,
-            ))),
-            rule!(require(self.owner_badge.clone())),
-            rule!(require(self.owner_badge.clone())),
-        );
-
-        // Create package node
-        let node_id = api.allocate_node_id(RENodeType::Package)?;
-        api.create_node(
-            node_id,
-            RENode::Package(
-                package,
-                package_royalty_config,
-                package_royalty_accumulator,
-                metadata_substate,
-                AccessRulesChainSubstate {
-                    access_rules_chain: vec![access_rules],
-                },
-            ),
-        )?;
-        let package_id: PackageId = node_id.into();
-
-        // Globalize
-        api.create_node(
-            global_node_id,
-            RENode::Global(GlobalAddressSubstate::Package(package_id)),
-        )?;
-
-        Ok((
-            package_address,
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Package(package_address))),
-        ))
     }
 }
 

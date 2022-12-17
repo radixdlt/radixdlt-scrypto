@@ -45,7 +45,7 @@ pub fn create_genesis() -> SystemTransaction {
             abi: Blob(hash(&faucet_abi)),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
-            access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
+            access_rules: BTreeMap::new(),
         };
 
         blobs.push(faucet_code);
@@ -61,7 +61,7 @@ pub fn create_genesis() -> SystemTransaction {
             abi: Blob(hash(&account_abi)),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
-            access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
+            access_rules: BTreeMap::new(),
         };
 
         blobs.push(account_code);

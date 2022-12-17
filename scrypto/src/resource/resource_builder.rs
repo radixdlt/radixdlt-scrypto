@@ -1,6 +1,7 @@
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::resource_access_rules_from_owner_badge;
 use radix_engine_interface::model::*;
 use radix_engine_interface::rule;
 use sbor::rust::borrow::ToOwned;
@@ -197,12 +198,12 @@ impl FungibleResourceBuilder {
         owner_badge: NonFungibleAddress,
     ) -> Bucket {
         let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateWithOwnerInvocation {
+            .invoke(ResourceManagerCreateInvocation {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata,
-                owner_badge: owner_badge,
+                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
                 mint_params: Some(MintParams::fungible(amount)),
             })
             .unwrap();
@@ -212,12 +213,12 @@ impl FungibleResourceBuilder {
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleAddress) -> ResourceAddress {
         let (resource_address, _bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateWithOwnerInvocation {
+            .invoke(ResourceManagerCreateInvocation {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata,
-                owner_badge: owner_badge,
+                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
                 mint_params: None,
             })
             .unwrap();
@@ -518,12 +519,12 @@ impl NonFungibleResourceBuilder {
         }
 
         let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateWithOwnerInvocation {
+            .invoke(ResourceManagerCreateInvocation {
                 resource_type: ResourceType::NonFungible {
                     id_type: self.id_type,
                 },
                 metadata: self.metadata,
-                owner_badge: owner_badge,
+                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
                 mint_params: Some(MintParams::NonFungible { entries: encoded }),
             })
             .unwrap();
@@ -533,12 +534,12 @@ impl NonFungibleResourceBuilder {
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleAddress) -> ResourceAddress {
         let (resource_address, _bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateWithOwnerInvocation {
+            .invoke(ResourceManagerCreateInvocation {
                 resource_type: ResourceType::NonFungible {
                     id_type: self.id_type,
                 },
                 metadata: self.metadata,
-                owner_badge: owner_badge,
+                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
                 mint_params: None,
             })
             .unwrap();

@@ -609,20 +609,6 @@ impl TransactionProcessor {
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
-                Instruction::Basic(BasicInstruction::PublishPackageWithOwner {
-                    code,
-                    abi,
-                    owner_badge,
-                }) => api
-                    .invoke(PackagePublishWithOwnerInvocation {
-                        code: code.clone(),
-                        abi: abi.clone(),
-                        royalty_config: BTreeMap::new(),
-                        metadata: BTreeMap::new(),
-                        owner_badge: owner_badge.clone(),
-                    })
-                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
-                    .map_err(InvokeError::Downstream),
 
                 Instruction::Basic(BasicInstruction::CreateFungibleResource {
                     divisibility,

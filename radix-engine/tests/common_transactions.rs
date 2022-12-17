@@ -1,14 +1,14 @@
 use radix_engine::types::{
-    require, scrypto_decode, BTreeMap, Bech32Encoder, Blob, ComponentAddress, Decimal,
+    require, BTreeMap, Bech32Encoder, Blob, ComponentAddress, Decimal,
     FromPublicKey, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey,
-    ResourceType, FAUCET_COMPONENT, RADIX_TOKEN, PackageMethodAuthKey,
+    ResourceType, FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
-use transaction::manifest::{compile, decompile};
+use transaction::manifest::compile;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use utils::ContextualDisplay;
 
@@ -126,7 +126,7 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 
 /// A sample manifest that publishes a package.
 #[test]
-fn publish_package_with_owner_succeeds() {
+fn publish_package_succeeds() {
     test_manifest(
         |account_component_address, bech32_encoder| {
             // TODO: Update the code.blob and abi.blob files that are used for testing.
