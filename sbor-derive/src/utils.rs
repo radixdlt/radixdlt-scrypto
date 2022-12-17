@@ -4,21 +4,11 @@ use std::process::Command;
 use std::process::Stdio;
 
 use proc_macro2::Span;
-use syn::parse_quote;
-use syn::parse_str;
-use syn::punctuated::Punctuated;
-use syn::token::Comma;
-use syn::Attribute;
-use syn::Error;
-use syn::Expr;
-use syn::ExprLit;
-use syn::Field;
-use syn::GenericParam;
-use syn::Generics;
-use syn::Lit;
-use syn::Path;
-use syn::TypeGenerics;
-use syn::WhereClause;
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::punctuated::*;
+use syn::token::*;
+use syn::*;
 
 #[allow(dead_code)]
 pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
@@ -98,6 +88,26 @@ pub fn custom_type_id(attrs: &[Attribute]) -> Option<String> {
         .get("custom_type_id")
         .cloned()
         .unwrap_or(None)
+}
+
+pub fn custom_type_schema(attrs: &[Attribute]) -> Option<String> {
+    extract_attributes(attrs)
+        .get("custom_type_schema")
+        .cloned()
+        .unwrap_or(None)
+}
+
+pub fn get_code_hash_const_array_token_stream(input: &TokenStream) -> TokenStream {
+    let hash = get_hash_of_code(input);
+    quote! {
+        [#(#hash),*]
+    }
+}
+
+pub fn get_hash_of_code(input: &TokenStream) -> [u8; 20] {
+    let buffer = const_sha1::ConstBuffer::new();
+    let buffer = buffer.push_slice(input.to_string().as_bytes());
+    const_sha1::sha1(&buffer).bytes()
 }
 
 pub fn build_decode_generics(
@@ -201,6 +211,52 @@ pub fn build_encode_generics(
         where_clause,
         custom_type_id_generic,
         encoder_generic,
+    ))
+}
+
+pub fn build_schema_generics(
+    original_generics: &Generics,
+    custom_type_schema: Option<String>,
+) -> syn::Result<(Generics, Generics, Option<&WhereClause>, Path)> {
+    let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
+
+    // Extract owned generic to allow mutation
+    let mut impl_generics: Generics = parse_quote! { #impl_generics };
+
+    let (custom_type_schema_generic, need_to_add_cti_generic): (Path, bool) =
+        if let Some(path) = custom_type_schema {
+            (parse_str(path.as_str())?, false)
+        } else {
+            let custom_type_label = find_free_generic_name(original_generics, "C")?;
+            (parse_str(&custom_type_label)?, true)
+        };
+
+    // Add a bound that all pre-existing type parameters have to implement Encode<X, E>
+    // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
+    // It's not perfect - but it's typically good enough!
+
+    for param in impl_generics.params.iter_mut() {
+        let GenericParam::Type(type_param) = param else {
+            continue;
+        };
+        type_param
+            .bounds
+            .push(parse_quote!(::sbor::Schema<#custom_type_schema_generic>));
+    }
+
+    if need_to_add_cti_generic {
+        impl_generics
+            .params
+            .push(parse_quote!(#custom_type_schema_generic: ::sbor::CustomTypeSchema));
+    }
+
+    let ty_generics: Generics = parse_quote! { #ty_generics };
+
+    Ok((
+        impl_generics,
+        ty_generics,
+        where_clause,
+        custom_type_schema_generic,
     ))
 }
 
