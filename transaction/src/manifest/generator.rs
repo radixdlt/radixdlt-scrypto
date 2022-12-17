@@ -387,15 +387,6 @@ pub fn generate_instruction(
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
         },
-        ast::Instruction::PublishPackageWithOwner {
-            code,
-            abi,
-            owner_badge,
-        } => BasicInstruction::PublishPackageWithOwner {
-            code: generate_blob(code, blobs)?,
-            abi: generate_blob(abi, blobs)?,
-            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
-        },
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator

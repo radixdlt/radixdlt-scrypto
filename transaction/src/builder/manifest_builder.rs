@@ -300,7 +300,7 @@ impl ManifestBuilder {
         owner_badge: NonFungibleAddress,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
-        let access_rules = resource_access_rules_for_owner_badge(&owner_badge);
+        let access_rules = resource_access_rules_from_owner_badge(&owner_badge);
         self.create_fungible_resource(divisibility, metadata, access_rules, initial_supply)
     }
 
@@ -349,7 +349,7 @@ impl ManifestBuilder {
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
-        let access_rules = resource_access_rules_for_owner_badge(&owner_badge);
+        let access_rules = resource_access_rules_from_owner_badge(&owner_badge);
         self.create_non_fungible_resource(id_type, metadata, access_rules, initial_supply)
     }
 
@@ -550,28 +550,6 @@ impl ManifestBuilder {
             royalty_config,
             metadata,
             access_rules,
-        })
-        .0
-    }
-
-    /// Publishes a package.
-    pub fn publish_package_with_owner(
-        &mut self,
-        code: Vec<u8>,
-        abi: BTreeMap<String, BlueprintAbi>,
-        owner_badge: NonFungibleAddress,
-    ) -> &mut Self {
-        let code_hash = hash(&code);
-        self.blobs.insert(code_hash, code);
-
-        let abi = scrypto_encode(&abi).unwrap();
-        let abi_hash = hash(&abi);
-        self.blobs.insert(abi_hash, abi);
-
-        self.add_instruction(BasicInstruction::PublishPackageWithOwner {
-            code: Blob(code_hash),
-            abi: Blob(abi_hash),
-            owner_badge,
         })
         .0
     }
@@ -1201,45 +1179,4 @@ fn parse_resource_specifier(
             .map_err(|_| ParseResourceSpecifierError::InvalidAmount(tokens[0].to_owned()))?;
         Ok(ResourceSpecifier::Amount(amount, resource_address))
     }
-}
-
-fn resource_access_rules_for_owner_badge(
-    owner_badge: &NonFungibleAddress,
-) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
-    let mut access_rules = BTreeMap::new();
-    access_rules.insert(
-        ResourceMethodAuthKey::Withdraw,
-        (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        ResourceMethodAuthKey::Deposit,
-        (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        ResourceMethodAuthKey::Recall,
-        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        Mint,
-        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        Burn,
-        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
-    );
-    access_rules.insert(
-        UpdateNonFungibleData,
-        (
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        ),
-    );
-    access_rules.insert(
-        UpdateMetadata,
-        (
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        ),
-    );
-    access_rules
 }

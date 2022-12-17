@@ -127,13 +127,6 @@ pub enum BasicInstruction {
         access_rules: AccessRules,
     },
 
-    /// Publishes a package and set up auth rules using the owner badge.
-    PublishPackageWithOwner {
-        code: Blob,
-        abi: Blob,
-        owner_badge: NonFungibleAddress,
-    },
-
     BurnResource {
         bucket_id: BucketId,
     },
