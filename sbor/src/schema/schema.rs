@@ -1,4 +1,4 @@
-use super::*;
+use crate::*;
 use sbor::rust::borrow::Cow;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -51,13 +51,13 @@ pub trait Schema<C: CustomTypeSchema> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LocalTypeData<C: CustomTypeSchema, L: TypeLink> {
-    pub schema: TypeSchema<C, L>,
+pub struct LocalTypeData<C: CustomTypeSchema, L: TypeLink + TypeId<C::CustomTypeId>> {
+    pub schema: TypeSchema<C::CustomTypeId, C, L>,
     pub naming: TypeNaming,
 }
 
-impl<C: CustomTypeSchema, L: TypeLink> LocalTypeData<C, L> {
-    pub const fn named(name: &'static str, schema: TypeSchema<C, L>) -> Self {
+impl<C: CustomTypeSchema, L: TypeLink + TypeId<C::CustomTypeId>> LocalTypeData<C, L> {
+    pub const fn named(name: &'static str, schema: TypeSchema<C::CustomTypeId, C, L>) -> Self {
         Self {
             schema,
             naming: TypeNaming {
@@ -122,12 +122,12 @@ impl TypeNaming {
 /// An array of custom types, and associated extra information.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FullTypeSchema<C: CustomTypeSchema> {
-    pub custom_types: Vec<TypeSchema<C, SchemaLocalTypeRef>>,
+    pub custom_types: Vec<TypeSchema<C::CustomTypeId, C, SchemaLocalTypeRef>>,
     pub naming: Vec<TypeNaming>,
 }
 
 pub struct ResolvedLocalTypeData<'a, C: CustomTypeSchema> {
-    pub schema: Cow<'a, TypeSchema<C, SchemaLocalTypeRef>>,
+    pub schema: Cow<'a, TypeSchema<C::CustomTypeId, C, SchemaLocalTypeRef>>,
     pub naming: Cow<'a, TypeNaming>,
 }
 

@@ -30,8 +30,8 @@ pub fn generate_full_schema<C: LinearizableCustomTypeSchema>(
 
 fn linearize<C: LinearizableCustomTypeSchema>(
     schemas: &IndexSet<ComplexTypeHash>,
-    type_schema: TypeSchema<C, GlobalTypeRef>,
-) -> TypeSchema<C::Linearized, SchemaLocalTypeRef> {
+    type_schema: TypeSchema<C::CustomTypeId, C, GlobalTypeRef>,
+) -> TypeSchema<C::CustomTypeId, C::Linearized, SchemaLocalTypeRef> {
     match type_schema {
         TypeSchema::Any => TypeSchema::Any,
         TypeSchema::Unit => TypeSchema::Unit,

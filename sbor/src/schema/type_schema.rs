@@ -5,8 +5,10 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 /// A schema for the values that a codec can decode / views as valid
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TypeSchema<C: CustomTypeSchema, L: TypeLink> {
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[sbor(custom_type_id = "X")]
+pub enum TypeSchema<X: CustomTypeId, C: CustomTypeSchema<CustomTypeId = X>, L: TypeLink + TypeId<X>>
+{
     Any,
 
     // Simple Types
@@ -76,13 +78,12 @@ pub trait CustomTypeSchema: Clone + PartialEq + Eq {
 
 // This should be implemented on CustomTypeSchema<ComplexTypeHash>
 pub trait LinearizableCustomTypeSchema: CustomTypeSchema {
-    type Linearized: CustomTypeSchema;
+    type Linearized: CustomTypeSchema<CustomTypeId = Self::CustomTypeId>;
 
     fn linearize(self, schemas: &IndexSet<ComplexTypeHash>) -> Self::Linearized;
 }
 
 /// Represents additional validation that should be performed on the size.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode, Default)]
 pub struct LengthValidation {
     pub min: Option<u32>,
@@ -99,14 +100,13 @@ impl LengthValidation {
 }
 
 /// Represents additional validation that should be performed on the numeric value.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct NumericValidation<T: Clone + PartialEq + Eq> {
+#[derive(Debug, Clone, PartialEq, Eq, Default, TypeId, Encode, Decode)]
+pub struct NumericValidation<T> {
     pub min: Option<T>,
     pub max: Option<T>,
 }
 
-impl<T: Clone + PartialEq + Eq> NumericValidation<T> {
+impl<T> NumericValidation<T> {
     pub const fn none() -> Self {
         Self {
             min: None,

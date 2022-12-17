@@ -1,6 +1,7 @@
 use super::*;
+use sbor::*;
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum GlobalTypeRef {
     /// This takes a well_known type index.
     /// Would use SborTypeId<X> here, but this needs to be usable from a const context
@@ -11,7 +12,7 @@ pub enum GlobalTypeRef {
 }
 impl TypeLink for GlobalTypeRef {}
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum SchemaLocalTypeRef {
     /// This takes a well_known type index
     WellKnown(u8),
