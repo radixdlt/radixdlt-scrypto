@@ -109,3 +109,29 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for RefCell<T
         Ok(RefCell::new(T::decode_body_with_type_id(decoder, type_id)?))
     }
 }
+
+#[cfg(feature = "schema")]
+pub use schema::*;
+
+#[cfg(feature = "schema")]
+mod schema {
+    use super::*;
+
+    use_same_generic_schema!(T, &T, T);
+
+    impl<'a, C: CustomTypeSchema, B: ?Sized + 'a + ToOwned + Schema<C>> Schema<C> for Cow<'a, B> {
+        const SCHEMA_TYPE_REF: GlobalTypeRef = <B>::SCHEMA_TYPE_REF;
+
+        fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
+            <B>::get_local_type_data()
+        }
+
+        fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {
+            <B>::add_all_dependencies(aggregator)
+        }
+    }
+
+    use_same_generic_schema!(T, Box<T>, T);
+    use_same_generic_schema!(T, Rc<T>, T);
+    use_same_generic_schema!(T, RefCell<T>, T);
+}

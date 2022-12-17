@@ -146,3 +146,25 @@ impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for usize {
         u64::decode_body_with_type_id(decoder, type_id).map(|i| i as usize)
     }
 }
+
+#[cfg(feature = "schema")]
+pub use schema::*;
+
+#[cfg(feature = "schema")]
+mod schema {
+    use super::*;
+
+    well_known_basic_schema!(u8, U8_INDEX);
+    well_known_basic_schema!(u16, U16_INDEX);
+    well_known_basic_schema!(u32, U32_INDEX);
+    well_known_basic_schema!(u64, U64_INDEX);
+    well_known_basic_schema!(u128, U128_INDEX);
+    well_known_basic_schema!(i8, I8_INDEX);
+    well_known_basic_schema!(i16, I16_INDEX);
+    well_known_basic_schema!(i32, I32_INDEX);
+    well_known_basic_schema!(i64, I64_INDEX);
+    well_known_basic_schema!(i128, I128_INDEX);
+
+    well_known_basic_schema!(usize, U64_INDEX);
+    well_known_basic_schema!(isize, I64_INDEX);
+}

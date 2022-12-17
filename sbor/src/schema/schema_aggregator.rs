@@ -1,4 +1,4 @@
-use crate::v2::*;
+use super::*;
 use sbor::rust::collections::*;
 
 pub fn generate_full_schema_from_single_type<T: Schema<C>, C: LinearizableCustomTypeSchema>(

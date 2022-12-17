@@ -28,3 +28,6 @@ impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for bool {
         }
     }
 }
+
+#[cfg(feature = "schema")]
+well_known_basic_schema!(bool, BOOL_INDEX);

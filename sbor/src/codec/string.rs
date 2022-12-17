@@ -40,3 +40,14 @@ impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for String {
         String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
     }
 }
+
+#[cfg(feature = "schema")]
+pub use schema::*;
+
+#[cfg(feature = "schema")]
+mod schema {
+    use super::*;
+
+    well_known_basic_schema!(String, STRING_INDEX);
+    well_known_basic_schema!(str, STRING_INDEX);
+}

@@ -1233,6 +1233,7 @@ dependencies = [
 name = "sbor"
 version = "0.8.0"
 dependencies = [
+ "const-sha1",
  "indexmap",
  "sbor-derive",
  "serde",
@@ -1272,8 +1273,6 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 name = "scrypto-abi"
 version = "0.8.0"
 dependencies = [
- "const-sha1",
- "indexmap",
  "sbor",
  "serde",
 ]

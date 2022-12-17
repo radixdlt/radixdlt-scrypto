@@ -122,6 +122,8 @@ pub mod collections {
     pub use std::collections::HashSet;
 
     #[cfg(feature = "indexmap")]
+    pub use indexmap;
+    #[cfg(feature = "indexmap")]
     pub use indexmap::IndexMap;
     #[cfg(feature = "indexmap")]
     pub use indexmap::IndexSet;

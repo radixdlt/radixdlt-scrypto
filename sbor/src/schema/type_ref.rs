@@ -1,4 +1,4 @@
-use crate::v2::*;
+use super::*;
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub enum GlobalTypeRef {

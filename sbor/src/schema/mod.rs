@@ -1,11 +1,24 @@
-macro_rules! well_known_schema {
+mod schema;
+mod schema_aggregator;
+mod type_ref;
+mod type_schema;
+mod well_known_type_schemas;
+
+pub use schema::*;
+pub use schema_aggregator::*;
+pub use type_ref::*;
+pub use type_schema::*;
+pub use well_known_type_schemas::*;
+
+macro_rules! well_known_basic_schema {
     ($type:ty, $well_known_index:ident) => {
         impl<C: CustomTypeSchema> Schema<C> for $type {
             const SCHEMA_TYPE_REF: GlobalTypeRef =
-                GlobalTypeRef::well_known(well_known::$well_known_index);
+                GlobalTypeRef::well_known(well_known_basic_schemas::$well_known_index);
         }
     };
 }
+pub(crate) use well_known_basic_schema;
 
 macro_rules! use_same_generic_schema {
     ($generic:ident, $type:ty, $other_type:ty) => {
@@ -24,6 +37,7 @@ macro_rules! use_same_generic_schema {
         }
     };
 }
+pub(crate) use use_same_generic_schema;
 
 macro_rules! use_same_double_generic_schema {
     ($key_generic:ident, $value_generic:ident, $type:ty, $other_type:ty) => {
@@ -42,23 +56,4 @@ macro_rules! use_same_double_generic_schema {
         }
     };
 }
-
-mod array;
-mod boolean;
-mod collection;
-mod enums;
-mod integer;
-mod misc;
-mod string;
-mod tuple;
-mod unit;
-
-pub use array::*;
-pub use boolean::*;
-pub use collection::*;
-pub use enums::*;
-pub use integer::*;
-pub use misc::*;
-pub use string::*;
-pub use tuple::*;
-pub use unit::*;
+pub(crate) use use_same_double_generic_schema;

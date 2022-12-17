@@ -23,6 +23,9 @@ pub mod encoder;
 pub mod path;
 /// A facade of Rust types.
 pub mod rust;
+#[cfg(feature = "schema")]
+/// SBOR Schema
+pub mod schema;
 /// SBOR type ids.
 pub mod type_id;
 /// SBOR value model and any decoding/encoding.
@@ -35,6 +38,8 @@ pub use decoder::{DecodeError, Decoder, VecDecoder};
 pub use encode::Encode;
 pub use encoder::{EncodeError, Encoder, VecEncoder};
 pub use path::{SborPath, SborPathBuf};
+#[cfg(feature = "schema")]
+pub use schema::*;
 pub use type_id::*;
 pub use value::*;
 

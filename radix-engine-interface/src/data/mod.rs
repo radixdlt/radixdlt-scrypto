@@ -1,3 +1,6 @@
+#[cfg(feature = "schema")]
+/// Defines the custom Scrypto schema types.
+mod custom_schema;
 /// Defines the custom type ID scrypto uses.
 mod custom_type_id;
 /// Defines the model of Scrypto custom values.
