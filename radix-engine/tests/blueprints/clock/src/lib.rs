@@ -98,7 +98,7 @@ blueprint! {
 
         pub fn test_date_time_conversions() {
             let now = Clock::current_time_rounded_to_minutes();
-            let dt = DateTime::try_from(now).unwrap();
+            let dt = UtcDateTime::try_from(now).unwrap();
             assert!(dt.to_instant() == now);
 
             let now_plus_2d = now.add_days(2).unwrap();

@@ -14,23 +14,27 @@ const DAYS_PER_400Y: i64 = 365 * 400 + 97;
 
 const LEAP_YEAR_DAYS_IN_MONTHS: [u8; 12] = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-// A shift (in seconds) from the Unix epoch (1970-01-01 00:00:00)
-// to a base date that is a multiple of a 400-year leap cycle.
-// Used in Instant -> DateTime conversion.
-// The date we're using is 2000-03-01 00:00:00, for two reasons:
-// a) It's a multiple of 400, to make it easier to work with leap years
-// b) We're also shifting the month to 1st March, so that
-//    the extra day on leap years is added to the last month (Feb),
-//    not in the middle of a year (makes some calculations easier)
+/// A shift (in seconds) from the Unix epoch (1970-01-01 00:00:00)
+/// to a base date that is a multiple of a 400-year leap cycle.
+///
+/// Used in `Instant` -> `UtcDateTime` conversion.
+///
+/// The date we're using is `2000-03-01 00:00:00`, for two reasons:
+/// 1. It's a multiple of 400, to make it easier to work with leap years
+/// 2. We're also shifting the month to 1st March, so that
+///    the extra day on leap years is added to the last month (Feb),
+///    not in the middle of a year (makes some calculations easier)
 const SHIFT_FROM_UNIX_TIME_TO_MARCH_Y2K: i64 = 946684800 + 86400 * (31 + 29);
 
-// A minimum Unix timestamp value that is supported by DateTime.
-// This value corresponds to a date of 1-1-1 00:00:00. Year 0 isn't allowed.
+/// A minimum Unix timestamp value that is supported by `UtcDateTime`.
+///
+/// This value corresponds to a date of `1-1-1 00:00:00`. Year `0` isn't allowed.
 const MIN_SUPPORTED_TIMESTAMP: i64 = -62135596800;
 
-// A maximum Unix timestamp value that is supported by DateTime.
-// This value corresponds to a date of 4294967295-12-31 23:59:59,
-// where year 4294967295 equals u32::MAX.
+/// A maximum Unix timestamp value that is supported by `UtcDateTime`.
+///
+/// This value corresponds to a date of `4294967295-12-31 23:59:59`,
+/// where year `4294967295` equals `u32::MAX`.
 const MAX_SUPPORTED_TIMESTAMP: i64 = 135536014634284799;
 
 #[derive(Encode, Decode, TypeId, PartialEq, Eq, Copy, Clone, Debug)]
