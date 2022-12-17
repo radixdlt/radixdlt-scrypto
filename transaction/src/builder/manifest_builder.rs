@@ -293,7 +293,7 @@ impl ManifestBuilder {
     }
 
     /// Creates a fungible resource with an owner badge
-    pub fn create_fungible_resource_with_owner<R: Into<AccessRule>>(
+    pub fn create_fungible_resource_with_owner(
         &mut self,
         divisibility: u8,
         metadata: BTreeMap<String, String>,
@@ -337,7 +337,7 @@ impl ManifestBuilder {
     }
 
     /// Creates a new non-fungible resource with an owner badge
-    pub fn create_non_fungible_resource_with_owner<R, T, V>(
+    pub fn create_non_fungible_resource_with_owner<T, V>(
         &mut self,
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
@@ -345,7 +345,6 @@ impl ManifestBuilder {
         initial_supply: Option<T>,
     ) -> &mut Self
     where
-        R: Into<AccessRule>,
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
