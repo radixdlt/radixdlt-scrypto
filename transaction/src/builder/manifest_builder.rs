@@ -1,7 +1,10 @@
 use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId, VaultId};
+use radix_engine_interface::api::types::{
+    BucketId, GlobalAddress, MetadataMethod, NativeFn, NativeMethod, PackageMethod, ProofId,
+    VaultId,
+};
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Blob, Hash};
@@ -549,6 +552,60 @@ impl ManifestBuilder {
             abi: Blob(abi_hash),
             royalty_config,
             metadata,
+            access_rules,
+        })
+        .0
+    }
+
+    /// Publishes a package with an owner badge.
+    pub fn publish_package_with_owner(
+        &mut self,
+        code: Vec<u8>,
+        abi: BTreeMap<String, BlueprintAbi>,
+        owner_badge: NonFungibleAddress,
+    ) -> &mut Self {
+        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Get,
+            ))),
+            AccessRule::AllowAll,
+            rule!(require(owner_badge.clone())),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+                PackageMethod::SetRoyaltyConfig,
+            ))),
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        );
+        access_rules.set_access_rule_and_mutability(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+                PackageMethod::ClaimRoyalty,
+            ))),
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        );
+
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let abi = scrypto_encode(&abi).unwrap();
+        let abi_hash = hash(&abi);
+        self.blobs.insert(abi_hash, abi);
+
+        self.add_instruction(BasicInstruction::PublishPackage {
+            code: Blob(code_hash),
+            abi: Blob(abi_hash),
+            royalty_config: BTreeMap::new(),
+            metadata: BTreeMap::new(),
             access_rules,
         })
         .0
