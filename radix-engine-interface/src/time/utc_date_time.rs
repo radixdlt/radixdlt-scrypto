@@ -408,8 +408,8 @@ impl From<UtcDateTime> for Instant {
 #[cfg(test)]
 mod tests {
     use super::{Instant, UtcDateTime};
-    use crate::time::date_time::MAX_SUPPORTED_TIMESTAMP;
-    use radix_engine_interface::time::date_time::MIN_SUPPORTED_TIMESTAMP;
+    use crate::time::utc_date_time::MAX_SUPPORTED_TIMESTAMP;
+    use radix_engine_interface::time::utc_date_time::MIN_SUPPORTED_TIMESTAMP;
 
     #[test]
     pub fn test_instant_date_time_conversions() {
