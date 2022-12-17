@@ -45,6 +45,22 @@ import! {
                             "type": "Bucket"
                         },
                         "export_name": "Simple_free_token_main"
+                    },
+                    {
+                        "ident": "hash",
+                        "mutability": "Mutable",
+                        "input": {
+                            "type": "Struct",
+                            "name": "",
+                            "fields": {
+                                "type": "Named",
+                                "named": []
+                            }
+                        },
+                        "output": {
+                            "type": "Hash"
+                        },
+                        "export_name": "Simple_hash_main"
                     }
                 ]
             }
