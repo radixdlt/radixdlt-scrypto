@@ -1014,12 +1014,12 @@ fn generate_non_fungible_mint_params(
         ast::Value::Array(kind, elements) => {
             if kind != &ast::Type::Tuple {
                 return Err(GeneratorError::InvalidType {
-                    expected_type: ast::Type::String,
+                    expected_type: ast::Type::Tuple,
                     actual: kind.clone(),
                 });
             };
 
-            let mut mint_params = BTreeMap::<NonFungibleId, (Vec<u8>, Vec<u8>)>::new();
+            let mut mint_params = BTreeMap::new();
             for element in elements.into_iter() {
                 match element {
                     ast::Value::Tuple(values) => {
