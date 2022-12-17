@@ -3,10 +3,10 @@ use sbor::rust::collections::IndexSet;
 use sbor::*;
 
 #[allow(dead_code)]
-type ScryptoTypeSchema<TypeLink> = TypeSchema<ScryptoCustomTypeSchema<TypeLink>, TypeLink>;
+type ScryptoTypeSchema<TypeLink> = TypeSchema<ScryptoCustomTypeId, ScryptoCustomTypeSchema<TypeLink>, TypeLink>;
 
 /// A schema for the values that a codec can decode / views as valid
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ScryptoCustomTypeSchema<L: TypeLink> {
     // Global address types
     PackageAddress,
@@ -38,7 +38,7 @@ pub enum ScryptoCustomTypeSchema<L: TypeLink> {
 }
 
 impl<L: TypeLink> CustomTypeSchema for ScryptoCustomTypeSchema<L> {
-    type CustomTypeId = NoCustomTypeId; // Fix this to be Scrypto
+    type CustomTypeId = ScryptoCustomTypeId;
 }
 
 impl LinearizableCustomTypeSchema for ScryptoCustomTypeSchema<GlobalTypeRef> {
