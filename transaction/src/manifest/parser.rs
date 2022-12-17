@@ -830,7 +830,23 @@ mod tests {
         );
 
         parse_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some( Array<Tuple>( Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100")))));"#,
+            r#"
+            CREATE_NON_FUNGIBLE_RESOURCE 
+                Enum("U32") 
+                Array<Tuple>(Tuple("name", "Token")) 
+                Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) 
+                Some(
+                    Array<Tuple>(
+                        Tuple(
+                            NonFungibleId(1u32), 
+                            Tuple(
+                                Tuple("Hello World", Decimal("12")),
+                                Tuple(12u8, 19u128)
+                            )
+                        )
+                    )
+                );
+            "#,
             Instruction::CreateNonFungibleResource {
                 id_type: Value::Enum("U32".into(), Vec::new()),
                 metadata: Value::Array(
@@ -864,8 +880,11 @@ mod tests {
                     vec![Value::Tuple(vec![
                         Value::NonFungibleId(Box::new(Value::U32(1))),
                         Value::Tuple(vec![
-                            Value::Bytes(Box::new(Value::String("5c2100".into()))),
-                            Value::Bytes(Box::new(Value::String("5c2100".into())))
+                            Value::Tuple(vec![
+                                Value::String("Hello World".into()),
+                                Value::Decimal(Box::new(Value::String("12".into())))
+                            ]),
+                            Value::Tuple(vec![Value::U8(12), Value::U128(19),]),
                         ])
                     ])]
                 )))
@@ -915,7 +934,19 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100"))));"#,
+            r#"
+            MINT_NON_FUNGIBLE 
+                ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") 
+                Array<Tuple>(
+                    Tuple(
+                        NonFungibleId(1u32), 
+                        Tuple(
+                            Tuple("Hello World", Decimal("12")),
+                            Tuple(12u8, 19u128)
+                        )
+                    )
+                );
+            "#,
             Instruction::MintNonFungible {
                 resource_address: Value::ResourceAddress(Box::new(Value::String(
                     "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
@@ -925,8 +956,11 @@ mod tests {
                     vec![Value::Tuple(vec![
                         Value::NonFungibleId(Box::new(Value::U32(1))),
                         Value::Tuple(vec![
-                            Value::Bytes(Box::new(Value::String("5c2100".into()))),
-                            Value::Bytes(Box::new(Value::String("5c2100".into())))
+                            Value::Tuple(vec![
+                                Value::String("Hello World".into()),
+                                Value::Decimal(Box::new(Value::String("12".into())))
+                            ]),
+                            Value::Tuple(vec![Value::U8(12), Value::U128(19),]),
                         ])
                     ])]
                 )

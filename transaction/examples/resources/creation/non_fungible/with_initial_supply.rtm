@@ -53,7 +53,13 @@ CREATE_NON_FUNGIBLE_RESOURCE
     )
     Some(
         Array<Tuple>(
-            Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100")))
+            Tuple(
+                NonFungibleId(1u32), 
+                Tuple(
+                    Tuple("Hello World", Decimal("12")),        # The immutable part of the data
+                    Tuple(12u8, 19u128)                         # The mutable part of the data
+                )
+            )
         )
     );
 

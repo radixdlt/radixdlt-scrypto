@@ -2,6 +2,7 @@ use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
+use radix_engine_interface::model::NonFungibleId;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
 use sbor::*;
@@ -445,9 +446,11 @@ pub fn decompile_instruction<F: fmt::Write>(
             resource_address,
             entries,
         } => {
+            let entries = transform_non_fungible_mint_params(entries)?;
+
             f.write_str("MINT_NON_FUNGIBLE")?;
             format_typed_value(f, context, resource_address)?;
-            format_typed_value(f, context, entries)?;
+            format_typed_value(f, context, &entries)?;
             f.write_str(";")?;
         }
         BasicInstruction::CreateFungibleResource {
@@ -469,11 +472,20 @@ pub fn decompile_instruction<F: fmt::Write>(
             access_rules,
             initial_supply,
         } => {
+            let initial_supply = {
+                match initial_supply {
+                    Some(initial_supply) => {
+                        transform_non_fungible_mint_params(initial_supply).map(Some)?
+                    }
+                    None => None,
+                }
+            };
+
             f.write_str("CREATE_NON_FUNGIBLE_RESOURCE")?;
             format_typed_value(f, context, id_type)?;
             format_typed_value(f, context, metadata)?;
             format_typed_value(f, context, access_rules)?;
-            format_typed_value(f, context, initial_supply)?;
+            format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
     }
@@ -553,6 +565,23 @@ pub fn format_args<F: fmt::Write>(
     }
 
     Ok(())
+}
+
+fn transform_non_fungible_mint_params(
+    mint_params: &BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+) -> Result<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>, ScryptoValueDecodeError> {
+    let mut mint_params_scrypto_value =
+        BTreeMap::<NonFungibleId, (ScryptoValue, ScryptoValue)>::new();
+    for (id, (immutable_data, mutable_data)) in mint_params.into_iter() {
+        mint_params_scrypto_value.insert(
+            id.clone(),
+            (
+                scrypto_decode(&immutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
+                scrypto_decode(&mutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
+            ),
+        );
+    }
+    Ok(mint_params_scrypto_value)
 }
 
 #[cfg(test)]
@@ -786,7 +815,7 @@ CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>(Tuple("description", "A very innovati
         assert_eq!(
             canonical_manifest,
             r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
-CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100")))));
+CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)))));
 CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "deposit_batch" Expression("ENTIRE_WORKTOP");
 "#
         );
@@ -847,7 +876,7 @@ CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc00
             canonical_manifest,
             r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
 CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "create_proof_by_amount" Decimal("1") ResourceAddress("resource_sim1qp075qmn6389pkq30ppzzsuadd55ry04mjx69v86r4wq0feh02");
-MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx") Array<Tuple>(Tuple(NonFungibleId(12u32), Tuple(Bytes("5c2100"), Bytes("5c2100"))));
+MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx") Array<Tuple>(Tuple(NonFungibleId(12u32), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
 CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "deposit_batch" Expression("ENTIRE_WORKTOP");
 "#
         );

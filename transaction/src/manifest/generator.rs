@@ -66,6 +66,11 @@ pub enum GeneratorError {
     ArgumentDecodingError(DecodeError),
     ArgumentIndexingError(ScryptoValueDecodeError),
     InvalidEntityAddress(String),
+    InvalidLength {
+        value_type: ast::Type,
+        expected_length: usize,
+        actual: usize,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -455,7 +460,7 @@ pub fn generate_instruction(
             entries,
         } => BasicInstruction::MintNonFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            entries: generate_typed_value(entries, resolver, bech32_decoder, blobs)?,
+            entries: generate_non_fungible_mint_params(entries, resolver, bech32_decoder, blobs)?,
         },
 
         ast::Instruction::CreateFungibleResource {
@@ -479,7 +484,13 @@ pub fn generate_instruction(
             id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+            initial_supply: generate_from_enum_if_some(
+                initial_supply,
+                resolver,
+                bech32_decoder,
+                blobs,
+                generate_non_fungible_mint_params,
+            )?,
         },
     })
 }
@@ -939,6 +950,130 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
         v => invalid_type!(v, ast::Type::String)?,
     };
     Ok(bytes)
+}
+
+/// This function generates args from an [`ast::Value`]. This is useful when minting NFTs to be able
+/// to specify their data in a human readable format instead of SBOR.
+fn generate_args_from_tuple(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<ScryptoValue, GeneratorError> {
+    match value {
+        ast::Value::Tuple(values) => generate_args(values, resolver, bech32_decoder, blobs),
+        v => invalid_type!(v, ast::Type::Tuple),
+    }
+}
+
+fn generate_from_enum_if_some<F, T>(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+    generator: F,
+) -> Result<Option<T>, GeneratorError>
+where
+    F: Fn(
+        &ast::Value,
+        &mut NameResolver,
+        &Bech32Decoder,
+        &BTreeMap<Hash, Vec<u8>>,
+    ) -> Result<T, GeneratorError>,
+{
+    let value = match value {
+        ast::Value::Enum(variant, fields) if variant == "None" && fields.len() == 0 => {
+            return Ok(None);
+        }
+        ast::Value::None => {
+            return Ok(None);
+        }
+        ast::Value::Some(value) => &**value,
+        ast::Value::Enum(variant, fields) if variant == "Some" && fields.len() == 1 => &fields[0],
+        v => invalid_type!(v, ast::Type::Enum)?,
+    };
+    Ok(Some(generator(value, resolver, bech32_decoder, blobs)?))
+}
+
+/// This function generates the mint parameters of a non fungible resource from an array which has
+/// the following structure:
+///
+/// Value::Array (element_type: Type::Tuple)
+///     - Value::Tuple:
+///         - Value::NonFungibleId
+///         - Value::Tuple
+///             - Value::Tuple (Args tuple of immutable data)
+///             - Value::Tuple (Args tuple of mutable data)
+fn generate_non_fungible_mint_params(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>, GeneratorError> {
+    match value {
+        ast::Value::Array(kind, elements) => {
+            if kind != &ast::Type::Tuple {
+                return Err(GeneratorError::InvalidType {
+                    expected_type: ast::Type::String,
+                    actual: kind.clone(),
+                });
+            };
+
+            let mut mint_params = BTreeMap::<NonFungibleId, (Vec<u8>, Vec<u8>)>::new();
+            for element in elements.into_iter() {
+                match element {
+                    ast::Value::Tuple(values) => {
+                        if values.len() != 2 {
+                            return Err(GeneratorError::InvalidLength {
+                                value_type: ast::Type::Tuple,
+                                expected_length: 2,
+                                actual: values.len(),
+                            });
+                        }
+
+                        let non_fungible_id = generate_non_fungible_id(&values[0])?;
+                        let non_fungible_data = {
+                            let non_fungible_data_value = values[1].clone();
+                            match non_fungible_data_value {
+                                ast::Value::Tuple(values) => {
+                                    if values.len() != 2 {
+                                        return Err(GeneratorError::InvalidLength {
+                                            value_type: ast::Type::Tuple,
+                                            expected_length: 2,
+                                            actual: values.len(),
+                                        });
+                                    }
+
+                                    let immutable_data = scrypto_encode(&generate_args_from_tuple(
+                                        &values[0],
+                                        resolver,
+                                        bech32_decoder,
+                                        blobs,
+                                    )?)
+                                    .map_err(GeneratorError::ArgumentEncodingError)?;
+                                    let mutable_data = scrypto_encode(&generate_args_from_tuple(
+                                        &values[1],
+                                        resolver,
+                                        bech32_decoder,
+                                        blobs,
+                                    )?)
+                                    .map_err(GeneratorError::ArgumentEncodingError)?;
+
+                                    (immutable_data, mutable_data)
+                                }
+                                v => invalid_type!(v, ast::Type::Tuple)?,
+                            }
+                        };
+                        mint_params.insert(non_fungible_id, non_fungible_data);
+                    }
+                    v => invalid_type!(v, ast::Type::Tuple)?,
+                }
+            }
+
+            Ok(mint_params)
+        }
+        v => invalid_type!(v, ast::Type::Array)?,
+    }
 }
 
 pub fn generate_value(
@@ -1502,7 +1637,23 @@ mod tests {
         );
 
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some( Array<Tuple>( Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100")))));"#,
+            r#"
+            CREATE_NON_FUNGIBLE_RESOURCE 
+                Enum("U32") 
+                Array<Tuple>(Tuple("name", "Token")) 
+                Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) 
+                Some(
+                    Array<Tuple>(
+                        Tuple(
+                            NonFungibleId(1u32), 
+                            Tuple(
+                                Tuple("Hello World", Decimal("12")),
+                                Tuple(12u8, 19u128)
+                            )
+                        )
+                    )
+                );
+            "#,
             BasicInstruction::CreateNonFungibleResource {
                 id_type: NonFungibleIdType::U32,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1518,7 +1669,16 @@ mod tests {
                 ]),
                 initial_supply: Some(BTreeMap::from([(
                     NonFungibleId::U32(1),
-                    (args!(), args!())
+                    (
+                        args!(
+                            String::from("Hello World"),
+                            Decimal::from("12")
+                        ), 
+                        args!(
+                            12u8,
+                            19u128
+                        )
+                    )
                 )]))
             },
         );
@@ -1549,10 +1709,34 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100"))));"#,
+            r#"
+            MINT_NON_FUNGIBLE 
+                ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") 
+                Array<Tuple>(
+                    Tuple(
+                        NonFungibleId(1u32), 
+                        Tuple(
+                            Tuple("Hello World", Decimal("12")),
+                            Tuple(12u8, 19u128)
+                        )
+                    )
+                );
+            "#,
             BasicInstruction::MintNonFungible {
                 resource_address: resource,
-                entries: BTreeMap::from([(NonFungibleId::U32(1), (args!(), args!()))])
+                entries: BTreeMap::from([(
+                    NonFungibleId::U32(1),
+                    (
+                        args!(
+                            String::from("Hello World"),
+                            Decimal::from("12")
+                        ), 
+                        args!(
+                            12u8,
+                            19u128
+                        )
+                    )
+                )])
             },
         );
     }
