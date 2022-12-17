@@ -43,7 +43,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     }
 
     let module_ident = format_ident!("{}_impl", bp_ident);
-    let value_ident = format_ident!("{}Component", bp_ident);
+    let component_ident = format_ident!("{}Component", bp_ident);
+    let component_ref_ident = format_ident!("{}GlobalComponentRef", bp_ident);
 
     let output_mod = quote! {
         #[allow(non_snake_case)]
@@ -58,13 +59,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #(#bp_items)*
             }
 
-            impl ::scrypto::component::ComponentState<#value_ident> for #bp_ident {
-                fn instantiate(self) -> #value_ident {
+            impl ::scrypto::component::ComponentState<#component_ident> for #bp_ident {
+                fn instantiate(self) -> #component_ident {
                     let component = ::scrypto::component::component_system().create_component(
                         #bp_name,
                         self
                     );
-                    #value_ident {
+                    #component_ident {
                         component
                     }
                 }
@@ -112,7 +113,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         quote! { #output_dispatcher }
     );
 
-    let output_stubs = generate_stubs(&value_ident, bp_ident, bp_items)?;
+    let output_stubs = generate_stubs(&component_ident, &component_ref_ident, bp_ident, bp_items)?;
 
     let output = quote! {
         #output_mod
@@ -381,10 +382,13 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
 
 // Parses function items of an `Impl` and returns ABI of functions.
 fn generate_stubs(
-    value_ident: &Ident,
+    component_ident: &Ident,
+    component_ref_ident: &Ident,
     bp_ident: &Ident,
     items: &[ImplItem],
 ) -> Result<TokenStream> {
+    let bp_name = bp_ident.to_string();
+    let mut functions = Vec::<ImplItem>::new();
     let mut methods = Vec::<ImplItem>::new();
 
     for item in items {
@@ -429,7 +433,18 @@ fn generate_stubs(
                         ReturnType::Type(_, t) => replace_self_with(t, &bp_ident.to_string()),
                     };
 
-                    if mutable.is_some() {
+                    if mutable.is_none() {
+                        functions.push(parse_quote! {
+                            pub fn #ident(#(#input_args: #input_types),*) -> #output {
+                                ::scrypto::runtime::Runtime::call_function(
+                                    ::scrypto::runtime::Runtime::package_address(),
+                                    #bp_name,
+                                    #name,
+                                    args!(#(#input_args),*)
+                                )
+                            }
+                        });
+                    } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
                                 self.component.call(#name, args!(
@@ -455,11 +470,11 @@ fn generate_stubs(
         #[allow(non_camel_case_types)]
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
         #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
-        pub struct #value_ident {
+        pub struct #component_ident {
             pub component: ::scrypto::component::Component,
         }
 
-        impl ::scrypto::component::LocalComponent for #value_ident {
+        impl ::scrypto::component::LocalComponent for #component_ident {
             fn package_address(&self) -> ::scrypto::model::PackageAddress {
                 self.component.package_address()
             }
@@ -486,7 +501,45 @@ fn generate_stubs(
             }
         }
 
-        impl #value_ident {
+        impl #component_ident {
+            #(#functions)*
+
+            #(#methods)*
+        }
+
+        #[allow(non_camel_case_types)]
+        pub struct #component_ref_ident {
+            pub component: ::scrypto::component::GlobalComponentRef,
+        }
+
+        impl ::scrypto::component::GlobalComponent for #component_ref_ident {
+            fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                self.component.package_address()
+            }
+            fn blueprint_name(&self) -> String {
+                self.component.blueprint_name()
+            }
+            fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                self.component.metadata(name, value);
+                self
+            }
+            fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
+                self.component.add_access_check(access_rules);
+                self
+            }
+            fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                self.component.set_royalty_config(royalty_config);
+                self
+            }
+            fn claim_royalty(&self) -> Bucket {
+                self.component.claim_royalty()
+            }
+            fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
+                self.component.access_rules_chain()
+            }
+        }
+
+        impl #component_ref_ident {
             #(#methods)*
         }
     };
@@ -686,6 +739,48 @@ mod tests {
                 }
 
                 impl TestComponent {
+                    pub fn y(arg0: u32) -> u32 {
+                        ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", args!(arg0))
+                    }
+
+                    pub fn x(&self, arg0: u32) -> u32 {
+                        self.component.call("x", args!(arg0))
+                    }
+                }
+
+                #[allow(non_camel_case_types)]
+                pub struct TestGlobalComponentRef {
+                    pub component: ::scrypto::component::GlobalComponentRef,
+                }
+
+                impl ::scrypto::component::GlobalComponent for TestGlobalComponentRef {
+                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                        self.component.package_address()
+                    }
+                    fn blueprint_name(&self) -> String {
+                        self.component.blueprint_name()
+                    }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
+                    }
+                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
+                        self.component.add_access_check(access_rules);
+                        self
+                    }
+                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                        self.component.set_royalty_config(royalty_config);
+                        self
+                    }
+                    fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
+                    }
+                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
+                        self.component.access_rules_chain()
+                    }
+                }
+
+                impl TestGlobalComponentRef {
                     pub fn x(&self, arg0: u32) -> u32 {
                         self.component.call("x", args!(arg0))
                     }
@@ -777,6 +872,41 @@ mod tests {
                 }
 
                 impl TestComponent {
+                }
+
+                #[allow(non_camel_case_types)]
+                pub struct TestGlobalComponentRef {
+                    pub component: ::scrypto::component::GlobalComponentRef,
+                }
+
+                impl ::scrypto::component::GlobalComponent for TestGlobalComponentRef {
+                    fn package_address(&self) -> ::scrypto::model::PackageAddress {
+                        self.component.package_address()
+                    }
+                    fn blueprint_name(&self) -> String {
+                        self.component.blueprint_name()
+                    }
+                    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+                        self.component.metadata(name, value);
+                        self
+                    }
+                    fn add_access_check(&mut self, access_rules: ::scrypto::model::AccessRules) -> &mut Self {
+                        self.component.add_access_check(access_rules);
+                        self
+                    }
+                    fn set_royalty_config(&mut self, royalty_config: ::scrypto::model::RoyaltyConfig) -> &mut Self {
+                        self.component.set_royalty_config(royalty_config);
+                        self
+                    }
+                    fn claim_royalty(&self) -> Bucket {
+                        self.component.claim_royalty()
+                    }
+                    fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
+                        self.component.access_rules_chain()
+                    }
+                }
+
+                impl TestGlobalComponentRef {
                 }
             },
         );
