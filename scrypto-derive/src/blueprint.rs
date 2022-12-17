@@ -385,8 +385,6 @@ fn generate_stubs(
     bp_ident: &Ident,
     items: &[ImplItem],
 ) -> Result<TokenStream> {
-    let bp_name = bp_ident.to_string();
-    let mut functions = Vec::<ImplItem>::new();
     let mut methods = Vec::<ImplItem>::new();
 
     for item in items {
@@ -431,18 +429,7 @@ fn generate_stubs(
                         ReturnType::Type(_, t) => replace_self_with(t, &bp_ident.to_string()),
                     };
 
-                    if mutable.is_none() {
-                        functions.push(parse_quote! {
-                            pub fn #ident(#(#input_args: #input_types),*) -> #output {
-                                ::scrypto::runtime::Runtime::call_function(
-                                    ::scrypto::runtime::Runtime::package_address(),
-                                    #bp_name,
-                                    #name,
-                                    args!(#(#input_args),*)
-                                )
-                            }
-                        });
-                    } else {
+                    if mutable.is_some() {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
                                 self.component.call(#name, args!(
@@ -500,8 +487,6 @@ fn generate_stubs(
         }
 
         impl #value_ident {
-            #(#functions)*
-
             #(#methods)*
         }
     };
@@ -701,9 +686,6 @@ mod tests {
                 }
 
                 impl TestComponent {
-                    pub fn y(arg0: u32) -> u32 {
-                        ::scrypto::runtime::Runtime::call_function(::scrypto::runtime::Runtime::package_address(), "Test", "y", args!(arg0))
-                    }
                     pub fn x(&self, arg0: u32) -> u32 {
                         self.component.call("x", args!(arg0))
                     }
