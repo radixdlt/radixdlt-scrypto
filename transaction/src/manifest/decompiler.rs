@@ -732,6 +732,128 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
     }
 
     #[test]
+    fn test_create_fungible_resource_with_initial_supply() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/resources/creation/fungible/with_initial_supply.rtm")
+                    .to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("12"));
+CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "deposit_batch" Expression("ENTIRE_WORKTOP");
+"#
+        );
+    }
+
+    #[test]
+    fn test_create_fungible_resource_with_no_initial_supply() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/resources/creation/fungible/no_initial_supply.rtm")
+                    .to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;
+"#
+        );
+    }
+
+    #[test]
+    fn test_create_non_fungible_resource_with_initial_supply() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!(
+                    "../../examples/resources/creation/non_fungible/with_initial_supply.rtm"
+                )
+                .to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100")))));
+CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "deposit_batch" Expression("ENTIRE_WORKTOP");
+"#
+        );
+    }
+
+    #[test]
+    fn test_create_non_fungible_resource_with_no_initial_supply() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!(
+                    "../../examples/resources/creation/non_fungible/no_initial_supply.rtm"
+                )
+                .to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;
+"#
+        );
+    }
+
+    #[test]
+    fn test_mint_fungible() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/resources/mint/fungible/mint.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "create_proof_by_amount" Decimal("1") ResourceAddress("resource_sim1qp075qmn6389pkq30ppzzsuadd55ry04mjx69v86r4wq0feh02");
+MINT_FUNGIBLE ResourceAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx") Decimal("12");
+CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "deposit_batch" Expression("ENTIRE_WORKTOP");
+"#
+        );
+    }
+
+    #[test]
+    fn test_mint_non_fungible() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/resources/mint/non_fungible/mint.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "create_proof_by_amount" Decimal("1") ResourceAddress("resource_sim1qp075qmn6389pkq30ppzzsuadd55ry04mjx69v86r4wq0feh02");
+MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx") Array<Tuple>(Tuple(NonFungibleId(12u32), Tuple(Bytes("5c2100"), Bytes("5c2100"))));
+CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "deposit_batch" Expression("ENTIRE_WORKTOP");
+"#
+        );
+    }
+
+    #[test]
     fn test_recompile_many_blobs() {
         // This test is mostly to prevent a regression whereby the blobs were re-ordered at compilation
         // Which made the manifest compilation process non-deterministic (when including blobs)
@@ -778,5 +900,37 @@ CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9
         );
 
         return decompiled2;
+    }
+
+    fn apply_replacements_to_manifest(mut manifest: String) -> String {
+        let replacement_vectors = BTreeMap::from([
+            (
+                "{xrd_resource_address}",
+                "resource_sim1qzkcyv5dwq3r6kawy6pxpvcythx8rh8ntum6ws62p95sqjjpwr",
+            ),
+            (
+                "{account_component_address}",
+                "account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na",
+            ),
+            (
+                "{other_account_component_address}",
+                "account_sim1qdy4jqfpehf8nv4n7680cw0vhxqvhgh5lf3ae8jkjz6q5hmzed",
+            ),
+            (
+                "{minter_badge_resource_address}",
+                "resource_sim1qp075qmn6389pkq30ppzzsuadd55ry04mjx69v86r4wq0feh02",
+            ),
+            (
+                "{mintable_resource_address}",
+                "resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx",
+            ),
+            ("{initial_supply}", "12"),
+            ("{mint_amount}", "12"),
+            ("{non_fungible_id}", "12u32"),
+        ]);
+        for (of, with) in replacement_vectors.into_iter() {
+            manifest = manifest.replace(of, with);
+        }
+        manifest
     }
 }

@@ -1216,9 +1216,9 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
-    use radix_engine_interface::args;
     use radix_engine_interface::core::NetworkDefinition;
     use radix_engine_interface::pdec;
+    use radix_engine_interface::{args, rule};
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1240,7 +1240,7 @@ mod tests {
 
     #[macro_export]
     macro_rules! generate_instruction_ok {
-        ( $s:expr, $expected:expr ) => {{
+        ( $s:expr, $expected:expr, $($blob_hash: expr),* ) => {{
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
@@ -1252,11 +1252,15 @@ mod tests {
                     &mut id_validator,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut BTreeMap::new()
+                    &mut BTreeMap::from([
+                        $(
+                            (($blob_hash).parse().unwrap(), Vec::new()),
+                        )*
+                    ])
                 ),
                 Ok($expected)
             );
-        }};
+        }}
     }
 
     #[macro_export]
@@ -1386,20 +1390,20 @@ mod tests {
             BasicInstruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
-            }
+            },
         );
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             BasicInstruction::TakeFromWorktop {
                 resource_address: resource
-            }
+            },
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             BasicInstruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
-            }
+            },
         );
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
@@ -1412,7 +1416,7 @@ mod tests {
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
                 args: args!(500u32, pdec!("120"))
-            }
+            },
         );
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
@@ -1420,14 +1424,136 @@ mod tests {
                 component_address: component,
                 method_name: "refill".to_string(),
                 args: args!()
-            }
+            },
         );
+        generate_instruction_ok!(
+            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Array<Tuple>(Tuple(Enum("SetMetadata"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("GetMetadata"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("SetRoyaltyConfig"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("ClaimRoyalty"), Tuple(Enum("DenyAll"), Enum("DenyAll"))));"#,
+            BasicInstruction::PublishPackage {
+                code: Blob(
+                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
+                        .parse()
+                        .unwrap()
+                ),
+                abi: Blob(
+                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+                        .parse()
+                        .unwrap()
+                ),
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+                access_rules: BTreeMap::from([
+                    (
+                        PackageMethodAuthKey::GetMetadata,
+                        (rule!(allow_all), rule!(deny_all))
+                    ),
+                    (
+                        PackageMethodAuthKey::SetMetadata,
+                        (rule!(deny_all), rule!(deny_all))
+                    ),
+                    (
+                        PackageMethodAuthKey::SetRoyaltyConfig,
+                        (rule!(deny_all), rule!(deny_all))
+                    ),
+                    (
+                        PackageMethodAuthKey::ClaimRoyalty,
+                        (rule!(deny_all), rule!(deny_all))
+                    ),
+                ])
+            },
+            "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
+            "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+        );
+
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("500"));"#,
+            BasicInstruction::CreateFungibleResource {
+                divisibility: 18,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                access_rules: BTreeMap::from([
+                    (
+                        ResourceMethodAuthKey::Withdraw,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                    (
+                        ResourceMethodAuthKey::Deposit,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                ]),
+                initial_supply: Some("500".parse().unwrap())
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            BasicInstruction::CreateFungibleResource {
+                divisibility: 18,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                access_rules: BTreeMap::from([
+                    (
+                        ResourceMethodAuthKey::Withdraw,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                    (
+                        ResourceMethodAuthKey::Deposit,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                ]),
+                initial_supply: None
+            },
+        );
+
+        generate_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some( Array<Tuple>( Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100")))));"#,
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::U32,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                access_rules: BTreeMap::from([
+                    (
+                        ResourceMethodAuthKey::Withdraw,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                    (
+                        ResourceMethodAuthKey::Deposit,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                ]),
+                initial_supply: Some(BTreeMap::from([(
+                    NonFungibleId::U32(1),
+                    (args!(), args!())
+                )]))
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::U32,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                access_rules: BTreeMap::from([
+                    (
+                        ResourceMethodAuthKey::Withdraw,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                    (
+                        ResourceMethodAuthKey::Deposit,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                ]),
+                initial_supply: None
+            },
+        );
+
         generate_instruction_ok!(
             r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
             BasicInstruction::MintFungible {
                 resource_address: resource,
                 amount: Decimal::from_str("100").unwrap()
-            }
+            },
+        );
+        generate_instruction_ok!(
+            r#"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100"))));"#,
+            BasicInstruction::MintNonFungible {
+                resource_address: resource,
+                entries: BTreeMap::from([(NonFungibleId::U32(1), (args!(), args!()))])
+            },
         );
     }
 }

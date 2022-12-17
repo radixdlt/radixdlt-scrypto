@@ -1,7 +1,7 @@
 use radix_engine::types::{
-    require, BTreeMap, Bech32Encoder, Blob, ComponentAddress, Decimal,
-    FromPublicKey, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey,
-    ResourceType, FAUCET_COMPONENT, RADIX_TOKEN,
+    require, BTreeMap, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey,
+    NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
+    FAUCET_COMPONENT, RADIX_TOKEN,
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::rule;
@@ -127,23 +127,21 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 /// A sample manifest that publishes a package.
 #[test]
 fn publish_package_succeeds() {
-    test_manifest(
-        |account_component_address, bech32_encoder| {
-            // TODO: Update the code.blob and abi.blob files that are used for testing.
-            // Using the WASM and ABI from the account blueprint here as they are up to date. The
-            // abi.blob and code.blob files from the transaction crate are not.
-            let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
-            let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
+    test_manifest(|account_component_address, bech32_encoder| {
+        // TODO: Update the code.blob and abi.blob files that are used for testing.
+        // Using the WASM and ABI from the account blueprint here as they are up to date. The
+        // abi.blob and code.blob files from the transaction crate are not.
+        let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
+        let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
 
-            let manifest = format!(
-                include_str!("../../transaction/examples/package/publish.rtm"),
-                code_blob_hash = Blob::new(&code_blob),
-                abi_blob_hash = Blob::new(&abi_blob),
-                account_component_address = account_component_address.display(bech32_encoder)
-            );
-            (manifest, vec![code_blob, abi_blob])
-        },
-    );
+        let manifest = format!(
+            include_str!("../../transaction/examples/package/publish.rtm"),
+            code_blob_hash = Blob::new(&code_blob),
+            abi_blob_hash = Blob::new(&abi_blob),
+            account_component_address = account_component_address.display(bech32_encoder)
+        );
+        (manifest, vec![code_blob, abi_blob])
+    });
 }
 
 /// A sample manifest for minting of a fungible resource

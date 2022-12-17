@@ -139,7 +139,7 @@ impl Parser {
                 blueprint_name: self.parse_value()?,
                 function_name: self.parse_value()?,
                 args: {
-                    let mut values = vec![];
+                    let mut values = Vec::new();
                     while self.peek()?.kind != TokenKind::Semicolon {
                         values.push(self.parse_value()?);
                     }
@@ -150,7 +150,7 @@ impl Parser {
                 component_address: self.parse_value()?,
                 method_name: self.parse_value()?,
                 args: {
-                    let mut values = vec![];
+                    let mut values = Vec::new();
                     while self.peek()?.kind != TokenKind::Semicolon {
                         values.push(self.parse_value()?);
                     }
@@ -571,7 +571,7 @@ mod tests {
         );
         parse_value_ok!(
             r#"Enum("Variant")"#,
-            Value::Enum("Variant".to_string(), vec![])
+            Value::Enum("Variant".to_string(), Vec::new())
         );
     }
 
@@ -589,7 +589,7 @@ mod tests {
             r#"Tuple("Hello", 123u8)"#,
             Value::Tuple(vec![Value::String("Hello".into()), Value::U8(123),])
         );
-        parse_value_ok!(r#"Tuple()"#, Value::Tuple(vec![]));
+        parse_value_ok!(r#"Tuple()"#, Value::Tuple(Vec::new()));
         parse_value_ok!(
             r#"Tuple(1u8, 2u8)"#,
             Value::Tuple(vec![Value::U8(1), Value::U8(2)])
@@ -712,15 +712,224 @@ mod tests {
                 ]
             }
         );
+
         parse_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 0u8 Array<Tuple>() Array<Tuple>() Some(Decimal("1.0"));"#,
-            Instruction::CreateFungibleResource {
-                divisibility: Value::U8(0),
-                metadata: Value::Array(Type::Tuple, vec![]),
-                access_rules: Value::Array(Type::Tuple, vec![]),
-                initial_supply: Value::Some(Box::new(Value::Decimal(
-                    Value::String("1.0".into()).into()
+            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Array<Tuple>(Tuple(Enum("SetMetadata"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("GetMetadata"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("SetRoyaltyConfig"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("ClaimRoyalty"), Tuple(Enum("DenyAll"), Enum("DenyAll"))));"#,
+            Instruction::PublishPackage {
+                code: Value::Blob(Box::new(Value::String(
+                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618".into()
                 ))),
+                abi: Value::Blob(Box::new(Value::String(
+                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d".into()
+                ))),
+                royalty_config: Value::Array(Type::Tuple, Vec::new()),
+                metadata: Value::Array(Type::Tuple, Vec::new()),
+                access_rules: Value::Array(
+                    Type::Tuple,
+                    vec![
+                        Value::Tuple(vec![
+                            Value::Enum("SetMetadata".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                        Value::Tuple(vec![
+                            Value::Enum("GetMetadata".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("AllowAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                        Value::Tuple(vec![
+                            Value::Enum("SetRoyaltyConfig".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                        Value::Tuple(vec![
+                            Value::Enum("ClaimRoyalty".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                    ]
+                )
+            }
+        );
+
+        parse_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("500"));"#,
+            Instruction::CreateFungibleResource {
+                divisibility: Value::U8(18),
+                metadata: Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::String("name".into()),
+                        Value::String("Token".into()),
+                    ])]
+                ),
+                access_rules: Value::Array(
+                    Type::Tuple,
+                    vec![
+                        Value::Tuple(vec![
+                            Value::Enum("Withdraw".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("AllowAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                        Value::Tuple(vec![
+                            Value::Enum("Deposit".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("AllowAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                    ]
+                ),
+                initial_supply: Value::Some(Box::new(Value::Decimal(Box::new(Value::String(
+                    "500".into()
+                )))))
+            }
+        );
+        parse_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            Instruction::CreateFungibleResource {
+                divisibility: Value::U8(18),
+                metadata: Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::String("name".into()),
+                        Value::String("Token".into()),
+                    ])]
+                ),
+                access_rules: Value::Array(
+                    Type::Tuple,
+                    vec![
+                        Value::Tuple(vec![
+                            Value::Enum("Withdraw".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("AllowAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                        Value::Tuple(vec![
+                            Value::Enum("Deposit".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("AllowAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                    ]
+                ),
+                initial_supply: Value::None
+            }
+        );
+
+        parse_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some( Array<Tuple>( Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100")))));"#,
+            Instruction::CreateNonFungibleResource {
+                id_type: Value::Enum("U32".into(), Vec::new()),
+                metadata: Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::String("name".into()),
+                        Value::String("Token".into()),
+                    ])]
+                ),
+                access_rules: Value::Array(
+                    Type::Tuple,
+                    vec![
+                        Value::Tuple(vec![
+                            Value::Enum("Withdraw".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("AllowAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                        Value::Tuple(vec![
+                            Value::Enum("Deposit".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("AllowAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                    ]
+                ),
+                initial_supply: Value::Some(Box::new(Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::NonFungibleId(Box::new(Value::U32(1))),
+                        Value::Tuple(vec![
+                            Value::Bytes(Box::new(Value::String("5c2100".into()))),
+                            Value::Bytes(Box::new(Value::String("5c2100".into())))
+                        ])
+                    ])]
+                )))
+            }
+        );
+        parse_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            Instruction::CreateNonFungibleResource {
+                id_type: Value::Enum("U32".into(), Vec::new()),
+                metadata: Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::String("name".into()),
+                        Value::String("Token".into()),
+                    ])]
+                ),
+                access_rules: Value::Array(
+                    Type::Tuple,
+                    vec![
+                        Value::Tuple(vec![
+                            Value::Enum("Withdraw".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("AllowAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                        Value::Tuple(vec![
+                            Value::Enum("Deposit".into(), Vec::new()),
+                            Value::Tuple(vec![
+                                Value::Enum("AllowAll".into(), Vec::new()),
+                                Value::Enum("DenyAll".into(), Vec::new()),
+                            ])
+                        ]),
+                    ]
+                ),
+                initial_supply: Value::None
+            }
+        );
+
+        parse_instruction_ok!(
+            r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
+            Instruction::MintFungible {
+                resource_address: Value::ResourceAddress(Box::new(Value::String(
+                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
+                ))),
+                amount: Value::Decimal(Box::new(Value::String("100".into())))
+            }
+        );
+        parse_instruction_ok!(
+            r#"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100"))));"#,
+            Instruction::MintNonFungible {
+                resource_address: Value::ResourceAddress(Box::new(Value::String(
+                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
+                ))),
+                entries: Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::NonFungibleId(Box::new(Value::U32(1))),
+                        Value::Tuple(vec![
+                            Value::Bytes(Box::new(Value::String("5c2100".into()))),
+                            Value::Bytes(Box::new(Value::String("5c2100".into())))
+                        ])
+                    ])]
+                )
             }
         );
     }
