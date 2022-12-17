@@ -1,0 +1,44 @@
+# This transaction manifest shows how a package can be published to the ledger
+
+# Locking 10 XRD in fees from the account component. 
+CALL_METHOD 
+    ComponentAddress("{account_component_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# Publishing a new package and setting some of its royalty and access rules.
+PUBLISH_PACKAGE 
+    Blob("{code_blob_hash}") 
+    Blob("{abi_blob_hash}") 
+    Array<Tuple>() 
+    Array<Tuple>() 
+    Array<Tuple>(
+        Tuple(
+            Enum("GetMetadata"), 
+            Tuple(
+                Enum("AllowAll"), 
+                Enum("DenyAll")
+            )
+        ), 
+        Tuple(
+            Enum("SetMetadata"), 
+            Tuple(
+                Enum("DenyAll"), 
+                Enum("DenyAll")
+            )
+        ), 
+        Tuple(
+            Enum("SetRoyaltyConfig"), 
+            Tuple(
+                Enum("DenyAll"), 
+                Enum("DenyAll")
+            )
+        ), 
+        Tuple(
+            Enum("ClaimRoyalty"), 
+            Tuple(
+                Enum("DenyAll"), 
+                Enum("DenyAll")
+            )
+        )
+    );

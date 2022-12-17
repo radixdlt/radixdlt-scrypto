@@ -99,12 +99,6 @@ pub enum Instruction {
         access_rules: Value,
     },
 
-    PublishPackageWithOwner {
-        code: Value,
-        abi: Value,
-        owner_badge: Value,
-    },
-
     BurnResource {
         bucket: Value,
     },

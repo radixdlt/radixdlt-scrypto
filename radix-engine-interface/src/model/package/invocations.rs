@@ -15,7 +15,7 @@ pub struct PackagePublishInvocation {
     pub abi: Blob,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
-    pub access_rules: AccessRules,
+    pub access_rules: BTreeMap<PackageMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
 impl Invocation for PackagePublishInvocation {
@@ -30,33 +30,6 @@ impl Into<SerializedInvocation> for PackagePublishInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Function(NativeFunctionInvocation::Package(
             PackageFunctionInvocation::Publish(self),
-        ))
-        .into()
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct PackagePublishWithOwnerInvocation {
-    pub code: Blob,
-    pub abi: Blob,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-    pub metadata: BTreeMap<String, String>,
-    pub owner_badge: NonFungibleAddress,
-}
-
-impl Invocation for PackagePublishWithOwnerInvocation {
-    type Output = PackageAddress;
-}
-
-impl SerializableInvocation for PackagePublishWithOwnerInvocation {
-    type ScryptoOutput = PackageAddress;
-}
-
-impl Into<SerializedInvocation> for PackagePublishWithOwnerInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Package(
-            PackageFunctionInvocation::PublishWithOwner(self),
         ))
         .into()
     }

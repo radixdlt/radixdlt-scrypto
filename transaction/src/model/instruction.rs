@@ -124,7 +124,7 @@ pub enum BasicInstruction {
         abi: Blob,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: AccessRules,
+        access_rules: BTreeMap<PackageMethodAuthKey, (AccessRule, AccessRule)>,
     },
 
     BurnResource {

@@ -1,14 +1,14 @@
 use radix_engine::types::{
-    require, BTreeMap, Bech32Encoder, Blob, ComponentAddress, Decimal, FromPublicKey,
-    NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
-    FAUCET_COMPONENT, RADIX_TOKEN,
+    require, scrypto_decode, BTreeMap, Bech32Encoder, Blob, ComponentAddress, Decimal,
+    FromPublicKey, NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey,
+    ResourceType, FAUCET_COMPONENT, RADIX_TOKEN, PackageMethodAuthKey,
 };
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;
 use transaction::builder::ManifestBuilder;
-use transaction::manifest::compile;
+use transaction::manifest::{compile, decompile};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use utils::ContextualDisplay;
 
@@ -127,17 +127,8 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 /// A sample manifest that publishes a package.
 #[test]
 fn publish_package_with_owner_succeeds() {
-    test_manifest_with_owner_badge(
-        |account_component_address, owner_badge_non_fungible_address, bech32_encoder| {
-            let owner_badge_resource_address = owner_badge_non_fungible_address.resource_address();
-            let owner_badge_non_fungible_id = if let NonFungibleId::U32(non_fungible_id) =
-                owner_badge_non_fungible_address.non_fungible_id()
-            {
-                *non_fungible_id
-            } else {
-                panic!("expected a u32 non-fungible-id");
-            };
-
+    test_manifest(
+        |account_component_address, bech32_encoder| {
             // TODO: Update the code.blob and abi.blob files that are used for testing.
             // Using the WASM and ABI from the account blueprint here as they are up to date. The
             // abi.blob and code.blob files from the transaction crate are not.
@@ -145,9 +136,7 @@ fn publish_package_with_owner_succeeds() {
             let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
 
             let manifest = format!(
-                include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
-                owner_badge_resource_address = owner_badge_resource_address.display(bech32_encoder),
-                owner_badge_non_fungible_id = owner_badge_non_fungible_id,
+                include_str!("../../transaction/examples/package/publish.rtm"),
                 code_blob_hash = Blob::new(&code_blob),
                 abi_blob_hash = Blob::new(&abi_blob),
                 account_component_address = account_component_address.display(bech32_encoder)
@@ -320,40 +309,6 @@ where
     // Run the function and get the manifest string
     let (manifest_string, blobs) =
         string_manifest_builder(&component_address, &accounts, &bech32_encoder);
-    let manifest = compile(&manifest_string, &network, blobs)
-        .expect("Failed to compile manifest from manifest string");
-
-    test_runner
-        .execute_manifest(manifest, vec![virtual_badge_non_fungible_address])
-        .expect_commit_success();
-}
-
-fn test_manifest_with_owner_badge<F>(string_manifest_builder: F)
-where
-    F: Fn(&ComponentAddress, &NonFungibleAddress, &Bech32Encoder) -> (String, Vec<Vec<u8>>),
-{
-    // Creating the test runner and the substate store
-    let mut test_runner = TestRunner::new(false);
-
-    // Creating the account component required for this test
-    let (public_key, _, component_address) = test_runner.new_account(false);
-    let virtual_badge_non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
-
-    // Creating a non-fungible resource which we will consider to be the owner badge
-    let resource_address = test_runner.create_non_fungible_resource(component_address.clone());
-    let owner_badge_non_fungible_address =
-        NonFungibleAddress::new(resource_address, NonFungibleId::U32(1));
-
-    // Defining the network and the bech32 encoder to use
-    let network = NetworkDefinition::simulator();
-    let bech32_encoder = Bech32Encoder::new(&network);
-
-    // Run the function and get the manifest string
-    let (manifest_string, blobs) = string_manifest_builder(
-        &component_address,
-        &owner_badge_non_fungible_address,
-        &bech32_encoder,
-    );
     let manifest = compile(&manifest_string, &network, blobs)
         .expect("Failed to compile manifest from manifest string");
 
