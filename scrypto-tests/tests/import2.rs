@@ -81,4 +81,5 @@ blueprint! {
 #[test]
 fn test_import_from_abi() {
     let _ = Simple::from(ComponentAddress::Normal([0; 26]));
+    let _: Simple = ComponentAddress::Normal([0; 26]).into();
 }
