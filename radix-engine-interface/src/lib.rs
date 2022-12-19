@@ -24,9 +24,14 @@ pub mod crypto;
 pub mod data;
 /// RE math library.
 pub mod math;
+
 /// RE node models.
 pub mod model;
 pub mod modules;
+
+/// RE time library.
+pub mod time;
+
 pub mod wasm;
 
 mod macros;

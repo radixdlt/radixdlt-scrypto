@@ -18,7 +18,6 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Enum("U32")
     Array<Tuple>(
         Tuple("name", "MyResource"), 
-        Tuple("symbol", "RSRC"),
         Tuple("description", "A very innovative and important resource"), 
     ) 
     Array<Tuple>(
