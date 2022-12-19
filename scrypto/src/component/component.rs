@@ -215,7 +215,7 @@ impl GlobalComponentRef {
             receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
             access_rules,
         })
-            .unwrap();
+        .unwrap();
         self
     }
 

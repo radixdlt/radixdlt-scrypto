@@ -38,10 +38,7 @@ impl ComponentSystem {
     }
 
     /// Returns a reference to a component.
-    pub fn get_component(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> &GlobalComponentRef {
+    pub fn get_component(&mut self, component_address: ComponentAddress) -> &GlobalComponentRef {
         self.components
             .entry(component_address)
             .or_insert(GlobalComponentRef(component_address))
