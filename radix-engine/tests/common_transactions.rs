@@ -138,7 +138,9 @@ fn publish_package_succeeds() {
             include_str!("../../transaction/examples/package/publish.rtm"),
             code_blob_hash = Blob::new(&code_blob),
             abi_blob_hash = Blob::new(&abi_blob),
-            account_component_address = account_component_address.display(bech32_encoder)
+            account_component_address = account_component_address.display(bech32_encoder),
+            auth_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
+            auth_badge_non_fungible_id = "1u32",
         );
         (manifest, vec![code_blob, abi_blob])
     });
@@ -196,7 +198,7 @@ fn test_manifest<F>(string_manifest_builder: F)
 where
     F: Fn(&ComponentAddress, &Bech32Encoder) -> (String, Vec<Vec<u8>>),
 {
-    // Creating the test runner and the substate store
+    // Creating a new test runner
     let mut test_runner = TestRunner::new(false);
 
     // Creating the account component required for this test
@@ -228,7 +230,7 @@ fn test_manifest_with_restricted_minting_resource<F>(
         &Bech32Encoder,
     ) -> (String, Vec<Vec<u8>>),
 {
-    // Creating the test runner and the substate store
+    // Creating a new test runner
     let mut test_runner = TestRunner::new(false);
 
     // Creating the account component required for this test
@@ -288,7 +290,7 @@ fn test_manifest_with_additional_accounts<F>(accounts_required: u16, string_mani
 where
     F: Fn(&ComponentAddress, &[ComponentAddress], &Bech32Encoder) -> (String, Vec<Vec<u8>>),
 {
-    // Creating the test runner and the substate store
+    // Creating a new test runner
     let mut test_runner = TestRunner::new(false);
 
     // Creating the account component required for this test

@@ -123,7 +123,7 @@ fn test_non_existent_blob_hash() {
             abi: Blob(Hash([0; 32])),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
-            access_rules: BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+            access_rules: AccessRules::new(),
         })
         .0
         .build();

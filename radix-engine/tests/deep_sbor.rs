@@ -122,7 +122,7 @@ fn publish_wasm_with_deep_sbor_response_and_execute_it(depth: u8) -> Transaction
         generate_single_function_abi("Test", "f", Type::Any),
         BTreeMap::new(),
         BTreeMap::new(),
-        BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+        AccessRules::new(),
     );
 
     // Act

@@ -15,7 +15,7 @@ pub struct PackagePublishInvocation {
     pub abi: Blob,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
-    pub access_rules: BTreeMap<PackageMethodAuthKey, (AccessRule, AccessRule)>,
+    pub access_rules: AccessRules,
 }
 
 impl Invocation for PackagePublishInvocation {

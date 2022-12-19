@@ -659,7 +659,7 @@ RECALL_RESOURCE Bytes("49cd9235ba62b2c217e32e5b4754c08219ef16389761356eaccbf6f6b
 
         assert_eq!(
             canonical_manifest,
-            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Array<Tuple>(Tuple(Enum("SetMetadata"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("GetMetadata"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("SetRoyaltyConfig"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("ClaimRoyalty"), Tuple(Enum("DenyAll"), Enum("DenyAll"))));
+            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Tuple(Array<Tuple>(Tuple(Enum("Native", Enum("Method", Enum("Package", Enum("SetRoyaltyConfig")))), Enum("AccessRule", Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32))))))), Tuple(Enum("Native", Enum("Method", Enum("Package", Enum("ClaimRoyalty")))), Enum("AccessRule", Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32))))))), Tuple(Enum("Native", Enum("Method", Enum("Metadata", Enum("Set")))), Enum("AccessRule", Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32))))))), Tuple(Enum("Native", Enum("Method", Enum("Metadata", Enum("Get")))), Enum("AccessRule", Enum("AllowAll")))), Array<Tuple>(), Enum("DenyAll"), Array<Tuple>(Tuple(Enum("Native", Enum("Method", Enum("Package", Enum("SetRoyaltyConfig")))), Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)))))), Tuple(Enum("Native", Enum("Method", Enum("Package", Enum("ClaimRoyalty")))), Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)))))), Tuple(Enum("Native", Enum("Method", Enum("Metadata", Enum("Set")))), Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)))))), Tuple(Enum("Native", Enum("Method", Enum("Metadata", Enum("Get")))), Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32))))))), Array<Tuple>(), Enum("DenyAll"));
 "#
         );
     }
@@ -815,7 +815,7 @@ CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>(Tuple("description", "A very innovati
         assert_eq!(
             canonical_manifest,
             r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
-CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)))));
+CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)))));
 CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "deposit_batch" Expression("ENTIRE_WORKTOP");
 "#
         );
@@ -837,7 +837,7 @@ CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc00
         assert_eq!(
             canonical_manifest,
             r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
-CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;
+CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;
 "#
         );
     }

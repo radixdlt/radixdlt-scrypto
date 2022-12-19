@@ -1351,9 +1351,9 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
+    use radix_engine_interface::args;
     use radix_engine_interface::core::NetworkDefinition;
     use radix_engine_interface::pdec;
-    use radix_engine_interface::{args, rule};
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1562,7 +1562,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Array<Tuple>(Tuple(Enum("SetMetadata"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("GetMetadata"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("SetRoyaltyConfig"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("ClaimRoyalty"), Tuple(Enum("DenyAll"), Enum("DenyAll"))));"#,
+            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Tuple(Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"), Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"));"#,
             BasicInstruction::PublishPackage {
                 code: Blob(
                     "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
@@ -1576,24 +1576,7 @@ mod tests {
                 ),
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
-                access_rules: BTreeMap::from([
-                    (
-                        PackageMethodAuthKey::GetMetadata,
-                        (rule!(allow_all), rule!(deny_all))
-                    ),
-                    (
-                        PackageMethodAuthKey::SetMetadata,
-                        (rule!(deny_all), rule!(deny_all))
-                    ),
-                    (
-                        PackageMethodAuthKey::SetRoyaltyConfig,
-                        (rule!(deny_all), rule!(deny_all))
-                    ),
-                    (
-                        PackageMethodAuthKey::ClaimRoyalty,
-                        (rule!(deny_all), rule!(deny_all))
-                    ),
-                ])
+                access_rules: AccessRules::new()
             },
             "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
             "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"

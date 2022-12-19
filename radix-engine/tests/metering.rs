@@ -17,7 +17,7 @@ fn test_loop() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -43,7 +43,7 @@ fn test_loop_out_of_cost_unit() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 45.into())
@@ -68,7 +68,7 @@ fn test_recursion() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -92,7 +92,7 @@ fn test_recursion_stack_overflow() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -116,7 +116,7 @@ fn test_grow_memory() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -140,7 +140,7 @@ fn test_grow_memory_out_of_cost_unit() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -223,7 +223,7 @@ fn test_publish_large_package() {
             BTreeMap::new(),
             BTreeMap::new(),
             BTreeMap::new(),
-            BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+            AccessRules::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

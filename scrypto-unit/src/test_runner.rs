@@ -23,7 +23,7 @@ use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType, PackageMethodAuthKey,
+    AccessRule, AccessRules, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::{dec, rule};
@@ -328,13 +328,13 @@ impl TestRunner {
         }
     }
 
-    pub fn publish_package<R: Into<AccessRule>>(
+    pub fn publish_package(
         &mut self,
         code: Vec<u8>,
         abi: BTreeMap<String, BlueprintAbi>,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
-        access_rules: BTreeMap<PackageMethodAuthKey, (AccessRule, R)>,
+        access_rules: AccessRules,
     ) -> PackageAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
@@ -381,7 +381,7 @@ impl TestRunner {
             abi,
             BTreeMap::new(),
             BTreeMap::new(),
-            BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+            AccessRules::new(),
         )
     }
 

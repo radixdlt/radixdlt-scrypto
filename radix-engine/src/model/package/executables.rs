@@ -80,19 +80,8 @@ impl NativeProcedure for PackagePublishInvocation {
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
         };
-        let access_rules = {
-            let mut access_rules = AccessRules::new();
-            for (auth_key, (access_rule, mutability)) in self.access_rules.into_iter() {
-                access_rules.set_access_rule_and_mutability(
-                    auth_key.into(),
-                    access_rule,
-                    mutability,
-                );
-            }
-
-            AccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
-            }
+        let access_rules = AccessRulesChainSubstate {
+            access_rules_chain: vec![self.access_rules],
         };
 
         // TODO: Can we trust developers enough to add protection for

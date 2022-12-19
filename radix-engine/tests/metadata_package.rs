@@ -16,7 +16,7 @@ fn cannot_set_package_metadata_with_no_owner() {
             BTreeMap::new(),
             BTreeMap::new(),
             BTreeMap::new(),
-            BTreeMap::<PackageMethodAuthKey, (AccessRule, AccessRule)>::new(),
+            AccessRules::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
