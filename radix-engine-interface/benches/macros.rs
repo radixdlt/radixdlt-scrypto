@@ -1,4 +1,7 @@
 
+// set it to false if you want full benchmarks.
+pub const QUICK : bool = true;
+
 #[macro_export]
 macro_rules! process_op {
     ($t:ty, $op:ident, $bid:ident, "to_string") => {
@@ -43,6 +46,9 @@ macro_rules! bench_ops {
                             [< $t:lower _ $ops>](&*o_first, &*o_second)
                         })
                     });
+                    if QUICK {
+                        break
+                    }
                 }
             }
         }
@@ -59,6 +65,9 @@ macro_rules! bench_ops {
                             [< $t:lower _ $ops>](&*o_first, &*o_second)
                         })
                     });
+                    if QUICK {
+                        break
+                    }
                 }
             }
         }

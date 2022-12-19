@@ -5,6 +5,7 @@ use criterion::{BenchmarkId, Criterion};
 use radix_engine_interface::math::Decimal;
 
 use crate::{bench_ops,process_op};
+use crate::macros::QUICK;
 
 fn decimal_add(a: &Decimal, b: &Decimal   ) {
     let _ = *a + *b;
