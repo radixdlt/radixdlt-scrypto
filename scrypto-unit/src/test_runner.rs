@@ -102,7 +102,7 @@ impl Compile {
 
 pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
-    substate_store: TypedInMemorySubstateStore,
+    staged_substate_store_manager: StagedSubstateStoreManager<TypedInMemorySubstateStore>,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
@@ -119,7 +119,7 @@ impl TestRunner {
         let substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
         Self {
             scrypto_interpreter,
-            substate_store,
+            staged_substate_store_manager: StagedSubstateStoreManager::new(substate_store),
             intent_hash_manager: TestIntentHashManager::new(),
             next_private_key: 1, // 0 is invalid
             next_transaction_nonce: 0,
@@ -128,23 +128,11 @@ impl TestRunner {
     }
 
     pub fn substate_store(&self) -> &TypedInMemorySubstateStore {
-        &self.substate_store
+        &self.staged_substate_store_manager.root
     }
 
     pub fn substate_store_mut(&mut self) -> &mut TypedInMemorySubstateStore {
-        &mut self.substate_store
-    }
-
-    pub fn new_staged_substate_store_manager(
-        &mut self,
-    ) -> (
-        StagedSubstateStoreManager<TypedInMemorySubstateStore>,
-        &ScryptoInterpreter<DefaultWasmEngine>,
-    ) {
-        (
-            StagedSubstateStoreManager::new(&mut self.substate_store),
-            &self.scrypto_interpreter,
-        )
+        &mut self.staged_substate_store_manager.root
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -182,7 +170,8 @@ impl TestRunner {
     pub fn get_metadata(&mut self, address: GlobalAddress) -> BTreeMap<String, String> {
         let node_id = RENodeId::Global(address);
         let global = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -193,7 +182,8 @@ impl TestRunner {
         let underlying_node = global.global().node_deref();
 
         let metadata = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 underlying_node,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
@@ -208,7 +198,8 @@ impl TestRunner {
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let global = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -220,7 +211,8 @@ impl TestRunner {
     pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
         let global = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -235,7 +227,8 @@ impl TestRunner {
     ) -> Option<Decimal> {
         let node_id = self.deref_component(component_address)?;
 
-        self.substate_store
+        self.staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
@@ -252,7 +245,8 @@ impl TestRunner {
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let node_id = self.deref_package(package_address)?;
 
-        self.substate_store
+        self.staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
@@ -275,7 +269,7 @@ impl TestRunner {
         let mut vault_finder = VaultFinder::new(resource_address);
 
         let mut state_tree_visitor =
-            StateTreeTraverser::new(&self.substate_store, &mut vault_finder, 100);
+            StateTreeTraverser::new(&self.staged_substate_store_manager.root, &mut vault_finder, 100);
         state_tree_visitor
             .traverse_all_descendents(None, node_id)
             .unwrap();
@@ -287,7 +281,7 @@ impl TestRunner {
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
-        let mut accounter = ResourceAccounter::new(&self.substate_store);
+        let mut accounter = ResourceAccounter::new(&self.staged_substate_store_manager.root);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
     }
@@ -340,7 +334,8 @@ impl TestRunner {
 
     pub fn deref_component_address(&mut self, component_address: ComponentAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -353,7 +348,8 @@ impl TestRunner {
 
     pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -506,7 +502,7 @@ impl TestRunner {
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         execute_and_commit_transaction(
-            &mut self.substate_store,
+            &mut self.staged_substate_store_manager.root,
             &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
@@ -520,7 +516,7 @@ impl TestRunner {
         network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
         execute_preview(
-            &self.substate_store,
+            &self.staged_substate_store_manager.root,
             &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
@@ -533,12 +529,12 @@ impl TestRunner {
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> BlueprintAbi {
-        export_abi(&self.substate_store, package_address, blueprint_name)
+        export_abi(&self.staged_substate_store_manager.root, package_address, blueprint_name)
             .expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(&mut self, component_address: ComponentAddress) -> BlueprintAbi {
-        export_abi_by_component(&self.substate_store, component_address)
+        export_abi_by_component(&self.staged_substate_store_manager.root, component_address)
             .expect("Failed to export ABI")
     }
 

@@ -1,6 +1,5 @@
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
 };
@@ -36,12 +35,8 @@ fn execute_single_transaction(transaction: NotarizedTransaction) {
     let execution_config = ExecutionConfig::default();
     let fee_reserve_config = FeeReserveConfig::default();
 
-    let mut staged_store_manager = StagedSubstateStoreManager::new(&mut store);
-    let staged_node = staged_store_manager.new_child_node(0);
-
-    let mut staged_store = staged_store_manager.get_output_store(staged_node);
     execute_and_commit_transaction(
-        &mut staged_store,
+        &mut store,
         &mut scrypto_interpreter,
         &fee_reserve_config,
         &execution_config,
