@@ -165,6 +165,11 @@ impl Parser {
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
             },
+            TokenKind::PublishPackageWithOwner => Instruction::PublishPackageWithOwner {
+                code: self.parse_value()?,
+                abi: self.parse_value()?,
+                owner_badge: self.parse_value()?,
+            },
             TokenKind::BurnResource => Instruction::BurnResource {
                 bucket: self.parse_value()?,
             },
@@ -211,12 +216,28 @@ impl Parser {
                 access_rules: self.parse_value()?,
                 initial_supply: self.parse_value()?,
             },
+            TokenKind::CreateFungibleResourceWithOwner => {
+                Instruction::CreateFungibleResourceWithOwner {
+                    divisibility: self.parse_value()?,
+                    metadata: self.parse_value()?,
+                    owner_badge: self.parse_value()?,
+                    initial_supply: self.parse_value()?,
+                }
+            }
             TokenKind::CreateNonFungibleResource => Instruction::CreateNonFungibleResource {
                 id_type: self.parse_value()?,
                 metadata: self.parse_value()?,
                 access_rules: self.parse_value()?,
                 initial_supply: self.parse_value()?,
             },
+            TokenKind::CreateNonFungibleResourceWithOwner => {
+                Instruction::CreateNonFungibleResourceWithOwner {
+                    id_type: self.parse_value()?,
+                    metadata: self.parse_value()?,
+                    owner_badge: self.parse_value()?,
+                    initial_supply: self.parse_value()?,
+                }
+            }
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }
@@ -759,6 +780,23 @@ mod tests {
                 )
             }
         );
+        parse_instruction_ok!(
+            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32);"#,
+            Instruction::PublishPackageWithOwner {
+                code: Value::Blob(Box::new(Value::String(
+                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618".into()
+                ))),
+                abi: Value::Blob(Box::new(Value::String(
+                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d".into()
+                ))),
+                owner_badge: Value::NonFungibleAddress(
+                    Box::new(Value::String(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
+                    )),
+                    Box::new(Value::U32(1))
+                )
+            }
+        );
 
         parse_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("500"));"#,
@@ -824,6 +862,48 @@ mod tests {
                             ])
                         ]),
                     ]
+                ),
+                initial_supply: Value::None
+            }
+        );
+        parse_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) Some(Decimal("500"));"#,
+            Instruction::CreateFungibleResourceWithOwner {
+                divisibility: Value::U8(18),
+                metadata: Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::String("name".into()),
+                        Value::String("Token".into()),
+                    ])]
+                ),
+                owner_badge: Value::NonFungibleAddress(
+                    Box::new(Value::String(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
+                    )),
+                    Box::new(Value::U32(1))
+                ),
+                initial_supply: Value::Some(Box::new(Value::Decimal(Box::new(Value::String(
+                    "500".into()
+                )))))
+            }
+        );
+        parse_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            Instruction::CreateFungibleResourceWithOwner {
+                divisibility: Value::U8(18),
+                metadata: Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::String("name".into()),
+                        Value::String("Token".into()),
+                    ])]
+                ),
+                owner_badge: Value::NonFungibleAddress(
+                    Box::new(Value::String(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
+                    )),
+                    Box::new(Value::U32(1))
                 ),
                 initial_supply: Value::None
             }
@@ -919,6 +999,74 @@ mod tests {
                             ])
                         ]),
                     ]
+                ),
+                initial_supply: Value::None
+            }
+        );
+        parse_instruction_ok!(
+            r#"
+            CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER 
+                Enum("U32") 
+                Array<Tuple>(Tuple("name", "Token")) 
+                NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) 
+                Some(
+                    Array<Tuple>(
+                        Tuple(
+                            NonFungibleId(1u32), 
+                            Tuple(
+                                Tuple("Hello World", Decimal("12")),
+                                Tuple(12u8, 19u128)
+                            )
+                        )
+                    )
+                );
+            "#,
+            Instruction::CreateNonFungibleResourceWithOwner {
+                id_type: Value::Enum("U32".into(), Vec::new()),
+                metadata: Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::String("name".into()),
+                        Value::String("Token".into()),
+                    ])]
+                ),
+                owner_badge: Value::NonFungibleAddress(
+                    Box::new(Value::String(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
+                    )),
+                    Box::new(Value::U32(1))
+                ),
+                initial_supply: Value::Some(Box::new(Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::NonFungibleId(Box::new(Value::U32(1))),
+                        Value::Tuple(vec![
+                            Value::Tuple(vec![
+                                Value::String("Hello World".into()),
+                                Value::Decimal(Box::new(Value::String("12".into())))
+                            ]),
+                            Value::Tuple(vec![Value::U8(12), Value::U128(19),]),
+                        ])
+                    ])]
+                )))
+            }
+        );
+        parse_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("U32") Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            Instruction::CreateNonFungibleResourceWithOwner {
+                id_type: Value::Enum("U32".into(), Vec::new()),
+                metadata: Value::Array(
+                    Type::Tuple,
+                    vec![Value::Tuple(vec![
+                        Value::String("name".into()),
+                        Value::String("Token".into()),
+                    ])]
+                ),
+                owner_badge: Value::NonFungibleAddress(
+                    Box::new(Value::String(
+                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
+                    )),
+                    Box::new(Value::U32(1))
                 ),
                 initial_supply: Value::None
             }

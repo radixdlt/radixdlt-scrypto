@@ -124,6 +124,7 @@ pub enum TokenKind {
     CallFunction,
     CallMethod,
     PublishPackage,
+    PublishPackageWithOwner,
     BurnResource,
     RecallResource,
     SetMetadata,
@@ -135,7 +136,9 @@ pub enum TokenKind {
     MintFungible,
     MintNonFungible,
     CreateFungibleResource,
+    CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
+    CreateNonFungibleResourceWithOwner,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -470,6 +473,7 @@ impl Lexer {
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
+            "PUBLISH_PACKAGE_WITH_OWNER" => Ok(TokenKind::PublishPackageWithOwner),
             "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
             "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
             "SET_METADATA" => Ok(TokenKind::SetMetadata),
@@ -482,6 +486,10 @@ impl Lexer {
             "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
             "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
             "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
+            "CREATE_FUNGIBLE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateFungibleResourceWithOwner),
+            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
+                Ok(TokenKind::CreateNonFungibleResourceWithOwner)
+            }
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

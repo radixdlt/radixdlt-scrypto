@@ -364,6 +364,17 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, access_rules)?;
             f.write_str(";")?;
         }
+        BasicInstruction::PublishPackageWithOwner {
+            code,
+            abi,
+            owner_badge,
+        } => {
+            f.write_str("PUBLISH_PACKAGE_WITH_OWNER")?;
+            format_typed_value(f, context, code)?;
+            format_typed_value(f, context, abi)?;
+            format_typed_value(f, context, owner_badge)?;
+            f.write_str(";")?;
+        }
         BasicInstruction::BurnResource { bucket_id } => {
             write!(
                 f,
@@ -466,6 +477,19 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, initial_supply)?;
             f.write_str(";")?;
         }
+        BasicInstruction::CreateFungibleResourceWithOwner {
+            divisibility,
+            metadata,
+            owner_badge,
+            initial_supply,
+        } => {
+            f.write_str("CREATE_FUNGIBLE_RESOURCE_WITH_OWNER")?;
+            format_typed_value(f, context, divisibility)?;
+            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, owner_badge)?;
+            format_typed_value(f, context, initial_supply)?;
+            f.write_str(";")?;
+        }
         BasicInstruction::CreateNonFungibleResource {
             id_type,
             metadata,
@@ -485,6 +509,28 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, id_type)?;
             format_typed_value(f, context, metadata)?;
             format_typed_value(f, context, access_rules)?;
+            format_typed_value(f, context, &initial_supply)?;
+            f.write_str(";")?;
+        }
+        BasicInstruction::CreateNonFungibleResourceWithOwner {
+            id_type,
+            metadata,
+            owner_badge,
+            initial_supply,
+        } => {
+            let initial_supply = {
+                match initial_supply {
+                    Some(initial_supply) => {
+                        transform_non_fungible_mint_params(initial_supply).map(Some)?
+                    }
+                    None => None,
+                }
+            };
+
+            f.write_str("CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER")?;
+            format_typed_value(f, context, id_type)?;
+            format_typed_value(f, context, metadata)?;
+            format_typed_value(f, context, owner_badge)?;
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
@@ -665,6 +711,27 @@ RECALL_RESOURCE Bytes("49cd9235ba62b2c217e32e5b4754c08219ef16389761356eaccbf6f6b
     }
 
     #[test]
+    fn test_publish_package_with_owner() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!("../../examples/package/publish_with_owner.rtm").to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![
+                include_bytes!("../../examples/test-cases/code.blob").to_vec(),
+                include_bytes!("../../examples/test-cases/abi.blob").to_vec(),
+            ],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u32);
+"#
+        );
+    }
+
+    #[test]
     fn test_invocation() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
             include_str!("../../examples/test-cases/invocation.rtm"),
@@ -781,6 +848,28 @@ CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc00
     }
 
     #[test]
+    fn test_create_fungible_resource_with_initial_supply_with_owner() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!(
+                    "../../examples/resources/creation/fungible/with_initial_supply_with_owner.rtm"
+                )
+                .to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u32) Some(Decimal("12"));
+CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "deposit_batch" Expression("ENTIRE_WORKTOP");
+"#
+        );
+    }
+
+    #[test]
     fn test_create_fungible_resource_with_no_initial_supply() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
             &apply_replacements_to_manifest(
@@ -795,6 +884,27 @@ CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc00
             canonical_manifest,
             r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
 CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;
+"#
+        );
+    }
+
+    #[test]
+    fn test_create_fungible_resource_with_no_initial_supply_with_owner() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!(
+                    "../../examples/resources/creation/fungible/no_initial_supply_with_owner.rtm"
+                )
+                .to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource"), Tuple("symbol", "RSRC")) NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u32) None;
 "#
         );
     }
@@ -822,6 +932,28 @@ CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc00
     }
 
     #[test]
+    fn test_create_non_fungible_resource_with_initial_supply_with_owner() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!(
+                    "../../examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"
+                )
+                .to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource")) NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u32) Some(Array<Tuple>(Tuple(NonFungibleId(1u32), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)))));
+CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "deposit_batch" Expression("ENTIRE_WORKTOP");
+"#
+        );
+    }
+
+    #[test]
     fn test_create_non_fungible_resource_with_no_initial_supply() {
         let canonical_manifest = compile_and_decompile_with_inversion_test(
             &apply_replacements_to_manifest(
@@ -838,6 +970,27 @@ CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc00
             canonical_manifest,
             r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;
+"#
+        );
+    }
+
+    #[test]
+    fn test_create_non_fungible_resource_with_no_initial_supply_with_owner() {
+        let canonical_manifest = compile_and_decompile_with_inversion_test(
+            &apply_replacements_to_manifest(
+                include_str!(
+                    "../../examples/resources/creation/non_fungible/no_initial_supply_with_owner.rtm"
+                )
+                .to_string(),
+            ),
+            &NetworkDefinition::simulator(),
+            vec![],
+        );
+
+        assert_eq!(
+            canonical_manifest,
+            r#"CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na") "lock_fee" Decimal("10");
+CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("U32") Array<Tuple>(Tuple("description", "A very innovative and important resource"), Tuple("name", "MyResource")) NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u32) None;
 "#
         );
     }
@@ -952,6 +1105,19 @@ CALL_METHOD ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc00
             (
                 "{mintable_resource_address}",
                 "resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx",
+            ),
+            (
+                "{owner_badge_resource_address}",
+                "resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx",
+            ),
+            ("{owner_badge_non_fungible_id}", "1u32"),
+            (
+                "{code_blob_hash}",
+                "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
+            ),
+            (
+                "{abi_blob_hash}",
+                "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d",
             ),
             ("{initial_supply}", "12"),
             ("{mint_amount}", "12"),

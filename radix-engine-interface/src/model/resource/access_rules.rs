@@ -6,6 +6,8 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::*;
 
+use crate::api::types::PackageMethod;
+use crate::api::types::{MetadataMethod, NativeMethod};
 use crate::model::*;
 use crate::rule;
 use crate::scrypto;
@@ -189,6 +191,39 @@ impl AccessRules {
     pub fn get_default_auth_mutability(&self) -> &AccessRule {
         &self.default_auth_mutability
     }
+}
+
+pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleAddress) -> AccessRules {
+    let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Get,
+        ))),
+        AccessRule::AllowAll,
+        rule!(require(owner_badge.clone())),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Set,
+        ))),
+        rule!(require(owner_badge.clone())),
+        rule!(require(owner_badge.clone())),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+            PackageMethod::SetRoyaltyConfig,
+        ))),
+        rule!(require(owner_badge.clone())),
+        rule!(require(owner_badge.clone())),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+            PackageMethod::ClaimRoyalty,
+        ))),
+        rule!(require(owner_badge.clone())),
+        rule!(require(owner_badge.clone())),
+    );
+    access_rules
 }
 
 pub fn resource_access_rules_from_owner_badge(

@@ -18,9 +18,9 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     18u8
     Array<Tuple>(
-        Tuple("name", "MyResource"), 
-        Tuple("symbol", "RSRC"),
-        Tuple("description", "A very innovative and important resource")
+        Tuple("name", "MyResource"),                                        # Resource Name
+        Tuple("symbol", "RSRC"),                                            # Resource Symbol
+        Tuple("description", "A very innovative and important resource")    # Resource Description
     ) 
     Array<Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array 

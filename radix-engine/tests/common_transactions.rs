@@ -80,6 +80,22 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
     });
 }
 
+/// An example manifest for creating a new fungible resource with no initial supply with an owner
+#[test]
+fn creating_a_fungible_resource_with_no_initial_supply_with_owner_succeeds() {
+    test_manifest(|account_component_address, bech32_encoder| {
+        let manifest = format!(
+            include_str!(
+                "../../transaction/examples/resources/creation/fungible/no_initial_supply_with_owner.rtm"
+            ),
+            account_component_address = account_component_address.display(bech32_encoder),
+            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
+            owner_badge_non_fungible_id = "1u32",
+        );
+        (manifest, Vec::new())
+    });
+}
+
 /// An example manifest for creating a new fungible resource with an initial supply
 #[test]
 fn creating_a_fungible_resource_with_initial_supply_succeeds() {
@@ -92,6 +108,25 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
             ),
             initial_supply = initial_supply,
             account_component_address = account_component_address.display(bech32_encoder)
+        );
+        (manifest, Vec::new())
+    });
+}
+
+/// An example manifest for creating a new fungible resource with an initial supply with an owner
+#[test]
+fn creating_a_fungible_resource_with_initial_supply_with_owner_succeeds() {
+    test_manifest(|account_component_address, bech32_encoder| {
+        let initial_supply = Decimal::from("10000000");
+
+        let manifest = format!(
+            include_str!(
+                "../../transaction/examples/resources/creation/fungible/with_initial_supply_with_owner.rtm"
+            ),
+            initial_supply = initial_supply,
+            account_component_address = account_component_address.display(bech32_encoder),
+            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
+            owner_badge_non_fungible_id = "1u32",
         );
         (manifest, Vec::new())
     });
@@ -124,6 +159,36 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
     });
 }
 
+/// An example manifest for creating a new non-fungible resource with no supply with owner
+#[test]
+fn creating_a_non_fungible_resource_with_no_initial_supply_with_owner_succeeds() {
+    test_manifest(|account_component_address, bech32_encoder| {
+        let manifest = format!(
+            include_str!(
+                "../../transaction/examples/resources/creation/non_fungible/no_initial_supply_with_owner.rtm"
+            ),
+            account_component_address = account_component_address.display(bech32_encoder),
+            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
+            owner_badge_non_fungible_id = "1u32",
+        );
+        (manifest, Vec::new())
+    });
+}
+
+/// An example manifest for creating a new non-fungible resource with an initial supply with owner
+#[test]
+fn creating_a_non_fungible_resource_with_initial_supply_with_owner_succeeds() {
+    test_manifest(|account_component_address, bech32_encoder| {
+        let manifest = format!(
+            include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"),
+            account_component_address = account_component_address.display(bech32_encoder),
+            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
+            owner_badge_non_fungible_id = "1u32",
+        );
+        (manifest, Vec::new())
+    });
+}
+
 /// A sample manifest that publishes a package.
 #[test]
 fn publish_package_succeeds() {
@@ -141,6 +206,28 @@ fn publish_package_succeeds() {
             account_component_address = account_component_address.display(bech32_encoder),
             auth_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
             auth_badge_non_fungible_id = "1u32",
+        );
+        (manifest, vec![code_blob, abi_blob])
+    });
+}
+
+/// A sample manifest that publishes a package with an owner badge.
+#[test]
+fn publish_package_with_owner_succeeds() {
+    test_manifest(|account_component_address, bech32_encoder| {
+        // TODO: Update the code.blob and abi.blob files that are used for testing.
+        // Using the WASM and ABI from the account blueprint here as they are up to date. The
+        // abi.blob and code.blob files from the transaction crate are not.
+        let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
+        let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
+
+        let manifest = format!(
+            include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
+            code_blob_hash = Blob::new(&code_blob),
+            abi_blob_hash = Blob::new(&abi_blob),
+            account_component_address = account_component_address.display(bech32_encoder),
+            owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
+            owner_badge_non_fungible_id = "1u32",
         );
         (manifest, vec![code_blob, abi_blob])
     });

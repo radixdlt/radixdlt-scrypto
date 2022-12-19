@@ -1,10 +1,7 @@
 use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, MetadataMethod, NativeFn, NativeMethod, PackageMethod, ProofId,
-    VaultId,
-};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId, VaultId};
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Blob, Hash};
@@ -303,8 +300,13 @@ impl ManifestBuilder {
         owner_badge: NonFungibleAddress,
         initial_supply: Option<Decimal>,
     ) -> &mut Self {
-        let access_rules = resource_access_rules_from_owner_badge(&owner_badge);
-        self.create_fungible_resource(divisibility, metadata, access_rules, initial_supply)
+        self.add_instruction(BasicInstruction::CreateFungibleResourceWithOwner {
+            divisibility,
+            metadata,
+            owner_badge,
+            initial_supply,
+        });
+        self
     }
 
     /// Creates a new non-fungible resource
@@ -351,8 +353,19 @@ impl ManifestBuilder {
         T: IntoIterator<Item = (NonFungibleId, V)>,
         V: NonFungibleData,
     {
-        let access_rules = resource_access_rules_from_owner_badge(&owner_badge);
-        self.create_non_fungible_resource(id_type, metadata, access_rules, initial_supply)
+        let initial_supply = initial_supply.map(|entries| {
+            entries
+                .into_iter()
+                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+                .collect()
+        });
+        self.add_instruction(BasicInstruction::CreateNonFungibleResourceWithOwner {
+            id_type,
+            metadata,
+            owner_badge,
+            initial_supply,
+        });
+        self
     }
 
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
@@ -552,8 +565,8 @@ impl ManifestBuilder {
             royalty_config,
             metadata,
             access_rules,
-        })
-        .0
+        });
+        self
     }
 
     /// Publishes a package with an owner badge.
@@ -563,37 +576,19 @@ impl ManifestBuilder {
         abi: BTreeMap<String, BlueprintAbi>,
         owner_badge: NonFungibleAddress,
     ) -> &mut Self {
-        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Get,
-            ))),
-            AccessRule::AllowAll,
-            rule!(require(owner_badge.clone())),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-                PackageMethod::SetRoyaltyConfig,
-            ))),
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-                PackageMethod::ClaimRoyalty,
-            ))),
-            rule!(require(owner_badge.clone())),
-            rule!(require(owner_badge.clone())),
-        );
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
 
-        self.publish_package(code, abi, BTreeMap::new(), BTreeMap::new(), access_rules)
+        let abi = scrypto_encode(&abi).unwrap();
+        let abi_hash = hash(&abi);
+        self.blobs.insert(abi_hash, abi);
+
+        self.add_instruction(BasicInstruction::PublishPackageWithOwner {
+            code: Blob(code_hash),
+            abi: Blob(abi_hash),
+            owner_badge,
+        });
+        self
     }
 
     /// Builds a transaction manifest.

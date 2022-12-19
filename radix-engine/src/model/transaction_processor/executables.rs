@@ -609,6 +609,20 @@ impl TransactionProcessor {
                     })
                     .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
                     .map_err(InvokeError::Downstream),
+                Instruction::Basic(BasicInstruction::PublishPackageWithOwner {
+                    code,
+                    abi,
+                    owner_badge,
+                }) => api
+                    .invoke(PackagePublishInvocation {
+                        code: code.clone(),
+                        abi: abi.clone(),
+                        royalty_config: BTreeMap::new(),
+                        metadata: BTreeMap::new(),
+                        access_rules: package_access_rules_from_owner_badge(owner_badge),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream),
 
                 Instruction::Basic(BasicInstruction::CreateFungibleResource {
                     divisibility,
@@ -634,6 +648,30 @@ impl TransactionProcessor {
                         }
                         Ok(result)
                     }),
+                Instruction::Basic(BasicInstruction::CreateFungibleResourceWithOwner {
+                    divisibility,
+                    metadata,
+                    owner_badge,
+                    initial_supply,
+                }) => api
+                    .invoke(ResourceManagerCreateInvocation {
+                        resource_type: ResourceType::Fungible {
+                            divisibility: *divisibility,
+                        },
+                        metadata: metadata.clone(),
+                        access_rules: resource_access_rules_from_owner_badge(owner_badge),
+                        mint_params: initial_supply.map(|amount| MintParams::Fungible { amount }),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|result| {
+                        // Auto move into worktop
+                        for (bucket_id, _) in &result.bucket_ids {
+                            Worktop::sys_put(Bucket(*bucket_id), api)
+                                .map_err(InvokeError::downstream)?;
+                        }
+                        Ok(result)
+                    }),
                 Instruction::Basic(BasicInstruction::CreateNonFungibleResource {
                     id_type,
                     metadata,
@@ -644,6 +682,30 @@ impl TransactionProcessor {
                         resource_type: ResourceType::NonFungible { id_type: *id_type },
                         metadata: metadata.clone(),
                         access_rules: access_rules.clone(),
+                        mint_params: initial_supply
+                            .as_ref()
+                            .map(|e| MintParams::NonFungible { entries: e.clone() }),
+                    })
+                    .map(|rtn| IndexedScryptoValue::from_typed(&rtn))
+                    .map_err(InvokeError::Downstream)
+                    .and_then(|result| {
+                        // Auto move into worktop
+                        for (bucket_id, _) in &result.bucket_ids {
+                            Worktop::sys_put(Bucket(*bucket_id), api)
+                                .map_err(InvokeError::downstream)?;
+                        }
+                        Ok(result)
+                    }),
+                Instruction::Basic(BasicInstruction::CreateNonFungibleResourceWithOwner {
+                    id_type,
+                    metadata,
+                    owner_badge,
+                    initial_supply,
+                }) => api
+                    .invoke(ResourceManagerCreateInvocation {
+                        resource_type: ResourceType::NonFungible { id_type: *id_type },
+                        metadata: metadata.clone(),
+                        access_rules: resource_access_rules_from_owner_badge(owner_badge),
                         mint_params: initial_supply
                             .as_ref()
                             .map(|e| MintParams::NonFungible { entries: e.clone() }),

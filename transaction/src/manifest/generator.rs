@@ -392,6 +392,15 @@ pub fn generate_instruction(
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::PublishPackageWithOwner {
+            code,
+            abi,
+            owner_badge,
+        } => BasicInstruction::PublishPackageWithOwner {
+            code: generate_blob(code, blobs)?,
+            abi: generate_blob(abi, blobs)?,
+            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+        },
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
@@ -474,6 +483,17 @@ pub fn generate_instruction(
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
             initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::CreateFungibleResourceWithOwner {
+            divisibility,
+            metadata,
+            owner_badge,
+            initial_supply,
+        } => BasicInstruction::CreateFungibleResourceWithOwner {
+            divisibility: generate_u8(divisibility)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+        },
 
         ast::Instruction::CreateNonFungibleResource {
             id_type,
@@ -484,6 +504,23 @@ pub fn generate_instruction(
             id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
             metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
             access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            initial_supply: generate_from_enum_if_some(
+                initial_supply,
+                resolver,
+                bech32_decoder,
+                blobs,
+                generate_non_fungible_mint_params,
+            )?,
+        },
+        ast::Instruction::CreateNonFungibleResourceWithOwner {
+            id_type,
+            metadata,
+            owner_badge,
+            initial_supply,
+        } => BasicInstruction::CreateNonFungibleResourceWithOwner {
+            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
             initial_supply: generate_from_enum_if_some(
                 initial_supply,
                 resolver,
@@ -1519,6 +1556,7 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
+        let owner_badge = NonFungibleAddress::new(resource, NonFungibleId::U32(1));
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
@@ -1581,6 +1619,24 @@ mod tests {
             "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
             "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
         );
+        generate_instruction_ok!(
+            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32);"#,
+            BasicInstruction::PublishPackageWithOwner {
+                code: Blob(
+                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
+                        .parse()
+                        .unwrap()
+                ),
+                abi: Blob(
+                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+                        .parse()
+                        .unwrap()
+                ),
+                owner_badge: owner_badge.clone()
+            },
+            "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
+            "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+        );
 
         generate_instruction_ok!(
             r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("500"));"#,
@@ -1615,6 +1671,24 @@ mod tests {
                         (AccessRule::AllowAll, AccessRule::DenyAll)
                     ),
                 ]),
+                initial_supply: None
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) Some(Decimal("500"));"#,
+            BasicInstruction::CreateFungibleResourceWithOwner {
+                divisibility: 18,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                owner_badge: owner_badge.clone(),
+                initial_supply: Some("500".parse().unwrap())
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            BasicInstruction::CreateFungibleResourceWithOwner {
+                divisibility: 18,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                owner_badge: owner_badge.clone(),
                 initial_supply: None
             },
         );
@@ -1674,6 +1748,47 @@ mod tests {
                         (AccessRule::AllowAll, AccessRule::DenyAll)
                     ),
                 ]),
+                initial_supply: None
+            },
+        );
+
+        generate_instruction_ok!(
+            r#"
+            CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER 
+                Enum("U32") 
+                Array<Tuple>(Tuple("name", "Token")) 
+                NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) 
+                Some(
+                    Array<Tuple>(
+                        Tuple(
+                            NonFungibleId(1u32), 
+                            Tuple(
+                                Tuple("Hello World", Decimal("12")),
+                                Tuple(12u8, 19u128)
+                            )
+                        )
+                    )
+                );
+            "#,
+            BasicInstruction::CreateNonFungibleResourceWithOwner {
+                id_type: NonFungibleIdType::U32,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                owner_badge: owner_badge.clone(),
+                initial_supply: Some(BTreeMap::from([(
+                    NonFungibleId::U32(1),
+                    (
+                        args!(String::from("Hello World"), Decimal::from("12")),
+                        args!(12u8, 19u128)
+                    )
+                )]))
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("U32") Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            BasicInstruction::CreateNonFungibleResourceWithOwner {
+                id_type: NonFungibleIdType::U32,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                owner_badge: owner_badge.clone(),
                 initial_supply: None
             },
         );

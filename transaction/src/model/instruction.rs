@@ -127,6 +127,13 @@ pub enum BasicInstruction {
         access_rules: AccessRules,
     },
 
+    /// Publish a package with owner.
+    PublishPackageWithOwner {
+        code: Blob,
+        abi: Blob,
+        owner_badge: NonFungibleAddress,
+    },
+
     BurnResource {
         bucket_id: BucketId,
     },
@@ -184,10 +191,24 @@ pub enum BasicInstruction {
         initial_supply: Option<Decimal>,
     },
 
+    CreateFungibleResourceWithOwner {
+        divisibility: u8,
+        metadata: BTreeMap<String, String>,
+        owner_badge: NonFungibleAddress,
+        initial_supply: Option<Decimal>,
+    },
+
     CreateNonFungibleResource {
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+    },
+
+    CreateNonFungibleResourceWithOwner {
+        id_type: NonFungibleIdType,
+        metadata: BTreeMap<String, String>,
+        owner_badge: NonFungibleAddress,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 }
