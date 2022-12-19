@@ -166,7 +166,7 @@ import! {
 
 blueprint! {
     struct UseImport {
-        simple: Simple
+        simple: SimpleGlobalComponentRef
     }
 
     impl UseImport {
@@ -182,5 +182,5 @@ blueprint! {
 
 #[test]
 fn test_import_from_abi() {
-    let _ = Simple::from(ComponentAddress::Normal([0; 26]));
+    let _ = SimpleGlobalComponentRef::from(ComponentAddress::Normal([0; 26]));
 }

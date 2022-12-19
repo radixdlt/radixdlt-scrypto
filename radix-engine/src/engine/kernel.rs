@@ -1109,7 +1109,37 @@ where
                     return maybe_lock_handle;
                 }
             }
-            Err(err) => return Err(err),
+            Err(err) => {
+                match &err {
+                    // TODO: This is a hack to allow for package imports to be visible
+                    // TODO: Remove this once we are able to get this information through the Blueprint ABI
+                    RuntimeError::CallFrameError(CallFrameError::RENodeNotVisible(
+                        RENodeId::Global(GlobalAddress::Package(package_address)),
+                    )) => {
+                        let node_id = RENodeId::Global(GlobalAddress::Package(*package_address));
+                        let offset = SubstateOffset::Global(GlobalOffset::Global);
+                        self.track
+                            .acquire_lock(
+                                SubstateId(node_id, offset.clone()),
+                                LockFlags::read_only(),
+                            )
+                            .map_err(|_| err.clone())?;
+                        self.track
+                            .release_lock(SubstateId(node_id, offset.clone()), false)
+                            .map_err(|_| err)?;
+                        self.current_frame
+                            .add_stored_ref(node_id, RENodeVisibilityOrigin::Normal);
+                        self.current_frame.acquire_lock(
+                            &mut self.heap,
+                            &mut self.track,
+                            node_id,
+                            offset.clone(),
+                            flags,
+                        )?
+                    }
+                    _ => return Err(err),
+                }
+            }
         };
 
         if let Some(lock_handle) = derefed_lock {
