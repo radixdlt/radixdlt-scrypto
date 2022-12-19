@@ -6,6 +6,7 @@ use num_traits::Pow;
 use num_bigint::BigInt;
 
 use crate::{bench_ops,process_op};
+use crate::macros::QUICK;
 
 macro_rules! ops_fn {
     ($t:ty) => {
