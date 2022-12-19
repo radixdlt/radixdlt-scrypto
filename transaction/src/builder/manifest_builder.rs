@@ -527,27 +527,15 @@ impl ManifestBuilder {
     pub fn new_token_mutable(
         &mut self,
         metadata: BTreeMap<String, String>,
-        minter_resource_address: ResourceAddress,
+        minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        access_rules.insert(
-            Mint,
-            (
-                rule!(require(minter_resource_address.clone())),
-                rule!(deny_all),
-            ),
-        );
-        access_rules.insert(
-            Burn,
-            (
-                rule!(require(minter_resource_address.clone())),
-                rule!(deny_all),
-            ),
-        );
+        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
+        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let mint_params: Option<MintParams> = Option::None;
         self.add_instruction(BasicInstruction::CreateResource {
@@ -586,27 +574,15 @@ impl ManifestBuilder {
     pub fn new_badge_mutable(
         &mut self,
         metadata: BTreeMap<String, String>,
-        minter_resource_address: ResourceAddress,
+        minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        access_rules.insert(
-            Mint,
-            (
-                rule!(require(minter_resource_address.clone())),
-                rule!(deny_all),
-            ),
-        );
-        access_rules.insert(
-            Burn,
-            (
-                rule!(require(minter_resource_address.clone())),
-                rule!(deny_all),
-            ),
-        );
+        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
+        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let mint_params: Option<MintParams> = Option::None;
 
