@@ -327,12 +327,12 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             parse_quote! { ::scrypto::model::ComponentAddress}
         }
         SchemaType::ResourceAddress => {
-            parse_quote! {::scrypto::engine_lib::resource::ResourceAddress }
+            parse_quote! {::scrypto::model::ResourceAddress }
         }
         SchemaType::SystemAddress => {
-            parse_quote! { ::scrypto::engine_lib::component::SystemAddress}
+            parse_quote! { ::scrypto::model::SystemAddress}
         }
-        SchemaType::Component => parse_quote! {::scrypto::engine_lib::component::Component },
+        SchemaType::Component => parse_quote! {::scrypto::model::Component },
         SchemaType::KeyValueStore {
             key_type,
             value_type,
@@ -343,13 +343,13 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             structs.extend(s);
             parse_quote! { ::scrypto::component::KeyValueStore<#k, #v> }
         }
-        SchemaType::Bucket => parse_quote! {::scrypto::engine_lib::resource::Bucket },
-        SchemaType::Proof => parse_quote! { ::scrypto::engine_lib::resource::Proof},
-        SchemaType::Vault => parse_quote! { ::scrypto::engine_lib::resource::Vault},
+        SchemaType::Bucket => parse_quote! {::scrypto::model::Bucket },
+        SchemaType::Proof => parse_quote! { ::scrypto::model::Proof},
+        SchemaType::Vault => parse_quote! { ::scrypto::model::Vault},
         SchemaType::Expression => parse_quote! {::scrypto::runtime::Expression },
-        SchemaType::Blob => parse_quote! { ::scrypto::engine_lib::crypto::Blob},
+        SchemaType::Blob => parse_quote! { ::scrypto::model::Blob},
         SchemaType::NonFungibleAddress => {
-            parse_quote! { ::scrypto::engine_lib::resource::NonFungibleAddress}
+            parse_quote! { ::scrypto::model::NonFungibleAddress}
         }
         SchemaType::Hash => parse_quote! { ::scrypto::crypto::Hash},
         SchemaType::EcdsaSecp256k1PublicKey => {
@@ -366,7 +366,7 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         }
         SchemaType::Decimal => parse_quote! { ::scrypto::math::Decimal},
         SchemaType::PreciseDecimal => parse_quote! {::scrypto::math::PreciseDecimal },
-        SchemaType::NonFungibleId => parse_quote! {::scrypto::engine_lib::resource::NonFungibleId },
+        SchemaType::NonFungibleId => parse_quote! {::scrypto::model::NonFungibleId },
     };
 
     Ok((t, structs))
@@ -458,7 +458,7 @@ mod tests {
                             args!()
                         )
                     }
-                    pub fn free_token(&self) -> ::scrypto::engine_lib::resource::Bucket {
+                    pub fn free_token(&self) -> ::scrypto::model::Bucket {
                         ::scrypto::runtime::Runtime::call_method(
                             self.component_address,
                             "free_token",

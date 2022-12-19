@@ -1,6 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -182,16 +181,6 @@ blueprint! {
 }
 
 #[test]
-#[should_panic] // asserts it compiles
 fn test_import_from_abi() {
-    let instance = Simple::from(ComponentAddress::Normal([0; 26]));
-
-    let arg1 = Floor { x: 5, y: 12 };
-    let arg2 = (1u8, 2u16);
-    let arg3 = Vec::<String>::new();
-    let arg4 = 5;
-    let arg5 = Hello::A { x: 1 };
-    let arg6 = ["a".to_owned(), "b".to_owned()];
-
-    instance.calculate_volume(arg1, arg2, arg3, arg4, arg5, arg6);
+    let _ = Simple::from(ComponentAddress::Normal([0; 26]));
 }
