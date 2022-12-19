@@ -22,6 +22,9 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
 criterion = { version = "0.3", features = ["html_reports"] }
+# This is for math benchmarks for comparison purposes.
+# Fast alternative to bigint but unfortunately not cross-compiled to WASM
+rug = { version = "1.18" }
 
 [[bench]]
 name = "math"

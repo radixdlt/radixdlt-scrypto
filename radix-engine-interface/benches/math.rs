@@ -43,5 +43,14 @@ criterion_group!(
     bench_bigint_pow,
     bench_bigint_from_string,
     bench_bigint_to_string,
+
+    bench_integer_add,
+    bench_integer_sub,
+    bench_integer_mul,
+    bench_integer_div,
+    bench_integer_root,
+    bench_integer_pow,
+    bench_integer_from_string,
+    bench_integer_to_string,
 );
 criterion_main!(bench_math);
