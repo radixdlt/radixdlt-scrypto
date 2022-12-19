@@ -27,7 +27,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
     let package_address = blueprint.package_address;
     let blueprint_name = blueprint.blueprint_name;
-    let ident = format_ident!("{}", blueprint_name);
+    let ident = format_ident!("{}GlobalComponentRef", blueprint_name);
     trace!("Blueprint name: {}", blueprint_name);
 
     let mut structs: Vec<Item> = vec![];
@@ -446,10 +446,10 @@ mod tests {
             quote! {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
                 #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
-                pub struct Simple {
+                pub struct SimpleGlobalComponentRef {
                     component_address: ::scrypto::model::ComponentAddress,
                 }
-                impl Simple {
+                impl SimpleGlobalComponentRef {
                     pub fn new() -> ::scrypto::model::ComponentAddress {
                         ::scrypto::runtime::Runtime::call_function(
                             ::scrypto::model::PackageAddress::try_from_hex("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
@@ -466,15 +466,15 @@ mod tests {
                         )
                     }
                 }
-                impl From<::scrypto::model::ComponentAddress> for Simple {
+                impl From<::scrypto::model::ComponentAddress> for SimpleGlobalComponentRef {
                     fn from(component_address: ::scrypto::model::ComponentAddress) -> Self {
                         Self {
                             component_address
                         }
                     }
                 }
-                impl From<Simple> for ::scrypto::model::ComponentAddress {
-                    fn from(a: Simple) -> ::scrypto::model::ComponentAddress {
+                impl From<SimpleGlobalComponentRef> for ::scrypto::model::ComponentAddress {
+                    fn from(a: SimpleGlobalComponentRef) -> ::scrypto::model::ComponentAddress {
                         a.component_address
                     }
                 }
