@@ -1,4 +1,8 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use sbor::rust::string::String;
 use scrypto::prelude::*;
+use scrypto::{blueprint, import};
 
 import! {
      r#"
@@ -72,4 +76,9 @@ blueprint! {
     struct Import {}
 
     impl Import {}
+}
+
+#[test]
+fn test_import_from_abi() {
+    let _ = Simple::from(ComponentAddress::Normal([0; 26]));
 }
