@@ -33,6 +33,15 @@ criterion_group!(
     bench_i512_root,
     bench_i512_pow,
     bench_i512_from_string,
-    bench_i512_to_string
+    bench_i512_to_string,
+
+    bench_bigint_add,
+    bench_bigint_sub,
+    bench_bigint_mul,
+    bench_bigint_div,
+    bench_bigint_root,
+    bench_bigint_pow,
+    bench_bigint_from_string,
+    bench_bigint_to_string,
 );
 criterion_main!(bench_math);
