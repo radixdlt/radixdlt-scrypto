@@ -1,7 +1,10 @@
-use crate::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreNodeKey, StagedSubstateStoreVisitor};
+use crate::state_manager::{
+    StagedSubstateStoreKey, StagedSubstateStoreNodeKey, StagedSubstateStoreVisitor,
+};
 
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
+use std::hash::Hash;
 
 pub struct ExecutionCache<H> {
     root_accumulator_hash: H,
@@ -10,7 +13,9 @@ pub struct ExecutionCache<H> {
 }
 
 impl<H> StagedSubstateStoreVisitor for ExecutionCache<H>
-where H: Eq + std::hash::Hash {
+where
+    H: Eq + Hash,
+{
     fn remove_node(&mut self, key: &StagedSubstateStoreNodeKey) {
         match self.key_to_accumulator_hash.get(*key) {
             None => {}
@@ -22,7 +27,9 @@ where H: Eq + std::hash::Hash {
 }
 
 impl<H> ExecutionCache<H>
-where H: Eq + std::hash::Hash + Copy {
+where
+    H: Eq + Hash + Copy,
+{
     pub fn new(root_accumulator_hash: H) -> Self {
         ExecutionCache {
             root_accumulator_hash,
@@ -39,7 +46,9 @@ where H: Eq + std::hash::Hash + Copy {
                 }
                 None
             }
-            Some(node_key) => Some(StagedSubstateStoreKey::InternalNodeStoreKey(node_key.clone()))
+            Some(node_key) => Some(StagedSubstateStoreKey::InternalNodeStoreKey(
+                node_key.clone(),
+            )),
         }
     }
 
@@ -50,7 +59,8 @@ where H: Eq + std::hash::Hash + Copy {
             }
             StagedSubstateStoreKey::InternalNodeStoreKey(node_key) => {
                 self.key_to_accumulator_hash[node_key] = *accumulator_hash;
-                self.accumulator_hash_to_key.insert(*accumulator_hash, node_key);
+                self.accumulator_hash_to_key
+                    .insert(*accumulator_hash, node_key);
             }
         }
     }
