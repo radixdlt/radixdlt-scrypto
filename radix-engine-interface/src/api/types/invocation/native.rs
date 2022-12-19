@@ -272,7 +272,6 @@ pub enum AuthZoneStackMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFunction {
     Create,
-    CreateWithOwner,
     BurnBucket,
 }
 
@@ -503,7 +502,6 @@ pub enum TransactionHashMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFunction {
     Publish,
-    PublishWithOwner,
 }
 
 #[derive(

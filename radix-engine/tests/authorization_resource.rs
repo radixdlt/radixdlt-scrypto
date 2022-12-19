@@ -70,7 +70,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     match action {
         Action::Mint => builder
-            .mint(Decimal::from("1.0"), token_address)
+            .mint_fungible(token_address, Decimal::from("1.0"))
             .call_method(
                 account,
                 "deposit_batch",

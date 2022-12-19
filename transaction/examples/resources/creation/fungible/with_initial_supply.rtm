@@ -15,12 +15,12 @@ CALL_METHOD
 
 # Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource has 
 # default resource behavior where it can be withdrawn and deposited by anybody.
-CREATE_RESOURCE 
-    Enum("Fungible", 18u8) 
+CREATE_FUNGIBLE_RESOURCE
+    18u8
     Array<Tuple>(
-        Tuple("name", "MyResource"), 
-        Tuple("symbol", "RSRC"),
-        Tuple("description", "A very innovative and important resource")
+        Tuple("name", "MyResource"),                                        # Resource Name
+        Tuple("symbol", "RSRC"),                                            # Resource Symbol
+        Tuple("description", "A very innovative and important resource")    # Resource Description
     ) 
     Array<Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array 
@@ -52,7 +52,7 @@ CREATE_RESOURCE
         Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))),
         Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
     )
-    Some(Enum("Fungible", Decimal("{initial_supply}")));
+    Some(Decimal("{initial_supply}"));
 
 # Depositing the entirety of the initial supply of the newly created resource into our account 
 # component.

@@ -6,6 +6,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::NonFungibleAddress;
 use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
+use transaction::model::BasicInstruction;
 
 use crate::resim::*;
 
@@ -78,25 +79,24 @@ impl NewSimpleBadge {
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
+        let mut initial_supply = BTreeMap::new();
+        initial_supply.insert(NonFungibleId::U32(1), EmptyStruct {});
 
         let manifest = ManifestBuilder::new(&network_definition)
             .lock_fee(FAUCET_COMPONENT, 100.into())
-            .create_resource(
-                ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::U32,
-                },
-                metadata,
-                resource_auth,
-                Option::Some(MintParams::NonFungible {
-                    entries: BTreeMap::from([(
-                        NonFungibleId::U32(1),
-                        (
-                            scrypto_encode(&EmptyStruct).unwrap(),
-                            scrypto_encode(&EmptyStruct).unwrap(),
-                        ),
-                    )]),
-                }),
-            )
+            .add_instruction(BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::U32,
+                metadata: metadata,
+                access_rules: resource_auth,
+                initial_supply: Some(BTreeMap::from([(
+                    NonFungibleId::U32(1),
+                    (
+                        scrypto_encode(&EmptyStruct).unwrap(),
+                        scrypto_encode(&EmptyStruct).unwrap(),
+                    ),
+                )])),
+            })
+            .0
             .call_method(
                 default_account,
                 "deposit_batch",

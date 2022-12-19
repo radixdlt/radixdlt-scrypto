@@ -23,12 +23,13 @@ use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
+use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Executable, SystemInstruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
@@ -596,14 +597,7 @@ impl TestRunner {
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility: 0 },
-                BTreeMap::new(),
-                access_rules,
-                Some(MintParams::Fungible {
-                    amount: 5u32.into(),
-                }),
-            )
+            .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(to, "deposit_batch", args!(Expression::entire_worktop()))
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -734,28 +728,17 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(
-            NonFungibleId::U32(1),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
-        entries.insert(
-            NonFungibleId::U32(2),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
-        entries.insert(
-            NonFungibleId::U32(3),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
+        entries.insert(NonFungibleId::U32(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::U32(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::U32(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::U32,
-                },
+            .create_non_fungible_resource(
+                NonFungibleIdType::U32,
                 BTreeMap::new(),
                 access_rules,
-                Some(MintParams::NonFungible { entries }),
+                Some(entries),
             )
             .call_method(
                 account,
@@ -782,12 +765,7 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility },
-                BTreeMap::new(),
-                access_rules,
-                Some(MintParams::Fungible { amount }),
-            )
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
                 "deposit_batch",
@@ -814,12 +792,7 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility },
-                BTreeMap::new(),
-                access_rules,
-                Some(MintParams::Fungible { amount }),
-            )
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
                 "deposit_batch",
@@ -990,3 +963,6 @@ pub fn generate_single_function_abi(
     );
     blueprint_abis
 }
+
+#[derive(NonFungibleData)]
+struct SampleNonFungibleData {}

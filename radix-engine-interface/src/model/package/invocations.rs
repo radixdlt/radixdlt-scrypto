@@ -37,33 +37,6 @@ impl Into<SerializedInvocation> for PackagePublishInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct PackagePublishWithOwnerInvocation {
-    pub code: Blob,
-    pub abi: Blob,
-    pub royalty_config: BTreeMap<String, RoyaltyConfig>,
-    pub metadata: BTreeMap<String, String>,
-    pub owner_badge: NonFungibleAddress,
-}
-
-impl Invocation for PackagePublishWithOwnerInvocation {
-    type Output = PackageAddress;
-}
-
-impl SerializableInvocation for PackagePublishWithOwnerInvocation {
-    type ScryptoOutput = PackageAddress;
-}
-
-impl Into<SerializedInvocation> for PackagePublishWithOwnerInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Package(
-            PackageFunctionInvocation::PublishWithOwner(self),
-        ))
-        .into()
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.

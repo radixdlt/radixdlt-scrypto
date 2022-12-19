@@ -1,12 +1,15 @@
 use radix_engine_interface::api::types::NativeFn;
 use sbor::rust::collections::hash_map::Iter;
-use sbor::rust::collections::HashMap;
+use sbor::rust::collections::{BTreeMap, HashMap};
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::*;
 
+use crate::api::types::PackageMethod;
+use crate::api::types::{MetadataMethod, NativeMethod};
 use crate::model::*;
+use crate::rule;
 use crate::scrypto;
 use crate::Describe;
 
@@ -188,4 +191,78 @@ impl AccessRules {
     pub fn get_default_auth_mutability(&self) -> &AccessRule {
         &self.default_auth_mutability
     }
+}
+
+pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleAddress) -> AccessRules {
+    let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Get,
+        ))),
+        AccessRule::AllowAll,
+        rule!(require(owner_badge.clone())),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+            MetadataMethod::Set,
+        ))),
+        rule!(require(owner_badge.clone())),
+        rule!(require(owner_badge.clone())),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+            PackageMethod::SetRoyaltyConfig,
+        ))),
+        rule!(require(owner_badge.clone())),
+        rule!(require(owner_badge.clone())),
+    );
+    access_rules.set_access_rule_and_mutability(
+        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
+            PackageMethod::ClaimRoyalty,
+        ))),
+        rule!(require(owner_badge.clone())),
+        rule!(require(owner_badge.clone())),
+    );
+    access_rules
+}
+
+pub fn resource_access_rules_from_owner_badge(
+    owner_badge: &NonFungibleAddress,
+) -> BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)> {
+    let mut access_rules = BTreeMap::new();
+    access_rules.insert(
+        ResourceMethodAuthKey::Withdraw,
+        (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
+    );
+    access_rules.insert(
+        ResourceMethodAuthKey::Deposit,
+        (AccessRule::AllowAll, rule!(require(owner_badge.clone()))),
+    );
+    access_rules.insert(
+        ResourceMethodAuthKey::Recall,
+        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
+    );
+    access_rules.insert(
+        Mint,
+        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
+    );
+    access_rules.insert(
+        Burn,
+        (AccessRule::DenyAll, rule!(require(owner_badge.clone()))),
+    );
+    access_rules.insert(
+        UpdateNonFungibleData,
+        (
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        ),
+    );
+    access_rules.insert(
+        UpdateMetadata,
+        (
+            rule!(require(owner_badge.clone())),
+            rule!(require(owner_badge.clone())),
+        ),
+    );
+    access_rules
 }
