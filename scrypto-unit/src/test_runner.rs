@@ -22,13 +22,15 @@ use radix_engine::wasm::{
 use radix_engine_constants::*;
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{RENodeId, ScryptoMethodIdent};
+use radix_engine_interface::constants::CLOCK;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
+    AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType, ClockSetCurrentTimeInvocation, ClockGetCurrentTimeInvocation, TimePrecision,
 };
+use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
@@ -934,6 +936,34 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateSt
                 })
                 .unwrap()
         })
+    }
+
+    pub fn set_current_time(&mut self, current_time_ms: i64) {
+        self.kernel_call(
+            vec![NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))],
+            |kernel| {
+                kernel
+                    .invoke(ClockSetCurrentTimeInvocation {
+                        current_time_ms,
+                        receiver: CLOCK,
+                    })
+                    .unwrap()
+            },
+        );
+    }
+
+    pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
+        self.kernel_call(
+            vec![NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))],
+            |kernel| {
+                kernel
+                    .invoke(ClockGetCurrentTimeInvocation {
+                        precision,
+                        receiver: CLOCK,
+                    })
+                    .unwrap()
+            },
+        )
     }
 
     /// Performs a kernel call through a kernel with `is_system = true`.
