@@ -18,6 +18,7 @@ use sbor::rust::vec::Vec;
 
 pub mod convert;
 pub mod bits;
+pub mod test;
 
 
 macro_rules! types {

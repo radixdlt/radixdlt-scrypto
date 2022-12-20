@@ -3,6 +3,7 @@ pub mod decimal;
 pub mod integer;
 pub mod precise_decimal;
 pub mod rounding_mode;
+pub mod integer_test_macros;
 
 pub use decimal::*;
 
@@ -14,3 +15,4 @@ pub use integer::*;
 pub use bnum_integer::*;
 pub use precise_decimal::*;
 pub use rounding_mode::*;
+
