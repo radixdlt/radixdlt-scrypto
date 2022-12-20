@@ -78,16 +78,13 @@ pub fn create_genesis() -> SystemTransaction {
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        let initial_supply: Option<MintParams> = None;
 
         // TODO: Create token at a specific address
-        BasicInstruction::CreateResource {
-            resource_type: ResourceType::NonFungible {
-                id_type: NonFungibleIdType::Bytes,
-            },
+        BasicInstruction::CreateNonFungibleResource {
+            id_type: NonFungibleIdType::Bytes,
             metadata,
             access_rules,
-            mint_params: initial_supply,
+            initial_supply: None,
         }
     };
 
@@ -99,16 +96,14 @@ pub fn create_genesis() -> SystemTransaction {
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        let initial_supply: Option<MintParams> = None;
+        let initial_supply = None;
 
         // TODO: Create token at a specific address
-        BasicInstruction::CreateResource {
-            resource_type: ResourceType::NonFungible {
-                id_type: NonFungibleIdType::Bytes,
-            },
+        BasicInstruction::CreateNonFungibleResource {
+            id_type: NonFungibleIdType::Bytes,
             metadata,
             access_rules,
-            mint_params: initial_supply,
+            initial_supply,
         }
     };
 
@@ -125,15 +120,12 @@ pub fn create_genesis() -> SystemTransaction {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        let initial_supply: Option<MintParams> = Option::Some(MintParams::Fungible {
-            amount: XRD_MAX_SUPPLY.into(),
-        });
-
-        BasicInstruction::CreateResource {
-            resource_type: ResourceType::Fungible { divisibility: 18 },
+        let initial_supply: Option<Decimal> = Some(XRD_MAX_SUPPLY.into());
+        BasicInstruction::CreateFungibleResource {
+            divisibility: 18,
             metadata,
             access_rules,
-            mint_params: initial_supply,
+            initial_supply,
         }
     };
 
@@ -178,16 +170,14 @@ pub fn create_genesis() -> SystemTransaction {
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        let initial_supply: Option<MintParams> = None;
+        let initial_supply = None;
 
         // TODO: Create token at a specific address
-        BasicInstruction::CreateResource {
-            resource_type: ResourceType::NonFungible {
-                id_type: NonFungibleIdType::Bytes,
-            },
+        BasicInstruction::CreateNonFungibleResource {
+            id_type: NonFungibleIdType::Bytes,
             metadata,
             access_rules,
-            mint_params: initial_supply,
+            initial_supply,
         }
     };
 

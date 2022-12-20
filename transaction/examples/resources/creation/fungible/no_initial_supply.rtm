@@ -1,6 +1,12 @@
 # This transaction manifest creates a new fungible resource with no initial supply and with the 
 # default auth.
 
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
     ComponentAddress("{account_component_address}") 
@@ -9,13 +15,13 @@ CALL_METHOD
 
 # Creating a new resource with a divisibility of 18 and a name of `MyResource`. The resource has 
 # default resource behavior where it can be withdrawn and deposited by anybody.
-CREATE_RESOURCE 
-    Enum("Fungible", 18u8) 
+CREATE_FUNGIBLE_RESOURCE
+    18u8
     Array<Tuple>(
         Tuple("name", "MyResource"),                                        # Resource Name
         Tuple("symbol", "RSRC"),                                            # Resource Symbol
         Tuple("description", "A very innovative and important resource")    # Resource Description
-    ) 
+    )
     Array<Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array 
         # defines different resource behaviors. As an example, the first element in this array

@@ -31,16 +31,15 @@ blueprint! {
         }
 
         pub fn cross_component_call(&mut self, component_address: ComponentAddress) -> String {
-            let other_component = borrow_component!(component_address);
+            let other_component_ref: CrossComponentGlobalComponentRef = component_address.into();
             match &mut self.auth_vault {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();
-                    let value = auth_bucket
-                        .authorize(|| other_component.call("get_component_state", args![]));
+                    let value = auth_bucket.authorize(|| other_component_ref.get_component_state());
                     vault.put(auth_bucket);
                     value
                 }
-                None => other_component.call("get_component_state", args![]),
+                None => other_component_ref.get_component_state(),
             }
         }
 

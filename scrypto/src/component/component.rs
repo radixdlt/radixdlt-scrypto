@@ -32,6 +32,21 @@ pub trait ComponentState<C: LocalComponent>: ScryptoEncode + ScryptoDecode {
     fn instantiate(self) -> C;
 }
 
+/// A separate trait for standardized calls so that component methods don't
+/// name clash
+/// TODO: unify with LocalComponent and use Own<C> and GlobalRef<C> Deref structures
+pub trait GlobalComponent {
+    fn package_address(&self) -> PackageAddress;
+    fn blueprint_name(&self) -> String;
+    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self;
+    fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
+    fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
+    fn claim_royalty(&self) -> Bucket;
+    fn access_rules_chain(&self) -> Vec<ComponentAccessRules>;
+}
+
+/// A separate trait for standardized calls so that component methods don't
+/// name clash
 pub trait LocalComponent {
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
@@ -164,9 +179,9 @@ impl Component {
 }
 
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct BorrowedGlobalComponent(pub ComponentAddress);
+pub struct GlobalComponentRef(pub ComponentAddress);
 
-impl BorrowedGlobalComponent {
+impl GlobalComponentRef {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let mut env = ScryptoEnv;
@@ -180,6 +195,28 @@ impl BorrowedGlobalComponent {
             ))
             .unwrap();
         scrypto_decode(&raw).unwrap()
+    }
+
+    pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+        ScryptoEnv
+            .invoke(MetadataSetInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+                key: name.as_ref().to_owned(),
+                value: value.as_ref().to_owned(),
+            })
+            .unwrap();
+        self
+    }
+
+    /// Add access check on the component.
+    pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesAddAccessCheckInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            access_rules,
+        })
+        .unwrap();
+        self
     }
 
     /// Returns the package ID of this component.

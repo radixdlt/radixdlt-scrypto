@@ -64,17 +64,6 @@ where
                     }
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerFunction::CreateWithOwner => {
-                    let invocation: ResourceManagerCreateWithOwnerInvocation =
-                        scrypto_decode(&args).map_err(|e| {
-                            RuntimeError::KernelError(KernelError::InvalidSborValue(e))
-                        })?;
-                    let rtn = api.invoke(invocation)?;
-                    if let (_, Some(bucket)) = &rtn {
-                        Worktop::sys_put(Bucket(bucket.0), api)?;
-                    }
-                    Ok(Box::new(rtn))
-                }
             },
             NativeFunction::Clock(ClockFunction::Create) => {
                 let invocation: ClockCreateInvocation = scrypto_decode(&args)
@@ -90,12 +79,6 @@ where
             NativeFunction::Package(package_function) => match package_function {
                 PackageFunction::Publish => {
                     let invocation: PackagePublishInvocation = scrypto_decode(&args)
-                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                PackageFunction::PublishWithOwner => {
-                    let invocation: PackagePublishWithOwnerInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))

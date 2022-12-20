@@ -74,7 +74,6 @@ pub trait InvokableModel<E>:
     + Invokable<PackageSetRoyaltyConfigInvocation, E>
     + Invokable<PackageClaimRoyaltyInvocation, E>
     + Invokable<PackagePublishInvocation, E>
-    + Invokable<PackagePublishWithOwnerInvocation, E>
     + Invokable<BucketTakeInvocation, E>
     + Invokable<BucketPutInvocation, E>
     + Invokable<BucketTakeNonFungiblesInvocation, E>
@@ -89,7 +88,6 @@ pub trait InvokableModel<E>:
     + Invokable<ProofGetResourceAddressInvocation, E>
     + Invokable<ResourceManagerBucketBurnInvocation, E>
     + Invokable<ResourceManagerCreateInvocation, E>
-    + Invokable<ResourceManagerCreateWithOwnerInvocation, E>
     + Invokable<ResourceManagerBurnInvocation, E>
     + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>
     + Invokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>

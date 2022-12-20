@@ -4,6 +4,7 @@ use sbor::*;
 use crate::api::api::*;
 use crate::model::*;
 use crate::scrypto;
+use crate::time::{Instant, TimeComparisonOperator};
 use crate::wasm::*;
 
 #[derive(Debug)]
@@ -81,7 +82,7 @@ impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockSetCurrentTimeInvocation {
     pub receiver: SystemAddress,
-    pub current_time_ms: u64,
+    pub current_time_ms: i64,
 }
 
 impl Invocation for ClockSetCurrentTimeInvocation {

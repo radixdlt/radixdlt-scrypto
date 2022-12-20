@@ -120,7 +120,6 @@ impl FeeTable {
             }
             NativeFunction::Package(package_fn) => match package_fn {
                 PackageFunction::Publish => self.fixed_low,
-                PackageFunction::PublishWithOwner => self.fixed_low,
             },
             NativeFunction::EpochManager(epoch_manager_fn) => match epoch_manager_fn {
                 EpochManagerFunction::Create => self.fixed_low,
@@ -131,7 +130,6 @@ impl FeeTable {
             NativeFunction::ResourceManager(resource_manager_ident) => {
                 match resource_manager_ident {
                     ResourceManagerFunction::Create => self.fixed_high, // TODO: more investigation about fungibility
-                    ResourceManagerFunction::CreateWithOwner => self.fixed_high, // TODO: more investigation about fungibility
                     ResourceManagerFunction::BurnBucket => self.fixed_low,
                 }
             }
