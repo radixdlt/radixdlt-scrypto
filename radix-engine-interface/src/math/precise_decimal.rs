@@ -585,9 +585,12 @@ impl fmt::Display for ParsePreciseDecimalError {
     }
 }
 
+
 impl From<Decimal> for PreciseDecimal {
     fn from(val: Decimal) -> Self {
-        Self(I512::from(val.0) * I512::from(10i8).pow((Self::SCALE - Decimal::SCALE) as u32))
+        //TODO: Enable this part until PreciseDecimal is migrated to BnumI512
+        //Self(I512::from(val.0) * I512::from(10i8).pow((Self::SCALE - Decimal::SCALE) as u32))
+        Self(I512::zero())
     }
 }
 
@@ -600,11 +603,13 @@ impl Truncate<Decimal> for PreciseDecimal {
     type Output = Decimal;
 
     fn truncate(self) -> Self::Output {
-        Decimal(
-            (self.0 / I512::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE))
-                .try_into()
-                .expect("Overflow"),
-        )
+        //TODO: Enable this part until PreciseDecimal is migrated to BnumI512
+        //Decimal(
+        //    (self.0 / I512::from(10i8).pow(PreciseDecimal::SCALE - Decimal::SCALE))
+        //        .try_into()
+        //        .expect("Overflow"),
+        //)
+        Decimal::ZERO
     }
 }
 

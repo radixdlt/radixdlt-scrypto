@@ -19,7 +19,7 @@ paste = { version = "1.0.7"}
 serde = { version = "1.0.144", default-features = false, optional = true }
 serde_with = { version = "2.0.1", optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
-bnum = { version = "0.3" }
+bnum = { version = "0.3", features = ["numtraits"] }
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }

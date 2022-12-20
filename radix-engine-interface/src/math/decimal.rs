@@ -1,6 +1,5 @@
 use num_bigint::BigInt;
-use num_traits::{One, Pow, ToPrimitive, Zero};
-use paste::paste;
+use num_traits::{One, Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
 use sbor::rust::iter;
@@ -8,11 +7,14 @@ use sbor::rust::ops::*;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::{String, ToString};
 use sbor::rust::vec::Vec;
+use sbor::rust::format;
 use sbor::*;
 
 use crate::abi::*;
 use crate::data::*;
-use crate::math::*;
+
+use crate::math::bnum_integer::*;
+use crate::math::rounding_mode::*;
 use crate::scrypto_type;
 
 /// `Decimal` represents a 256 bit representation of a fixed-scale decimal number.
@@ -22,7 +24,7 @@ use crate::scrypto_type;
 ///
 /// Unless otherwise specified, all operations will panic if underflow/overflow.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Decimal(pub I256);
+pub struct Decimal(pub BnumI256);
 
 impl Default for Decimal {
     fn default() -> Self {
@@ -38,26 +40,29 @@ impl iter::Sum for Decimal {
     }
 }
 
+// TODO come up with some smarter formatting depending on Decimal::Scale
+macro_rules! fmt_remainder {
+    () => {
+        "{:018}"
+    };
+}
+
 impl Decimal {
     /// The min value of `Decimal`.
-    pub const MIN: Self = Self(I256::MIN);
+    pub const MIN: Self = Self(BnumI256::MIN);
 
     /// The max value of `Decimal`.
-    pub const MAX: Self = Self(I256::MAX);
+    pub const MAX: Self = Self(BnumI256::MAX);
 
     /// The bit length of number storing `Decimal`.
-    pub const BITS: usize = I256::BITS as usize;
+    pub const BITS: usize = BnumI256::BITS as usize;
 
     /// The fixed scale used by `Decimal`.
     pub const SCALE: u32 = 18;
 
-    pub const ZERO: Self = Self(I256([0; 32]));
+    pub const ZERO: Self = Self(BnumI256::ZERO);
 
-    pub const ONE: Self = Self(I256([
-        0x00, 0x00, 0x64, 0xA7, 0xB3, 0xB6, 0xE0, 0x0D, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00,
-    ]));
+    pub const ONE: Self = Self(BnumI256::from_digits([10_u64.pow(Decimal::SCALE), 0, 0, 0]));
 
     /// Returns `Decimal` of 0.
     pub fn zero() -> Self {
@@ -71,17 +76,17 @@ impl Decimal {
 
     /// Whether this decimal is zero.
     pub fn is_zero(&self) -> bool {
-        self.0 == I256::zero()
+        self.0 == BnumI256::zero()
     }
 
     /// Whether this decimal is positive.
     pub fn is_positive(&self) -> bool {
-        self.0 > I256::zero()
+        self.0 > BnumI256::zero()
     }
 
     /// Whether this decimal is negative.
     pub fn is_negative(&self) -> bool {
-        self.0 < I256::zero()
+        self.0 < BnumI256::zero()
     }
 
     /// Returns the absolute value.
@@ -102,53 +107,53 @@ impl Decimal {
     pub fn round(&self, decimal_places: u32, mode: RoundingMode) -> Self {
         assert!(decimal_places <= Self::SCALE);
 
-        let divisor: I256 = I256::from(10i8).pow(Self::SCALE - decimal_places);
+        let divisor: BnumI256 = BnumI256::from(10i8).pow(Self::SCALE - decimal_places);
         match mode {
             RoundingMode::TowardsPositiveInfinity => {
-                if self.0 % divisor == I256::zero() {
+                if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else if self.is_negative() {
                     Self(self.0 / divisor * divisor)
                 } else {
-                    Self((self.0 / divisor + I256::one()) * divisor)
+                    Self((self.0 / divisor + BnumI256::one()) * divisor)
                 }
             }
             RoundingMode::TowardsNegativeInfinity => {
-                if self.0 % divisor == I256::zero() {
+                if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else if self.is_negative() {
-                    Self((self.0 / divisor - I256::one()) * divisor)
+                    Self((self.0 / divisor - BnumI256::one()) * divisor)
                 } else {
                     Self(self.0 / divisor * divisor)
                 }
             }
             RoundingMode::TowardsZero => {
-                if self.0 % divisor == I256::zero() {
+                if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else {
                     Self(self.0 / divisor * divisor)
                 }
             }
             RoundingMode::AwayFromZero => {
-                if self.0 % divisor == I256::zero() {
+                if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else if self.is_negative() {
-                    Self((self.0 / divisor - I256::one()) * divisor)
+                    Self((self.0 / divisor - BnumI256::one()) * divisor)
                 } else {
-                    Self((self.0 / divisor + I256::one()) * divisor)
+                    Self((self.0 / divisor + BnumI256::one()) * divisor)
                 }
             }
             RoundingMode::TowardsNearestAndHalfTowardsZero => {
-                if self.0 % divisor == I256::zero() {
+                if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else {
                     let digit =
-                        (self.0 / (divisor / I256::from(10i128)) % I256::from(10i128)).abs();
+                        (self.0 / (divisor / BnumI256::from(10i128)) % BnumI256::from(10i128)).abs();
                     if digit > 5.into() {
                         if self.is_negative() {
-                            Self((self.0 / divisor - I256::one()) * divisor)
+                            Self((self.0 / divisor - BnumI256::one()) * divisor)
                         } else {
-                            Self((self.0 / divisor + I256::one()) * divisor)
+                            Self((self.0 / divisor + BnumI256::one()) * divisor)
                         }
                     } else {
                         Self(self.0 / divisor * divisor)
@@ -156,18 +161,18 @@ impl Decimal {
                 }
             }
             RoundingMode::TowardsNearestAndHalfAwayFromZero => {
-                if self.0 % divisor == I256::zero() {
+                if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else {
                     let digit =
-                        (self.0 / (divisor / I256::from(10i128)) % I256::from(10i128)).abs();
+                        (self.0 / (divisor / BnumI256::from(10i128)) % BnumI256::from(10i128)).abs();
                     if digit < 5.into() {
                         Self(self.0 / divisor * divisor)
                     } else {
                         if self.is_negative() {
-                            Self((self.0 / divisor - I256::one()) * divisor)
+                            Self((self.0 / divisor - BnumI256::one()) * divisor)
                         } else {
-                            Self((self.0 / divisor + I256::one()) * divisor)
+                            Self((self.0 / divisor + BnumI256::one()) * divisor)
                         }
                     }
                 }
@@ -175,32 +180,26 @@ impl Decimal {
         }
     }
 
-    /// Calculates power usingexponentiation by squaring".
+    /// Calculates power using exponentiation by squaring".
     pub fn powi(&self, exp: i64) -> Self {
-        let one_384: I384 = I384::from(Self::ONE.0);
-        let base_384: I384 = I384::from(self.0);
+        let one = Self::ONE.0;
+        let base = self.0;
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
         if exp < 0 {
-            let dec_256: I256 = I256::try_from(&one_384 * &one_384 / &base_384).expect("Overflow");
-            return Decimal(dec_256).powi(mul(exp, -1));
+            return Decimal(&one * &one / base).powi(mul(exp, -1));
         }
         if exp == 0 {
             return Self::ONE;
         }
-        if exp == 1 {
-            return *self;
-        }
         if exp % 2 == 0 {
-            let dec_256: I256 = I256::try_from(&base_384 * &base_384 / &one_384).expect("Overflow");
-            return Decimal(dec_256).powi(div(exp, 2));
+            return Decimal(&base * &base / &one).powi(div(exp, 2));
         } else {
-            let sub_dec_256: I256 =
-                I256::try_from(&base_384 * &base_384 / &one_384).expect("Overflow");
-            let sub_dec = Decimal(sub_dec_256);
-            return *self * sub_dec.powi(div(sub(exp, 1), 2));
+            return Decimal(
+                &base * Decimal(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one,
+            );
         }
     }
 
@@ -213,12 +212,14 @@ impl Decimal {
             return Some(Self::ZERO);
         }
 
-        // The I256 i associated to a Decimal d is : i = d*10^18.
+        // The BnumI256 i associated to a Decimal d is : i = d*10^18.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^9 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^18) = sqrt(d)*10^18
-        let self_384: I384 = I384::from(self.0);
-        let correct_nb = self_384 * I384::from(Decimal::one().0);
-        let sqrt = I256::try_from(correct_nb.sqrt()).expect("Overflow");
+        // Use BnumI512 (BInt<8>) to not overflow.
+        // FIXME: Switch to BnumI384
+        let self_512: BnumI512 = BnumI512::from(self.0);
+        let correct_nb = self_512 * BnumI512::from(Decimal::one().0);
+        let sqrt = BnumI256::try_from(correct_nb.sqrt()).unwrap();
         Some(Decimal(sqrt))
     }
 
@@ -227,11 +228,12 @@ impl Decimal {
         if self.is_zero() {
             return Self::ZERO;
         }
-
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
-        let self_384: I384 = I384::from(self.0);
-        let correct_nb = self_384 * I384::from(Decimal::one().0).pow(2);
-        let cbrt = I256::try_from(correct_nb.cbrt()).expect("Overflow");
+        // Use BnumI512 (BInt<8>) to not overflow.
+        // FIXME: Switch to BnumI384
+        let self_512: BnumI512 = BnumI512::from(self.0);
+        let correct_nb = self_512 * BnumI512::from(Decimal::one().0).pow(2);
+        let cbrt = BnumI256::try_from(correct_nb.cbrt()).unwrap();
         Decimal(cbrt)
     }
 
@@ -250,7 +252,7 @@ impl Decimal {
             // To not overflow, we use BigInts
             let self_bigint = BigInt::from(self.0);
             let correct_nb = self_bigint * BigInt::from(Decimal::one().0).pow(n - 1);
-            let nth_root = I256::try_from(correct_nb.nth_root(n)).unwrap();
+            let nth_root = BnumI256::try_from(correct_nb.nth_root(n)).unwrap();
             Some(Decimal(nth_root))
         }
     }
@@ -260,7 +262,7 @@ macro_rules! from_int {
     ($type:ident) => {
         impl From<$type> for Decimal {
             fn from(val: $type) -> Self {
-                Self(I256::from(val) * Self::ONE.0)
+                Self(BnumI256::from(val) * Self::ONE.0)
             }
         }
     };
@@ -309,7 +311,7 @@ where
     fn add(self, other: T) -> Self::Output {
         let a = self.0;
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I256 = b_dec.0;
+        let b: BnumI256 = b_dec.0;
         let c = a + b;
         Decimal(c)
     }
@@ -324,8 +326,8 @@ where
     fn sub(self, other: T) -> Self::Output {
         let a = self.0;
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I256 = b_dec.0;
-        let c: I256 = a - b;
+        let b: BnumI256 = b_dec.0;
+        let c: BnumI256 = a - b;
         Decimal(c)
     }
 }
@@ -337,11 +339,13 @@ where
     type Output = Decimal;
 
     fn mul(self, other: T) -> Self::Output {
-        let a = I384::from(self.0);
+        // Use BnumI512 (BInt<8>) to not overflow.
+        // FIXME: Switch to BnumI384 or BnumI320
+        let a = BnumI512::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I384 = I384::from(b_dec.0);
-        let c: I384 = a * b / I384::from(Self::ONE.0);
-        let c_256 = I256::try_from(c).unwrap();
+        let b = BnumI512::from(b_dec.0);
+        let c = a * b / BnumI512::from(Self::ONE.0);
+        let c_256 = BnumI256::try_from(c).unwrap();
         Decimal(c_256)
     }
 }
@@ -353,11 +357,13 @@ where
     type Output = Decimal;
 
     fn div(self, other: T) -> Self::Output {
-        let a = I384::from(self.0);
+        // Use BnumI512 (BInt<8>) to not overflow.
+        // Explanation in mul()
+        let a = BnumI512::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b: I384 = I384::from(b_dec.0);
-        let c: I384 = a * I384::from(Self::ONE.0) / b;
-        let c_256 = I256::try_from(c).unwrap();
+        let b = BnumI512::from(b_dec.0);
+        let c = a * BnumI512::from(Self::ONE.0) / b;
+        let c_256 = BnumI256::try_from(c).unwrap();
         Decimal(c_256)
     }
 }
@@ -419,7 +425,7 @@ impl TryFrom<&[u8]> for Decimal {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() == Self::BITS / 8 {
-            match I256::try_from(slice) {
+            match BnumI256::try_from(slice) {
                 Ok(val) => Ok(Self(val)),
                 Err(_) => Err(ParseDecimalError::Overflow),
             }
@@ -450,113 +456,58 @@ impl FromStr for Decimal {
     type Err = ParseDecimalError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut sign = I256::from(1u8);
-        let mut value = I256::from(0u8);
+        let tens = BnumI256::from(10);
+        let v: Vec<&str> = s.split(".").collect();
 
-        let chars: Vec<char> = s.chars().collect();
-        let mut p = 0;
+        let mut int = match BnumI256::from_str(v[0]) {
+            Ok(val) => val,
+            Err(_) => return Err(ParseDecimalError::InvalidDigit),
+        };
 
-        // read sign
-        if chars[p] == '-' {
-            sign = I256::from(-1i8);
-            p += 1;
-        }
+        int *= tens.pow(Self::SCALE);
 
-        // read integral
-        while p < chars.len() && chars[p] != '.' {
-            let digit = read_digitdecimal(chars[p]);
-            match digit {
-                Ok(dig) => value = value * I256::from(10u8) + I256::from(dig) * sign,
-                Err(e) => return Err(e),
-            }
-            p += 1;
-        }
+        if v.len() == 2 {
+            let scale: u32 = Self::SCALE - (v[1].len() as u32);
 
-        // read radix point
-        if p < chars.len() {
-            read_dotdecimal(chars[p])?;
-            p += 1;
-        }
-
-        // read fraction
-        for _ in 0..Self::SCALE {
-            if p < chars.len() {
-                let digit = read_digitdecimal(chars[p]);
-                match digit {
-                    Ok(dig) => value = value * I256::from(10u8) + I256::from(dig) * sign,
-                    Err(e) => return Err(e),
-                }
-                p += 1;
+            // if input is -0. then from_str returns 0 and we loose '-' sign.
+            // Therefore check for '-' in input directly
+            if int.is_negative() || v[0].starts_with('-') {
+                int -= BnumI256::from(v[1]) * tens.pow(scale);
             } else {
-                value *= I256::from(10u8);
+                int += BnumI256::from(v[1]) * tens.pow(scale);
             }
         }
-
-        if p < chars.len() {
-            Err(ParseDecimalError::UnsupportedDecimalPlace)
-        } else {
-            Ok(Self(value))
-        }
+        Ok(Self(int))
     }
 }
 
 impl fmt::Display for Decimal {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let mut a = self.0;
-        let mut buf = String::new();
+        let multiplier = BnumI256::from(10i8).pow(Self::SCALE);
 
-        let mut trailing_zeros = true;
-        for _ in 0..Self::SCALE {
-            let m: I256 = a % I256::from(10u8);
-            if m != 0.into() || !trailing_zeros {
-                trailing_zeros = false;
-                buf.push(char::from_digit(m.abs().to_u32().expect("Overflow"), 10).unwrap())
+        let quotient = self.0 / multiplier;
+        let remainder = self.0 % multiplier;
+        if !remainder.is_zero() {
+            // print remainder with leading zeroes
+            let mut sign = "".to_string();
+
+            // take care of sign in case quotient == zere and remainder < 0,
+            // eg.
+            //  self.0=-100000000000000000 -> -0.1
+            if remainder < BnumI256::ZERO && quotient == BnumI256::ZERO {
+                sign.push('-');
             }
-            a /= I256::from(10u8);
-        }
-
-        if !buf.is_empty() {
-            buf.push('.');
-        }
-
-        if a == 0.into() {
-            buf.push('0')
+            let rem_str = format!(fmt_remainder!(), remainder.abs());
+            write!(f, "{}{}.{}", sign, quotient, &rem_str.trim_end_matches('0'))
         } else {
-            while a != 0.into() {
-                let m: I256 = a % I256::from(10u8);
-                buf.push(char::from_digit(m.abs().to_u32().expect("Overflow"), 10).unwrap());
-                a /= I256::from(10u8);
-            }
+            write!(f, "{}", quotient)
         }
-
-        write!(
-            f,
-            "{}{}",
-            if self.is_negative() { "-" } else { "" },
-            buf.chars().rev().collect::<String>()
-        )
     }
 }
 
 impl fmt::Debug for Decimal {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.to_string())
-    }
-}
-fn read_digitdecimal(c: char) -> Result<U8, ParseDecimalError> {
-    let n = U8::from(c as u8);
-    if n >= U8(48u8) && n <= U8(48u8 + 9u8) {
-        Ok(n - U8(48u8))
-    } else {
-        Err(ParseDecimalError::InvalidChar(c))
-    }
-}
-
-fn read_dotdecimal(c: char) -> Result<(), ParseDecimalError> {
-    if c == '.' {
-        Ok(())
-    } else {
-        Err(ParseDecimalError::InvalidChar(c))
     }
 }
 
@@ -569,6 +520,7 @@ fn read_dotdecimal(c: char) -> Result<(), ParseDecimalError> {
 pub enum ParseDecimalError {
     InvalidDecimal(String),
     InvalidChar(char),
+    InvalidDigit,
     UnsupportedDecimalPlace,
     InvalidLength(usize),
     Overflow,
@@ -589,33 +541,15 @@ macro_rules! from_integer {
         $(
             impl From<$t> for Decimal {
                 fn from(val: $t) -> Self {
-                    Self(I256::from(val) * Self::ONE.0)
+                    Self(BnumI256::from(val) * Self::ONE.0)
                 }
             }
         )*
     };
 }
 
-from_integer!(U8, U16, U32, U64, U128);
-from_integer!(I8, I16, I32, I64, I128);
-
-macro_rules! try_from_integer {
-    ($($t:ident),*) => {
-        paste!{
-            $(
-                impl TryFrom<$t> for Decimal {
-                    type Error = ParseDecimalError;
-
-                    fn try_from(val: $t) -> Result<Self, Self::Error> {
-                        Ok(Self(I256::try_from(val).map_err(|_| ParseDecimalError::Overflow).unwrap() * Self::ONE.0))
-                    }
-                }
-            )*
-        }
-    };
-}
-
-try_from_integer!(U256, U384, U512, I256, I384, I512);
+from_integer!(BnumI256, BnumI512);
+from_integer!(BnumU256, BnumU512);
 
 #[cfg(test)]
 mod tests {
@@ -1138,7 +1072,7 @@ mod tests {
     #[test]
     fn test_from_str_failure_decimal() {
         let dec = Decimal::from_str("non_decimal_value");
-        assert_eq!(dec, Err(ParseDecimalError::InvalidChar('n')));
+        assert_eq!(dec, Err(ParseDecimalError::InvalidDigit));
     }
 
     #[test]

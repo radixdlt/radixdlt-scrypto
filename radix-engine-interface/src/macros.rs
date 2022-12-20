@@ -13,12 +13,12 @@ macro_rules! dec {
             let base = Decimal::from($base);
             if $shift >= 0 {
                 base * Decimal::try_from(
-                    I256::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
+                    BnumI256::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
                 base / Decimal::try_from(
-                    I256::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
+                    BnumI256::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             }
