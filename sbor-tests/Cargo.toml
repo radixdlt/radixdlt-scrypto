@@ -1,6 +1,6 @@
 [package]
 name = "sbor-tests"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 
 [dependencies]
@@ -9,7 +9,7 @@ sbor = { path = "../sbor", default-features = false }
 [dev-dependencies]
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false }
-bincode = { git = "https://github.com/bincode-org/bincode", tag = "v2.0.0-rc.1", default-features = false, features = ["derive"] }
+bincode = { version = "2.0.0-rc.1", default-features = false, features = ["derive"] }
 bencher = { version = "0.1.5" }
 
 [[bench]]

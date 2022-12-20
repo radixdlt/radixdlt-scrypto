@@ -14,17 +14,27 @@ account=`echo $temp | cut -d " " -f1`
 account2=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 
 # Test - create fixed supply badge
-minter_badge=`$resim new-badge-fixed 1 --name 'MintBadge' | awk '/Resource:/ {print $NF}'`
+minter_badge=`$resim new-badge-fixed 1 --name 'MinterBadge' | awk '/Resource:/ {print $NF}'`
 
-# Test - create mutable supply token
+# Test - create mutable supply token (requires a `ResourceAddress`)
 token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print $NF}'`
 
-# Test - mint and transfer
+# Test - transfer non fungible
+non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
+non_fungible=`echo "$non_fungible_create_receipt" | awk '/NFAddress:/ {print $NF}'`
+non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
+non_fungible_id=`echo "$non_fungible_create_receipt" | awk '/NFID:/ {print $NF}'`
+# The below line looks like this: U32#1,resource_address
+# You can put multiple ids into a bucket like so: String#Id1,String#num2,String#num3,resource_address
+$resim call-method $account2 deposit "$non_fungible_id,$non_fungible_resource"
+
+# Test - mint and transfer (Mintable that requires a `ResourceAddress`)
 $resim mint 777 $token_address --proofs 1,$minter_badge
 $resim transfer 111 $token_address $account2
 
-# Test - publish, call-funciton and call-method
-package=`$resim publish ../examples/hello-world | awk '/Package:/ {print $NF}'`
+# Test - publish, call-function and call-method and non-fungibles
+owner_badge=`$resim new-simple-badge --name 'OwnerBadge' | awk '/NFAddress:/ {print $NF}'`
+package=`$resim publish ../examples/hello-world --owner-badge $owner_badge | awk '/Package:/ {print $NF}'`
 component=`$resim call-function $package Hello instantiate_hello | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token
 
@@ -39,9 +49,10 @@ $resim show $account2
 $resim show $token_address
 
 # Test - output manifest
+mkdir -p target
 $resim new-badge-fixed 1 --name 'MintBadge' --manifest ./target/temp.rtm
 cat ./target/temp.rtm
-$resim publish ../examples/hello-world --manifest ./target/temp2.rtm
+$resim publish ../examples/hello-world --owner-badge $owner_badge --manifest ./target/temp2.rtm
 files=`ls target/*.blob`
 blobs=`echo $files | sed 's/ / --blobs /g'`
 $resim run ./target/temp2.rtm --blobs $blobs
@@ -53,7 +64,7 @@ $resim generate-key-pair
 $resim run ./target/temp2.rtm --blobs $blobs
 
 # Test - nft
-package=`$resim publish ./tests/blueprints | awk '/Package:/ {print $NF}'`
+package=`$resim publish ./tests/blueprints --owner-badge $owner_badge | awk '/Package:/ {print $NF}'`
 $resim call-function $package Foo nfts
 $resim show $account
 
@@ -73,7 +84,18 @@ $resim transfer 2 $token $account2 --proofs 1,$supervisor_badge 1,$admin_badge 1
 $resim mint 100000 $token --proofs 1,$supervisor_badge 1,$admin_badge 1,$superadmin_badge
 
 # Test - publishing a large package
-$resim publish ./tests/large_package.wasm
+$resim publish ./tests/large_package.wasm --owner-badge $owner_badge
 
 # Test - math types and numbers
 $resim call-function $package "Numbers" test_input 1 2
+
+# Test - create mutable supply token (requires a `NonFungibleAddress`)
+non_fungible_create_receipt=`$resim new-simple-badge --name 'TestNonFungible'`
+non_fungible=`echo "$non_fungible_create_receipt" | awk '/NFAddress:/ {print $NF}'`
+non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
+non_fungible_id=`echo "$non_fungible_create_receipt" | awk '/NFID:/ {print $NF}'`
+
+token_address=`$resim new-token-mutable $non_fungible | awk '/Resource:/ {print $NF}'`
+
+# Test - mint and transfer (Mintable that requires a `NonFungibleAddress`)
+$resim mint 777 $token_address --proofs "$non_fungible_id,$non_fungible_resource"

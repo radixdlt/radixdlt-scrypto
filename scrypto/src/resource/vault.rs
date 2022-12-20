@@ -1,170 +1,131 @@
-use sbor::rust::borrow::ToOwned;
+use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::core::ResourceManagerFnIdentifier;
+use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::scrypto_env_native_fn;
 
-use crate::abi::*;
-use crate::buffer::scrypto_encode;
-use crate::core::{FnIdentifier, NativeFnIdentifier, Receiver, VaultFnIdentifier};
-use crate::crypto::*;
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine, types::VaultId};
-use crate::math::*;
-use crate::misc::*;
-use crate::native_functions;
 use crate::resource::*;
+use crate::scrypto;
 
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultPutInput {
-    pub bucket: Bucket,
+pub trait ScryptoVault {
+    fn with_bucket(bucket: Bucket) -> Self;
+    fn amount(&self) -> Decimal;
+    fn new(resource_address: ResourceAddress) -> Self;
+    fn take_internal(&mut self, amount: Decimal) -> Bucket;
+    fn lock_fee_internal(&mut self, amount: Decimal) -> ();
+    fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> ();
+    fn put(&mut self, bucket: Bucket) -> ();
+    fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket;
+    fn resource_address(&self) -> ResourceAddress;
+    fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId>;
+    fn create_proof(&self) -> Proof;
+    fn create_proof_by_amount(&self, amount: Decimal) -> Proof;
+    fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof;
+    fn lock_fee<A: Into<Decimal>>(&mut self, amount: A);
+    fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A);
+    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket;
+    fn take_all(&mut self) -> Bucket;
+    fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket;
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O;
+    fn is_empty(&self) -> bool;
+    fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>>;
+    fn non_fungible_id(&self) -> NonFungibleId;
+    fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T>;
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultTakeInput {
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultTakeNonFungiblesInput {
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetAmountInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetResourceAddressInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetNonFungibleIdsInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultCreateProofInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultCreateProofByAmountInput {
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultCreateProofByIdsInput {
-    pub ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultLockFeeInput {
-    pub amount: Decimal,
-}
-
-/// Represents a persistent resource container on ledger state.
-#[derive(PartialEq, Eq, Hash)]
-pub struct Vault(pub VaultId);
-
-impl Vault {
-    /// Creates an empty vault to permanently hold resource of the given definition.
-    pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::CreateVault,
-            )),
-            scrypto_encode(&ResourceManagerCreateVaultInput {}),
-        );
-        call_engine(input)
-    }
-
+impl ScryptoVault for Vault {
     /// Creates an empty vault and fills it with an initial bucket of resource.
-    pub fn with_bucket(bucket: Bucket) -> Self {
-        let mut vault = Vault::new(bucket.resource_address());
+    fn with_bucket(bucket: Bucket) -> Self {
+        let vault = Vault::new(bucket.resource_address());
+        let mut vault = Vault(vault.0);
         vault.put(bucket);
         vault
     }
 
-    fn take_internal(&mut self, amount: Decimal) -> Bucket {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Vault(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)),
-            scrypto_encode(&VaultTakeInput { amount }),
-        );
-        call_engine(input)
+    fn amount(&self) -> Decimal {
+        let mut env = ScryptoEnv;
+        env.invoke(VaultGetAmountInvocation { receiver: self.0 })
+            .unwrap()
     }
 
-    fn lock_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Vault(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::LockFee)),
-            scrypto_encode(&VaultTakeInput { amount }),
-        );
-        call_engine(input)
-    }
-
-    fn lock_contingent_fee_internal(&mut self, amount: Decimal) {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Vault(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Vault(
-                VaultFnIdentifier::LockContingentFee,
-            )),
-            scrypto_encode(&VaultTakeInput { amount }),
-        );
-        call_engine(input)
-    }
-
-    native_functions! {
-        Receiver::Ref(RENodeId::Vault(self.0)), NativeFnIdentifier::Vault => {
-            pub fn put(&mut self, bucket: Bucket) -> () {
-                VaultFnIdentifier::Put,
-                VaultPutInput {
-                    bucket
-                }
+    scrypto_env_native_fn! {
+        fn new(resource_address: ResourceAddress) -> Self {
+            ResourceManagerCreateVaultInvocation {
+                receiver: resource_address,
             }
+        }
 
-            pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
-                VaultFnIdentifier::TakeNonFungibles,
-                VaultTakeNonFungiblesInput {
-                    non_fungible_ids: non_fungible_ids.clone(),
-                }
+        fn take_internal(&mut self, amount: Decimal) -> Bucket {
+            VaultTakeInvocation {
+                receiver: self.0,
+                amount,
             }
+        }
 
-            pub fn amount(&self) -> Decimal {
-                VaultFnIdentifier::GetAmount,
-                VaultGetAmountInput {}
+        fn lock_fee_internal(&mut self, amount: Decimal) -> () {
+            VaultLockFeeInvocation {
+                receiver: self.0,
+                amount,
+                contingent: false,
             }
+        }
 
-            pub fn resource_address(&self) -> ResourceAddress {
-                VaultFnIdentifier::GetResourceAddress,
-                VaultGetResourceAddressInput {}
+        fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> () {
+            VaultLockFeeInvocation {
+                receiver: self.0,
+                amount,
+                contingent: true,
             }
+        }
 
-            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                VaultFnIdentifier::GetNonFungibleIds,
-                VaultGetNonFungibleIdsInput {}
-            }
 
-            pub fn create_proof(&self) -> Proof {
-                VaultFnIdentifier::CreateProof,
-                VaultCreateProofInput {}
+        fn put(&mut self, bucket: Bucket) -> () {
+            VaultPutInvocation {
+                receiver: self.0,
+                bucket: Bucket(bucket.0),
             }
+        }
 
-            pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-                VaultFnIdentifier::CreateProofByAmount,
-                VaultCreateProofByAmountInput { amount }
+        fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+            VaultTakeNonFungiblesInvocation {
+                receiver: self.0,
+                non_fungible_ids: non_fungible_ids.clone(),
             }
+        }
 
-            pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-                VaultFnIdentifier::CreateProofByIds,
-                VaultCreateProofByIdsInput { ids: ids.clone() }
+        fn resource_address(&self) -> ResourceAddress {
+            VaultGetResourceAddressInvocation {
+                receiver: self.0,
             }
+        }
+
+        fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+            VaultGetNonFungibleIdsInvocation {
+                receiver: self.0,
+            }
+        }
+
+        fn create_proof(&self) -> Proof {
+            VaultCreateProofInvocation {
+                receiver: self.0,
+            }
+        }
+
+        fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+            VaultCreateProofByAmountInvocation { amount, receiver: self.0, }
+        }
+
+        fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+            VaultCreateProofByIdsInvocation { ids: ids.clone(), receiver: self.0 }
         }
     }
 
     /// Locks the specified amount as transaction fee.
     ///
     /// Unused fee will be refunded to the vaults from the most recently locked to the least.
-    pub fn lock_fee<A: Into<Decimal>>(&mut self, amount: A) {
+    fn lock_fee<A: Into<Decimal>>(&mut self, amount: A) {
         self.lock_fee_internal(amount.into())
     }
 
@@ -172,17 +133,18 @@ impl Vault {
     ///
     /// The locked amount will be used as transaction only if the transaction succeeds;
     /// Unused amount will be refunded the original vault.
-    pub fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A) {
+    fn lock_contingent_fee<A: Into<Decimal>>(&mut self, amount: A) {
         self.lock_contingent_fee_internal(amount.into())
     }
 
     /// Takes some amount of resource from this vault into a bucket.
-    pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
-        self.take_internal(amount.into())
+    fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
+        let bucket = self.take_internal(amount.into());
+        Bucket(bucket.0)
     }
 
     /// Takes all resource stored in this vault.
-    pub fn take_all(&mut self) -> Bucket {
+    fn take_all(&mut self) -> Bucket {
         self.take(self.amount())
     }
 
@@ -190,12 +152,13 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
-    pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
-        self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
+    fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
+        let bucket = self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]));
+        Bucket(bucket.0)
     }
 
     /// Uses resources in this vault as authorization for an operation.
-    pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+    fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         ComponentAuthZone::push(self.create_proof());
         let output = f();
         ComponentAuthZone::pop().drop();
@@ -203,7 +166,7 @@ impl Vault {
     }
 
     /// Checks if this vault is empty.
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.amount() == 0.into()
     }
 
@@ -211,7 +174,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault.
-    pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
+    fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let resource_address = self.resource_address();
         self.non_fungible_ids()
             .iter()
@@ -223,7 +186,7 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
-    pub fn non_fungible_id(&self) -> NonFungibleId {
+    fn non_fungible_id(&self) -> NonFungibleId {
         let non_fungible_ids = self.non_fungible_ids();
         if non_fungible_ids.len() != 1 {
             panic!("Expecting singleton NFT vault");
@@ -235,85 +198,11 @@ impl Vault {
     ///
     /// # Panics
     /// Panics if this is not a singleton bucket
-    pub fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
+    fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
         let non_fungibles = self.non_fungibles();
         if non_fungibles.len() != 1 {
             panic!("Expecting singleton NFT vault");
         }
         non_fungibles.into_iter().next().unwrap()
-    }
-}
-
-//========
-// error
-//========
-
-/// Represents an error when decoding vault.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseVaultError {
-    InvalidHex(String),
-    InvalidLength(usize),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseVaultError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseVaultError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-//========
-// binary
-//========
-
-impl TryFrom<&[u8]> for Vault {
-    type Error = ParseVaultError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            36 => Ok(Self((
-                Hash(copy_u8_array(&slice[0..32])),
-                u32::from_le_bytes(copy_u8_array(&slice[32..])),
-            ))),
-            _ => Err(ParseVaultError::InvalidLength(slice.len())),
-        }
-    }
-}
-
-impl Vault {
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut v = self.0 .0.to_vec();
-        v.extend(self.0 .1.to_le_bytes());
-        v
-    }
-}
-
-scrypto_type!(Vault, ScryptoType::Vault, Vec::new());
-
-//======
-// text
-//======
-
-impl FromStr for Vault {
-    type Err = ParseVaultError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|_| ParseVaultError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-impl fmt::Display for Vault {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(self.to_vec()))
-    }
-}
-
-impl fmt::Debug for Vault {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
     }
 }

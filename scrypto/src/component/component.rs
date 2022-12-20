@@ -1,80 +1,275 @@
+use radix_engine_derive::Describe;
+use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::types::{
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
+    SubstateOffset,
+};
+use radix_engine_interface::data::{
+    scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
+};
+use radix_engine_interface::model::*;
+use radix_engine_interface::scrypto_type;
+use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
+use sbor::rust::fmt::Debug;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::copy_u8_array;
 
 use crate::abi::*;
-use crate::address::*;
-use crate::buffer::scrypto_encode;
-use crate::component::*;
-use crate::core::*;
-use crate::engine::types::{RENodeId, SubstateId};
-use crate::engine::{api::*, call_engine};
-use crate::misc::*;
-use crate::resource::AccessRules;
+use crate::engine::scrypto_env::ScryptoEnv;
+use crate::runtime::*;
+use crate::scrypto;
 
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ComponentAddAccessCheckInput {
-    pub access_rules: AccessRules,
-}
+use super::ComponentAccessRules;
 
 /// Represents the state of a component.
-pub trait ComponentState<C: LocalComponent>: Encode + Decode {
+pub trait ComponentState<C: LocalComponent>: ScryptoEncode + ScryptoDecode {
     /// Instantiates a component from this data structure.
     fn instantiate(self) -> C;
 }
 
+/// A separate trait for standardized calls so that component methods don't
+/// name clash
+/// TODO: unify with LocalComponent and use Own<C> and GlobalRef<C> Deref structures
+pub trait GlobalComponent {
+    fn package_address(&self) -> PackageAddress;
+    fn blueprint_name(&self) -> String;
+    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self;
+    fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
+    fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
+    fn claim_royalty(&self) -> Bucket;
+    fn access_rules_chain(&self) -> Vec<ComponentAccessRules>;
+}
+
+/// A separate trait for standardized calls so that component methods don't
+/// name clash
 pub trait LocalComponent {
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
+    fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self;
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
+    fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self;
     fn globalize(self) -> ComponentAddress;
+    fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress;
+}
+
+// TODO: de-duplication
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+pub struct ComponentInfoSubstate {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+}
+
+// TODO: de-duplication
+#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+pub struct ComponentStateSubstate {
+    pub raw: Vec<u8>,
 }
 
 /// Represents an instantiated component.
-#[derive(PartialEq, Eq, Hash)]
-pub struct Component(pub(crate) ComponentAddress);
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct Component(pub ComponentId);
 
 impl Component {
     /// Invokes a method on this component.
-    pub fn call<T: Decode>(&self, method: &str, args: Vec<u8>) -> T {
-        Runtime::call_method(self.0, method, args)
+    pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+        let mut env = ScryptoEnv;
+        let buffer = env
+            .invoke(ScryptoInvocation::Method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Component(self.0),
+                    method_name: method.to_string(),
+                },
+                args,
+            ))
+            .unwrap();
+        scrypto_decode(&buffer).unwrap()
     }
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let substate_id = SubstateId::ComponentInfo(self.0);
-        let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: (PackageAddress, String) = call_engine(input);
-        output.0
+        let pointer = DataPointer::new(
+            RENodeId::Component(self.0),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.package_address
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let substate_id = SubstateId::ComponentInfo(self.0);
-        let input = RadixEngineInput::SubstateRead(substate_id);
-        let output: (PackageAddress, String) = call_engine(input);
-        output.1
+        let pointer = DataPointer::new(
+            RENodeId::Component(self.0),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.blueprint_name.clone()
     }
 
+    /// Add access check on the component.
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Component(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::Component(
-                ComponentFnIdentifier::AddAccessCheck,
-            )),
-            scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
-        );
-        let _: () = call_engine(input);
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesAddAccessCheckInvocation {
+            receiver: RENodeId::Component(self.0),
+            access_rules,
+        })
+        .unwrap();
+        self
+    }
 
+    /// Set the royalty configuration of the component.
+    pub fn set_royalty_config(&mut self, royalty_config: RoyaltyConfig) -> &mut Self {
+        ScryptoEnv
+            .invoke(ComponentSetRoyaltyConfigInvocation {
+                receiver: RENodeId::Component(self.0),
+                royalty_config,
+            })
+            .unwrap();
+        self
+    }
+
+    pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+        ScryptoEnv
+            .invoke(MetadataSetInvocation {
+                receiver: RENodeId::Component(self.0),
+                key: name.as_ref().to_owned(),
+                value: value.as_ref().to_owned(),
+            })
+            .unwrap();
         self
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(self.0));
-        let _: () = call_engine(input);
-        self.0.clone()
+        ScryptoEnv
+            .invoke(ComponentGlobalizeInvocation {
+                component_id: self.0,
+            })
+            .unwrap()
+    }
+
+    /// Globalize with owner badge. This will add additional access rules to protect native
+    /// methods, such as metadata and royalty.
+    pub fn globalize_with_owner(self, owner_badge: NonFungibleAddress) -> ComponentAddress {
+        ScryptoEnv
+            .invoke(ComponentGlobalizeWithOwnerInvocation {
+                component_id: self.0,
+                owner_badge,
+            })
+            .unwrap()
+    }
+
+    /// Returns the layers of access rules on this component.
+    pub fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
+        let mut env = ScryptoEnv;
+        let length = env
+            .invoke(AccessRulesGetLengthInvocation {
+                receiver: RENodeId::Component(self.0),
+            })
+            .unwrap();
+        (0..length)
+            .into_iter()
+            .map(|id| ComponentAccessRules::new(self.0, id))
+            .collect()
+    }
+}
+
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct GlobalComponentRef(pub ComponentAddress);
+
+impl GlobalComponentRef {
+    /// Invokes a method on this component.
+    pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
+        let mut env = ScryptoEnv;
+        let raw = env
+            .invoke(ScryptoInvocation::Method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(self.0),
+                    method_name: method.to_string(),
+                },
+                args,
+            ))
+            .unwrap();
+        scrypto_decode(&raw).unwrap()
+    }
+
+    pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
+        ScryptoEnv
+            .invoke(MetadataSetInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+                key: name.as_ref().to_owned(),
+                value: value.as_ref().to_owned(),
+            })
+            .unwrap();
+        self
+    }
+
+    /// Add access check on the component.
+    pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesAddAccessCheckInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            access_rules,
+        })
+        .unwrap();
+        self
+    }
+
+    /// Returns the package ID of this component.
+    pub fn package_address(&self) -> PackageAddress {
+        let pointer = DataPointer::new(
+            RENodeId::Global(GlobalAddress::Component(self.0)),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.package_address
+    }
+
+    /// Returns the blueprint name of this component.
+    pub fn blueprint_name(&self) -> String {
+        let pointer = DataPointer::new(
+            RENodeId::Global(GlobalAddress::Component(self.0)),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        let state: DataRef<ComponentInfoSubstate> = pointer.get();
+        state.blueprint_name.clone()
+    }
+
+    pub fn set_royalty_config(&self, royalty_config: RoyaltyConfig) {
+        let mut env = ScryptoEnv;
+
+        env.invoke(ComponentSetRoyaltyConfigInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            royalty_config,
+        })
+        .unwrap();
+    }
+
+    pub fn claim_royalty(&self) -> Bucket {
+        let mut env = ScryptoEnv;
+
+        env.invoke(ComponentClaimRoyaltyInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+        })
+        .unwrap()
+    }
+
+    /// Returns the layers of access rules on this component.
+    pub fn access_rules_chain(&self) -> Vec<ComponentAccessRules> {
+        let mut env = ScryptoEnv;
+        let length = env
+            .invoke(AccessRulesGetLengthInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Component(self.0)),
+            })
+            .unwrap();
+        (0..length)
+            .into_iter()
+            .map(|id| ComponentAccessRules::new(self.0, id))
+            .collect()
     }
 }
 
@@ -82,19 +277,21 @@ impl Component {
 // binary
 //========
 
-impl TryFrom<&[u8]> for Component {
-    type Error = AddressError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let component_address = ComponentAddress::try_from(slice)?;
-        Ok(Self(component_address))
-    }
+/// Represents an error when decoding key value store.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseComponentError {
+    InvalidHex(String),
+    InvalidLength(usize),
 }
 
-impl From<ComponentAddress> for Component {
-    fn from(component: ComponentAddress) -> Self {
-        let component_address = ComponentAddress::try_from(component.to_vec().as_slice()).unwrap();
-        Self(component_address)
+impl TryFrom<&[u8]> for Component {
+    type Error = ParseComponentError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            36 => Ok(Self(copy_u8_array(slice))),
+            _ => Err(ParseComponentError::InvalidLength(slice.len())),
+        }
     }
 }
 
@@ -104,89 +301,34 @@ impl Component {
     }
 }
 
-scrypto_type!(Component, ScryptoType::Component, Vec::new());
+scrypto_type!(
+    Component,
+    ScryptoCustomTypeId::Component,
+    Type::Component,
+    36
+);
 
 //======
 // text
 //======
 
+impl FromStr for Component {
+    type Err = ParseComponentError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(|_| ParseComponentError::InvalidHex(s.to_owned()))?;
+        Self::try_from(bytes.as_slice())
+    }
+}
+
 impl fmt::Display for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.0)
+        write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
 impl fmt::Debug for Component {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
-    }
-}
-
-/// An instance of a blueprint, which lives in the ledger state.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ComponentAddress {
-    Normal([u8; 26]),
-    Account([u8; 26]),
-    System([u8; 26]),
-}
-
-impl ComponentAddress {}
-
-//========
-// binary
-//========
-
-impl TryFrom<&[u8]> for ComponentAddress {
-    type Error = AddressError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            27 => match EntityType::try_from(slice[0])
-                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
-            {
-                EntityType::NormalComponent => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
-                EntityType::AccountComponent => Ok(Self::Account(copy_u8_array(&slice[1..]))),
-                EntityType::SystemComponent => Ok(Self::System(copy_u8_array(&slice[1..]))),
-                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
-            },
-            _ => Err(AddressError::InvalidLength(slice.len())),
-        }
-    }
-}
-
-impl ComponentAddress {
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        buf.push(EntityType::component(self).id());
-        match self {
-            Self::Normal(v) | Self::Account(v) | Self::System(v) => buf.extend(v),
-        }
-        buf
-    }
-}
-
-scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
-
-//======
-// text
-//======
-
-impl FromStr for ComponentAddress {
-    type Err = AddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BECH32_DECODER.validate_and_decode_component_address(s)
-    }
-}
-
-impl fmt::Display for ComponentAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", BECH32_ENCODER.encode_component_address(self))
-    }
-}
-
-impl fmt::Debug for ComponentAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        write!(f, "{:?}", self.0)
     }
 }

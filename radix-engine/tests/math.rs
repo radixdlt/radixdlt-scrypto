@@ -1,19 +1,23 @@
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
+use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use utils::ContextualDisplay;
 
 #[test]
 fn test_integer_basic_ops() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/math-ops-check");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/math-ops-check");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function_with_abi(
             package_address,
             "Hello",
@@ -24,8 +28,11 @@ fn test_integer_basic_ops() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
-    println!("{:?}", receipt);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();
@@ -36,11 +43,11 @@ fn test_native_and_safe_integer_interop() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/math-ops-check");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/math-ops-check");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "Hello",
@@ -49,7 +56,7 @@ fn test_native_and_safe_integer_interop() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{:?}", receipt);
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();

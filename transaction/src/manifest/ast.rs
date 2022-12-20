@@ -81,23 +81,39 @@ pub enum Instruction {
     CallFunction {
         package_address: Value,
         blueprint_name: Value,
-        function: Value,
+        function_name: Value,
         args: Vec<Value>,
     },
 
     CallMethod {
-        component_address: Value,
+        receiver: ScryptoReceiver,
         method: Value,
         args: Vec<Value>,
     },
 
-    PublishPackage {
+    CallNativeFunction {
+        blueprint_name: Value,
+        function_name: Value,
+        args: Vec<Value>,
+    },
+
+    CallNativeMethod {
+        receiver: Receiver,
+        method: Value,
+        args: Vec<Value>,
+    },
+
+    PublishPackageWithOwner {
         code: Value,
         abi: Value,
+        owner_badge: Value,
     },
 
     CreateResource {
-        args: Vec<Value>,
+        resource_type: Value,
+        metadata: Value,
+        access_rules: Value,
+        mint_params: Value,
     },
 
     BurnBucket {
@@ -108,6 +124,34 @@ pub enum Instruction {
         resource_address: Value,
         amount: Value,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScryptoReceiver {
+    Global(Value),
+    Component(Value),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Receiver {
+    Ref(RENode),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RENode {
+    Bucket(Value),
+    Proof(Value),
+    AuthZoneStack(Value),
+    Worktop,
+    Global(Value),
+    KeyValueStore(Value),
+    NonFungibleStore(Value),
+    Component(Value),
+    Vault(Value),
+    ResourceManager(Value),
+    Package(Value),
+    EpochManager(Value),
+    Clock(Value),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -128,37 +172,51 @@ pub enum Type {
     String,
 
     /* Struct and enum */
-    Struct,
     Enum,
-    Option,
-    Result,
 
     /* [T; N] and (A, B, C) */
     Array,
     Tuple,
 
-    /* Collections */
-    List,
-    Set,
-    Map,
+    // ==============
+    // Custom Types
+    // ==============
 
-    /* Custom types */
-    Decimal,
-    PreciseDecimal,
+    // Globals
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    Hash,
+    SystemAddress,
+
+    // RE Nodes
+    Component,
+    KeyValueStore,
     Bucket,
     Proof,
-    NonFungibleId,
-    NonFungibleAddress,
+    Vault,
+
+    // Other interpreted types
     Expression,
     Blob,
+    NonFungibleAddress,
+
+    // Uninterpreted,
+    Hash,
+    EcdsaSecp256k1PublicKey,
+    EcdsaSecp256k1Signature,
+    EddsaEd25519PublicKey,
+    EddsaEd25519Signature,
+    Decimal,
+    PreciseDecimal,
+    NonFungibleId,
+    Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
+    // ==============
+    // Basic Types
+    // ==============
     Unit,
     Bool(bool),
     I8(i8),
@@ -173,35 +231,60 @@ pub enum Value {
     U128(u128),
     String(String),
 
-    Struct(Vec<Value>),
     Enum(String, Vec<Value>),
-    Option(Box<Option<Value>>),
-    Result(Box<Result<Value, Value>>),
-
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
 
-    List(Type, Vec<Value>),
-    Set(Type, Vec<Value>),
-    Map(Type, Type, Vec<Value>),
+    // ==============
+    // Aliases
+    // ==============
+    Some(Box<Value>),
+    None,
 
-    Decimal(Box<Value>),
-    PreciseDecimal(Box<Value>),
+    Ok(Box<Value>),
+    Err(Box<Value>),
+
+    Bytes(Box<Value>),
+
+    // ==============
+    // Custom Types
+    // ==============
+
+    // Globals
     PackageAddress(Box<Value>),
     ComponentAddress(Box<Value>),
     ResourceAddress(Box<Value>),
-    Hash(Box<Value>),
+    SystemAddress(Box<Value>),
+
+    // RE Nodes
+    Component(Box<Value>),
+    KeyValueStore(Box<Value>),
     Bucket(Box<Value>),
     Proof(Box<Value>),
-    NonFungibleId(Box<Value>),
-    NonFungibleAddress(Box<Value>),
+    Vault(Box<Value>),
+
+    // Other interpreted types
     Expression(Box<Value>),
     Blob(Box<Value>),
+    NonFungibleAddress(Box<Value>, Box<Value>),
+
+    // Uninterpreted,
+    Hash(Box<Value>),
+    EcdsaSecp256k1PublicKey(Box<Value>),
+    EcdsaSecp256k1Signature(Box<Value>),
+    EddsaEd25519PublicKey(Box<Value>),
+    EddsaEd25519Signature(Box<Value>),
+    Decimal(Box<Value>),
+    PreciseDecimal(Box<Value>),
+    NonFungibleId(Box<Value>),
 }
 
 impl Value {
     pub const fn kind(&self) -> Type {
         match self {
+            // ==============
+            // Basic Types
+            // ==============
             Value::Unit => Type::Unit,
             Value::Bool(_) => Type::Bool,
             Value::I8(_) => Type::I8,
@@ -215,27 +298,50 @@ impl Value {
             Value::U64(_) => Type::U64,
             Value::U128(_) => Type::U128,
             Value::String(_) => Type::String,
-            Value::Struct(_) => Type::Struct,
             Value::Enum(_, _) => Type::Enum,
-            Value::Option(_) => Type::Option,
             Value::Array(_, _) => Type::Array,
             Value::Tuple(_) => Type::Tuple,
-            Value::Result(_) => Type::Result,
-            Value::List(_, _) => Type::List,
-            Value::Set(_, _) => Type::Set,
-            Value::Map(_, _, _) => Type::Map,
-            Value::Decimal(_) => Type::Decimal,
-            Value::PreciseDecimal(_) => Type::PreciseDecimal,
+
+            // ==============
+            // Aliases
+            // ==============
+            Value::Some(_) => Type::Enum,
+            Value::None => Type::Enum,
+            Value::Ok(_) => Type::Enum,
+            Value::Err(_) => Type::Enum,
+            Value::Bytes(_) => Type::Bytes,
+
+            // ==============
+            // Custom Types
+            // ==============
+
+            // Global address types
             Value::PackageAddress(_) => Type::PackageAddress,
             Value::ComponentAddress(_) => Type::ComponentAddress,
             Value::ResourceAddress(_) => Type::ResourceAddress,
-            Value::Hash(_) => Type::Hash,
+            Value::SystemAddress(_) => Type::SystemAddress,
+
+            // RE Nodes
+            Value::Component(_) => Type::Component,
+            Value::KeyValueStore(_) => Type::KeyValueStore,
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
-            Value::NonFungibleId(_) => Type::NonFungibleId,
-            Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
+            Value::Vault(_) => Type::Vault,
+
+            // Other interpreted types
             Value::Expression(_) => Type::Expression,
             Value::Blob(_) => Type::Blob,
+            Value::NonFungibleAddress(_, _) => Type::NonFungibleAddress,
+
+            // Uninterpreted,
+            Value::Hash(_) => Type::Hash,
+            Value::EcdsaSecp256k1PublicKey(_) => Type::EcdsaSecp256k1PublicKey,
+            Value::EcdsaSecp256k1Signature(_) => Type::EcdsaSecp256k1Signature,
+            Value::EddsaEd25519PublicKey(_) => Type::EddsaEd25519PublicKey,
+            Value::EddsaEd25519Signature(_) => Type::EddsaEd25519Signature,
+            Value::Decimal(_) => Type::Decimal,
+            Value::PreciseDecimal(_) => Type::PreciseDecimal,
+            Value::NonFungibleId(_) => Type::NonFungibleId,
         }
     }
 }

@@ -56,7 +56,7 @@ impl NewPackage {
 
             fs::write(
                 child_of(&path, "Cargo.toml"),
-                include_str!("../../../assets/template/Cargo.toml")
+                include_str!("../../../assets/template/Cargo.toml_template")
                     .replace("${package_name}", &self.package_name)
                     .replace("${sbor}", &sbor)
                     .replace("${scrypto}", &scrypto)

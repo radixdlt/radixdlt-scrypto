@@ -1,3 +1,4 @@
+mod addressing;
 mod cmd_call_function;
 mod cmd_call_method;
 mod cmd_export_abi;
@@ -6,6 +7,7 @@ mod cmd_mint;
 mod cmd_new_account;
 mod cmd_new_badge_fixed;
 mod cmd_new_badge_mutable;
+mod cmd_new_simple_badge;
 mod cmd_new_token_fixed;
 mod cmd_new_token_mutable;
 mod cmd_publish;
@@ -20,6 +22,7 @@ mod cmd_transfer;
 mod config;
 mod error;
 
+pub use addressing::*;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
 pub use cmd_export_abi::*;
@@ -28,6 +31,7 @@ pub use cmd_mint::*;
 pub use cmd_new_account::*;
 pub use cmd_new_badge_fixed::*;
 pub use cmd_new_badge_mutable::*;
+pub use cmd_new_simple_badge::*;
 pub use cmd_new_token_fixed::*;
 pub use cmd_new_token_mutable::*;
 pub use cmd_publish::*;
@@ -47,25 +51,31 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
-use radix_engine::constants::*;
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::model::*;
-use radix_engine::transaction::TransactionExecutor;
+use radix_engine::transaction::execute_and_commit_transaction;
 use radix_engine::transaction::TransactionOutcome;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::transaction::TransactionResult;
 use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
 use radix_engine::types::*;
 use radix_engine::wasm::*;
+use radix_engine_constants::*;
+use radix_engine_interface::abi;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::hash;
+use radix_engine_interface::model::FromPublicKey;
 use radix_engine_stores::rocks_db::RadixEngineDB;
-use scrypto::abi;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
+use transaction::model::AuthModule;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
+use utils::ContextualDisplay;
 
 /// Build fast, reward everyone, and scale without friction
 #[derive(Parser, Debug)]
@@ -87,8 +97,9 @@ pub enum Command {
     CallMethod(CallMethod),
     ExportAbi(ExportAbi),
     GenerateKeyPair(GenerateKeyPair),
-    Mint(Mint),
+    Mint(crate::resim::cmd_mint::Mint),
     NewAccount(NewAccount),
+    NewSimpleBadge(NewSimpleBadge),
     NewBadgeFixed(NewBadgeFixed),
     NewBadgeMutable(NewBadgeMutable),
     NewTokenFixed(NewTokenFixed),
@@ -116,6 +127,7 @@ pub fn run() -> Result<(), Error> {
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),
+        Command::NewSimpleBadge(cmd) => cmd.run(&mut out),
         Command::NewBadgeFixed(cmd) => cmd.run(&mut out),
         Command::NewBadgeMutable(cmd) => cmd.run(&mut out),
         Command::NewTokenFixed(cmd) => cmd.run(&mut out),
@@ -136,18 +148,19 @@ pub fn handle_manifest<O: std::io::Write>(
     manifest: TransactionManifest,
     signing_keys: &Option<String>,
     network: &Option<String>,
-    manifest_path: &Option<PathBuf>,
+    write_manifest: &Option<PathBuf>,
     trace: bool,
-    output_receipt: bool,
+    print_receipt: bool,
+    with_system_privilege: bool,
     out: &mut O,
 ) -> Result<Option<TransactionReceipt>, Error> {
-    match manifest_path {
+    let network = match network {
+        Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
+        None => NetworkDefinition::simulator(),
+    };
+    match write_manifest {
         Some(path) => {
             if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                let network = match network {
-                    Some(n) => NetworkDefinition::from_str(&n).map_err(Error::ParseNetworkError)?,
-                    None => NetworkDefinition::simulator(),
-                };
                 let manifest_str =
                     decompile(&manifest.instructions, &network).map_err(Error::DecompileError)?;
                 fs::write(path, manifest_str).map_err(Error::IOError)?;
@@ -165,36 +178,42 @@ pub fn handle_manifest<O: std::io::Write>(
         }
         None => {
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-            let mut wasm_engine = DefaultWasmEngine::new();
-            let mut wasm_instrumenter = WasmInstrumenter::new();
-            let mut executor = TransactionExecutor::new(
-                &mut substate_store,
-                &mut wasm_engine,
-                &mut wasm_instrumenter,
-            );
+
+            let mut scrypto_interpreter = ScryptoInterpreter {
+                wasm_engine: DefaultWasmEngine::default(),
+                wasm_instrumenter: WasmInstrumenter::default(),
+                wasm_metering_config: WasmMeteringConfig::new(
+                    InstructionCostRules::tiered(1, 5, 10, 5000),
+                    1024,
+                ),
+            };
 
             let sks = get_signing_keys(signing_keys)?;
-            let pks = sks
-                .iter()
-                .map(|e| e.public_key().into())
-                .collect::<Vec<PublicKey>>();
+            let mut initial_proofs = sks
+                .into_iter()
+                .map(|e| NonFungibleAddress::from_public_key(&e.public_key()))
+                .collect::<Vec<NonFungibleAddress>>();
+            if with_system_privilege {
+                initial_proofs.push(AuthModule::system_role_non_fungible_address());
+            }
             let nonce = get_nonce()?;
-            let transaction = TestTransaction::new(manifest, nonce, pks);
+            let transaction = TestTransaction::new(manifest, nonce, DEFAULT_COST_UNIT_LIMIT);
 
-            let receipt = executor.execute_and_commit(
-                &transaction,
-                &FeeReserveConfig {
-                    cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-                    system_loan: DEFAULT_SYSTEM_LOAN,
-                },
+            let receipt = execute_and_commit_transaction(
+                &mut substate_store,
+                &mut scrypto_interpreter,
+                &FeeReserveConfig::default(),
                 &ExecutionConfig {
                     max_call_depth: DEFAULT_MAX_CALL_DEPTH,
                     trace,
+                    max_sys_call_trace_depth: 1,
                 },
+                &transaction.get_executable(initial_proofs),
             );
 
-            if output_receipt {
-                writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
+            if print_receipt {
+                writeln!(out, "{}", receipt.display(&Bech32Encoder::new(&network)))
+                    .map_err(Error::IOError)?;
             }
 
             if receipt.is_commit() {

@@ -106,7 +106,7 @@ pub fn import(input: TokenStream) -> TokenStream {
 /// use scrypto::prelude::*;
 ///
 /// #[derive(NonFungibleData)]
-/// pub struct AwesomeNonFungible {
+/// pub struct MyStruct {
 ///     pub field_1: u32,
 ///     #[scrypto(mutable)]
 ///     pub field_2: String,

@@ -1,0 +1,26 @@
+# This transaction manifest shows how resources may be transferred between two accounts in a 
+# transaction. We will be withdrawing 100 XRD from our account component and depositing them in 
+# another account component. 
+
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+CALL_METHOD 
+    ComponentAddress("{this_account_component_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# Withdrawing 100 XRD from the account component
+CALL_METHOD 
+    ComponentAddress("{this_account_component_address}") 
+    "withdraw_by_amount"
+    Decimal("100")
+    ResourceAddress("{xrd_resource_address}");
+
+# Depositing all of the XRD withdrawn from the account into the other account
+CALL_METHOD
+    ComponentAddress("{other_account_component_address}") 
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");

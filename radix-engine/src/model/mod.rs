@@ -1,43 +1,39 @@
 mod abi_extractor;
+mod auth;
 mod auth_converter;
-mod auth_zone;
-mod bucket;
+mod clock;
 mod component;
+mod epoch_manager;
+mod fee;
+mod fn_resolver;
+mod global;
+mod invokable_interface;
+mod kv_store;
+mod metadata;
 mod method_authorization;
-mod non_fungible;
 mod package;
 mod package_extractor;
-mod precommitted_kv_store;
-mod proof;
-mod resource;
-mod resource_manager;
-mod system;
+mod resources;
+mod scrypto;
+mod substates;
 mod transaction_processor;
-mod vault;
-mod worktop;
-mod wrappers;
 
+pub use self::scrypto::*;
 pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
+pub use auth::*;
 pub use auth_converter::convert;
-pub use auth_zone::{AuthZone, AuthZoneError};
-pub use bucket::{Bucket, BucketError};
-pub use component::{ComponentError, ComponentInfo, ComponentState};
-pub use method_authorization::{
-    HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
-    MethodAuthorizationError,
-};
-pub use non_fungible::NonFungible;
-pub use package::{Package, PackageError};
+pub use clock::*;
+pub use component::*;
+pub use epoch_manager::*;
+pub use fee::*;
+pub use fn_resolver::*;
+pub use global::*;
+pub use invokable_interface::*;
+pub use kv_store::*;
+pub use metadata::*;
+pub use method_authorization::*;
+pub use package::*;
 pub use package_extractor::{extract_abi, ExtractAbiError};
-pub use precommitted_kv_store::HeapKeyValueStore;
-pub use proof::*;
-pub use resource::*;
-pub use resource_manager::{ResourceManager, ResourceManagerError};
-pub use system::{System, SystemError};
-pub use transaction_processor::{
-    TransactionProcessor, TransactionProcessorError, TransactionProcessorRunInput,
-};
-pub use vault::{Vault, VaultError};
-pub use worktop::{Worktop, WorktopError};
-pub use wrappers::*;
+pub use resources::*;
+pub use transaction_processor::*;

@@ -1,11 +1,15 @@
-use radix_engine::constants::{
-    DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
-};
+use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::state_manager::StagedSubstateStoreManager;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig, TransactionExecutor};
+use radix_engine::transaction::{
+    execute_and_commit_transaction, ExecutionConfig, FeeReserveConfig,
+};
 use radix_engine::types::*;
-use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
+use radix_engine::wasm::{
+    DefaultWasmEngine, InstructionCostRules, WasmInstrumenter, WasmMeteringConfig,
+};
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use rand::Rng;
 use rand_chacha;
 use rand_chacha::rand_core::SeedableRng;
@@ -19,36 +23,35 @@ use transaction::validation::{
 };
 
 fn execute_single_transaction(transaction: NotarizedTransaction) {
-    let validator = NotarizedTransactionValidator::new(ValidationConfig {
-        network_id: NetworkDefinition::simulator().id,
-        current_epoch: 1,
-        max_cost_unit_limit: DEFAULT_COST_UNIT_LIMIT,
-        min_tip_percentage: 0,
-    });
+    let validator = NotarizedTransactionValidator::new(ValidationConfig::simulator());
 
-    let transaction = validator
-        .validate(transaction, &TestIntentHashManager::new())
+    let executable = validator
+        .validate(&transaction, &TestIntentHashManager::new())
         .unwrap();
 
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
-    let execution_config = ExecutionConfig {
-        max_call_depth: DEFAULT_MAX_CALL_DEPTH,
-        trace: false,
+    let mut scrypto_interpreter = ScryptoInterpreter {
+        wasm_engine: DefaultWasmEngine::default(),
+        wasm_instrumenter: WasmInstrumenter::default(),
+        wasm_metering_config: WasmMeteringConfig::new(
+            InstructionCostRules::tiered(1, 5, 10, 5000),
+            1024,
+        ),
     };
-    let fee_reserve_config = FeeReserveConfig {
-        cost_unit_price: DEFAULT_COST_UNIT_PRICE.parse().unwrap(),
-        system_loan: DEFAULT_SYSTEM_LOAN,
-    };
+    let execution_config = ExecutionConfig::default();
+    let fee_reserve_config = FeeReserveConfig::default();
 
     let mut staged_store_manager = StagedSubstateStoreManager::new(&mut store);
     let staged_node = staged_store_manager.new_child_node(0);
 
     let mut staged_store = staged_store_manager.get_output_store(staged_node);
-    let mut transaction_executor =
-        TransactionExecutor::new(&mut staged_store, &mut wasm_engine, &mut wasm_instrumenter);
-    transaction_executor.execute_and_commit(&transaction, &fee_reserve_config, &execution_config);
+    execute_and_commit_transaction(
+        &mut staged_store,
+        &mut scrypto_interpreter,
+        &fee_reserve_config,
+        &execution_config,
+        &executable,
+    );
 }
 
 struct TransactionFuzzer {
@@ -71,16 +74,16 @@ impl TransactionFuzzer {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.call_function(
                             ACCOUNT_PACKAGE,
-                            "Account",
+                            ACCOUNT_BLUEPRINT,
                             "new_with_resource",
-                            args!(AccessRule::AllowAll, scrypto::resource::Bucket(bucket_id)),
+                            args!(AccessRule::AllowAll, Bucket(bucket_id)),
                         )
                     });
                 }
                 1 => {
                     builder.call_function(
                         ACCOUNT_PACKAGE,
-                        "Account",
+                        ACCOUNT_BLUEPRINT,
                         "new",
                         args!(AccessRule::AllowAll),
                     );
@@ -89,14 +92,14 @@ impl TransactionFuzzer {
                     builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.call_function(
                             ACCOUNT_PACKAGE,
-                            "Account",
+                            ACCOUNT_BLUEPRINT,
                             "new_with_resource",
-                            args!(AccessRule::AllowAll, scrypto::resource::Bucket(bucket_id)),
+                            args!(AccessRule::AllowAll, Bucket(bucket_id)),
                         )
                     });
                 }
                 3 => {
-                    builder.call_method(SYS_FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));
+                    builder.call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("100")));
                 }
                 _ => panic!("Unexpected"),
             }
@@ -128,7 +131,7 @@ impl TransactionFuzzer {
 #[test]
 fn simple_transaction_fuzz_test() {
     let mut fuzzer = TransactionFuzzer::new();
-    let transactions: Vec<NotarizedTransaction> = (0..200)
+    let transactions: Vec<NotarizedTransaction> = (0..50)
         .into_iter()
         .map(|_| fuzzer.next_transaction())
         .collect();

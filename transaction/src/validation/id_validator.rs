@@ -1,6 +1,6 @@
+use radix_engine_interface::api::types::{BucketId, ProofId};
+use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::collections::*;
-use scrypto::engine::types::*;
-use scrypto::values::*;
 
 use crate::errors::*;
 use crate::validation::*;
@@ -112,7 +112,7 @@ impl IdValidator {
         Ok(())
     }
 
-    pub fn move_resources(&mut self, args: &ScryptoValue) -> Result<(), IdValidationError> {
+    pub fn move_resources(&mut self, args: &IndexedScryptoValue) -> Result<(), IdValidationError> {
         for (bucket_id, _) in &args.bucket_ids {
             self.drop_bucket(*bucket_id)?;
         }

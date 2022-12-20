@@ -1,18 +1,21 @@
+use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::ResourceContainer;
+use crate::model::Resource;
 use crate::types::*;
+use radix_engine_interface::api::types::{
+    Level, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
+};
+use sbor::rust::fmt::Debug;
 
 pub enum SysCallInput<'a> {
-    InvokeFunction {
-        fn_identifier: &'a FnIdentifier,
-        input: &'a ScryptoValue,
+    Invoke {
+        invocation: &'a dyn Debug,
+        input_size: u32,
+        value_count: u32,
+        depth: usize,
     },
-    InvokeMethod {
-        receiver: &'a Receiver,
-        fn_identifier: &'a FnIdentifier,
-        input: &'a ScryptoValue,
-    },
+    ReadOwnedNodes,
     BorrowNode {
         node_id: &'a RENodeId,
     },
@@ -20,23 +23,21 @@ pub enum SysCallInput<'a> {
         node_id: &'a RENodeId,
     },
     CreateNode {
-        node: &'a HeapRENode,
+        node: &'a RENode,
     },
-    GlobalizeNode {
+    LockSubstate {
         node_id: &'a RENodeId,
+        offset: &'a SubstateOffset,
+        flags: &'a LockFlags,
     },
-    BorrowSubstateMut {
-        substate_id: &'a SubstateId,
+    GetRef {
+        lock_handle: &'a LockHandle,
     },
-    ReturnSubstateMut {
-        substate_ref: &'a NativeSubstateRef,
+    GetRefMut {
+        lock_handle: &'a LockHandle,
     },
-    ReadSubstate {
-        substate_id: &'a SubstateId,
-    },
-    WriteSubstate {
-        substate_id: &'a SubstateId,
-        value: &'a ScryptoValue,
+    DropLock {
+        lock_handle: &'a LockHandle,
     },
     TakeSubstate {
         substate_id: &'a SubstateId,
@@ -50,66 +51,109 @@ pub enum SysCallInput<'a> {
         level: &'a Level,
         message: &'a String,
     },
-    CheckAccessRule {
-        access_rule: &'a AccessRule,
-        proof_ids: &'a Vec<ProofId>,
+    EmitEvent {
+        event: &'a Event<'a>,
     },
 }
 
+#[derive(Debug)]
 pub enum SysCallOutput<'a> {
-    InvokeFunction { output: &'a ScryptoValue },
-    InvokeMethod { output: &'a ScryptoValue },
-    BorrowNode { node_pointer: &'a RENodePointer },
-    DropNode { node: &'a HeapRootRENode },
+    Invoke { rtn: &'a dyn Debug },
+    ReadOwnedNodes,
+    BorrowNode { node_pointer: &'a RENodeLocation },
+    DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },
-    GlobalizeNode,
-    BorrowSubstateMut { substate_ref: &'a NativeSubstateRef },
-    ReturnSubstateMut,
-    ReadSubstate { value: &'a ScryptoValue },
-    WriteSubstate,
-    TakeSubstate { value: &'a ScryptoValue },
+    LockSubstate { lock_handle: LockHandle },
+    GetRef { lock_handle: LockHandle },
+    GetRefMut,
+    DropLock,
     ReadTransactionHash { hash: &'a Hash },
     ReadBlob { blob: &'a [u8] },
     GenerateUuid { uuid: u128 },
     EmitLog,
-    CheckAccessRule { result: bool },
+    EmitEvent,
 }
 
 pub trait Module<R: FeeReserve> {
     fn pre_sys_call(
         &mut self,
-        track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
-        input: SysCallInput,
-    ) -> Result<(), ModuleError>;
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _input: SysCallInput,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn post_sys_call(
         &mut self,
-        track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
-        output: SysCallOutput,
-    ) -> Result<(), ModuleError>;
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _output: SysCallOutput,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn pre_execute_invocation(
+        &mut self,
+        _actor: &REActor,
+        _call_frame_update: &CallFrameUpdate,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
+
+    fn post_execute_invocation(
+        &mut self,
+        _caller: &REActor,
+        _update: &CallFrameUpdate,
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn on_wasm_instantiation(
         &mut self,
-        track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
-        code: &[u8],
-    ) -> Result<(), ModuleError>;
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _code: &[u8],
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn on_wasm_costing(
         &mut self,
-        track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
-        units: u32,
-    ) -> Result<(), ModuleError>;
+        _call_frame: &CallFrame,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+        _units: u32,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 
     fn on_lock_fee(
         &mut self,
-        track: &mut Track<R>,
-        heap: &mut Vec<CallFrame>,
-        vault_id: VaultId,
-        fee: ResourceContainer,
-        contingent: bool,
-    ) -> Result<ResourceContainer, ModuleError>;
+        _call_frame: &CallFrame,
+        _eap: &mut Heap,
+        _rack: &mut Track<R>,
+        _ault_id: VaultId,
+        fee: Resource,
+        _ontingent: bool,
+    ) -> Result<Resource, ModuleError> {
+        Ok(fee)
+    }
+
+    fn on_finished_processing(
+        &mut self,
+        _heap: &mut Heap,
+        _track: &mut Track<R>,
+    ) -> Result<(), ModuleError> {
+        Ok(())
+    }
 }

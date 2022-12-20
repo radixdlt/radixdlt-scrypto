@@ -1,31 +1,35 @@
-use crate::engine::Substate;
+use crate::model::PersistedSubstate;
 use crate::types::*;
+use radix_engine_interface::api::types::{KeyValueStoreId, SubstateId};
 
 pub trait QueryableSubstateStore {
-    fn get_kv_store_entries(&self, kv_store_id: &KeyValueStoreId) -> HashMap<Vec<u8>, Substate>;
+    fn get_kv_store_entries(
+        &self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> HashMap<Vec<u8>, PersistedSubstate>;
 }
 
-#[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct OutputId {
     pub substate_id: SubstateId,
     pub substate_hash: Hash,
     pub version: u32,
 }
 
-#[derive(Debug, Clone, Encode, Decode, TypeId, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct OutputValue {
-    pub substate: Substate,
+    pub substate: PersistedSubstate,
     pub version: u32,
 }
 
 pub trait ReadableSubstateStore {
     fn get_substate(&self, substate_id: &SubstateId) -> Option<OutputValue>;
-    fn is_root(&self, substate_id: &SubstateId) -> bool;
 }
 
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, substate_id: SubstateId, substate: OutputValue);
-    fn set_root(&mut self, substate_id: SubstateId);
 }
 
 pub trait SubstateStore: ReadableSubstateStore + WriteableSubstateStore {}

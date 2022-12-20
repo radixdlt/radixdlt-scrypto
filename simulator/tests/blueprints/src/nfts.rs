@@ -11,7 +11,7 @@ blueprint! {
 
     impl Foo {
         pub fn nfts() -> Bucket {
-            ResourceBuilder::new_non_fungible()
+            ResourceBuilder::new_non_fungible(NonFungibleIdType::UUID)
                 .metadata("name", "Cars!")
                 .metadata("description", "Fast Cars")
                 .initial_supply(vec![

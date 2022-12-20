@@ -1,4 +1,5 @@
-use crate::manifest::ast::{Instruction, Type, Value};
+use super::ast::ScryptoReceiver;
+use crate::manifest::ast::{Instruction, RENode, Receiver, Type, Value};
 use crate::manifest::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -137,7 +138,7 @@ impl Parser {
             TokenKind::CallFunction => Instruction::CallFunction {
                 package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
-                function: self.parse_value()?,
+                function_name: self.parse_value()?,
                 args: {
                     let mut values = vec![];
                     while self.peek()?.kind != TokenKind::Semicolon {
@@ -147,7 +148,7 @@ impl Parser {
                 },
             },
             TokenKind::CallMethod => Instruction::CallMethod {
-                component_address: self.parse_value()?,
+                receiver: self.parse_scrypto_receiver()?,
                 method: self.parse_value()?,
                 args: {
                     let mut values = vec![];
@@ -157,11 +158,9 @@ impl Parser {
                     values
                 },
             },
-            TokenKind::PublishPackage => Instruction::PublishPackage {
-                code: self.parse_value()?,
-                abi: self.parse_value()?,
-            },
-            TokenKind::CreateResource => Instruction::CreateResource {
+            TokenKind::CallNativeFunction => Instruction::CallNativeFunction {
+                blueprint_name: self.parse_value()?,
+                function_name: self.parse_value()?,
                 args: {
                     let mut values = vec![];
                     while self.peek()?.kind != TokenKind::Semicolon {
@@ -169,6 +168,29 @@ impl Parser {
                     }
                     values
                 },
+            },
+            TokenKind::CallNativeMethod => Instruction::CallNativeMethod {
+                receiver: self.parse_receiver()?,
+                method: self.parse_value()?,
+                args: {
+                    let mut values = vec![];
+                    while self.peek()?.kind != TokenKind::Semicolon {
+                        values.push(self.parse_value()?);
+                    }
+                    values
+                },
+            },
+
+            TokenKind::PublishPackageWithOwner => Instruction::PublishPackageWithOwner {
+                code: self.parse_value()?,
+                abi: self.parse_value()?,
+                owner_badge: self.parse_value()?,
+            },
+            TokenKind::CreateResource => Instruction::CreateResource {
+                resource_type: self.parse_value()?,
+                metadata: self.parse_value()?,
+                access_rules: self.parse_value()?,
+                mint_params: self.parse_value()?,
             },
             TokenKind::BurnBucket => Instruction::BurnBucket {
                 bucket: self.parse_value()?,
@@ -185,9 +207,59 @@ impl Parser {
         Ok(instruction)
     }
 
+    pub fn parse_scrypto_receiver(&mut self) -> Result<ScryptoReceiver, ParserError> {
+        let token = self.advance()?;
+        match token.kind {
+            TokenKind::ComponentAddress => Ok(ScryptoReceiver::Global(self.parse_values_one()?)),
+            TokenKind::Component => Ok(ScryptoReceiver::Component(self.parse_values_one()?)),
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
+    }
+
+    pub fn parse_receiver(&mut self) -> Result<Receiver, ParserError> {
+        let token = self.peek()?;
+        match token.kind {
+            TokenKind::Bucket
+            | TokenKind::Proof
+            | TokenKind::AuthZoneStack
+            | TokenKind::Worktop
+            | TokenKind::Global
+            | TokenKind::KeyValueStore
+            | TokenKind::NonFungibleStore
+            | TokenKind::Component
+            | TokenKind::EpochManager
+            | TokenKind::Vault
+            | TokenKind::ResourceManager
+            | TokenKind::Package => Ok(Receiver::Ref(self.parse_re_node()?)),
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
+    }
+
+    pub fn parse_re_node(&mut self) -> Result<RENode, ParserError> {
+        let token = self.advance()?;
+        match token.kind {
+            TokenKind::Bucket => Ok(RENode::Bucket(self.parse_values_one()?)),
+            TokenKind::Proof => Ok(RENode::Proof(self.parse_values_one()?)),
+            TokenKind::AuthZoneStack => Ok(RENode::AuthZoneStack(self.parse_values_one()?)),
+            TokenKind::Worktop => Ok(RENode::Worktop),
+            TokenKind::Global => Ok(RENode::Global(self.parse_values_one()?)),
+            TokenKind::KeyValueStore => Ok(RENode::KeyValueStore(self.parse_values_one()?)),
+            TokenKind::NonFungibleStore => Ok(RENode::NonFungibleStore(self.parse_values_one()?)),
+            TokenKind::Component => Ok(RENode::Component(self.parse_values_one()?)),
+            TokenKind::EpochManager => Ok(RENode::EpochManager(self.parse_values_one()?)),
+            TokenKind::Vault => Ok(RENode::Vault(self.parse_values_one()?)),
+            TokenKind::ResourceManager => Ok(RENode::ResourceManager(self.parse_values_one()?)),
+            TokenKind::Package => Ok(RENode::Package(self.parse_values_one()?)),
+            _ => Err(ParserError::UnexpectedToken(token)),
+        }
+    }
+
     pub fn parse_value(&mut self) -> Result<Value, ParserError> {
         let token = self.peek()?;
         match token.kind {
+            // ==============
+            // Basic Types
+            // ==============
             TokenKind::OpenParenthesis => {
                 advance_match!(self, TokenKind::OpenParenthesis);
                 advance_match!(self, TokenKind::CloseParenthesis);
@@ -205,35 +277,49 @@ impl Parser {
             TokenKind::I64Literal(value) => advance_ok!(self, Value::I64(value)),
             TokenKind::I128Literal(value) => advance_ok!(self, Value::I128(value)),
             TokenKind::StringLiteral(value) => advance_ok!(self, Value::String(value)),
-            TokenKind::Struct => self.parse_struct(),
             TokenKind::Enum => self.parse_enum(),
-            TokenKind::Some | TokenKind::None => self.parse_option(),
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
-            TokenKind::Ok | TokenKind::Err => self.parse_result(),
-            TokenKind::List => self.parse_list(),
-            TokenKind::Set => self.parse_set(),
-            TokenKind::Map => self.parse_map(),
-            TokenKind::Decimal
-            | TokenKind::PreciseDecimal
-            | TokenKind::PackageAddress
-            | TokenKind::ComponentAddress
-            | TokenKind::ResourceAddress
-            | TokenKind::Hash
-            | TokenKind::Bucket
-            | TokenKind::Proof
-            | TokenKind::NonFungibleId
-            | TokenKind::NonFungibleAddress
-            | TokenKind::Expression
-            | TokenKind::Blob => self.parse_scrypto_types(),
+
+            // ==============
+            // Aliases
+            // ==============
+            TokenKind::Some |
+            TokenKind::None |
+            TokenKind::Ok |
+            TokenKind::Err |
+            TokenKind::Bytes => self.parse_alias(),
+
+            // ==============
+            // Custom Types
+            // ==============
+
+            /* Global address */
+            TokenKind::PackageAddress |
+            TokenKind::SystemAddress |
+            TokenKind::ComponentAddress |
+            TokenKind::ResourceAddress |
+            /* RE Nodes */
+            TokenKind::Component |
+            TokenKind::KeyValueStore |
+            TokenKind::Bucket |
+            TokenKind::Proof |
+            TokenKind::Vault |
+            /* Other interpreted */
+            TokenKind::Expression |
+            TokenKind::Blob |
+            TokenKind::NonFungibleAddress |
+            /* Uninterpreted */
+            TokenKind::Hash |
+            TokenKind::EcdsaSecp256k1PublicKey |
+            TokenKind::EcdsaSecp256k1Signature |
+            TokenKind::EddsaEd25519PublicKey |
+            TokenKind::EddsaEd25519Signature |
+            TokenKind::Decimal |
+            TokenKind::PreciseDecimal |
+            TokenKind::NonFungibleId => self.parse_scrypto_types(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
-    }
-    pub fn parse_struct(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Struct);
-        let fields =
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        Ok(Value::Struct(fields))
     }
 
     pub fn parse_enum(&mut self) -> Result<Value, ParserError> {
@@ -248,15 +334,6 @@ impl Parser {
         };
         name_and_fields.remove(0);
         Ok(Value::Enum(name, name_and_fields))
-    }
-
-    pub fn parse_option(&mut self) -> Result<Value, ParserError> {
-        let token = self.advance()?;
-        match token.kind {
-            TokenKind::Some => Ok(Value::Option(Some(self.parse_values_one()?).into())),
-            TokenKind::None => Ok(Value::Option(None.into())),
-            _ => Err(ParserError::UnexpectedToken(token)),
-        }
     }
 
     pub fn parse_array(&mut self) -> Result<Value, ParserError> {
@@ -276,64 +353,64 @@ impl Parser {
         )?))
     }
 
-    pub fn parse_result(&mut self) -> Result<Value, ParserError> {
+    pub fn parse_alias(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            TokenKind::Ok => Ok(Value::Result(Ok(self.parse_values_one()?).into())),
-            TokenKind::Err => Ok(Value::Result(Err(self.parse_values_one()?).into())),
+            TokenKind::Some => Ok(Value::Some(Box::new(self.parse_values_one()?))),
+            TokenKind::None => Ok(Value::None),
+            TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
+            TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
+            TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
-    }
-
-    pub fn parse_list(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::List);
-        let generics = self.parse_generics(1)?;
-        Ok(Value::List(
-            generics[0],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-        ))
-    }
-
-    pub fn parse_set(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Set);
-        let generics = self.parse_generics(1)?;
-        Ok(Value::Set(
-            generics[0],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-        ))
-    }
-
-    pub fn parse_map(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Map);
-        let generics = self.parse_generics(2)?;
-        Ok(Value::Map(
-            generics[0],
-            generics[1],
-            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-        ))
     }
 
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
-            TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
+            // Global address types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
+            TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
                 Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
             }
             TokenKind::ResourceAddress => {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
-            TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
+
+            // RE nodes
+            TokenKind::Component => Ok(Value::Component(self.parse_values_one()?.into())),
+            TokenKind::KeyValueStore => Ok(Value::KeyValueStore(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleAddress => {
-                Ok(Value::NonFungibleAddress(self.parse_values_one()?.into()))
-            }
+            TokenKind::Vault => Ok(Value::Vault(self.parse_values_one()?.into())),
+
+            // Interpreted
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
+            TokenKind::NonFungibleAddress => {
+                let values = self.parse_values_two()?;
+                Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
+            }
+
+            // Uninterpreted
+            TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
+            TokenKind::EcdsaSecp256k1PublicKey => Ok(Value::EcdsaSecp256k1PublicKey(
+                self.parse_values_one()?.into(),
+            )),
+            TokenKind::EcdsaSecp256k1Signature => Ok(Value::EcdsaSecp256k1Signature(
+                self.parse_values_one()?.into(),
+            )),
+            TokenKind::EddsaEd25519PublicKey => Ok(Value::EddsaEd25519PublicKey(
+                self.parse_values_one()?.into(),
+            )),
+            TokenKind::EddsaEd25519Signature => Ok(Value::EddsaEd25519Signature(
+                self.parse_values_one()?.into(),
+            )),
+            TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
+            TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
+            TokenKind::NonFungibleId => Ok(Value::NonFungibleId(self.parse_values_one()?.into())),
+
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -366,6 +443,19 @@ impl Parser {
             })
         } else {
             Ok(values[0].clone())
+        }
+    }
+
+    fn parse_values_two(&mut self) -> Result<(Value, Value), ParserError> {
+        let values =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        if values.len() != 2 {
+            Err(ParserError::InvalidNumberOfValues {
+                actual: values.len(),
+                expected: 2,
+            })
+        } else {
+            Ok((values[0].clone(), values[1].clone()))
         }
     }
 
@@ -406,25 +496,38 @@ impl Parser {
             TokenKind::U64 => Ok(Type::U64),
             TokenKind::U128 => Ok(Type::U128),
             TokenKind::String => Ok(Type::String),
-            TokenKind::Struct => Ok(Type::Struct),
             TokenKind::Enum => Ok(Type::Enum),
-            TokenKind::Option => Ok(Type::Option),
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
-            TokenKind::Result => Ok(Type::Result),
-            TokenKind::List => Ok(Type::List),
-            TokenKind::Set => Ok(Type::Set),
-            TokenKind::Map => Ok(Type::Map),
-            TokenKind::Decimal => Ok(Type::Decimal),
+
+            // Globals
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::Hash => Ok(Type::Hash),
+            TokenKind::SystemAddress => Ok(Type::SystemAddress),
+
+            // RE Nodes
+            TokenKind::Component => Ok(Type::Component),
+            TokenKind::KeyValueStore => Ok(Type::KeyValueStore),
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
-            TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
+            TokenKind::Vault => Ok(Type::Vault),
+
+            // Other interpreted types
             TokenKind::Expression => Ok(Type::Expression),
             TokenKind::Blob => Ok(Type::Blob),
+            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+
+            // Uninterpreted
+            TokenKind::Hash => Ok(Type::Hash),
+            TokenKind::EcdsaSecp256k1PublicKey => Ok(Type::EcdsaSecp256k1PublicKey),
+            TokenKind::EcdsaSecp256k1Signature => Ok(Type::EcdsaSecp256k1Signature),
+            TokenKind::EddsaEd25519PublicKey => Ok(Type::EddsaEd25519PublicKey),
+            TokenKind::EddsaEd25519Signature => Ok(Type::EddsaEd25519Signature),
+            TokenKind::Decimal => Ok(Type::Decimal),
+            TokenKind::PreciseDecimal => Ok(Type::PreciseDecimal),
+            TokenKind::NonFungibleId => Ok(Type::NonFungibleId),
+
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -487,15 +590,6 @@ mod tests {
     }
 
     #[test]
-    fn test_struct() {
-        parse_value_ok!(
-            r#"Struct("Hello", 123u8)"#,
-            Value::Struct(vec![Value::String("Hello".into()), Value::U8(123),])
-        );
-        parse_value_ok!(r#"Struct()"#, Value::Struct(vec![]));
-    }
-
-    #[test]
     fn test_enum() {
         parse_value_ok!(
             r#"Enum("Variant", "Hello", 123u8)"#,
@@ -511,73 +605,23 @@ mod tests {
     }
 
     #[test]
-    fn test_option_result_box() {
-        parse_value_ok!(
-            r#"Some("test")"#,
-            Value::Option(Some(Value::String("test".into())).into())
-        );
-        parse_value_ok!(r#"None"#, Value::Option(None.into()));
-        parse_value_ok!(
-            r#"Ok("test")"#,
-            Value::Result(Ok(Value::String("test".into())).into())
-        );
-        parse_value_ok!(
-            r#"Err("test")"#,
-            Value::Result(Err(Value::String("test".into())).into())
-        );
-    }
-
-    #[test]
-    fn test_array_tuple() {
+    fn test_array() {
         parse_value_ok!(
             r#"Array<U8>(1u8, 2u8)"#,
             Value::Array(Type::U8, vec![Value::U8(1), Value::U8(2)])
         );
-        parse_value_ok!(
-            r#"Tuple(1u8, 2u8)"#,
-            Value::Tuple(vec![Value::U8(1), Value::U8(2)])
-        );
     }
 
     #[test]
-    fn test_collections() {
+    fn test_tuple() {
         parse_value_ok!(
-            r#"Vec<String>("foo", "bar")"#,
-            Value::List(
-                Type::String,
-                vec![Value::String("foo".into()), Value::String("bar".into())]
-            )
+            r#"Tuple("Hello", 123u8)"#,
+            Value::Tuple(vec![Value::String("Hello".into()), Value::U8(123),])
         );
+        parse_value_ok!(r#"Tuple()"#, Value::Tuple(vec![]));
         parse_value_ok!(
-            r#"List<String>("foo", "bar")"#,
-            Value::List(
-                Type::String,
-                vec![Value::String("foo".into()), Value::String("bar".into())]
-            )
-        );
-        parse_value_ok!(
-            r#"Set<String>("1st", "2nd", "3rd")"#,
-            Value::Set(
-                Type::String,
-                vec![
-                    Value::String("1st".into()),
-                    Value::String("2nd".into()),
-                    Value::String("3rd".into())
-                ]
-            )
-        );
-        parse_value_ok!(
-            r#"Map<String, U32>("key1", 8u32, "key2", 100u32)"#,
-            Value::Map(
-                Type::String,
-                Type::U32,
-                vec![
-                    Value::String("key1".into()),
-                    Value::U32(8),
-                    Value::String("key2".into()),
-                    Value::U32(100)
-                ]
-            )
+            r#"Tuple(1u8, 2u8)"#,
+            Value::Tuple(vec![Value::U8(1), Value::U8(2)])
         );
     }
 
@@ -597,13 +641,6 @@ mod tests {
         parse_value_error!(
             r#"PackageAddress("abc", "def")"#,
             ParserError::InvalidNumberOfValues {
-                actual: 2,
-                expected: 1
-            }
-        );
-        parse_value_error!(
-            r#"List<String, String>("abc", "def")"#,
-            ParserError::InvalidNumberOfTypes {
                 actual: 2,
                 expected: 1
             }
@@ -665,28 +702,21 @@ mod tests {
         );
         parse_instruction_ok!(r#"DROP_ALL_PROOFS;"#, Instruction::DropAllProofs);
         parse_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  Map<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32;"#,
             Instruction::CallFunction {
                 package_address: Value::PackageAddress(
                     Value::String("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into())
                         .into()
                 ),
                 blueprint_name: Value::String("Airdrop".into()),
-                function: Value::String("new".into()),
-                args: vec![
-                    Value::U32(500),
-                    Value::Map(
-                        Type::String,
-                        Type::U8,
-                        vec![Value::String("key".into()), Value::U8(1)]
-                    )
-                ]
+                function_name: Value::String("new".into()),
+                args: vec![Value::U32(500),]
             }
         );
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                component_address: Value::ComponentAddress(
+                receiver: ScryptoReceiver::Global(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
@@ -700,7 +730,7 @@ mod tests {
         parse_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleId("00")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                component_address: Value::ComponentAddress(
+                receiver: ScryptoReceiver::Global(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
@@ -716,17 +746,18 @@ mod tests {
     #[test]
     fn test_create_resource() {
         parse_instruction_ok!(
-            r#"CREATE_RESOURCE Enum("Fungible", 0u8) Map<String, String>() Map<Enum, Tuple>() Some(Enum("Fungible", Decimal("1.0")));"#,
+            r#"CREATE_RESOURCE Enum("Fungible", 0u8) Array<Tuple>() Array<Tuple>() Enum("Some", Enum("Fungible", Decimal("1.0")));"#,
             Instruction::CreateResource {
-                args: vec![
-                    Value::Enum("Fungible".to_string(), vec![Value::U8(0)]),
-                    Value::Map(Type::String, Type::String, vec![]),
-                    Value::Map(Type::Enum, Type::Tuple, vec![]),
-                    Value::Option(Box::new(Option::Some(Value::Enum(
+                resource_type: Value::Enum("Fungible".to_string(), vec![Value::U8(0)]),
+                metadata: Value::Array(Type::Tuple, vec![]),
+                access_rules: Value::Array(Type::Tuple, vec![]),
+                mint_params: Value::Enum(
+                    "Some".to_string(),
+                    vec![Value::Enum(
                         "Fungible".to_string(),
                         vec![Value::Decimal(Value::String("1.0".into()).into())]
-                    )))),
-                ]
+                    )]
+                ),
             }
         );
     }

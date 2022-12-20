@@ -1,8 +1,9 @@
-use sbor::describe::Type;
+use radix_engine_interface::abi::Type;
+use radix_engine_interface::api::types::{BucketId, KeyValueStoreId, ProofId, VaultId};
+use radix_engine_interface::data::ScryptoValueDecodeError;
+use radix_engine_interface::model::*;
 use sbor::rust::string::String;
 use sbor::*;
-use scrypto::component::{ComponentAddress, PackageAddress};
-use scrypto::engine::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HeaderValidationError {
@@ -21,6 +22,13 @@ pub enum SignatureValidationError {
     InvalidIntentSignature,
     InvalidNotarySignature,
     DuplicateSigner,
+    SerializationError(EncodeError),
+}
+
+impl From<EncodeError> for SignatureValidationError {
+    fn from(err: EncodeError) -> Self {
+        Self::SerializationError(err)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -38,7 +46,7 @@ pub enum IdValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallDataValidationError {
-    DecodeError(DecodeError),
+    InvalidScryptoValue(ScryptoValueDecodeError),
     IdValidationError(IdValidationError),
     VaultNotAllowed(VaultId),
     KeyValueStoreNotAllowed(KeyValueStoreId),
@@ -47,12 +55,19 @@ pub enum CallDataValidationError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionValidationError {
     TransactionTooLarge,
+    SerializationError(EncodeError),
     DeserializationError(DecodeError),
     IntentHashRejected,
     HeaderValidationError(HeaderValidationError),
     SignatureValidationError(SignatureValidationError),
     IdValidationError(IdValidationError),
     CallDataValidationError(CallDataValidationError),
+}
+
+impl From<EncodeError> for TransactionValidationError {
+    fn from(err: EncodeError) -> Self {
+        Self::SerializationError(err)
+    }
 }
 
 /// Represents an error when parsing arguments.

@@ -1,13 +1,21 @@
 extern crate core;
 
 use radix_engine::ledger::{
-    ReadableSubstateStore, TypedInMemorySubstateStore, WriteableSubstateStore,
+    QueryableSubstateStore, ReadableSubstateStore, TypedInMemorySubstateStore,
+    WriteableSubstateStore,
 };
 use radix_engine::types::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
+use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::AuthModule;
 
-fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
+fn test_auth_rule<
+    's,
+    S: ReadableSubstateStore + WriteableSubstateStore + QueryableSubstateStore,
+>(
     test_runner: &mut TestRunner<'s, S>,
     auth_rule: &AccessRule,
     signer_public_keys: &[PublicKey],
@@ -15,19 +23,20 @@ fn test_auth_rule<'s, S: ReadableSubstateStore + WriteableSubstateStore>(
 ) {
     // Arrange
     let account = test_runner.new_account_with_auth_rule(auth_rule);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .withdraw_from_account(RADIX_TOKEN, account)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account(account, RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, signer_public_keys.to_vec());
+    let receipt =
+        test_runner.execute_manifest(manifest, AuthModule::pk_non_fungibles(signer_public_keys));
 
     // Assert
     if should_succeed {
@@ -71,7 +80,7 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
         ])),
         rule!(require(auth0.clone()) || require(auth1.clone()) || require(auth2.clone())),
         rule!((require(auth0.clone()) || require(auth1.clone())) || require(auth2.clone())),
-        rule!(require(auth0.clone()) || (require(auth1.clone()) || require(auth2.clone()))),
+        rule!(require(auth0) || (require(auth1) || require(auth2))),
     ];
 
     for auth in auths {
@@ -133,7 +142,7 @@ fn can_withdraw_from_my_complex_account() {
         rule!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
         rule!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
         rule!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
-        rule!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
+        rule!(require(auth2) || (require(auth0) && require(auth1))),
     ];
     let signer_public_keys_list = [
         vec![pk2.into()],
@@ -160,7 +169,7 @@ fn cannot_withdraw_from_my_complex_account() {
         rule!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
         rule!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
         rule!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
-        rule!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
+        rule!(require(auth2) || (require(auth0) && require(auth1))),
     ];
     let signer_public_keys_list = [vec![pk0.into()], vec![pk1.into()]];
 
@@ -184,10 +193,7 @@ fn can_withdraw_from_my_complex_account_2() {
             require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
                 || require(auth3.clone())
         ),
-        rule!(
-            (require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()))
-                || require(auth3.clone())
-        ),
+        rule!((require(auth0) && require(auth1) && require(auth2)) || require(auth3)),
     ];
     let signer_public_keys_list = [vec![pk0.into(), pk1.into(), pk2.into()], vec![pk3.into()]];
 
@@ -211,10 +217,7 @@ fn cannot_withdraw_from_my_complex_account_2() {
             require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
                 || require(auth3.clone())
         ),
-        rule!(
-            (require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()))
-                || require(auth3.clone())
-        ),
+        rule!((require(auth0) && require(auth1) && require(auth2)) || require(auth3)),
     ];
     let signer_public_keys_list = [
         vec![pk0.into()],
@@ -238,16 +241,16 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let xrd_auth = rule!(require(RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_from_account(RADIX_TOKEN, account);
+                builder.withdraw_from_account(account, RADIX_TOKEN);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
@@ -273,16 +276,16 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let mut test_runner = TestRunner::new(true, &mut store);
     let xrd_auth = rule!(require_amount(Decimal(I256::from(1)), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_from_account(RADIX_TOKEN, account);
+                builder.withdraw_from_account(account, RADIX_TOKEN);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });
@@ -308,16 +311,16 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     let mut test_runner = TestRunner::new(true, &mut store);
     let xrd_auth = rule!(require_amount(Decimal::from(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
-    let (_, _, other_account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
-        .call_method(SYS_FAUCET_COMPONENT, "free_xrd", args!())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
-                builder.withdraw_from_account(RADIX_TOKEN, account);
+                builder.withdraw_from_account(account, RADIX_TOKEN);
                 builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id));
                 builder
             });

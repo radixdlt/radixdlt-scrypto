@@ -1,11 +1,12 @@
 use clap::Parser;
 use radix_engine::types::*;
-use scrypto::prelude::Expression;
+use radix_engine_interface::core::*;
+use radix_engine_interface::data::*;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 
-/// Create a token with fixed supply
+/// Create a fungible token with fixed supply
 #[derive(Parser, Debug)]
 pub struct NewTokenFixed {
     /// The total supply
@@ -69,7 +70,7 @@ impl NewTokenFixed {
         };
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100.into())
             .new_token_fixed(metadata, self.total_supply)
             .call_method(
                 default_account,
@@ -84,6 +85,7 @@ impl NewTokenFixed {
             &self.manifest,
             self.trace,
             true,
+            false,
             out,
         )
         .map(|_| ())
