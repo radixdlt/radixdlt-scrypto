@@ -198,20 +198,16 @@ pub fn create_genesis() -> SystemTransaction {
     }
 }
 
-pub fn genesis_result(invoke_result: &Vec<Vec<u8>>) -> GenesisReceipt {
-    let faucet_package: PackageAddress = scrypto_decode(&invoke_result[0]).unwrap();
-    let account_package: PackageAddress = scrypto_decode(&invoke_result[1]).unwrap();
-    let (ecdsa_secp256k1_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[2]).unwrap();
-    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[3]).unwrap();
-    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[4]).unwrap();
-    let faucet_component: ComponentAddress = scrypto_decode(&invoke_result[6]).unwrap();
-    let epoch_manager: SystemAddress = scrypto_decode(&invoke_result[7]).unwrap();
-    let clock: SystemAddress = scrypto_decode(&invoke_result[8]).unwrap();
-    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) =
-        scrypto_decode(&invoke_result[9]).unwrap();
+pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
+    let faucet_package: PackageAddress = receipt.output(0);
+    let account_package: PackageAddress = receipt.output(1);
+    let (ecdsa_secp256k1_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(2);
+    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(3);
+    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(4);
+    let faucet_component: ComponentAddress = receipt.output(6);
+    let epoch_manager: SystemAddress = receipt.output(7);
+    let clock: SystemAddress = receipt.output(8);
+    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(9);
 
     GenesisReceipt {
         faucet_package,
@@ -281,9 +277,7 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
-        let commit_result = transaction_receipt.expect_commit();
-        let invoke_result = commit_result.outcome.expect_success();
-        let genesis_receipt = genesis_result(&invoke_result);
+        let genesis_receipt = genesis_result(&transaction_receipt);
 
         assert_eq!(genesis_receipt.faucet_package, FAUCET_PACKAGE);
         assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);

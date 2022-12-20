@@ -1,10 +1,7 @@
 use crate::engine::*;
 use crate::model::*;
-use crate::types::*;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::api::types::RENodeId;
-use sbor::rust::fmt::Debug;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {
     fn into(self) -> RuntimeError {
@@ -72,32 +69,6 @@ impl Into<ApplicationError> for AccessRulesChainError {
 impl Into<ApplicationError> for EpochManagerError {
     fn into(self) -> ApplicationError {
         ApplicationError::EpochManagerError(self)
-    }
-}
-
-pub trait NativeProcedure {
-    type Output: Debug;
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation, RuntimeError>
-            + EngineApi<RuntimeError>
-            + InvokableModel<RuntimeError>;
-}
-
-pub struct NativeExecutor<N: NativeProcedure>(pub N);
-
-impl<N: NativeProcedure> Executor for NativeExecutor<N> {
-    type Output = N::Output;
-
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation, RuntimeError>
-            + EngineApi<RuntimeError>
-            + InvokableModel<RuntimeError>,
-    {
-        self.0.main(system_api)
     }
 }
 

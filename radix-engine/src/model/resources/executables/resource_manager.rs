@@ -1,6 +1,6 @@
 use crate::engine::{
-    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags,
-    NativeExecutor, NativeProcedure, RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
+    RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, BucketSubstate, GlobalAddressSubstate, InvokeError, MetadataSubstate,
@@ -45,7 +45,7 @@ pub enum ResourceManagerError {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBucketBurnInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -55,15 +55,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBucketBurnInvocat
         let actor = ResolvedActor::function(NativeFunction::ResourceManager(
             ResourceManagerFunction::BurnBucket,
         ));
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ResourceManagerBucketBurnInvocation {
+impl Executor for ResourceManagerBucketBurnInvocation {
     type Output = ();
 
-    fn main<Y>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -75,7 +74,7 @@ impl NativeProcedure for ResourceManagerBucketBurnInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -85,8 +84,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateInvocation 
         let actor = ResolvedActor::function(NativeFunction::ResourceManager(
             ResourceManagerFunction::Create,
         ));
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
@@ -420,10 +418,10 @@ fn build_substates(
     (substate, vault_substate)
 }
 
-impl NativeProcedure for ResourceManagerCreateInvocation {
+impl Executor for ResourceManagerCreateInvocation {
     type Output = (ResourceAddress, Option<Bucket>);
 
-    fn main<Y>(
+    fn execute<Y>(
         self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Option<Bucket>), CallFrameUpdate), RuntimeError>
@@ -481,7 +479,7 @@ impl NativeProcedure for ResourceManagerCreateInvocation {
 pub struct ResourceManagerBurnExecutable(RENodeId, Bucket);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBurnInvocation {
-    type Exec = NativeExecutor<ResourceManagerBurnExecutable>;
+    type Exec = ResourceManagerBurnExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -497,18 +495,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBurnInvocation {
             NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerBurnExecutable(
-            resolved_receiver.receiver,
-            self.bucket,
-        ));
+        let executor = ResourceManagerBurnExecutable(resolved_receiver.receiver, self.bucket);
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ResourceManagerBurnExecutable {
+impl Executor for ResourceManagerBurnExecutable {
     type Output = ();
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -569,7 +564,7 @@ impl NativeProcedure for ResourceManagerBurnExecutable {
 pub struct ResourceManagerUpdateVaultAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateVaultAuthInvocation {
-    type Exec = NativeExecutor<ResourceManagerUpdateVaultAuthExecutable>;
+    type Exec = ResourceManagerUpdateVaultAuthExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -585,20 +580,20 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateVaultAuthIn
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateVaultAuth),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerUpdateVaultAuthExecutable(
+        let executor = ResourceManagerUpdateVaultAuthExecutable(
             resolved_receiver.receiver,
             self.method,
             self.access_rule,
-        ));
+        );
         Ok((actor, call_frame_update, executor))
     }
 }
 
 // TODO: Figure out better place to do vault auth (or child node authorization)
-impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
+impl Executor for ResourceManagerUpdateVaultAuthExecutable {
     type Output = ();
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -659,7 +654,7 @@ impl NativeProcedure for ResourceManagerUpdateVaultAuthExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerSetVaultAuthMutabilityInvocation {
-    type Exec = NativeExecutor<ResourceManagerLockVaultAuthExecutable>;
+    type Exec = ResourceManagerLockVaultAuthExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -675,21 +670,21 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerSetVaultAuthMutab
             NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerLockVaultAuthExecutable(
+        let executor = ResourceManagerLockVaultAuthExecutable(
             resolved_receiver.receiver,
             self.method,
             self.mutability,
-        ));
+        );
         Ok((actor, call_frame_update, executor))
     }
 }
 
 pub struct ResourceManagerLockVaultAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
 
-impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
+impl Executor for ResourceManagerLockVaultAuthExecutable {
     type Output = ();
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -750,7 +745,7 @@ impl NativeProcedure for ResourceManagerLockVaultAuthExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateVaultInvocation {
-    type Exec = NativeExecutor<ResourceManagerCreateVaultExecutable>;
+    type Exec = ResourceManagerCreateVaultExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -766,19 +761,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateVaultInvoca
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerCreateVaultExecutable(
-            resolved_receiver.receiver,
-        ));
+        let executor = ResourceManagerCreateVaultExecutable(resolved_receiver.receiver);
         Ok((actor, call_frame_update, executor))
     }
 }
 
 pub struct ResourceManagerCreateVaultExecutable(RENodeId);
 
-impl NativeProcedure for ResourceManagerCreateVaultExecutable {
+impl Executor for ResourceManagerCreateVaultExecutable {
     type Output = Vault;
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<(Vault, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Vault, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -804,7 +797,7 @@ impl NativeProcedure for ResourceManagerCreateVaultExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateBucketInvocation {
-    type Exec = NativeExecutor<ResourceManagerCreateBucketExecutable>;
+    type Exec = ResourceManagerCreateBucketExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -820,19 +813,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateBucketInvoc
             NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerCreateBucketExecutable(
-            resolved_receiver.receiver,
-        ));
+        let executor = ResourceManagerCreateBucketExecutable(resolved_receiver.receiver);
         Ok((actor, call_frame_update, executor))
     }
 }
 
 pub struct ResourceManagerCreateBucketExecutable(RENodeId);
 
-impl NativeProcedure for ResourceManagerCreateBucketExecutable {
+impl Executor for ResourceManagerCreateBucketExecutable {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -858,7 +849,7 @@ impl NativeProcedure for ResourceManagerCreateBucketExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintInvocation {
-    type Exec = NativeExecutor<ResourceManagerMintExecutable>;
+    type Exec = ResourceManagerMintExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -874,20 +865,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintInvocation {
             NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerMintExecutable(
-            resolved_receiver.receiver,
-            self.mint_params,
-        ));
+        let executor = ResourceManagerMintExecutable(resolved_receiver.receiver, self.mint_params);
         Ok((actor, call_frame_update, executor))
     }
 }
 
 pub struct ResourceManagerMintExecutable(RENodeId, MintParams);
 
-impl NativeProcedure for ResourceManagerMintExecutable {
+impl Executor for ResourceManagerMintExecutable {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -955,7 +943,7 @@ impl NativeProcedure for ResourceManagerMintExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetResourceTypeInvocation {
-    type Exec = NativeExecutor<ResourceManagerGetResourceTypeExecutable>;
+    type Exec = ResourceManagerGetResourceTypeExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -971,19 +959,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetResourceTypeIn
             NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerGetResourceTypeExecutable(
-            resolved_receiver.receiver,
-        ));
+        let executor = ResourceManagerGetResourceTypeExecutable(resolved_receiver.receiver);
         Ok((actor, call_frame_update, executor))
     }
 }
 
 pub struct ResourceManagerGetResourceTypeExecutable(RENodeId);
 
-impl NativeProcedure for ResourceManagerGetResourceTypeExecutable {
+impl Executor for ResourceManagerGetResourceTypeExecutable {
     type Output = ResourceType;
 
-    fn main<'a, Y>(
+    fn execute<'a, Y>(
         self,
         system_api: &mut Y,
     ) -> Result<(ResourceType, CallFrameUpdate), RuntimeError>
@@ -1001,7 +987,7 @@ impl NativeProcedure for ResourceManagerGetResourceTypeExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetTotalSupplyInvocation {
-    type Exec = NativeExecutor<ResourceManagerGetTotalSupplyExecutable>;
+    type Exec = ResourceManagerGetTotalSupplyExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -1017,19 +1003,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetTotalSupplyInv
             NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerGetTotalSupplyExecutable(
-            resolved_receiver.receiver,
-        ));
+        let executor = ResourceManagerGetTotalSupplyExecutable(resolved_receiver.receiver);
         Ok((actor, call_frame_update, executor))
     }
 }
 
 pub struct ResourceManagerGetTotalSupplyExecutable(RENodeId);
 
-impl NativeProcedure for ResourceManagerGetTotalSupplyExecutable {
+impl Executor for ResourceManagerGetTotalSupplyExecutable {
     type Output = Decimal;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1043,7 +1027,7 @@ impl NativeProcedure for ResourceManagerGetTotalSupplyExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateNonFungibleDataInvocation {
-    type Exec = NativeExecutor<ResourceManagerUpdateNonFungibleDataExecutable>;
+    type Exec = ResourceManagerUpdateNonFungibleDataExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -1059,21 +1043,21 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateNonFungible
             NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerUpdateNonFungibleDataExecutable(
+        let executor = ResourceManagerUpdateNonFungibleDataExecutable(
             resolved_receiver.receiver,
             self.id,
             self.data,
-        ));
+        );
         Ok((actor, call_frame_update, executor))
     }
 }
 
 pub struct ResourceManagerUpdateNonFungibleDataExecutable(RENodeId, NonFungibleId, Vec<u8>);
 
-impl NativeProcedure for ResourceManagerUpdateNonFungibleDataExecutable {
+impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
     type Output = ();
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1118,7 +1102,7 @@ impl NativeProcedure for ResourceManagerUpdateNonFungibleDataExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerNonFungibleExistsInvocation {
-    type Exec = NativeExecutor<ResourceManagerNonFungibleExistsExecutable>;
+    type Exec = ResourceManagerNonFungibleExistsExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -1134,20 +1118,18 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerNonFungibleExists
             NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerNonFungibleExistsExecutable(
-            resolved_receiver.receiver,
-            self.id,
-        ));
+        let executor =
+            ResourceManagerNonFungibleExistsExecutable(resolved_receiver.receiver, self.id);
         Ok((actor, call_frame_update, executor))
     }
 }
 
 pub struct ResourceManagerNonFungibleExistsExecutable(RENodeId, NonFungibleId);
 
-impl NativeProcedure for ResourceManagerNonFungibleExistsExecutable {
+impl Executor for ResourceManagerNonFungibleExistsExecutable {
     type Output = bool;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1178,7 +1160,7 @@ impl NativeProcedure for ResourceManagerNonFungibleExistsExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetNonFungibleInvocation {
-    type Exec = NativeExecutor<ResourceManagerGetNonFungibleExecutable>;
+    type Exec = ResourceManagerGetNonFungibleExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -1194,20 +1176,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetNonFungibleInv
             NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
             resolved_receiver,
         );
-        let executor = NativeExecutor(ResourceManagerGetNonFungibleExecutable(
-            resolved_receiver.receiver,
-            self.id,
-        ));
+        let executor = ResourceManagerGetNonFungibleExecutable(resolved_receiver.receiver, self.id);
         Ok((actor, call_frame_update, executor))
     }
 }
 
 pub struct ResourceManagerGetNonFungibleExecutable(RENodeId, NonFungibleId);
 
-impl NativeProcedure for ResourceManagerGetNonFungibleExecutable {
+impl Executor for ResourceManagerGetNonFungibleExecutable {
     type Output = [Vec<u8>; 2];
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

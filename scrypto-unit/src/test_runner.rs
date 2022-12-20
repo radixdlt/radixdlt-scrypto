@@ -887,7 +887,7 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        scrypto_decode(&receipt.expect_commit_success()[0]).unwrap()
+        receipt.output(0)
     }
 }
 

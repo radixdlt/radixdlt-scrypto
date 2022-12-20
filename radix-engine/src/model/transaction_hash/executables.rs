@@ -12,7 +12,7 @@ pub enum TransactionHashError {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGetInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -26,16 +26,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGetInvocation {
             ResolvedReceiver::new(RENodeId::TransactionHash(self.receiver)),
         );
         let call_frame_update = CallFrameUpdate::empty();
-        let executor = NativeExecutor(self);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for TransactionHashGetInvocation {
+impl Executor for TransactionHashGetInvocation {
     type Output = Hash;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
@@ -52,7 +51,7 @@ impl NativeProcedure for TransactionHashGetInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGenerateUuidInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -67,16 +66,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGenerateUuidInvoc
         );
 
         let call_frame_update = CallFrameUpdate::empty();
-        let executor = NativeExecutor(self);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for TransactionHashGenerateUuidInvocation {
+impl Executor for TransactionHashGenerateUuidInvocation {
     type Output = u128;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {

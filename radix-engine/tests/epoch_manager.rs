@@ -21,8 +21,7 @@ fn get_epoch_should_succeed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let outputs = receipt.expect_commit_success();
-    let epoch: u64 = scrypto_decode(&outputs[1]).unwrap();
+    let epoch: u64 = receipt.output(1);
     assert_eq!(epoch, 0);
 }
 
