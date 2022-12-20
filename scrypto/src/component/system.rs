@@ -18,7 +18,7 @@ use scrypto::runtime::Runtime;
 /// TODO: add mutex/lock for non-WebAssembly target
 pub struct ComponentSystem {
     packages: HashMap<PackageAddress, BorrowedPackage>,
-    components: HashMap<ComponentAddress, BorrowedGlobalComponent>,
+    components: HashMap<ComponentAddress, GlobalComponentRef>,
 }
 
 impl ComponentSystem {
@@ -38,13 +38,10 @@ impl ComponentSystem {
     }
 
     /// Returns a reference to a component.
-    pub fn get_component(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> &BorrowedGlobalComponent {
+    pub fn get_component(&mut self, component_address: ComponentAddress) -> &GlobalComponentRef {
         self.components
             .entry(component_address)
-            .or_insert(BorrowedGlobalComponent(component_address))
+            .or_insert(GlobalComponentRef(component_address))
     }
 
     /// Instantiates a component.

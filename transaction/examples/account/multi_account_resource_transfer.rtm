@@ -6,13 +6,21 @@
 # Account C: 50 XRD
 # Which is a total of 330 XRD. 
 
-# The account component withdraw methods which have been optimized to also lock a fee in a single 
-# call. In this call, we lock a fee of 10 XRD and also withdraw 330 XRD from the account.
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
 CALL_METHOD 
     ComponentAddress("{this_account_component_address}") 
-    "lock_fee_and_withdraw_by_amount"
-    Decimal("10")                                   # Amount of XRD to lock for fees
-    Decimal("330")                                  # Amount of XRD to withdraw
+    "lock_fee"
+    Decimal("10");
+
+# Withdrawing 330 XRD from the account component
+CALL_METHOD 
+    ComponentAddress("{this_account_component_address}") 
+    "withdraw_by_amount"
+    Decimal("330")
     ResourceAddress("{xrd_resource_address}");
 
 # Taking 150 XRD from the worktop and depositing them into Account A

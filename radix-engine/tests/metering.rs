@@ -17,7 +17,7 @@ fn test_loop() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -43,7 +43,7 @@ fn test_loop_out_of_cost_unit() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 45.into())
@@ -68,7 +68,7 @@ fn test_recursion() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -92,7 +92,7 @@ fn test_recursion_stack_overflow() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -116,7 +116,7 @@ fn test_grow_memory() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -140,7 +140,7 @@ fn test_grow_memory_out_of_cost_unit() {
         generate_single_function_abi("Test", "f", Type::Unit),
         BTreeMap::new(),
         BTreeMap::new(),
-        AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+        AccessRules::new(),
     );
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
@@ -189,7 +189,7 @@ fn test_basic_transfer() {
         + 28500 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 299779 /* run_wasm */
+        + 299767 /* run_wasm */
         + 10000 /* tx_base_fee */
         + 318 /* tx_payload_cost */
         + 3750 /* tx_signature_verification */
@@ -222,7 +222,7 @@ fn test_publish_large_package() {
             BTreeMap::new(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+            AccessRules::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
