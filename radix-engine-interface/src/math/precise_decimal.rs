@@ -177,7 +177,7 @@ impl PreciseDecimal {
         }
     }
 
-    /// Calculates power usingexponentiation by squaring.
+    /// Calculates power using exponentiation by squaring.
     pub fn powi(&self, exp: i64) -> Self {
         let one_768 = I768::from(Self::ONE.0);
         let base_768 = I768::from(self.0);
@@ -189,16 +189,17 @@ impl PreciseDecimal {
             let pdec_512: I512 = I512::try_from(&one_768 * &one_768 / base_768).expect("Overflow");
             return PreciseDecimal(pdec_512).powi(mul(exp, -1));
         }
+        if exp == 0 {
+            return Self::ONE;
+        }
         if exp == 1 {
-            return *self;
+            return *self
         }
         if exp % 2 == 0 {
-            let pdec_512: I512 =
-                I512::try_from(&base_768 * &base_768 / &one_768).expect("Overflow");
+            let pdec_512: I512 = I512::try_from(&base_768 * &base_768 / &one_768).expect("Overflow");
             return PreciseDecimal(pdec_512).powi(div(exp, 2));
         } else {
-            let sub_pdec_512: I512 =
-                I512::try_from(&base_768 * &base_768 / &one_768).expect("Overflow");
+            let sub_pdec_512: I512 = I512::try_from(&base_768 * &base_768 / &one_768).expect("Overflow");
             let sub_pdec = PreciseDecimal(sub_pdec_512);
             return *self * sub_pdec.powi(div(sub(exp, 1), 2));
         }
