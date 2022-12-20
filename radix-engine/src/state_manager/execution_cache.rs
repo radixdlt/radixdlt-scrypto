@@ -4,7 +4,7 @@ use crate::state_manager::{
 
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
-use std::hash::Hash;
+use core::hash::Hash;
 
 pub struct ExecutionCache<H> {
     root_accumulator_hash: H,

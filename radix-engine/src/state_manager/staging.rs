@@ -2,6 +2,7 @@ use crate::transaction::TransactionReceipt;
 use crate::types::*;
 use crate::{ledger::*, transaction::TransactionResult};
 
+use sbor::rust::vec::Vec;
 use im::hashmap::HashMap as ImmutableHashMap;
 use slotmap::{new_key_type, SlotMap};
 
@@ -343,6 +344,7 @@ mod tests {
     use radix_engine_interface::model::ResourceAddress;
     use sbor::rust::collections::BTreeMap;
     use sbor::rust::collections::HashMap;
+    use sbor::rust::vec::Vec;
 
     fn build_transaction_receipt_from_state_diff(state_diff: StateDiff) -> TransactionReceipt {
         TransactionReceipt {
