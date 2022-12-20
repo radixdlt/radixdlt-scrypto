@@ -3,6 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::transaction::ExecutionConfig;
 use radix_engine_interface::api::types::VaultId;
+use sbor::rust::vec::Vec;
 
 pub struct KernelModule {
     trace: bool,
