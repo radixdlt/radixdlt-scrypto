@@ -215,7 +215,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-derive"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -224,7 +224,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bech32",
  "hex",
@@ -254,7 +254,7 @@ checksum = "4501abdff3ae82a1c1b477a17252eb69cee9e66eb915c1abaa4f44d873df9f09"
 
 [[package]]
 name = "sbor"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "hashbrown",
  "sbor-derive",
@@ -263,7 +263,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -272,7 +272,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bech32",
  "hex",
@@ -292,7 +292,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-abi"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "sbor",
  "serde",
@@ -300,7 +300,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -410,7 +410,7 @@ checksum = "6ceab39d59e4c9499d4e5a8ee0e2735b891bb7308ac83dfb4e80cad195c9f6f3"
 
 [[package]]
 name = "utils"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "sbor",
 ]
