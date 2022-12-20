@@ -1,31 +1,50 @@
 use colored::*;
-use scrypto::core::NetworkDefinition;
+use radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
+use radix_engine_interface::api::types::{GlobalAddress, Level};
+use radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
+use radix_engine_interface::model::*;
+use transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 use transaction::model::*;
+use utils::ContextualDisplay;
 
-use crate::engine::{RejectionError, ResourceChange, RuntimeError};
+use crate::engine::{RejectionError, ResourceChange, RuntimeError, TrackedEvent};
 use crate::fee::FeeSummary;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionContents {
     pub instructions: Vec<Instruction>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub application_logs: Vec<(Level, String)>,
+    pub events: Vec<TrackedEvent>,
 }
 
 /// Captures whether a transaction should be committed, and its other results
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+impl TransactionResult {
+    pub fn expect_commit(&self) -> &CommitResult {
+        match self {
+            TransactionResult::Commit(c) => c,
+            TransactionResult::Reject(_) => panic!("Transaction was rejected"),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
@@ -34,26 +53,80 @@ pub struct CommitResult {
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum TransactionOutcome {
     Success(Vec<Vec<u8>>),
     Failure(RuntimeError),
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+impl TransactionOutcome {
+    pub fn expect_success(&self) -> &Vec<Vec<u8>> {
+        match self {
+            TransactionOutcome::Success(results) => results,
+            TransactionOutcome::Failure(error) => panic!("Outcome was a failure: {}", error),
+        }
+    }
+
+    pub fn success_or_else<E, F: FnOnce(&RuntimeError) -> E>(
+        &self,
+        f: F,
+    ) -> Result<&Vec<Vec<u8>>, E> {
+        match self {
+            TransactionOutcome::Success(results) => Ok(results),
+            TransactionOutcome::Failure(error) => Err(f(error)),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
+    pub new_system_addresses: Vec<SystemAddress>,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+impl EntityChanges {
+    pub fn new(new_global_addresses: Vec<GlobalAddress>) -> Self {
+        let mut entity_changes = Self {
+            new_package_addresses: Vec::new(),
+            new_component_addresses: Vec::new(),
+            new_resource_addresses: Vec::new(),
+            new_system_addresses: Vec::new(),
+        };
+
+        for new_global_address in new_global_addresses {
+            match new_global_address {
+                GlobalAddress::Package(package_address) => {
+                    entity_changes.new_package_addresses.push(package_address)
+                }
+                GlobalAddress::Component(component_address) => entity_changes
+                    .new_component_addresses
+                    .push(component_address),
+                GlobalAddress::Resource(resource_address) => {
+                    entity_changes.new_resource_addresses.push(resource_address)
+                }
+                GlobalAddress::System(system_address) => {
+                    entity_changes.new_system_addresses.push(system_address)
+                }
+            }
+        }
+
+        entity_changes
+    }
+}
+
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
 
 /// Represents a transaction receipt.
-#[derive(TypeId, Encode, Decode)]
+#[derive(Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionReceipt {
     pub contents: TransactionContents,
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
@@ -80,6 +153,23 @@ impl TransactionReceipt {
         match &self.result {
             TransactionResult::Commit(..) => panic!("Expected rejection but was commit"),
             TransactionResult::Reject(ref r) => &r.error,
+        }
+    }
+
+    pub fn expect_specific_rejection<F>(&self, f: F)
+    where
+        F: FnOnce(&RejectionError) -> bool,
+    {
+        match &self.result {
+            TransactionResult::Commit(..) => panic!("Expected rejection but was committed"),
+            TransactionResult::Reject(result) => {
+                if !f(&result.error) {
+                    panic!(
+                        "Expected specific rejection but was different error:\n{:?}",
+                        self
+                    );
+                }
+            }
         }
     }
 
@@ -127,7 +217,7 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn output<T: Decode>(&self, nth: usize) -> T {
+    pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
         scrypto_decode::<T>(&self.expect_commit_success()[nth][..])
             .expect("Wrong instruction output type!")
     }
@@ -146,6 +236,11 @@ impl TransactionReceipt {
         let commit = self.expect_commit();
         &commit.entity_changes.new_resource_addresses
     }
+
+    pub fn new_system_addresses(&self) -> &Vec<SystemAddress> {
+        let commit = self.expect_commit();
+        &commit.entity_changes.new_system_addresses
+    }
 }
 
 macro_rules! prefix {
@@ -160,9 +255,23 @@ macro_rules! prefix {
 
 impl fmt::Debug for TransactionReceipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.display(NO_NETWORK))
+    }
+}
+
+impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
+    type Error = fmt::Error;
+
+    fn contextual_format<F: fmt::Write>(
+        &self,
+        f: &mut F,
+        context: &AddressDisplayContext<'a>,
+    ) -> Result<(), Self::Error> {
         let contents = &self.contents;
         let execution = &self.execution;
         let result = &self.result;
+
+        let bech32_encoder = context.encoder;
 
         write!(
             f,
@@ -179,19 +288,21 @@ impl fmt::Debug for TransactionReceipt {
 
         write!(
             f,
-            "\n{} {} XRD burned, {} XRD tipped to validators",
+            "\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt",
             "Transaction Fee:".bold().green(),
-            execution.fee_summary.burned,
-            execution.fee_summary.tipped,
+            execution.fee_summary.total_execution_cost_xrd,
+            execution.fee_summary.total_royalty_cost_xrd,
+            execution.fee_summary.bad_debt_xrd,
         )?;
 
         write!(
             f,
-            "\n{} {} limit, {} consumed, {} XRD per cost unit",
+            "\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip",
             "Cost Units:".bold().green(),
             execution.fee_summary.cost_unit_limit,
             execution.fee_summary.cost_unit_consumed,
             execution.fee_summary.cost_unit_price,
+            execution.fee_summary.tip_percentage
         )?;
 
         write!(
@@ -217,60 +328,16 @@ impl fmt::Debug for TransactionReceipt {
             )?;
         }
 
-        // TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
-        let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
+        let mut decompilation_context =
+            DecompilationContext::new_with_optional_network(bech32_encoder);
 
         write!(f, "\n{}", "Instructions:".bold().green())?;
         for (i, inst) in contents.instructions.iter().enumerate() {
-            write!(
-                f,
-                "\n{} {}",
-                prefix!(i, contents.instructions),
-                match inst {
-                    Instruction::CallFunction {
-                        fn_identifier: FnIdentifier::Scrypto {
-                            package_address,
-                            blueprint_name,
-                            ident,
-                        },
-                        args,
-                    } => format!(
-                        "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, args: {:?} }}",
-                        bech32_encoder.encode_package_address(&package_address),
-                        blueprint_name,
-                        ident,
-                        ScryptoValue::from_slice(&args).expect("Failed parse call data")
-                    ),
-                    Instruction::CallMethod {
-                        method_identifier,
-                        args,
-                    } => {
-                        match method_identifier {
-                            MethodIdentifier::Scrypto {
-                                component_address,
-                                ident
-                            } => {
-                                format!(
-                                    "CallMethod {{ component_address: {}, method_name: {:?}, args: {:?} }}",
-                                    bech32_encoder.encode_component_address(&component_address),
-                                    ident,
-                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
-                                )
-                            },
-                            MethodIdentifier::Native { receiver, native_fn_identifier } => {
-                                format!(
-                                    "CallNativeMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}",
-                                    receiver,
-                                    native_fn_identifier,
-                                    ScryptoValue::from_slice(&args).expect("Failed to parse call data")
-                                )
-                            }
-                        }
-                    },
-                    Instruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
-                    i @ _ => format!("{:?}", i),
-                }
-            )?;
+            write!(f, "\n{} ", prefix!(i, contents.instructions))?;
+            let res = decompile_instruction(f, inst, &mut decompilation_context);
+            if let Err(err) = res {
+                write!(f, "[INVALID_INSTRUCTION({:?})]", err)?
+            }
         }
 
         if let TransactionResult::Commit(c) = &result {
@@ -279,9 +346,11 @@ impl fmt::Debug for TransactionReceipt {
                 for (i, output) in outputs.iter().enumerate() {
                     write!(
                         f,
-                        "\n{} {:?}",
+                        "\n{} {}",
                         prefix!(i, outputs),
-                        ScryptoValue::from_slice(output).expect("Failed to parse return data")
+                        IndexedScryptoValue::from_slice(output)
+                            .expect("Failed to parse return data")
+                            .display(decompilation_context.for_value_display())
                     )?;
                 }
             }
@@ -302,7 +371,7 @@ impl fmt::Debug for TransactionReceipt {
                     f,
                     "\n{} Package: {}",
                     prefix!(i, c.entity_changes.new_package_addresses),
-                    bech32_encoder.encode_package_address(package_address)
+                    package_address.display(bech32_encoder)
                 )?;
             }
             for (i, component_address) in
@@ -312,7 +381,7 @@ impl fmt::Debug for TransactionReceipt {
                     f,
                     "\n{} Component: {}",
                     prefix!(i, c.entity_changes.new_component_addresses),
-                    bech32_encoder.encode_component_address(component_address)
+                    component_address.display(bech32_encoder)
                 )?;
             }
             for (i, resource_address) in c.entity_changes.new_resource_addresses.iter().enumerate()
@@ -321,7 +390,7 @@ impl fmt::Debug for TransactionReceipt {
                     f,
                     "\n{} Resource: {}",
                     prefix!(i, c.entity_changes.new_resource_addresses),
-                    bech32_encoder.encode_resource_address(resource_address)
+                    resource_address.display(bech32_encoder)
                 )?;
             }
         }

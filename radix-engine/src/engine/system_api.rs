@@ -1,83 +1,107 @@
 use crate::engine::node::*;
 use crate::engine::*;
-use crate::fee::FeeReserve;
-use crate::model::AuthZone;
-use crate::model::ResourceContainer;
+use crate::model::{Resource, SubstateRef, SubstateRefMut};
 use crate::types::*;
-use crate::wasm::*;
+use crate::wasm::WasmEngine;
+use bitflags::bitflags;
+use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
 
-pub trait SystemApi<'s, W, I, R>
-where
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    R: FeeReserve,
-{
-    // TODO: possible to consider AuthZone as a RENode?
-    fn auth_zone(&mut self, frame_id: usize) -> &mut AuthZone;
+bitflags! {
+    #[derive(Encode, Decode, TypeId)]
+    pub struct LockFlags: u32 {
+        /// Allows the locked substate to be mutated
+        const MUTABLE = 0b00000001;
+        /// Checks that the substate locked is unmodified from the beginning of
+        /// the transaction. This is used mainly for locking fees in vaults which
+        /// requires this in order to be able to support rollbacks
+        const UNMODIFIED_BASE = 0b00000010;
+        /// Forces a write of a substate even on a transaction failure
+        /// Currently used for vault fees.
+        const FORCE_WRITE = 0b00000100;
+    }
+}
+
+impl LockFlags {
+    pub fn read_only() -> Self {
+        LockFlags::empty()
+    }
+}
+
+pub struct LockInfo {
+    pub offset: SubstateOffset,
+}
+
+pub trait SystemApi {
+    fn execute_in_mode<X, RTN, E>(
+        &mut self,
+        execution_mode: ExecutionMode,
+        execute: X,
+    ) -> Result<RTN, RuntimeError>
+    where
+        RuntimeError: From<E>,
+        X: FnOnce(&mut Self) -> Result<RTN, E>;
 
     fn consume_cost_units(&mut self, units: u32) -> Result<(), RuntimeError>;
 
     fn lock_fee(
         &mut self,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -> Result<ResourceContainer, RuntimeError>;
+    ) -> Result<Resource, RuntimeError>;
 
-    fn invoke_function(
+    /// Retrieve the running actor for the current frame
+    fn get_actor(&self) -> &REActor;
+
+    /// Retrieves all nodes referenceable by the current frame
+    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError>;
+
+    fn get_visible_node_data(
         &mut self,
-        fn_identifier: FnIdentifier,
-        input: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError>;
-
-    fn invoke_method(
-        &mut self,
-        receiver: Receiver,
-        function: FnIdentifier,
-        input: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError>;
-
-    // TODO: Convert to substate_borrow
-    fn borrow_node(&mut self, node_id: &RENodeId) -> Result<RENodeRef<'_, 's, R>, RuntimeError>;
+        node_id: RENodeId,
+    ) -> Result<RENodeVisibilityOrigin, RuntimeError>;
 
     /// Removes an RENode and all of it's children from the Heap
-    fn node_drop(&mut self, node_id: &RENodeId) -> Result<HeapRootRENode, RuntimeError>;
+    fn drop_node(&mut self, node_id: RENodeId) -> Result<HeapRENode, RuntimeError>;
 
-    /// Creates a new RENode and places it in the Heap
-    fn node_create(&mut self, re_node: HeapRENode) -> Result<RENodeId, RuntimeError>;
+    /// Allocates a new node id useable for create_node
+    fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError>;
 
-    /// Moves an RENode from Heap to Store
-    fn node_globalize(&mut self, node_id: RENodeId) -> Result<(), RuntimeError>;
+    /// Creates a new RENode
+    /// TODO: Remove, replace with lock_substate + get_ref_mut use
+    fn create_node(&mut self, node_id: RENodeId, re_node: RENode) -> Result<(), RuntimeError>;
 
-    /// Borrow a mutable substate
-    fn substate_borrow_mut(
+    /// Locks a visible substate
+    fn lock_substate(
         &mut self,
-        substate_id: &SubstateId,
-    ) -> Result<NativeSubstateRef, RuntimeError>;
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        flags: LockFlags,
+    ) -> Result<LockHandle, RuntimeError>;
 
-    /// Return a mutable substate
-    fn substate_return_mut(&mut self, val_ref: NativeSubstateRef) -> Result<(), RuntimeError>;
+    fn get_lock_info(&mut self, lock_handle: LockHandle) -> Result<LockInfo, RuntimeError>;
 
-    // TODO: Convert use substate_borrow interface
-    fn substate_read(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
-    fn substate_write(
-        &mut self,
-        substate_id: SubstateId,
-        value: ScryptoValue,
-    ) -> Result<(), RuntimeError>;
-    fn substate_take(&mut self, substate_id: SubstateId) -> Result<ScryptoValue, RuntimeError>;
+    /// Drops a lock
+    fn drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), RuntimeError>;
 
-    fn transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
+    /// Get a non-mutable reference to a locked substate
+    fn get_ref(&mut self, lock_handle: LockHandle) -> Result<SubstateRef, RuntimeError>;
+
+    /// Get a mutable reference to a locked substate
+    fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
+
+    fn read_transaction_hash(&mut self) -> Result<Hash, RuntimeError>;
 
     fn read_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError>;
 
     fn generate_uuid(&mut self) -> Result<u128, RuntimeError>;
 
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError>;
+    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError>;
+}
 
-    fn check_access_rule(
-        &mut self,
-        access_rule: AccessRule,
-        proof_ids: Vec<ProofId>,
-    ) -> Result<bool, RuntimeError>;
+// TODO: Clean this up
+pub trait ResolverApi<W: WasmEngine> {
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;
+    fn vm(&mut self) -> &ScryptoInterpreter<W>;
+    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
 }

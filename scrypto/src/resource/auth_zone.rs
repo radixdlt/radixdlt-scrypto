@@ -1,40 +1,9 @@
+use radix_engine_interface::api::api::{EngineApi, Invokable};
+use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
-use sbor::*;
-use scrypto::core::NativeFnIdentifier;
-
-use crate::core::{AuthZoneFnIdentifier, FnIdentifier, Receiver};
-use crate::engine::{api::*, call_engine};
-use crate::math::Decimal;
-use crate::native_functions;
-use crate::resource::*;
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePopInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZonePushInput {
-    pub proof: Proof,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofInput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofByAmountInput {
-    pub amount: Decimal,
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneCreateProofByIdsInput {
-    pub ids: BTreeSet<NonFungibleId>,
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct AuthZoneClearInput {}
+use scrypto::engine::scrypto_env::ScryptoEnv;
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
@@ -44,44 +13,80 @@ pub struct AuthZoneClearInput {}
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    native_functions! {
-        Receiver::CurrentAuthZone, NativeFnIdentifier::AuthZone => {
-            pub fn pop() -> Proof {
-                AuthZoneFnIdentifier::Pop,
-                AuthZonePopInput {}
-            }
+    pub fn push<P: Into<Proof>>(proof: P) {
+        let mut env = ScryptoEnv;
+        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
 
-            pub fn create_proof(resource_address: ResourceAddress) -> Proof {
-                AuthZoneFnIdentifier::CreateProof,
-                AuthZoneCreateProofInput {
-                    resource_address
-                }
-            }
+        let proof: Proof = proof.into();
 
-            pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-                AuthZoneFnIdentifier::CreateProofByAmount,
-                AuthZoneCreateProofByAmountInput {
-                    amount, resource_address
-                }
-            }
-
-            pub fn create_proof_by_ids(ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress) -> Proof {
-                AuthZoneFnIdentifier::CreateProofByIds,
-                AuthZoneCreateProofByIdsInput {
-                    ids: ids.clone(),
-                    resource_address
-                }
-            }
-        }
+        env.invoke(AuthZonePushInvocation {
+            receiver: node_id.into(),
+            proof,
+        })
+        .unwrap();
     }
 
-    pub fn push<P: Into<Proof>>(proof: P) {
-        let proof: Proof = proof.into();
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::CurrentAuthZone,
-            FnIdentifier::Native(NativeFnIdentifier::AuthZone(AuthZoneFnIdentifier::Push)),
-            scrypto::buffer::scrypto_encode(&(AuthZonePushInput { proof })),
-        );
-        call_engine(input)
+    pub fn pop() -> Proof {
+        let mut env = ScryptoEnv;
+        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
+        env.invoke(AuthZonePopInvocation {
+            receiver: node_id.into(),
+        })
+        .unwrap()
+    }
+
+    pub fn create_proof(resource_address: ResourceAddress) -> Proof {
+        let mut env = ScryptoEnv;
+        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
+        env.invoke(AuthZoneCreateProofInvocation {
+            receiver: node_id.into(),
+            resource_address,
+        })
+        .unwrap()
+    }
+
+    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
+        let mut env = ScryptoEnv;
+        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
+        env.invoke(AuthZoneCreateProofByAmountInvocation {
+            receiver: node_id.into(),
+            amount,
+            resource_address,
+        })
+        .unwrap()
+    }
+
+    pub fn create_proof_by_ids(
+        ids: &BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
+    ) -> Proof {
+        let mut env = ScryptoEnv;
+        let owned_node_ids = env.sys_get_visible_nodes().unwrap();
+        let node_id = owned_node_ids
+            .into_iter()
+            .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+            .expect("AuthZone does not exist");
+        env.invoke(AuthZoneCreateProofByIdsInvocation {
+            receiver: node_id.into(),
+            ids: ids.clone(),
+            resource_address,
+        })
+        .unwrap()
     }
 }

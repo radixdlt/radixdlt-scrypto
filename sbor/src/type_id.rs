@@ -1,9 +1,86 @@
+use crate::constants::*;
+use crate::rust::borrow::Cow;
+use crate::rust::borrow::ToOwned;
 use crate::rust::boxed::Box;
 use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
+use crate::rust::fmt::Debug;
 use crate::rust::rc::Rc;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type") // See https://serde.rs/enum-representations.html
+)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SborTypeId<X: CustomTypeId> {
+    Unit,
+    Bool,
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
+    String,
+    Enum,
+    Array,
+    Tuple,
+    Custom(X),
+}
+
+impl<X: CustomTypeId> SborTypeId<X> {
+    pub fn as_u8(&self) -> u8 {
+        match self {
+            SborTypeId::Unit => TYPE_UNIT,
+            SborTypeId::Bool => TYPE_BOOL,
+            SborTypeId::I8 => TYPE_I8,
+            SborTypeId::I16 => TYPE_I16,
+            SborTypeId::I32 => TYPE_I32,
+            SborTypeId::I64 => TYPE_I64,
+            SborTypeId::I128 => TYPE_I128,
+            SborTypeId::U8 => TYPE_U8,
+            SborTypeId::U16 => TYPE_U16,
+            SborTypeId::U32 => TYPE_U32,
+            SborTypeId::U64 => TYPE_U64,
+            SborTypeId::U128 => TYPE_U128,
+            SborTypeId::String => TYPE_STRING,
+            SborTypeId::Tuple => TYPE_TUPLE,
+            SborTypeId::Enum => TYPE_ENUM,
+            SborTypeId::Array => TYPE_ARRAY,
+            SborTypeId::Custom(type_id) => type_id.as_u8(),
+        }
+    }
+
+    pub fn from_u8(id: u8) -> Option<Self> {
+        match id {
+            TYPE_UNIT => Some(SborTypeId::Unit),
+            TYPE_BOOL => Some(SborTypeId::Bool),
+            TYPE_I8 => Some(SborTypeId::I8),
+            TYPE_I16 => Some(SborTypeId::I16),
+            TYPE_I32 => Some(SborTypeId::I32),
+            TYPE_I64 => Some(SborTypeId::I64),
+            TYPE_I128 => Some(SborTypeId::I128),
+            TYPE_U8 => Some(SborTypeId::U8),
+            TYPE_U16 => Some(SborTypeId::U16),
+            TYPE_U32 => Some(SborTypeId::U32),
+            TYPE_U64 => Some(SborTypeId::U64),
+            TYPE_U128 => Some(SborTypeId::U128),
+            TYPE_STRING => Some(SborTypeId::String),
+            TYPE_TUPLE => Some(SborTypeId::Tuple),
+            TYPE_ENUM => Some(SborTypeId::Enum),
+            TYPE_ARRAY => Some(SborTypeId::Array),
+            type_id if type_id >= CUSTOM_TYPE_START => X::from_u8(type_id).map(SborTypeId::Custom),
+            _ => None,
+        }
+    }
+}
 
 // primitive types
 pub const TYPE_UNIT: u8 = 0x00;
@@ -19,163 +96,152 @@ pub const TYPE_U32: u8 = 0x09;
 pub const TYPE_U64: u8 = 0x0a;
 pub const TYPE_U128: u8 = 0x0b;
 pub const TYPE_STRING: u8 = 0x0c;
-
-// struct and enum
-pub const TYPE_STRUCT: u8 = 0x10;
-pub const TYPE_ENUM: u8 = 0x11;
-pub const TYPE_OPTION: u8 = 0x12; // enum Option<T> { Some(T), None }
-pub const TYPE_RESULT: u8 = 0x13; // enum Result<T, E> { Ok(T), Err(E) }
-
 // composite types
+pub const TYPE_TUPLE: u8 = 0x21; // Any "product type" - Tuples and Structs (T1, T2, T3)
+pub const TYPE_ENUM: u8 = 0x11;
 pub const TYPE_ARRAY: u8 = 0x20; // [T; N]
-pub const TYPE_TUPLE: u8 = 0x21; // (A, B, C)
-
-// collections
-pub const TYPE_LIST: u8 = 0x30;
-pub const TYPE_SET: u8 = 0x31;
-pub const TYPE_MAP: u8 = 0x32;
-
-// custom types start from 0x80 and values are encoded as `len + data`
-pub const TYPE_CUSTOM_START: u8 = 0x80;
-
-// enum variant indices
-pub const OPTION_VARIANT_SOME: u8 = 0x00;
-pub const OPTION_VARIANT_NONE: u8 = 0x01;
-pub const RESULT_VARIANT_OK: u8 = 0x00;
-pub const RESULT_VARIANT_ERR: u8 = 0x01;
 
 /// A SBOR type ID.
-pub trait TypeId {
-    fn type_id() -> u8;
+pub trait TypeId<X: CustomTypeId> {
+    fn type_id() -> SborTypeId<X>;
 }
 
-impl TypeId for () {
+impl<X: CustomTypeId> TypeId<X> for () {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_UNIT
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Unit
     }
 }
 
-impl TypeId for bool {
+impl<X: CustomTypeId> TypeId<X> for bool {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_BOOL
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Bool
     }
 }
 
-impl TypeId for i8 {
+impl<X: CustomTypeId> TypeId<X> for i8 {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_I8
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::I8
     }
 }
-impl TypeId for u8 {
+impl<X: CustomTypeId> TypeId<X> for u8 {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_U8
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::U8
     }
 }
 
 macro_rules! type_id_int {
-    ($type:ident, $type_id:ident) => {
-        impl TypeId for $type {
+    ($type:ty, $type_id:expr) => {
+        impl<X: CustomTypeId> TypeId<X> for $type {
             #[inline]
-            fn type_id() -> u8 {
+            fn type_id() -> SborTypeId<X> {
                 $type_id
             }
         }
     };
 }
 
-type_id_int!(i16, TYPE_I16);
-type_id_int!(i32, TYPE_I32);
-type_id_int!(i64, TYPE_I64);
-type_id_int!(i128, TYPE_I128);
-type_id_int!(u16, TYPE_U16);
-type_id_int!(u32, TYPE_U32);
-type_id_int!(u64, TYPE_U64);
-type_id_int!(u128, TYPE_U128);
+type_id_int!(i16, SborTypeId::I16);
+type_id_int!(i32, SborTypeId::I32);
+type_id_int!(i64, SborTypeId::I64);
+type_id_int!(i128, SborTypeId::I128);
+type_id_int!(u16, SborTypeId::U16);
+type_id_int!(u32, SborTypeId::U32);
+type_id_int!(u64, SborTypeId::U64);
+type_id_int!(u128, SborTypeId::U128);
 
-impl TypeId for isize {
+impl<X: CustomTypeId> TypeId<X> for isize {
     #[inline]
-    fn type_id() -> u8 {
-        i64::type_id()
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::I64
     }
 }
 
-impl TypeId for usize {
+impl<X: CustomTypeId> TypeId<X> for usize {
     #[inline]
-    fn type_id() -> u8 {
-        u64::type_id()
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::U64
     }
 }
 
-impl TypeId for str {
+impl<X: CustomTypeId> TypeId<X> for str {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_STRING
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::String
     }
 }
 
-impl TypeId for &str {
+impl<X: CustomTypeId> TypeId<X> for &str {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_STRING
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::String
     }
 }
 
-impl TypeId for String {
+impl<X: CustomTypeId> TypeId<X> for String {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_STRING
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::String
     }
 }
 
-impl<T> TypeId for Option<T> {
+impl<X: CustomTypeId, T> TypeId<X> for Option<T> {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_OPTION
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Enum
     }
 }
 
-impl<T: TypeId> TypeId for Box<T> {
+impl<'a, X: CustomTypeId, B: ?Sized + 'a + ToOwned + TypeId<X>> TypeId<X> for Cow<'a, B> {
     #[inline]
-    fn type_id() -> u8 {
+    fn type_id() -> SborTypeId<X> {
+        B::type_id()
+    }
+}
+
+impl<X: CustomTypeId, T: TypeId<X>> TypeId<X> for Box<T> {
+    #[inline]
+    fn type_id() -> SborTypeId<X> {
         T::type_id()
     }
 }
 
-impl<T: TypeId> TypeId for Rc<T> {
+impl<X: CustomTypeId, T: TypeId<X>> TypeId<X> for Rc<T> {
     #[inline]
-    fn type_id() -> u8 {
+    fn type_id() -> SborTypeId<X> {
         T::type_id()
     }
 }
 
-impl<T: TypeId> TypeId for RefCell<T> {
+impl<X: CustomTypeId, T: TypeId<X>> TypeId<X> for RefCell<T> {
     #[inline]
-    fn type_id() -> u8 {
+    fn type_id() -> SborTypeId<X> {
         T::type_id()
     }
 }
 
-impl<T, const N: usize> TypeId for [T; N] {
+impl<X: CustomTypeId, T, const N: usize> TypeId<X> for [T; N] {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_ARRAY
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
     }
 }
+
 macro_rules! type_id_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
-        impl<$($name),+> TypeId for ($($name,)+) {
+        impl<X: CustomTypeId, $($name),+> TypeId<X> for ($($name,)+) {
             #[inline]
-            fn type_id() -> u8 {
-                TYPE_TUPLE
+            fn type_id() -> SborTypeId<X> {
+                SborTypeId::Tuple
             }
         }
     };
 }
 
+type_id_tuple! { 1 0 A }
 type_id_tuple! { 2 0 A 1 B }
 type_id_tuple! { 3 0 A 1 B 2 C }
 type_id_tuple! { 4 0 A 1 B 2 C 3 D }
@@ -186,51 +252,73 @@ type_id_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 type_id_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 type_id_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
-impl<T, E> TypeId for Result<T, E> {
+impl<X: CustomTypeId, T, E> TypeId<X> for Result<T, E> {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_RESULT
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Enum
     }
 }
 
-impl<T> TypeId for Vec<T> {
+impl<X: CustomTypeId, T> TypeId<X> for Vec<T> {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_LIST
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
     }
 }
 
-impl<T> TypeId for [T] {
+impl<X: CustomTypeId, T> TypeId<X> for [T] {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_LIST
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
     }
 }
 
-impl<T> TypeId for BTreeSet<T> {
+impl<X: CustomTypeId, T> TypeId<X> for BTreeSet<T> {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_SET
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
     }
 }
 
-impl<K, V> TypeId for BTreeMap<K, V> {
+impl<X: CustomTypeId, K, V> TypeId<X> for BTreeMap<K, V> {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_MAP
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
     }
 }
 
-impl<T> TypeId for HashSet<T> {
+impl<X: CustomTypeId, T> TypeId<X> for HashSet<T> {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_SET
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
     }
 }
 
-impl<K, V> TypeId for HashMap<K, V> {
+impl<X: CustomTypeId, K, V> TypeId<X> for HashMap<K, V> {
     #[inline]
-    fn type_id() -> u8 {
-        TYPE_MAP
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
     }
+}
+
+#[cfg(feature = "indexmap")]
+impl<X: CustomTypeId, T> TypeId<X> for IndexSet<T> {
+    #[inline]
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
+    }
+}
+
+#[cfg(feature = "indexmap")]
+impl<X: CustomTypeId, K, V> TypeId<X> for IndexMap<K, V> {
+    #[inline]
+    fn type_id() -> SborTypeId<X> {
+        SborTypeId::Array
+    }
+}
+
+pub trait CustomTypeId: Copy + Debug + Clone + PartialEq + Eq {
+    fn as_u8(&self) -> u8;
+
+    fn from_u8(id: u8) -> Option<Self>;
 }

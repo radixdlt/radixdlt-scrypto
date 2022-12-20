@@ -1,15 +1,21 @@
 [package]
 name = "radix-engine"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 
 [dependencies]
-sbor = { path = "../sbor", default-features = false }
-scrypto = { path = "../scrypto", default-features = false }
+sbor = { path = "../sbor", default-features = false, features = ["indexmap"] }
+radix-engine-constants = { path = "../radix-engine-constants" }
+radix-engine-interface = { path = "../radix-engine-interface", default-features = false }
+native-sdk = { path = "../native-sdk", default-features = false }
 transaction = { path = "../transaction", default-features = false }
+utils = { path = "../utils", default-features = false }
 colored = { version = "2.0.0", default-features = false }
 hex = { version = "0.4.3", default-features = false }
-indexmap = { version = "1.8.1" }
+bitflags = { version = "1.3" }
+indexmap = { version = "1.9.2" }
+lru = { version = "0.8.1", default-features = false }
+moka = { version = "0.9.4", features = ["sync"], default-features = false, optional = true }
 
 # WASM de-/serialization
 parity-wasm = { version = "0.42.2" }
@@ -30,7 +36,8 @@ wasmer-compiler-singlepass = { version = "2.2.1", optional = true }
 [dev-dependencies]
 wabt = { version = "0.10.0" }
 criterion = { version = "0.3", features = ["html_reports"] }
-scrypto-unit = { path = "../scrypto-unit" }
+scrypto = { path = "../scrypto", default-features = false }
+scrypto-unit = { path = "../scrypto-unit", default-features = false }
 rand = { version = "0.8.5" }
 rand_chacha = { version = "0.3.1" }
 rayon = "1.5.3"
@@ -50,8 +57,11 @@ harness = false
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "scrypto/std", "wasmi/std", "transaction/std"]
-alloc = ["sbor/alloc", "scrypto/alloc", "transaction/alloc"]
+std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "utils/std", "moka", "scrypto/std", "scrypto-unit/std"]
+alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "utils/alloc", "lru/hashbrown", "scrypto/alloc", "scrypto-unit/alloc"]
 
 # Use `wasmer` as WASM engine, otherwise `wasmi`
 wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
+
+# Use moka for caching
+moka = ["dep:moka"]

@@ -1,13 +1,17 @@
-use crate::model::MethodIdentifier;
+use radix_engine_interface::api::types::{
+    BucketId, NativeFunctionIdent, NativeMethodIdent, ProofId, ScryptoFunctionIdent,
+    ScryptoMethodIdent,
+};
+use radix_engine_interface::crypto::Blob;
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::*;
+use radix_engine_interface::scrypto;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{Blob, FnIdentifier};
-use scrypto::engine::types::*;
-use scrypto::math::*;
-use scrypto::resource::{NonFungibleId, ResourceAddress};
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum Instruction {
     /// Takes resource from worktop.
     TakeFromWorktop { resource_address: ResourceAddress },
@@ -79,22 +83,43 @@ pub enum Instruction {
     /// Drops all of the proofs in the transaction.
     DropAllProofs,
 
-    /// Calls a blueprint function.
+    /// Calls a scrypto function.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
-        fn_identifier: FnIdentifier,
+        function_ident: ScryptoFunctionIdent,
         args: Vec<u8>,
     },
 
-    /// Calls a component method.
+    /// Calls a scrypto method.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
-        method_identifier: MethodIdentifier,
+        method_ident: ScryptoMethodIdent,
         args: Vec<u8>,
     },
 
+    /// Calls a native function.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallNativeFunction {
+        function_ident: NativeFunctionIdent,
+        args: Vec<u8>,
+    },
+
+    /// Calls a native method.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallNativeMethod {
+        method_ident: NativeMethodIdent,
+        args: Vec<u8>,
+    },
+
+    // TODO: add PublishPackage instruction
     /// Publishes a package.
-    PublishPackage { code: Blob, abi: Blob },
+    PublishPackageWithOwner {
+        code: Blob,
+        abi: Blob,
+        owner_badge: NonFungibleAddress,
+    },
 }

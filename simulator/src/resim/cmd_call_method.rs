@@ -2,7 +2,8 @@
 
 use clap::Parser;
 use radix_engine::types::*;
-use scrypto::prelude::Expression;
+use radix_engine_interface::core::*;
+use radix_engine_interface::data::*;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -11,7 +12,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct CallMethod {
     /// The component that the method belongs to
-    component_address: ComponentAddress,
+    component_address: SimulatorComponentAddress,
 
     /// The method name
     method_name: String,
@@ -49,20 +50,20 @@ impl CallMethod {
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
-                    resource_specifier,
                     default_account,
+                    resource_specifier,
                 )
                 .map_err(Error::FailedToBuildArgs)?;
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100.into())
             .call_method_with_abi(
-                self.component_address,
+                self.component_address.0,
                 &self.method_name,
                 self.arguments.clone(),
                 Some(default_account),
-                &export_abi_by_component(self.component_address)?,
+                &export_abi_by_component(self.component_address.0)?,
             )
             .map_err(Error::TransactionConstructionError)?
             .call_method(
@@ -78,6 +79,7 @@ impl CallMethod {
             &self.manifest,
             self.trace,
             true,
+            false,
             out,
         )
         .map(|_| ())

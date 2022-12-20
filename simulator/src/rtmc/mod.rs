@@ -1,6 +1,6 @@
 use clap::Parser;
-use scrypto::buffer::scrypto_encode;
-use scrypto::core::{NetworkDefinition, ParseNetworkError};
+use radix_engine_interface::core::{NetworkDefinition, ParseNetworkError};
+use radix_engine_interface::data::scrypto_encode;
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::compile;
@@ -29,6 +29,7 @@ pub struct Args {
 #[derive(Debug)]
 pub enum Error {
     IoError(std::io::Error),
+    EncodeError(sbor::EncodeError),
     CompileError(transaction::manifest::CompileError),
     ParseNetworkError(ParseNetworkError),
 }
@@ -48,7 +49,11 @@ pub fn run() -> Result<(), Error> {
         }
     }
     let transaction = compile(&content, &network, blobs).map_err(Error::CompileError)?;
-    std::fs::write(args.output, scrypto_encode(&transaction)).map_err(Error::IoError)?;
+    std::fs::write(
+        args.output,
+        scrypto_encode(&transaction).map_err(Error::EncodeError)?,
+    )
+    .map_err(Error::IoError)?;
 
     Ok(())
 }

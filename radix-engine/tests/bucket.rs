@@ -1,20 +1,24 @@
 use radix_engine::engine::*;
 use radix_engine::ledger::TypedInMemorySubstateStore;
-use radix_engine::model::{BucketError, ResourceContainerError};
+use radix_engine::model::{BucketError, ResourceOperationError};
 use radix_engine::types::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
+use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
+use utils::ContextualDisplay;
 
 fn test_bucket_internal(method_name: &str) {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/bucket");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .call_function(package_address, "BucketTest", method_name, args!())
         .call_method(
             account,
@@ -22,7 +26,10 @@ fn test_bucket_internal(method_name: &str) {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_commit_success();
@@ -77,11 +84,11 @@ fn test_bucket_empty_non_fungible() {
 fn test_bucket_of_badges() {
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.compile_and_publish("./tests/bucket");
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .call_function(package_address, "BadgeTest", "combine", args!())
         .call_function(package_address, "BadgeTest", "split", args!())
         .call_function(package_address, "BadgeTest", "borrow", args!())
@@ -92,7 +99,10 @@ fn test_bucket_of_badges() {
             args!(Expression::entire_worktop()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
     receipt.expect_commit_success();
 }
 
@@ -101,29 +111,34 @@ fn test_take_with_invalid_granularity() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.compile_and_publish("./tests/bucket");
+    let resource_address_str =
+        Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .call_function_with_abi(
             package_address,
             "BucketTest",
             "take_from_bucket",
-            vec![format!("100,{}", resource_address), "1.123".to_owned()],
+            vec![format!("100,{}", resource_address_str), "1.123".to_owned()],
             Some(account),
             &test_runner.export_abi(package_address, "BucketTest"),
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::BucketError(
-            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+            BucketError::ResourceOperationError(ResourceOperationError::InvalidAmount(
                 amount,
                 granularity,
             )),
@@ -141,29 +156,34 @@ fn test_take_with_negative_amount() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.compile_and_publish("./tests/bucket");
+    let resource_address_str =
+        Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .call_function_with_abi(
             package_address,
             "BucketTest",
             "take_from_bucket",
-            vec![format!("100,{}", resource_address), "-2".to_owned()],
+            vec![format!("100,{}", resource_address_str), "-2".to_owned()],
             Some(account),
             &test_runner.export_abi(package_address, "BucketTest"),
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
 
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::ApplicationError(ApplicationError::BucketError(
-            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+            BucketError::ResourceOperationError(ResourceOperationError::InvalidAmount(
                 amount,
                 granularity,
             )),
@@ -181,12 +201,12 @@ fn create_empty_bucket() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let (public_key, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_allocated_account();
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), account)
+        .lock_fee(account, 10.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)
         })
@@ -199,8 +219,11 @@ fn create_empty_bucket() {
             |builder, bucket_id| builder.return_to_worktop(bucket_id),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key.into()]);
-    println!("{:?}", receipt);
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    println!("{}", receipt.display(&Bech32Encoder::for_simulator()));
 
     // Assert
     receipt.expect_commit_success();

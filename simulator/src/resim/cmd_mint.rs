@@ -1,6 +1,7 @@
 use clap::Parser;
 use radix_engine::types::*;
-use scrypto::prelude::Expression;
+use radix_engine_interface::core::*;
+use radix_engine_interface::data::*;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -12,7 +13,7 @@ pub struct Mint {
     amount: Decimal,
 
     /// The resource address
-    resource_address: ResourceAddress,
+    resource_address: SimulatorResourceAddress,
 
     /// The proofs to add to the auth zone
     #[clap(short, long, multiple = true)]
@@ -44,15 +45,15 @@ impl Mint {
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
-                    resource_specifier,
                     default_account,
+                    resource_specifier,
                 )
                 .map_err(Error::FailedToBuildArgs)?;
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .mint(self.amount, self.resource_address)
+            .lock_fee(FAUCET_COMPONENT, 100.into())
+            .mint(self.resource_address.0, self.amount)
             .call_method(
                 default_account,
                 "deposit_batch",
@@ -66,6 +67,7 @@ impl Mint {
             &self.manifest,
             self.trace,
             true,
+            false,
             out,
         )
         .map(|_| ())

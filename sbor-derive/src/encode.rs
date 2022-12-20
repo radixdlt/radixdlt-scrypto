@@ -14,27 +14,37 @@ macro_rules! trace {
 pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
     trace!("handle_encode() starts");
 
-    let DeriveInput { ident, data, .. } = parse2(input)?;
-    trace!("Encoding: {}", ident);
+    let DeriveInput {
+        attrs,
+        ident,
+        data,
+        generics,
+        ..
+    } = parse2(input)?;
+    let custom_type_id = custom_type_id(&attrs);
+    let (impl_generics, ty_generics, where_clause, custom_type_id_generic, encoder_generic) =
+        build_encode_generics(&generics, custom_type_id)?;
 
     let output = match data {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
                 // ns: not skipped
-                let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
+                let ns: Vec<&Field> = named.iter().filter(|f| !is_encoding_skipped(f)).collect();
                 let ns_ids = ns.iter().map(|f| &f.ident);
                 let ns_len = Index::from(ns_ids.len());
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
+                        fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                            encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                         }
+
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
                             use ::sbor::{self, Encode};
-                            encoder.write_static_size(#ns_len);
-                            #(self.#ns_ids.encode(encoder);)*
+                            encoder.write_size(#ns_len)?;
+                            #(encoder.encode(&self.#ns_ids)?;)*
+                            Ok(())
                         }
                     }
                 }
@@ -42,36 +52,39 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
             syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
                 let mut ns_indices = Vec::new();
                 for (i, f) in unnamed.iter().enumerate() {
-                    if !is_skipped(f) {
+                    if !is_encoding_skipped(f) {
                         ns_indices.push(Index::from(i));
                     }
                 }
                 let ns_len = Index::from(ns_indices.len());
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
+                        fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                            encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                         }
+
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
                             use ::sbor::{self, Encode};
-                            encoder.write_static_size(#ns_len);
-                            #(self.#ns_indices.encode(encoder);)*
+                            encoder.write_size(#ns_len)?;
+                            #(encoder.encode(&self.#ns_indices)?;)*
+                            Ok(())
                         }
                     }
                 }
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
+                        fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                            encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                         }
+
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                            encoder.write_static_size(0);
+                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                            encoder.write_size(0)
                         }
                     }
                 }
@@ -80,20 +93,21 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
         Data::Enum(DataEnum { variants, .. }) => {
             let match_arms = variants.iter().map(|v| {
                 let v_id = &v.ident;
-                let name_string = v_id.to_string();
-                let name: Expr = parse_quote! { #name_string };
+                let discriminator_string = v_id.to_string();
+                let discriminator: Expr = parse_quote! { #discriminator_string };
 
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
-                        let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
+                        let ns: Vec<&Field> =
+                            named.iter().filter(|f| !is_encoding_skipped(f)).collect();
                         let ns_ids = ns.iter().map(|f| &f.ident);
                         let ns_ids2 = ns.iter().map(|f| &f.ident);
                         let ns_len = Index::from(ns.len());
                         quote! {
                             Self::#v_id {#(#ns_ids,)* ..} => {
-                                encoder.write_variant_label(#name);
-                                encoder.write_static_size(#ns_len);
-                                #(#ns_ids2.encode(encoder);)*
+                                encoder.write_discriminator(#discriminator)?;
+                                encoder.write_size(#ns_len)?;
+                                #(encoder.encode(#ns_ids2)?;)*
                             }
                         }
                     }
@@ -101,24 +115,24 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let args = (0..unnamed.len()).map(|i| format_ident!("a{}", i));
                         let mut ns_args = Vec::<Ident>::new();
                         for (i, f) in unnamed.iter().enumerate() {
-                            if !is_skipped(f) {
+                            if !is_encoding_skipped(f) {
                                 ns_args.push(format_ident!("a{}", i));
                             }
                         }
                         let ns_len = Index::from(ns_args.len());
                         quote! {
                             Self::#v_id (#(#args),*) => {
-                                encoder.write_variant_label(#name);
-                                encoder.write_static_size(#ns_len);
-                                #(#ns_args.encode(encoder);)*
+                                encoder.write_discriminator(#discriminator)?;
+                                encoder.write_size(#ns_len)?;
+                                #(encoder.encode(#ns_args)?;)*
                             }
                         }
                     }
                     syn::Fields::Unit => {
                         quote! {
                             Self::#v_id => {
-                                encoder.write_variant_label(#name);
-                                encoder.write_static_size(0);
+                                encoder.write_discriminator(#discriminator)?;
+                                encoder.write_size(0)?;
                             }
                         }
                     }
@@ -127,30 +141,34 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
 
             if match_arms.len() == 0 {
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
+                        fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                            encoder.write_type_id(::sbor::type_id::SborTypeId::Enum)
                         }
+
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                            Ok(())
                         }
                     }
                 }
             } else {
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
-                        fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                            encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
+                        fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
+                            encoder.write_type_id(::sbor::type_id::SborTypeId::Enum)
                         }
+
                         #[inline]
-                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                        fn encode_body(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
                             use ::sbor::{self, Encode};
 
                             match self {
                                 #(#match_arms)*
                             }
+                            Ok(())
                         }
                     }
                 }
@@ -160,11 +178,11 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
             return Err(Error::new(Span::call_site(), "Union is not supported!"));
         }
     };
-    trace!("handle_encode() finishes");
 
     #[cfg(feature = "trace")]
     crate::utils::print_generated_code("Encode", &output);
 
+    trace!("handle_encode() finishes");
     Ok(output)
 }
 
@@ -187,16 +205,18 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Encode for Test {
+                impl <CTI: ::sbor::type_id::CustomTypeId, ENC: ::sbor::encoder::Encoder<CTI> > ::sbor::Encode<CTI, ENC> for Test {
                     #[inline]
-                    fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                        encoder.write_type_id(::sbor::type_id::TYPE_STRUCT);
+                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
                     }
+
                     #[inline]
-                    fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
                         use ::sbor::{self, Encode};
-                        encoder.write_static_size(1);
-                        self.a.encode(encoder);
+                        encoder.write_size(1)?;
+                        encoder.encode(&self.a)?;
+                        Ok(())
                     }
                 }
             },
@@ -211,30 +231,113 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Encode for Test {
+                impl <CTI: ::sbor::type_id::CustomTypeId, ENC: ::sbor::encoder::Encoder<CTI> > ::sbor::Encode<CTI, ENC> for Test {
                     #[inline]
-                    fn encode_type_id(encoder: &mut ::sbor::Encoder) {
-                        encoder.write_type_id(::sbor::type_id::TYPE_ENUM);
+                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::type_id::SborTypeId::Enum)
                     }
+
                     #[inline]
-                    fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
                         use ::sbor::{self, Encode};
                         match self {
                             Self::A => {
-                                encoder.write_variant_label("A");
-                                encoder.write_static_size(0);
+                                encoder.write_discriminator("A")?;
+                                encoder.write_size(0)?;
                             }
                             Self::B(a0) => {
-                                encoder.write_variant_label("B");
-                                encoder.write_static_size(1);
-                                a0.encode(encoder);
+                                encoder.write_discriminator("B")?;
+                                encoder.write_size(1)?;
+                                encoder.encode(a0)?;
                             }
                             Self::C { x, .. } => {
-                                encoder.write_variant_label("C");
-                                encoder.write_static_size(1);
-                                x.encode(encoder);
+                                encoder.write_discriminator("C")?;
+                                encoder.write_size(1)?;
+                                encoder.encode(x)?;
                             }
                         }
+                        Ok(())
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_skip() {
+        let input = TokenStream::from_str("struct Test {#[sbor(skip)] a: u32}").unwrap();
+        let output = handle_encode(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl <CTI: ::sbor::type_id::CustomTypeId, ENC: ::sbor::encoder::Encoder<CTI> > ::sbor::Encode<CTI, ENC> for Test {
+                    #[inline]
+                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                    }
+
+                    #[inline]
+                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                        use ::sbor::{self, Encode};
+                        encoder.write_size(0)?;
+                        Ok(())
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_encode_struct_with_custom_type_id() {
+        let input = TokenStream::from_str(
+            "#[sbor(custom_type_id = \"NoCustomTypeId\")] struct Test {#[sbor(skip)] a: u32}",
+        )
+        .unwrap();
+        let output = handle_encode(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl <ENC: ::sbor::encoder::Encoder<NoCustomTypeId> > ::sbor::Encode<NoCustomTypeId, ENC> for Test {
+                    #[inline]
+                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                    }
+
+                    #[inline]
+                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                        use ::sbor::{self, Encode};
+                        encoder.write_size(0)?;
+                        Ok(())
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_custom_type_id_canonical_path() {
+        let input = TokenStream::from_str(
+            "#[sbor(custom_type_id = \"::sbor::basic::NoCustomTypeId\")] struct Test {#[sbor(skip)] a: u32}",
+        )
+        .unwrap();
+        let output = handle_encode(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl <ENC: ::sbor::encoder::Encoder<::sbor::basic::NoCustomTypeId> > ::sbor::Encode<::sbor::basic::NoCustomTypeId, ENC> for Test {
+                    #[inline]
+                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                    }
+
+                    #[inline]
+                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                        use ::sbor::{self, Encode};
+                        encoder.write_size(0)?;
+                        Ok(())
                     }
                 }
             },

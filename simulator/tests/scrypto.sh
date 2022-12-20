@@ -19,3 +19,6 @@ $scrypto build --path $test_pkg
 $scrypto test --path $test_pkg
 $scrypto test --path $test_pkg -- test_hello --nocapture
 $scrypto test --path $test_pkg -- --nocapture
+
+# Clean up
+rm -fr $test_pkg

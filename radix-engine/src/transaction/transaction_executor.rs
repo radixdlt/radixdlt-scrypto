@@ -1,6 +1,3 @@
-use transaction::model::*;
-
-use crate::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
 use crate::engine::Track;
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
@@ -9,18 +6,28 @@ use crate::model::*;
 use crate::transaction::*;
 use crate::types::*;
 use crate::wasm::*;
+use radix_engine_constants::{
+    DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
+};
+use radix_engine_interface::api::api::Invokable;
+use sbor::rust::borrow::Cow;
+use transaction::model::*;
 
 pub struct FeeReserveConfig {
-    pub cost_unit_price: Decimal,
+    pub cost_unit_price: u128,
     pub system_loan: u32,
+}
+
+impl Default for FeeReserveConfig {
+    fn default() -> Self {
+        FeeReserveConfig::standard()
+    }
 }
 
 impl FeeReserveConfig {
     pub fn standard() -> Self {
         Self {
-            cost_unit_price: DEFAULT_COST_UNIT_PRICE
-                .parse()
-                .expect("Invalid cost unit price"),
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE,
             system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }
@@ -29,6 +36,7 @@ impl FeeReserveConfig {
 pub struct ExecutionConfig {
     pub max_call_depth: usize,
     pub trace: bool,
+    pub max_sys_call_trace_depth: usize,
 }
 
 impl Default for ExecutionConfig {
@@ -42,6 +50,7 @@ impl ExecutionConfig {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: false,
+            max_sys_call_trace_depth: 1,
         }
     }
 
@@ -49,78 +58,73 @@ impl ExecutionConfig {
         Self {
             max_call_depth: DEFAULT_MAX_CALL_DEPTH,
             trace: true,
+            max_sys_call_trace_depth: 1,
         }
     }
 }
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'s, 'w, S, W, I>
+/// This is no longer public -- it can be removed / merged into the exposed functions in a future small PR
+/// But I'm not doing it in this PR to avoid merge conflicts in the body of execute_with_fee_reserve
+struct TransactionExecutor<'s, 'w, S, W>
 where
     S: ReadableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
 {
-    substate_store: &'s mut S,
-    wasm_engine: &'w mut W,
-    wasm_instrumenter: &'w mut WasmInstrumenter,
-    phantom: PhantomData<I>,
+    substate_store: &'s S,
+    scrypto_interpreter: &'w ScryptoInterpreter<W>,
 }
 
-impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
+impl<'s, 'w, S, W> TransactionExecutor<'s, 'w, S, W>
 where
     S: ReadableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
+    W: WasmEngine,
 {
-    pub fn new(
-        substate_store: &'s mut S,
-        wasm_engine: &'w mut W,
-        wasm_instrumenter: &'w mut WasmInstrumenter,
-    ) -> Self {
+    pub fn new(substate_store: &'s S, scrypto_interpreter: &'w ScryptoInterpreter<W>) -> Self {
         Self {
             substate_store,
-            wasm_engine,
-            wasm_instrumenter,
-            phantom: PhantomData,
+            scrypto_interpreter,
         }
     }
 
-    pub fn execute<T: ExecutableTransaction>(
+    pub fn execute(
         &mut self,
-        transaction: &T,
+        transaction: &Executable,
         fee_reserve_config: &FeeReserveConfig,
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
-        let fee_reserve = SystemLoanFeeReserve::new(
-            transaction.cost_unit_limit(),
-            transaction.tip_percentage(),
-            fee_reserve_config.cost_unit_price,
-            fee_reserve_config.system_loan,
-        );
+        let fee_reserve = match transaction.fee_payment() {
+            FeePayment::User {
+                cost_unit_limit,
+                tip_percentage,
+            } => SystemLoanFeeReserve::new(
+                fee_reserve_config.cost_unit_price,
+                *tip_percentage,
+                *cost_unit_limit,
+                fee_reserve_config.system_loan,
+            ),
+            FeePayment::NoFee => SystemLoanFeeReserve::no_fee(),
+        };
 
         self.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
     }
 
-    pub fn execute_with_fee_reserve<T: ExecutableTransaction, R: FeeReserve>(
+    fn execute_with_fee_reserve<R: FeeReserve>(
         &mut self,
-        transaction: &T,
+        transaction: &Executable,
         execution_config: &ExecutionConfig,
         fee_reserve: R,
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
-        let initial_proofs = transaction.initial_proofs();
-        let instructions = transaction.instructions().to_vec();
-        let blobs: HashMap<Hash, Vec<u8>> = transaction
-            .blobs()
-            .iter()
-            .map(|b| (hash(b), b.clone()))
-            .collect();
+        let auth_zone_params = transaction.auth_zone_params();
+        let instructions = transaction.instructions();
+        let blobs = transaction.blobs();
 
         #[cfg(not(feature = "alloc"))]
         if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
             println!("Transaction hash: {}", transaction_hash);
-            println!("Transaction proofs: {:?}", initial_proofs);
+            println!("Transaction auth zone params: {:?}", auth_zone_params);
             println!("Number of unique blobs: {}", blobs.len());
 
             println!("{:-^80}", "Engine Execution Log");
@@ -131,18 +135,21 @@ where
 
         // Apply pre execution costing
         let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let mut track = match pre_execution_result {
+        let track = match pre_execution_result {
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
-                    contents: TransactionContents { instructions },
+                    contents: TransactionContents {
+                        instructions: instructions.to_vec(),
+                    },
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         application_logs: vec![],
+                        events: vec![],
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
-                            ModuleError::CostingError(err.error),
+                            ModuleError::CostingError(CostingError::FeeReserveError(err.error)),
                         )),
                     }),
                 };
@@ -150,49 +157,43 @@ where
         };
 
         // Invoke the function/method
-        let mut execution_trace = ExecutionTrace::new();
-        let invoke_result = {
+        let track_receipt = {
             let mut modules = Vec::<Box<dyn Module<R>>>::new();
             if execution_config.trace {
                 modules.push(Box::new(LoggerModule::new()));
             }
             modules.push(Box::new(CostingModule::default()));
+            modules.push(Box::new(RoyaltyModule::default()));
+            modules.push(Box::new(ExecutionTraceModule::new(
+                execution_config.max_sys_call_trace_depth,
+            )));
+
             let mut kernel = Kernel::new(
-                transaction_hash,
-                initial_proofs,
-                &blobs,
+                transaction_hash.clone(),
+                auth_zone_params.clone(),
+                blobs,
                 execution_config.max_call_depth,
-                &mut track,
-                self.wasm_engine,
-                self.wasm_instrumenter,
-                WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 5000), 512), // TODO: add to ExecutionConfig
-                &mut execution_trace,
+                track,
+                self.scrypto_interpreter,
                 modules,
             );
-            kernel
-                .invoke_function(
-                    FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
-                        TransactionProcessorFnIdentifier::Run,
-                    )),
-                    ScryptoValue::from_typed(&TransactionProcessorRunInput {
-                        instructions: instructions.clone(),
-                    }),
-                )
-                .map(|o| {
-                    scrypto_decode::<Vec<Vec<u8>>>(&o.raw)
-                        .expect("TransactionProcessor returned data of unexpected type")
-                })
+
+            let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+                runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
+                instructions: Cow::Borrowed(instructions),
+            });
+
+            kernel.finalize(invoke_result)
         };
 
-        // Produce the final transaction receipt
-        let execution_trace_receipt = execution_trace.to_receipt();
-        let track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
-
         let receipt = TransactionReceipt {
-            contents: TransactionContents { instructions },
+            contents: TransactionContents {
+                instructions: instructions.to_vec(),
+            },
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 application_logs: track_receipt.application_logs,
+                events: track_receipt.events,
             },
             result: track_receipt.result,
         };
@@ -202,7 +203,7 @@ where
             let break_down = receipt
                 .execution
                 .fee_summary
-                .cost_breakdown
+                .execution_cost_unit_breakdown
                 .iter()
                 .collect::<BTreeMap<&String, &u32>>();
             for (k, v) in break_down {
@@ -221,22 +222,39 @@ where
     }
 }
 
-impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
-where
+pub fn execute_and_commit_transaction<
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
-{
-    pub fn execute_and_commit<T: ExecutableTransaction>(
-        &mut self,
-        transaction: &T,
-        fee_reserve_config: &FeeReserveConfig,
-        execution_config: &ExecutionConfig,
-    ) -> TransactionReceipt {
-        let receipt = self.execute(transaction, fee_reserve_config, execution_config);
-        if let TransactionResult::Commit(commit) = &receipt.result {
-            commit.state_updates.commit(self.substate_store);
-        }
-        receipt
+    W: WasmEngine,
+>(
+    substate_store: &mut S,
+    scrypto_interpreter: &ScryptoInterpreter<W>,
+    fee_reserve_config: &FeeReserveConfig,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    let receipt = execute_transaction(
+        substate_store,
+        scrypto_interpreter,
+        fee_reserve_config,
+        execution_config,
+        transaction,
+    );
+    if let TransactionResult::Commit(commit) = &receipt.result {
+        commit.state_updates.commit(substate_store);
     }
+    receipt
+}
+
+pub fn execute_transaction<S: ReadableSubstateStore, W: WasmEngine>(
+    substate_store: &S,
+    scrypto_interpreter: &ScryptoInterpreter<W>,
+    fee_reserve_config: &FeeReserveConfig,
+    execution_config: &ExecutionConfig,
+    transaction: &Executable,
+) -> TransactionReceipt {
+    TransactionExecutor::new(substate_store, scrypto_interpreter).execute(
+        transaction,
+        fee_reserve_config,
+        execution_config,
+    )
 }

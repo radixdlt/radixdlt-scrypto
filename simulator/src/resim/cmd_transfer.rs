@@ -1,6 +1,7 @@
 use clap::Parser;
 use radix_engine::types::*;
-use scrypto::prelude::Expression;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -12,10 +13,10 @@ pub struct Transfer {
     amount: Decimal,
 
     /// The resource address.
-    resource_address: ResourceAddress,
+    resource_address: SimulatorResourceAddress,
 
     /// The recipient component address.
-    recipient: ComponentAddress,
+    recipient: SimulatorComponentAddress,
 
     /// The proofs to add to the auth zone
     #[clap(short, long, multiple = true)]
@@ -47,17 +48,17 @@ impl Transfer {
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
-                    resource_specifier,
                     default_account,
+                    resource_specifier,
                 )
                 .map_err(Error::FailedToBuildArgs)?;
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
-            .withdraw_from_account_by_amount(self.amount, self.resource_address, default_account)
+            .lock_fee(FAUCET_COMPONENT, 100.into())
+            .withdraw_from_account_by_amount(default_account, self.amount, self.resource_address.0)
             .call_method(
-                self.recipient,
+                self.recipient.0,
                 "deposit_batch",
                 args!(Expression::entire_worktop()),
             )
@@ -69,6 +70,7 @@ impl Transfer {
             &self.manifest,
             self.trace,
             true,
+            false,
             out,
         )
         .map(|_| ())

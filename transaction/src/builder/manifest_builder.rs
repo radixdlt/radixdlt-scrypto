@@ -1,4 +1,18 @@
-use sbor::describe::*;
+use radix_engine_interface::abi;
+use radix_engine_interface::abi::*;
+use radix_engine_interface::address::Bech32Decoder;
+use radix_engine_interface::api::types::{
+    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, PackageFunction, ProofId,
+    RENodeId, ResourceManagerFunction, ResourceManagerMethod, ScryptoFunctionIdent,
+    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
+};
+use radix_engine_interface::constants::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::crypto::{hash, Blob, Hash};
+use radix_engine_interface::data::*;
+use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::model::*;
+use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
 use sbor::rust::fmt;
@@ -6,32 +20,22 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use sbor::*;
-use scrypto::abi::*;
-use scrypto::address::Bech32Decoder;
-use scrypto::buffer::*;
-use scrypto::component::{ComponentAddress, PackageAddress};
-use scrypto::constants::*;
-use scrypto::core::{
-    Blob, BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, NetworkDefinition, Receiver,
-    ResourceManagerFnIdentifier,
-};
-use scrypto::crypto::*;
-use scrypto::engine::types::*;
-use scrypto::math::*;
-use scrypto::resource::{require, LOCKED};
-use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
-use scrypto::resource::{
-    MintParams, Mutability, ResourceManagerCreateInput, ResourceMethodAuthKey,
-};
-use scrypto::resource::{NonFungibleAddress, NonFungibleId, ResourceAddress};
-use scrypto::resource::{ResourceManagerMintInput, ResourceType};
-use scrypto::values::*;
-use scrypto::*;
 
 use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
+
+#[macro_export]
+macro_rules! args_from_bytes_vec {
+    ($args: expr) => {{
+        let mut fields = Vec::new();
+        for arg in $args {
+            fields.push(::radix_engine_interface::data::scrypto_decode(&arg).unwrap());
+        }
+        let input_struct = ::radix_engine_interface::data::ScryptoValue::Tuple { fields };
+        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
+    }};
+}
 
 /// Utility for building transaction manifest.
 pub struct ManifestBuilder {
@@ -112,11 +116,14 @@ impl ManifestBuilder {
             Instruction::DropAllProofs => {
                 self.id_validator.drop_all_proofs().unwrap();
             }
-            Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
-                let scrypt_value = ScryptoValue::from_slice(&args).unwrap();
+            Instruction::CallFunction { args, .. }
+            | Instruction::CallMethod { args, .. }
+            | Instruction::CallNativeFunction { args, .. }
+            | Instruction::CallNativeMethod { args, .. } => {
+                let scrypt_value = IndexedScryptoValue::from_slice(&args).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
-            Instruction::PublishPackage { .. } => {}
+            Instruction::PublishPackageWithOwner { .. } => {}
         }
 
         self.instructions.push(inst);
@@ -305,27 +312,47 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::DropAllProofs).0
     }
 
-    pub fn create_resource(
+    pub fn create_resource<R: Into<AccessRule>>(
         &mut self,
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, R)>,
         mint_params: Option<MintParams>,
     ) -> &mut Self {
-        let input = ResourceManagerCreateInput {
+        let input = ResourceManagerCreateInvocation {
             resource_type,
             metadata,
-            access_rules,
+            access_rules: access_rules
+                .into_iter()
+                .map(|(k, v)| (k, (v.0, v.1.into())))
+                .collect(),
             mint_params,
         };
 
-        self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
-            )),
-            args: scrypto_encode(&input),
+        self.add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_string(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: scrypto_encode(&input).unwrap(),
         });
 
+        self
+    }
+
+    pub fn call_native_function(
+        &mut self,
+        blueprint_name: &str,
+        function_name: &str,
+        args: Vec<u8>,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: blueprint_name.to_string(),
+                function_name: function_name.to_string(),
+            },
+            args,
+        });
         self
     }
 
@@ -334,14 +361,14 @@ impl ManifestBuilder {
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
-        method_name: &str,
+        function_name: &str,
         args: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
-                package_address,
+            function_ident: ScryptoFunctionIdent {
+                package: ScryptoPackage::Global(package_address),
                 blueprint_name: blueprint_name.to_string(),
-                ident: method_name.to_string(),
+                function_name: function_name.to_string(),
             },
             args,
         });
@@ -377,17 +404,17 @@ impl ManifestBuilder {
 
         let mut fields = Vec::new();
         for arg in arguments {
-            fields.push(::sbor::decode_any(&arg).unwrap());
+            fields.push(scrypto_decode(&arg).unwrap());
         }
-        let input_struct = ::sbor::Value::Struct { fields };
-        let bytes = ::sbor::encode_any(&input_struct);
+        let input_struct = ScryptoValue::Tuple { fields };
+        let bytes = scrypto_encode(&input_struct).unwrap();
 
         Ok(self
             .add_instruction(Instruction::CallFunction {
-                fn_identifier: FnIdentifier::Scrypto {
-                    package_address,
+                function_ident: ScryptoFunctionIdent {
+                    package: ScryptoPackage::Global(package_address),
                     blueprint_name: blueprint_name.to_string(),
-                    ident: function.to_string(),
+                    function_name: function.to_string(),
                 },
                 args: bytes,
             })
@@ -402,9 +429,9 @@ impl ManifestBuilder {
         args: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Scrypto {
-                component_address,
-                ident: method_name.to_owned(),
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(component_address),
+                method_name: method_name.to_owned(),
             },
             args,
         });
@@ -414,14 +441,14 @@ impl ManifestBuilder {
     /// Calls a native method where the arguments should be an array of encoded Scrypto value.
     pub fn call_native_method(
         &mut self,
-        receiver: Receiver,
-        native_fn_identifier: NativeFnIdentifier,
+        receiver: RENodeId,
+        method_name: &str,
         args: Vec<u8>,
     ) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Native {
+        self.add_instruction(Instruction::CallNativeMethod {
+            method_ident: NativeMethodIdent {
                 receiver,
-                native_fn_identifier,
+                method_name: method_name.to_string(),
             },
             args,
         });
@@ -438,7 +465,7 @@ impl ManifestBuilder {
     pub fn call_method_with_abi(
         &mut self,
         component_address: ComponentAddress,
-        method: &str,
+        method_name: &str,
         args: Vec<String>,
         account: Option<ComponentAddress>,
         blueprint_abi: &abi::BlueprintAbi,
@@ -446,9 +473,9 @@ impl ManifestBuilder {
         let abi = blueprint_abi
             .fns
             .iter()
-            .find(|m| m.ident == method)
+            .find(|m| m.ident == method_name)
             .map(Clone::clone)
-            .ok_or_else(|| BuildCallWithAbiError::MethodNotFound(method.to_owned()))?;
+            .ok_or_else(|| BuildCallWithAbiError::MethodNotFound(method_name.to_owned()))?;
 
         let arguments = self
             .parse_args(&abi.input, args, account)
@@ -456,9 +483,9 @@ impl ManifestBuilder {
 
         Ok(self
             .add_instruction(Instruction::CallMethod {
-                method_identifier: MethodIdentifier::Scrypto {
-                    component_address,
-                    ident: method.to_owned(),
+                method_ident: ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(component_address),
+                    method_name: method_name.to_owned(),
                 },
                 args: args_from_bytes_vec!(arguments),
             })
@@ -470,17 +497,52 @@ impl ManifestBuilder {
         &mut self,
         code: Vec<u8>,
         abi: HashMap<String, BlueprintAbi>,
+        royalty_config: HashMap<String, RoyaltyConfig>,
+        metadata: HashMap<String, String>,
+        access_rules: AccessRules,
     ) -> &mut Self {
         let code_hash = hash(&code);
         self.blobs.insert(code_hash, code);
 
-        let abi = scrypto_encode(&abi);
+        let abi = scrypto_encode(&abi).unwrap();
         let abi_hash = hash(&abi);
         self.blobs.insert(abi_hash, abi);
 
-        self.add_instruction(Instruction::PublishPackage {
+        self.add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: PACKAGE_BLUEPRINT.to_string(),
+                function_name: PackageFunction::Publish.to_string(),
+            },
+            args: scrypto_encode(&PackagePublishInvocation {
+                code: Blob(code_hash),
+                abi: Blob(abi_hash),
+                royalty_config,
+                metadata,
+                access_rules,
+            })
+            .unwrap(),
+        })
+        .0
+    }
+
+    /// Publishes a package.
+    pub fn publish_package_with_owner(
+        &mut self,
+        code: Vec<u8>,
+        abi: HashMap<String, BlueprintAbi>,
+        owner_badge: NonFungibleAddress,
+    ) -> &mut Self {
+        let code_hash = hash(&code);
+        self.blobs.insert(code_hash, code);
+
+        let abi = scrypto_encode(&abi).unwrap();
+        let abi_hash = hash(&abi);
+        self.blobs.insert(abi_hash, abi);
+
+        self.add_instruction(Instruction::PublishPackageWithOwner {
             code: Blob(code_hash),
             abi: Blob(abi_hash),
+            owner_badge,
         })
         .0
     }
@@ -498,30 +560,29 @@ impl ManifestBuilder {
     pub fn new_token_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        minter_resource_address: ResourceAddress,
+        minter_rule: AccessRule,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
-            Mint,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
         );
-        resource_auth.insert(
-            Burn,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
-        );
+        resource_auth.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
+        resource_auth.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let mint_params: Option<MintParams> = Option::None;
-        self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
-            )),
-            args: args!(
-                ResourceType::Fungible { divisibility: 18 },
+        self.add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible { divisibility: 18 },
                 metadata,
-                resource_auth,
-                mint_params
-            ),
+                access_rules: resource_auth,
+                mint_params,
+            })
+            .unwrap(),
         })
         .0
     }
@@ -533,20 +594,25 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
 
-        self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
-            )),
-            args: args!(
-                ResourceType::Fungible { divisibility: 18 },
+        self.add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible { divisibility: 18 },
                 metadata,
-                resource_auth,
-                Option::Some(MintParams::Fungible {
+                access_rules: resource_auth,
+                mint_params: Option::Some(MintParams::Fungible {
                     amount: initial_supply.into(),
-                })
-            ),
+                }),
+            })
+            .unwrap(),
         })
         .0
     }
@@ -555,31 +621,30 @@ impl ManifestBuilder {
     pub fn new_badge_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        minter_resource_address: ResourceAddress,
+        minter_rule: AccessRule,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
-            Mint,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
         );
-        resource_auth.insert(
-            Burn,
-            (rule!(require(minter_resource_address.clone())), LOCKED),
-        );
+        resource_auth.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
+        resource_auth.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
         let mint_params: Option<MintParams> = Option::None;
 
-        self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
-            )),
-            args: args!(
-                ResourceType::Fungible { divisibility: 0 },
+        self.add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible { divisibility: 18 },
                 metadata,
-                resource_auth,
-                mint_params
-            ),
+                access_rules: resource_auth,
+                mint_params,
+            })
+            .unwrap(),
         })
         .0
     }
@@ -591,50 +656,59 @@ impl ManifestBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+        resource_auth.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
 
-        self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Create,
-            )),
-            args: args!(
-                ResourceType::Fungible { divisibility: 0 },
+        self.add_instruction(Instruction::CallNativeFunction {
+            function_ident: NativeFunctionIdent {
+                blueprint_name: RESOURCE_MANAGER_BLUEPRINT.to_owned(),
+                function_name: ResourceManagerFunction::Create.to_string(),
+            },
+            args: scrypto_encode(&ResourceManagerCreateInvocation {
+                resource_type: ResourceType::Fungible { divisibility: 0 },
                 metadata,
-                resource_auth,
-                Option::Some(MintParams::Fungible {
+                access_rules: resource_auth,
+                mint_params: Option::Some(MintParams::Fungible {
                     amount: initial_supply.into(),
-                })
-            ),
+                }),
+            })
+            .unwrap(),
         })
         .0
     }
 
     /// Mints resource.
-    pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
-        self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Native {
-                receiver: Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                native_fn_identifier: NativeFnIdentifier::ResourceManager(
-                    ResourceManagerFnIdentifier::Mint,
-                ),
+    pub fn mint(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
+        self.add_instruction(Instruction::CallNativeMethod {
+            method_ident: NativeMethodIdent {
+                receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                method_name: ResourceManagerMethod::Mint.to_string(),
             },
-            args: scrypto_encode(&ResourceManagerMintInput {
+            args: scrypto_encode(&ResourceManagerMintInvocation {
+                receiver: resource_address,
                 mint_params: MintParams::Fungible { amount },
-            }),
+            })
+            .unwrap(),
         });
         self
     }
 
     /// Burns a resource.
-    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+    pub fn burn(&mut self, resource_address: ResourceAddress, amount: Decimal) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
-                .add_instruction(Instruction::CallMethod {
-                    method_identifier: MethodIdentifier::Native {
-                        native_fn_identifier: NativeFnIdentifier::Bucket(BucketFnIdentifier::Burn),
-                        receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                .add_instruction(Instruction::CallNativeMethod {
+                    method_ident: NativeMethodIdent {
+                        receiver: RENodeId::Global(GlobalAddress::Resource(resource_address)),
+                        method_name: ResourceManagerMethod::Burn.to_string(),
                     },
-                    args: args!(),
+                    args: scrypto_encode(&ResourceManagerBurnInvocation {
+                        receiver: resource_address,
+                        bucket: Bucket(bucket_id),
+                    })
+                    .unwrap(),
                 })
                 .0
         })
@@ -642,20 +716,24 @@ impl ManifestBuilder {
 
     pub fn burn_non_fungible(&mut self, non_fungible_address: NonFungibleAddress) -> &mut Self {
         let mut ids = BTreeSet::new();
-        ids.insert(non_fungible_address.non_fungible_id());
+        ids.insert(non_fungible_address.non_fungible_id().clone());
         self.take_from_worktop_by_ids(
             &ids,
             non_fungible_address.resource_address(),
             |builder, bucket_id| {
                 builder
-                    .add_instruction(Instruction::CallMethod {
-                        method_identifier: MethodIdentifier::Native {
-                            native_fn_identifier: NativeFnIdentifier::Bucket(
-                                BucketFnIdentifier::Burn,
-                            ),
-                            receiver: Receiver::Consumed(RENodeId::Bucket(bucket_id)),
+                    .add_instruction(Instruction::CallNativeMethod {
+                        method_ident: NativeMethodIdent {
+                            receiver: RENodeId::Global(GlobalAddress::Resource(
+                                non_fungible_address.resource_address(),
+                            )),
+                            method_name: ResourceManagerMethod::Burn.to_string(),
                         },
-                        args: args!(),
+                        args: scrypto_encode(&ResourceManagerBurnInvocation {
+                            receiver: non_fungible_address.resource_address(),
+                            bucket: Bucket(bucket_id),
+                        })
+                        .unwrap(),
                     })
                     .0
             },
@@ -665,10 +743,10 @@ impl ManifestBuilder {
     /// Creates an account.
     pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
-                package_address: ACCOUNT_PACKAGE,
-                blueprint_name: "Account".to_owned(),
-                ident: "new".to_string(),
+            function_ident: ScryptoFunctionIdent {
+                package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
+                blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
+                function_name: "new".to_string(),
             },
             args: args!(withdraw_auth.clone()),
         })
@@ -682,33 +760,83 @@ impl ManifestBuilder {
         bucket_id: BucketId,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            fn_identifier: FnIdentifier::Scrypto {
-                package_address: ACCOUNT_PACKAGE,
-                blueprint_name: "Account".to_owned(),
-                ident: "new_with_resource".to_string(),
+            function_ident: ScryptoFunctionIdent {
+                package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
+                blueprint_name: ACCOUNT_BLUEPRINT.to_owned(),
+                function_name: "new_with_resource".to_string(),
             },
-            args: args!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
+            args: args!(withdraw_auth.clone(), Bucket(bucket_id)),
+        })
+        .0
+    }
+
+    pub fn lock_fee_and_withdraw(
+        &mut self,
+        account: ComponentAddress,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee_and_withdraw".to_string(),
+            },
+            args: args!(amount, resource_address),
+        })
+        .0
+    }
+
+    pub fn lock_fee_and_withdraw_by_amount(
+        &mut self,
+        account: ComponentAddress,
+        amount_to_lock: Decimal,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee_and_withdraw_by_amount".to_string(),
+            },
+            args: args!(amount_to_lock, amount, resource_address),
+        })
+        .0
+    }
+
+    pub fn lock_fee_and_withdraw_by_ids(
+        &mut self,
+        account: ComponentAddress,
+        amount_to_lock: Decimal,
+        ids: BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
+    ) -> &mut Self {
+        self.add_instruction(Instruction::CallMethod {
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee_and_withdraw_by_ids".to_string(),
+            },
+            args: args!(amount_to_lock, ids, resource_address),
         })
         .0
     }
 
     /// Locks a fee from the XRD vault of an account.
-    pub fn lock_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
+    pub fn lock_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Scrypto {
-                component_address: account,
-                ident: "lock_fee".to_string(),
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_fee".to_string(),
             },
             args: args!(amount),
         })
         .0
     }
 
-    pub fn lock_contingent_fee(&mut self, amount: Decimal, account: ComponentAddress) -> &mut Self {
+    pub fn lock_contingent_fee(&mut self, account: ComponentAddress, amount: Decimal) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Scrypto {
-                component_address: account,
-                ident: "lock_contingent_fee".to_string(),
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "lock_contingent_fee".to_string(),
             },
             args: args!(amount),
         })
@@ -718,13 +846,13 @@ impl ManifestBuilder {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
-        resource_address: ResourceAddress,
         account: ComponentAddress,
+        resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Scrypto {
-                component_address: account,
-                ident: "withdraw".to_string(),
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "withdraw".to_string(),
             },
             args: args!(resource_address),
         })
@@ -734,14 +862,14 @@ impl ManifestBuilder {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account_by_amount(
         &mut self,
+        account: ComponentAddress,
         amount: Decimal,
         resource_address: ResourceAddress,
-        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Scrypto {
-                component_address: account,
-                ident: "withdraw_by_amount".to_string(),
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "withdraw_by_amount".to_string(),
             },
             args: args!(amount, resource_address),
         })
@@ -751,14 +879,14 @@ impl ManifestBuilder {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account_by_ids(
         &mut self,
+        account: ComponentAddress,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
-        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Scrypto {
-                component_address: account,
-                ident: "withdraw_by_ids".to_string(),
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "withdraw_by_ids".to_string(),
             },
             args: args!(ids.clone(), resource_address),
         })
@@ -768,13 +896,13 @@ impl ManifestBuilder {
     /// Creates resource proof from an account.
     pub fn create_proof_from_account(
         &mut self,
-        resource_address: ResourceAddress,
         account: ComponentAddress,
+        resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Scrypto {
-                component_address: account,
-                ident: "create_proof".to_string(),
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "create_proof".to_string(),
             },
             args: args!(resource_address),
         })
@@ -784,14 +912,14 @@ impl ManifestBuilder {
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_by_amount(
         &mut self,
+        account: ComponentAddress,
         amount: Decimal,
         resource_address: ResourceAddress,
-        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Scrypto {
-                component_address: account,
-                ident: "create_proof_by_amount".to_string(),
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "create_proof_by_amount".to_string(),
             },
             args: args!(amount, resource_address),
         })
@@ -801,14 +929,14 @@ impl ManifestBuilder {
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_by_ids(
         &mut self,
+        account: ComponentAddress,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
-        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            method_identifier: MethodIdentifier::Scrypto {
-                component_address: account,
-                ident: "create_proof_by_ids".to_string(),
+            method_ident: ScryptoMethodIdent {
+                receiver: ScryptoReceiver::Global(account),
+                method_name: "create_proof_by_ids".to_string(),
             },
             args: args!(ids.clone(), resource_address),
         })
@@ -818,17 +946,17 @@ impl ManifestBuilder {
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_by_resource_specifier(
         &mut self,
-        resource_specifier: String,
         account: ComponentAddress,
+        resource_specifier: String,
     ) -> Result<&mut Self, BuildArgsError> {
         let resource_specifier = parse_resource_specifier(&resource_specifier, &self.decoder)
             .map_err(|_| BuildArgsError::InvalidResourceSpecifier(resource_specifier))?;
         let builder = match resource_specifier {
             ResourceSpecifier::Amount(amount, resource_address) => {
-                self.create_proof_from_account_by_amount(amount, resource_address, account)
+                self.create_proof_from_account_by_amount(account, amount, resource_address)
             }
             ResourceSpecifier::Ids(non_fungible_ids, resource_address) => {
-                self.create_proof_from_account_by_ids(&non_fungible_ids, resource_address, account)
+                self.create_proof_from_account_by_ids(account, &non_fungible_ids, resource_address)
             }
         };
         Ok(builder)
@@ -847,7 +975,7 @@ impl ManifestBuilder {
         let mut encoded = Vec::new();
 
         match arg_type {
-            sbor::Type::Struct {
+            Type::Struct {
                 name: _,
                 fields: Fields::Named { named },
             } => {
@@ -868,8 +996,143 @@ impl ManifestBuilder {
                         Type::U64 => self.parse_basic_ty::<u64>(i, t, arg),
                         Type::U128 => self.parse_basic_ty::<u128>(i, t, arg),
                         Type::String => self.parse_basic_ty::<String>(i, t, arg),
-                        Type::Custom { type_id, .. } => {
-                            self.parse_custom_ty(i, t, arg, *type_id, account)
+                        Type::Decimal => {
+                            let value = arg.parse::<Decimal>().map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            Ok(scrypto_encode(&value).unwrap())
+                        }
+                        Type::PreciseDecimal => {
+                            let value = arg.parse::<PreciseDecimal>().map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            Ok(scrypto_encode(&value).unwrap())
+                        }
+                        Type::PackageAddress => {
+                            let value = self
+                                .decoder
+                                .validate_and_decode_package_address(arg)
+                                .map_err(|_| {
+                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                                })?;
+                            Ok(scrypto_encode(&value).unwrap())
+                        }
+                        Type::ComponentAddress => {
+                            let value = self
+                                .decoder
+                                .validate_and_decode_component_address(arg)
+                                .map_err(|_| {
+                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                                })?;
+                            Ok(scrypto_encode(&value).unwrap())
+                        }
+                        Type::ResourceAddress => {
+                            let value = self
+                                .decoder
+                                .validate_and_decode_resource_address(arg)
+                                .map_err(|_| {
+                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                                })?;
+                            Ok(scrypto_encode(&value).unwrap())
+                        }
+                        Type::Hash => {
+                            let value = arg.parse::<Hash>().map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            Ok(scrypto_encode(&value).unwrap())
+                        }
+                        Type::NonFungibleId => {
+                            let value = NonFungibleId::try_from_combined_simple_string(arg)
+                                .map_err(|_| {
+                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                                })?;
+                            Ok(scrypto_encode(&value).unwrap())
+                        }
+                        Type::NonFungibleAddress => {
+                            let value = NonFungibleAddress::try_from_canonical_combined_string(
+                                &self.decoder,
+                                arg,
+                            )
+                            .map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            Ok(scrypto_encode(&value).unwrap())
+                        }
+                        Type::Bucket => {
+                            let resource_specifier = parse_resource_specifier(arg, &self.decoder)
+                                .map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            let bucket_id = match resource_specifier {
+                                ResourceSpecifier::Amount(amount, resource_address) => {
+                                    if let Some(account) = account {
+                                        self.withdraw_from_account_by_amount(
+                                            account,
+                                            amount,
+                                            resource_address,
+                                        );
+                                    }
+                                    self.add_instruction(Instruction::TakeFromWorktopByAmount {
+                                        amount,
+                                        resource_address,
+                                    })
+                                    .1
+                                    .unwrap()
+                                }
+                                ResourceSpecifier::Ids(ids, resource_address) => {
+                                    if let Some(account) = account {
+                                        self.withdraw_from_account_by_ids(
+                                            account,
+                                            &ids,
+                                            resource_address,
+                                        );
+                                    }
+                                    self.add_instruction(Instruction::TakeFromWorktopByIds {
+                                        ids,
+                                        resource_address,
+                                    })
+                                    .1
+                                    .unwrap()
+                                }
+                            };
+                            Ok(scrypto_encode(&Bucket(bucket_id)).unwrap())
+                        }
+                        Type::Proof => {
+                            let resource_specifier = parse_resource_specifier(arg, &self.decoder)
+                                .map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
+                            let proof_id = match resource_specifier {
+                                ResourceSpecifier::Amount(amount, resource_address) => {
+                                    if let Some(account) = account {
+                                        self.create_proof_from_account_by_amount(
+                                            account,
+                                            amount,
+                                            resource_address,
+                                        );
+                                        self.add_instruction(Instruction::PopFromAuthZone)
+                                            .2
+                                            .unwrap()
+                                    } else {
+                                        todo!("Take from worktop and create proof")
+                                    }
+                                }
+                                ResourceSpecifier::Ids(ids, resource_address) => {
+                                    if let Some(account) = account {
+                                        self.create_proof_from_account_by_ids(
+                                            account,
+                                            &ids,
+                                            resource_address,
+                                        );
+                                        self.add_instruction(Instruction::PopFromAuthZone)
+                                            .2
+                                            .unwrap()
+                                    } else {
+                                        todo!("Take from worktop and create proof")
+                                    }
+                                }
+                            };
+                            Ok(scrypto_encode(&Proof(proof_id)).unwrap())
                         }
                         _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
                     };
@@ -886,135 +1149,17 @@ impl ManifestBuilder {
     fn parse_basic_ty<T>(
         &mut self,
         i: usize,
-        ty: &Type,
+        t: &Type,
         arg: &str,
     ) -> Result<Vec<u8>, BuildArgsError>
     where
-        T: FromStr + Encode,
+        T: FromStr + ScryptoEncode,
         T::Err: fmt::Debug,
     {
         let value = arg
             .parse::<T>()
-            .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-        Ok(scrypto_encode(&value))
-    }
-
-    fn parse_custom_ty(
-        &mut self,
-        i: usize,
-        ty: &Type,
-        arg: &str,
-        type_id: u8,
-        account: Option<ComponentAddress>,
-    ) -> Result<Vec<u8>, BuildArgsError> {
-        match ScryptoType::from_id(type_id).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
-            ScryptoType::Decimal => {
-                let value = arg
-                    .parse::<Decimal>()
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
-            }
-            ScryptoType::PreciseDecimal => {
-                let value = arg
-                    .parse::<PreciseDecimal>()
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
-            }
-            ScryptoType::PackageAddress => {
-                let value = self
-                    .decoder
-                    .validate_and_decode_package_address(arg)
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
-            }
-            ScryptoType::ComponentAddress => {
-                let value = self
-                    .decoder
-                    .validate_and_decode_component_address(arg)
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
-            }
-            ScryptoType::ResourceAddress => {
-                let value = self
-                    .decoder
-                    .validate_and_decode_resource_address(arg)
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
-            }
-            ScryptoType::Hash => {
-                let value = arg
-                    .parse::<Hash>()
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
-            }
-            ScryptoType::NonFungibleId => {
-                let value = arg
-                    .parse::<NonFungibleId>()
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
-            }
-            ScryptoType::Bucket => {
-                let resource_specifier = parse_resource_specifier(arg, &self.decoder)
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                let bucket_id = match resource_specifier {
-                    ResourceSpecifier::Amount(amount, resource_address) => {
-                        if let Some(account) = account {
-                            self.withdraw_from_account_by_amount(amount, resource_address, account);
-                        }
-                        self.add_instruction(Instruction::TakeFromWorktopByAmount {
-                            amount,
-                            resource_address,
-                        })
-                        .1
-                        .unwrap()
-                    }
-                    ResourceSpecifier::Ids(ids, resource_address) => {
-                        if let Some(account) = account {
-                            self.withdraw_from_account_by_ids(&ids, resource_address, account);
-                        }
-                        self.add_instruction(Instruction::TakeFromWorktopByIds {
-                            ids,
-                            resource_address,
-                        })
-                        .1
-                        .unwrap()
-                    }
-                };
-                Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
-            }
-            ScryptoType::Proof => {
-                let resource_specifier = parse_resource_specifier(arg, &self.decoder)
-                    .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                let proof_id = match resource_specifier {
-                    ResourceSpecifier::Amount(amount, resource_address) => {
-                        if let Some(account) = account {
-                            self.create_proof_from_account_by_amount(
-                                amount,
-                                resource_address,
-                                account,
-                            );
-                            self.add_instruction(Instruction::PopFromAuthZone)
-                                .2
-                                .unwrap()
-                        } else {
-                            todo!("Take from worktop and create proof")
-                        }
-                    }
-                    ResourceSpecifier::Ids(ids, resource_address) => {
-                        if let Some(account) = account {
-                            self.create_proof_from_account_by_ids(&ids, resource_address, account);
-                            self.add_instruction(Instruction::PopFromAuthZone)
-                                .2
-                                .unwrap()
-                        } else {
-                            todo!("Take from worktop and create proof")
-                        }
-                    }
-                };
-                Ok(scrypto_encode(&scrypto::resource::Proof(proof_id)))
-            }
-            _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
-        }
+            .map_err(|_| BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned()))?;
+        Ok(scrypto_encode(&value).unwrap())
     }
 }
 
@@ -1043,17 +1188,25 @@ fn parse_resource_specifier(
     }
 
     // parse resource address
-    let token = tokens[tokens.len() - 1];
+    let resource_address_token = tokens[tokens.len() - 1];
     let resource_address = decoder
-        .validate_and_decode_resource_address(token)
-        .map_err(|_| ParseResourceSpecifierError::InvalidResourceAddress(token.to_owned()))?;
+        .validate_and_decode_resource_address(resource_address_token)
+        .map_err(|_| {
+            ParseResourceSpecifierError::InvalidResourceAddress(resource_address_token.to_owned())
+        })?;
 
     // parse non-fungible ids or amount
-    if tokens[0].starts_with('#') {
+    if tokens[0].contains('#') {
         let mut ids = BTreeSet::<NonFungibleId>::new();
-        for id in &tokens[..tokens.len() - 1] {
+        for id in tokens[..tokens.len() - 1].iter() {
+            let mut id = *id;
+            if id.starts_with('#') {
+                // Support the ids optionally starting with a # (which was an old encoding)
+                // EG: #String#123,resource_address
+                id = &id[1..];
+            }
             ids.insert(
-                id[1..].parse().map_err(|_| {
+                NonFungibleId::try_from_combined_simple_string(id).map_err(|_| {
                     ParseResourceSpecifierError::InvalidNonFungibleId(id.to_string())
                 })?,
             );

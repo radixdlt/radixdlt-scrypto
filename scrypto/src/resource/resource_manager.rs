@@ -1,333 +1,256 @@
+use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::types::{
+    GlobalAddress, MetadataMethod, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod,
+};
+use radix_engine_interface::math::Decimal;
+use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
+use radix_engine_interface::model::*;
+
 use sbor::rust::collections::HashMap;
-use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
+use scrypto::engine::scrypto_env::ScryptoEnv;
+use scrypto::scrypto_env_native_fn;
 
-use crate::abi::*;
-use crate::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
-use crate::buffer::scrypto_encode;
-use crate::core::NativeFnIdentifier;
-use crate::core::{FnIdentifier, Receiver, ResourceManagerFnIdentifier};
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine};
-use crate::math::*;
-use crate::misc::*;
-use crate::native_functions;
-use crate::resource::*;
-
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
-)]
-pub enum ResourceMethodAuthKey {
-    Mint,
-    Burn,
-    Withdraw,
-    Deposit,
-    UpdateMetadata,
-    UpdateNonFungibleData,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
-pub enum Mutability {
-    LOCKED,
-    MUTABLE(AccessRule),
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateInput {
-    pub resource_type: ResourceType,
-    pub metadata: HashMap<String, String>,
-    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
-    pub mint_params: Option<MintParams>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerUpdateAuthInput {
-    pub method: ResourceMethodAuthKey,
-    pub access_rule: AccessRule,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerLockAuthInput {
-    pub method: ResourceMethodAuthKey,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateVaultInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateBucketInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerMintInput {
-    pub mint_params: MintParams,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerGetMetadataInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerGetResourceTypeInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerGetTotalSupplyInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerUpdateMetadataInput {
-    pub metadata: HashMap<String, String>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerUpdateNonFungibleDataInput {
-    pub id: NonFungibleId,
-    pub data: Vec<u8>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerNonFungibleExistsInput {
-    pub id: NonFungibleId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct ResourceManagerGetNonFungibleInput {
-    pub id: NonFungibleId,
-}
-
-/// Represents a resource address.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub enum ResourceAddress {
-    Normal([u8; 26]),
-}
-
-impl ResourceAddress {}
+use crate::scrypto;
 
 /// Represents a resource manager.
 #[derive(Debug)]
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
-    pub fn set_mintable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::Mint,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    pub fn set_metadata(&mut self, key: String, value: String) {
+        let mut env = ScryptoEnv;
+        env.invoke(MetadataSetInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            key,
+            value,
+        })
+        .unwrap()
+    }
+
+    pub fn get_metadata(&mut self, key: String) -> Option<String> {
+        let mut env = ScryptoEnv;
+        env.invoke(MetadataGetInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            key,
+        })
+        .unwrap()
+    }
+
+    pub fn set_mintable(&mut self, access_rule: AccessRule) {
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Mint,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::Burn,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Burn,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::Withdraw,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerUpdateVaultAuthInvocation {
+            receiver: self.0,
+            method: Withdraw,
+            access_rule,
+        })
+        .unwrap()
     }
 
-    pub fn set_depositable(&mut self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::Deposit,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    pub fn set_depositable(&mut self, access_rule: AccessRule) {
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerUpdateVaultAuthInvocation {
+            receiver: self.0,
+            method: Deposit,
+            access_rule,
+        })
+        .unwrap()
     }
 
-    pub fn set_updateable_metadata(&self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::UpdateMetadata,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    pub fn set_recallable(&mut self, access_rule: AccessRule) {
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerUpdateVaultAuthInvocation {
+            receiver: self.0,
+            method: Recall,
+            access_rule,
+        })
+        .unwrap()
     }
 
-    pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(&ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    pub fn set_updateable_metadata(&self, access_rule: AccessRule) {
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
-    pub fn lock_mintable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::Mint,
-            }),
-        );
-        call_engine(input)
+    pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) {
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateNonFungibleData,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
-    pub fn lock_burnable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::Burn,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_mintable(&mut self) {
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Mint,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
-    pub fn lock_withdrawable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::Withdraw,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_burnable(&mut self) {
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Burn,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
-    pub fn lock_depositable(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::Deposit,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_updateable_metadata(&mut self) {
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
-    pub fn lock_updateable_metadata(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::UpdateMetadata,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_updateable_non_fungible_data(&mut self) {
+        let mut env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
+            index: 0,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateNonFungibleData,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
-    pub fn lock_updateable_non_fungible_data(&mut self) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(&ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
-            }),
-        );
-        call_engine(input)
+    pub fn lock_withdrawable(&mut self) {
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
+            receiver: self.0,
+            method: Withdraw,
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
+    }
+
+    pub fn lock_depositable(&mut self) {
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
+            receiver: self.0,
+            method: Deposit,
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
+    }
+
+    pub fn lock_recallable(&mut self) {
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
+            receiver: self.0,
+            method: Recall,
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Mint,
-            )),
-            scrypto_encode(&ResourceManagerMintInput { mint_params }),
-        );
-        call_engine(input)
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerMintInvocation {
+            mint_params,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
-    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateNonFungibleData,
-            )),
-            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data }),
-        );
-        call_engine(input)
+    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerUpdateNonFungibleDataInvocation {
+            id,
+            data,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
-        let input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(self.0)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::GetNonFungible,
-            )),
-            scrypto_encode(&ResourceManagerGetNonFungibleInput { id }),
-        );
-        call_engine(input)
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerGetNonFungibleInvocation {
+            id,
+            receiver: self.0,
+        })
+        .unwrap()
     }
 
-    native_functions! {
-        Receiver::Ref(RENodeId::ResourceManager(self.0)), NativeFnIdentifier::ResourceManager => {
-            pub fn metadata(&self) -> HashMap<String, String> {
-                ResourceManagerFnIdentifier::GetMetadata,
-                ResourceManagerGetMetadataInput {}
+    scrypto_env_native_fn! {
+        pub fn resource_type(&self) -> ResourceType {
+            ResourceManagerGetResourceTypeInvocation {
+                receiver: self.0,
             }
-            pub fn resource_type(&self) -> ResourceType {
-                ResourceManagerFnIdentifier::GetResourceType,
-                ResourceManagerGetResourceTypeInput {}
+        }
+        pub fn total_supply(&self) -> Decimal {
+            ResourceManagerGetTotalSupplyInvocation {
+                receiver: self.0,
             }
-            pub fn total_supply(&self) -> Decimal {
-                ResourceManagerFnIdentifier::GetTotalSupply,
-                ResourceManagerGetTotalSupplyInput {}
+        }
+        pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
+            ResourceManagerNonFungibleExistsInvocation {
+                receiver: self.0,
+                id: id.clone()
             }
-            pub fn update_metadata(&mut self, metadata: HashMap<String, String>) -> () {
-                ResourceManagerFnIdentifier::UpdateMetadata,
-                ResourceManagerUpdateMetadataInput {
-                    metadata
-                }
-            }
-            pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
-                ResourceManagerFnIdentifier::NonFungibleExists,
-                ResourceManagerNonFungibleExistsInput {
-                    id: id.clone()
-                }
+        }
+        pub fn burn(&mut self, bucket: Bucket) -> () {
+            ResourceManagerBurnInvocation {
+                receiver: self.0,
+                bucket: Bucket(bucket.0),
             }
         }
     }
@@ -342,13 +265,11 @@ impl ResourceManager {
     /// Mints non-fungible resources
     pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
         let mut entries = HashMap::new();
-        entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
+        entries.insert(
+            id.clone(),
+            (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
+        );
         self.mint_internal(MintParams::NonFungible { entries })
-    }
-
-    /// Burns a bucket of resources.
-    pub fn burn(&self, bucket: Bucket) {
-        bucket.burn()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
@@ -369,63 +290,6 @@ impl ResourceManager {
         id: &NonFungibleId,
         new_data: T,
     ) {
-        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
-    }
-}
-
-//========
-// binary
-//========
-
-impl TryFrom<&[u8]> for ResourceAddress {
-    type Error = AddressError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            27 => match EntityType::try_from(slice[0])
-                .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
-            {
-                EntityType::Resource => Ok(Self::Normal(copy_u8_array(&slice[1..]))),
-                _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
-            },
-            _ => Err(AddressError::InvalidLength(slice.len())),
-        }
-    }
-}
-
-impl ResourceAddress {
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        buf.push(EntityType::resource(self).id());
-        match self {
-            Self::Normal(v) => buf.extend(v),
-        }
-        buf
-    }
-}
-
-scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
-
-//======
-// text
-//======
-
-impl FromStr for ResourceAddress {
-    type Err = AddressError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        BECH32_DECODER.validate_and_decode_resource_address(s)
-    }
-}
-
-impl fmt::Display for ResourceAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", BECH32_ENCODER.encode_resource_address(self))
-    }
-}
-
-impl fmt::Debug for ResourceAddress {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
+        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data().unwrap())
     }
 }
