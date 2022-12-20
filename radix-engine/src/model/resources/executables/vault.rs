@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, RENode, ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
+    ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::fee::FeeReserveError;
 use crate::model::{
@@ -28,7 +28,7 @@ pub enum VaultError {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallInvocation {
-    type Exec = NativeExecutor<VaultTakeInvocation>;
+    type Exec = VaultTakeInvocation;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -40,16 +40,16 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallInvocation {
             NativeMethod::Vault(VaultMethod::Recall),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(VaultTakeInvocation {
+        let executor = VaultTakeInvocation {
             receiver: self.receiver,
             amount: self.amount,
-        });
+        };
         Ok((actor, call_frame_update, executor))
     }
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -61,15 +61,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeInvocation {
             NativeMethod::Vault(VaultMethod::Take),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultTakeInvocation {
+impl Executor for VaultTakeInvocation {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -100,7 +99,7 @@ impl NativeProcedure for VaultTakeInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultPutInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -115,15 +114,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultPutInvocation {
             NativeMethod::Vault(VaultMethod::Put),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultPutInvocation {
+impl Executor for VaultPutInvocation {
     type Output = ();
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -148,7 +146,7 @@ impl NativeProcedure for VaultPutInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultLockFeeInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -160,15 +158,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultLockFeeInvocation {
             NativeMethod::Vault(VaultMethod::LockFee),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultLockFeeInvocation {
+impl Executor for VaultLockFeeInvocation {
     type Output = ();
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -217,7 +214,7 @@ impl NativeProcedure for VaultLockFeeInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallNonFungiblesInvocation {
-    type Exec = NativeExecutor<VaultTakeNonFungiblesInvocation>;
+    type Exec = VaultTakeNonFungiblesInvocation;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -229,16 +226,16 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallNonFungiblesInvocatio
             NativeMethod::Vault(VaultMethod::RecallNonFungibles),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(VaultTakeNonFungiblesInvocation {
+        let executor = VaultTakeNonFungiblesInvocation {
             receiver: self.receiver,
             non_fungible_ids: self.non_fungible_ids,
-        });
+        };
         Ok((actor, call_frame_update, executor))
     }
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeNonFungiblesInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -250,15 +247,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeNonFungiblesInvocation 
             NativeMethod::Vault(VaultMethod::TakeNonFungibles),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultTakeNonFungiblesInvocation {
+impl Executor for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -291,7 +287,7 @@ impl NativeProcedure for VaultTakeNonFungiblesInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetAmountInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -303,15 +299,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetAmountInvocation {
             NativeMethod::Vault(VaultMethod::GetAmount),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultGetAmountInvocation {
+impl Executor for VaultGetAmountInvocation {
     type Output = Decimal;
 
-    fn main<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -328,7 +323,7 @@ impl NativeProcedure for VaultGetAmountInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetResourceAddressInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -340,15 +335,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetResourceAddressInvocatio
             NativeMethod::Vault(VaultMethod::GetResourceAddress),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultGetResourceAddressInvocation {
+impl Executor for VaultGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
-    fn main<'a, Y>(
+    fn execute<'a, Y>(
         self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
@@ -371,7 +365,7 @@ impl NativeProcedure for VaultGetResourceAddressInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetNonFungibleIdsInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -383,15 +377,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetNonFungibleIdsInvocation
             NativeMethod::Vault(VaultMethod::GetNonFungibleIds),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultGetNonFungibleIdsInvocation {
+impl Executor for VaultGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 
-    fn main<'a, Y>(
+    fn execute<'a, Y>(
         self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
@@ -415,7 +408,7 @@ impl NativeProcedure for VaultGetNonFungibleIdsInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -427,15 +420,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofInvocation {
             NativeMethod::Vault(VaultMethod::CreateProof),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultCreateProofInvocation {
+impl Executor for VaultCreateProofInvocation {
     type Output = Proof;
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -467,7 +459,7 @@ impl NativeProcedure for VaultCreateProofInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByAmountInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -479,15 +471,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByAmountInvocati
             NativeMethod::Vault(VaultMethod::CreateProofByAmount),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultCreateProofByAmountInvocation {
+impl Executor for VaultCreateProofByAmountInvocation {
     type Output = Proof;
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -519,7 +510,7 @@ impl NativeProcedure for VaultCreateProofByAmountInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByIdsInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -531,15 +522,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByIdsInvocation 
             NativeMethod::Vault(VaultMethod::CreateProofByIds),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for VaultCreateProofByIdsInvocation {
+impl Executor for VaultCreateProofByIdsInvocation {
     type Output = Proof;
 
-    fn main<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

@@ -65,6 +65,11 @@ pub enum GeneratorError {
     ArgumentDecodingError(DecodeError),
     ArgumentIndexingError(ScryptoValueDecodeError),
     InvalidEntityAddress(String),
+    InvalidLength {
+        value_type: ast::Type,
+        expected_length: usize,
+        actual: usize,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -395,28 +400,6 @@ pub fn generate_instruction(
             abi: generate_blob(abi, blobs)?,
             owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
         },
-        ast::Instruction::CreateResource {
-            resource_type,
-            metadata,
-            access_rules,
-            mint_params,
-        } => BasicInstruction::CreateResource {
-            resource_type: generate_typed_value(resource_type, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
-            mint_params: generate_typed_value(mint_params, resolver, bech32_decoder, blobs)?,
-        },
-        ast::Instruction::CreateResourceWithOwner {
-            resource_type,
-            metadata,
-            owner_badge,
-            mint_params,
-        } => BasicInstruction::CreateResourceWithOwner {
-            resource_type: generate_typed_value(resource_type, resolver, bech32_decoder, blobs)?,
-            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
-            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
-            mint_params: generate_typed_value(mint_params, resolver, bech32_decoder, blobs)?,
-        },
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
@@ -424,13 +407,6 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::BurnResource { bucket_id }
         }
-        ast::Instruction::MintResource {
-            amount,
-            resource_address,
-        } => BasicInstruction::MintResource {
-            amount: generate_decimal(amount)?,
-            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-        },
         ast::Instruction::RecallResource { vault_id, amount } => BasicInstruction::RecallResource {
             vault_id: generate_typed_value(vault_id, resolver, bech32_decoder, blobs)?,
             amount: generate_decimal(amount)?,
@@ -479,6 +455,79 @@ pub fn generate_instruction(
             key: generate_typed_value(key, resolver, bech32_decoder, blobs)?,
             rule: generate_typed_value(rule, resolver, bech32_decoder, blobs)?,
         },
+
+        ast::Instruction::MintFungible {
+            resource_address,
+            amount,
+        } => BasicInstruction::MintFungible {
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            amount: generate_decimal(amount)?,
+        },
+        ast::Instruction::MintNonFungible {
+            resource_address,
+            entries,
+        } => BasicInstruction::MintNonFungible {
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            entries: generate_non_fungible_mint_params(entries, resolver, bech32_decoder, blobs)?,
+        },
+
+        ast::Instruction::CreateFungibleResource {
+            divisibility,
+            metadata,
+            access_rules,
+            initial_supply,
+        } => BasicInstruction::CreateFungibleResource {
+            divisibility: generate_u8(divisibility)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+        },
+        ast::Instruction::CreateFungibleResourceWithOwner {
+            divisibility,
+            metadata,
+            owner_badge,
+            initial_supply,
+        } => BasicInstruction::CreateFungibleResourceWithOwner {
+            divisibility: generate_u8(divisibility)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+            initial_supply: generate_typed_value(initial_supply, resolver, bech32_decoder, blobs)?,
+        },
+
+        ast::Instruction::CreateNonFungibleResource {
+            id_type,
+            metadata,
+            access_rules,
+            initial_supply,
+        } => BasicInstruction::CreateNonFungibleResource {
+            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            access_rules: generate_typed_value(access_rules, resolver, bech32_decoder, blobs)?,
+            initial_supply: generate_from_enum_if_some(
+                initial_supply,
+                resolver,
+                bech32_decoder,
+                blobs,
+                generate_non_fungible_mint_params,
+            )?,
+        },
+        ast::Instruction::CreateNonFungibleResourceWithOwner {
+            id_type,
+            metadata,
+            owner_badge,
+            initial_supply,
+        } => BasicInstruction::CreateNonFungibleResourceWithOwner {
+            id_type: generate_typed_value(id_type, resolver, bech32_decoder, blobs)?,
+            metadata: generate_typed_value(metadata, resolver, bech32_decoder, blobs)?,
+            owner_badge: generate_non_fungible_address(owner_badge, bech32_decoder)?,
+            initial_supply: generate_from_enum_if_some(
+                initial_supply,
+                resolver,
+                bech32_decoder,
+                blobs,
+                generate_non_fungible_mint_params,
+            )?,
+        },
     })
 }
 
@@ -522,6 +571,13 @@ fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
     match value {
         ast::Value::String(s) => Ok(s.into()),
         v => invalid_type!(v, ast::Type::String),
+    }
+}
+
+fn generate_u8(value: &ast::Value) -> Result<u8, GeneratorError> {
+    match value {
+        ast::Value::U8(inner) => Ok(*inner),
+        v => invalid_type!(v, ast::Type::U8),
     }
 }
 
@@ -932,6 +988,130 @@ fn generate_byte_vec_from_hex(value: &ast::Value) -> Result<Vec<u8>, GeneratorEr
     Ok(bytes)
 }
 
+/// This function generates args from an [`ast::Value`]. This is useful when minting NFTs to be able
+/// to specify their data in a human readable format instead of SBOR.
+fn generate_args_from_tuple(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<ScryptoValue, GeneratorError> {
+    match value {
+        ast::Value::Tuple(values) => generate_args(values, resolver, bech32_decoder, blobs),
+        v => invalid_type!(v, ast::Type::Tuple),
+    }
+}
+
+fn generate_from_enum_if_some<F, T>(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+    generator: F,
+) -> Result<Option<T>, GeneratorError>
+where
+    F: Fn(
+        &ast::Value,
+        &mut NameResolver,
+        &Bech32Decoder,
+        &BTreeMap<Hash, Vec<u8>>,
+    ) -> Result<T, GeneratorError>,
+{
+    let value = match value {
+        ast::Value::Enum(variant, fields) if variant == "None" && fields.len() == 0 => {
+            return Ok(None);
+        }
+        ast::Value::None => {
+            return Ok(None);
+        }
+        ast::Value::Some(value) => &**value,
+        ast::Value::Enum(variant, fields) if variant == "Some" && fields.len() == 1 => &fields[0],
+        v => invalid_type!(v, ast::Type::Enum)?,
+    };
+    Ok(Some(generator(value, resolver, bech32_decoder, blobs)?))
+}
+
+/// This function generates the mint parameters of a non fungible resource from an array which has
+/// the following structure:
+///
+/// Value::Array (element_type: Type::Tuple)
+///     - Value::Tuple:
+///         - Value::NonFungibleId
+///         - Value::Tuple
+///             - Value::Tuple (Args tuple of immutable data)
+///             - Value::Tuple (Args tuple of mutable data)
+fn generate_non_fungible_mint_params(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>, GeneratorError> {
+    match value {
+        ast::Value::Array(kind, elements) => {
+            if kind != &ast::Type::Tuple {
+                return Err(GeneratorError::InvalidType {
+                    expected_type: ast::Type::Tuple,
+                    actual: kind.clone(),
+                });
+            };
+
+            let mut mint_params = BTreeMap::new();
+            for element in elements.into_iter() {
+                match element {
+                    ast::Value::Tuple(values) => {
+                        if values.len() != 2 {
+                            return Err(GeneratorError::InvalidLength {
+                                value_type: ast::Type::Tuple,
+                                expected_length: 2,
+                                actual: values.len(),
+                            });
+                        }
+
+                        let non_fungible_id = generate_non_fungible_id(&values[0])?;
+                        let non_fungible_data = {
+                            let non_fungible_data_value = values[1].clone();
+                            match non_fungible_data_value {
+                                ast::Value::Tuple(values) => {
+                                    if values.len() != 2 {
+                                        return Err(GeneratorError::InvalidLength {
+                                            value_type: ast::Type::Tuple,
+                                            expected_length: 2,
+                                            actual: values.len(),
+                                        });
+                                    }
+
+                                    let immutable_data = scrypto_encode(&generate_args_from_tuple(
+                                        &values[0],
+                                        resolver,
+                                        bech32_decoder,
+                                        blobs,
+                                    )?)
+                                    .map_err(GeneratorError::ArgumentEncodingError)?;
+                                    let mutable_data = scrypto_encode(&generate_args_from_tuple(
+                                        &values[1],
+                                        resolver,
+                                        bech32_decoder,
+                                        blobs,
+                                    )?)
+                                    .map_err(GeneratorError::ArgumentEncodingError)?;
+
+                                    (immutable_data, mutable_data)
+                                }
+                                v => invalid_type!(v, ast::Type::Tuple)?,
+                            }
+                        };
+                        mint_params.insert(non_fungible_id, non_fungible_data);
+                    }
+                    v => invalid_type!(v, ast::Type::Tuple)?,
+                }
+            }
+
+            Ok(mint_params)
+        }
+        v => invalid_type!(v, ast::Type::Array)?,
+    }
+}
+
 pub fn generate_value(
     value: &ast::Value,
     expected: Option<ast::Type>,
@@ -1230,7 +1410,7 @@ mod tests {
 
     #[macro_export]
     macro_rules! generate_instruction_ok {
-        ( $s:expr, $expected:expr ) => {{
+        ( $s:expr, $expected:expr, $($blob_hash: expr),* ) => {{
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
@@ -1242,11 +1422,15 @@ mod tests {
                     &mut id_validator,
                     &mut resolver,
                     &Bech32Decoder::new(&NetworkDefinition::simulator()),
-                    &mut BTreeMap::new()
+                    &mut BTreeMap::from([
+                        $(
+                            (($blob_hash).parse().unwrap(), Vec::new()),
+                        )*
+                    ])
                 ),
                 Ok($expected)
             );
-        }};
+        }}
     }
 
     #[macro_export]
@@ -1370,26 +1554,27 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
+        let owner_badge = NonFungibleAddress::new(resource, NonFungibleId::U32(1));
 
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             BasicInstruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
-            }
+            },
         );
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             BasicInstruction::TakeFromWorktop {
                 resource_address: resource
-            }
+            },
         );
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             BasicInstruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
-            }
+            },
         );
         generate_instruction_ok!(
             r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  PreciseDecimal("120");"#,
@@ -1402,7 +1587,7 @@ mod tests {
                 blueprint_name: "Airdrop".into(),
                 function_name: "new".to_string(),
                 args: args!(500u32, pdec!("120"))
-            }
+            },
         );
         generate_instruction_ok!(
             r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
@@ -1410,14 +1595,233 @@ mod tests {
                 component_address: component,
                 method_name: "refill".to_string(),
                 args: args!()
-            }
+            },
         );
         generate_instruction_ok!(
-            r#"MINT_RESOURCE Decimal("100") ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
-            BasicInstruction::MintResource {
+            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Tuple(Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"), Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"));"#,
+            BasicInstruction::PublishPackage {
+                code: Blob(
+                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
+                        .parse()
+                        .unwrap()
+                ),
+                abi: Blob(
+                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+                        .parse()
+                        .unwrap()
+                ),
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new()
+            },
+            "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
+            "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+        );
+        generate_instruction_ok!(
+            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32);"#,
+            BasicInstruction::PublishPackageWithOwner {
+                code: Blob(
+                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
+                        .parse()
+                        .unwrap()
+                ),
+                abi: Blob(
+                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+                        .parse()
+                        .unwrap()
+                ),
+                owner_badge: owner_badge.clone()
+            },
+            "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
+            "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
+        );
+
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("500"));"#,
+            BasicInstruction::CreateFungibleResource {
+                divisibility: 18,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                access_rules: BTreeMap::from([
+                    (
+                        ResourceMethodAuthKey::Withdraw,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                    (
+                        ResourceMethodAuthKey::Deposit,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                ]),
+                initial_supply: Some("500".parse().unwrap())
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            BasicInstruction::CreateFungibleResource {
+                divisibility: 18,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                access_rules: BTreeMap::from([
+                    (
+                        ResourceMethodAuthKey::Withdraw,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                    (
+                        ResourceMethodAuthKey::Deposit,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                ]),
+                initial_supply: None
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) Some(Decimal("500"));"#,
+            BasicInstruction::CreateFungibleResourceWithOwner {
+                divisibility: 18,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                owner_badge: owner_badge.clone(),
+                initial_supply: Some("500".parse().unwrap())
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            BasicInstruction::CreateFungibleResourceWithOwner {
+                divisibility: 18,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                owner_badge: owner_badge.clone(),
+                initial_supply: None
+            },
+        );
+
+        generate_instruction_ok!(
+            r#"
+            CREATE_NON_FUNGIBLE_RESOURCE 
+                Enum("U32") 
+                Array<Tuple>(Tuple("name", "Token")) 
+                Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) 
+                Some(
+                    Array<Tuple>(
+                        Tuple(
+                            NonFungibleId(1u32), 
+                            Tuple(
+                                Tuple("Hello World", Decimal("12")),
+                                Tuple(12u8, 19u128)
+                            )
+                        )
+                    )
+                );
+            "#,
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::U32,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                access_rules: BTreeMap::from([
+                    (
+                        ResourceMethodAuthKey::Withdraw,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                    (
+                        ResourceMethodAuthKey::Deposit,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                ]),
+                initial_supply: Some(BTreeMap::from([(
+                    NonFungibleId::U32(1),
+                    (
+                        args!(String::from("Hello World"), Decimal::from("12")),
+                        args!(12u8, 19u128)
+                    )
+                )]))
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::U32,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                access_rules: BTreeMap::from([
+                    (
+                        ResourceMethodAuthKey::Withdraw,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                    (
+                        ResourceMethodAuthKey::Deposit,
+                        (AccessRule::AllowAll, AccessRule::DenyAll)
+                    ),
+                ]),
+                initial_supply: None
+            },
+        );
+
+        generate_instruction_ok!(
+            r#"
+            CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER 
+                Enum("U32") 
+                Array<Tuple>(Tuple("name", "Token")) 
+                NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) 
+                Some(
+                    Array<Tuple>(
+                        Tuple(
+                            NonFungibleId(1u32), 
+                            Tuple(
+                                Tuple("Hello World", Decimal("12")),
+                                Tuple(12u8, 19u128)
+                            )
+                        )
+                    )
+                );
+            "#,
+            BasicInstruction::CreateNonFungibleResourceWithOwner {
+                id_type: NonFungibleIdType::U32,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                owner_badge: owner_badge.clone(),
+                initial_supply: Some(BTreeMap::from([(
+                    NonFungibleId::U32(1),
+                    (
+                        args!(String::from("Hello World"), Decimal::from("12")),
+                        args!(12u8, 19u128)
+                    )
+                )]))
+            },
+        );
+        generate_instruction_ok!(
+            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("U32") Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            BasicInstruction::CreateNonFungibleResourceWithOwner {
+                id_type: NonFungibleIdType::U32,
+                metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
+                owner_badge: owner_badge.clone(),
+                initial_supply: None
+            },
+        );
+
+        generate_instruction_ok!(
+            r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
+            BasicInstruction::MintFungible {
                 resource_address: resource,
                 amount: Decimal::from_str("100").unwrap()
-            }
+            },
+        );
+        generate_instruction_ok!(
+            r#"
+            MINT_NON_FUNGIBLE 
+                ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") 
+                Array<Tuple>(
+                    Tuple(
+                        NonFungibleId(1u32), 
+                        Tuple(
+                            Tuple("Hello World", Decimal("12")),
+                            Tuple(12u8, 19u128)
+                        )
+                    )
+                );
+            "#,
+            BasicInstruction::MintNonFungible {
+                resource_address: resource,
+                entries: BTreeMap::from([(
+                    NonFungibleId::U32(1),
+                    (
+                        args!(String::from("Hello World"), Decimal::from("12")),
+                        args!(12u8, 19u128)
+                    )
+                )])
+            },
         );
     }
 }

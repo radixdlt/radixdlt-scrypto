@@ -1,6 +1,6 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor,
-    NativeProcedure, RENode, ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
+    ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
@@ -28,7 +28,7 @@ pub enum ProofError {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -40,15 +40,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
             NativeMethod::Proof(ProofMethod::GetAmount),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ProofGetAmountInvocation {
+impl Executor for ProofGetAmountInvocation {
     type Output = Decimal;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -63,7 +62,7 @@ impl NativeProcedure for ProofGetAmountInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -75,15 +74,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation
             NativeMethod::Proof(ProofMethod::GetNonFungibleIds),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ProofGetNonFungibleIdsInvocation {
+impl Executor for ProofGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 
-    fn main<Y>(
+    fn execute<Y>(
         self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
@@ -107,7 +105,7 @@ impl NativeProcedure for ProofGetNonFungibleIdsInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -119,15 +117,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocatio
             NativeMethod::Proof(ProofMethod::GetResourceAddress),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ProofGetResourceAddressInvocation {
+impl Executor for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -147,7 +147,7 @@ impl NativeProcedure for ProofGetResourceAddressInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -159,15 +159,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
             NativeMethod::Proof(ProofMethod::Clone),
             ResolvedReceiver::new(receiver),
         );
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ProofCloneInvocation {
+impl Executor for ProofCloneInvocation {
     type Output = Proof;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

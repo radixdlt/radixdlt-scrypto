@@ -6,8 +6,9 @@ use radix_engine_interface::model::*;
 use transaction::manifest::decompiler::DecompilationContext;
 use utils::ContextualDisplay;
 
-use crate::engine::{RejectionError, ResourceChange, RuntimeError, TrackedEvent};
+use crate::engine::{RejectionError, RuntimeError, TrackedEvent};
 use crate::fee::FeeSummary;
+use crate::model::*;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
@@ -20,8 +21,7 @@ pub struct TransactionExecution {
 }
 
 /// Captures whether a transaction should be committed, and its other results
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug)]
 pub enum TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
@@ -36,8 +36,7 @@ impl TransactionResult {
     }
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug)]
 pub struct CommitResult {
     pub outcome: TransactionOutcome,
     pub state_updates: StateDiff,
@@ -46,15 +45,14 @@ pub struct CommitResult {
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug)]
 pub enum TransactionOutcome {
-    Success(Vec<Vec<u8>>),
+    Success(Vec<InstructionOutput>),
     Failure(RuntimeError),
 }
 
 impl TransactionOutcome {
-    pub fn expect_success(&self) -> &Vec<Vec<u8>> {
+    pub fn expect_success(&self) -> &Vec<InstructionOutput> {
         match self {
             TransactionOutcome::Success(results) => results,
             TransactionOutcome::Failure(error) => panic!("Outcome was a failure: {}", error),
@@ -64,7 +62,7 @@ impl TransactionOutcome {
     pub fn success_or_else<E, F: FnOnce(&RuntimeError) -> E>(
         &self,
         f: F,
-    ) -> Result<&Vec<Vec<u8>>, E> {
+    ) -> Result<&Vec<InstructionOutput>, E> {
         match self {
             TransactionOutcome::Success(results) => Ok(results),
             TransactionOutcome::Failure(error) => Err(f(error)),
@@ -118,8 +116,6 @@ pub struct RejectResult {
 }
 
 /// Represents a transaction receipt.
-#[derive(Clone)]
-#[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionReceipt {
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
@@ -185,7 +181,7 @@ impl TransactionReceipt {
         }
     }
 
-    pub fn expect_commit_success(&self) -> &Vec<Vec<u8>> {
+    pub fn expect_commit_success(&self) -> &Vec<InstructionOutput> {
         match &self.result {
             TransactionResult::Commit(c) => match &c.outcome {
                 TransactionOutcome::Success(x) => x,
@@ -230,8 +226,16 @@ impl TransactionReceipt {
     }
 
     pub fn output<T: ScryptoDecode>(&self, nth: usize) -> T {
-        scrypto_decode::<T>(&self.expect_commit_success()[nth][..])
-            .expect("Wrong instruction output type!")
+        match &self.expect_commit_success()[nth] {
+            InstructionOutput::Native(native) => {
+                // TODO: Use downcast
+                let value = IndexedScryptoValue::from_typed(&native.as_ref());
+                scrypto_decode::<T>(&value.raw).expect("Wrong native instruction output type!")
+            }
+            InstructionOutput::Scrypto(value) => {
+                scrypto_decode::<T>(&value.raw).expect("Wrong scrypto instruction output type!")
+            }
+        }
     }
 
     pub fn new_package_addresses(&self) -> &Vec<PackageAddress> {
@@ -349,7 +353,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for TransactionReceipt {
                         f,
                         "\n{} {}",
                         prefix!(i, outputs),
-                        IndexedScryptoValue::from_slice(output)
+                        IndexedScryptoValue::from_slice(&output.as_vec())
                             .expect("Failed to parse return data")
                             .display(decompilation_context.for_value_display())
                     )?;

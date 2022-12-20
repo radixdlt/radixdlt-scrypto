@@ -8,11 +8,9 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
 use radix_engine_interface::model::*;
-use radix_engine_interface::rule;
 
 pub struct Package;
 
@@ -41,7 +39,7 @@ impl Package {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -49,15 +47,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
         let actor = ResolvedActor::function(NativeFunction::Package(PackageFunction::Publish));
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for PackagePublishInvocation {
+impl Executor for PackagePublishInvocation {
     type Output = PackageAddress;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -118,115 +115,8 @@ impl NativeProcedure for PackagePublishInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishWithOwnerInvocation {
-    type Exec = NativeExecutor<Self>;
-
-    fn resolve<D: ResolverApi<W>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
-        let actor =
-            ResolvedActor::function(NativeFunction::Package(PackageFunction::PublishWithOwner));
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl NativeProcedure for PackagePublishWithOwnerInvocation {
-    type Output = PackageAddress;
-
-    fn main<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + InvokableModel<RuntimeError>,
-    {
-        let code = api.read_blob(&self.code.0)?.to_vec();
-        let blob = api.read_blob(&self.abi.0)?;
-        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidAbi(e),
-            ))
-        })?;
-        let package = Package::new(code, abi).map_err(|e| {
-            RuntimeError::ApplicationError(ApplicationError::PackageError(
-                PackageError::InvalidWasm(e),
-            ))
-        })?;
-        let package_royalty_config = PackageRoyaltyConfigSubstate {
-            royalty_config: self.royalty_config,
-        };
-        let package_royalty_accumulator = PackageRoyaltyAccumulatorSubstate {
-            royalty: Resource::new_empty(RADIX_TOKEN, ResourceType::Fungible { divisibility: 18 }),
-        };
-        let metadata_substate = MetadataSubstate {
-            metadata: self.metadata,
-        };
-
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalPackage)?;
-        let package_address: PackageAddress = global_node_id.into();
-
-        // Add protection for metadata/royalties
-        let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Get,
-            ))),
-            AccessRule::AllowAll,
-            rule!(require(self.owner_badge.clone())),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
-            rule!(require(self.owner_badge.clone())),
-            rule!(require(self.owner_badge.clone())),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-                PackageMethod::SetRoyaltyConfig,
-            ))),
-            rule!(require(self.owner_badge.clone())),
-            rule!(require(self.owner_badge.clone())),
-        );
-        access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-                PackageMethod::ClaimRoyalty,
-            ))),
-            rule!(require(self.owner_badge.clone())),
-            rule!(require(self.owner_badge.clone())),
-        );
-
-        // Create package node
-        let node_id = api.allocate_node_id(RENodeType::Package)?;
-        api.create_node(
-            node_id,
-            RENode::Package(
-                package,
-                package_royalty_config,
-                package_royalty_accumulator,
-                metadata_substate,
-                AccessRulesChainSubstate {
-                    access_rules_chain: vec![access_rules],
-                },
-            ),
-        )?;
-        let package_id: PackageId = node_id.into();
-
-        // Globalize
-        api.create_node(
-            global_node_id,
-            RENode::Global(GlobalAddressSubstate::Package(package_id)),
-        )?;
-
-        Ok((
-            package_address,
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Package(package_address))),
-        ))
-    }
-}
-
 impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocation {
-    type Exec = NativeExecutor<PackageSetRoyaltyConfigExecutable>;
+    type Exec = PackageSetRoyaltyConfigExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -243,19 +133,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocatio
             NativeMethod::Package(PackageMethod::SetRoyaltyConfig),
             resolved_receiver,
         );
-        let executor = NativeExecutor(PackageSetRoyaltyConfigExecutable {
+        let executor = PackageSetRoyaltyConfigExecutable {
             receiver: resolved_receiver.receiver,
             royalty_config: self.royalty_config,
-        });
+        };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for PackageSetRoyaltyConfigExecutable {
+impl Executor for PackageSetRoyaltyConfigExecutable {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -274,7 +164,7 @@ impl NativeProcedure for PackageSetRoyaltyConfigExecutable {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
-    type Exec = NativeExecutor<PackageClaimRoyaltyExecutable>;
+    type Exec = PackageClaimRoyaltyExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -288,18 +178,18 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
             NativeMethod::Package(PackageMethod::ClaimRoyalty),
             resolved_receiver,
         );
-        let executor = NativeExecutor(PackageClaimRoyaltyExecutable {
+        let executor = PackageClaimRoyaltyExecutable {
             receiver: resolved_receiver.receiver,
-        });
+        };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for PackageClaimRoyaltyExecutable {
+impl Executor for PackageClaimRoyaltyExecutable {
     type Output = Bucket;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 
-/// Create a token with fixed supply
+/// Create a fungible token with fixed supply
 #[derive(Parser, Debug)]
 pub struct NewTokenFixed {
     /// The total supply

@@ -1,4 +1,4 @@
-use radix_engine::engine::ResourceChange;
+use radix_engine::model::ResourceChange;
 use radix_engine::types::*;
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::data::*;
@@ -30,8 +30,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     );
 
     // Assert
-    let outputs = receipt.expect_commit_success();
-    let other_account_balance: Decimal = scrypto_decode(&outputs[2]).unwrap();
+    let other_account_balance: Decimal = receipt.output(2);
     let transfer_amount = other_account_balance - 1000 /* initial balance */;
     let other_account_id: ComponentId = test_runner.deref_component(other_account).unwrap().into();
 
@@ -181,7 +180,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     // Assert
     assert_eq!(1, receipt.expect_commit().resource_changes.len()); // Just the fee payment
     assert_eq!(
-        outputs[1],
+        outputs[1].as_vec(),
         IndexedScryptoValue::from_typed(&Decimal::from(1000)).raw
     );
 }

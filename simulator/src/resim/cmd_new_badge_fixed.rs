@@ -6,7 +6,7 @@ use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 
-/// Create a badge with fixed supply
+/// Create a fungible badge with fixed supply
 #[derive(Parser, Debug)]
 pub struct NewBadgeFixed {
     /// The total supply

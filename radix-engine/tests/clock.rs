@@ -78,7 +78,7 @@ fn set_current_time_should_fail_without_validator_auth() {
             package_address,
             "ClockTest",
             "set_current_time",
-            args!(CLOCK, 123 as u64),
+            args!(CLOCK, 123 as i64),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -95,8 +95,8 @@ fn validator_can_set_current_time() {
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
-    let time_to_set_ms: u64 = 1669663688996;
-    let expected_unix_time_rounded_to_minutes: u64 = 1669663680;
+    let time_to_set_ms: i64 = 1669663688996;
+    let expected_unix_time_rounded_to_minutes: i64 = 1669663680;
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -117,8 +117,8 @@ fn validator_can_set_current_time() {
     let receipt = test_runner.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
 
     // Assert
-    let outputs = receipt.expect_commit_success();
-    let current_unix_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[2]).unwrap();
+    receipt.expect_commit_success();
+    let current_unix_time_rounded_to_minutes: i64 = receipt.output(2);
     assert_eq!(
         current_unix_time_rounded_to_minutes,
         expected_unix_time_rounded_to_minutes
@@ -144,8 +144,8 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let outputs = receipt.expect_commit_success();
-    let current_time_rounded_to_minutes: u64 = scrypto_decode(&outputs[1]).unwrap();
+    receipt.expect_commit_success();
+    let current_time_rounded_to_minutes: i64 = receipt.output(1);
     assert_eq!(current_time_rounded_to_minutes, 0);
 }
 
@@ -162,7 +162,7 @@ fn test_clock_comparison_methods_against_the_current_time() {
             package_address,
             "ClockTest",
             "set_current_time",
-            args!(CLOCK, 1669663688996 as u64),
+            args!(CLOCK, 1669663688996 as i64),
         )
         .call_function(
             package_address,
@@ -172,6 +172,28 @@ fn test_clock_comparison_methods_against_the_current_time() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![AuthAddresses::validator_role()]);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn test_date_time_conversions() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "ClockTest",
+            "test_date_time_conversions",
+            args![],
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();

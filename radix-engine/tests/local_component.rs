@@ -1,4 +1,5 @@
-use radix_engine::engine::{KernelError, ModuleError, RuntimeError};
+use radix_engine::engine::{ModuleError, RuntimeError};
+use radix_engine::model::CostingError;
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
@@ -196,7 +197,9 @@ fn recursion_bomb_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)
+            RuntimeError::ModuleError(ModuleError::CostingError(
+                CostingError::MaxCallDepthLimitReached
+            ))
         )
     });
 }
@@ -270,7 +273,9 @@ fn recursion_bomb_2_to_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)
+            RuntimeError::ModuleError(ModuleError::CostingError(
+                CostingError::MaxCallDepthLimitReached
+            ))
         )
     });
 }

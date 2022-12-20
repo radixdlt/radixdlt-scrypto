@@ -1,0 +1,18 @@
+# Create resource
+CREATE_FUNGIBLE_RESOURCE
+    0u8
+    Array<Tuple>()
+    Array<Tuple>()
+    Some(Decimal("1.0"));
+
+# Burn
+TAKE_FROM_WORKTOP
+    ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag")
+    Bucket("temp1");
+BURN_RESOURCE Bucket("temp1");
+
+# Mint
+MINT_FUNGIBLE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Decimal("5.0");
+
+# Recall
+RECALL_RESOURCE Bytes("49cd9235ba62b2c217e32e5b4754c08219ef16389761356eaccbf6f6bdbfa44d00000000") Decimal("1.2");

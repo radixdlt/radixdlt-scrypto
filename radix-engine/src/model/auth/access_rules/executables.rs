@@ -1,7 +1,6 @@
 use crate::engine::{
-    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, InterpreterError,
-    LockFlags, NativeExecutor, NativeProcedure, ResolvedActor, ResolverApi, RuntimeError,
-    SystemApi,
+    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor,
+    InterpreterError, LockFlags, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{MethodAuthorization, MethodAuthorizationError};
 use crate::types::*;
@@ -22,7 +21,7 @@ pub enum AccessRulesChainError {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         mut self,
@@ -44,28 +43,24 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocat
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
+impl Executor for AccessRulesAddAccessCheckInvocation {
     type Output = ();
 
-    fn main<Y>(
-        self,
-        system_api: &mut Y,
-    ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         // Abi checks
         {
             let offset = SubstateOffset::Component(ComponentOffset::Info);
-            let handle = system_api.lock_substate(self.receiver, offset, LockFlags::read_only())?;
+            let handle = api.lock_substate(self.receiver, offset, LockFlags::read_only())?;
 
             let (package_id, blueprint_name) = {
-                let substate_ref = system_api.get_ref(handle)?;
+                let substate_ref = api.get_ref(handle)?;
                 let component_info = substate_ref.component_info();
                 let package_address = component_info.package_address;
                 let blueprint_name = component_info.blueprint_name.to_owned();
@@ -76,9 +71,8 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
             };
 
             let package_offset = SubstateOffset::Package(PackageOffset::Info);
-            let handle =
-                system_api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
-            let substate_ref = system_api.get_ref(handle)?;
+            let handle = api.lock_substate(package_id, package_offset, LockFlags::read_only())?;
+            let substate_ref = api.get_ref(handle)?;
             let package = substate_ref.package_info();
             let blueprint_abi = package.blueprint_abi(&blueprint_name).unwrap_or_else(|| {
                 panic!(
@@ -102,9 +96,9 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
         }
 
         let offset = SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain);
-        let handle = system_api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(self.receiver, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+        let mut substate_ref_mut = api.get_ref_mut(handle)?;
         let substate = substate_ref_mut.access_rules_chain();
         substate.access_rules_chain.push(self.access_rules);
 
@@ -113,7 +107,7 @@ impl NativeProcedure for AccessRulesAddAccessCheckInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         mut self,
@@ -137,15 +131,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleIn
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
+impl Executor for AccessRulesSetMethodAccessRuleInvocation {
     type Output = ();
 
-    fn main<Y>(
+    fn execute<Y>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -231,7 +224,7 @@ impl NativeProcedure for AccessRulesSetMethodAccessRuleInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         mut self,
@@ -255,15 +248,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInv
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
+impl Executor for AccessRulesSetGroupAccessRuleInvocation {
     type Output = ();
 
-    fn main<Y>(
+    fn execute<Y>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -321,7 +313,7 @@ impl NativeProcedure for AccessRulesSetGroupAccessRuleInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         mut self,
@@ -345,15 +337,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityIn
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
+impl Executor for AccessRulesSetMethodMutabilityInvocation {
     type Output = ();
 
-    fn main<Y>(
+    fn execute<Y>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -439,7 +430,7 @@ impl NativeProcedure for AccessRulesSetMethodMutabilityInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         mut self,
@@ -463,15 +454,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInv
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
+impl Executor for AccessRulesSetGroupMutabilityInvocation {
     type Output = ();
 
-    fn main<Y>(
+    fn execute<Y>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -529,7 +519,7 @@ impl NativeProcedure for AccessRulesSetGroupMutabilityInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         mut self,
@@ -553,15 +543,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for AccessRulesGetLengthInvocation {
+impl Executor for AccessRulesGetLengthInvocation {
     type Output = u32;
 
-    fn main<Y>(
+    fn execute<Y>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>

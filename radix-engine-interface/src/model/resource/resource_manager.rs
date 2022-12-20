@@ -66,32 +66,6 @@ impl Into<SerializedInvocation> for ResourceManagerCreateInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateWithOwnerInvocation {
-    pub resource_type: ResourceType,
-    pub metadata: BTreeMap<String, String>,
-    pub owner_badge: NonFungibleAddress,
-    pub mint_params: Option<MintParams>,
-}
-
-impl Invocation for ResourceManagerCreateWithOwnerInvocation {
-    type Output = (ResourceAddress, Option<Bucket>);
-}
-
-impl SerializableInvocation for ResourceManagerCreateWithOwnerInvocation {
-    type ScryptoOutput = (ResourceAddress, Option<Bucket>);
-}
-
-impl Into<SerializedInvocation> for ResourceManagerCreateWithOwnerInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
-            ResourceManagerFunctionInvocation::CreateWithOwner(self),
-        ))
-        .into()
-    }
-}
-
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerBucketBurnInvocation {
     pub bucket: Bucket,
 }

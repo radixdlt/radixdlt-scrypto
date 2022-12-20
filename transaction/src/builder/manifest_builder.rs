@@ -272,23 +272,100 @@ impl ManifestBuilder {
         self.add_instruction(BasicInstruction::DropAllProofs).0
     }
 
-    pub fn create_resource<R: Into<AccessRule>>(
+    /// Creates a fungible resource
+    pub fn create_fungible_resource<R: Into<AccessRule>>(
         &mut self,
-        resource_type: ResourceType,
+        divisibility: u8,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
-        mint_params: Option<MintParams>,
+        initial_supply: Option<Decimal>,
     ) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateResource {
-            resource_type,
+        self.add_instruction(BasicInstruction::CreateFungibleResource {
+            divisibility,
             metadata,
             access_rules: access_rules
                 .into_iter()
                 .map(|(k, v)| (k, (v.0, v.1.into())))
                 .collect(),
-            mint_params,
+            initial_supply: initial_supply,
         });
 
+        self
+    }
+
+    /// Creates a fungible resource with an owner badge
+    pub fn create_fungible_resource_with_owner(
+        &mut self,
+        divisibility: u8,
+        metadata: BTreeMap<String, String>,
+        owner_badge: NonFungibleAddress,
+        initial_supply: Option<Decimal>,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateFungibleResourceWithOwner {
+            divisibility,
+            metadata,
+            owner_badge,
+            initial_supply,
+        });
+        self
+    }
+
+    /// Creates a new non-fungible resource
+    pub fn create_non_fungible_resource<R, T, V>(
+        &mut self,
+        id_type: NonFungibleIdType,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
+        initial_supply: Option<T>,
+    ) -> &mut Self
+    where
+        R: Into<AccessRule>,
+        T: IntoIterator<Item = (NonFungibleId, V)>,
+        V: NonFungibleData,
+    {
+        let initial_supply = initial_supply.map(|entries| {
+            entries
+                .into_iter()
+                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+                .collect()
+        });
+        let access_rules = access_rules
+            .into_iter()
+            .map(|(k, v)| (k, (v.0, v.1.into())))
+            .collect();
+        self.add_instruction(BasicInstruction::CreateNonFungibleResource {
+            id_type,
+            metadata,
+            access_rules,
+            initial_supply,
+        });
+        self
+    }
+
+    /// Creates a new non-fungible resource with an owner badge
+    pub fn create_non_fungible_resource_with_owner<T, V>(
+        &mut self,
+        id_type: NonFungibleIdType,
+        metadata: BTreeMap<String, String>,
+        owner_badge: NonFungibleAddress,
+        initial_supply: Option<T>,
+    ) -> &mut Self
+    where
+        T: IntoIterator<Item = (NonFungibleId, V)>,
+        V: NonFungibleData,
+    {
+        let initial_supply = initial_supply.map(|entries| {
+            entries
+                .into_iter()
+                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+                .collect()
+        });
+        self.add_instruction(BasicInstruction::CreateNonFungibleResourceWithOwner {
+            id_type,
+            metadata,
+            owner_badge,
+            initial_supply,
+        });
         self
     }
 
@@ -489,11 +566,11 @@ impl ManifestBuilder {
             royalty_config,
             metadata,
             access_rules,
-        })
-        .0
+        });
+        self
     }
 
-    /// Publishes a package.
+    /// Publishes a package with an owner badge.
     pub fn publish_package_with_owner(
         &mut self,
         code: Vec<u8>,
@@ -511,8 +588,8 @@ impl ManifestBuilder {
             code: Blob(code_hash),
             abi: Blob(abi_hash),
             owner_badge,
-        })
-        .0
+        });
+        self
     }
 
     /// Builds a transaction manifest.
@@ -528,36 +605,18 @@ impl ManifestBuilder {
     pub fn new_token_mutable(
         &mut self,
         metadata: BTreeMap<String, String>,
-        minter_resource_address: ResourceAddress,
+        minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        access_rules.insert(
-            Mint,
-            (
-                rule!(require(minter_resource_address.clone())),
-                rule!(deny_all),
-            ),
-        );
-        access_rules.insert(
-            Burn,
-            (
-                rule!(require(minter_resource_address.clone())),
-                rule!(deny_all),
-            ),
-        );
+        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
+        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
-        let mint_params: Option<MintParams> = Option::None;
-        self.add_instruction(BasicInstruction::CreateResource {
-            resource_type: ResourceType::Fungible { divisibility: 18 },
-            metadata,
-            access_rules,
-            mint_params,
-        })
-        .0
+        let initial_supply = Option::None;
+        self.create_fungible_resource(18, metadata, access_rules, initial_supply)
     }
 
     /// Creates a token resource with fixed supply.
@@ -572,52 +631,25 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.add_instruction(BasicInstruction::CreateResource {
-            resource_type: ResourceType::Fungible { divisibility: 18 },
-            metadata,
-            access_rules,
-            mint_params: Option::Some(MintParams::Fungible {
-                amount: initial_supply.into(),
-            }),
-        })
-        .0
+        self.create_fungible_resource(18, metadata, access_rules, Some(initial_supply))
     }
 
     /// Creates a badge resource with mutable supply.
     pub fn new_badge_mutable(
         &mut self,
         metadata: BTreeMap<String, String>,
-        minter_resource_address: ResourceAddress,
+        minter_rule: AccessRule,
     ) -> &mut Self {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        access_rules.insert(
-            Mint,
-            (
-                rule!(require(minter_resource_address.clone())),
-                rule!(deny_all),
-            ),
-        );
-        access_rules.insert(
-            Burn,
-            (
-                rule!(require(minter_resource_address.clone())),
-                rule!(deny_all),
-            ),
-        );
+        access_rules.insert(Mint, (minter_rule.clone(), rule!(deny_all)));
+        access_rules.insert(Burn, (minter_rule.clone(), rule!(deny_all)));
 
-        let mint_params: Option<MintParams> = Option::None;
-
-        self.add_instruction(BasicInstruction::CreateResource {
-            resource_type: ResourceType::Fungible { divisibility: 0 },
-            metadata,
-            access_rules,
-            mint_params,
-        })
-        .0
+        let initial_supply = Option::None;
+        self.create_fungible_resource(0, metadata, access_rules, initial_supply)
     }
 
     /// Creates a badge resource with fixed supply.
@@ -632,15 +664,7 @@ impl ManifestBuilder {
             (rule!(allow_all), rule!(deny_all)),
         );
 
-        self.add_instruction(BasicInstruction::CreateResource {
-            resource_type: ResourceType::Fungible { divisibility: 0 },
-            metadata,
-            access_rules,
-            mint_params: Option::Some(MintParams::Fungible {
-                amount: initial_supply.into(),
-            }),
-        })
-        .0
+        self.create_fungible_resource(0, metadata, access_rules, Some(initial_supply))
     }
 
     pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
@@ -651,10 +675,34 @@ impl ManifestBuilder {
         })
     }
 
-    pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
-        self.add_instruction(BasicInstruction::MintResource {
-            amount,
+    pub fn mint_fungible(
+        &mut self,
+        resource_address: ResourceAddress,
+        amount: Decimal,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::MintFungible {
             resource_address,
+            amount,
+        });
+        self
+    }
+
+    pub fn mint_non_fungible<T, V>(
+        &mut self,
+        resource_address: ResourceAddress,
+        entries: T,
+    ) -> &mut Self
+    where
+        T: IntoIterator<Item = (NonFungibleId, V)>,
+        V: NonFungibleData,
+    {
+        let entries = entries
+            .into_iter()
+            .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+            .collect();
+        self.add_instruction(BasicInstruction::MintNonFungible {
+            resource_address,
+            entries,
         });
         self
     }
@@ -1120,16 +1168,17 @@ fn parse_resource_specifier(
         })?;
 
     // parse non-fungible ids or amount
-    if tokens[0].starts_with('#') {
+    if tokens[0].contains('#') {
         let mut ids = BTreeSet::<NonFungibleId>::new();
-        for id in &tokens[..tokens.len() - 1] {
-            if !id.starts_with('#') {
-                return Err(ParseResourceSpecifierError::InvalidNonFungibleId(
-                    id.to_string(),
-                ));
+        for id in tokens[..tokens.len() - 1].iter() {
+            let mut id = *id;
+            if id.starts_with('#') {
+                // Support the ids optionally starting with a # (which was an old encoding)
+                // EG: #String#123,resource_address
+                id = &id[1..];
             }
             ids.insert(
-                NonFungibleId::try_from_combined_simple_string(&id[1..]).map_err(|_| {
+                NonFungibleId::try_from_combined_simple_string(id).map_err(|_| {
                     ParseResourceSpecifierError::InvalidNonFungibleId(id.to_string())
                 })?,
             );

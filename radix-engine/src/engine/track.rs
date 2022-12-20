@@ -13,10 +13,10 @@ use crate::fee::FeeSummary;
 use crate::fee::FeeTable;
 use crate::fee::{FeeReserve, RoyaltyReceiver};
 use crate::ledger::*;
-use crate::model::Resource;
 use crate::model::RuntimeSubstate;
 use crate::model::SubstateRef;
 use crate::model::TransactionProcessorError;
+use crate::model::*;
 use crate::model::{KeyValueStoreEntrySubstate, PersistedSubstate};
 use crate::model::{NonFungibleSubstate, SubstateRefMut};
 use crate::state_manager::StateDiff;
@@ -81,8 +81,6 @@ pub enum TrackError {
     LockUnmodifiedBaseOnNewSubstate(SubstateId),
     LockUnmodifiedBaseOnOnUpdatedSubstate(SubstateId),
 }
-
-pub type InvokeResult = Result<Vec<Vec<u8>>, RuntimeError>;
 
 pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
@@ -498,7 +496,10 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             })
     }
 
-    pub fn finalize(self, invoke_result: InvokeResult) -> TrackReceipt {
+    pub fn finalize(
+        self,
+        invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
+    ) -> TrackReceipt {
         // Close fee reserve
         let mut fee_summary = self.fee_reserve.finalize();
 
@@ -527,9 +528,9 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 }
 
 fn check_for_rejection(
-    invoke_result: InvokeResult,
+    invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
     fee_summary: &FeeSummary,
-) -> Result<InvokeResult, RejectionError> {
+) -> Result<Result<Vec<InstructionOutput>, RuntimeError>, RejectionError> {
     // First - check for required rejections from explicit invoke result errors
     match &invoke_result {
         Err(RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(err))) => {
@@ -580,7 +581,7 @@ struct FinalizingTrack<'s> {
 impl<'s> FinalizingTrack<'s> {
     fn calculate_commit_result(
         self,
-        invoke_result: InvokeResult,
+        invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
         fee_summary: &mut FeeSummary,
     ) -> TransactionResult {
         let is_success = invoke_result.is_ok();

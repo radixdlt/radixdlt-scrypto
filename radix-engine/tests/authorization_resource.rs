@@ -13,14 +13,22 @@ enum Action {
     Withdraw,
     Deposit,
     Recall,
+    UpdateMetadata,
 }
 
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let (token_address, mint_auth, burn_auth, withdraw_auth, recall_auth, admin_auth) =
-        test_runner.create_restricted_token(account);
+    let (
+        token_address,
+        mint_auth,
+        burn_auth,
+        withdraw_auth,
+        recall_auth,
+        update_metadata_auth,
+        admin_auth,
+    ) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
@@ -30,6 +38,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Withdraw => "set_withdrawable",
             Action::Deposit => "set_depositable",
             Action::Recall => "set_recallable",
+            Action::UpdateMetadata => "set_updateable_metadata",
         };
         test_runner.update_resource_auth(
             function,
@@ -50,6 +59,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Withdraw => withdraw_auth,
             Action::Deposit => mint_auth, // Any bad auth
             Action::Recall => recall_auth,
+            Action::UpdateMetadata => update_metadata_auth,
         }
     };
 
@@ -60,7 +70,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
 
     match action {
         Action::Mint => builder
-            .mint(Decimal::from("1.0"), token_address)
+            .mint_fungible(token_address, Decimal::from("1.0"))
             .call_method(
                 account,
                 "deposit_batch",
@@ -103,6 +113,11 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
                 args!(Expression::entire_worktop()),
             )
         }
+        Action::UpdateMetadata => builder.set_metadata(
+            GlobalAddress::Resource(token_address),
+            "key".to_string(),
+            "value".to_string(),
+        ),
     };
 
     let manifest = builder.build();
@@ -165,6 +180,18 @@ fn can_recall_with_auth() {
 fn cannot_recall_with_wrong_auth() {
     test_resource_auth(Action::Recall, false, true, true);
     test_resource_auth(Action::Recall, true, false, true);
+}
+
+#[test]
+fn can_update_metadata_with_auth() {
+    test_resource_auth(Action::UpdateMetadata, false, false, false);
+    test_resource_auth(Action::UpdateMetadata, true, true, false);
+}
+
+#[test]
+fn cannot_update_metadata_with_wrong_auth() {
+    test_resource_auth(Action::UpdateMetadata, false, true, true);
+    test_resource_auth(Action::UpdateMetadata, true, false, true);
 }
 
 #[test]

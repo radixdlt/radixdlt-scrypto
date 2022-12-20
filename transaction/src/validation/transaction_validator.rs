@@ -278,14 +278,11 @@ impl NotarizedTransactionValidator {
                 }
                 BasicInstruction::PublishPackage { .. } => {}
                 BasicInstruction::PublishPackageWithOwner { .. } => {}
-                BasicInstruction::CreateResource { .. } => {}
-                BasicInstruction::CreateResourceWithOwner { .. } => {}
                 BasicInstruction::BurnResource { bucket_id } => {
                     id_validator
                         .drop_bucket(*bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::MintResource { .. } => {}
                 BasicInstruction::RecallResource { .. } => {}
                 BasicInstruction::SetMetadata { .. } => {}
                 BasicInstruction::SetPackageRoyaltyConfig { .. } => {}
@@ -293,6 +290,12 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::ClaimPackageRoyalty { .. } => {}
                 BasicInstruction::ClaimComponentRoyalty { .. } => {}
                 BasicInstruction::SetMethodAccessRule { .. } => {}
+                BasicInstruction::MintFungible { .. } => {}
+                BasicInstruction::MintNonFungible { .. } => {}
+                BasicInstruction::CreateFungibleResource { .. } => {}
+                BasicInstruction::CreateFungibleResourceWithOwner { .. } => {}
+                BasicInstruction::CreateNonFungibleResource { .. } => {}
+                BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
             }
         }
 

@@ -105,28 +105,8 @@ pub enum Instruction {
         owner_badge: Value,
     },
 
-    CreateResource {
-        resource_type: Value,
-        metadata: Value,
-        access_rules: Value,
-        mint_params: Value,
-    },
-
-    CreateResourceWithOwner {
-        resource_type: Value,
-        metadata: Value,
-        owner_badge: Value,
-        mint_params: Value,
-    },
-
     BurnResource {
         bucket: Value,
-    },
-
-    // TODO: Dedicated bucket for this?
-    MintResource {
-        amount: Value,
-        resource_address: Value,
     },
 
     // TODO: Dedicated bucket for this?
@@ -166,6 +146,44 @@ pub enum Instruction {
         index: Value,
         key: Value,
         rule: Value,
+    },
+
+    MintFungible {
+        resource_address: Value,
+        amount: Value,
+    },
+
+    MintNonFungible {
+        resource_address: Value,
+        entries: Value,
+    },
+
+    CreateFungibleResource {
+        divisibility: Value,
+        metadata: Value,
+        access_rules: Value,
+        initial_supply: Value,
+    },
+
+    CreateFungibleResourceWithOwner {
+        divisibility: Value,
+        metadata: Value,
+        owner_badge: Value,
+        initial_supply: Value,
+    },
+
+    CreateNonFungibleResource {
+        id_type: Value,
+        metadata: Value,
+        access_rules: Value,
+        initial_supply: Value,
+    },
+
+    CreateNonFungibleResourceWithOwner {
+        id_type: Value,
+        metadata: Value,
+        owner_badge: Value,
+        initial_supply: Value,
     },
 }
 

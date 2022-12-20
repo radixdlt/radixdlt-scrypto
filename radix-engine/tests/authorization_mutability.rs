@@ -16,13 +16,14 @@ enum ResourceAuth {
     Withdraw,
     Deposit,
     Recall,
+    UpdateMetadata,
 }
 
 fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> TransactionReceipt {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
-    let (token_address, _, _, _, _, admin_auth) = test_runner.create_restricted_token(account);
+    let (token_address, _, _, _, _, _, admin_auth) = test_runner.create_restricted_token(account);
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
     {
         let function = match action {
@@ -31,6 +32,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
             ResourceAuth::Withdraw => "lock_withdrawable",
             ResourceAuth::Deposit => "lock_depositable",
             ResourceAuth::Recall => "lock_recallable",
+            ResourceAuth::UpdateMetadata => "lock_metadata_updateable",
         };
         test_runner.lock_resource_auth(function, admin_auth, token_address, account, public_key);
     }
@@ -43,6 +45,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
             ResourceAuth::Withdraw => "lock_withdrawable",
             ResourceAuth::Deposit => "lock_depositable",
             ResourceAuth::Recall => "lock_recallable",
+            ResourceAuth::UpdateMetadata => "lock_metadata_updateable",
         };
 
         let args = args!(token_address);
@@ -54,6 +57,7 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
             ResourceAuth::Withdraw => "set_withdrawable",
             ResourceAuth::Deposit => "set_depositable",
             ResourceAuth::Recall => "set_recallable",
+            ResourceAuth::UpdateMetadata => "set_updateable_metadata",
         };
         let args = args!(token_address, updated_auth);
         (function, args)
@@ -214,6 +218,30 @@ fn locked_recall_auth_cannot_be_relocked() {
             RuntimeError::ApplicationError(ApplicationError::AuthZoneError(
                 AuthZoneError::AssertAccessRuleError(..)
             ))
+        )
+    })
+}
+
+#[test]
+fn locked_update_metadata_auth_cannot_be_updated() {
+    let receipt = lock_resource_auth_and_try_update(ResourceAuth::UpdateMetadata, false);
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..)),
+        )
+    })
+}
+
+#[test]
+fn locked_update_metadata_auth_cannot_be_relocked() {
+    let receipt = lock_resource_auth_and_try_update(ResourceAuth::UpdateMetadata, true);
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::AccessRulesChainError(..)),
         )
     })
 }

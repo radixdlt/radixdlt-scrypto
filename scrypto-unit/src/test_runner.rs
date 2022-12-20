@@ -22,18 +22,83 @@ use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
+use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Executable, SystemInstruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
+
+pub struct Compile;
+
+impl Compile {
+    pub fn compile<P: AsRef<Path>>(package_dir: P) -> (Vec<u8>, BTreeMap<String, BlueprintAbi>) {
+        // Build
+        let status = Command::new("cargo")
+            .current_dir(package_dir.as_ref())
+            .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
+            .status()
+            .unwrap();
+        if !status.success() {
+            panic!("Failed to compile package: {:?}", package_dir.as_ref());
+        }
+
+        // Find wasm path
+        let mut cargo = package_dir.as_ref().to_owned();
+        cargo.push("Cargo.toml");
+        let wasm_name = if cargo.exists() {
+            let content = fs::read_to_string(&cargo).expect("Failed to read the Cargo.toml file");
+            Self::extract_crate_name(&content)
+                .expect("Failed to extract crate name from the Cargo.toml file")
+                .replace("-", "_")
+        } else {
+            // file name
+            package_dir
+                .as_ref()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_owned()
+                .replace("-", "_")
+        };
+        let mut path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap(); // Infallible;
+        path.push("wasm32-unknown-unknown");
+        path.push("release");
+        path.push(wasm_name);
+        path.set_extension("wasm");
+
+        // Extract ABI
+        let code = fs::read(&path).unwrap_or_else(|err| {
+            panic!(
+                "Failed to read built WASM from path {:?} - {:?}",
+                &path, err
+            )
+        });
+        let abi = extract_abi(&code).unwrap();
+
+        (code, abi)
+    }
+
+    // Naive pattern matching to find the crate name.
+    fn extract_crate_name(mut content: &str) -> Result<String, ()> {
+        let idx = content.find("name").ok_or(())?;
+        content = &content[idx + 4..];
+
+        let idx = content.find('"').ok_or(())?;
+        content = &content[idx + 1..];
+
+        let end = content.find('"').ok_or(())?;
+        Ok(content[..end].to_string())
+    }
+}
 
 pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
@@ -361,20 +426,8 @@ impl TestRunner {
         receipt.expect_commit().entity_changes.new_package_addresses[0]
     }
 
-    // Naive pattern matching to find the crate name.
-    fn extract_crate_name(mut content: &str) -> Result<String, ()> {
-        let idx = content.find("name").ok_or(())?;
-        content = &content[idx + 4..];
-
-        let idx = content.find('"').ok_or(())?;
-        content = &content[idx + 1..];
-
-        let end = content.find('"').ok_or(())?;
-        Ok(content[..end].to_string())
-    }
-
     pub fn compile_and_publish<P: AsRef<Path>>(&mut self, package_dir: P) -> PackageAddress {
-        let (code, abi) = self.compile(package_dir);
+        let (code, abi) = Compile::compile(package_dir);
         self.publish_package(
             code,
             abi,
@@ -389,59 +442,8 @@ impl TestRunner {
         package_dir: P,
         owner_badge: NonFungibleAddress,
     ) -> PackageAddress {
-        let (code, abi) = self.compile(package_dir);
+        let (code, abi) = Compile::compile(package_dir);
         self.publish_package_with_owner(code, abi, owner_badge)
-    }
-
-    pub fn compile<P: AsRef<Path>>(
-        &mut self,
-        package_dir: P,
-    ) -> (Vec<u8>, BTreeMap<String, BlueprintAbi>) {
-        // Build
-        let status = Command::new("cargo")
-            .current_dir(package_dir.as_ref())
-            .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
-            .status()
-            .unwrap();
-        if !status.success() {
-            panic!("Failed to compile package: {:?}", package_dir.as_ref());
-        }
-
-        // Find wasm path
-        let mut cargo = package_dir.as_ref().to_owned();
-        cargo.push("Cargo.toml");
-        let wasm_name = if cargo.exists() {
-            let content = fs::read_to_string(&cargo).expect("Failed to read the Cargo.toml file");
-            Self::extract_crate_name(&content)
-                .expect("Failed to extract crate name from the Cargo.toml file")
-                .replace("-", "_")
-        } else {
-            // file name
-            package_dir
-                .as_ref()
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_owned()
-                .replace("-", "_")
-        };
-        let mut path = PathBuf::from_str(&get_cargo_target_directory(&cargo)).unwrap(); // Infallible;
-        path.push("wasm32-unknown-unknown");
-        path.push("release");
-        path.push(wasm_name);
-        path.set_extension("wasm");
-
-        // Extract ABI
-        let code = fs::read(&path).unwrap_or_else(|err| {
-            panic!(
-                "Failed to read built WASM from path {:?} - {:?}",
-                &path, err
-            )
-        });
-        let abi = extract_abi(&code).unwrap();
-
-        (code, abi)
     }
 
     pub fn execute_manifest_ignoring_fee(
@@ -595,14 +597,7 @@ impl TestRunner {
     ) -> ResourceAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility: 0 },
-                BTreeMap::new(),
-                access_rules,
-                Some(MintParams::Fungible {
-                    amount: 5u32.into(),
-                }),
-            )
+            .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(to, "deposit_batch", args!(Expression::entire_worktop()))
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -623,11 +618,13 @@ impl TestRunner {
         ResourceAddress,
         ResourceAddress,
         ResourceAddress,
+        ResourceAddress,
     ) {
         let mint_auth = self.create_non_fungible_resource(account);
         let burn_auth = self.create_non_fungible_resource(account);
         let withdraw_auth = self.create_non_fungible_resource(account);
         let recall_auth = self.create_non_fungible_resource(account);
+        let update_metadata_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
         let mut access_rules = BTreeMap::new();
@@ -660,6 +657,13 @@ impl TestRunner {
             ),
         );
         access_rules.insert(
+            UpdateMetadata,
+            (
+                rule!(require(update_metadata_auth)),
+                MUTABLE(rule!(require(admin_auth))),
+            ),
+        );
+        access_rules.insert(
             Deposit,
             (rule!(allow_all), MUTABLE(rule!(require(admin_auth)))),
         );
@@ -672,6 +676,7 @@ impl TestRunner {
             burn_auth,
             withdraw_auth,
             recall_auth,
+            update_metadata_auth,
             admin_auth,
         )
     }
@@ -723,28 +728,17 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(
-            NonFungibleId::U32(1),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
-        entries.insert(
-            NonFungibleId::U32(2),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
-        entries.insert(
-            NonFungibleId::U32(3),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
-        );
+        entries.insert(NonFungibleId::U32(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::U32(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::U32(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::NonFungible {
-                    id_type: NonFungibleIdType::U32,
-                },
+            .create_non_fungible_resource(
+                NonFungibleIdType::U32,
                 BTreeMap::new(),
                 access_rules,
-                Some(MintParams::NonFungible { entries }),
+                Some(entries),
             )
             .call_method(
                 account,
@@ -771,12 +765,34 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .create_resource(
-                ResourceType::Fungible { divisibility },
-                BTreeMap::new(),
-                access_rules,
-                Some(MintParams::Fungible { amount }),
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
+            .call_method(
+                account,
+                "deposit_batch",
+                args!(Expression::entire_worktop()),
             )
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        receipt
+            .expect_commit()
+            .entity_changes
+            .new_resource_addresses[0]
+    }
+
+    pub fn create_mintable_fungible_resource(
+        &mut self,
+        amount: Decimal,
+        divisibility: u8,
+        account: ComponentAddress,
+    ) -> ResourceAddress {
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
+        access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(FAUCET_COMPONENT, 100u32.into())
+            .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
                 "deposit_batch",
@@ -871,7 +887,7 @@ impl TestRunner {
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
-        scrypto_decode(&receipt.expect_commit_success()[0]).unwrap()
+        receipt.output(0)
     }
 }
 
@@ -947,3 +963,6 @@ pub fn generate_single_function_abi(
     );
     blueprint_abis
 }
+
+#[derive(NonFungibleData)]
+struct SampleNonFungibleData {}

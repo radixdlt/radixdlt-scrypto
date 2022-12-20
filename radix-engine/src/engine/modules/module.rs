@@ -8,6 +8,7 @@ use radix_engine_interface::api::types::{
 };
 use sbor::rust::fmt::Debug;
 
+#[derive(Clone)]
 pub enum SysCallInput<'a> {
     Invoke {
         invocation: &'a dyn Debug,
@@ -54,7 +55,7 @@ pub enum SysCallInput<'a> {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SysCallOutput<'a> {
     Invoke { rtn: &'a dyn Debug },
     ReadOwnedNodes,

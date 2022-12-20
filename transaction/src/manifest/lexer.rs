@@ -117,10 +117,7 @@ pub enum TokenKind {
     CallMethod,
     PublishPackage,
     PublishPackageWithOwner,
-    CreateResource,
-    CreateResourceWithOwner,
     BurnResource,
-    MintResource,
     RecallResource,
     SetMetadata,
     SetPackageRoyaltyConfig,
@@ -128,6 +125,12 @@ pub enum TokenKind {
     ClaimPackageRoyalty,
     ClaimComponentRoyalty,
     SetMethodAccessRule,
+    MintFungible,
+    MintNonFungible,
+    CreateFungibleResource,
+    CreateFungibleResourceWithOwner,
+    CreateNonFungibleResource,
+    CreateNonFungibleResourceWithOwner,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -455,10 +458,7 @@ impl Lexer {
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
             "PUBLISH_PACKAGE_WITH_OWNER" => Ok(TokenKind::PublishPackageWithOwner),
-            "CREATE_RESOURCE" => Ok(TokenKind::CreateResource),
-            "CREATE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateResourceWithOwner),
             "BURN_RESOURCE" => Ok(TokenKind::BurnResource),
-            "MINT_RESOURCE" => Ok(TokenKind::MintResource),
             "RECALL_RESOURCE" => Ok(TokenKind::RecallResource),
             "SET_METADATA" => Ok(TokenKind::SetMetadata),
             "SET_PACKAGE_ROYALTY_CONFIG" => Ok(TokenKind::SetPackageRoyaltyConfig),
@@ -466,6 +466,14 @@ impl Lexer {
             "CLAIM_PACKAGE_ROYALTY" => Ok(TokenKind::ClaimPackageRoyalty),
             "CLAIM_COMPONENT_ROYALTY" => Ok(TokenKind::ClaimComponentRoyalty),
             "SET_METHOD_ACCESS_RULE" => Ok(TokenKind::SetMethodAccessRule),
+            "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
+            "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
+            "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
+            "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
+            "CREATE_FUNGIBLE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateFungibleResourceWithOwner),
+            "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
+                Ok(TokenKind::CreateNonFungibleResourceWithOwner)
+            }
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

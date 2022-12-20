@@ -1,4 +1,5 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::{ModuleError, RuntimeError};
+use radix_engine::model::CostingError;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
 use radix_engine_interface::data::*;
@@ -47,7 +48,9 @@ fn test_max_call_depth_failure() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::MaxCallDepthLimitReached)
+            RuntimeError::ModuleError(ModuleError::CostingError(
+                CostingError::MaxCallDepthLimitReached
+            ))
         )
     });
 }
