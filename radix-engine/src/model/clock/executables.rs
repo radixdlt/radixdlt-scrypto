@@ -16,10 +16,11 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
+use radix_engine_interface::time::*;
 
-const SECONDS_TO_MS_FACTOR: u64 = 1000;
-const MINUTES_TO_SECONDS_FACTOR: u64 = 60;
-const MINUTES_TO_MS_FACTOR: u64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
+const SECONDS_TO_MS_FACTOR: i64 = 1000;
+const MINUTES_TO_SECONDS_FACTOR: i64 = 60;
+const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACTOR;
 
 pub struct Clock;
 
@@ -100,7 +101,7 @@ impl Executor for ClockCreateInvocation {
     }
 }
 
-pub struct ClockSetCurrentTimeExecutable(RENodeId, u64);
+pub struct ClockSetCurrentTimeExecutable(RENodeId, i64);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
     type Exec = ClockSetCurrentTimeExecutable;

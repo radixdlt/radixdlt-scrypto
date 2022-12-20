@@ -38,6 +38,9 @@ pub mod math {
 pub mod model {
     pub use radix_engine_interface::model::*;
 }
+pub mod crypto {
+    pub use radix_engine_interface::crypto::*;
+}
 /// Scrypto RE abstraction.
 pub mod engine;
 /// Scrypto resource abstraction.

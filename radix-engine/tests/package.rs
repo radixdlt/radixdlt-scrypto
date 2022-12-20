@@ -29,7 +29,7 @@ fn missing_memory_should_cause_error() {
             BTreeMap::new(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+            AccessRules::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -127,7 +127,7 @@ fn test_basic_package() {
             BTreeMap::new(),
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+            AccessRules::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -164,7 +164,7 @@ fn test_basic_package_missing_export() {
             blueprints,
             BTreeMap::new(),
             BTreeMap::new(),
-            AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll),
+            AccessRules::new(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

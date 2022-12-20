@@ -88,60 +88,6 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateInvocation 
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateWithOwnerInvocation {
-    type Exec = ResourceManagerCreateInvocation;
-
-    fn resolve<D: ResolverApi<W>>(
-        self,
-        _api: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::function(NativeFunction::ResourceManager(
-            ResourceManagerFunction::CreateWithOwner,
-        ));
-
-        let owner_badge = self.owner_badge;
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (AllowAll, rule!(require(owner_badge.clone()))),
-        );
-        access_rules.insert(
-            ResourceMethodAuthKey::Deposit,
-            (AllowAll, rule!(require(owner_badge.clone()))),
-        );
-        access_rules.insert(
-            ResourceMethodAuthKey::Recall,
-            (DenyAll, rule!(require(owner_badge.clone()))),
-        );
-        access_rules.insert(Mint, (DenyAll, rule!(require(owner_badge.clone()))));
-        access_rules.insert(Burn, (DenyAll, rule!(require(owner_badge.clone()))));
-        access_rules.insert(
-            UpdateNonFungibleData,
-            (
-                rule!(require(owner_badge.clone())),
-                rule!(require(owner_badge.clone())),
-            ),
-        );
-        access_rules.insert(
-            UpdateMetadata,
-            (
-                rule!(require(owner_badge.clone())),
-                rule!(require(owner_badge.clone())),
-            ),
-        );
-
-        let executor = ResourceManagerCreateInvocation {
-            resource_type: self.resource_type,
-            metadata: self.metadata,
-            access_rules,
-            mint_params: self.mint_params,
-        };
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
 fn build_resource_manager_substate<Y>(
     resource_address: ResourceAddress,
     resource_type: ResourceType,

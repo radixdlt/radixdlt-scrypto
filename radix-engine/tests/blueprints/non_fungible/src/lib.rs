@@ -165,6 +165,33 @@ blueprint! {
             bucket
         }
 
+        pub fn take_non_fungible_and_put_bucket() -> Bucket {
+            let mut bucket = Self::create_non_fungible_fixed();
+            assert_eq!(bucket.amount(), 3.into());
+
+            let non_fungible = bucket.take_non_fungible(&NonFungibleId::U32(1));
+            assert_eq!(bucket.amount(), 2.into());
+            assert_eq!(non_fungible.amount(), 1.into());
+
+            bucket.put(non_fungible);
+            bucket
+        }
+
+        pub fn take_non_fungibles_and_put_bucket() -> Bucket {
+            let mut bucket = Self::create_non_fungible_fixed();
+            assert_eq!(bucket.amount(), 3.into());
+
+            let mut non_fungibles = BTreeSet::new();
+            non_fungibles.insert(NonFungibleId::U32(1));
+
+            let non_fungible = bucket.take_non_fungibles(&non_fungibles);
+            assert_eq!(bucket.amount(), 2.into());
+            assert_eq!(non_fungible.amount(), 1.into());
+
+            bucket.put(non_fungible);
+            bucket
+        }
+
         pub fn take_and_put_vault() -> Bucket {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             assert_eq!(vault.amount(), 3.into());
