@@ -553,7 +553,11 @@ where
         Ok(output)
     }
 
-    pub fn finalize(mut self, result: InvokeResult) -> TrackReceipt {
+    // TODO: Remove
+    pub fn finalize(
+        mut self,
+        result: Result<Vec<InstructionOutput>, RuntimeError>,
+    ) -> TrackReceipt {
         let final_result = match result {
             Ok(res) => self.finalize_modules().map(|_| res),
             Err(err) => {

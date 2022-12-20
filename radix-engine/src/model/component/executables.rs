@@ -1,7 +1,7 @@
-use crate::engine::{deref_and_update, RENode};
+use crate::engine::{deref_and_update, Executor, RENode};
 use crate::engine::{
-    CallFrameUpdate, ExecutableInvocation, LockFlags, NativeExecutor, NativeProcedure,
-    ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    CallFrameUpdate, ExecutableInvocation, LockFlags, ResolvedActor, ResolverApi, RuntimeError,
+    SystemApi,
 };
 use crate::model::{BucketSubstate, GlobalAddressSubstate};
 use crate::wasm::WasmEngine;
@@ -10,7 +10,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::{constants::*, rule};
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -22,16 +22,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
         let actor =
             ResolvedActor::function(NativeFunction::Component(ComponentFunction::Globalize));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
-        let executor = NativeExecutor(self);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ComponentGlobalizeInvocation {
+impl Executor for ComponentGlobalizeInvocation {
     type Output = ComponentAddress;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -71,7 +70,7 @@ impl NativeProcedure for ComponentGlobalizeInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -83,16 +82,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvoc
         let actor =
             ResolvedActor::function(NativeFunction::Component(ComponentFunction::Globalize));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
-        let executor = NativeExecutor(self);
 
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
+impl Executor for ComponentGlobalizeWithOwnerInvocation {
     type Output = ComponentAddress;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -168,7 +166,7 @@ impl NativeProcedure for ComponentGlobalizeWithOwnerInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -185,19 +183,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocat
             NativeMethod::Component(ComponentMethod::SetRoyaltyConfig),
             resolved_receiver,
         );
-        let executor = NativeExecutor(Self {
+        let executor = Self {
             receiver: resolved_receiver.receiver,
             royalty_config: self.royalty_config,
-        });
+        };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ComponentSetRoyaltyConfigInvocation {
+impl Executor for ComponentSetRoyaltyConfigInvocation {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -216,7 +214,7 @@ impl NativeProcedure for ComponentSetRoyaltyConfigInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -230,18 +228,18 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation 
             NativeMethod::Component(ComponentMethod::ClaimRoyalty),
             resolved_receiver,
         );
-        let executor = NativeExecutor(Self {
+        let executor = Self {
             receiver: resolved_receiver.receiver,
-        });
+        };
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl NativeProcedure for ComponentClaimRoyaltyInvocation {
+impl Executor for ComponentClaimRoyaltyInvocation {
     type Output = Bucket;
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

@@ -1,6 +1,6 @@
 use crate::engine::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, InterpreterError, LockFlags,
-    NativeExecutor, NativeProcedure, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, InterpreterError, LockFlags,
+    ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -9,7 +9,7 @@ use radix_engine_interface::api::types::{NativeMethod, RENodeId, SubstateOffset}
 use radix_engine_interface::model::*;
 
 impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         mut self,
@@ -35,15 +35,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for MetadataSetInvocation {
+impl Executor for MetadataSetInvocation {
     type Output = ();
 
-    fn main<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
@@ -59,7 +58,7 @@ impl NativeProcedure for MetadataSetInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
-    type Exec = NativeExecutor<Self>;
+    type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
         mut self,
@@ -85,15 +84,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
             resolved_receiver,
         );
 
-        let executor = NativeExecutor(self);
-        Ok((actor, call_frame_update, executor))
+        Ok((actor, call_frame_update, self))
     }
 }
 
-impl NativeProcedure for MetadataGetInvocation {
+impl Executor for MetadataGetInvocation {
     type Output = Option<String>;
 
-    fn main<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
