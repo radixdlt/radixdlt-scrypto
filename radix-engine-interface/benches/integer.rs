@@ -1,10 +1,11 @@
 use std::{concat, str::FromStr};
 
 use criterion::{BenchmarkId, Criterion};
-use radix_engine_interface::math::{NthRoot,I256,I512};
+use radix_engine_interface::math::integer::{NthRoot,I256,I512};
 use num_traits::Pow;
 use num_bigint::BigInt;
 use rug::{Integer, ops::Pow as RugPow};
+use radix_engine_interface::math::bnum_integer::{NthRoot as BnumNthRoot,BnumI256,BnumI512};
 
 use crate::{ops_fn,bench_ops,process_op};
 use crate::macros::QUICK;
@@ -104,3 +105,23 @@ bench_ops!(Integer, "root", u32);
 bench_ops!(Integer, "pow", u32);
 bench_ops!(Integer, "to_string");
 bench_ops!(Integer, "from_string");
+
+ops_fn!(BnumI256, nth_root, pow, u32);
+bench_ops!(BnumI256, "add");
+bench_ops!(BnumI256, "sub");
+bench_ops!(BnumI256, "mul");
+bench_ops!(BnumI256, "div");
+bench_ops!(BnumI256, "root", u32);
+bench_ops!(BnumI256, "pow", u32);
+bench_ops!(BnumI256, "to_string");
+bench_ops!(BnumI256, "from_string");
+
+ops_fn!(BnumI512, nth_root, pow, u32);
+bench_ops!(BnumI512, "add");
+bench_ops!(BnumI512, "sub");
+bench_ops!(BnumI512, "mul");
+bench_ops!(BnumI512, "div");
+bench_ops!(BnumI512, "root", u32);
+bench_ops!(BnumI512, "pow", u32);
+bench_ops!(BnumI512, "to_string");
+bench_ops!(BnumI512, "from_string");
