@@ -158,8 +158,21 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::Resource(*resource_address)));
             }
-
-            _ => {}
+            BasicInstruction::ReturnToWorktop { .. }
+            | BasicInstruction::PopFromAuthZone { .. }
+            | BasicInstruction::PushToAuthZone { .. }
+            | BasicInstruction::ClearAuthZone { .. }
+            | BasicInstruction::CreateProofFromBucket { .. }
+            | BasicInstruction::CloneProof { .. }
+            | BasicInstruction::DropProof { .. }
+            | BasicInstruction::DropAllProofs { .. }
+            | BasicInstruction::PublishPackage { .. }
+            | BasicInstruction::PublishPackageWithOwner { .. }
+            | BasicInstruction::BurnResource { .. }
+            | BasicInstruction::CreateFungibleResource { .. }
+            | BasicInstruction::CreateFungibleResourceWithOwner { .. }
+            | BasicInstruction::CreateNonFungibleResource { .. }
+            | BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
         },
         Instruction::System(SystemInstruction::CallNativeFunction { args, .. }) => {
             for node_id in slice_to_global_references(args) {
