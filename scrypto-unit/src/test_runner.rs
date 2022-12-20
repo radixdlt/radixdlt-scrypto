@@ -268,8 +268,11 @@ impl TestRunner {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let mut vault_finder = VaultFinder::new(resource_address);
 
-        let mut state_tree_visitor =
-            StateTreeTraverser::new(&self.staged_substate_store_manager.root, &mut vault_finder, 100);
+        let mut state_tree_visitor = StateTreeTraverser::new(
+            &self.staged_substate_store_manager.root,
+            &mut vault_finder,
+            100,
+        );
         state_tree_visitor
             .traverse_all_descendents(None, node_id)
             .unwrap();
@@ -529,8 +532,12 @@ impl TestRunner {
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> BlueprintAbi {
-        export_abi(&self.staged_substate_store_manager.root, package_address, blueprint_name)
-            .expect("Failed to export ABI")
+        export_abi(
+            &self.staged_substate_store_manager.root,
+            package_address,
+            blueprint_name,
+        )
+        .expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(&mut self, component_address: ComponentAddress) -> BlueprintAbi {

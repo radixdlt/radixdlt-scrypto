@@ -2,8 +2,8 @@ use crate::transaction::TransactionReceipt;
 use crate::types::*;
 use crate::{ledger::*, transaction::TransactionResult};
 
-use sbor::rust::vec::Vec;
 use im::hashmap::HashMap as ImmutableHashMap;
+use sbor::rust::vec::Vec;
 use slotmap::{new_key_type, SlotMap};
 
 /// An immutable/persistent store (i.e a store built from a [`parent`] store

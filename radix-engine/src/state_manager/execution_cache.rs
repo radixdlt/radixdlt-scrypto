@@ -2,9 +2,9 @@ use crate::state_manager::{
     StagedSubstateStoreKey, StagedSubstateStoreNodeKey, StagedSubstateStoreVisitor,
 };
 
+use core::hash::Hash;
 use sbor::rust::collections::HashMap;
 use slotmap::SecondaryMap;
-use core::hash::Hash;
 
 pub struct ExecutionCache<H> {
     root_accumulator_hash: H,
