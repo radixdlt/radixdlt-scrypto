@@ -1,6 +1,12 @@
 # This transaction manifest creates a new non-fungible resource with initial supply and with the 
 # default auth.
 
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
     ComponentAddress("{account_component_address}") 
@@ -8,15 +14,11 @@ CALL_METHOD
     Decimal("10");
 
 # Creating a new resource 
-CREATE_RESOURCE 
-    Enum(
-        "NonFungible", 
-        Enum("U32")
-    ) 
+CREATE_NON_FUNGIBLE_RESOURCE
+    Enum("U32")
     Array<Tuple>(
-        Tuple("name", "MyResource"), 
-        Tuple("symbol", "RSRC"),
-        Tuple("description", "A very innovative and important resource"), 
+        Tuple("name", "MyResource"),                                        # Resource Name
+        Tuple("description", "A very innovative and important resource")    # Resource Description
     ) 
     Array<Tuple>(
         # This array of tuples defines the behavior of the resource. Each element in the array 
@@ -49,10 +51,13 @@ CREATE_RESOURCE
         Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
     )
     Some(
-        Enum(
-            "NonFungible", 
-            Array<Tuple>(
-                Tuple(NonFungibleId(1u32), Tuple(Bytes("5c2100"), Bytes("5c2100")))
+        Array<Tuple>(
+            Tuple(
+                NonFungibleId(1u32), 
+                Tuple(
+                    Tuple("Hello World", Decimal("12")),        # The immutable part of the data
+                    Tuple(12u8, 19u128)                         # The mutable part of the data
+                )
             )
         )
     );
