@@ -4,42 +4,8 @@ use std::str::FromStr;
 use criterion::{BenchmarkId, Criterion};
 use radix_engine_interface::math::Decimal;
 
-use crate::{bench_ops,process_op};
+use crate::{ops_fn,bench_ops,process_op};
 use crate::macros::QUICK;
-
-fn decimal_add(a: &Decimal, b: &Decimal   ) {
-    let _ = *a + *b;
-}
-
-fn decimal_sub(a: &Decimal, b: &Decimal) {
-    let _ = *a - *b;
-}
-fn decimal_mul(a: &Decimal, b: &Decimal) {
-    let _ = *a * *b;
-}
-
-fn decimal_div(a: &Decimal, b: &Decimal) {
-    let _ = *a / *b;
-}
-
-fn decimal_root(a: &Decimal, n: &u32) {
-    let _ = a.nth_root(*n);
-}
-
-fn decimal_pow(a: &Decimal, exp: &i64) {
-    let _ = a.powi(*exp);
-}
-
-fn decimal_to_string(a: &Decimal, _: &str) {
-    let _ = a.to_string();
-}
-
-fn decimal_from_string(s: &str, _: &str) {
-    let _ = Decimal::from(s);
-}
-
-//#![feature(trace_macros)]
-//trace_macros!(true);
 
 const ADD_OPERANDS: [(&str, &str); 4] = [
     ("27896044618658097711785492504343953926634900000000000000000.12312312312312", "27896044618658097711785492504343953926634900000000000000000.12312312312312"),
@@ -97,6 +63,7 @@ const FROM_STRING_OPERANDS: [&str; 4] = [
     "9",
 ];
 
+ops_fn!(Decimal, nth_root, powi, i64, "clone");
 bench_ops!(Decimal, "add");
 bench_ops!(Decimal, "sub");
 bench_ops!(Decimal, "mul");
@@ -105,17 +72,3 @@ bench_ops!(Decimal, "root", u32);
 bench_ops!(Decimal, "pow", i64);
 bench_ops!(Decimal, "to_string");
 bench_ops!(Decimal, "from_string");
-/*
-criterion_group!(
-    bench_decimal,
-    bench_decimal_add,
-    bench_decimal_sub,
-    bench_decimal_mul,
-    bench_decimal_div,
-    bench_decimal_root,
-    bench_decimal_pow,
-    bench_decimal_to_string,
-    bench_decimal_from_string
-);
-*/
-//criterion_main!(bench_decimal);

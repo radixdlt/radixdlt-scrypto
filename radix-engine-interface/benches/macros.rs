@@ -3,6 +3,81 @@
 pub const QUICK : bool = true;
 
 #[macro_export]
+macro_rules! ops_fn {
+    ($t:ty, $root_fn:ident, $pow_fn:ident, $exp_t:ty) => {
+        paste::item! {
+            fn [< $t:lower _add >](a: &$t, b: &$t) {
+                let _ = a + b;
+            }
+
+            fn [< $t:lower _sub >](a: &$t, b: &$t) {
+                let _ = a - b;
+            }
+
+            fn [< $t:lower _mul >](a: &$t, b: &$t) {
+                let _ = a * b;
+            }
+
+            fn [< $t:lower _div >](a: &$t, b: &$t) {
+                let _ = a / b;
+            }
+
+            fn [< $t:lower _root >](a: &$t, n: &u32) {
+                let _ = a.$root_fn(*n);
+            }
+
+            fn [< $t:lower _pow >](a: &$t, exp: &$exp_t) {
+                let _ = a.$pow_fn(*exp);
+            }
+
+            fn [< $t:lower _to_string >](a: &$t, _: &str) {
+                let _ = a.to_string();
+            }
+
+            fn [< $t:lower _from_string >](s: &str, _: &str) {
+                let _ = <$t>::from_str(s).unwrap();
+            }
+        }
+    };
+    ($t:ty, $root_fn:ident, $pow_fn:ident, $exp_t:ty, "clone") => {
+        paste::item! {
+            fn [< $t:lower _add >](a: &$t, b: &$t) {
+                let _ = a.clone() + b.clone();
+            }
+
+            fn [< $t:lower _sub >](a: &$t, b: &$t) {
+                let _ = a.clone() - b.clone();
+            }
+
+            fn [< $t:lower _mul >](a: &$t, b: &$t) {
+                let _ = a.clone() * b.clone();
+            }
+
+            fn [< $t:lower _div >](a: &$t, b: &$t) {
+                let _ = a.clone() / b.clone();
+            }
+
+            fn [< $t:lower _root >](a: &$t, n: &u32) {
+                let _ = a.clone().$root_fn(*n);
+            }
+
+            fn [< $t:lower _pow >](a: &$t, exp: &$exp_t) {
+                let _ = a.$pow_fn(*exp);
+            }
+
+            fn [< $t:lower _to_string >](a: &$t, _: &str) {
+                let _ = a.to_string();
+            }
+
+            fn [< $t:lower _from_string >](s: &str, _: &str) {
+                let _ = <$t>::from_str(s).unwrap();
+            }
+        }
+    };
+}
+
+
+#[macro_export]
 macro_rules! process_op {
     ($t:ty, $op:ident, $bid:ident, "to_string") => {
         let $bid = format!("{}_to_string", $op);

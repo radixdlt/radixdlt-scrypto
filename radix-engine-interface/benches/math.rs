@@ -1,9 +1,11 @@
 use criterion::{criterion_group, criterion_main};
 mod macros;
 mod decimal;
+mod precise_decimal;
 mod integer;
 
 use decimal::*;
+use precise_decimal::*;
 use integer::*;
 
 criterion_group!(
@@ -16,6 +18,15 @@ criterion_group!(
     bench_decimal_pow,
     bench_decimal_from_string,
     bench_decimal_to_string,
+
+    bench_precisedecimal_add,
+    bench_precisedecimal_sub,
+    bench_precisedecimal_mul,
+    bench_precisedecimal_div,
+    bench_precisedecimal_root,
+    bench_precisedecimal_pow,
+    bench_precisedecimal_from_string,
+    bench_precisedecimal_to_string,
 
     bench_i256_add,
     bench_i256_sub,
