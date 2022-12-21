@@ -52,12 +52,12 @@ macro_rules! pdec {
             let base = PreciseDecimal::from($base);
             if $shift >= 0 {
                 base * PreciseDecimal::try_from(
-                    I512::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
+                    BnumI512::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
                 base / PreciseDecimal::try_from(
-                    I512::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
+                    BnumI512::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             }
