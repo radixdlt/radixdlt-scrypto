@@ -52,7 +52,10 @@ impl Executor for EpochManagerCreateInvocation {
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
 
-        let epoch_manager = EpochManagerSubstate { epoch: 0 };
+        let epoch_manager = EpochManagerSubstate {
+            epoch: 0,
+            round: 0,
+        };
 
         let validator_set = ValidatorSetSubstate {
             validator_set: self.validator_set,

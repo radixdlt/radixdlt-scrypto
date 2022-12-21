@@ -4,6 +4,7 @@ use crate::types::*;
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerSubstate {
     pub epoch: u64,
+    pub round: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
