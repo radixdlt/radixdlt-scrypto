@@ -59,6 +59,7 @@ impl Executor for EpochManagerCreateInvocation {
         };
 
         let validator_set = ValidatorSetSubstate {
+            epoch: self.initial_epoch,
             validator_set: self.validator_set,
         };
 
@@ -211,6 +212,11 @@ impl Executor for EpochManagerNextRoundExecutable {
         if self.round >= epoch_manager.rounds_per_epoch {
             epoch_manager.epoch = epoch_manager.epoch + 1;
             epoch_manager.round = 0;
+
+            let offset = SubstateOffset::EpochManager(EpochManagerOffset::ValidatorSet);
+            let handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
+            // Keep same validator set for now but mark as updated
+            let _ = system_api.get_ref_mut(handle)?;
         } else {
             epoch_manager.round = self.round;
         }

@@ -1147,6 +1147,13 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
+    pub fn validator_set(&mut self) -> &mut ValidatorSetSubstate {
+        match self {
+            SubstateRefMut::ValidatorSet(value) => *value,
+            _ => panic!("Not a validator set"),
+        }
+    }
+
     pub fn current_time_rounded_to_minutes(&mut self) -> &mut CurrentTimeRoundedToMinutesSubstate {
         match self {
             SubstateRefMut::CurrentTimeRoundedToMinutes(value) => *value,

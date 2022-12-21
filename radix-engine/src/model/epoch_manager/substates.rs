@@ -12,4 +12,5 @@ pub struct EpochManagerSubstate {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ValidatorSetSubstate {
     pub validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    pub epoch: u64,
 }

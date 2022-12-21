@@ -304,10 +304,10 @@ mod tests {
         let validator_set = transaction_receipt
             .result
             .expect_commit()
-            .next_validator_set
+            .next_epoch
             .as_ref()
             .expect("Should contain validator set");
-        assert_eq!(validator_set, &initial_validator_set);
+        assert_eq!(validator_set, &(initial_validator_set, 1u64));
 
         let genesis_receipt = genesis_result(&transaction_receipt);
 
