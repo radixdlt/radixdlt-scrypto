@@ -4,7 +4,7 @@ use crate::engine::{
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
-    HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
+    HardProofRule, HardResourceOrNonFungible, MethodAuthorization, ValidatorSetSubstate,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -52,8 +52,9 @@ impl Executor for EpochManagerCreateInvocation {
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
 
-        let epoch_manager = EpochManagerSubstate {
-            epoch: 0,
+        let epoch_manager = EpochManagerSubstate { epoch: 0 };
+
+        let validator_set = ValidatorSetSubstate {
             validator_set: self.validator_set,
         };
 
@@ -75,6 +76,7 @@ impl Executor for EpochManagerCreateInvocation {
             underlying_node_id,
             RENode::EpochManager(
                 epoch_manager,
+                validator_set,
                 AccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 },

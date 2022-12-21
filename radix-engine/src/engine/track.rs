@@ -596,7 +596,7 @@ impl<'s> FinalizingTrack<'s> {
                         let logger: LoggerSubstate = loaded.substate.into();
                         application_logs.extend(logger.logs);
                     }
-                    SubstateOffset::EpochManager(EpochManagerOffset::EpochManager) => {
+                    SubstateOffset::EpochManager(EpochManagerOffset::ValidatorSet) => {
                         // TODO: Use application layer events rather than state updates to get this info
                         match &loaded.metastate {
                             SubstateMetaState::New
@@ -605,7 +605,7 @@ impl<'s> FinalizingTrack<'s> {
                                 ..
                             } => {
                                 let validator_set =
-                                    loaded.substate.epoch_manager().validator_set.clone();
+                                    loaded.substate.validator_set().validator_set.clone();
                                 next_validator_set = Some(validator_set);
                             }
                             _ => {}

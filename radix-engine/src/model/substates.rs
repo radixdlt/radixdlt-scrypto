@@ -12,6 +12,7 @@ use radix_engine_interface::data::IndexedScryptoValue;
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
+    ValidatorSet(ValidatorSetSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
@@ -69,6 +70,7 @@ impl PersistedSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
+            PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
             PersistedSubstate::CurrentTimeRoundedToMinutes(value) => {
                 RuntimeSubstate::CurrentTimeRoundedToMinutes(value)
             }
@@ -109,6 +111,7 @@ pub enum PersistError {
 pub enum RuntimeSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
+    ValidatorSet(ValidatorSetSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
@@ -137,6 +140,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
+            RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
             RuntimeSubstate::AccessRulesChain(value) => {
                 PersistedSubstate::AccessRulesChain(value.clone())
             }
@@ -190,6 +194,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
+            RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
             RuntimeSubstate::AccessRulesChain(value) => PersistedSubstate::AccessRulesChain(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value)
@@ -267,6 +272,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
+            RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
@@ -305,6 +311,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
+            RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
@@ -418,6 +425,14 @@ impl RuntimeSubstate {
             panic!("Not epoch manager");
         }
     }
+
+    pub fn validator_set(&self) -> &ValidatorSetSubstate {
+        if let RuntimeSubstate::ValidatorSet(validator_set) = self {
+            validator_set
+        } else {
+            panic!("Not a validator set");
+        }
+    }
 }
 
 impl Into<RuntimeSubstate> for AccessRulesChainSubstate {
@@ -435,6 +450,12 @@ impl Into<RuntimeSubstate> for MetadataSubstate {
 impl Into<RuntimeSubstate> for EpochManagerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::EpochManager(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for ValidatorSetSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::ValidatorSet(self)
     }
 }
 
@@ -721,6 +742,7 @@ pub enum SubstateRef<'a> {
     Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
+    ValidatorSet(&'a ValidatorSetSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a AccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
@@ -997,6 +1019,7 @@ pub enum SubstateRefMut<'a> {
     Vault(&'a mut VaultRuntimeSubstate),
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
+    ValidatorSet(&'a mut ValidatorSetSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a mut AccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
