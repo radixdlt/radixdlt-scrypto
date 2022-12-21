@@ -1,4 +1,7 @@
-use crate::engine::{deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi, ApplicationError};
+use crate::engine::{
+    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
+    RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+};
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization, ValidatorSetSubstate,
@@ -16,10 +19,7 @@ use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum EpochManagerError {
-    InvalidRoundUpdate {
-        from: u64,
-        to: u64,
-    }
+    InvalidRoundUpdate { from: u64, to: u64 },
 }
 
 pub struct EpochManager;
@@ -68,6 +68,12 @@ impl Executor for EpochManagerCreateInvocation {
                 EpochManagerMethod::NextRound,
             ))),
             rule!(require(AuthAddresses::validator_role())),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
+                EpochManagerMethod::SetEpoch,
+            ))),
+            rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
@@ -194,10 +200,12 @@ impl Executor for EpochManagerNextRoundExecutable {
         let epoch_manager = substate_mut.epoch_manager();
 
         if self.round <= epoch_manager.round {
-            return Err(RuntimeError::ApplicationError(ApplicationError::EpochManagerError(EpochManagerError::InvalidRoundUpdate {
-                from: epoch_manager.round,
-                to: self.round,
-            })))
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::EpochManagerError(EpochManagerError::InvalidRoundUpdate {
+                    from: epoch_manager.round,
+                    to: self.round,
+                }),
+            ));
         }
 
         if self.round >= epoch_manager.rounds_per_epoch {
@@ -207,6 +215,47 @@ impl Executor for EpochManagerNextRoundExecutable {
             epoch_manager.round = self.round;
         }
 
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
+
+impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
+    type Exec = EpochManagerSetEpochExecutable;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+            resolved_receiver,
+        );
+        let executor = EpochManagerSetEpochExecutable(resolved_receiver.receiver, self.epoch);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for EpochManagerSetEpochExecutable {
+    type Output = ();
+
+    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
+        let handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        substate_mut.epoch_manager().epoch = self.1;
         Ok(((), CallFrameUpdate::empty()))
     }
 }

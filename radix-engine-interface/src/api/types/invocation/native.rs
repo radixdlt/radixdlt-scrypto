@@ -224,6 +224,7 @@ pub enum PackageMethod {
 pub enum EpochManagerMethod {
     GetCurrentEpoch,
     NextRound,
+    SetEpoch,
 }
 
 #[derive(

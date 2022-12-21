@@ -29,7 +29,7 @@ impl SetCurrentEpoch {
         }
         .into()];
         let blobs = vec![];
-        let initial_proofs = vec![AuthAddresses::validator_role()];
+        let initial_proofs = vec![AuthAddresses::system_role()];
         handle_system_transaction(instructions, blobs, initial_proofs, self.trace, true, out)
             .map(|_| ())
     }

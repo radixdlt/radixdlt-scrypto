@@ -149,6 +149,7 @@ impl FeeTable {
             NativeMethod::EpochManager(epoch_manager_method) => match epoch_manager_method {
                 EpochManagerMethod::GetCurrentEpoch => self.fixed_low,
                 EpochManagerMethod::NextRound => self.fixed_low,
+                EpochManagerMethod::SetEpoch => self.fixed_low,
             },
             NativeMethod::Clock(clock_method) => match clock_method {
                 ClockMethod::SetCurrentTime => self.fixed_low,

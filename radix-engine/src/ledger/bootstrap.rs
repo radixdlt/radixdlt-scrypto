@@ -151,7 +151,11 @@ pub fn create_genesis(
                 blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
                 function_name: EpochManagerFunction::Create.to_string(),
             },
-            args: scrypto_encode(&EpochManagerCreateInvocation { validator_set, rounds_per_epoch }).unwrap(),
+            args: scrypto_encode(&EpochManagerCreateInvocation {
+                validator_set,
+                rounds_per_epoch,
+            })
+            .unwrap(),
         }
     };
 

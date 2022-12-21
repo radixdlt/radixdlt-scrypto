@@ -147,6 +147,7 @@ pub enum PackageMethodInvocation {
 pub enum EpochManagerMethodInvocation {
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     NextRound(EpochManagerNextRoundInvocation),
+    SetEpoch(EpochManagerSetEpochInvocation),
 }
 
 #[derive(Debug)]
@@ -470,6 +471,9 @@ impl NativeFnInvocation {
                             .invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                         EpochManagerMethodInvocation::NextRound(invocation) => api
+                            .invoke(invocation)
+                            .map(|a| IndexedScryptoValue::from_typed(&a)),
+                        EpochManagerMethodInvocation::SetEpoch(invocation) => api
                             .invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }

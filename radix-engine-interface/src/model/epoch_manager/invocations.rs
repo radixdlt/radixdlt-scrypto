@@ -57,6 +57,30 @@ impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
+pub struct EpochManagerSetEpochInvocation {
+    pub receiver: SystemAddress,
+    pub epoch: u64,
+}
+
+impl Invocation for EpochManagerSetEpochInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for EpochManagerSetEpochInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
+            EpochManagerMethodInvocation::SetEpoch(self),
+        ))
+        .into()
+    }
+}
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerNextRoundInvocation {
     pub receiver: SystemAddress,
     pub round: u64,
