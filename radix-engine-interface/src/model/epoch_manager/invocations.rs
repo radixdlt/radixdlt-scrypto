@@ -12,6 +12,7 @@ use crate::wasm::*;
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
     pub validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    pub rounds_per_epoch: u64,
 }
 
 impl Invocation for EpochManagerCreateInvocation {
@@ -56,23 +57,23 @@ impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct EpochManagerSetEpochInvocation {
+pub struct EpochManagerNextRoundInvocation {
     pub receiver: SystemAddress,
-    pub epoch: u64,
+    pub round: u64,
 }
 
-impl Invocation for EpochManagerSetEpochInvocation {
+impl Invocation for EpochManagerNextRoundInvocation {
     type Output = ();
 }
 
-impl SerializableInvocation for EpochManagerSetEpochInvocation {
+impl SerializableInvocation for EpochManagerNextRoundInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
+impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::SetEpoch(self),
+            EpochManagerMethodInvocation::NextRound(self),
         ))
         .into()
     }

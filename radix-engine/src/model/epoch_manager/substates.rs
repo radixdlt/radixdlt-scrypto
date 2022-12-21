@@ -5,6 +5,7 @@ use crate::types::*;
 pub struct EpochManagerSubstate {
     pub epoch: u64,
     pub round: u64,
+    pub rounds_per_epoch: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -848,7 +848,7 @@ impl TestRunner {
         let instructions = vec![SystemInstruction::CallNativeMethod {
             method_ident: NativeMethodIdent {
                 receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                method_name: EpochManagerMethod::SetEpoch.as_ref().to_owned(),
+                method_name: EpochManagerMethod::NextRound.as_ref().to_owned(),
             },
             args: args!(EPOCH_MANAGER, epoch),
         }

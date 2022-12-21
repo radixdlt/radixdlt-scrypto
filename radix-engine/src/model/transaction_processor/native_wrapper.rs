@@ -440,8 +440,8 @@ where
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                EpochManagerMethod::SetEpoch => {
-                    let invocation: EpochManagerSetEpochInvocation = scrypto_decode(&args)
+                EpochManagerMethod::NextRound => {
+                    let invocation: EpochManagerNextRoundInvocation = scrypto_decode(&args)
                         .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))

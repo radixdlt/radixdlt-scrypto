@@ -34,7 +34,10 @@ pub struct GenesisReceipt {
     pub eddsa_ed25519_token: ResourceAddress,
 }
 
-pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTransaction {
+pub fn create_genesis(
+    validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    rounds_per_epoch: u64,
+) -> SystemTransaction {
     let mut blobs = Vec::new();
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
     let create_faucet_package = {
@@ -148,7 +151,7 @@ pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTran
                 blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
                 function_name: EpochManagerFunction::Create.to_string(),
             },
-            args: scrypto_encode(&EpochManagerCreateInvocation { validator_set }).unwrap(),
+            args: scrypto_encode(&EpochManagerCreateInvocation { validator_set, rounds_per_epoch }).unwrap(),
         }
     };
 
@@ -230,13 +233,14 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
-    bootstrap_with_validator_set(substate_store, scrypto_interpreter, Vec::new())
+    bootstrap_with_validator_set(substate_store, scrypto_interpreter, Vec::new(), 1u64)
 }
 
 pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
     validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    rounds_per_epoch: u64,
 ) -> Option<TransactionReceipt>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
@@ -249,7 +253,7 @@ where
         ))
         .is_none()
     {
-        let genesis_transaction = create_genesis(validator_set);
+        let genesis_transaction = create_genesis(validator_set, rounds_per_epoch);
 
         let transaction_receipt = execute_transaction(
             substate_store,
@@ -280,7 +284,7 @@ mod tests {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
         let initial_validator_set = vec![EcdsaSecp256k1PublicKey([0; 33])];
-        let genesis_transaction = create_genesis(initial_validator_set.clone());
+        let genesis_transaction = create_genesis(initial_validator_set.clone(), 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,

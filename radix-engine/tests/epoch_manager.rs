@@ -26,20 +26,20 @@ fn get_epoch_should_succeed() {
 }
 
 #[test]
-fn set_epoch_without_supervisor_auth_fails() {
+fn next_round_without_supervisor_auth_fails() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
-    let epoch = 9876u64;
+    let round = 9876u64;
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "EpochManagerTest",
-            "set_epoch",
-            args!(EPOCH_MANAGER, epoch),
+            "next_round",
+            args!(EPOCH_MANAGER, round),
         )
         .call_function(package_address, "EpochManagerTest", "get_epoch", args!())
         .build();
@@ -64,6 +64,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
         },
         args: scrypto_encode(&EpochManagerCreateInvocation {
             validator_set: Vec::new(),
+            rounds_per_epoch: 1u64,
         })
         .unwrap(),
     }
@@ -97,6 +98,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
         },
         args: scrypto_encode(&EpochManagerCreateInvocation {
             validator_set: Vec::new(),
+            rounds_per_epoch: 1u64,
         })
         .unwrap(),
     }

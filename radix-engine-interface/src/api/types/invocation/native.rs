@@ -223,7 +223,7 @@ pub enum PackageMethod {
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerMethod {
     GetCurrentEpoch,
-    SetEpoch,
+    NextRound,
 }
 
 #[derive(
