@@ -53,7 +53,7 @@ impl Executor for EpochManagerCreateInvocation {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
 
         let epoch_manager = EpochManagerSubstate {
-            epoch: 0,
+            epoch: self.initial_epoch,
             round: 0,
             rounds_per_epoch: self.rounds_per_epoch,
         };

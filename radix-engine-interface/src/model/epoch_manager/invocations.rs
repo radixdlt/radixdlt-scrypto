@@ -12,6 +12,7 @@ use crate::wasm::*;
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
     pub validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
 }
 

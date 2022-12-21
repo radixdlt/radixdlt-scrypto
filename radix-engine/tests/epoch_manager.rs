@@ -22,7 +22,7 @@ fn get_epoch_should_succeed() {
 
     // Assert
     let epoch: u64 = receipt.output(1);
-    assert_eq!(epoch, 0);
+    assert_eq!(epoch, 1);
 }
 
 #[test]
@@ -64,6 +64,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
         },
         args: scrypto_encode(&EpochManagerCreateInvocation {
             validator_set: Vec::new(),
+            initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
         })
         .unwrap(),
@@ -98,6 +99,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
         },
         args: scrypto_encode(&EpochManagerCreateInvocation {
             validator_set: Vec::new(),
+            initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
         })
         .unwrap(),
