@@ -23,7 +23,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGetHashInvocat
     {
         let actor = ResolvedActor::method(
             NativeMethod::TransactionHash(TransactionHashMethod::Get),
-            ResolvedReceiver::new(RENodeId::TransactionHash(self.receiver)),
+            ResolvedReceiver::new(RENodeId::TransactionRuntime(self.receiver)),
         );
         let call_frame_update = CallFrameUpdate::empty();
 
@@ -40,7 +40,7 @@ impl Executor for TransactionRuntimeGetHashInvocation {
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
-        let node_id = RENodeId::TransactionHash(self.receiver);
+        let node_id = RENodeId::TransactionRuntime(self.receiver);
         let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate = api.get_ref(handle)?;
         let transaction_runtime_substate = substate.transaction_runtime();
@@ -63,7 +63,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGenerateUuidIn
     {
         let actor = ResolvedActor::method(
             NativeMethod::TransactionHash(TransactionHashMethod::GenerateUuid),
-            ResolvedReceiver::new(RENodeId::TransactionHash(self.receiver)),
+            ResolvedReceiver::new(RENodeId::TransactionRuntime(self.receiver)),
         );
 
         let call_frame_update = CallFrameUpdate::empty();
@@ -81,14 +81,14 @@ impl Executor for TransactionRuntimeGenerateUuidInvocation {
     {
         let offset =
             SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
-        let node_id = RENodeId::TransactionHash(self.receiver);
+        let node_id = RENodeId::TransactionRuntime(self.receiver);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = api.get_ref_mut(handle)?;
         let transaction_hash_substate = substate_mut.transaction_runtime();
 
         if transaction_hash_substate.next_id == u32::MAX {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::TransactionHashError(TransactionRuntimeError::OutOfUUid),
+                ApplicationError::TransactionRuntimeError(TransactionRuntimeError::OutOfUUid),
             ));
         }
 

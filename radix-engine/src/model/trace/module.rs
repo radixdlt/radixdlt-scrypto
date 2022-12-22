@@ -267,7 +267,7 @@ impl ExecutionTraceModule {
         let maybe_runtime_id = call_frame
             .get_visible_nodes()
             .into_iter()
-            .find(|e| matches!(e, RENodeId::TransactionHash(..)));
+            .find(|e| matches!(e, RENodeId::TransactionRuntime(..)));
         maybe_runtime_id.map(|runtime_id| {
             let substate_ref = heap
                 .get_substate(
