@@ -182,24 +182,29 @@ impl Decimal {
 
     /// Calculates power using exponentiation by squaring".
     pub fn powi(&self, exp: i64) -> Self {
-        let one = Self::ONE.0;
-        let base = self.0;
+        let one_512 = BnumI512::from(Self::ONE.0);
+        let base_512 = BnumI512::from(self.0);
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
         if exp < 0 {
-            return Decimal(&one * &one / base).powi(mul(exp, -1));
+            let dec_256 = BnumI256::from(one_512 * one_512 / base_512);
+            return Decimal(dec_256).powi(mul(exp, -1));
         }
         if exp == 0 {
             return Self::ONE;
         }
+        if exp == 1 {
+            return *self;
+        }
         if exp % 2 == 0 {
-            return Decimal(&base * &base / &one).powi(div(exp, 2));
+            let dec_256 = BnumI256::from(base_512 * base_512 / one_512);
+            Decimal(dec_256).powi(div(exp, 2))
         } else {
-            return Decimal(
-                &base * Decimal(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one,
-            );
+            let dec_256 = BnumI256::from(base_512 * base_512 / one_512);
+            let sub_dec = Decimal(dec_256);
+            *self * sub_dec.powi(div(sub(exp, 1), 2))
         }
     }
 
