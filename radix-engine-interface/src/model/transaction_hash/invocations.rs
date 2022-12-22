@@ -2,7 +2,7 @@ use radix_engine_interface::crypto::Hash;
 use sbor::rust::fmt::Debug;
 
 use crate::api::api::*;
-use crate::api::types::TransactionHashId;
+use crate::api::types::TransactionRuntimeId;
 use crate::scrypto;
 use crate::wasm::*;
 use sbor::*;
@@ -10,7 +10,7 @@ use sbor::*;
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionRuntimeGetHashInvocation {
-    pub receiver: TransactionHashId,
+    pub receiver: TransactionRuntimeId,
 }
 
 impl Invocation for TransactionRuntimeGetHashInvocation {
@@ -23,8 +23,8 @@ impl SerializableInvocation for TransactionRuntimeGetHashInvocation {
 
 impl Into<SerializedInvocation> for TransactionRuntimeGetHashInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::TransactionHash(
-            TransactionHashMethodInvocation::Get(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::TransactionRuntime(
+            TransactionRuntimeMethodInvocation::Get(self),
         ))
         .into()
     }
@@ -33,7 +33,7 @@ impl Into<SerializedInvocation> for TransactionRuntimeGetHashInvocation {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionRuntimeGenerateUuidInvocation {
-    pub receiver: TransactionHashId,
+    pub receiver: TransactionRuntimeId,
 }
 
 impl Invocation for TransactionRuntimeGenerateUuidInvocation {
@@ -46,8 +46,8 @@ impl SerializableInvocation for TransactionRuntimeGenerateUuidInvocation {
 
 impl Into<SerializedInvocation> for TransactionRuntimeGenerateUuidInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::TransactionHash(
-            TransactionHashMethodInvocation::GenerateUuid(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::TransactionRuntime(
+            TransactionRuntimeMethodInvocation::GenerateUuid(self),
         ))
         .into()
     }

@@ -54,7 +54,7 @@ pub enum RENodeId {
     Package(PackageId),
     EpochManager(EpochManagerId),
     Clock(ClockId),
-    TransactionHash(TransactionHashId),
+    TransactionRuntime(TransactionRuntimeId),
 }
 
 impl Into<[u8; 36]> for RENodeId {
@@ -80,7 +80,7 @@ impl Into<u32> for RENodeId {
             RENodeId::Proof(id) => id,
             RENodeId::AuthZoneStack(id) => id,
             RENodeId::FeeReserve(id) => id,
-            RENodeId::TransactionHash(id) => id,
+            RENodeId::TransactionRuntime(id) => id,
             _ => panic!("Not a transient id"),
         }
     }

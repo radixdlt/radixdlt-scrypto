@@ -57,7 +57,7 @@ pub enum NativeMethodInvocation {
     Vault(VaultMethodInvocation),
     Proof(ProofMethodInvocation),
     Worktop(WorktopMethodInvocation),
-    TransactionHash(TransactionHashMethodInvocation),
+    TransactionRuntime(TransactionRuntimeMethodInvocation),
     Logger(LoggerInvocation),
 }
 
@@ -79,7 +79,7 @@ pub enum LoggerInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum TransactionHashMethodInvocation {
+pub enum TransactionRuntimeMethodInvocation {
     Get(TransactionRuntimeGetHashInvocation),
     GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
@@ -511,11 +511,11 @@ impl NativeFnInvocation {
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },
-                NativeMethodInvocation::TransactionHash(method) => match method {
-                    TransactionHashMethodInvocation::Get(invocation) => api
+                NativeMethodInvocation::TransactionRuntime(method) => match method {
+                    TransactionRuntimeMethodInvocation::Get(invocation) => api
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    TransactionHashMethodInvocation::GenerateUuid(invocation) => api
+                    TransactionRuntimeMethodInvocation::GenerateUuid(invocation) => api
                         .invoke(invocation)
                         .map(|a| IndexedScryptoValue::from_typed(&a)),
                 },

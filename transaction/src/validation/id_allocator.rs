@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::{
     AuthZoneStackId, BucketId, ComponentId, FeeReserveId, KeyValueStoreId, NonFungibleStoreId,
-    PackageId, ProofId, ResourceManagerId, TransactionHashId, VaultId,
+    PackageId, ProofId, ResourceManagerId, TransactionRuntimeId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
@@ -149,7 +149,7 @@ impl IdAllocator {
         self.next_id(transaction_hash)
     }
 
-    pub fn new_transaction_hash_id(&mut self) -> Result<TransactionHashId, IdAllocationError> {
+    pub fn new_transaction_hash_id(&mut self) -> Result<TransactionRuntimeId, IdAllocationError> {
         self.next()
     }
 
