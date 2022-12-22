@@ -83,7 +83,7 @@ impl Runtime {
         let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
         let node_id = visible_node_ids
             .into_iter()
-            .find(|n| matches!(n, RENodeId::TransactionHash(..)))
+            .find(|n| matches!(n, RENodeId::TransactionRuntime(..)))
             .expect("TransactionHash does not exist");
 
         ScryptoEnv
@@ -98,7 +98,7 @@ impl Runtime {
         let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
         let node_id = visible_node_ids
             .into_iter()
-            .find(|n| matches!(n, RENodeId::TransactionHash(..)))
+            .find(|n| matches!(n, RENodeId::TransactionRuntime(..)))
             .expect("TransactionHash does not exist");
 
         ScryptoEnv
