@@ -118,9 +118,13 @@ macro_rules! types {
 }
 types! {
     BnumI256, BInt::<4>,
+    BnumI384, BInt::<6>,
     BnumI512, BInt::<8>,
+    BnumI768, BInt::<12>,
     BnumU256, BUint::<4>,
-    BnumU512, BUint::<8>
+    BnumU384, BUint::<6>,
+    BnumU512, BUint::<8>,
+    BnumU768, BUint::<12>
 }
 
 pub trait Sqrt {
@@ -348,9 +352,13 @@ macro_rules! op_impl {
     };
 }
 op_impl! { BnumI256 }
+op_impl! { BnumI384 }
 op_impl! { BnumI512 }
+op_impl! { BnumI768 }
 op_impl! { BnumU256 }
+op_impl! { BnumU384 }
 op_impl! { BnumU512 }
+op_impl! { BnumU768 }
 
 macro_rules! op_impl_unsigned {
     ($($t:ty),*) => {
@@ -370,7 +378,9 @@ macro_rules! op_impl_unsigned {
     };
 }
 op_impl_unsigned! { BnumU256 }
+op_impl_unsigned! { BnumU384 }
 op_impl_unsigned! { BnumU512 }
+op_impl_unsigned! { BnumU768 }
 
 macro_rules! op_impl_signed {
     ($($t:ty),*) => {
@@ -438,5 +448,7 @@ macro_rules! op_impl_signed {
 }
 
 op_impl_signed! { BnumI256 }
+op_impl_signed! { BnumI384 }
 op_impl_signed! { BnumI512 }
+op_impl_signed! { BnumI768 }
 
