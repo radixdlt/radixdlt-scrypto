@@ -254,7 +254,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let xrd_auth = rule!(require_amount(Decimal(I256::from(1)), RADIX_TOKEN));
+    let xrd_auth = rule!(require_amount(Decimal(BnumI256::from(1)), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_allocated_account();
 
