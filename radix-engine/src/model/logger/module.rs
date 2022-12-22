@@ -27,9 +27,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::ReadOwnedNodes => {
                 log!(call_frame, "Reading owned nodes");
             }
-            SysCallInput::BorrowNode { node_id } => {
-                log!(call_frame, "Borrowing node: node_id = {:?}", node_id);
-            }
             SysCallInput::DropNode { node_id } => {
                 log!(call_frame, "Dropping node: node_id = {:?}", node_id);
             }
@@ -62,21 +59,11 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::DropLock { lock_handle } => {
                 log!(call_frame, "Drop Lock: lock_handle = {:?}", lock_handle);
             }
-            SysCallInput::TakeSubstate { substate_id } => {
-                log!(
-                    call_frame,
-                    "Taking substate: substate_id = {:?}",
-                    substate_id
-                );
-            }
             SysCallInput::ReadBlob { blob_hash } => {
                 log!(call_frame, "Reading blob: hash = {}", blob_hash);
             }
             SysCallInput::EmitLog { .. } => {
                 log!(call_frame, "Emitting application log");
-            }
-            SysCallInput::EmitEvent { .. } => {
-                log!(call_frame, "Emitting an event");
             }
         }
 
@@ -95,7 +82,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                 log!(call_frame, "Exiting invoke: output = {:?}", rtn);
             }
             SysCallOutput::ReadOwnedNodes { .. } => {}
-            SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
             SysCallOutput::LockSubstate { lock_handle } => {
@@ -111,7 +97,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::ReadBlob { .. } => {}
             SysCallOutput::GenerateUuid { .. } => {}
             SysCallOutput::EmitLog { .. } => {}
-            SysCallOutput::EmitEvent { .. } => {}
         }
 
         Ok(())

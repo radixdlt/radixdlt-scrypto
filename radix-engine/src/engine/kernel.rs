@@ -52,14 +52,13 @@ pub struct Kernel<
     prev_frame_stack: Vec<CallFrame>,
     /// Heap
     heap: Heap,
-    /// Store
-    track: Track<'s, R>,
 
+    /// Store
+    track: &'g mut Track<'s, R>,
     /// Interpreter capable of running scrypto programs
     scrypto_interpreter: &'g ScryptoInterpreter<W>,
-
     /// Kernel module
-    module: M,
+    module: &'g mut M,
 }
 
 impl<'g, 's, W, R, M> Kernel<'g, 's, W, R, M>
@@ -72,9 +71,9 @@ where
         transaction_hash: Hash,
         auth_zone_params: AuthZoneParams,
         blobs: &'g HashMap<Hash, &'g [u8]>,
-        track: Track<'s, R>,
+        track: &'g mut Track<'s, R>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
-        module: M,
+        module: &'g mut M,
     ) -> Self {
         let mut kernel = Self {
             execution_mode: ExecutionMode::Kernel,
@@ -105,17 +104,6 @@ where
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
-        kernel
-            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::TransactionModule, |api| {
-                let transaction_hash_substate = TransactionHashSubstate {
-                    hash: transaction_hash,
-                    next_id: 0u32,
-                };
-                let node_id = api.allocate_node_id(RENodeType::TransactionHash)?;
-                api.create_node(node_id, RENode::TransactionHash(transaction_hash_substate))?;
-                Ok(())
-            })
-            .expect("TransactionModule failed to initialize");
 
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
@@ -253,7 +241,7 @@ where
                     Ok(())
                 }
                 RENodeId::Bucket(..) => Ok(()),
-                RENodeId::TransactionHash(..) => Ok(()),
+                RENodeId::TransactionRuntime(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                     node_id,
                 ))),
@@ -552,30 +540,6 @@ where
 
         Ok(output)
     }
-
-    // TODO: Remove
-    pub fn finalize(
-        mut self,
-        result: Result<Vec<InstructionOutput>, RuntimeError>,
-    ) -> TrackReceipt {
-        let final_result = match result {
-            Ok(res) => self.finalize_modules().map(|_| res),
-            Err(err) => {
-                // If there was an error, we still try to finalize the modules,
-                // but forward the original error (even if module finalizer also errors).
-                let _silently_ignored = self.finalize_modules();
-                Err(err)
-            }
-        };
-        self.track.finalize(final_result)
-    }
-
-    fn finalize_modules(&mut self) -> Result<(), RuntimeError> {
-        self.module
-            .on_finished_processing(&mut self.heap, &mut self.track)
-            .map_err(RuntimeError::ModuleError)?;
-        Ok(())
-    }
 }
 
 impl<'g, 's, W, R, M> ResolverApi<W> for Kernel<'g, 's, W, R, M>
@@ -819,10 +783,10 @@ where
                 .id_allocator
                 .new_proof_id()
                 .map(|id| RENodeId::Proof(id)),
-            RENodeType::TransactionHash => self
+            RENodeType::TransactionRuntime => self
                 .id_allocator
                 .new_transaction_hash_id()
-                .map(|id| RENodeId::TransactionHash(id)),
+                .map(|id| RENodeId::TransactionRuntime(id)),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
             RENodeType::Vault => self
                 .id_allocator
@@ -978,7 +942,7 @@ where
                 }
             }
             (RENodeId::Bucket(..), RENode::Bucket(..)) => {}
-            (RENodeId::TransactionHash(..), RENode::TransactionHash(..)) => {}
+            (RENodeId::TransactionRuntime(..), RENode::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENode::Proof(..)) => {}
             (RENodeId::AuthZoneStack(..), RENode::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENode::Vault(..)) => {}
@@ -1276,32 +1240,6 @@ where
             .map_err(RuntimeError::ModuleError)?;
 
         Ok(blob)
-    }
-
-    fn emit_event(&mut self, event: Event) -> Result<(), RuntimeError> {
-        self.module
-            .pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::EmitEvent { event: &event },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        if let Event::Tracked(tracked_event) = event {
-            self.track.add_event(tracked_event);
-        }
-
-        self.module
-            .post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::EmitEvent,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(())
     }
 }
 

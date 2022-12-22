@@ -3,6 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::transaction::ExecutionConfig;
 use radix_engine_interface::api::types::VaultId;
+use sbor::rust::vec::Vec;
 
 pub struct KernelModule {
     trace: bool,
@@ -19,6 +20,12 @@ impl KernelModule {
             royalty: RoyaltyModule::default(),
             costing: CostingModule::new(config.max_call_depth),
         }
+    }
+}
+
+impl KernelModule {
+    pub fn collect_events(&mut self) -> Vec<TrackedEvent> {
+        self.execution_trace.collect_events()
     }
 }
 
@@ -179,20 +186,5 @@ impl<R: FeeReserve> Module<R> for KernelModule {
             .on_lock_fee(call_frame, heap, track, vault_id, fee, contingent)?;
 
         Ok(fee)
-    }
-
-    fn on_finished_processing(
-        &mut self,
-        heap: &mut Heap,
-        track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        if self.trace {
-            LoggerModule.on_finished_processing(heap, track)?;
-        }
-        self.costing.on_finished_processing(heap, track)?;
-        self.royalty.on_finished_processing(heap, track)?;
-        self.execution_trace.on_finished_processing(heap, track)?;
-
-        Ok(())
     }
 }

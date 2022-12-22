@@ -135,7 +135,7 @@ where
 
         // Apply pre execution costing
         let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let track = match pre_execution_result {
+        let mut track = match pre_execution_result {
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
@@ -155,17 +155,18 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let module = KernelModule::new(execution_config);
+            let mut module = KernelModule::new(execution_config);
             let mut kernel = Kernel::new(
                 transaction_hash.clone(),
                 auth_zone_params.clone(),
                 blobs,
-                track,
+                &mut track,
                 self.scrypto_interpreter,
-                module,
+                &mut module,
             );
 
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+                transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
                 instructions: match instructions {
                     InstructionList::Basic(instructions) => {
@@ -175,7 +176,8 @@ where
                 },
             });
 
-            kernel.finalize(invoke_result)
+            let events = module.collect_events();
+            track.finalize(invoke_result, events)
         };
 
         let receipt = TransactionReceipt {

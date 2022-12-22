@@ -43,7 +43,7 @@ pub enum RENode {
         CurrentTimeRoundedToMinutesSubstate,
         AccessRulesChainSubstate,
     ),
-    TransactionHash(TransactionHashSubstate),
+    TransactionRuntime(TransactionRuntimeSubstate),
 }
 
 impl RENode {
@@ -210,9 +210,11 @@ impl RENode {
                     fee_reserve.into(),
                 );
             }
-            RENode::TransactionHash(transaction_hash) => {
+            RENode::TransactionRuntime(transaction_hash) => {
                 substates.insert(
-                    SubstateOffset::TransactionHash(TransactionHashOffset::TransactionHash),
+                    SubstateOffset::TransactionRuntime(
+                        TransactionRuntimeOffset::TransactionRuntime,
+                    ),
                     transaction_hash.into(),
                 );
             }

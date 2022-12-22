@@ -7,11 +7,11 @@ use radix_engine_interface::crypto::hash;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum TransactionHashError {
+pub enum TransactionRuntimeError {
     OutOfUUid,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGetInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGetHashInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
@@ -23,7 +23,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGetInvocation {
     {
         let actor = ResolvedActor::method(
             NativeMethod::TransactionHash(TransactionHashMethod::Get),
-            ResolvedReceiver::new(RENodeId::TransactionHash(self.receiver)),
+            ResolvedReceiver::new(RENodeId::TransactionRuntime(self.receiver)),
         );
         let call_frame_update = CallFrameUpdate::empty();
 
@@ -31,26 +31,27 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGetInvocation {
     }
 }
 
-impl Executor for TransactionHashGetInvocation {
+impl Executor for TransactionRuntimeGetHashInvocation {
     type Output = Hash;
 
     fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
-        let offset = SubstateOffset::TransactionHash(TransactionHashOffset::TransactionHash);
-        let node_id = RENodeId::TransactionHash(self.receiver);
+        let offset =
+            SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
+        let node_id = RENodeId::TransactionRuntime(self.receiver);
         let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate = api.get_ref(handle)?;
-        let transaction_hash_substate = substate.transaction_hash();
+        let transaction_runtime_substate = substate.transaction_runtime();
         Ok((
-            transaction_hash_substate.hash.clone(),
+            transaction_runtime_substate.hash.clone(),
             CallFrameUpdate::empty(),
         ))
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGenerateUuidInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGenerateUuidInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
@@ -62,7 +63,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGenerateUuidInvoc
     {
         let actor = ResolvedActor::method(
             NativeMethod::TransactionHash(TransactionHashMethod::GenerateUuid),
-            ResolvedReceiver::new(RENodeId::TransactionHash(self.receiver)),
+            ResolvedReceiver::new(RENodeId::TransactionRuntime(self.receiver)),
         );
 
         let call_frame_update = CallFrameUpdate::empty();
@@ -71,22 +72,23 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionHashGenerateUuidInvoc
     }
 }
 
-impl Executor for TransactionHashGenerateUuidInvocation {
+impl Executor for TransactionRuntimeGenerateUuidInvocation {
     type Output = u128;
 
     fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
-        let offset = SubstateOffset::TransactionHash(TransactionHashOffset::TransactionHash);
-        let node_id = RENodeId::TransactionHash(self.receiver);
+        let offset =
+            SubstateOffset::TransactionRuntime(TransactionRuntimeOffset::TransactionRuntime);
+        let node_id = RENodeId::TransactionRuntime(self.receiver);
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = api.get_ref_mut(handle)?;
-        let transaction_hash_substate = substate_mut.transaction_hash();
+        let transaction_hash_substate = substate_mut.transaction_runtime();
 
         if transaction_hash_substate.next_id == u32::MAX {
             return Err(RuntimeError::ApplicationError(
-                ApplicationError::TransactionHashError(TransactionHashError::OutOfUUid),
+                ApplicationError::TransactionRuntimeError(TransactionRuntimeError::OutOfUUid),
             ));
         }
 
