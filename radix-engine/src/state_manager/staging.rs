@@ -160,8 +160,7 @@ mod tests {
     #[test]
     fn test_complicated_merge() {
         // Arrange
-        let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-        let mut store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+        let mut store = TypedInMemorySubstateStore::new();
         let mut stores = StagedSubstateStoreManager::new(&mut store);
         let child_node1 = stores.new_child_node(0);
         let child_node2 = stores.new_child_node(child_node1);

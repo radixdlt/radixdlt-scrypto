@@ -19,12 +19,6 @@ impl SerializedInMemorySubstateStore {
             substates: HashMap::new(),
         }
     }
-
-    pub fn with_bootstrap<W: WasmEngine>(scrypto_interpreter: &ScryptoInterpreter<W>) -> Self {
-        let mut substate_store = Self::new();
-        bootstrap(&mut substate_store, scrypto_interpreter);
-        substate_store
-    }
 }
 
 impl Default for SerializedInMemorySubstateStore {
