@@ -650,7 +650,7 @@ dependencies = [
 
 [[package]]
 name = "native-sdk"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "radix-engine-derive",
  "radix-engine-interface",
@@ -794,7 +794,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bitflags",
  "colored",
@@ -815,11 +815,11 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-constants"
-version = "0.7.0"
+version = "0.8.0"
 
 [[package]]
 name = "radix-engine-derive"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -828,7 +828,7 @@ dependencies = [
 
 [[package]]
 name = "radix-engine-interface"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bech32",
  "hex",
@@ -937,7 +937,7 @@ dependencies = [
 
 [[package]]
 name = "sbor"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "indexmap",
  "sbor-derive",
@@ -946,7 +946,7 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -976,7 +976,7 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 
 [[package]]
 name = "scrypto"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bech32",
  "hex",
@@ -997,7 +997,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-abi"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "sbor",
  "serde",
@@ -1005,7 +1005,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-derive"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1018,7 +1018,7 @@ dependencies = [
 
 [[package]]
 name = "scrypto-unit"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "radix-engine",
  "radix-engine-constants",
@@ -1314,7 +1314,7 @@ dependencies = [
 
 [[package]]
 name = "transaction"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -1366,7 +1366,7 @@ checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
 
 [[package]]
 name = "utils"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "sbor",
  "serde",
