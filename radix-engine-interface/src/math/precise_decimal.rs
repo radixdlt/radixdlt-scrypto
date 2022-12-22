@@ -184,15 +184,15 @@ impl PreciseDecimal {
 
     /// Calculates power using exponentiation by squaring.
     pub fn powi(&self, exp: i64) -> Self {
-        let one = BigInt::from(Self::ONE.0);
-        let base = BigInt::from(self.0);
+        let one_768 = BnumI768::from(Self::ONE.0);
+        let base_768 = BnumI768::from(self.0);
         let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
         if exp < 0 {
-            let sub_integer = BigInt::from(&one * &one) / &base;
-            let sub_512 = BnumI512::from(sub_integer);
+            let sub_768 = one_768 * one_768 / base_768;
+            let sub_512 = BnumI512::from(sub_768);
             return PreciseDecimal(sub_512).powi(mul(exp, -1));
         }
         if exp == 0 {
@@ -202,28 +202,49 @@ impl PreciseDecimal {
             return *self;
         }
         if exp % 2 == 0 {
-            let sub_integer = BigInt::from(&base * &base) / &one;
-            let sub_512 = BnumI512::from(sub_integer);
+            let sub_768 = base_768 * base_768 / one_768;
+            let sub_512 = BnumI512::from(sub_768);
             PreciseDecimal(sub_512).powi(div(exp, 2))
         } else {
-            let sub_integer = BigInt::from(&base * &base) / &one;
-            let sub_512 = BnumI512::from(sub_integer);
-            let sub_pdec = PreciseDecimal(sub_512);
+            let sub_768 = base_768 * base_768 / one_768;
+            let sub_512 = BnumI512::from(sub_768);
+            let  sub_pdec = PreciseDecimal(sub_512);
             *self * sub_pdec.powi(div(sub(exp, 1), 2))
         }
     }
 
-    /// Square root of a Decimal
+    /// Square root of a PreciseDecimal
     pub fn sqrt(&self) -> Option<Self> {
-        self.nth_root(2)
+        if self.is_negative() {
+            return None;
+        }
+        if self.is_zero() {
+            return Some(Self::ZERO);
+        }
+
+        // The BnumI512 i associated to a Decimal d is : i = d*10^64.
+        // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^32 => We lost precision
+        // To get the right precision, we compute : sqrt(i*10^64) = sqrt(d)*10^64
+        let self_768 = BnumI768::from(self.0);
+        let correct_nb = self_768 * BnumI768::from(PreciseDecimal::one().0);
+        let sqrt = BnumI512::try_from(correct_nb.sqrt()).unwrap();
+        Some(PreciseDecimal(sqrt))
     }
 
-    /// Cubic root of a Decimal
+    /// Cubic root of a PreciseDecimal
     pub fn cbrt(&self) -> Self {
-        self.nth_root(3).unwrap()
+        if self.is_zero() {
+            return Self::ZERO;
+        }
+
+        // By reasoning in the same way as before, we realise that we need to multiply by 10^36
+        let self_bigint = BigInt::from(self.0);
+        let correct_nb: BigInt = self_bigint * BigInt::from(PreciseDecimal::one().0).pow(2_u32);
+        let cbrt = BnumI512::try_from(correct_nb.cbrt()).unwrap();
+        PreciseDecimal(cbrt)
     }
 
-    /// Nth root of a Decimal
+    /// Nth root of a PreciseDecimal
     pub fn nth_root(&self, n: u32) -> Option<Self> {
         if (self.is_negative() && n % 2 == 0) || n == 0 {
             None
@@ -326,13 +347,13 @@ where
     type Output = PreciseDecimal;
 
     fn mul(self, other: T) -> Self::Output {
-        // Use BigInt to not overflow.
-        // FIXME: Switch to BnumI768
-        let p: PreciseDecimal = other.try_into().unwrap();
-        let self_integer  = BigInt::from(self.0);
-        let other_integer = BigInt::from(p.0);
-        let one_integer = BigInt::from(Self::ONE.0);
-        PreciseDecimal(BnumI512::from(self_integer * other_integer / one_integer))
+        // Use BnumI768 to not overflow.
+        let a = BnumI768::from(self.0);
+        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
+        let b = BnumI768::from(b_dec.0);
+        let c = a * b / BnumI768::from(Self::ONE.0);
+        let c_512 = BnumI512::try_from(c).unwrap();
+        PreciseDecimal(c_512)
     }
 }
 
@@ -343,13 +364,13 @@ where
     type Output = PreciseDecimal;
 
     fn div(self, other: T) -> Self::Output {
-        // Use BigInt to not overflow.
-        // FIXME: Switch to BnumI768
-        let p: PreciseDecimal = other.try_into().unwrap();
-        let self_integer = BigInt::from(self.0);
-        let other_integer = BigInt::from(p.0);
-        let one_integer = BigInt::from(Self::ONE.0);
-        PreciseDecimal(BnumI512::from(self_integer * one_integer / other_integer))
+        // Use BnumI768 to not overflow.
+        let a = BnumI768::from(self.0);
+        let b_dec: PreciseDecimal = other.try_into().expect("Overflow");
+        let b = BnumI768::from(b_dec.0);
+        let c = a * BnumI768::from(Self::ONE.0) / b;
+        let c_512 = BnumI512::try_from(c).unwrap();
+        PreciseDecimal(c_512)
     }
 }
 
