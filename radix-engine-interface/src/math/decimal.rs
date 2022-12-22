@@ -182,14 +182,14 @@ impl Decimal {
 
     /// Calculates power using exponentiation by squaring".
     pub fn powi(&self, exp: i64) -> Self {
-        let one_512 = BnumI512::from(Self::ONE.0);
-        let base_512 = BnumI512::from(self.0);
-        let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
+        let one_384 = BnumI384::from(Self::ONE.0);
+        let base_384 = BnumI384::from(self.0);
+        let div = |x: i64, y:i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 
         if exp < 0 {
-            let dec_256 = BnumI256::from(one_512 * one_512 / base_512);
+            let dec_256 = BnumI256::from(one_384 * one_384 / base_384);
             return Decimal(dec_256).powi(mul(exp, -1));
         }
         if exp == 0 {
@@ -199,10 +199,10 @@ impl Decimal {
             return *self;
         }
         if exp % 2 == 0 {
-            let dec_256 = BnumI256::from(base_512 * base_512 / one_512);
+            let dec_256 = BnumI256::from(base_384 * base_384 / one_384);
             Decimal(dec_256).powi(div(exp, 2))
         } else {
-            let dec_256 = BnumI256::from(base_512 * base_512 / one_512);
+            let dec_256 = BnumI256::from(base_384 * base_384 / one_384);
             let sub_dec = Decimal(dec_256);
             *self * sub_dec.powi(div(sub(exp, 1), 2))
         }
@@ -220,11 +220,9 @@ impl Decimal {
         // The BnumI256 i associated to a Decimal d is : i = d*10^18.
         // Therefore, taking sqrt yields sqrt(i) = sqrt(d)*10^9 => We lost precision
         // To get the right precision, we compute : sqrt(i*10^18) = sqrt(d)*10^18
-        // Use BnumI512 (BInt<8>) to not overflow.
-        // FIXME: Switch to BnumI384
-        let self_512: BnumI512 = BnumI512::from(self.0);
-        let correct_nb = self_512 * BnumI512::from(Decimal::one().0);
-        let sqrt = BnumI256::try_from(correct_nb.sqrt()).unwrap();
+        let self_384: BnumI384 = BnumI384::from(self.0);
+        let correct_nb = self_384 * BnumI384::from(Decimal::one().0);
+        let sqrt = BnumI256::try_from(correct_nb.sqrt()).expect("Overflow");
         Some(Decimal(sqrt))
     }
 
@@ -233,12 +231,11 @@ impl Decimal {
         if self.is_zero() {
             return Self::ZERO;
         }
+
         // By reasoning in the same way as before, we realise that we need to multiply by 10^36
-        // Use BnumI512 (BInt<8>) to not overflow.
-        // FIXME: Switch to BnumI384
-        let self_512: BnumI512 = BnumI512::from(self.0);
-        let correct_nb = self_512 * BnumI512::from(Decimal::one().0).pow(2);
-        let cbrt = BnumI256::try_from(correct_nb.cbrt()).unwrap();
+        let self_384: BnumI384 = BnumI384::from(self.0);
+        let correct_nb = self_384 * BnumI384::from(Decimal::one().0).pow(2);
+        let cbrt = BnumI256::try_from(correct_nb.cbrt()).expect("Overflow");
         Decimal(cbrt)
     }
 
@@ -344,12 +341,11 @@ where
     type Output = Decimal;
 
     fn mul(self, other: T) -> Self::Output {
-        // Use BnumI512 (BInt<8>) to not overflow.
-        // FIXME: Switch to BnumI384 or BnumI320
-        let a = BnumI512::from(self.0);
+        // Use BnumI384 (BInt<6>) to not overflow.
+        let a = BnumI384::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI512::from(b_dec.0);
-        let c = a * b / BnumI512::from(Self::ONE.0);
+        let b = BnumI384::from(b_dec.0);
+        let c = a * b / BnumI384::from(Self::ONE.0);
         let c_256 = BnumI256::try_from(c).unwrap();
         Decimal(c_256)
     }
@@ -362,12 +358,11 @@ where
     type Output = Decimal;
 
     fn div(self, other: T) -> Self::Output {
-        // Use BnumI512 (BInt<8>) to not overflow.
-        // Explanation in mul()
-        let a = BnumI512::from(self.0);
+        // Use BnumI384 (BInt<6>) to not overflow.
+        let a = BnumI384::from(self.0);
         let b_dec: Decimal = other.try_into().expect("Overflow");
-        let b = BnumI512::from(b_dec.0);
-        let c = a * BnumI512::from(Self::ONE.0) / b;
+        let b = BnumI384::from(b_dec.0);
+        let c = a * BnumI384::from(Self::ONE.0) / b;
         let c_256 = BnumI256::try_from(c).unwrap();
         Decimal(c_256)
     }
