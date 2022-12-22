@@ -12,7 +12,7 @@ impl TransactionHashModule {
         let refed = api.get_visible_node_ids()?;
         let maybe_hash_id = refed
             .into_iter()
-            .find(|e| matches!(e, RENodeId::TransactionHash(..)));
+            .find(|e| matches!(e, RENodeId::TransactionRuntime(..)));
         if let Some(transaction_hash_id) = maybe_hash_id {
             call_frame_update
                 .node_refs_to_copy

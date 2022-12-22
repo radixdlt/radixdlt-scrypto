@@ -241,7 +241,7 @@ where
                     Ok(())
                 }
                 RENodeId::Bucket(..) => Ok(()),
-                RENodeId::TransactionHash(..) => Ok(()),
+                RENodeId::TransactionRuntime(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
                     node_id,
                 ))),
@@ -786,7 +786,7 @@ where
             RENodeType::TransactionRuntime => self
                 .id_allocator
                 .new_transaction_hash_id()
-                .map(|id| RENodeId::TransactionHash(id)),
+                .map(|id| RENodeId::TransactionRuntime(id)),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
             RENodeType::Vault => self
                 .id_allocator
@@ -942,7 +942,7 @@ where
                 }
             }
             (RENodeId::Bucket(..), RENode::Bucket(..)) => {}
-            (RENodeId::TransactionHash(..), RENode::TransactionRuntime(..)) => {}
+            (RENodeId::TransactionRuntime(..), RENode::TransactionRuntime(..)) => {}
             (RENodeId::Proof(..), RENode::Proof(..)) => {}
             (RENodeId::AuthZoneStack(..), RENode::AuthZoneStack(..)) => {}
             (RENodeId::Vault(..), RENode::Vault(..)) => {}
