@@ -1,4 +1,4 @@
-use radix_engine::engine::{ModuleError, RuntimeError};
+use radix_engine::engine::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
@@ -118,6 +118,125 @@ fn next_epoch_with_validator_auth_succeeds() {
         .expect("Should have next epoch")
         .1;
     assert_eq!(next_epoch, initial_epoch + 1);
+}
+
+#[test]
+fn register_validator_with_auth_succeeds() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let (pub_key, _, _) = test_runner.new_allocated_account();
+
+    // Act
+    let instructions = vec![SystemInstruction::CallNativeMethod {
+        method_ident: NativeMethodIdent {
+            receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            method_name: "register_validator".to_string(),
+        },
+        args: args!(EPOCH_MANAGER, pub_key),
+    }
+    .into()];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+        }
+        .get_executable(vec![NonFungibleAddress::from_public_key(&pub_key)]),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn register_validator_without_auth_fails() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let (pub_key, _, _) = test_runner.new_allocated_account();
+
+    // Act
+    let instructions = vec![SystemInstruction::CallNativeMethod {
+        method_ident: NativeMethodIdent {
+            receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            method_name: "register_validator".to_string(),
+        },
+        args: args!(EPOCH_MANAGER, pub_key),
+    }
+    .into()];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+        }
+        .get_executable(vec![]),
+    );
+
+    // Assert
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(..))
+        )
+    });
+}
+
+#[test]
+fn registered_validator_becomes_part_of_validator_on_epoch_change() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let (pub_key, _, _) = test_runner.new_allocated_account();
+    let instructions = vec![SystemInstruction::CallNativeMethod {
+        method_ident: NativeMethodIdent {
+            receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            method_name: "register_validator".to_string(),
+        },
+        args: args!(EPOCH_MANAGER, pub_key),
+    }
+    .into()];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+        }
+        .get_executable(vec![NonFungibleAddress::from_public_key(&pub_key)]),
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let instructions = vec![SystemInstruction::CallNativeMethod {
+        method_ident: NativeMethodIdent {
+            receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            method_name: "next_round".to_string(),
+        },
+        args: args!(EPOCH_MANAGER, rounds_per_epoch),
+    }
+    .into()];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+        }
+        .get_executable(vec![AuthAddresses::validator_role()]),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    let result = receipt.expect_commit();
+    let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
+    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert!(next_epoch.0.contains(&pub_key));
 }
 
 #[test]
