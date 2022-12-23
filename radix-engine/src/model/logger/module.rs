@@ -2,6 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::LoggerSubstate;
 use radix_engine_interface::api::types::{RENodeId, RENodeType};
+use sbor::rust::vec::Vec;
 
 pub struct LoggerModule;
 
