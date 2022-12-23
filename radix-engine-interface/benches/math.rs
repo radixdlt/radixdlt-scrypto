@@ -63,5 +63,23 @@ criterion_group!(
     bench_integer_pow,
     bench_integer_from_string,
     bench_integer_to_string,
+
+    bench_bnumbint256_add,
+    bench_bnumbint256_sub,
+    bench_bnumbint256_mul,
+    bench_bnumbint256_div,
+    bench_bnumbint256_root,
+    bench_bnumbint256_pow,
+    bench_bnumbint256_from_string,
+    bench_bnumbint256_to_string,
+
+    bench_ethnumi256_add,
+    bench_ethnumi256_sub,
+    bench_ethnumi256_mul,
+    bench_ethnumi256_div,
+//    bench_ethnumi256_root,
+    bench_ethnumi256_pow,
+    bench_ethnumi256_from_string,
+    bench_ethnumi256_to_string,
 );
 criterion_main!(bench_math);

@@ -4,10 +4,15 @@ use criterion::{BenchmarkId, Criterion};
 use radix_engine_interface::math::{NthRoot,I256,I512};
 use num_traits::Pow;
 use num_bigint::BigInt;
+use num_integer::Roots;
 use rug::{Integer, ops::Pow as RugPow};
+use bnum::BInt;
+use ethnum::I256 as EthnumI256;
 
-use crate::{ops_fn,bench_ops,process_op};
+use crate::{ops_fn,ops_root_fn,bench_ops,process_op};
 use crate::macros::QUICK;
+
+type BnumBint256 = BInt<4>;
 
 const ADD_OPERANDS: [(&str, &str); 4] = [
     ("278960446186580977117854925043439539266349000000000000000000000000000000000", "278960446186580977117854925043439539266349000000000000000000000000000000000"),
@@ -65,7 +70,8 @@ const FROM_STRING_OPERANDS: [&str; 4] = [
     "9",
 ];
 
-ops_fn!(I256, nth_root, pow, u32);
+ops_fn!(I256, pow, u32);
+ops_root_fn!(I256, nth_root);
 bench_ops!(I256, "add");
 bench_ops!(I256, "sub");
 bench_ops!(I256, "mul");
@@ -75,7 +81,8 @@ bench_ops!(I256, "pow", u32);
 bench_ops!(I256, "to_string");
 bench_ops!(I256, "from_string");
 
-ops_fn!(I512, nth_root, pow, u32);
+ops_fn!(I512, pow, u32);
+ops_root_fn!(I512, nth_root);
 bench_ops!(I512, "add");
 bench_ops!(I512, "sub");
 bench_ops!(I512, "mul");
@@ -85,7 +92,8 @@ bench_ops!(I512, "pow", u32);
 bench_ops!(I512, "to_string");
 bench_ops!(I512, "from_string");
 
-ops_fn!(BigInt, nth_root, pow, u32);
+ops_fn!(BigInt, pow, u32);
+ops_root_fn!(BigInt, nth_root);
 bench_ops!(BigInt, "add");
 bench_ops!(BigInt, "sub");
 bench_ops!(BigInt, "mul");
@@ -95,7 +103,8 @@ bench_ops!(BigInt, "pow", u32);
 bench_ops!(BigInt, "to_string");
 bench_ops!(BigInt, "from_string");
 
-ops_fn!(Integer, root, pow, u32, "clone");
+ops_fn!(Integer, pow, u32, "clone");
+ops_root_fn!(Integer, root, "clone");
 bench_ops!(Integer, "add");
 bench_ops!(Integer, "sub");
 bench_ops!(Integer, "mul");
@@ -104,3 +113,24 @@ bench_ops!(Integer, "root", u32);
 bench_ops!(Integer, "pow", u32);
 bench_ops!(Integer, "to_string");
 bench_ops!(Integer, "from_string");
+
+ops_fn!(BnumBint256, pow, u32);
+ops_root_fn!(BnumBint256, nth_root);
+bench_ops!(BnumBint256, "add");
+bench_ops!(BnumBint256, "sub");
+bench_ops!(BnumBint256, "mul");
+bench_ops!(BnumBint256, "div");
+bench_ops!(BnumBint256, "root", u32);
+bench_ops!(BnumBint256, "pow", u32);
+bench_ops!(BnumBint256, "to_string");
+bench_ops!(BnumBint256, "from_string");
+
+ops_fn!(EthnumI256, pow, u32);
+bench_ops!(EthnumI256, "add");
+bench_ops!(EthnumI256, "sub");
+bench_ops!(EthnumI256, "mul");
+bench_ops!(EthnumI256, "div");
+// Ethnum does not implement root function
+bench_ops!(EthnumI256, "pow", u32);
+bench_ops!(EthnumI256, "to_string");
+bench_ops!(EthnumI256, "from_string");

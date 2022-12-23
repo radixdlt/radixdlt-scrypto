@@ -4,7 +4,7 @@ use std::str::FromStr;
 use criterion::{BenchmarkId, Criterion};
 use radix_engine_interface::math::PreciseDecimal;
 
-use crate::{ops_fn,bench_ops,process_op};
+use crate::{ops_fn,ops_root_fn,bench_ops,process_op};
 use crate::macros::QUICK;
 
 const ADD_OPERANDS: [(&str, &str); 4] = [
@@ -90,7 +90,8 @@ const FROM_STRING_OPERANDS: [&str; 4] = [
     "9",
 ];
 
-ops_fn!(PreciseDecimal, nth_root, powi, i64, "clone");
+ops_fn!(PreciseDecimal, powi, i64, "clone");
+ops_root_fn!(PreciseDecimal, nth_root, "clone");
 bench_ops!(PreciseDecimal, "add");
 bench_ops!(PreciseDecimal, "sub");
 bench_ops!(PreciseDecimal, "mul");
