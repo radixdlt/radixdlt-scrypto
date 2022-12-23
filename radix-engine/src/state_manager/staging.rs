@@ -152,10 +152,8 @@ impl<'t, 's, S: ReadableSubstateStore> WriteableSubstateStore for StagedSubstate
 
 #[cfg(test)]
 mod tests {
-    use crate::engine::ScryptoInterpreter;
     use crate::ledger::TypedInMemorySubstateStore;
     use crate::state_manager::StagedSubstateStoreManager;
-    use crate::wasm::DefaultWasmEngine;
 
     #[test]
     fn test_complicated_merge() {

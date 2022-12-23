@@ -35,7 +35,7 @@ pub struct GenesisReceipt {
 }
 
 pub fn create_genesis(
-    validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    validator_set: HashSet<EcdsaSecp256k1PublicKey>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
 ) -> SystemTransaction {
@@ -239,13 +239,19 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
-    bootstrap_with_validator_set(substate_store, scrypto_interpreter, Vec::new(), 1u64, 1u64)
+    bootstrap_with_validator_set(
+        substate_store,
+        scrypto_interpreter,
+        HashSet::new(),
+        1u64,
+        1u64,
+    )
 }
 
 pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    validator_set: HashSet<EcdsaSecp256k1PublicKey>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
 ) -> Option<TransactionReceipt>
@@ -290,7 +296,8 @@ mod tests {
     fn bootstrap_receipt_should_match_constants() {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
-        let initial_validator_set = vec![EcdsaSecp256k1PublicKey([0; 33])];
+        let mut initial_validator_set = HashSet::new();
+        initial_validator_set.insert(EcdsaSecp256k1PublicKey([0; 33]));
         let genesis_transaction = create_genesis(initial_validator_set.clone(), 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(

@@ -1,10 +1,8 @@
-use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::{
-    bootstrap, OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
+    OutputValue, QueryableSubstateStore, ReadableSubstateStore, WriteableSubstateStore,
 };
 use radix_engine::model::PersistedSubstate;
 use radix_engine::types::*;
-use radix_engine::wasm::WasmEngine;
 use radix_engine_interface::api::types::RENodeId;
 
 /// A substate store that stores all typed substates in host memory.

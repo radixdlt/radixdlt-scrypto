@@ -56,7 +56,7 @@ fn next_round_without_supervisor_auth_fails() {
 fn next_round_with_validator_auth_succeeds() {
     // Arrange
     let rounds_per_epoch = 5u64;
-    let genesis = create_genesis(vec![], 1u64, rounds_per_epoch);
+    let genesis = create_genesis(HashSet::new(), 1u64, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
 
     // Act
@@ -88,7 +88,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(vec![], initial_epoch, rounds_per_epoch);
+    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
 
     // Act
@@ -132,7 +132,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
             function_name: EpochManagerFunction::Create.as_ref().to_owned(),
         },
         args: scrypto_encode(&EpochManagerCreateInvocation {
-            validator_set: Vec::new(),
+            validator_set: HashSet::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
         })
@@ -167,7 +167,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             function_name: EpochManagerFunction::Create.as_ref().to_owned(),
         },
         args: scrypto_encode(&EpochManagerCreateInvocation {
-            validator_set: Vec::new(),
+            validator_set: HashSet::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
         })

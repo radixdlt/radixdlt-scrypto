@@ -111,7 +111,7 @@ pub struct TestRunner {
 
 impl TestRunner {
     pub fn new(trace: bool) -> Self {
-        Self::new_with_genesis(trace, create_genesis(Vec::new(), 1u64, 1u64))
+        Self::new_with_genesis(trace, create_genesis(HashSet::new(), 1u64, 1u64))
     }
 
     pub fn new_with_genesis(trace: bool, genesis: SystemTransaction) -> Self {
