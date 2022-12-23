@@ -529,6 +529,9 @@ pub fn generate_instruction(
                 generate_non_fungible_mint_params,
             )?,
         },
+        ast::Instruction::RegisterValidator { validator } => BasicInstruction::RegisterValidator {
+            validator: generate_ecdsa_secp256k1_public_key(validator)?,
+        },
     })
 }
 

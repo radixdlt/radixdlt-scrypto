@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, VaultId,
 };
-use radix_engine_interface::crypto::Blob;
+use radix_engine_interface::crypto::{Blob, EcdsaSecp256k1PublicKey};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
@@ -210,6 +210,10 @@ pub enum BasicInstruction {
         metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleAddress,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+    },
+
+    RegisterValidator {
+        validator: EcdsaSecp256k1PublicKey,
     },
 }
 

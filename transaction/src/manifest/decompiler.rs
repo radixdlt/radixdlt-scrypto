@@ -534,6 +534,11 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
+        BasicInstruction::RegisterValidator { validator } => {
+            f.write_str("REGISTER_VALIDATOR")?;
+            format_typed_value(f, context, validator)?;
+            f.write_str(";")?;
+        }
     }
     Ok(())
 }

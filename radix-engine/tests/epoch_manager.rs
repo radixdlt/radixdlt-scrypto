@@ -130,21 +130,13 @@ fn register_validator_with_auth_succeeds() {
     let (pub_key, _, _) = test_runner.new_allocated_account();
 
     // Act
-    let instructions = vec![SystemInstruction::CallNativeMethod {
-        method_ident: NativeMethodIdent {
-            receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-            method_name: "register_validator".to_string(),
-        },
-        args: args!(EPOCH_MANAGER, pub_key),
-    }
-    .into()];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-        }
-        .get_executable(vec![NonFungibleAddress::from_public_key(&pub_key)]),
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .register_validator(pub_key)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&pub_key)],
     );
 
     // Assert
@@ -161,22 +153,11 @@ fn register_validator_without_auth_fails() {
     let (pub_key, _, _) = test_runner.new_allocated_account();
 
     // Act
-    let instructions = vec![SystemInstruction::CallNativeMethod {
-        method_ident: NativeMethodIdent {
-            receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-            method_name: "register_validator".to_string(),
-        },
-        args: args!(EPOCH_MANAGER, pub_key),
-    }
-    .into()];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-        }
-        .get_executable(vec![]),
-    );
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .register_validator(pub_key)
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
@@ -195,21 +176,13 @@ fn registered_validator_becomes_part_of_validator_on_epoch_change() {
     let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (pub_key, _, _) = test_runner.new_allocated_account();
-    let instructions = vec![SystemInstruction::CallNativeMethod {
-        method_ident: NativeMethodIdent {
-            receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-            method_name: "register_validator".to_string(),
-        },
-        args: args!(EPOCH_MANAGER, pub_key),
-    }
-    .into()];
-    let receipt = test_runner.execute_transaction(
-        SystemTransaction {
-            instructions,
-            blobs: vec![],
-            nonce: 0,
-        }
-        .get_executable(vec![NonFungibleAddress::from_public_key(&pub_key)]),
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .register_validator(pub_key)
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&pub_key)],
     );
     receipt.expect_commit_success();
 
