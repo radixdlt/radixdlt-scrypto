@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/sbor/src/describe.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>describe.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/sbor/src/describe.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>describe.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -524,527 +519,526 @@
 <span id="519">519</span>
 <span id="520">520</span>
 <span id="521">521</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::boxed::Box</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::collections</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::string::String</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::sbor</span>::{<span class="ident">Decode</span>, <span class="ident">Encode</span>, <span class="ident">TypeId</span>};
-<span class="kw">use</span> <span class="ident">sbor::Value</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::rust::boxed::Box;
+<span class="kw">use </span><span class="kw">crate</span>::rust::collections::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rust::string::String;
+<span class="kw">use </span><span class="kw">crate</span>::rust::vec;
+<span class="kw">use </span><span class="kw">crate</span>::rust::vec::Vec;
+<span class="kw">use </span><span class="kw">crate</span>::sbor::{Decode, Encode, TypeId};
+<span class="kw">use </span>sbor::Value;
 
-<span class="doccomment">/// Represents a SBOR type.</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(
-    <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>,
-    <span class="ident">derive</span>(<span class="ident">serde::Serialize</span>, <span class="ident">serde::Deserialize</span>),
-    <span class="ident">serde</span>(<span class="ident">tag</span> <span class="op">=</span> <span class="string">&quot;type&quot;</span>)  <span class="comment">// For JSON readability, see https://serde.rs/enum-representations.html</span>
-)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">TypeId</span>, <span class="ident">Decode</span>, <span class="ident">Encode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Type</span> {
-    <span class="ident">Unit</span>,
-    <span class="ident">Bool</span>,
-    <span class="ident">I8</span>,
-    <span class="ident">I16</span>,
-    <span class="ident">I32</span>,
-    <span class="ident">I64</span>,
-    <span class="ident">I128</span>,
-    <span class="ident">U8</span>,
-    <span class="ident">U16</span>,
-    <span class="ident">U32</span>,
-    <span class="ident">U64</span>,
-    <span class="ident">U128</span>,
-    <span class="ident">String</span>,
+<span class="doccomment">/// Represents a SBOR type.
+</span><span class="attribute">#[cfg_attr(
+    feature = <span class="string">&quot;serde&quot;</span>,
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = <span class="string">&quot;type&quot;</span>)  <span class="comment">// For JSON readability, see https://serde.rs/enum-representations.html
+</span>)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
+</span><span class="kw">pub enum </span>Type {
+    Unit,
+    Bool,
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
+    String,
 
-    <span class="prelude-ty">Option</span> {
-        <span class="ident">value</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
+    <span class="prelude-ty">Option </span>{
+        value: Box&lt;Type&gt;,
     },
 
-    <span class="ident">Array</span> {
-        <span class="ident">element</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
-        <span class="ident">length</span>: <span class="ident">u16</span>,
+    Array {
+        element: Box&lt;Type&gt;,
+        length: u16,
     },
 
-    <span class="ident">Tuple</span> {
-        <span class="ident">elements</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
+    Tuple {
+        elements: Vec&lt;Type&gt;,
     },
 
-    <span class="ident">Struct</span> {
-        <span class="ident">name</span>: <span class="ident">String</span>,
-        <span class="ident">fields</span>: <span class="ident">Fields</span>,
+    Struct {
+        name: String,
+        fields: Fields,
     },
 
-    <span class="ident">Enum</span> {
-        <span class="ident">name</span>: <span class="ident">String</span>,
-        <span class="ident">variants</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Variant</span><span class="op">&gt;</span>, <span class="comment">// Order matters as it decides of the variant index</span>
+    Enum {
+        name: String,
+        variants: Vec&lt;Variant&gt;, <span class="comment">// Order matters as it decides of the variant index
+    </span>},
+
+    <span class="prelude-ty">Result </span>{
+        okay: Box&lt;Type&gt;,
+        error: Box&lt;Type&gt;,
     },
 
-    <span class="prelude-ty">Result</span> {
-        <span class="ident">okay</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
-        <span class="ident">error</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
+    Vec {
+        element: Box&lt;Type&gt;,
     },
 
-    <span class="ident">Vec</span> {
-        <span class="ident">element</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
+    TreeSet {
+        element: Box&lt;Type&gt;,
     },
 
-    <span class="ident">TreeSet</span> {
-        <span class="ident">element</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
+    TreeMap {
+        key: Box&lt;Type&gt;,
+        value: Box&lt;Type&gt;,
     },
 
-    <span class="ident">TreeMap</span> {
-        <span class="ident">key</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
-        <span class="ident">value</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
+    HashSet {
+        element: Box&lt;Type&gt;,
     },
 
-    <span class="ident">HashSet</span> {
-        <span class="ident">element</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
+    HashMap {
+        key: Box&lt;Type&gt;,
+        value: Box&lt;Type&gt;,
     },
 
-    <span class="ident">HashMap</span> {
-        <span class="ident">key</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
-        <span class="ident">value</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
+    Custom {
+        type_id: u8,
+        generics: Vec&lt;Type&gt;,
     },
 
-    <span class="ident">Custom</span> {
-        <span class="ident">type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">generics</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span>,
-    },
-
-    <span class="ident">Any</span>,
+    Any,
 }
 
-<span class="kw">impl</span> <span class="ident">Type</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">matches</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">Value</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">Type::Unit</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::Unit</span>),
-            <span class="ident">Type::Bool</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::Bool</span> { .. }),
-            <span class="ident">Type::I8</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::I8</span> { .. }),
-            <span class="ident">Type::I16</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::I16</span> { .. }),
-            <span class="ident">Type::I32</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::I32</span> { .. }),
-            <span class="ident">Type::I64</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::I64</span> { .. }),
-            <span class="ident">Type::I128</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::I128</span> { .. }),
-            <span class="ident">Type::U8</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::U8</span> { .. }),
-            <span class="ident">Type::U16</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::U16</span> { .. }),
-            <span class="ident">Type::U32</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::U32</span> { .. }),
-            <span class="ident">Type::U64</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::U64</span> { .. }),
-            <span class="ident">Type::U128</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::U128</span> { .. }),
-            <span class="ident">Type::String</span> =&gt; <span class="macro">matches!</span>(<span class="ident">value</span>, <span class="ident">Value::String</span> { .. }),
-            <span class="ident">Type::Option</span> { <span class="ident">value</span>: <span class="ident">type_value</span> } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Option</span> { <span class="ident">value</span> } <span class="op">=</span> <span class="ident">value</span> {
-                    <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">value</span> {
-                        <span class="prelude-val">None</span> =&gt; <span class="bool-val">true</span>,
-                        <span class="prelude-val">Some</span>(<span class="ident">value</span>) =&gt; <span class="ident">type_value</span>.<span class="ident">matches</span>(<span class="ident">value</span>),
+<span class="kw">impl </span>Type {
+    <span class="kw">pub fn </span>matches(<span class="kw-2">&amp;</span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>Value) -&gt; bool {
+        <span class="kw">match </span><span class="self">self </span>{
+            Type::Unit =&gt; <span class="macro">matches!</span>(value, Value::Unit),
+            Type::Bool =&gt; <span class="macro">matches!</span>(value, Value::Bool { .. }),
+            Type::I8 =&gt; <span class="macro">matches!</span>(value, Value::I8 { .. }),
+            Type::I16 =&gt; <span class="macro">matches!</span>(value, Value::I16 { .. }),
+            Type::I32 =&gt; <span class="macro">matches!</span>(value, Value::I32 { .. }),
+            Type::I64 =&gt; <span class="macro">matches!</span>(value, Value::I64 { .. }),
+            Type::I128 =&gt; <span class="macro">matches!</span>(value, Value::I128 { .. }),
+            Type::U8 =&gt; <span class="macro">matches!</span>(value, Value::U8 { .. }),
+            Type::U16 =&gt; <span class="macro">matches!</span>(value, Value::U16 { .. }),
+            Type::U32 =&gt; <span class="macro">matches!</span>(value, Value::U32 { .. }),
+            Type::U64 =&gt; <span class="macro">matches!</span>(value, Value::U64 { .. }),
+            Type::U128 =&gt; <span class="macro">matches!</span>(value, Value::U128 { .. }),
+            Type::String =&gt; <span class="macro">matches!</span>(value, Value::String { .. }),
+            Type::Option { value: type_value } =&gt; {
+                <span class="kw">if let </span>Value::Option { value } = value {
+                    <span class="kw">match </span><span class="kw-2">&amp;**</span>value {
+                        <span class="prelude-val">None </span>=&gt; <span class="bool-val">true</span>,
+                        <span class="prelude-val">Some</span>(value) =&gt; type_value.matches(value),
                     }
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::Array</span> {
-                <span class="ident">element</span>: <span class="ident">type_element</span>,
-                <span class="ident">length</span>,
+            Type::Array {
+                element: type_element,
+                length,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Array</span> {
-                    <span class="ident">element_type_id</span>: <span class="kw">_</span>,
-                    <span class="ident">elements</span>,
-                } <span class="op">=</span> <span class="ident">value</span>
+                <span class="kw">if let </span>Value::Array {
+                    element_type_id: <span class="kw">_</span>,
+                    elements,
+                } = value
                 {
-                    <span class="kw">let</span> <span class="ident">length</span> <span class="op">=</span> <span class="ident">usize::from</span>(<span class="kw-2">*</span><span class="ident">length</span>);
-                    <span class="ident">length</span> <span class="op">==</span> <span class="ident">elements</span>.<span class="ident">len</span>() <span class="op">&amp;&amp;</span> <span class="ident">elements</span>.<span class="ident">iter</span>().<span class="ident">all</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">type_element</span>.<span class="ident">matches</span>(<span class="ident">v</span>))
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                    <span class="kw">let </span>length = usize::from(<span class="kw-2">*</span>length);
+                    length == elements.len() &amp;&amp; elements.iter().all(|v| type_element.matches(v))
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::Tuple</span> {
-                <span class="ident">elements</span>: <span class="ident">type_elements</span>,
+            Type::Tuple {
+                elements: type_elements,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Tuple</span> { <span class="ident">elements</span> } <span class="op">=</span> <span class="ident">value</span> {
-                    <span class="ident">type_elements</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="ident">elements</span>.<span class="ident">len</span>()
-                        <span class="op">&amp;&amp;</span> <span class="ident">type_elements</span>
-                            .<span class="ident">iter</span>()
-                            .<span class="ident">enumerate</span>()
-                            .<span class="ident">all</span>(<span class="op">|</span>(<span class="ident">i</span>, <span class="ident">e</span>)<span class="op">|</span> <span class="ident">e</span>.<span class="ident">matches</span>(<span class="ident">elements</span>.<span class="ident">get</span>(<span class="ident">i</span>).<span class="ident">unwrap</span>()))
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                <span class="kw">if let </span>Value::Tuple { elements } = value {
+                    type_elements.len() == elements.len()
+                        &amp;&amp; type_elements
+                            .iter()
+                            .enumerate()
+                            .all(|(i, e)| e.matches(elements.get(i).unwrap()))
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::Result</span> { <span class="ident">okay</span>, <span class="ident">error</span> } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Result</span> { <span class="ident">value</span> } <span class="op">=</span> <span class="ident">value</span> {
-                    <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="kw-2">*</span><span class="ident">value</span> {
-                        <span class="ident">Result::Ok</span>(<span class="ident">v</span>) =&gt; <span class="ident">okay</span>.<span class="ident">matches</span>(<span class="ident">v</span>),
-                        <span class="ident">Result::Err</span>(<span class="ident">e</span>) =&gt; <span class="ident">error</span>.<span class="ident">matches</span>(<span class="ident">e</span>),
+            Type::Result { okay, error } =&gt; {
+                <span class="kw">if let </span>Value::Result { value } = value {
+                    <span class="kw">match </span><span class="kw-2">&amp;**</span>value {
+                        Result::Ok(v) =&gt; okay.matches(v),
+                        Result::Err(e) =&gt; error.matches(e),
                     }
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::TreeSet</span> {
-                <span class="ident">element</span>: <span class="ident">type_element</span>,
+            Type::TreeSet {
+                element: type_element,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Set</span> {
-                    <span class="ident">element_type_id</span>: <span class="kw">_</span>,
-                    <span class="ident">elements</span>,
-                } <span class="op">=</span> <span class="ident">value</span>
+                <span class="kw">if let </span>Value::Set {
+                    element_type_id: <span class="kw">_</span>,
+                    elements,
+                } = value
                 {
-                    <span class="ident">elements</span>.<span class="ident">iter</span>().<span class="ident">all</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">type_element</span>.<span class="ident">matches</span>(<span class="ident">v</span>))
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                    elements.iter().all(|v| type_element.matches(v))
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::TreeMap</span> {
-                <span class="ident">key</span>: <span class="ident">type_key</span>,
-                <span class="ident">value</span>: <span class="ident">type_value</span>,
+            Type::TreeMap {
+                key: type_key,
+                value: type_value,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Map</span> {
-                    <span class="ident">key_type_id</span>: <span class="kw">_</span>,
-                    <span class="ident">value_type_id</span>: <span class="kw">_</span>,
-                    <span class="ident">elements</span>,
-                } <span class="op">=</span> <span class="ident">value</span>
+                <span class="kw">if let </span>Value::Map {
+                    key_type_id: <span class="kw">_</span>,
+                    value_type_id: <span class="kw">_</span>,
+                    elements,
+                } = value
                 {
-                    <span class="ident">elements</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>().<span class="ident">all</span>(<span class="op">|</span>(<span class="ident">i</span>, <span class="ident">e</span>)<span class="op">|</span> {
-                        <span class="kw">if</span> <span class="ident">i</span> <span class="op">%</span> <span class="number">2</span> <span class="op">==</span> <span class="number">0</span> {
-                            <span class="ident">type_key</span>.<span class="ident">matches</span>(<span class="ident">e</span>)
-                        } <span class="kw">else</span> {
-                            <span class="ident">type_value</span>.<span class="ident">matches</span>(<span class="ident">e</span>)
+                    elements.iter().enumerate().all(|(i, e)| {
+                        <span class="kw">if </span>i % <span class="number">2 </span>== <span class="number">0 </span>{
+                            type_key.matches(e)
+                        } <span class="kw">else </span>{
+                            type_value.matches(e)
                         }
                     })
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::Vec</span> {
-                <span class="ident">element</span>: <span class="ident">type_element</span>,
+            Type::Vec {
+                element: type_element,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::List</span> {
-                    <span class="ident">element_type_id</span>: <span class="kw">_</span>,
-                    <span class="ident">elements</span>,
-                } <span class="op">=</span> <span class="ident">value</span>
+                <span class="kw">if let </span>Value::List {
+                    element_type_id: <span class="kw">_</span>,
+                    elements,
+                } = value
                 {
-                    <span class="ident">elements</span>.<span class="ident">iter</span>().<span class="ident">all</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">type_element</span>.<span class="ident">matches</span>(<span class="ident">v</span>))
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                    elements.iter().all(|v| type_element.matches(v))
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::HashSet</span> {
-                <span class="ident">element</span>: <span class="ident">type_element</span>,
+            Type::HashSet {
+                element: type_element,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Set</span> {
-                    <span class="ident">element_type_id</span>: <span class="kw">_</span>,
-                    <span class="ident">elements</span>,
-                } <span class="op">=</span> <span class="ident">value</span>
+                <span class="kw">if let </span>Value::Set {
+                    element_type_id: <span class="kw">_</span>,
+                    elements,
+                } = value
                 {
-                    <span class="ident">elements</span>.<span class="ident">iter</span>().<span class="ident">all</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">type_element</span>.<span class="ident">matches</span>(<span class="ident">v</span>))
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                    elements.iter().all(|v| type_element.matches(v))
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::HashMap</span> {
-                <span class="ident">key</span>: <span class="ident">type_key</span>,
-                <span class="ident">value</span>: <span class="ident">type_value</span>,
+            Type::HashMap {
+                key: type_key,
+                value: type_value,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Map</span> {
-                    <span class="ident">key_type_id</span>: <span class="kw">_</span>,
-                    <span class="ident">value_type_id</span>: <span class="kw">_</span>,
-                    <span class="ident">elements</span>,
-                } <span class="op">=</span> <span class="ident">value</span>
+                <span class="kw">if let </span>Value::Map {
+                    key_type_id: <span class="kw">_</span>,
+                    value_type_id: <span class="kw">_</span>,
+                    elements,
+                } = value
                 {
-                    <span class="ident">elements</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>().<span class="ident">all</span>(<span class="op">|</span>(<span class="ident">i</span>, <span class="ident">e</span>)<span class="op">|</span> {
-                        <span class="kw">if</span> <span class="ident">i</span> <span class="op">%</span> <span class="number">2</span> <span class="op">==</span> <span class="number">0</span> {
-                            <span class="ident">type_key</span>.<span class="ident">matches</span>(<span class="ident">e</span>)
-                        } <span class="kw">else</span> {
-                            <span class="ident">type_value</span>.<span class="ident">matches</span>(<span class="ident">e</span>)
+                    elements.iter().enumerate().all(|(i, e)| {
+                        <span class="kw">if </span>i % <span class="number">2 </span>== <span class="number">0 </span>{
+                            type_key.matches(e)
+                        } <span class="kw">else </span>{
+                            type_value.matches(e)
                         }
                     })
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::Struct</span> {
-                <span class="ident">name</span>: <span class="kw">_</span>,
-                <span class="ident">fields</span>: <span class="ident">type_fields</span>,
+            Type::Struct {
+                name: <span class="kw">_</span>,
+                fields: type_fields,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Struct</span> { <span class="ident">fields</span> } <span class="op">=</span> <span class="ident">value</span> {
-                    <span class="kw">match</span> <span class="ident">type_fields</span> {
-                        <span class="ident">Fields::Unit</span> =&gt; <span class="ident">fields</span>.<span class="ident">is_empty</span>(),
-                        <span class="ident">Fields::Unnamed</span> { <span class="ident">unnamed</span> } =&gt; {
-                            <span class="ident">unnamed</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="ident">fields</span>.<span class="ident">len</span>()
-                                <span class="op">&amp;&amp;</span> <span class="ident">unnamed</span>
-                                    .<span class="ident">iter</span>()
-                                    .<span class="ident">enumerate</span>()
-                                    .<span class="ident">all</span>(<span class="op">|</span>(<span class="ident">i</span>, <span class="ident">e</span>)<span class="op">|</span> <span class="ident">e</span>.<span class="ident">matches</span>(<span class="ident">fields</span>.<span class="ident">get</span>(<span class="ident">i</span>).<span class="ident">unwrap</span>()))
+                <span class="kw">if let </span>Value::Struct { fields } = value {
+                    <span class="kw">match </span>type_fields {
+                        Fields::Unit =&gt; fields.is_empty(),
+                        Fields::Unnamed { unnamed } =&gt; {
+                            unnamed.len() == fields.len()
+                                &amp;&amp; unnamed
+                                    .iter()
+                                    .enumerate()
+                                    .all(|(i, e)| e.matches(fields.get(i).unwrap()))
                         }
-                        <span class="ident">Fields::Named</span> { <span class="ident">named</span> } =&gt; {
-                            <span class="ident">named</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="ident">fields</span>.<span class="ident">len</span>()
-                                <span class="op">&amp;&amp;</span> <span class="ident">named</span>
-                                    .<span class="ident">iter</span>()
-                                    .<span class="ident">enumerate</span>()
-                                    .<span class="ident">all</span>(<span class="op">|</span>(<span class="ident">i</span>, (<span class="kw">_</span>, <span class="ident">e</span>))<span class="op">|</span> <span class="ident">e</span>.<span class="ident">matches</span>(<span class="ident">fields</span>.<span class="ident">get</span>(<span class="ident">i</span>).<span class="ident">unwrap</span>()))
+                        Fields::Named { named } =&gt; {
+                            named.len() == fields.len()
+                                &amp;&amp; named
+                                    .iter()
+                                    .enumerate()
+                                    .all(|(i, (<span class="kw">_</span>, e))| e.matches(fields.get(i).unwrap()))
                         }
                     }
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::Enum</span> {
-                <span class="ident">name</span>: <span class="kw">_</span>,
-                <span class="ident">variants</span>: <span class="ident">type_variants</span>,
+            Type::Enum {
+                name: <span class="kw">_</span>,
+                variants: type_variants,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Enum</span> { <span class="ident">name</span>, <span class="ident">fields</span> } <span class="op">=</span> <span class="ident">value</span> {
-                    <span class="kw">for</span> <span class="ident">variant</span> <span class="kw">in</span> <span class="ident">type_variants</span> {
-                        <span class="kw">if</span> <span class="ident">variant</span>.<span class="ident">name</span>.<span class="ident">eq</span>(<span class="ident">name</span>) {
-                            <span class="kw">return</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">variant</span>.<span class="ident">fields</span> {
-                                <span class="ident">Fields::Unit</span> =&gt; <span class="ident">fields</span>.<span class="ident">is_empty</span>(),
-                                <span class="ident">Fields::Unnamed</span> { <span class="ident">unnamed</span> } =&gt; {
-                                    <span class="ident">unnamed</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="ident">fields</span>.<span class="ident">len</span>()
-                                        <span class="op">&amp;&amp;</span> <span class="ident">unnamed</span>
-                                            .<span class="ident">iter</span>()
-                                            .<span class="ident">enumerate</span>()
-                                            .<span class="ident">all</span>(<span class="op">|</span>(<span class="ident">i</span>, <span class="ident">e</span>)<span class="op">|</span> <span class="ident">e</span>.<span class="ident">matches</span>(<span class="ident">fields</span>.<span class="ident">get</span>(<span class="ident">i</span>).<span class="ident">unwrap</span>()))
+                <span class="kw">if let </span>Value::Enum { name, fields } = value {
+                    <span class="kw">for </span>variant <span class="kw">in </span>type_variants {
+                        <span class="kw">if </span>variant.name.eq(name) {
+                            <span class="kw">return match </span><span class="kw-2">&amp;</span>variant.fields {
+                                Fields::Unit =&gt; fields.is_empty(),
+                                Fields::Unnamed { unnamed } =&gt; {
+                                    unnamed.len() == fields.len()
+                                        &amp;&amp; unnamed
+                                            .iter()
+                                            .enumerate()
+                                            .all(|(i, e)| e.matches(fields.get(i).unwrap()))
                                 }
-                                <span class="ident">Fields::Named</span> { <span class="ident">named</span> } =&gt; {
-                                    <span class="ident">named</span>.<span class="ident">len</span>() <span class="op">==</span> <span class="ident">fields</span>.<span class="ident">len</span>()
-                                        <span class="op">&amp;&amp;</span> <span class="ident">named</span>
-                                            .<span class="ident">iter</span>()
-                                            .<span class="ident">enumerate</span>()
-                                            .<span class="ident">all</span>(<span class="op">|</span>(<span class="ident">i</span>, (<span class="kw">_</span>, <span class="ident">e</span>))<span class="op">|</span> <span class="ident">e</span>.<span class="ident">matches</span>(<span class="ident">fields</span>.<span class="ident">get</span>(<span class="ident">i</span>).<span class="ident">unwrap</span>()))
+                                Fields::Named { named } =&gt; {
+                                    named.len() == fields.len()
+                                        &amp;&amp; named
+                                            .iter()
+                                            .enumerate()
+                                            .all(|(i, (<span class="kw">_</span>, e))| e.matches(fields.get(i).unwrap()))
                                 }
                             };
                         }
                     }
-                    <span class="bool-val">false</span>
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                    <span class="bool-val">false
+                </span>} <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::Custom</span> {
-                <span class="ident">type_id</span>: <span class="ident">type_type_id</span>,
-                <span class="ident">generics</span>: <span class="kw">_</span>,
+            Type::Custom {
+                type_id: type_type_id,
+                generics: <span class="kw">_</span>,
             } =&gt; {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Custom</span> { <span class="ident">type_id</span>, <span class="ident">bytes</span>: <span class="kw">_</span> } <span class="op">=</span> <span class="ident">value</span> {
-                    <span class="comment">// TODO: check generics</span>
-                    <span class="kw-2">*</span><span class="ident">type_type_id</span> <span class="op">==</span> <span class="kw-2">*</span><span class="ident">type_id</span>
-                } <span class="kw">else</span> {
-                    <span class="bool-val">false</span>
-                }
+                <span class="kw">if let </span>Value::Custom { type_id, bytes: <span class="kw">_ </span>} = value {
+                    <span class="comment">// TODO: check generics
+                    </span><span class="kw-2">*</span>type_type_id == <span class="kw-2">*</span>type_id
+                } <span class="kw">else </span>{
+                    <span class="bool-val">false
+                </span>}
             }
-            <span class="ident">Type::Any</span> =&gt; <span class="bool-val">true</span>,
+            Type::Any =&gt; <span class="bool-val">true</span>,
         }
     }
 }
 
-<span class="doccomment">/// Represents the type info of an enum variant.</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>, <span class="ident">derive</span>(<span class="ident">serde::Serialize</span>, <span class="ident">serde::Deserialize</span>))]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">TypeId</span>, <span class="ident">Decode</span>, <span class="ident">Encode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Variant</span> {
-    <span class="kw">pub</span> <span class="ident">name</span>: <span class="ident">String</span>,
-    <span class="kw">pub</span> <span class="ident">fields</span>: <span class="ident">Fields</span>,
+<span class="doccomment">/// Represents the type info of an enum variant.
+</span><span class="attribute">#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
+</span><span class="kw">pub struct </span>Variant {
+    <span class="kw">pub </span>name: String,
+    <span class="kw">pub </span>fields: Fields,
 }
 
-<span class="doccomment">/// Represents the type info of struct fields.</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(
-    <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>,
-    <span class="ident">derive</span>(<span class="ident">serde::Serialize</span>, <span class="ident">serde::Deserialize</span>),
-    <span class="ident">serde</span>(<span class="ident">tag</span> <span class="op">=</span> <span class="string">&quot;type&quot;</span>)
-)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">TypeId</span>, <span class="ident">Decode</span>, <span class="ident">Encode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Fields</span> {
-    <span class="ident">Named</span> { <span class="ident">named</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">String</span>, <span class="ident">Type</span>)<span class="op">&gt;</span> },
+<span class="doccomment">/// Represents the type info of struct fields.
+</span><span class="attribute">#[cfg_attr(
+    feature = <span class="string">&quot;serde&quot;</span>,
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = <span class="string">&quot;type&quot;</span>)
+)]
+#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
+</span><span class="kw">pub enum </span>Fields {
+    Named { named: Vec&lt;(String, Type)&gt; },
 
-    <span class="ident">Unnamed</span> { <span class="ident">unnamed</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Type</span><span class="op">&gt;</span> },
+    Unnamed { unnamed: Vec&lt;Type&gt; },
 
-    <span class="ident">Unit</span>,
+    Unit,
 }
 
-<span class="doccomment">/// A data structure that can be described using SBOR types.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Describe</span> {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span>;
+<span class="doccomment">/// A data structure that can be described using SBOR types.
+</span><span class="kw">pub trait </span>Describe {
+    <span class="kw">fn </span>describe() -&gt; Type;
 }
 
-<span class="kw">impl</span> <span class="ident">Describe</span> <span class="kw">for</span> () {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-        <span class="ident">Type::Unit</span>
+<span class="kw">impl </span>Describe <span class="kw">for </span>() {
+    <span class="kw">fn </span>describe() -&gt; Type {
+        Type::Unit
     }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">describe_basic_type</span> {
-    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">type_id</span>:<span class="ident">expr</span>) =&gt; {
-        <span class="kw">impl</span> <span class="ident">Describe</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="kw">type</span> {
-            <span class="kw">fn</span> <span class="macro-nonterminal">describe</span>() -&gt; <span class="ident">Type</span> {
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">type_id</span>
+<span class="macro">macro_rules! </span>describe_basic_type {
+    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ident</span>, <span class="macro-nonterminal">$type_id</span>:expr) =&gt; {
+        <span class="kw">impl </span>Describe <span class="kw">for </span><span class="macro-nonterminal">$</span><span class="kw">type </span>{
+            <span class="kw">fn </span><span class="macro-nonterminal">describe</span>() -&gt; Type {
+                <span class="macro-nonterminal">$type_id
+            </span>}
+        }
+    };
+}
+
+<span class="macro">describe_basic_type!</span>(bool, Type::Bool);
+<span class="macro">describe_basic_type!</span>(i8, Type::I8);
+<span class="macro">describe_basic_type!</span>(i16, Type::I16);
+<span class="macro">describe_basic_type!</span>(i32, Type::I32);
+<span class="macro">describe_basic_type!</span>(i64, Type::I64);
+<span class="macro">describe_basic_type!</span>(i128, Type::I128);
+<span class="macro">describe_basic_type!</span>(u8, Type::U8);
+<span class="macro">describe_basic_type!</span>(u16, Type::U16);
+<span class="macro">describe_basic_type!</span>(u32, Type::U32);
+<span class="macro">describe_basic_type!</span>(u64, Type::U64);
+<span class="macro">describe_basic_type!</span>(u128, Type::U128);
+
+<span class="macro">describe_basic_type!</span>(isize, Type::I64);
+<span class="macro">describe_basic_type!</span>(usize, Type::U64);
+
+<span class="macro">describe_basic_type!</span>(str, Type::String);
+<span class="macro">describe_basic_type!</span>(String, Type::String);
+
+<span class="kw">impl</span>&lt;T: Describe&gt; Describe <span class="kw">for </span><span class="prelude-ty">Option</span>&lt;T&gt; {
+    <span class="kw">fn </span>describe() -&gt; Type {
+        <span class="kw">let </span>ty = T::describe();
+        Type::Option {
+            value: Box::new(ty),
+        }
+    }
+}
+
+<span class="kw">impl</span>&lt;T: Describe, <span class="kw">const </span>N: usize&gt; Describe <span class="kw">for </span>[T; N] {
+    <span class="kw">fn </span>describe() -&gt; Type {
+        <span class="kw">let </span>ty = T::describe();
+        Type::Array {
+            element: Box::new(ty),
+            length: N <span class="kw">as </span>u16,
+        }
+    }
+}
+
+<span class="macro">macro_rules! </span>describe_tuple {
+    ($(<span class="macro-nonterminal">$name</span>:ident)+) =&gt; {
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$name</span>: Describe),+&gt; Describe <span class="kw">for </span>($(<span class="macro-nonterminal">$name</span>,)+) {
+            <span class="kw">fn </span>describe() -&gt; Type {
+                Type::Tuple { elements: <span class="macro">vec!</span>[ $(<span class="macro-nonterminal">$name::describe</span>(),)* ] }
             }
         }
     };
 }
 
-<span class="macro">describe_basic_type!</span>(<span class="ident">bool</span>, <span class="ident">Type::Bool</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">i8</span>, <span class="ident">Type::I8</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">i16</span>, <span class="ident">Type::I16</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">i32</span>, <span class="ident">Type::I32</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">i64</span>, <span class="ident">Type::I64</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">i128</span>, <span class="ident">Type::I128</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">u8</span>, <span class="ident">Type::U8</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">u16</span>, <span class="ident">Type::U16</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">u32</span>, <span class="ident">Type::U32</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">u64</span>, <span class="ident">Type::U64</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">u128</span>, <span class="ident">Type::U128</span>);
+<span class="macro">describe_tuple! </span>{ A B }
+<span class="macro">describe_tuple! </span>{ A B C }
+<span class="macro">describe_tuple! </span>{ A B C D }
+<span class="macro">describe_tuple! </span>{ A B C D E }
+<span class="macro">describe_tuple! </span>{ A B C D E F }
+<span class="macro">describe_tuple! </span>{ A B C D E F G }
+<span class="macro">describe_tuple! </span>{ A B C D E F G H }
+<span class="macro">describe_tuple! </span>{ A B C D E F G H I }
+<span class="macro">describe_tuple! </span>{ A B C D E F G H I J }
 
-<span class="macro">describe_basic_type!</span>(<span class="ident">isize</span>, <span class="ident">Type::I64</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">usize</span>, <span class="ident">Type::U64</span>);
-
-<span class="macro">describe_basic_type!</span>(<span class="ident">str</span>, <span class="ident">Type::String</span>);
-<span class="macro">describe_basic_type!</span>(<span class="ident">String</span>, <span class="ident">Type::String</span>);
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Describe</span><span class="op">&gt;</span> <span class="ident">Describe</span> <span class="kw">for</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-        <span class="kw">let</span> <span class="ident">ty</span> <span class="op">=</span> <span class="ident">T::describe</span>();
-        <span class="ident">Type::Option</span> {
-            <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="ident">ty</span>),
+<span class="kw">impl</span>&lt;T: Describe, E: Describe&gt; Describe <span class="kw">for </span><span class="prelude-ty">Result</span>&lt;T, E&gt; {
+    <span class="kw">fn </span>describe() -&gt; Type {
+        <span class="kw">let </span>t = T::describe();
+        <span class="kw">let </span>e = E::describe();
+        Type::Result {
+            okay: Box::new(t),
+            error: Box::new(e),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Describe</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Describe</span> <span class="kw">for</span> [<span class="ident">T</span>; <span class="ident">N</span>] {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-        <span class="kw">let</span> <span class="ident">ty</span> <span class="op">=</span> <span class="ident">T::describe</span>();
-        <span class="ident">Type::Array</span> {
-            <span class="ident">element</span>: <span class="ident">Box::new</span>(<span class="ident">ty</span>),
-            <span class="ident">length</span>: <span class="ident">N</span> <span class="kw">as</span> <span class="ident">u16</span>,
+<span class="kw">impl</span>&lt;T: Describe&gt; Describe <span class="kw">for </span>Vec&lt;T&gt; {
+    <span class="kw">fn </span>describe() -&gt; Type {
+        <span class="kw">let </span>ty = T::describe();
+        Type::Vec {
+            element: Box::new(ty),
         }
     }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">describe_tuple</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span>)<span class="op">+</span>) =&gt; {
-        <span class="kw">impl</span><span class="op">&lt;</span>$(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>: <span class="ident">Describe</span>),<span class="op">+</span><span class="op">&gt;</span> <span class="ident">Describe</span> <span class="kw">for</span> ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>,)<span class="op">+</span>) {
-            <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-                <span class="ident">Type::Tuple</span> { <span class="ident">elements</span>: <span class="macro">vec!</span>[ $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name::describe</span>(),)<span class="op">*</span> ] }
-            }
-        }
-    };
-}
-
-<span class="macro">describe_tuple!</span> { <span class="ident">A</span> <span class="ident">B</span> }
-<span class="macro">describe_tuple!</span> { <span class="ident">A</span> <span class="ident">B</span> <span class="ident">C</span> }
-<span class="macro">describe_tuple!</span> { <span class="ident">A</span> <span class="ident">B</span> <span class="ident">C</span> <span class="ident">D</span> }
-<span class="macro">describe_tuple!</span> { <span class="ident">A</span> <span class="ident">B</span> <span class="ident">C</span> <span class="ident">D</span> <span class="ident">E</span> }
-<span class="macro">describe_tuple!</span> { <span class="ident">A</span> <span class="ident">B</span> <span class="ident">C</span> <span class="ident">D</span> <span class="ident">E</span> <span class="ident">F</span> }
-<span class="macro">describe_tuple!</span> { <span class="ident">A</span> <span class="ident">B</span> <span class="ident">C</span> <span class="ident">D</span> <span class="ident">E</span> <span class="ident">F</span> <span class="ident">G</span> }
-<span class="macro">describe_tuple!</span> { <span class="ident">A</span> <span class="ident">B</span> <span class="ident">C</span> <span class="ident">D</span> <span class="ident">E</span> <span class="ident">F</span> <span class="ident">G</span> <span class="ident">H</span> }
-<span class="macro">describe_tuple!</span> { <span class="ident">A</span> <span class="ident">B</span> <span class="ident">C</span> <span class="ident">D</span> <span class="ident">E</span> <span class="ident">F</span> <span class="ident">G</span> <span class="ident">H</span> <span class="ident">I</span> }
-<span class="macro">describe_tuple!</span> { <span class="ident">A</span> <span class="ident">B</span> <span class="ident">C</span> <span class="ident">D</span> <span class="ident">E</span> <span class="ident">F</span> <span class="ident">G</span> <span class="ident">H</span> <span class="ident">I</span> <span class="ident">J</span> }
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Describe</span>, <span class="ident">E</span>: <span class="ident">Describe</span><span class="op">&gt;</span> <span class="ident">Describe</span> <span class="kw">for</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-        <span class="kw">let</span> <span class="ident">t</span> <span class="op">=</span> <span class="ident">T::describe</span>();
-        <span class="kw">let</span> <span class="ident">e</span> <span class="op">=</span> <span class="ident">E::describe</span>();
-        <span class="ident">Type::Result</span> {
-            <span class="ident">okay</span>: <span class="ident">Box::new</span>(<span class="ident">t</span>),
-            <span class="ident">error</span>: <span class="ident">Box::new</span>(<span class="ident">e</span>),
+<span class="kw">impl</span>&lt;T: Describe&gt; Describe <span class="kw">for </span>BTreeSet&lt;T&gt; {
+    <span class="kw">fn </span>describe() -&gt; Type {
+        <span class="kw">let </span>ty = T::describe();
+        Type::TreeSet {
+            element: Box::new(ty),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Describe</span><span class="op">&gt;</span> <span class="ident">Describe</span> <span class="kw">for</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-        <span class="kw">let</span> <span class="ident">ty</span> <span class="op">=</span> <span class="ident">T::describe</span>();
-        <span class="ident">Type::Vec</span> {
-            <span class="ident">element</span>: <span class="ident">Box::new</span>(<span class="ident">ty</span>),
+<span class="kw">impl</span>&lt;K: Describe, V: Describe&gt; Describe <span class="kw">for </span>BTreeMap&lt;K, V&gt; {
+    <span class="kw">fn </span>describe() -&gt; Type {
+        <span class="kw">let </span>k = K::describe();
+        <span class="kw">let </span>v = V::describe();
+        Type::TreeMap {
+            key: Box::new(k),
+            value: Box::new(v),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Describe</span><span class="op">&gt;</span> <span class="ident">Describe</span> <span class="kw">for</span> <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-        <span class="kw">let</span> <span class="ident">ty</span> <span class="op">=</span> <span class="ident">T::describe</span>();
-        <span class="ident">Type::TreeSet</span> {
-            <span class="ident">element</span>: <span class="ident">Box::new</span>(<span class="ident">ty</span>),
+<span class="kw">impl</span>&lt;T: Describe&gt; Describe <span class="kw">for </span>HashSet&lt;T&gt; {
+    <span class="kw">fn </span>describe() -&gt; Type {
+        <span class="kw">let </span>ty = T::describe();
+        Type::HashSet {
+            element: Box::new(ty),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">Describe</span>, <span class="ident">V</span>: <span class="ident">Describe</span><span class="op">&gt;</span> <span class="ident">Describe</span> <span class="kw">for</span> <span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-        <span class="kw">let</span> <span class="ident">k</span> <span class="op">=</span> <span class="ident">K::describe</span>();
-        <span class="kw">let</span> <span class="ident">v</span> <span class="op">=</span> <span class="ident">V::describe</span>();
-        <span class="ident">Type::TreeMap</span> {
-            <span class="ident">key</span>: <span class="ident">Box::new</span>(<span class="ident">k</span>),
-            <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="ident">v</span>),
+<span class="kw">impl</span>&lt;K: Describe, V: Describe&gt; Describe <span class="kw">for </span>HashMap&lt;K, V&gt; {
+    <span class="kw">fn </span>describe() -&gt; Type {
+        <span class="kw">let </span>k = K::describe();
+        <span class="kw">let </span>v = V::describe();
+        Type::HashMap {
+            key: Box::new(k),
+            value: Box::new(v),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Describe</span><span class="op">&gt;</span> <span class="ident">Describe</span> <span class="kw">for</span> <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-        <span class="kw">let</span> <span class="ident">ty</span> <span class="op">=</span> <span class="ident">T::describe</span>();
-        <span class="ident">Type::HashSet</span> {
-            <span class="ident">element</span>: <span class="ident">Box::new</span>(<span class="ident">ty</span>),
-        }
-    }
-}
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span><span class="kw">crate</span>::describe::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::boxed::Box;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::string::String;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::vec;
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">Describe</span>, <span class="ident">V</span>: <span class="ident">Describe</span><span class="op">&gt;</span> <span class="ident">Describe</span> <span class="kw">for</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">Type</span> {
-        <span class="kw">let</span> <span class="ident">k</span> <span class="op">=</span> <span class="ident">K::describe</span>();
-        <span class="kw">let</span> <span class="ident">v</span> <span class="op">=</span> <span class="ident">V::describe</span>();
-        <span class="ident">Type::HashMap</span> {
-            <span class="ident">key</span>: <span class="ident">Box::new</span>(<span class="ident">k</span>),
-            <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="ident">v</span>),
-        }
-    }
-}
-
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::describe</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::boxed::Box</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::string::String</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec</span>;
-
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_basic_types</span>() {
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::Bool</span>, <span class="ident">bool::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::I8</span>, <span class="ident">i8::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::I16</span>, <span class="ident">i16::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::I32</span>, <span class="ident">i32::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::I64</span>, <span class="ident">i64::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::I128</span>, <span class="ident">i128::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::U8</span>, <span class="ident">u8::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::U16</span>, <span class="ident">u16::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::U32</span>, <span class="ident">u32::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::U64</span>, <span class="ident">u64::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::U128</span>, <span class="ident">u128::describe</span>());
-        <span class="macro">assert_eq!</span>(<span class="ident">Type::String</span>, <span class="ident">String::describe</span>());
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_basic_types() {
+        <span class="macro">assert_eq!</span>(Type::Bool, bool::describe());
+        <span class="macro">assert_eq!</span>(Type::I8, i8::describe());
+        <span class="macro">assert_eq!</span>(Type::I16, i16::describe());
+        <span class="macro">assert_eq!</span>(Type::I32, i32::describe());
+        <span class="macro">assert_eq!</span>(Type::I64, i64::describe());
+        <span class="macro">assert_eq!</span>(Type::I128, i128::describe());
+        <span class="macro">assert_eq!</span>(Type::U8, u8::describe());
+        <span class="macro">assert_eq!</span>(Type::U16, u16::describe());
+        <span class="macro">assert_eq!</span>(Type::U32, u32::describe());
+        <span class="macro">assert_eq!</span>(Type::U64, u64::describe());
+        <span class="macro">assert_eq!</span>(Type::U128, u128::describe());
+        <span class="macro">assert_eq!</span>(Type::String, String::describe());
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_option</span>() {
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_option() {
         <span class="macro">assert_eq!</span>(
-            <span class="ident">Type::Option</span> {
-                <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="ident">Type::String</span>)
+            Type::Option {
+                value: Box::new(Type::String)
             },
-            <span class="prelude-ty">Option</span>::<span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="ident">::describe</span>(),
+            <span class="prelude-ty">Option</span>::&lt;String&gt;::describe(),
         );
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_array</span>() {
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_array() {
         <span class="macro">assert_eq!</span>(
-            <span class="ident">Type::Array</span> {
-                <span class="ident">element</span>: <span class="ident">Box::new</span>(<span class="ident">Type::U8</span>),
-                <span class="ident">length</span>: <span class="number">3</span>,
+            Type::Array {
+                element: Box::new(Type::U8),
+                length: <span class="number">3</span>,
             },
-            <span class="op">&lt;</span>[<span class="ident">u8</span>; <span class="number">3</span>]<span class="op">&gt;</span><span class="ident">::describe</span>(),
+            &lt;[u8; <span class="number">3</span>]&gt;::describe(),
         );
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_tuple</span>() {
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_tuple() {
         <span class="macro">assert_eq!</span>(
-            <span class="ident">Type::Tuple</span> {
-                <span class="ident">elements</span>: <span class="macro">vec!</span>[<span class="ident">Type::U8</span>, <span class="ident">Type::U128</span>]
+            Type::Tuple {
+                elements: <span class="macro">vec!</span>[Type::U8, Type::U128]
             },
-            <span class="op">&lt;</span>(<span class="ident">u8</span>, <span class="ident">u128</span>)<span class="op">&gt;</span><span class="ident">::describe</span>(),
+            &lt;(u8, u128)&gt;::describe(),
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

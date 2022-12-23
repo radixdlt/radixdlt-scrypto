@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/sbor/src/encode.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>encode.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/sbor/src/encode.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>encode.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -554,557 +549,556 @@
 <span id="549">549</span>
 <span id="550">550</span>
 <span id="551">551</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::boxed::Box</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::cell::RefCell</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::collections</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::hash::Hash</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::ptr::copy</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::string::String</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::type_id</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::rust::boxed::Box;
+<span class="kw">use </span><span class="kw">crate</span>::rust::cell::RefCell;
+<span class="kw">use </span><span class="kw">crate</span>::rust::collections::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rust::hash::Hash;
+<span class="kw">use </span><span class="kw">crate</span>::rust::ptr::copy;
+<span class="kw">use </span><span class="kw">crate</span>::rust::string::String;
+<span class="kw">use </span><span class="kw">crate</span>::rust::vec::Vec;
+<span class="kw">use </span><span class="kw">crate</span>::type_id::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// A data structure that can be serialized into a byte array using SBOR.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">Encode</span> {
-    <span class="kw">fn</span> <span class="ident">encode</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident"><span class="self">Self</span>::encode_type_id</span>(<span class="ident">encoder</span>);
-        <span class="self">self</span>.<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
+<span class="doccomment">/// A data structure that can be serialized into a byte array using SBOR.
+</span><span class="kw">pub trait </span>Encode {
+    <span class="kw">fn </span>encode(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        <span class="self">Self</span>::encode_type_id(encoder);
+        <span class="self">self</span>.encode_value(encoder);
     }
 
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>);
+    <span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder);
 
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>);
+    <span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder);
 }
 
-<span class="doccomment">/// An `Encoder` abstracts the logic for writing core types into a byte buffer.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Encoder</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    <span class="ident">with_static_info</span>: <span class="ident">bool</span>,
+<span class="doccomment">/// An `Encoder` abstracts the logic for writing core types into a byte buffer.
+</span><span class="kw">pub struct </span>Encoder&lt;<span class="lifetime">&#39;a</span>&gt; {
+    buf: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;u8&gt;,
+    with_static_info: bool,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">Encoder</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">with_static_info</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">buf</span>,
-            <span class="ident">with_static_info</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Encoder&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">pub fn </span>new(buf: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;u8&gt;, with_static_info: bool) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            buf,
+            with_static_info,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_static_info</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::new</span>(<span class="ident">buf</span>, <span class="bool-val">true</span>)
+    <span class="kw">pub fn </span>with_static_info(buf: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;u8&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new(buf, <span class="bool-val">true</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">no_static_info</span>(<span class="ident">buf</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::new</span>(<span class="ident">buf</span>, <span class="bool-val">false</span>)
+    <span class="kw">pub fn </span>no_static_info(buf: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Vec&lt;u8&gt;) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new(buf, <span class="bool-val">false</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_type_id</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">ty</span>: <span class="ident">u8</span>) {
-        <span class="comment">// May use compile-time feature flag, instead of runtime check, for performance.</span>
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">with_static_info</span> {
-            <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">push</span>(<span class="ident">ty</span>);
+    <span class="kw">pub fn </span>write_type_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ty: u8) {
+        <span class="comment">// May use compile-time feature flag, instead of runtime check, for performance.
+        </span><span class="kw">if </span><span class="self">self</span>.with_static_info {
+            <span class="self">self</span>.buf.push(ty);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_variant_index</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">index</span>: <span class="ident">u8</span>) {
-        <span class="self">self</span>.<span class="ident">write_byte</span>(<span class="ident">index</span>);
+    <span class="kw">pub fn </span>write_variant_index(<span class="kw-2">&amp;mut </span><span class="self">self</span>, index: u8) {
+        <span class="self">self</span>.write_byte(index);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_variant_label</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">label</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) {
-        <span class="self">self</span>.<span class="ident">write_dynamic_size</span>(<span class="ident">label</span>.<span class="ident">len</span>());
-        <span class="self">self</span>.<span class="ident">write_slice</span>(<span class="ident">label</span>.<span class="ident">as_bytes</span>());
+    <span class="kw">pub fn </span>write_variant_label(<span class="kw-2">&amp;mut </span><span class="self">self</span>, label: <span class="kw-2">&amp;</span>str) {
+        <span class="self">self</span>.write_dynamic_size(label.len());
+        <span class="self">self</span>.write_slice(label.as_bytes());
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_static_size</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>) {
-        <span class="comment">// May use compile-time feature flag, instead of runtime check, for performance.</span>
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">with_static_info</span> {
-            <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">extend</span>(<span class="kw-2">&amp;</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">u32</span>).<span class="ident">to_le_bytes</span>());
+    <span class="kw">pub fn </span>write_static_size(<span class="kw-2">&amp;mut </span><span class="self">self</span>, len: usize) {
+        <span class="comment">// May use compile-time feature flag, instead of runtime check, for performance.
+        </span><span class="kw">if </span><span class="self">self</span>.with_static_info {
+            <span class="self">self</span>.buf.extend(<span class="kw-2">&amp;</span>(len <span class="kw">as </span>u32).to_le_bytes());
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_dynamic_size</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">len</span>: <span class="ident">usize</span>) {
-        <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">extend</span>(<span class="kw-2">&amp;</span>(<span class="ident">len</span> <span class="kw">as</span> <span class="ident">u32</span>).<span class="ident">to_le_bytes</span>());
+    <span class="kw">pub fn </span>write_dynamic_size(<span class="kw-2">&amp;mut </span><span class="self">self</span>, len: usize) {
+        <span class="self">self</span>.buf.extend(<span class="kw-2">&amp;</span>(len <span class="kw">as </span>u32).to_le_bytes());
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_byte</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">n</span>: <span class="ident">u8</span>) {
-        <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">push</span>(<span class="ident">n</span>);
+    <span class="kw">pub fn </span>write_byte(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: u8) {
+        <span class="self">self</span>.buf.push(n);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_slice</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">slice</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) {
-        <span class="self">self</span>.<span class="ident">buf</span>.<span class="ident">extend</span>(<span class="ident">slice</span>);
+    <span class="kw">pub fn </span>write_slice(<span class="kw-2">&amp;mut </span><span class="self">self</span>, slice: <span class="kw-2">&amp;</span>[u8]) {
+        <span class="self">self</span>.buf.extend(slice);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">encode</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="question-mark">?</span><span class="ident">Sized</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) {
-        <span class="ident">value</span>.<span class="ident">encode</span>(<span class="self">self</span>)
+    <span class="kw">pub fn </span>encode&lt;T: Encode + <span class="question-mark">?</span>Sized&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: <span class="kw-2">&amp;</span>T) {
+        value.encode(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> () {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl </span>Encode <span class="kw">for </span>() {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
     }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_byte</span>(<span class="number">0</span>);
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">bool</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_byte</span>(<span class="kw">if</span> <span class="kw-2">*</span><span class="self">self</span> { <span class="number">1u8</span> } <span class="kw">else</span> { <span class="number">0u8</span> });
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_byte(<span class="number">0</span>);
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">i8</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl </span>Encode <span class="kw">for </span>bool {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
     }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_byte</span>(<span class="kw-2">*</span><span class="self">self</span> <span class="kw">as</span> <span class="ident">u8</span>);
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">u8</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_byte</span>(<span class="kw-2">*</span><span class="self">self</span>);
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_byte(<span class="kw">if </span><span class="kw-2">*</span><span class="self">self </span>{ <span class="number">1u8 </span>} <span class="kw">else </span>{ <span class="number">0u8 </span>});
     }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">encode_int</span> {
-    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">type_id</span>:<span class="ident">ident</span>) =&gt; {
-        <span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="kw">type</span> {
-            <span class="attribute">#[<span class="macro-nonterminal">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-                <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl </span>Encode <span class="kw">for </span>i8 {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_byte(<span class="kw-2">*</span><span class="self">self </span><span class="kw">as </span>u8);
+    }
+}
+
+<span class="kw">impl </span>Encode <span class="kw">for </span>u8 {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_byte(<span class="kw-2">*</span><span class="self">self</span>);
+    }
+}
+
+<span class="macro">macro_rules! </span>encode_int {
+    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ident</span>, <span class="macro-nonterminal">$type_id</span>:ident) =&gt; {
+        <span class="kw">impl </span>Encode <span class="kw">for </span><span class="macro-nonterminal">$</span><span class="kw">type </span>{
+            <span class="attribute">#[<span class="macro-nonterminal">inline</span>]
+            </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+                encoder.write_type_id(<span class="self">Self</span>::type_id());
             }
-            <span class="attribute">#[<span class="ident">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-                <span class="ident">encoder</span>.<span class="ident">write_slice</span>(<span class="kw-2">&amp;</span>(<span class="kw-2">*</span><span class="self">self</span>).<span class="ident">to_le_bytes</span>());
-            }
-        }
-    };
-}
-
-<span class="macro">encode_int!</span>(<span class="ident">i16</span>, <span class="ident">TYPE_I16</span>);
-<span class="macro">encode_int!</span>(<span class="ident">i32</span>, <span class="ident">TYPE_I32</span>);
-<span class="macro">encode_int!</span>(<span class="ident">i64</span>, <span class="ident">TYPE_I64</span>);
-<span class="macro">encode_int!</span>(<span class="ident">i128</span>, <span class="ident">TYPE_I128</span>);
-<span class="macro">encode_int!</span>(<span class="ident">u16</span>, <span class="ident">TYPE_U16</span>);
-<span class="macro">encode_int!</span>(<span class="ident">u32</span>, <span class="ident">TYPE_U32</span>);
-<span class="macro">encode_int!</span>(<span class="ident">u64</span>, <span class="ident">TYPE_U64</span>);
-<span class="macro">encode_int!</span>(<span class="ident">u128</span>, <span class="ident">TYPE_U128</span>);
-
-<span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">isize</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        (<span class="kw-2">*</span><span class="self">self</span> <span class="kw">as</span> <span class="ident">i64</span>).<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">usize</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        (<span class="kw-2">*</span><span class="self">self</span> <span class="kw">as</span> <span class="ident">u64</span>).<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">str</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_dynamic_size</span>(<span class="self">self</span>.<span class="ident">len</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_slice</span>(<span class="self">self</span>.<span class="ident">as_bytes</span>());
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_dynamic_size</span>(<span class="self">self</span>.<span class="ident">len</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_slice</span>(<span class="self">self</span>.<span class="ident">as_bytes</span>());
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">String</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="self">self</span>.<span class="ident">as_str</span>().<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="prelude-val">Some</span>(<span class="ident">v</span>) =&gt; {
-                <span class="ident">encoder</span>.<span class="ident">write_variant_index</span>(<span class="ident">OPTION_VARIANT_SOME</span>);
-                <span class="ident">v</span>.<span class="ident">encode</span>(<span class="ident">encoder</span>);
-            }
-            <span class="prelude-val">None</span> =&gt; {
-                <span class="ident">encoder</span>.<span class="ident">write_variant_index</span>(<span class="ident">OPTION_VARIANT_NONE</span>);
-            }
-        }
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">T::encode_type_id</span>(<span class="ident">encoder</span>)
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="self">self</span>.<span class="ident">as_ref</span>().<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">T::encode_type_id</span>(<span class="ident">encoder</span>)
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="self">self</span>.<span class="ident">borrow</span>().<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> [<span class="ident">T</span>; <span class="ident">N</span>] {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-    }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident">T::type_id</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_static_size</span>(<span class="self">self</span>.<span class="ident">len</span>());
-        <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="self">self</span> {
-            <span class="ident">v</span>.<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
-        }
-    }
-}
-
-<span class="macro">macro_rules!</span> <span class="ident">encode_tuple</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">n</span>:<span class="ident">tt</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">idx</span>:<span class="ident">tt</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span>)<span class="op">+</span>) =&gt; {
-        <span class="kw">impl</span><span class="op">&lt;</span>$(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>: <span class="ident">Encode</span>),<span class="op">+</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>,)<span class="op">+</span>) {
-            <span class="attribute">#[<span class="ident">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-                <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
-            }
-            <span class="attribute">#[<span class="ident">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-                <span class="ident">encoder</span>.<span class="ident">write_static_size</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">n</span>);
-
-                $(<span class="self">self</span>.<span class="macro-nonterminal">$</span><span class="macro-nonterminal">idx</span>.<span class="ident">encode</span>(<span class="ident">encoder</span>);)<span class="op">+</span>
+            <span class="attribute">#[inline]
+            </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+                encoder.write_slice(<span class="kw-2">&amp;</span>(<span class="kw-2">*</span><span class="self">self</span>).to_le_bytes());
             }
         }
     };
 }
 
-<span class="macro">encode_tuple!</span> { <span class="number">2</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> }
-<span class="macro">encode_tuple!</span> { <span class="number">3</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> }
-<span class="macro">encode_tuple!</span> { <span class="number">4</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> }
-<span class="macro">encode_tuple!</span> { <span class="number">5</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> }
-<span class="macro">encode_tuple!</span> { <span class="number">6</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> }
-<span class="macro">encode_tuple!</span> { <span class="number">7</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> <span class="number">6</span> <span class="ident">G</span> }
-<span class="macro">encode_tuple!</span> { <span class="number">8</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> <span class="number">6</span> <span class="ident">G</span> <span class="number">7</span> <span class="ident">H</span> }
-<span class="macro">encode_tuple!</span> { <span class="number">9</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> <span class="number">6</span> <span class="ident">G</span> <span class="number">7</span> <span class="ident">H</span> <span class="number">8</span> <span class="ident">I</span> }
-<span class="macro">encode_tuple!</span> { <span class="number">10</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> <span class="number">6</span> <span class="ident">G</span> <span class="number">7</span> <span class="ident">H</span> <span class="number">8</span> <span class="ident">I</span> <span class="number">9</span> <span class="ident">J</span> }
+<span class="macro">encode_int!</span>(i16, TYPE_I16);
+<span class="macro">encode_int!</span>(i32, TYPE_I32);
+<span class="macro">encode_int!</span>(i64, TYPE_I64);
+<span class="macro">encode_int!</span>(i128, TYPE_I128);
+<span class="macro">encode_int!</span>(u16, TYPE_U16);
+<span class="macro">encode_int!</span>(u32, TYPE_U32);
+<span class="macro">encode_int!</span>(u64, TYPE_U64);
+<span class="macro">encode_int!</span>(u128, TYPE_U128);
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span>, <span class="ident">E</span>: <span class="ident">Encode</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl </span>Encode <span class="kw">for </span>isize {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
     }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">o</span>) =&gt; {
-                <span class="ident">encoder</span>.<span class="ident">write_variant_index</span>(<span class="ident">RESULT_VARIANT_OK</span>);
-                <span class="ident">o</span>.<span class="ident">encode</span>(<span class="ident">encoder</span>);
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        (<span class="kw-2">*</span><span class="self">self </span><span class="kw">as </span>i64).encode_value(encoder);
+    }
+}
+
+<span class="kw">impl </span>Encode <span class="kw">for </span>usize {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        (<span class="kw-2">*</span><span class="self">self </span><span class="kw">as </span>u64).encode_value(encoder);
+    }
+}
+
+<span class="kw">impl </span>Encode <span class="kw">for </span>str {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_dynamic_size(<span class="self">self</span>.len());
+        encoder.write_slice(<span class="self">self</span>.as_bytes());
+    }
+}
+
+<span class="kw">impl </span>Encode <span class="kw">for </span><span class="kw-2">&amp;</span>str {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_dynamic_size(<span class="self">self</span>.len());
+        encoder.write_slice(<span class="self">self</span>.as_bytes());
+    }
+}
+
+<span class="kw">impl </span>Encode <span class="kw">for </span>String {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        <span class="self">self</span>.as_str().encode_value(encoder);
+    }
+}
+
+<span class="kw">impl</span>&lt;T: Encode + TypeId&gt; Encode <span class="kw">for </span><span class="prelude-ty">Option</span>&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="prelude-val">Some</span>(v) =&gt; {
+                encoder.write_variant_index(OPTION_VARIANT_SOME);
+                v.encode(encoder);
             }
-            <span class="prelude-val">Err</span>(<span class="ident">e</span>) =&gt; {
-                <span class="ident">encoder</span>.<span class="ident">write_variant_index</span>(<span class="ident">RESULT_VARIANT_ERR</span>);
-                <span class="ident">e</span>.<span class="ident">encode</span>(<span class="ident">encoder</span>);
+            <span class="prelude-val">None </span>=&gt; {
+                encoder.write_variant_index(OPTION_VARIANT_NONE);
             }
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl</span>&lt;T: Encode&gt; Encode <span class="kw">for </span>Box&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        T::encode_type_id(encoder)
     }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="self">self</span>.<span class="ident">as_slice</span>().<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        <span class="self">self</span>.as_ref().encode_value(encoder);
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> [<span class="ident">T</span>] {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl</span>&lt;T: Encode&gt; Encode <span class="kw">for </span>RefCell&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        T::encode_type_id(encoder)
     }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident">T::type_id</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_dynamic_size</span>(<span class="self">self</span>.<span class="ident">len</span>());
-        <span class="kw">if</span> <span class="ident">T::type_id</span>() <span class="op">==</span> <span class="ident">TYPE_U8</span> <span class="op">|</span><span class="op">|</span> <span class="ident">T::type_id</span>() <span class="op">==</span> <span class="ident">TYPE_I8</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="ident">::with_capacity</span>(<span class="self">self</span>.<span class="ident">len</span>());
-            <span class="kw">unsafe</span> {
-                <span class="ident">copy</span>(<span class="self">self</span>.<span class="ident">as_ptr</span>() <span class="kw">as</span> <span class="kw-2">*mut</span> <span class="ident">u8</span>, <span class="ident">buf</span>.<span class="ident">as_mut_ptr</span>(), <span class="self">self</span>.<span class="ident">len</span>());
-                <span class="ident">buf</span>.<span class="ident">set_len</span>(<span class="self">self</span>.<span class="ident">len</span>());
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        <span class="self">self</span>.borrow().encode_value(encoder);
+    }
+}
+
+<span class="kw">impl</span>&lt;T: Encode + TypeId, <span class="kw">const </span>N: usize&gt; Encode <span class="kw">for </span>[T; N] {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(T::type_id());
+        encoder.write_static_size(<span class="self">self</span>.len());
+        <span class="kw">for </span>v <span class="kw">in </span><span class="self">self </span>{
+            v.encode_value(encoder);
+        }
+    }
+}
+
+<span class="macro">macro_rules! </span>encode_tuple {
+    (<span class="macro-nonterminal">$n</span>:tt $(<span class="macro-nonterminal">$idx</span>:tt <span class="macro-nonterminal">$name</span>:ident)+) =&gt; {
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$name</span>: Encode),+&gt; Encode <span class="kw">for </span>($(<span class="macro-nonterminal">$name</span>,)+) {
+            <span class="attribute">#[inline]
+            </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+                encoder.write_type_id(<span class="self">Self</span>::type_id());
             }
-            <span class="ident">encoder</span>.<span class="ident">write_slice</span>(<span class="kw-2">&amp;</span><span class="ident">buf</span>);
-        } <span class="kw">else</span> {
-            <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="self">self</span> {
-                <span class="ident">v</span>.<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
+            <span class="attribute">#[inline]
+            </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+                encoder.write_static_size(<span class="macro-nonterminal">$n</span>);
+
+                $(<span class="self">self</span>.<span class="macro-nonterminal">$idx</span>.encode(encoder);)+
+            }
+        }
+    };
+}
+
+<span class="macro">encode_tuple! </span>{ <span class="number">2 0 </span>A <span class="number">1 </span>B }
+<span class="macro">encode_tuple! </span>{ <span class="number">3 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C }
+<span class="macro">encode_tuple! </span>{ <span class="number">4 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D }
+<span class="macro">encode_tuple! </span>{ <span class="number">5 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E }
+<span class="macro">encode_tuple! </span>{ <span class="number">6 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F }
+<span class="macro">encode_tuple! </span>{ <span class="number">7 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G }
+<span class="macro">encode_tuple! </span>{ <span class="number">8 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G <span class="number">7 </span>H }
+<span class="macro">encode_tuple! </span>{ <span class="number">9 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G <span class="number">7 </span>H <span class="number">8 </span>I }
+<span class="macro">encode_tuple! </span>{ <span class="number">10 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G <span class="number">7 </span>H <span class="number">8 </span>I <span class="number">9 </span>J }
+
+<span class="kw">impl</span>&lt;T: Encode, E: Encode&gt; Encode <span class="kw">for </span><span class="prelude-ty">Result</span>&lt;T, E&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="prelude-val">Ok</span>(o) =&gt; {
+                encoder.write_variant_index(RESULT_VARIANT_OK);
+                o.encode(encoder);
+            }
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                encoder.write_variant_index(RESULT_VARIANT_ERR);
+                e.encode(encoder);
             }
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl</span>&lt;T: Encode + TypeId&gt; Encode <span class="kw">for </span>Vec&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
     }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident">T::type_id</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_dynamic_size</span>(<span class="self">self</span>.<span class="ident">len</span>());
-        <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="self">self</span> {
-            <span class="ident">v</span>.<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        <span class="self">self</span>.as_slice().encode_value(encoder);
+    }
+}
+
+<span class="kw">impl</span>&lt;T: Encode + TypeId&gt; Encode <span class="kw">for </span>[T] {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(T::type_id());
+        encoder.write_dynamic_size(<span class="self">self</span>.len());
+        <span class="kw">if </span>T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
+            <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::&lt;u8&gt;::with_capacity(<span class="self">self</span>.len());
+            <span class="kw">unsafe </span>{
+                copy(<span class="self">self</span>.as_ptr() <span class="kw">as </span><span class="kw-2">*mut </span>u8, buf.as_mut_ptr(), <span class="self">self</span>.len());
+                buf.set_len(<span class="self">self</span>.len());
+            }
+            encoder.write_slice(<span class="kw-2">&amp;</span>buf);
+        } <span class="kw">else </span>{
+            <span class="kw">for </span>v <span class="kw">in </span><span class="self">self </span>{
+                v.encode_value(encoder);
+            }
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span>, <span class="ident">V</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl</span>&lt;T: Encode + TypeId&gt; Encode <span class="kw">for </span>BTreeSet&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
     }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident">K::type_id</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident">V::type_id</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_dynamic_size</span>(<span class="self">self</span>.<span class="ident">len</span>());
-        <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">v</span>) <span class="kw">in</span> <span class="self">self</span> {
-            <span class="ident">k</span>.<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
-            <span class="ident">v</span>.<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(T::type_id());
+        encoder.write_dynamic_size(<span class="self">self</span>.len());
+        <span class="kw">for </span>v <span class="kw">in </span><span class="self">self </span>{
+            v.encode_value(encoder);
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Hash</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl</span>&lt;K: Encode + TypeId, V: Encode + TypeId&gt; Encode <span class="kw">for </span>BTreeMap&lt;K, V&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
     }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident">T::type_id</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_dynamic_size</span>(<span class="self">self</span>.<span class="ident">len</span>());
-        <span class="comment">// Encode elements based on the order defined on the key type to generate deterministic bytes.</span>
-        <span class="kw">let</span> <span class="ident">values</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">iter</span>().<span class="ident">collect</span>();
-        <span class="kw">for</span> <span class="ident">v</span> <span class="kw">in</span> <span class="ident">values</span> {
-            <span class="ident">v</span>.<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(K::type_id());
+        encoder.write_type_id(V::type_id());
+        encoder.write_dynamic_size(<span class="self">self</span>.len());
+        <span class="kw">for </span>(k, v) <span class="kw">in </span><span class="self">self </span>{
+            k.encode_value(encoder);
+            v.encode_value(encoder);
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span> <span class="op">+</span> <span class="ident">Ord</span> <span class="op">+</span> <span class="ident">Hash</span>, <span class="ident">V</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">TypeId</span><span class="op">&gt;</span> <span class="ident">Encode</span> <span class="kw">for</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_type_id</span>(<span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident"><span class="self">Self</span>::type_id</span>());
+<span class="kw">impl</span>&lt;T: Encode + TypeId + Ord + Hash&gt; Encode <span class="kw">for </span>HashSet&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
     }
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">encode_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">encoder</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident">K::type_id</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_type_id</span>(<span class="ident">V::type_id</span>());
-        <span class="ident">encoder</span>.<span class="ident">write_dynamic_size</span>(<span class="self">self</span>.<span class="ident">len</span>());
-        <span class="comment">// Encode elements based on the order defined on the key type to generate deterministic bytes.</span>
-        <span class="kw">let</span> <span class="ident">keys</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">K</span><span class="op">&gt;</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">keys</span>().<span class="ident">collect</span>();
-        <span class="kw">for</span> <span class="ident">key</span> <span class="kw">in</span> <span class="ident">keys</span> {
-            <span class="ident">key</span>.<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
-            <span class="self">self</span>.<span class="ident">get</span>(<span class="ident">key</span>).<span class="ident">unwrap</span>().<span class="ident">encode_value</span>(<span class="ident">encoder</span>);
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(T::type_id());
+        encoder.write_dynamic_size(<span class="self">self</span>.len());
+        <span class="comment">// Encode elements based on the order defined on the key type to generate deterministic bytes.
+        </span><span class="kw">let </span>values: BTreeSet&lt;<span class="kw-2">&amp;</span>T&gt; = <span class="self">self</span>.iter().collect();
+        <span class="kw">for </span>v <span class="kw">in </span>values {
+            v.encode_value(encoder);
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::borrow::ToOwned</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec</span>;
+<span class="kw">impl</span>&lt;K: Encode + TypeId + Ord + Hash, V: Encode + TypeId&gt; Encode <span class="kw">for </span>HashMap&lt;K, V&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(<span class="self">Self</span>::type_id());
+    }
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
+        encoder.write_type_id(K::type_id());
+        encoder.write_type_id(V::type_id());
+        encoder.write_dynamic_size(<span class="self">self</span>.len());
+        <span class="comment">// Encode elements based on the order defined on the key type to generate deterministic bytes.
+        </span><span class="kw">let </span>keys: BTreeSet&lt;<span class="kw-2">&amp;</span>K&gt; = <span class="self">self</span>.keys().collect();
+        <span class="kw">for </span>key <span class="kw">in </span>keys {
+            key.encode_value(encoder);
+            <span class="self">self</span>.get(key).unwrap().encode_value(encoder);
+        }
+    }
+}
 
-    <span class="kw">fn</span> <span class="ident">do_encoding</span>(<span class="ident">enc</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-        ().<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="bool-val">true</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1i8</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1i16</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1i32</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1i64</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1i128</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1u8</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1u16</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1u32</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1u64</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="number">1u128</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="string">&quot;hello&quot;</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::borrow::ToOwned;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::vec;
 
-        <span class="prelude-val">Some</span>(<span class="number">1u32</span>).<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="prelude-ty">Option</span>::<span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span><span class="ident">::None</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="prelude-ty">Result</span>::<span class="op">&lt;</span><span class="ident">u32</span>, <span class="ident">String</span><span class="op">&gt;</span><span class="ident">::Ok</span>(<span class="number">1u32</span>).<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="prelude-ty">Result</span>::<span class="op">&lt;</span><span class="ident">u32</span>, <span class="ident">String</span><span class="op">&gt;</span><span class="ident">::Err</span>(<span class="string">&quot;hello&quot;</span>.<span class="ident">to_owned</span>()).<span class="ident">encode</span>(<span class="ident">enc</span>);
+    <span class="kw">fn </span>do_encoding(enc: <span class="kw-2">&amp;mut </span>Encoder) {
+        ().encode(enc);
+        <span class="bool-val">true</span>.encode(enc);
+        <span class="number">1i8</span>.encode(enc);
+        <span class="number">1i16</span>.encode(enc);
+        <span class="number">1i32</span>.encode(enc);
+        <span class="number">1i64</span>.encode(enc);
+        <span class="number">1i128</span>.encode(enc);
+        <span class="number">1u8</span>.encode(enc);
+        <span class="number">1u16</span>.encode(enc);
+        <span class="number">1u32</span>.encode(enc);
+        <span class="number">1u64</span>.encode(enc);
+        <span class="number">1u128</span>.encode(enc);
+        <span class="string">&quot;hello&quot;</span>.encode(enc);
 
-        [<span class="number">1u32</span>, <span class="number">2u32</span>, <span class="number">3u32</span>].<span class="ident">encode</span>(<span class="ident">enc</span>);
-        (<span class="number">1u32</span>, <span class="number">2u32</span>).<span class="ident">encode</span>(<span class="ident">enc</span>);
+        <span class="prelude-val">Some</span>(<span class="number">1u32</span>).encode(enc);
+        <span class="prelude-ty">Option</span>::&lt;u32&gt;::None.encode(enc);
+        <span class="prelude-ty">Result</span>::&lt;u32, String&gt;::Ok(<span class="number">1u32</span>).encode(enc);
+        <span class="prelude-ty">Result</span>::&lt;u32, String&gt;::Err(<span class="string">&quot;hello&quot;</span>.to_owned()).encode(enc);
 
-        <span class="macro">vec!</span>[<span class="number">1u32</span>, <span class="number">2u32</span>, <span class="number">3u32</span>].<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">BTreeSet</span>::<span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="ident">::new</span>();
-        <span class="ident">set</span>.<span class="ident">insert</span>(<span class="number">1</span>);
-        <span class="ident">set</span>.<span class="ident">insert</span>(<span class="number">2</span>);
-        <span class="ident">set</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">map</span> <span class="op">=</span> <span class="ident">BTreeMap</span>::<span class="op">&lt;</span><span class="ident">u8</span>, <span class="ident">u8</span><span class="op">&gt;</span><span class="ident">::new</span>();
-        <span class="ident">map</span>.<span class="ident">insert</span>(<span class="number">1</span>, <span class="number">2</span>);
-        <span class="ident">map</span>.<span class="ident">insert</span>(<span class="number">3</span>, <span class="number">4</span>);
-        <span class="ident">map</span>.<span class="ident">encode</span>(<span class="ident">enc</span>);
+        [<span class="number">1u32</span>, <span class="number">2u32</span>, <span class="number">3u32</span>].encode(enc);
+        (<span class="number">1u32</span>, <span class="number">2u32</span>).encode(enc);
+
+        <span class="macro">vec!</span>[<span class="number">1u32</span>, <span class="number">2u32</span>, <span class="number">3u32</span>].encode(enc);
+        <span class="kw">let </span><span class="kw-2">mut </span>set = BTreeSet::&lt;u8&gt;::new();
+        set.insert(<span class="number">1</span>);
+        set.insert(<span class="number">2</span>);
+        set.encode(enc);
+        <span class="kw">let </span><span class="kw-2">mut </span>map = BTreeMap::&lt;u8, u8&gt;::new();
+        map.insert(<span class="number">1</span>, <span class="number">2</span>);
+        map.insert(<span class="number">3</span>, <span class="number">4</span>);
+        map.encode(enc);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_encoding</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="number">512</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">enc</span> <span class="op">=</span> <span class="ident">Encoder::with_static_info</span>(<span class="kw-2">&amp;mut</span> <span class="ident">bytes</span>);
-        <span class="ident">do_encoding</span>(<span class="kw-2">&amp;mut</span> <span class="ident">enc</span>);
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_encoding() {
+        <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::with_capacity(<span class="number">512</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>enc = Encoder::with_static_info(<span class="kw-2">&amp;mut </span>bytes);
+        do_encoding(<span class="kw-2">&amp;mut </span>enc);
 
         <span class="macro">assert_eq!</span>(
             <span class="macro">vec!</span>[
-                <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// unit</span>
-                <span class="number">1</span>, <span class="number">1</span>, <span class="comment">// bool</span>
-                <span class="number">2</span>, <span class="number">1</span>, <span class="comment">// i8</span>
-                <span class="number">3</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">// i16</span>
-                <span class="number">4</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i32</span>
-                <span class="number">5</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i64</span>
-                <span class="number">6</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i128</span>
-                <span class="number">7</span>, <span class="number">1</span>, <span class="comment">// u8</span>
-                <span class="number">8</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">// u16</span>
-                <span class="number">9</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u32</span>
-                <span class="number">10</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u64</span>
-                <span class="number">11</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u128</span>
-                <span class="number">12</span>, <span class="number">5</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">104</span>, <span class="number">101</span>, <span class="number">108</span>, <span class="number">108</span>, <span class="number">111</span>, <span class="comment">// string</span>
-                <span class="number">18</span>, <span class="number">0</span>, <span class="number">9</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// option</span>
-                <span class="number">18</span>, <span class="number">1</span>, <span class="comment">// option</span>
-                <span class="number">19</span>, <span class="number">0</span>, <span class="number">9</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// result</span>
-                <span class="number">19</span>, <span class="number">1</span>, <span class="number">12</span>, <span class="number">5</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">104</span>, <span class="number">101</span>, <span class="number">108</span>, <span class="number">108</span>, <span class="number">111</span>, <span class="comment">// result</span>
-                <span class="number">32</span>, <span class="number">9</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// array</span>
-                <span class="number">33</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">9</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">9</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// tuple</span>
-                <span class="number">48</span>, <span class="number">9</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// list</span>
-                <span class="number">49</span>, <span class="number">7</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="comment">// set</span>
-                <span class="number">50</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span> <span class="comment">// map</span>
-            ],
-            <span class="ident">bytes</span>
+                <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// unit
+                </span><span class="number">1</span>, <span class="number">1</span>, <span class="comment">// bool
+                </span><span class="number">2</span>, <span class="number">1</span>, <span class="comment">// i8
+                </span><span class="number">3</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">// i16
+                </span><span class="number">4</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i32
+                </span><span class="number">5</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i64
+                </span><span class="number">6</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i128
+                </span><span class="number">7</span>, <span class="number">1</span>, <span class="comment">// u8
+                </span><span class="number">8</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">// u16
+                </span><span class="number">9</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u32
+                </span><span class="number">10</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u64
+                </span><span class="number">11</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u128
+                </span><span class="number">12</span>, <span class="number">5</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">104</span>, <span class="number">101</span>, <span class="number">108</span>, <span class="number">108</span>, <span class="number">111</span>, <span class="comment">// string
+                </span><span class="number">18</span>, <span class="number">0</span>, <span class="number">9</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// option
+                </span><span class="number">18</span>, <span class="number">1</span>, <span class="comment">// option
+                </span><span class="number">19</span>, <span class="number">0</span>, <span class="number">9</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// result
+                </span><span class="number">19</span>, <span class="number">1</span>, <span class="number">12</span>, <span class="number">5</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">104</span>, <span class="number">101</span>, <span class="number">108</span>, <span class="number">108</span>, <span class="number">111</span>, <span class="comment">// result
+                </span><span class="number">32</span>, <span class="number">9</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// array
+                </span><span class="number">33</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">9</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">9</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// tuple
+                </span><span class="number">48</span>, <span class="number">9</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// list
+                </span><span class="number">49</span>, <span class="number">7</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="comment">// set
+                </span><span class="number">50</span>, <span class="number">7</span>, <span class="number">7</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4 </span><span class="comment">// map
+            </span>],
+            bytes
         );
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_encoding_no_static_info</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="number">512</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">enc</span> <span class="op">=</span> <span class="ident">Encoder::no_static_info</span>(<span class="kw-2">&amp;mut</span> <span class="ident">bytes</span>);
-        <span class="ident">do_encoding</span>(<span class="kw-2">&amp;mut</span> <span class="ident">enc</span>);
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_encoding_no_static_info() {
+        <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::with_capacity(<span class="number">512</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>enc = Encoder::no_static_info(<span class="kw-2">&amp;mut </span>bytes);
+        do_encoding(<span class="kw-2">&amp;mut </span>enc);
 
         <span class="macro">assert_eq!</span>(
             <span class="macro">vec!</span>[
-                <span class="number">0</span>, <span class="comment">// unit</span>
-                <span class="number">1</span>, <span class="comment">// bool</span>
-                <span class="number">1</span>, <span class="comment">// i8</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="comment">// i16</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i32</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i64</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i128</span>
-                <span class="number">1</span>, <span class="comment">// u8</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="comment">// u16</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u32</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u64</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u128</span>
-                <span class="number">5</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">104</span>, <span class="number">101</span>, <span class="number">108</span>, <span class="number">108</span>, <span class="number">111</span>, <span class="comment">// string</span>
-                <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// option</span>
-                <span class="number">1</span>, <span class="comment">// option</span>
-                <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// result</span>
-                <span class="number">1</span>, <span class="number">5</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">104</span>, <span class="number">101</span>, <span class="number">108</span>, <span class="number">108</span>, <span class="number">111</span>, <span class="comment">// result</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// array</span>
-                <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// tuple</span>
-                <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// list</span>
-                <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="comment">// set</span>
-                <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span> <span class="comment">// map</span>
-            ],
-            <span class="ident">bytes</span>
+                <span class="number">0</span>, <span class="comment">// unit
+                </span><span class="number">1</span>, <span class="comment">// bool
+                </span><span class="number">1</span>, <span class="comment">// i8
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="comment">// i16
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i32
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i64
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// i128
+                </span><span class="number">1</span>, <span class="comment">// u8
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="comment">// u16
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u32
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u64
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// u128
+                </span><span class="number">5</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">104</span>, <span class="number">101</span>, <span class="number">108</span>, <span class="number">108</span>, <span class="number">111</span>, <span class="comment">// string
+                </span><span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// option
+                </span><span class="number">1</span>, <span class="comment">// option
+                </span><span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// result
+                </span><span class="number">1</span>, <span class="number">5</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">104</span>, <span class="number">101</span>, <span class="number">108</span>, <span class="number">108</span>, <span class="number">111</span>, <span class="comment">// result
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// array
+                </span><span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// tuple
+                </span><span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="comment">// list
+                </span><span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="comment">// set
+                </span><span class="number">2</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4 </span><span class="comment">// map
+            </span>],
+            bytes
         );
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_encode_box</span>() {
-        <span class="kw">let</span> <span class="ident">x</span> <span class="op">=</span> <span class="ident">Box::new</span>(<span class="number">5u8</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="number">512</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">enc</span> <span class="op">=</span> <span class="ident">Encoder::with_static_info</span>(<span class="kw-2">&amp;mut</span> <span class="ident">bytes</span>);
-        <span class="ident">x</span>.<span class="ident">encode</span>(<span class="kw-2">&amp;mut</span> <span class="ident">enc</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">bytes</span>, <span class="macro">vec!</span>[<span class="number">7</span>, <span class="number">5</span>])
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_encode_box() {
+        <span class="kw">let </span>x = Box::new(<span class="number">5u8</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::with_capacity(<span class="number">512</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>enc = Encoder::with_static_info(<span class="kw-2">&amp;mut </span>bytes);
+        x.encode(<span class="kw-2">&amp;mut </span>enc);
+        <span class="macro">assert_eq!</span>(bytes, <span class="macro">vec!</span>[<span class="number">7</span>, <span class="number">5</span>])
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_encode_rc</span>() {
-        <span class="kw">let</span> <span class="ident">x</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::rust::rc::Rc::new</span>(<span class="number">5u8</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="number">512</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">enc</span> <span class="op">=</span> <span class="ident">Encoder::with_static_info</span>(<span class="kw-2">&amp;mut</span> <span class="ident">bytes</span>);
-        <span class="ident">x</span>.<span class="ident">encode</span>(<span class="kw-2">&amp;mut</span> <span class="ident">enc</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">bytes</span>, <span class="macro">vec!</span>[<span class="number">7</span>, <span class="number">5</span>])
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_encode_rc() {
+        <span class="kw">let </span>x = <span class="kw">crate</span>::rust::rc::Rc::new(<span class="number">5u8</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::with_capacity(<span class="number">512</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>enc = Encoder::with_static_info(<span class="kw-2">&amp;mut </span>bytes);
+        x.encode(<span class="kw-2">&amp;mut </span>enc);
+        <span class="macro">assert_eq!</span>(bytes, <span class="macro">vec!</span>[<span class="number">7</span>, <span class="number">5</span>])
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_encode_ref_cell</span>() {
-        <span class="kw">let</span> <span class="ident">x</span> <span class="op">=</span> <span class="ident"><span class="kw">crate</span>::rust::cell::RefCell::new</span>(<span class="number">5u8</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="number">512</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">enc</span> <span class="op">=</span> <span class="ident">Encoder::with_static_info</span>(<span class="kw-2">&amp;mut</span> <span class="ident">bytes</span>);
-        <span class="ident">x</span>.<span class="ident">encode</span>(<span class="kw-2">&amp;mut</span> <span class="ident">enc</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">bytes</span>, <span class="macro">vec!</span>[<span class="number">7</span>, <span class="number">5</span>])
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_encode_ref_cell() {
+        <span class="kw">let </span>x = <span class="kw">crate</span>::rust::cell::RefCell::new(<span class="number">5u8</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::with_capacity(<span class="number">512</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>enc = Encoder::with_static_info(<span class="kw-2">&amp;mut </span>bytes);
+        x.encode(<span class="kw-2">&amp;mut </span>enc);
+        <span class="macro">assert_eq!</span>(bytes, <span class="macro">vec!</span>[<span class="number">7</span>, <span class="number">5</span>])
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

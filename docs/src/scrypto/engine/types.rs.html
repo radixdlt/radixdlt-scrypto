@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/engine/types.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>types.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/engine/types.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>types.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -112,115 +107,114 @@
 <span id="107">107</span>
 <span id="108">108</span>
 <span id="109">109</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident">sbor</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::vec::Vec;
+<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::component</span>::{<span class="ident">ComponentAddress</span>, <span class="ident">PackageAddress</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::crypto</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource</span>::{<span class="ident">NonFungibleId</span>, <span class="ident">ResourceAddress</span>};
+<span class="kw">use </span><span class="kw">crate</span>::component::{ComponentAddress, PackageAddress};
+<span class="kw">use </span><span class="kw">crate</span>::crypto::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::resource::{NonFungibleId, ResourceAddress};
 
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">KeyValueStoreId</span> <span class="op">=</span> (<span class="ident">Hash</span>, <span class="ident">u32</span>);
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">VaultId</span> <span class="op">=</span> (<span class="ident">Hash</span>, <span class="ident">u32</span>);
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">BucketId</span> <span class="op">=</span> <span class="ident">u32</span>;
-<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">ProofId</span> <span class="op">=</span> <span class="ident">u32</span>;
+<span class="kw">pub type </span>KeyValueStoreId = (Hash, u32);
+<span class="kw">pub type </span>VaultId = (Hash, u32);
+<span class="kw">pub type </span>BucketId = u32;
+<span class="kw">pub type </span>ProofId = u32;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RENodeId</span> {
-    <span class="ident">Bucket</span>(<span class="ident">BucketId</span>),
-    <span class="ident">Proof</span>(<span class="ident">ProofId</span>),
-    <span class="ident">KeyValueStore</span>(<span class="ident">KeyValueStoreId</span>),
-    <span class="ident">Worktop</span>,
-    <span class="ident">Component</span>(<span class="ident">ComponentAddress</span>),
-    <span class="ident">Vault</span>(<span class="ident">VaultId</span>),
-    <span class="ident">ResourceManager</span>(<span class="ident">ResourceAddress</span>),
-    <span class="ident">Package</span>(<span class="ident">PackageAddress</span>),
-    <span class="ident">System</span>,
+<span class="attribute">#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+</span><span class="kw">pub enum </span>RENodeId {
+    Bucket(BucketId),
+    Proof(ProofId),
+    KeyValueStore(KeyValueStoreId),
+    Worktop,
+    Component(ComponentAddress),
+    Vault(VaultId),
+    ResourceManager(ResourceAddress),
+    Package(PackageAddress),
+    System,
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span>(<span class="ident">Hash</span>, <span class="ident">u32</span>)<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">RENodeId</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">KeyValueStoreId</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeId::KeyValueStore</span>(<span class="ident">id</span>) =&gt; <span class="ident">id</span>,
-            <span class="ident">RENodeId::Vault</span>(<span class="ident">id</span>) =&gt; <span class="ident">id</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a stored id&quot;</span>),
+<span class="kw">impl </span>Into&lt;(Hash, u32)&gt; <span class="kw">for </span>RENodeId {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; KeyValueStoreId {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeId::KeyValueStore(id) =&gt; id,
+            RENodeId::Vault(id) =&gt; id,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a stored id&quot;</span>),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">RENodeId</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeId::Bucket</span>(<span class="ident">id</span>) =&gt; <span class="ident">id</span>,
-            <span class="ident">RENodeId::Proof</span>(<span class="ident">id</span>) =&gt; <span class="ident">id</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a transient id&quot;</span>),
+<span class="kw">impl </span>Into&lt;u32&gt; <span class="kw">for </span>RENodeId {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; u32 {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeId::Bucket(id) =&gt; id,
+            RENodeId::Proof(id) =&gt; id,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a transient id&quot;</span>),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ComponentAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">RENodeId</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ComponentAddress</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeId::Component</span>(<span class="ident">component_address</span>) =&gt; <span class="ident">component_address</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a component address&quot;</span>),
+<span class="kw">impl </span>Into&lt;ComponentAddress&gt; <span class="kw">for </span>RENodeId {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ComponentAddress {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeId::Component(component_address) =&gt; component_address,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a component address&quot;</span>),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">PackageAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">RENodeId</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">PackageAddress</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeId::Package</span>(<span class="ident">package_address</span>) =&gt; <span class="ident">package_address</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a package address&quot;</span>),
+<span class="kw">impl </span>Into&lt;PackageAddress&gt; <span class="kw">for </span>RENodeId {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; PackageAddress {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeId::Package(package_address) =&gt; package_address,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a package address&quot;</span>),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">RENodeId</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeId::ResourceManager</span>(<span class="ident">resource_address</span>) =&gt; <span class="ident">resource_address</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a resource address&quot;</span>),
+<span class="kw">impl </span>Into&lt;ResourceAddress&gt; <span class="kw">for </span>RENodeId {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ResourceAddress {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeId::ResourceManager(resource_address) =&gt; resource_address,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Not a resource address&quot;</span>),
         }
     }
 }
 
-<span class="doccomment">/// TODO: separate space addresses?</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SubstateId</span> {
-    <span class="ident">ComponentInfo</span>(<span class="ident">ComponentAddress</span>),
-    <span class="ident">Package</span>(<span class="ident">PackageAddress</span>),
-    <span class="ident">ResourceManager</span>(<span class="ident">ResourceAddress</span>),
-    <span class="ident">NonFungibleSpace</span>(<span class="ident">ResourceAddress</span>),
-    <span class="ident">NonFungible</span>(<span class="ident">ResourceAddress</span>, <span class="ident">NonFungibleId</span>),
-    <span class="ident">KeyValueStoreSpace</span>(<span class="ident">KeyValueStoreId</span>),
-    <span class="ident">KeyValueStoreEntry</span>(<span class="ident">KeyValueStoreId</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>),
-    <span class="ident">Vault</span>(<span class="ident">VaultId</span>),
-    <span class="ident">ComponentState</span>(<span class="ident">ComponentAddress</span>),
-    <span class="ident">System</span>,
-    <span class="ident">Bucket</span>(<span class="ident">BucketId</span>),
-    <span class="ident">Proof</span>(<span class="ident">ProofId</span>),
-    <span class="ident">Worktop</span>,
+<span class="doccomment">/// TODO: separate space addresses?
+</span><span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+</span><span class="kw">pub enum </span>SubstateId {
+    ComponentInfo(ComponentAddress),
+    Package(PackageAddress),
+    ResourceManager(ResourceAddress),
+    NonFungibleSpace(ResourceAddress),
+    NonFungible(ResourceAddress, NonFungibleId),
+    KeyValueStoreSpace(KeyValueStoreId),
+    KeyValueStoreEntry(KeyValueStoreId, Vec&lt;u8&gt;),
+    Vault(VaultId),
+    ComponentState(ComponentAddress),
+    System,
+    Bucket(BucketId),
+    Proof(ProofId),
+    Worktop,
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ComponentAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SubstateId</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ComponentAddress</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">SubstateId::ComponentInfo</span>(<span class="ident">component_address</span>)
-            <span class="op">|</span> <span class="ident">SubstateId::ComponentState</span>(<span class="ident">component_address</span>) =&gt; <span class="ident">component_address</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Address is not a component address&quot;</span>),
+<span class="kw">impl </span>Into&lt;ComponentAddress&gt; <span class="kw">for </span>SubstateId {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ComponentAddress {
+        <span class="kw">match </span><span class="self">self </span>{
+            SubstateId::ComponentInfo(component_address)
+            | SubstateId::ComponentState(component_address) =&gt; component_address,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Address is not a component address&quot;</span>),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SubstateId</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">SubstateId::ResourceManager</span>(<span class="ident">resource_address</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="kw">return</span> <span class="ident">resource_address</span>;
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Into&lt;ResourceAddress&gt; <span class="kw">for </span>SubstateId {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ResourceAddress {
+        <span class="kw">if let </span>SubstateId::ResourceManager(resource_address) = <span class="self">self </span>{
+            <span class="kw">return </span>resource_address;
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Address is not a resource address&quot;</span>);
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

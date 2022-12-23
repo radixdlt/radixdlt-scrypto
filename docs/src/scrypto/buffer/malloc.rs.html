@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/buffer/malloc.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>malloc.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/buffer/malloc.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>malloc.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -76,79 +71,78 @@
 <span id="71">71</span>
 <span id="72">72</span>
 <span id="73">73</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::rust::mem::forget</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::ptr::copy</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::mem::forget;
+<span class="kw">use </span>sbor::rust::ptr::copy;
+<span class="kw">use </span>sbor::rust::vec::Vec;
 
-<span class="doccomment">/// Allocates a chunk of memory that is not tracked by Rust ownership system.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Safety</span>
-<span class="doccomment">/// The allocated memory is not tracked by Rust ownership; be use to free it after use.</span>
-<span class="attribute">#[<span class="ident">no_mangle</span>]</span>
-<span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">extern</span> <span class="string">&quot;C&quot;</span> <span class="kw">fn</span> <span class="ident">scrypto_alloc</span>(<span class="ident">len</span>: <span class="ident">u32</span>) -&gt; <span class="kw-2">*mut</span> <span class="ident">u8</span> {
-    <span class="kw">let</span> <span class="ident">cap</span> <span class="op">=</span> (<span class="ident">len</span> <span class="op">+</span> <span class="number">4</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="ident">::with_capacity</span>(<span class="ident">cap</span>);
-    <span class="kw">let</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">buf</span>.<span class="ident">as_mut_ptr</span>();
-    <span class="ident">forget</span>(<span class="ident">buf</span>);
-    <span class="ident">copy</span>(<span class="ident">len</span>.<span class="ident">to_le_bytes</span>().<span class="ident">as_ptr</span>(), <span class="ident">ptr</span>, <span class="number">4</span>);
-    <span class="ident">ptr</span>
+<span class="doccomment">/// Allocates a chunk of memory that is not tracked by Rust ownership system.
+///
+/// # Safety
+/// The allocated memory is not tracked by Rust ownership; be use to free it after use.
+</span><span class="attribute">#[no_mangle]
+</span><span class="kw">pub unsafe extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>scrypto_alloc(len: u32) -&gt; <span class="kw-2">*mut </span>u8 {
+    <span class="kw">let </span>cap = (len + <span class="number">4</span>) <span class="kw">as </span>usize;
+    <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::&lt;u8&gt;::with_capacity(cap);
+    <span class="kw">let </span>ptr = buf.as_mut_ptr();
+    forget(buf);
+    copy(len.to_le_bytes().as_ptr(), ptr, <span class="number">4</span>);
+    ptr
 }
 
-<span class="doccomment">/// Allocates a buffer with initial values.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">scrypto_alloc_initialized</span>(<span class="ident">bytes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="kw-2">*mut</span> <span class="ident">u8</span> {
-    <span class="kw">unsafe</span> {
-        <span class="kw">let</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">scrypto_alloc</span>(<span class="ident">bytes</span>.<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u32</span>);
-        <span class="ident">copy</span>(<span class="ident">bytes</span>.<span class="ident">as_ptr</span>(), <span class="ident">ptr</span>.<span class="ident">add</span>(<span class="number">4</span>), <span class="ident">bytes</span>.<span class="ident">len</span>());
-        <span class="ident">ptr</span>
+<span class="doccomment">/// Allocates a buffer with initial values.
+</span><span class="kw">pub fn </span>scrypto_alloc_initialized(bytes: Vec&lt;u8&gt;) -&gt; <span class="kw-2">*mut </span>u8 {
+    <span class="kw">unsafe </span>{
+        <span class="kw">let </span>ptr = scrypto_alloc(bytes.len() <span class="kw">as </span>u32);
+        copy(bytes.as_ptr(), ptr.add(<span class="number">4</span>), bytes.len());
+        ptr
     }
 }
 
-<span class="doccomment">/// Consumes a buffer.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Safety</span>
-<span class="doccomment">/// The memory pointer must be obtained from `scrypto_alloc` or `scrypto_wrap`.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">scrypto_consume</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">ptr</span>: <span class="kw-2">*mut</span> <span class="ident">u8</span>, <span class="ident">f</span>: <span class="kw">fn</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="ident">T</span>) -&gt; <span class="ident">T</span> {
-    <span class="kw">unsafe</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">len</span> <span class="op">=</span> [<span class="number">0u8</span>; <span class="number">4</span>];
-        <span class="ident">copy</span>(<span class="ident">ptr</span>, <span class="ident">len</span>.<span class="ident">as_mut_ptr</span>(), <span class="number">4</span>);
+<span class="doccomment">/// Consumes a buffer.
+///
+/// # Safety
+/// The memory pointer must be obtained from `scrypto_alloc` or `scrypto_wrap`.
+</span><span class="kw">pub fn </span>scrypto_consume&lt;T&gt;(ptr: <span class="kw-2">*mut </span>u8, f: <span class="kw">fn</span>(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; T) -&gt; T {
+    <span class="kw">unsafe </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>len = [<span class="number">0u8</span>; <span class="number">4</span>];
+        copy(ptr, len.as_mut_ptr(), <span class="number">4</span>);
 
-        <span class="kw">let</span> <span class="ident">cap</span> <span class="op">=</span> (<span class="ident">u32::from_le_bytes</span>(<span class="ident">len</span>) <span class="op">+</span> <span class="number">4</span>) <span class="kw">as</span> <span class="ident">usize</span>;
-        <span class="kw">let</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="ident">::from_raw_parts</span>(<span class="ident">ptr</span>, <span class="ident">cap</span>, <span class="ident">cap</span>);
-        <span class="ident">f</span>(<span class="kw-2">&amp;</span><span class="ident">buf</span>[<span class="number">4</span>..])
+        <span class="kw">let </span>cap = (u32::from_le_bytes(len) + <span class="number">4</span>) <span class="kw">as </span>usize;
+        <span class="kw">let </span>buf = Vec::&lt;u8&gt;::from_raw_parts(ptr, cap, cap);
+        f(<span class="kw-2">&amp;</span>buf[<span class="number">4</span>..])
     }
 }
 
-<span class="doccomment">/// Releases a buffer.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Safety</span>
-<span class="doccomment">/// The memory pointer must be obtained from `scrypto_alloc` or `scrypto_wrap`.</span>
-<span class="attribute">#[<span class="ident">no_mangle</span>]</span>
-<span class="kw">pub</span> <span class="kw">unsafe</span> <span class="kw">extern</span> <span class="string">&quot;C&quot;</span> <span class="kw">fn</span> <span class="ident">scrypto_free</span>(<span class="ident">ptr</span>: <span class="kw-2">*mut</span> <span class="ident">u8</span>) {
-    <span class="ident">scrypto_consume</span>(<span class="ident">ptr</span>, <span class="op">|</span><span class="kw">_</span><span class="op">|</span> {});
+<span class="doccomment">/// Releases a buffer.
+///
+/// # Safety
+/// The memory pointer must be obtained from `scrypto_alloc` or `scrypto_wrap`.
+</span><span class="attribute">#[no_mangle]
+</span><span class="kw">pub unsafe extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>scrypto_free(ptr: <span class="kw-2">*mut </span>u8) {
+    scrypto_consume(ptr, |<span class="kw">_</span>| {});
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_memory_allocation</span>() {
-        <span class="kw">let</span> <span class="ident">msg</span> <span class="op">=</span> <span class="string">&quot;hello&quot;</span>.<span class="ident">as_bytes</span>();
-        <span class="kw">let</span> <span class="ident">size</span> <span class="op">=</span> <span class="ident">msg</span>.<span class="ident">len</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_memory_allocation() {
+        <span class="kw">let </span>msg = <span class="string">&quot;hello&quot;</span>.as_bytes();
+        <span class="kw">let </span>size = msg.len();
 
-        <span class="kw">unsafe</span> {
-            <span class="comment">// Test allocating memory</span>
-            <span class="kw">let</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">scrypto_alloc</span>(<span class="ident">size</span> <span class="kw">as</span> <span class="ident">u32</span>);
-            <span class="ident">scrypto_free</span>(<span class="ident">ptr</span>);
+        <span class="kw">unsafe </span>{
+            <span class="comment">// Test allocating memory
+            </span><span class="kw">let </span>ptr = scrypto_alloc(size <span class="kw">as </span>u32);
+            scrypto_free(ptr);
 
-            <span class="comment">// Ensure no memory leak</span>
-            <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">1000</span> {
-                <span class="kw">let</span> <span class="ident">ptr</span> <span class="op">=</span> <span class="ident">scrypto_alloc</span>(<span class="number">100_000_000</span>);
-                <span class="ident">scrypto_free</span>(<span class="ident">ptr</span>);
+            <span class="comment">// Ensure no memory leak
+            </span><span class="kw">for _ in </span><span class="number">0</span>..<span class="number">1000 </span>{
+                <span class="kw">let </span>ptr = scrypto_alloc(<span class="number">100_000_000</span>);
+                scrypto_free(ptr);
             }
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

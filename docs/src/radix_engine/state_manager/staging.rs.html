@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/state_manager/staging.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>staging.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/state_manager/staging.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>staging.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -226,229 +221,228 @@
 <span id="221">221</span>
 <span id="222">222</span>
 <span id="223">223</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::ledger::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident">indexmap::IndexMap</span>;
-<span class="kw">use</span> <span class="ident">indexmap::IndexSet</span>;
-<span class="kw">use</span> <span class="ident">scrypto::engine::types::SubstateId</span>;
+<span class="kw">use </span>indexmap::IndexMap;
+<span class="kw">use </span>indexmap::IndexSet;
+<span class="kw">use </span>scrypto::engine::types::SubstateId;
 
-<span class="doccomment">/// Nodes form an acyclic graph towards the parent</span>
-<span class="kw">struct</span> <span class="ident">StagedSubstateStoreNode</span> {
-    <span class="ident">parent_id</span>: <span class="ident">u64</span>,
-    <span class="ident">locked</span>: <span class="ident">bool</span>,
-    <span class="ident">outputs</span>: <span class="ident">IndexMap</span><span class="op">&lt;</span><span class="ident">SubstateId</span>, <span class="ident">OutputValue</span><span class="op">&gt;</span>,
-    <span class="ident">new_roots</span>: <span class="ident">IndexSet</span><span class="op">&lt;</span><span class="ident">SubstateId</span><span class="op">&gt;</span>,
+<span class="doccomment">/// Nodes form an acyclic graph towards the parent
+</span><span class="kw">struct </span>StagedSubstateStoreNode {
+    parent_id: u64,
+    locked: bool,
+    outputs: IndexMap&lt;SubstateId, OutputValue&gt;,
+    new_roots: IndexSet&lt;SubstateId&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">StagedSubstateStoreNode</span> {
-    <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">parent_id</span>: <span class="ident">u64</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">StagedSubstateStoreNode</span> {
-            <span class="ident">parent_id</span>,
-            <span class="ident">locked</span>: <span class="bool-val">false</span>,
-            <span class="ident">outputs</span>: <span class="ident">IndexMap::new</span>(),
-            <span class="ident">new_roots</span>: <span class="ident">IndexSet::new</span>(),
+<span class="kw">impl </span>StagedSubstateStoreNode {
+    <span class="kw">fn </span>new(parent_id: u64) -&gt; <span class="self">Self </span>{
+        StagedSubstateStoreNode {
+            parent_id,
+            locked: <span class="bool-val">false</span>,
+            outputs: IndexMap::new(),
+            new_roots: IndexSet::new(),
         }
     }
 }
 
-<span class="doccomment">/// Structure which manages the acyclic graph</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StagedSubstateStoreManager</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span><span class="op">&gt;</span> {
-    <span class="ident">root</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="kw-2">mut</span> <span class="ident">S</span>,
-    <span class="ident">nodes</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">u64</span>, <span class="ident">StagedSubstateStoreNode</span><span class="op">&gt;</span>,
-    <span class="ident">cur_id</span>: <span class="ident">u64</span>,
+<span class="doccomment">/// Structure which manages the acyclic graph
+</span><span class="kw">pub struct </span>StagedSubstateStoreManager&lt;<span class="lifetime">&#39;s</span>, S: ReadableSubstateStore&gt; {
+    root: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>S,
+    nodes: HashMap&lt;u64, StagedSubstateStoreNode&gt;,
+    cur_id: u64,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span><span class="op">&gt;</span> <span class="ident">StagedSubstateStoreManager</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">S</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">root</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="kw-2">mut</span> <span class="ident">S</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">StagedSubstateStoreManager</span> {
-            <span class="ident">root</span>,
-            <span class="ident">nodes</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">cur_id</span>: <span class="number">0</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;s</span>, S: ReadableSubstateStore&gt; StagedSubstateStoreManager&lt;<span class="lifetime">&#39;s</span>, S&gt; {
+    <span class="kw">pub fn </span>new(root: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>S) -&gt; <span class="self">Self </span>{
+        StagedSubstateStoreManager {
+            root,
+            nodes: HashMap::new(),
+            cur_id: <span class="number">0</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_child_node</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">parent_id</span>: <span class="ident">u64</span>) -&gt; <span class="ident">u64</span> {
-        <span class="kw">if</span> <span class="ident">parent_id</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
-            <span class="kw">let</span> <span class="ident">parent</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">nodes</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">parent_id</span>).<span class="ident">unwrap</span>();
-            <span class="ident">parent</span>.<span class="ident">locked</span> <span class="op">=</span> <span class="bool-val">true</span>;
+    <span class="kw">pub fn </span>new_child_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parent_id: u64) -&gt; u64 {
+        <span class="kw">if </span>parent_id != <span class="number">0 </span>{
+            <span class="kw">let </span>parent = <span class="self">self</span>.nodes.get_mut(<span class="kw-2">&amp;</span>parent_id).unwrap();
+            parent.locked = <span class="bool-val">true</span>;
         }
 
-        <span class="self">self</span>.<span class="ident">cur_id</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">cur_id</span> <span class="op">+</span> <span class="number">1</span>;
-        <span class="self">self</span>.<span class="ident">nodes</span>
-            .<span class="ident">insert</span>(<span class="self">self</span>.<span class="ident">cur_id</span>, <span class="ident">StagedSubstateStoreNode::new</span>(<span class="ident">parent_id</span>));
-        <span class="self">self</span>.<span class="ident">cur_id</span>
+        <span class="self">self</span>.cur_id = <span class="self">self</span>.cur_id + <span class="number">1</span>;
+        <span class="self">self</span>.nodes
+            .insert(<span class="self">self</span>.cur_id, StagedSubstateStoreNode::new(parent_id));
+        <span class="self">self</span>.cur_id
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_root_store</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">S</span> {
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">root</span>
+    <span class="kw">pub fn </span>get_root_store(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>S {
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.root
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_output_store</span><span class="op">&lt;</span><span class="lifetime">&#39;t</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;t</span> <span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="ident">u64</span>) -&gt; <span class="ident">StagedSubstateStore</span><span class="op">&lt;</span><span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, <span class="ident">S</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">id</span> <span class="op">==</span> <span class="number">0</span> {
+    <span class="kw">pub fn </span>get_output_store&lt;<span class="lifetime">&#39;t</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;t </span><span class="kw-2">mut </span><span class="self">self</span>, id: u64) -&gt; StagedSubstateStore&lt;<span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, S&gt; {
+        <span class="kw">if </span>id == <span class="number">0 </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Use get_root_store to get root store&quot;</span>);
         }
 
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">nodes</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>).<span class="ident">unwrap</span>().<span class="ident">locked</span> {
+        <span class="kw">if </span><span class="self">self</span>.nodes.get(<span class="kw-2">&amp;</span>id).unwrap().locked {
             <span class="macro">panic!</span>(<span class="string">&quot;Should not write to locked node&quot;</span>);
         }
 
-        <span class="ident">StagedSubstateStore</span> { <span class="ident">stores</span>: <span class="self">self</span>, <span class="ident">id</span> }
+        StagedSubstateStore { stores: <span class="self">self</span>, id }
     }
 
-    <span class="kw">fn</span> <span class="ident">remove_children</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="ident">u64</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">to_delete</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">for</span> (<span class="ident">to_delete_id</span>, <span class="ident">node</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">nodes</span> {
-            <span class="kw">if</span> <span class="ident">node</span>.<span class="ident">parent_id</span> <span class="op">==</span> <span class="ident">id</span> {
-                <span class="ident">to_delete</span>.<span class="ident">push</span>(<span class="kw-2">*</span><span class="ident">to_delete_id</span>);
+    <span class="kw">fn </span>remove_children(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: u64) {
+        <span class="kw">let </span><span class="kw-2">mut </span>to_delete = Vec::new();
+        <span class="kw">for </span>(to_delete_id, node) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.nodes {
+            <span class="kw">if </span>node.parent_id == id {
+                to_delete.push(<span class="kw-2">*</span>to_delete_id);
             }
         }
-        <span class="kw">for</span> <span class="ident">to_delete_id</span> <span class="kw">in</span> <span class="ident">to_delete</span> {
-            <span class="self">self</span>.<span class="ident">remove_children</span>(<span class="ident">to_delete_id</span>);
-            <span class="self">self</span>.<span class="ident">nodes</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">to_delete_id</span>);
+        <span class="kw">for </span>to_delete_id <span class="kw">in </span>to_delete {
+            <span class="self">self</span>.remove_children(to_delete_id);
+            <span class="self">self</span>.nodes.remove(<span class="kw-2">&amp;</span>to_delete_id);
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span> <span class="op">+</span> <span class="ident">WriteableSubstateStore</span><span class="op">&gt;</span> <span class="ident">StagedSubstateStoreManager</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">S</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">set_root_parent</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="ident">u64</span>) {
-        <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">nodes</span>.<span class="ident">values_mut</span>().<span class="ident">filter</span>(<span class="op">|</span><span class="ident">node</span><span class="op">|</span> <span class="ident">id</span> <span class="op">==</span> <span class="ident">node</span>.<span class="ident">parent_id</span>) {
-            <span class="ident">node</span>.<span class="ident">parent_id</span> <span class="op">=</span> <span class="number">0</span>;
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;s</span>, S: ReadableSubstateStore + WriteableSubstateStore&gt; StagedSubstateStoreManager&lt;<span class="lifetime">&#39;s</span>, S&gt; {
+    <span class="kw">fn </span>set_root_parent(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: u64) {
+        <span class="kw">for </span>node <span class="kw">in </span><span class="self">self</span>.nodes.values_mut().filter(|node| id == node.parent_id) {
+            node.parent_id = <span class="number">0</span>;
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">merge_to_parent</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="ident">u64</span>) {
-        <span class="self">self</span>.<span class="ident">merge_to_parent_recurse</span>(<span class="ident">id</span>, <span class="bool-val">false</span>)
+    <span class="kw">pub fn </span>merge_to_parent(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: u64) {
+        <span class="self">self</span>.merge_to_parent_recurse(id, <span class="bool-val">false</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">merge_to_parent_recurse</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="ident">u64</span>, <span class="ident">remove_children</span>: <span class="ident">bool</span>) {
-        <span class="kw">if</span> <span class="ident">id</span> <span class="op">==</span> <span class="number">0</span> {
-            <span class="kw">if</span> <span class="ident">remove_children</span> {
-                <span class="self">self</span>.<span class="ident">remove_children</span>(<span class="number">0</span>);
+    <span class="kw">fn </span>merge_to_parent_recurse(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: u64, remove_children: bool) {
+        <span class="kw">if </span>id == <span class="number">0 </span>{
+            <span class="kw">if </span>remove_children {
+                <span class="self">self</span>.remove_children(<span class="number">0</span>);
             }
             <span class="kw">return</span>;
         }
 
-        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">nodes</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>).<span class="ident">unwrap</span>();
-        <span class="kw">if</span> <span class="ident">remove_children</span> {
-            <span class="self">self</span>.<span class="ident">remove_children</span>(<span class="ident">id</span>);
+        <span class="kw">let </span>node = <span class="self">self</span>.nodes.remove(<span class="kw-2">&amp;</span>id).unwrap();
+        <span class="kw">if </span>remove_children {
+            <span class="self">self</span>.remove_children(id);
         }
 
-        <span class="self">self</span>.<span class="ident">merge_to_parent_recurse</span>(<span class="ident">node</span>.<span class="ident">parent_id</span>, <span class="bool-val">true</span>);
+        <span class="self">self</span>.merge_to_parent_recurse(node.parent_id, <span class="bool-val">true</span>);
 
-        <span class="kw">for</span> (<span class="ident">substate_id</span>, <span class="ident">output</span>) <span class="kw">in</span> <span class="ident">node</span>.<span class="ident">outputs</span> {
-            <span class="self">self</span>.<span class="ident">root</span>.<span class="ident">put_substate</span>(<span class="ident">substate_id</span>, <span class="ident">output</span>);
+        <span class="kw">for </span>(substate_id, output) <span class="kw">in </span>node.outputs {
+            <span class="self">self</span>.root.put_substate(substate_id, output);
         }
 
-        <span class="kw">for</span> <span class="ident">substate_id</span> <span class="kw">in</span> <span class="ident">node</span>.<span class="ident">new_roots</span> {
-            <span class="self">self</span>.<span class="ident">root</span>.<span class="ident">set_root</span>(<span class="ident">substate_id</span>);
+        <span class="kw">for </span>substate_id <span class="kw">in </span>node.new_roots {
+            <span class="self">self</span>.root.set_root(substate_id);
         }
 
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">remove_children</span> {
-            <span class="self">self</span>.<span class="ident">set_root_parent</span>(<span class="ident">id</span>);
+        <span class="kw">if </span>!remove_children {
+            <span class="self">self</span>.set_root_parent(id);
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">StagedSubstateStore</span><span class="op">&lt;</span><span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span><span class="op">&gt;</span> {
-    <span class="ident">stores</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;t</span> <span class="kw-2">mut</span> <span class="ident">StagedSubstateStoreManager</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">S</span><span class="op">&gt;</span>,
-    <span class="ident">id</span>: <span class="ident">u64</span>,
+<span class="kw">pub struct </span>StagedSubstateStore&lt;<span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, S: ReadableSubstateStore&gt; {
+    stores: <span class="kw-2">&amp;</span><span class="lifetime">&#39;t </span><span class="kw-2">mut </span>StagedSubstateStoreManager&lt;<span class="lifetime">&#39;s</span>, S&gt;,
+    id: u64,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span><span class="op">&gt;</span> <span class="ident">StagedSubstateStore</span><span class="op">&lt;</span><span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, <span class="ident">S</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">get_substate_recurse</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">substate_id</span>: <span class="kw-2">&amp;</span><span class="ident">SubstateId</span>, <span class="ident">id</span>: <span class="ident">u64</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OutputValue</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">id</span> <span class="op">==</span> <span class="number">0</span> {
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">stores</span>.<span class="ident">root</span>.<span class="ident">get_substate</span>(<span class="ident">substate_id</span>);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, S: ReadableSubstateStore&gt; StagedSubstateStore&lt;<span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, S&gt; {
+    <span class="kw">fn </span>get_substate_recurse(<span class="kw-2">&amp;</span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId, id: u64) -&gt; <span class="prelude-ty">Option</span>&lt;OutputValue&gt; {
+        <span class="kw">if </span>id == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="self">self</span>.stores.root.get_substate(substate_id);
         }
 
-        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">stores</span>.<span class="ident">nodes</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>).<span class="ident">unwrap</span>();
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">output</span>) <span class="op">=</span> <span class="ident">node</span>.<span class="ident">outputs</span>.<span class="ident">get</span>(<span class="ident">substate_id</span>) {
-            <span class="comment">// TODO: Remove encoding/decoding</span>
-            <span class="kw">let</span> <span class="ident">encoded_output</span> <span class="op">=</span> <span class="ident">scrypto_encode</span>(<span class="ident">output</span>);
-            <span class="kw">return</span> <span class="prelude-val">Some</span>(<span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">encoded_output</span>).<span class="ident">unwrap</span>());
+        <span class="kw">let </span>node = <span class="self">self</span>.stores.nodes.get(<span class="kw-2">&amp;</span>id).unwrap();
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(output) = node.outputs.get(substate_id) {
+            <span class="comment">// TODO: Remove encoding/decoding
+            </span><span class="kw">let </span>encoded_output = scrypto_encode(output);
+            <span class="kw">return </span><span class="prelude-val">Some</span>(scrypto_decode(<span class="kw-2">&amp;</span>encoded_output).unwrap());
         }
 
-        <span class="self">self</span>.<span class="ident">get_substate_recurse</span>(<span class="ident">substate_id</span>, <span class="ident">node</span>.<span class="ident">parent_id</span>)
+        <span class="self">self</span>.get_substate_recurse(substate_id, node.parent_id)
     }
 
-    <span class="kw">fn</span> <span class="ident">is_root_recurse</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">substate_id</span>: <span class="kw-2">&amp;</span><span class="ident">SubstateId</span>, <span class="ident">id</span>: <span class="ident">u64</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">if</span> <span class="ident">id</span> <span class="op">==</span> <span class="number">0</span> {
-            <span class="kw">return</span> <span class="self">self</span>.<span class="ident">stores</span>.<span class="ident">root</span>.<span class="ident">is_root</span>(<span class="ident">substate_id</span>);
+    <span class="kw">fn </span>is_root_recurse(<span class="kw-2">&amp;</span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId, id: u64) -&gt; bool {
+        <span class="kw">if </span>id == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="self">self</span>.stores.root.is_root(substate_id);
         }
 
-        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">stores</span>.<span class="ident">nodes</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>).<span class="ident">unwrap</span>();
-        <span class="kw">if</span> <span class="ident">node</span>.<span class="ident">new_roots</span>.<span class="ident">contains</span>(<span class="ident">substate_id</span>) {
-            <span class="kw">return</span> <span class="bool-val">true</span>;
+        <span class="kw">let </span>node = <span class="self">self</span>.stores.nodes.get(<span class="kw-2">&amp;</span>id).unwrap();
+        <span class="kw">if </span>node.new_roots.contains(substate_id) {
+            <span class="kw">return </span><span class="bool-val">true</span>;
         }
 
-        <span class="self">self</span>.<span class="ident">is_root_recurse</span>(<span class="ident">substate_id</span>, <span class="ident">node</span>.<span class="ident">parent_id</span>)
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span><span class="op">&gt;</span> <span class="ident">ReadableSubstateStore</span> <span class="kw">for</span> <span class="ident">StagedSubstateStore</span><span class="op">&lt;</span><span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, <span class="ident">S</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">get_substate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">substate_id</span>: <span class="kw-2">&amp;</span><span class="ident">SubstateId</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OutputValue</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">get_substate_recurse</span>(<span class="ident">substate_id</span>, <span class="self">self</span>.<span class="ident">id</span>)
-    }
-
-    <span class="kw">fn</span> <span class="ident">is_root</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">substate_id</span>: <span class="kw-2">&amp;</span><span class="ident">SubstateId</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">is_root_recurse</span>(<span class="ident">substate_id</span>, <span class="self">self</span>.<span class="ident">id</span>)
+        <span class="self">self</span>.is_root_recurse(substate_id, node.parent_id)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span><span class="op">&gt;</span> <span class="ident">WriteableSubstateStore</span> <span class="kw">for</span> <span class="ident">StagedSubstateStore</span><span class="op">&lt;</span><span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, <span class="ident">S</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">put_substate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>, <span class="ident">output</span>: <span class="ident">OutputValue</span>) {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">id</span> <span class="op">==</span> <span class="number">0</span> {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, S: ReadableSubstateStore&gt; ReadableSubstateStore <span class="kw">for </span>StagedSubstateStore&lt;<span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, S&gt; {
+    <span class="kw">fn </span>get_substate(<span class="kw-2">&amp;</span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId) -&gt; <span class="prelude-ty">Option</span>&lt;OutputValue&gt; {
+        <span class="self">self</span>.get_substate_recurse(substate_id, <span class="self">self</span>.id)
+    }
+
+    <span class="kw">fn </span>is_root(<span class="kw-2">&amp;</span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId) -&gt; bool {
+        <span class="self">self</span>.is_root_recurse(substate_id, <span class="self">self</span>.id)
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, S: ReadableSubstateStore&gt; WriteableSubstateStore <span class="kw">for </span>StagedSubstateStore&lt;<span class="lifetime">&#39;t</span>, <span class="lifetime">&#39;s</span>, S&gt; {
+    <span class="kw">fn </span>put_substate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId, output: OutputValue) {
+        <span class="kw">if </span><span class="self">self</span>.id == <span class="number">0 </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Cannot write to root store&quot;</span>);
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">stores</span>.<span class="ident">nodes</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">id</span>).<span class="ident">unwrap</span>();
-            <span class="ident">node</span>.<span class="ident">outputs</span>.<span class="ident">insert</span>(<span class="ident">substate_id</span>, <span class="ident">output</span>);
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>node = <span class="self">self</span>.stores.nodes.get_mut(<span class="kw-2">&amp;</span><span class="self">self</span>.id).unwrap();
+            node.outputs.insert(substate_id, output);
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">set_root</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>) {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">id</span> <span class="op">==</span> <span class="number">0</span> {
+    <span class="kw">fn </span>set_root(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId) {
+        <span class="kw">if </span><span class="self">self</span>.id == <span class="number">0 </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Cannot write to root store&quot;</span>);
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">stores</span>.<span class="ident">nodes</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">id</span>).<span class="ident">unwrap</span>();
-            <span class="ident">node</span>.<span class="ident">new_roots</span>.<span class="ident">insert</span>(<span class="ident">substate_id</span>);
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>node = <span class="self">self</span>.stores.nodes.get_mut(<span class="kw-2">&amp;</span><span class="self">self</span>.id).unwrap();
+            node.new_roots.insert(substate_id);
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger::TypedInMemorySubstateStore</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::state_manager::StagedSubstateStoreManager</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span><span class="kw">crate</span>::ledger::TypedInMemorySubstateStore;
+    <span class="kw">use </span><span class="kw">crate</span>::state_manager::StagedSubstateStoreManager;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_complicated_merge</span>() {
-        <span class="comment">// Arrange</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">store</span> <span class="op">=</span> <span class="ident">TypedInMemorySubstateStore::with_bootstrap</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">stores</span> <span class="op">=</span> <span class="ident">StagedSubstateStoreManager::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">store</span>);
-        <span class="kw">let</span> <span class="ident">child_node1</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="number">0</span>);
-        <span class="kw">let</span> <span class="ident">child_node2</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="ident">child_node1</span>);
-        <span class="kw">let</span> <span class="ident">child_node3</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="ident">child_node2</span>);
-        <span class="kw">let</span> <span class="ident">_child_node4</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="ident">child_node3</span>);
-        <span class="kw">let</span> <span class="ident">child_node5</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="ident">child_node3</span>);
-        <span class="kw">let</span> <span class="ident">child_node6</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="ident">child_node5</span>);
-        <span class="kw">let</span> <span class="ident">child_node7</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="number">0</span>);
-        <span class="kw">let</span> <span class="ident">_child_node8</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="ident">child_node7</span>);
-        <span class="kw">let</span> <span class="ident">child_node9</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="ident">child_node6</span>);
-        <span class="kw">let</span> <span class="ident">child_node10</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">new_child_node</span>(<span class="ident">child_node9</span>);
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_complicated_merge() {
+        <span class="comment">// Arrange
+        </span><span class="kw">let </span><span class="kw-2">mut </span>store = TypedInMemorySubstateStore::with_bootstrap();
+        <span class="kw">let </span><span class="kw-2">mut </span>stores = StagedSubstateStoreManager::new(<span class="kw-2">&amp;mut </span>store);
+        <span class="kw">let </span>child_node1 = stores.new_child_node(<span class="number">0</span>);
+        <span class="kw">let </span>child_node2 = stores.new_child_node(child_node1);
+        <span class="kw">let </span>child_node3 = stores.new_child_node(child_node2);
+        <span class="kw">let </span>_child_node4 = stores.new_child_node(child_node3);
+        <span class="kw">let </span>child_node5 = stores.new_child_node(child_node3);
+        <span class="kw">let </span>child_node6 = stores.new_child_node(child_node5);
+        <span class="kw">let </span>child_node7 = stores.new_child_node(<span class="number">0</span>);
+        <span class="kw">let </span>_child_node8 = stores.new_child_node(child_node7);
+        <span class="kw">let </span>child_node9 = stores.new_child_node(child_node6);
+        <span class="kw">let </span>child_node10 = stores.new_child_node(child_node9);
 
-        <span class="comment">// Act</span>
-        <span class="ident">stores</span>.<span class="ident">merge_to_parent</span>(<span class="ident">child_node5</span>);
+        <span class="comment">// Act
+        </span>stores.merge_to_parent(child_node5);
 
-        <span class="comment">// Assert</span>
-        <span class="macro">assert_eq!</span>(<span class="ident">stores</span>.<span class="ident">nodes</span>.<span class="ident">len</span>(), <span class="number">3</span>);
-        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">nodes</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">child_node6</span>).<span class="ident">expect</span>(<span class="string">&quot;Should exist&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">node</span>.<span class="ident">parent_id</span>, <span class="number">0</span>);
-        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">nodes</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">child_node9</span>).<span class="ident">expect</span>(<span class="string">&quot;Should exist&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">node</span>.<span class="ident">parent_id</span>, <span class="ident">child_node6</span>);
-        <span class="kw">let</span> <span class="ident">node</span> <span class="op">=</span> <span class="ident">stores</span>.<span class="ident">nodes</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">child_node10</span>).<span class="ident">expect</span>(<span class="string">&quot;Should exist&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">node</span>.<span class="ident">parent_id</span>, <span class="ident">child_node9</span>);
+        <span class="comment">// Assert
+        </span><span class="macro">assert_eq!</span>(stores.nodes.len(), <span class="number">3</span>);
+        <span class="kw">let </span>node = stores.nodes.get(<span class="kw-2">&amp;</span>child_node6).expect(<span class="string">&quot;Should exist&quot;</span>);
+        <span class="macro">assert_eq!</span>(node.parent_id, <span class="number">0</span>);
+        <span class="kw">let </span>node = stores.nodes.get(<span class="kw-2">&amp;</span>child_node9).expect(<span class="string">&quot;Should exist&quot;</span>);
+        <span class="macro">assert_eq!</span>(node.parent_id, child_node6);
+        <span class="kw">let </span>node = stores.nodes.get(<span class="kw-2">&amp;</span>child_node10).expect(<span class="string">&quot;Should exist&quot;</span>);
+        <span class="macro">assert_eq!</span>(node.parent_id, child_node9);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

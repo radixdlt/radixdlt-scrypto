@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/transaction/preview_executor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>preview_executor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/transaction/preview_executor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>preview_executor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -109,112 +104,111 @@
 <span id="104">104</span>
 <span id="105">105</span>
 <span id="106">106</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">scrypto::core::NetworkDefinition</span>;
-<span class="kw">use</span> <span class="ident">transaction::errors::TransactionValidationError</span>;
-<span class="kw">use</span> <span class="ident">transaction::model::PreviewIntent</span>;
-<span class="kw">use</span> <span class="ident">transaction::validation::IntentHashManager</span>;
-<span class="kw">use</span> <span class="ident">transaction::validation::NotarizedTransactionValidator</span>;
-<span class="kw">use</span> <span class="ident">transaction::validation::ValidationConfig</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>scrypto::core::NetworkDefinition;
+<span class="kw">use </span>transaction::errors::TransactionValidationError;
+<span class="kw">use </span>transaction::model::PreviewIntent;
+<span class="kw">use </span>transaction::validation::IntentHashManager;
+<span class="kw">use </span>transaction::validation::NotarizedTransactionValidator;
+<span class="kw">use </span>transaction::validation::ValidationConfig;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::constants::DEFAULT_MAX_COST_UNIT_LIMIT</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::constants::PREVIEW_CREDIT</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::SystemLoanFeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::transaction::TransactionReceipt</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::transaction</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::{<span class="ident">WasmEngine</span>, <span class="ident">WasmInstance</span>, <span class="ident">WasmInstrumenter</span>};
+<span class="kw">use </span><span class="kw">crate</span>::constants::DEFAULT_MAX_COST_UNIT_LIMIT;
+<span class="kw">use </span><span class="kw">crate</span>::constants::PREVIEW_CREDIT;
+<span class="kw">use </span><span class="kw">crate</span>::fee::SystemLoanFeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::ledger::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::transaction::TransactionReceipt;
+<span class="kw">use </span><span class="kw">crate</span>::transaction::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::{WasmEngine, WasmInstance, WasmInstrumenter};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PreviewResult</span> {
-    <span class="kw">pub</span> <span class="ident">intent</span>: <span class="ident">PreviewIntent</span>,
-    <span class="kw">pub</span> <span class="ident">receipt</span>: <span class="ident">TransactionReceipt</span>,
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>PreviewResult {
+    <span class="kw">pub </span>intent: PreviewIntent,
+    <span class="kw">pub </span>receipt: TransactionReceipt,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">PreviewError</span> {
-    <span class="ident">TransactionValidationError</span>(<span class="ident">TransactionValidationError</span>),
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>PreviewError {
+    TransactionValidationError(TransactionValidationError),
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PreviewExecutor</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="lifetime">&#39;n</span>, <span class="ident">S</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">IHM</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span>,
-    <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-    <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-    <span class="ident">IHM</span>: <span class="ident">IntentHashManager</span>,
+<span class="kw">pub struct </span>PreviewExecutor&lt;<span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="lifetime">&#39;n</span>, S, W, I, IHM&gt;
+<span class="kw">where
+    </span>S: ReadableSubstateStore,
+    W: WasmEngine&lt;I&gt;,
+    I: WasmInstance,
+    IHM: IntentHashManager,
 {
-    <span class="ident">substate_store</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="kw-2">mut</span> <span class="ident">S</span>,
-    <span class="ident">wasm_engine</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="kw-2">mut</span> <span class="ident">W</span>,
-    <span class="ident">wasm_instrumenter</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="kw-2">mut</span> <span class="ident">WasmInstrumenter</span>,
-    <span class="ident">intent_hash_manager</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="ident">IHM</span>,
-    <span class="ident">network</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;n</span> <span class="ident">NetworkDefinition</span>,
-    <span class="ident">phantom1</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
+    substate_store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>S,
+    wasm_engine: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span><span class="kw-2">mut </span>W,
+    wasm_instrumenter: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span><span class="kw-2">mut </span>WasmInstrumenter,
+    intent_hash_manager: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span>IHM,
+    network: <span class="kw-2">&amp;</span><span class="lifetime">&#39;n </span>NetworkDefinition,
+    phantom1: PhantomData&lt;I&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="lifetime">&#39;n</span>, <span class="ident">S</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">IHM</span><span class="op">&gt;</span> <span class="ident">PreviewExecutor</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="lifetime">&#39;n</span>, <span class="ident">S</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">IHM</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span>,
-    <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-    <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-    <span class="ident">IHM</span>: <span class="ident">IntentHashManager</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="lifetime">&#39;n</span>, S, W, I, IHM&gt; PreviewExecutor&lt;<span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="lifetime">&#39;n</span>, S, W, I, IHM&gt;
+<span class="kw">where
+    </span>S: ReadableSubstateStore,
+    W: WasmEngine&lt;I&gt;,
+    I: WasmInstance,
+    IHM: IntentHashManager,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">substate_store</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="kw-2">mut</span> <span class="ident">S</span>,
-        <span class="ident">wasm_engine</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="kw-2">mut</span> <span class="ident">W</span>,
-        <span class="ident">wasm_instrumenter</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="kw-2">mut</span> <span class="ident">WasmInstrumenter</span>,
-        <span class="ident">intent_hash_manager</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="ident">IHM</span>,
-        <span class="ident">network</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;n</span> <span class="ident">NetworkDefinition</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="ident">PreviewExecutor</span> {
-            <span class="ident">substate_store</span>,
-            <span class="ident">wasm_engine</span>,
-            <span class="ident">wasm_instrumenter</span>,
-            <span class="ident">intent_hash_manager</span>,
-            <span class="ident">network</span>,
-            <span class="ident">phantom1</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(
+        substate_store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>S,
+        wasm_engine: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span><span class="kw-2">mut </span>W,
+        wasm_instrumenter: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span><span class="kw-2">mut </span>WasmInstrumenter,
+        intent_hash_manager: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span>IHM,
+        network: <span class="kw-2">&amp;</span><span class="lifetime">&#39;n </span>NetworkDefinition,
+    ) -&gt; <span class="self">Self </span>{
+        PreviewExecutor {
+            substate_store,
+            wasm_engine,
+            wasm_instrumenter,
+            intent_hash_manager,
+            network,
+            phantom1: PhantomData,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">execute</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">preview_intent</span>: <span class="ident">PreviewIntent</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">PreviewResult</span>, <span class="ident">PreviewError</span><span class="op">&gt;</span> {
-        <span class="comment">// TODO: construct validation config based on current world state</span>
-        <span class="kw">let</span> <span class="ident">validation_config</span> <span class="op">=</span> <span class="ident">ValidationConfig</span> {
-            <span class="ident">network_id</span>: <span class="self">self</span>.<span class="ident">network</span>.<span class="ident">id</span>,
-            <span class="ident">current_epoch</span>: <span class="number">1</span>,
-            <span class="ident">max_cost_unit_limit</span>: <span class="ident">DEFAULT_MAX_COST_UNIT_LIMIT</span>,
-            <span class="ident">min_tip_percentage</span>: <span class="number">0</span>,
+    <span class="kw">pub fn </span>execute(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        preview_intent: PreviewIntent,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;PreviewResult, PreviewError&gt; {
+        <span class="comment">// TODO: construct validation config based on current world state
+        </span><span class="kw">let </span>validation_config = ValidationConfig {
+            network_id: <span class="self">self</span>.network.id,
+            current_epoch: <span class="number">1</span>,
+            max_cost_unit_limit: DEFAULT_MAX_COST_UNIT_LIMIT,
+            min_tip_percentage: <span class="number">0</span>,
         };
-        <span class="kw">let</span> <span class="ident">execution_params</span> <span class="op">=</span> <span class="ident">ExecutionConfig::default</span>();
-        <span class="kw">let</span> <span class="ident">validator</span> <span class="op">=</span> <span class="ident">NotarizedTransactionValidator::new</span>(<span class="ident">validation_config</span>);
+        <span class="kw">let </span>execution_params = ExecutionConfig::default();
+        <span class="kw">let </span>validator = NotarizedTransactionValidator::new(validation_config);
 
-        <span class="kw">let</span> <span class="ident">validated_preview_transaction</span> <span class="op">=</span> <span class="ident">validator</span>
-            .<span class="ident">validate_preview_intent</span>(<span class="ident">preview_intent</span>.<span class="ident">clone</span>(), <span class="self">self</span>.<span class="ident">intent_hash_manager</span>)
-            .<span class="ident">map_err</span>(<span class="ident">PreviewError::TransactionValidationError</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>validated_preview_transaction = validator
+            .validate_preview_intent(preview_intent.clone(), <span class="self">self</span>.intent_hash_manager)
+            .map_err(PreviewError::TransactionValidationError)<span class="question-mark">?</span>;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">transaction_executor</span> <span class="op">=</span> <span class="ident">TransactionExecutor::new</span>(
-            <span class="self">self</span>.<span class="ident">substate_store</span>,
-            <span class="self">self</span>.<span class="ident">wasm_engine</span>,
-            <span class="self">self</span>.<span class="ident">wasm_instrumenter</span>,
+        <span class="kw">let </span><span class="kw-2">mut </span>transaction_executor = TransactionExecutor::new(
+            <span class="self">self</span>.substate_store,
+            <span class="self">self</span>.wasm_engine,
+            <span class="self">self</span>.wasm_instrumenter,
         );
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fee_reserve</span> <span class="op">=</span> <span class="ident">SystemLoanFeeReserve::default</span>();
-        <span class="kw">if</span> <span class="ident">preview_intent</span>.<span class="ident">flags</span>.<span class="ident">unlimited_loan</span> {
-            <span class="ident">fee_reserve</span>.<span class="ident">credit</span>(<span class="ident">PREVIEW_CREDIT</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::default();
+        <span class="kw">if </span>preview_intent.flags.unlimited_loan {
+            fee_reserve.credit(PREVIEW_CREDIT);
         }
-        <span class="kw">let</span> <span class="ident">receipt</span> <span class="op">=</span> <span class="ident">transaction_executor</span>.<span class="ident">execute_with_fee_reserve</span>(
-            <span class="kw-2">&amp;</span><span class="ident">validated_preview_transaction</span>,
-            <span class="kw-2">&amp;</span><span class="ident">execution_params</span>,
-            <span class="ident">SystemLoanFeeReserve::default</span>(),
+        <span class="kw">let </span>receipt = transaction_executor.execute_with_fee_reserve(
+            <span class="kw-2">&amp;</span>validated_preview_transaction,
+            <span class="kw-2">&amp;</span>execution_params,
+            SystemLoanFeeReserve::default(),
         );
 
-        <span class="prelude-val">Ok</span>(<span class="ident">PreviewResult</span> {
-            <span class="ident">intent</span>: <span class="ident">preview_intent</span>,
-            <span class="ident">receipt</span>,
+        <span class="prelude-val">Ok</span>(PreviewResult {
+            intent: preview_intent,
+            receipt,
         })
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

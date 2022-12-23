@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/core/runtime.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>runtime.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/core/runtime.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>runtime.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -117,120 +112,119 @@
 <span id="112">112</span>
 <span id="113">113</span>
 <span id="114">114</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::rust::borrow::ToOwned</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::string</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident">sbor</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::borrow::ToOwned;
+<span class="kw">use </span>sbor::rust::string::<span class="kw-2">*</span>;
+<span class="kw">use </span>sbor::rust::vec::Vec;
+<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::buffer::scrypto_encode</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::component</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::core</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::crypto</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::types</span>::{<span class="ident">RENodeId</span>, <span class="ident">SubstateId</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">api</span>::<span class="kw-2">*</span>, <span class="ident">call_engine</span>};
+<span class="kw">use </span><span class="kw">crate</span>::buffer::scrypto_encode;
+<span class="kw">use </span><span class="kw">crate</span>::component::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::core::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::crypto::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::engine::types::{RENodeId, SubstateId};
+<span class="kw">use </span><span class="kw">crate</span>::engine::{api::<span class="kw-2">*</span>, call_engine};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SystemGetCurrentEpochInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>SystemGetCurrentEpochInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SystemSetEpochInput</span> {
-    <span class="kw">pub</span> <span class="ident">epoch</span>: <span class="ident">u64</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>SystemSetEpochInput {
+    <span class="kw">pub </span>epoch: u64,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SystemGetTransactionHashInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>SystemGetTransactionHashInput {}
 
-<span class="doccomment">/// The transaction runtime.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Runtime</span> {}
+<span class="doccomment">/// The transaction runtime.
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>Runtime {}
 
-<span class="kw">impl</span> <span class="ident">Runtime</span> {
-    <span class="doccomment">/// Returns the running entity, a component if within a call-method context or a</span>
-    <span class="doccomment">/// blueprint if within a call-function context.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">actor</span>() -&gt; <span class="ident">ScryptoActor</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::GetActor</span>();
-        <span class="kw">let</span> <span class="ident">output</span>: <span class="ident">ScryptoActor</span> <span class="op">=</span> <span class="ident">call_engine</span>(<span class="ident">input</span>);
-        <span class="ident">output</span>
+<span class="kw">impl </span>Runtime {
+    <span class="doccomment">/// Returns the running entity, a component if within a call-method context or a
+    /// blueprint if within a call-function context.
+    </span><span class="kw">pub fn </span>actor() -&gt; ScryptoActor {
+        <span class="kw">let </span>input = RadixEngineInput::GetActor();
+        <span class="kw">let </span>output: ScryptoActor = call_engine(input);
+        output
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">package_address</span>() -&gt; <span class="ident">PackageAddress</span> {
-        <span class="kw">match</span> <span class="ident"><span class="self">Self</span>::actor</span>() {
-            <span class="ident">ScryptoActor::Blueprint</span>(<span class="ident">package_address</span>, <span class="kw">_</span>)
-            <span class="op">|</span> <span class="ident">ScryptoActor::Component</span>(<span class="kw">_</span>, <span class="ident">package_address</span>, <span class="kw">_</span>) =&gt; <span class="ident">package_address</span>,
+    <span class="kw">pub fn </span>package_address() -&gt; PackageAddress {
+        <span class="kw">match </span><span class="self">Self</span>::actor() {
+            ScryptoActor::Blueprint(package_address, <span class="kw">_</span>)
+            | ScryptoActor::Component(<span class="kw">_</span>, package_address, <span class="kw">_</span>) =&gt; package_address,
         }
     }
 
-    <span class="doccomment">/// Generates a UUID.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">generate_uuid</span>() -&gt; <span class="ident">u128</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::GenerateUuid</span>();
-        <span class="kw">let</span> <span class="ident">output</span>: <span class="ident">u128</span> <span class="op">=</span> <span class="ident">call_engine</span>(<span class="ident">input</span>);
+    <span class="doccomment">/// Generates a UUID.
+    </span><span class="kw">pub fn </span>generate_uuid() -&gt; u128 {
+        <span class="kw">let </span>input = RadixEngineInput::GenerateUuid();
+        <span class="kw">let </span>output: u128 = call_engine(input);
 
-        <span class="ident">output</span>
+        output
     }
 
-    <span class="doccomment">/// Invokes a function on a blueprint.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">call_function</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">T</span>: <span class="ident">Decode</span><span class="op">&gt;</span>(
-        <span class="ident">package_address</span>: <span class="ident">PackageAddress</span>,
-        <span class="ident">blueprint_name</span>: <span class="ident">S</span>,
-        <span class="ident">function</span>: <span class="ident">S</span>,
-        <span class="ident">args</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">T</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeFunction</span>(
-            <span class="ident">FnIdentifier::Scrypto</span> {
-                <span class="ident">package_address</span>,
-                <span class="ident">blueprint_name</span>: <span class="ident">blueprint_name</span>.<span class="ident">as_ref</span>().<span class="ident">to_owned</span>(),
-                <span class="ident">ident</span>: <span class="ident">function</span>.<span class="ident">as_ref</span>().<span class="ident">to_string</span>(),
+    <span class="doccomment">/// Invokes a function on a blueprint.
+    </span><span class="kw">pub fn </span>call_function&lt;S: AsRef&lt;str&gt;, T: Decode&gt;(
+        package_address: PackageAddress,
+        blueprint_name: S,
+        function: S,
+        args: Vec&lt;u8&gt;,
+    ) -&gt; T {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeFunction(
+            FnIdentifier::Scrypto {
+                package_address,
+                blueprint_name: blueprint_name.as_ref().to_owned(),
+                ident: function.as_ref().to_string(),
             },
-            <span class="ident">args</span>,
+            args,
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="doccomment">/// Invokes a method on a component.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">call_method</span><span class="op">&lt;</span><span class="ident">S</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">T</span>: <span class="ident">Decode</span><span class="op">&gt;</span>(
-        <span class="ident">component_address</span>: <span class="ident">ComponentAddress</span>,
-        <span class="ident">method</span>: <span class="ident">S</span>,
-        <span class="ident">args</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">T</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::SubstateRead</span>(<span class="ident">SubstateId::ComponentInfo</span>(<span class="ident">component_address</span>));
-        <span class="kw">let</span> (<span class="ident">package_address</span>, <span class="ident">blueprint_name</span>): (<span class="ident">PackageAddress</span>, <span class="ident">String</span>) <span class="op">=</span> <span class="ident">call_engine</span>(<span class="ident">input</span>);
+    <span class="doccomment">/// Invokes a method on a component.
+    </span><span class="kw">pub fn </span>call_method&lt;S: AsRef&lt;str&gt;, T: Decode&gt;(
+        component_address: ComponentAddress,
+        method: S,
+        args: Vec&lt;u8&gt;,
+    ) -&gt; T {
+        <span class="kw">let </span>input = RadixEngineInput::SubstateRead(SubstateId::ComponentInfo(component_address));
+        <span class="kw">let </span>(package_address, blueprint_name): (PackageAddress, String) = call_engine(input);
 
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Component</span>(<span class="ident">component_address</span>)),
-            <span class="ident">FnIdentifier::Scrypto</span> {
-                <span class="ident">package_address</span>,
-                <span class="ident">blueprint_name</span>,
-                <span class="ident">ident</span>: <span class="ident">method</span>.<span class="ident">as_ref</span>().<span class="ident">to_string</span>(),
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::Component(component_address)),
+            FnIdentifier::Scrypto {
+                package_address,
+                blueprint_name,
+                ident: method.as_ref().to_string(),
             },
-            <span class="ident">args</span>,
+            args,
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="doccomment">/// Returns the transaction hash.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">transaction_hash</span>() -&gt; <span class="ident">Hash</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::System</span>),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::System</span>(
-                <span class="ident">SystemFnIdentifier::GetTransactionHash</span>,
+    <span class="doccomment">/// Returns the transaction hash.
+    </span><span class="kw">pub fn </span>transaction_hash() -&gt; Hash {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::System),
+            FnIdentifier::Native(NativeFnIdentifier::System(
+                SystemFnIdentifier::GetTransactionHash,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">SystemGetTransactionHashInput</span> {}),
+            scrypto_encode(<span class="kw-2">&amp;</span>SystemGetTransactionHashInput {}),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="doccomment">/// Returns the current epoch number.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">current_epoch</span>() -&gt; <span class="ident">u64</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::System</span>),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::System</span>(
-                <span class="ident">SystemFnIdentifier::GetCurrentEpoch</span>,
+    <span class="doccomment">/// Returns the current epoch number.
+    </span><span class="kw">pub fn </span>current_epoch() -&gt; u64 {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::System),
+            FnIdentifier::Native(NativeFnIdentifier::System(
+                SystemFnIdentifier::GetCurrentEpoch,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">SystemGetCurrentEpochInput</span> {}),
+            scrypto_encode(<span class="kw-2">&amp;</span>SystemGetCurrentEpochInput {}),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

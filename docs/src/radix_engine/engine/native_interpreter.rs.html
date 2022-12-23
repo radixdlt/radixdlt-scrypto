@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/native_interpreter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>native_interpreter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/native_interpreter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>native_interpreter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -157,160 +152,159 @@
 <span id="152">152</span>
 <span id="153">153</span>
 <span id="154">154</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">NativeInterpreter</span>;
+<span class="kw">pub struct </span>NativeInterpreter;
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">E</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">RuntimeError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">RuntimeError</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">InvokeError::Downstream</span>(<span class="ident">runtime_error</span>) =&gt; <span class="ident">runtime_error</span>,
-            <span class="ident">InvokeError::Error</span>(<span class="ident">e</span>) =&gt; <span class="ident">RuntimeError::ApplicationError</span>(<span class="ident">e</span>.<span class="ident">into</span>()),
+<span class="kw">impl</span>&lt;E: Into&lt;ApplicationError&gt;&gt; Into&lt;RuntimeError&gt; <span class="kw">for </span>InvokeError&lt;E&gt; {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; RuntimeError {
+        <span class="kw">match </span><span class="self">self </span>{
+            InvokeError::Downstream(runtime_error) =&gt; runtime_error,
+            InvokeError::Error(e) =&gt; RuntimeError::ApplicationError(e.into()),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">TransactionProcessorError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::TransactionProcessorError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>TransactionProcessorError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::TransactionProcessorError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">PackageError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::PackageError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>PackageError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::PackageError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ResourceManagerError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::ResourceManagerError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>ResourceManagerError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::ResourceManagerError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">BucketError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::BucketError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>BucketError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::BucketError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ProofError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::ProofError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>ProofError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::ProofError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">AuthZoneError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::AuthZoneError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>AuthZoneError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::AuthZoneError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">WorktopError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::WorktopError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>WorktopError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::WorktopError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">VaultError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::VaultError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>VaultError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::VaultError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ComponentError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::ComponentError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>ComponentError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::ComponentError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ApplicationError</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SystemError</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ApplicationError</span> {
-        <span class="ident">ApplicationError::SystemError</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;ApplicationError&gt; <span class="kw">for </span>SystemError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ApplicationError {
+        ApplicationError::SystemError(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">NativeInterpreter</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">receiver</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Receiver</span><span class="op">&gt;</span>,
-        <span class="ident">auth_zone_frame_id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>,
-        <span class="ident">fn_identifier</span>: <span class="ident">NativeFnIdentifier</span>,
-        <span class="ident">input</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">RuntimeError</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+<span class="kw">impl </span>NativeInterpreter {
+    <span class="kw">pub fn </span>run&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        receiver: <span class="prelude-ty">Option</span>&lt;Receiver&gt;,
+        auth_zone_frame_id: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+        fn_identifier: NativeFnIdentifier,
+        input: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, RuntimeError&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">match</span> (<span class="ident">receiver</span>, <span class="ident">fn_identifier</span>) {
-            (<span class="prelude-val">None</span>, <span class="ident">NativeFnIdentifier::TransactionProcessor</span>(<span class="ident">transaction_processor_fn</span>)) =&gt; {
-                <span class="ident">TransactionProcessor::static_main</span>(<span class="ident">transaction_processor_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+        <span class="kw">match </span>(receiver, fn_identifier) {
+            (<span class="prelude-val">None</span>, NativeFnIdentifier::TransactionProcessor(transaction_processor_fn)) =&gt; {
+                TransactionProcessor::static_main(transaction_processor_fn, input, system_api)
+                    .map_err(|e| e.into())
             }
-            (<span class="prelude-val">None</span>, <span class="ident">NativeFnIdentifier::Package</span>(<span class="ident">package_fn</span>)) =&gt; {
-                <span class="ident">Package::static_main</span>(<span class="ident">package_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+            (<span class="prelude-val">None</span>, NativeFnIdentifier::Package(package_fn)) =&gt; {
+                Package::static_main(package_fn, input, system_api).map_err(|e| e.into())
             }
-            (<span class="prelude-val">None</span>, <span class="ident">NativeFnIdentifier::ResourceManager</span>(<span class="ident">resource_manager_fn</span>)) =&gt; {
-                <span class="ident">ResourceManager::static_main</span>(<span class="ident">resource_manager_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+            (<span class="prelude-val">None</span>, NativeFnIdentifier::ResourceManager(resource_manager_fn)) =&gt; {
+                ResourceManager::static_main(resource_manager_fn, input, system_api)
+                    .map_err(|e| e.into())
             }
-            (<span class="prelude-val">Some</span>(<span class="ident">Receiver::Consumed</span>(<span class="ident">node_id</span>)), <span class="ident">NativeFnIdentifier::Bucket</span>(<span class="ident">bucket_fn</span>)) =&gt; {
-                <span class="ident">Bucket::consuming_main</span>(<span class="ident">node_id</span>, <span class="ident">bucket_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+            (<span class="prelude-val">Some</span>(Receiver::Consumed(node_id)), NativeFnIdentifier::Bucket(bucket_fn)) =&gt; {
+                Bucket::consuming_main(node_id, bucket_fn, input, system_api).map_err(|e| e.into())
             }
-            (<span class="prelude-val">Some</span>(<span class="ident">Receiver::Consumed</span>(<span class="ident">node_id</span>)), <span class="ident">NativeFnIdentifier::Proof</span>(<span class="ident">proof_fn</span>)) =&gt; {
-                <span class="ident">Proof::main_consume</span>(<span class="ident">node_id</span>, <span class="ident">proof_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+            (<span class="prelude-val">Some</span>(Receiver::Consumed(node_id)), NativeFnIdentifier::Proof(proof_fn)) =&gt; {
+                Proof::main_consume(node_id, proof_fn, input, system_api).map_err(|e| e.into())
             }
-            (<span class="prelude-val">Some</span>(<span class="ident">Receiver::CurrentAuthZone</span>), <span class="ident">NativeFnIdentifier::AuthZone</span>(<span class="ident">auth_zone_fn</span>)) =&gt; {
-                <span class="ident">AuthZone::main</span>(
-                    <span class="ident">auth_zone_frame_id</span>.<span class="ident">expect</span>(<span class="string">&quot;AuthZone receiver frame id not specified&quot;</span>),
-                    <span class="ident">auth_zone_fn</span>,
-                    <span class="ident">input</span>,
-                    <span class="ident">system_api</span>,
+            (<span class="prelude-val">Some</span>(Receiver::CurrentAuthZone), NativeFnIdentifier::AuthZone(auth_zone_fn)) =&gt; {
+                AuthZone::main(
+                    auth_zone_frame_id.expect(<span class="string">&quot;AuthZone receiver frame id not specified&quot;</span>),
+                    auth_zone_fn,
+                    input,
+                    system_api,
                 )
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+                .map_err(|e| e.into())
             }
             (
-                <span class="prelude-val">Some</span>(<span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Bucket</span>(<span class="ident">bucket_id</span>))),
-                <span class="ident">NativeFnIdentifier::Bucket</span>(<span class="ident">bucket_fn</span>),
-            ) =&gt; <span class="ident">Bucket::main</span>(<span class="ident">bucket_id</span>, <span class="ident">bucket_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>()),
+                <span class="prelude-val">Some</span>(Receiver::Ref(RENodeId::Bucket(bucket_id))),
+                NativeFnIdentifier::Bucket(bucket_fn),
+            ) =&gt; Bucket::main(bucket_id, bucket_fn, input, system_api).map_err(|e| e.into()),
             (
-                <span class="prelude-val">Some</span>(<span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Proof</span>(<span class="ident">proof_id</span>))),
-                <span class="ident">NativeFnIdentifier::Proof</span>(<span class="ident">proof_fn</span>),
-            ) =&gt; <span class="ident">Proof::main</span>(<span class="ident">proof_id</span>, <span class="ident">proof_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>()),
-            (<span class="prelude-val">Some</span>(<span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>)), <span class="ident">NativeFnIdentifier::Worktop</span>(<span class="ident">worktop_fn</span>)) =&gt; {
-                <span class="ident">Worktop::main</span>(<span class="ident">worktop_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+                <span class="prelude-val">Some</span>(Receiver::Ref(RENodeId::Proof(proof_id))),
+                NativeFnIdentifier::Proof(proof_fn),
+            ) =&gt; Proof::main(proof_id, proof_fn, input, system_api).map_err(|e| e.into()),
+            (<span class="prelude-val">Some</span>(Receiver::Ref(RENodeId::Worktop)), NativeFnIdentifier::Worktop(worktop_fn)) =&gt; {
+                Worktop::main(worktop_fn, input, system_api).map_err(|e| e.into())
             }
             (
-                <span class="prelude-val">Some</span>(<span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Vault</span>(<span class="ident">vault_id</span>))),
-                <span class="ident">NativeFnIdentifier::Vault</span>(<span class="ident">vault_fn</span>),
-            ) =&gt; <span class="ident">Vault::main</span>(<span class="ident">vault_id</span>, <span class="ident">vault_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>()),
+                <span class="prelude-val">Some</span>(Receiver::Ref(RENodeId::Vault(vault_id))),
+                NativeFnIdentifier::Vault(vault_fn),
+            ) =&gt; Vault::main(vault_id, vault_fn, input, system_api).map_err(|e| e.into()),
             (
-                <span class="prelude-val">Some</span>(<span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Component</span>(<span class="ident">component_address</span>))),
-                <span class="ident">NativeFnIdentifier::Component</span>(<span class="ident">component_fn</span>),
-            ) =&gt; <span class="ident">ComponentInfo::main</span>(<span class="ident">component_address</span>, <span class="ident">component_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>)
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>()),
+                <span class="prelude-val">Some</span>(Receiver::Ref(RENodeId::Component(component_address))),
+                NativeFnIdentifier::Component(component_fn),
+            ) =&gt; ComponentInfo::main(component_address, component_fn, input, system_api)
+                .map_err(|e| e.into()),
             (
-                <span class="prelude-val">Some</span>(<span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="ident">resource_address</span>))),
-                <span class="ident">NativeFnIdentifier::ResourceManager</span>(<span class="ident">resource_manager_fn</span>),
-            ) =&gt; <span class="ident">ResourceManager::main</span>(<span class="ident">resource_address</span>, <span class="ident">resource_manager_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>)
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>()),
-            (<span class="prelude-val">Some</span>(<span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::System</span>)), <span class="ident">NativeFnIdentifier::System</span>(<span class="ident">system_fn</span>)) =&gt; {
-                <span class="ident">System::main</span>(<span class="ident">system_fn</span>, <span class="ident">input</span>, <span class="ident">system_api</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">into</span>())
+                <span class="prelude-val">Some</span>(Receiver::Ref(RENodeId::ResourceManager(resource_address))),
+                NativeFnIdentifier::ResourceManager(resource_manager_fn),
+            ) =&gt; ResourceManager::main(resource_address, resource_manager_fn, input, system_api)
+                .map_err(|e| e.into()),
+            (<span class="prelude-val">Some</span>(Receiver::Ref(RENodeId::System)), NativeFnIdentifier::System(system_fn)) =&gt; {
+                System::main(system_fn, input, system_api).map_err(|e| e.into())
             }
-            <span class="kw">_</span> =&gt; {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::MethodNotFound</span>(
-                    <span class="ident">FnIdentifier::Native</span>(<span class="ident">fn_identifier</span>.<span class="ident">clone</span>()),
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::MethodNotFound(
+                    FnIdentifier::Native(fn_identifier.clone()),
                 )))
             }
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/resource/resource_builder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource_builder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/resource/resource_builder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource_builder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -250,253 +245,252 @@
 <span id="245">245</span>
 <span id="246">246</span>
 <span id="247">247</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::rust::borrow::ToOwned</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::collections::HashMap</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::string::String</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::borrow::ToOwned;
+<span class="kw">use </span>sbor::rust::collections::HashMap;
+<span class="kw">use </span>sbor::rust::string::String;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::math</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rule</span>;
+<span class="kw">use </span><span class="kw">crate</span>::math::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::resource::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rule;
 
-<span class="doccomment">/// Not divisible.</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">DIVISIBILITY_NONE</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0</span>;
-<span class="doccomment">/// The maximum divisibility supported.</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">DIVISIBILITY_MAXIMUM</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">18</span>;
+<span class="doccomment">/// Not divisible.
+</span><span class="kw">pub const </span>DIVISIBILITY_NONE: u8 = <span class="number">0</span>;
+<span class="doccomment">/// The maximum divisibility supported.
+</span><span class="kw">pub const </span>DIVISIBILITY_MAXIMUM: u8 = <span class="number">18</span>;
 
-<span class="doccomment">/// Utility for setting up a new resource.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceBuilder</span>;
+<span class="doccomment">/// Utility for setting up a new resource.
+</span><span class="kw">pub struct </span>ResourceBuilder;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FungibleResourceBuilder</span> {
-    <span class="ident">divisibility</span>: <span class="ident">u8</span>,
-    <span class="ident">metadata</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-    <span class="ident">authorization</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceMethodAuthKey</span>, (<span class="ident">AccessRule</span>, <span class="ident">Mutability</span>)<span class="op">&gt;</span>,
+<span class="kw">pub struct </span>FungibleResourceBuilder {
+    divisibility: u8,
+    metadata: HashMap&lt;String, String&gt;,
+    authorization: HashMap&lt;ResourceMethodAuthKey, (AccessRule, Mutability)&gt;,
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">NonFungibleResourceBuilder</span> {
-    <span class="ident">metadata</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-    <span class="ident">authorization</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceMethodAuthKey</span>, (<span class="ident">AccessRule</span>, <span class="ident">Mutability</span>)<span class="op">&gt;</span>,
+<span class="kw">pub struct </span>NonFungibleResourceBuilder {
+    metadata: HashMap&lt;String, String&gt;,
+    authorization: HashMap&lt;ResourceMethodAuthKey, (AccessRule, Mutability)&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">ResourceBuilder</span> {
-    <span class="doccomment">/// Starts a new builder to create fungible resource.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_fungible</span>() -&gt; <span class="ident">FungibleResourceBuilder</span> {
-        <span class="ident">FungibleResourceBuilder::new</span>()
+<span class="kw">impl </span>ResourceBuilder {
+    <span class="doccomment">/// Starts a new builder to create fungible resource.
+    </span><span class="kw">pub fn </span>new_fungible() -&gt; FungibleResourceBuilder {
+        FungibleResourceBuilder::new()
     }
 
-    <span class="doccomment">/// Starts a new builder to create non-fungible resource.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_non_fungible</span>() -&gt; <span class="ident">NonFungibleResourceBuilder</span> {
-        <span class="ident">NonFungibleResourceBuilder::new</span>()
+    <span class="doccomment">/// Starts a new builder to create non-fungible resource.
+    </span><span class="kw">pub fn </span>new_non_fungible() -&gt; NonFungibleResourceBuilder {
+        NonFungibleResourceBuilder::new()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">FungibleResourceBuilder</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">divisibility</span>: <span class="ident">DIVISIBILITY_MAXIMUM</span>,
-            <span class="ident">metadata</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">authorization</span>: <span class="ident">HashMap::new</span>(),
+<span class="kw">impl </span>FungibleResourceBuilder {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            divisibility: DIVISIBILITY_MAXIMUM,
+            metadata: HashMap::new(),
+            authorization: HashMap::new(),
         }
     }
 
-    <span class="doccomment">/// Set the divisibility.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// `0` means the resource is not divisible; `18` is the max divisibility.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">divisibility</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">divisibility</span>: <span class="ident">u8</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="macro">assert!</span>(<span class="ident">divisibility</span> <span class="op">&lt;</span><span class="op">=</span> <span class="number">18</span>);
-        <span class="self">self</span>.<span class="ident">divisibility</span> <span class="op">=</span> <span class="ident">divisibility</span>;
-        <span class="self">self</span>
+    <span class="doccomment">/// Set the divisibility.
+    ///
+    /// `0` means the resource is not divisible; `18` is the max divisibility.
+    </span><span class="kw">pub fn </span>divisibility(<span class="kw-2">&amp;mut </span><span class="self">self</span>, divisibility: u8) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="macro">assert!</span>(divisibility &lt;= <span class="number">18</span>);
+        <span class="self">self</span>.divisibility = divisibility;
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Adds a resource metadata.
+    ///
+    /// If a previous attribute with the same name has been set, it will be overwritten.
+    </span><span class="kw">pub fn </span>metadata&lt;K: AsRef&lt;str&gt;, V: AsRef&lt;str&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: K, value: V) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.metadata
+            .insert(name.as_ref().to_owned(), value.as_ref().to_owned());
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>mintable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, method_auth: AccessRule, mutability: Mutability) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization.insert(Mint, (method_auth, mutability));
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>burnable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, method_auth: AccessRule, mutability: Mutability) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization.insert(Burn, (method_auth, mutability));
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>restrict_withdraw(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization
+            .insert(Withdraw, (method_auth, mutability));
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>restrict_deposit(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization
+            .insert(Deposit, (method_auth, mutability));
+        <span class="self">self
+    </span>}
+
+    <span class="kw">pub fn </span>updateable_metadata(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization
+            .insert(UpdateMetadata, (method_auth, mutability));
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Creates resource with the given initial supply.
+    ///
+    /// # Example
+    /// ```ignore
+    /// let bucket = ResourceBuilder::new_fungible()
+    ///     .metadata(&quot;name&quot;, &quot;TestToken&quot;)
+    ///     .initial_supply(5);
+    /// ```
+    </span><span class="kw">pub fn </span>initial_supply&lt;T: Into&lt;Decimal&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, amount: T) -&gt; Bucket {
+        <span class="self">self</span>.build(<span class="prelude-val">Some</span>(MintParams::fungible(amount))).<span class="number">1</span>.unwrap()
     }
 
-    <span class="doccomment">/// Adds a resource metadata.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If a previous attribute with the same name has been set, it will be overwritten.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">metadata</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">V</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">name</span>: <span class="ident">K</span>, <span class="ident">value</span>: <span class="ident">V</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">metadata</span>
-            .<span class="ident">insert</span>(<span class="ident">name</span>.<span class="ident">as_ref</span>().<span class="ident">to_owned</span>(), <span class="ident">value</span>.<span class="ident">as_ref</span>().<span class="ident">to_owned</span>());
-        <span class="self">self</span>
-    }
+    <span class="doccomment">/// Creates resource with no initial supply.
+    </span><span class="kw">pub fn </span>no_initial_supply(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceAddress {
+        <span class="self">self</span>.build(<span class="prelude-val">None</span>).<span class="number">0
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mintable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>, <span class="ident">mutability</span>: <span class="ident">Mutability</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>.<span class="ident">insert</span>(<span class="ident">Mint</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">burnable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>, <span class="ident">mutability</span>: <span class="ident">Mutability</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>.<span class="ident">insert</span>(<span class="ident">Burn</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">restrict_withdraw</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>,
-        <span class="ident">mutability</span>: <span class="ident">Mutability</span>,
-    ) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>
-            .<span class="ident">insert</span>(<span class="ident">Withdraw</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">restrict_deposit</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>,
-        <span class="ident">mutability</span>: <span class="ident">Mutability</span>,
-    ) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>
-            .<span class="ident">insert</span>(<span class="ident">Deposit</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">updateable_metadata</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>,
-        <span class="ident">mutability</span>: <span class="ident">Mutability</span>,
-    ) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>
-            .<span class="ident">insert</span>(<span class="ident">UpdateMetadata</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
-
-    <span class="doccomment">/// Creates resource with the given initial supply.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Example</span>
-    <span class="doccomment">/// ```ignore</span>
-    <span class="doccomment">/// let bucket = ResourceBuilder::new_fungible()</span>
-    <span class="doccomment">///     .metadata(&quot;name&quot;, &quot;TestToken&quot;)</span>
-    <span class="doccomment">///     .initial_supply(5);</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">initial_supply</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Decimal</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">T</span>) -&gt; <span class="ident">Bucket</span> {
-        <span class="self">self</span>.<span class="ident">build</span>(<span class="prelude-val">Some</span>(<span class="ident">MintParams::fungible</span>(<span class="ident">amount</span>))).<span class="number">1</span>.<span class="ident">unwrap</span>()
-    }
-
-    <span class="doccomment">/// Creates resource with no initial supply.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">no_initial_supply</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-        <span class="self">self</span>.<span class="ident">build</span>(<span class="prelude-val">None</span>).<span class="number">0</span>
-    }
-
-    <span class="kw">fn</span> <span class="ident">build</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mint_params</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MintParams</span><span class="op">&gt;</span>) -&gt; (<span class="ident">ResourceAddress</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Bucket</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">authorization</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">authorization</span>.<span class="ident">clone</span>();
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">authorization</span>.<span class="ident">contains_key</span>(<span class="kw-2">&amp;</span><span class="ident">Withdraw</span>) {
-            <span class="ident">authorization</span>.<span class="ident">insert</span>(<span class="ident">Withdraw</span>, (<span class="macro">rule!</span>(<span class="ident">allow_all</span>), <span class="ident">LOCKED</span>));
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, mint_params: <span class="prelude-ty">Option</span>&lt;MintParams&gt;) -&gt; (ResourceAddress, <span class="prelude-ty">Option</span>&lt;Bucket&gt;) {
+        <span class="kw">let </span><span class="kw-2">mut </span>authorization = <span class="self">self</span>.authorization.clone();
+        <span class="kw">if </span>!authorization.contains_key(<span class="kw-2">&amp;</span>Withdraw) {
+            authorization.insert(Withdraw, (<span class="macro">rule!</span>(allow_all), LOCKED));
         }
 
-        <span class="ident">resource_system</span>().<span class="ident">new_resource</span>(
-            <span class="ident">ResourceType::Fungible</span> {
-                <span class="ident">divisibility</span>: <span class="self">self</span>.<span class="ident">divisibility</span>,
+        resource_system().new_resource(
+            ResourceType::Fungible {
+                divisibility: <span class="self">self</span>.divisibility,
             },
-            <span class="self">self</span>.<span class="ident">metadata</span>.<span class="ident">clone</span>(),
-            <span class="ident">authorization</span>,
-            <span class="ident">mint_params</span>,
+            <span class="self">self</span>.metadata.clone(),
+            authorization,
+            mint_params,
         )
     }
 }
 
-<span class="kw">impl</span> <span class="ident">NonFungibleResourceBuilder</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">metadata</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">authorization</span>: <span class="ident">HashMap::new</span>(),
+<span class="kw">impl </span>NonFungibleResourceBuilder {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            metadata: HashMap::new(),
+            authorization: HashMap::new(),
         }
     }
 
-    <span class="doccomment">/// Adds a resource metadata.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// If a previous attribute with the same name has been set, it will be overwritten.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">metadata</span><span class="op">&lt;</span><span class="ident">K</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span>, <span class="ident">V</span>: <span class="ident">AsRef</span><span class="op">&lt;</span><span class="ident">str</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">name</span>: <span class="ident">K</span>, <span class="ident">value</span>: <span class="ident">V</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">metadata</span>
-            .<span class="ident">insert</span>(<span class="ident">name</span>.<span class="ident">as_ref</span>().<span class="ident">to_owned</span>(), <span class="ident">value</span>.<span class="ident">as_ref</span>().<span class="ident">to_owned</span>());
-        <span class="self">self</span>
-    }
+    <span class="doccomment">/// Adds a resource metadata.
+    ///
+    /// If a previous attribute with the same name has been set, it will be overwritten.
+    </span><span class="kw">pub fn </span>metadata&lt;K: AsRef&lt;str&gt;, V: AsRef&lt;str&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: K, value: V) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.metadata
+            .insert(name.as_ref().to_owned(), value.as_ref().to_owned());
+        <span class="self">self
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mintable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>, <span class="ident">mutability</span>: <span class="ident">Mutability</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>.<span class="ident">insert</span>(<span class="ident">Mint</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
+    <span class="kw">pub fn </span>mintable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, method_auth: AccessRule, mutability: Mutability) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization.insert(Mint, (method_auth, mutability));
+        <span class="self">self
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">burnable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>, <span class="ident">mutability</span>: <span class="ident">Mutability</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>.<span class="ident">insert</span>(<span class="ident">Burn</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
+    <span class="kw">pub fn </span>burnable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, method_auth: AccessRule, mutability: Mutability) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization.insert(Burn, (method_auth, mutability));
+        <span class="self">self
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">restrict_withdraw</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>,
-        <span class="ident">mutability</span>: <span class="ident">Mutability</span>,
-    ) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>
-            .<span class="ident">insert</span>(<span class="ident">Withdraw</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
+    <span class="kw">pub fn </span>restrict_withdraw(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization
+            .insert(Withdraw, (method_auth, mutability));
+        <span class="self">self
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">restrict_deposit</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>,
-        <span class="ident">mutability</span>: <span class="ident">Mutability</span>,
-    ) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>
-            .<span class="ident">insert</span>(<span class="ident">Deposit</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
+    <span class="kw">pub fn </span>restrict_deposit(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization
+            .insert(Deposit, (method_auth, mutability));
+        <span class="self">self
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">updateable_metadata</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>,
-        <span class="ident">mutability</span>: <span class="ident">Mutability</span>,
-    ) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>
-            .<span class="ident">insert</span>(<span class="ident">UpdateMetadata</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
+    <span class="kw">pub fn </span>updateable_metadata(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization
+            .insert(UpdateMetadata, (method_auth, mutability));
+        <span class="self">self
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">updateable_non_fungible_data</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>,
-        <span class="ident">mutability</span>: <span class="ident">Mutability</span>,
-    ) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">authorization</span>
-            .<span class="ident">insert</span>(<span class="ident">UpdateNonFungibleData</span>, (<span class="ident">method_auth</span>, <span class="ident">mutability</span>));
-        <span class="self">self</span>
-    }
+    <span class="kw">pub fn </span>updateable_non_fungible_data(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        method_auth: AccessRule,
+        mutability: Mutability,
+    ) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="self">self</span>.authorization
+            .insert(UpdateNonFungibleData, (method_auth, mutability));
+        <span class="self">self
+    </span>}
 
-    <span class="doccomment">/// Creates resource with the given initial supply.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Example</span>
-    <span class="doccomment">/// ```ignore</span>
-    <span class="doccomment">/// let bucket = ResourceBuilder::new_non_fungible()</span>
-    <span class="doccomment">///     .metadata(&quot;name&quot;, &quot;TestNonFungible&quot;)</span>
-    <span class="doccomment">///     .initial_supply([</span>
-    <span class="doccomment">///         (NftKey::from(1u128), &quot;immutable_part&quot;, &quot;mutable_part&quot;),</span>
-    <span class="doccomment">///         (NftKey::from(2u128), &quot;another_immutable_part&quot;, &quot;another_mutable_part&quot;),</span>
-    <span class="doccomment">///     ]);</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">initial_supply</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">V</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">entries</span>: <span class="ident">T</span>) -&gt; <span class="ident">Bucket</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">IntoIterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> (<span class="ident">NonFungibleId</span>, <span class="ident">V</span>)<span class="op">&gt;</span>,
-        <span class="ident">V</span>: <span class="ident">NonFungibleData</span>,
+    <span class="doccomment">/// Creates resource with the given initial supply.
+    ///
+    /// # Example
+    /// ```ignore
+    /// let bucket = ResourceBuilder::new_non_fungible()
+    ///     .metadata(&quot;name&quot;, &quot;TestNonFungible&quot;)
+    ///     .initial_supply([
+    ///         (NftKey::from(1u128), &quot;immutable_part&quot;, &quot;mutable_part&quot;),
+    ///         (NftKey::from(2u128), &quot;another_immutable_part&quot;, &quot;another_mutable_part&quot;),
+    ///     ]);
+    /// ```
+    </span><span class="kw">pub fn </span>initial_supply&lt;T, V&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, entries: T) -&gt; Bucket
+    <span class="kw">where
+        </span>T: IntoIterator&lt;Item = (NonFungibleId, V)&gt;,
+        V: NonFungibleData,
     {
-        <span class="self">self</span>.<span class="ident">build</span>(<span class="prelude-val">Some</span>(<span class="ident">MintParams::non_fungible</span>(<span class="ident">entries</span>)))
-            .<span class="number">1</span>
-            .<span class="ident">unwrap</span>()
+        <span class="self">self</span>.build(<span class="prelude-val">Some</span>(MintParams::non_fungible(entries)))
+            .<span class="number">1
+            </span>.unwrap()
     }
 
-    <span class="doccomment">/// Creates resource with no initial supply.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">no_initial_supply</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-        <span class="self">self</span>.<span class="ident">build</span>(<span class="prelude-val">None</span>).<span class="number">0</span>
-    }
+    <span class="doccomment">/// Creates resource with no initial supply.
+    </span><span class="kw">pub fn </span>no_initial_supply(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceAddress {
+        <span class="self">self</span>.build(<span class="prelude-val">None</span>).<span class="number">0
+    </span>}
 
-    <span class="kw">fn</span> <span class="ident">build</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">mint_params</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MintParams</span><span class="op">&gt;</span>) -&gt; (<span class="ident">ResourceAddress</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Bucket</span><span class="op">&gt;</span>) {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">authorization</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">authorization</span>.<span class="ident">clone</span>();
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">authorization</span>.<span class="ident">contains_key</span>(<span class="kw-2">&amp;</span><span class="ident">Withdraw</span>) {
-            <span class="ident">authorization</span>.<span class="ident">insert</span>(<span class="ident">Withdraw</span>, (<span class="macro">rule!</span>(<span class="ident">allow_all</span>), <span class="ident">LOCKED</span>));
+    <span class="kw">fn </span>build(<span class="kw-2">&amp;</span><span class="self">self</span>, mint_params: <span class="prelude-ty">Option</span>&lt;MintParams&gt;) -&gt; (ResourceAddress, <span class="prelude-ty">Option</span>&lt;Bucket&gt;) {
+        <span class="kw">let </span><span class="kw-2">mut </span>authorization = <span class="self">self</span>.authorization.clone();
+        <span class="kw">if </span>!authorization.contains_key(<span class="kw-2">&amp;</span>Withdraw) {
+            authorization.insert(Withdraw, (<span class="macro">rule!</span>(allow_all), LOCKED));
         }
 
-        <span class="ident">resource_system</span>().<span class="ident">new_resource</span>(
-            <span class="ident">ResourceType::NonFungible</span>,
-            <span class="self">self</span>.<span class="ident">metadata</span>.<span class="ident">clone</span>(),
-            <span class="ident">authorization</span>,
-            <span class="ident">mint_params</span>,
+        resource_system().new_resource(
+            ResourceType::NonFungible,
+            <span class="self">self</span>.metadata.clone(),
+            authorization,
+            mint_params,
         )
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

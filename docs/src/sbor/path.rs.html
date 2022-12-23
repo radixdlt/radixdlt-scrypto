@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/sbor/src/path.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>path.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/sbor/src/path.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>path.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -126,129 +121,128 @@
 <span id="121">121</span>
 <span id="122">122</span>
 <span id="123">123</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::any::Value</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec::Vec</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::any::Value;
+<span class="kw">use </span><span class="kw">crate</span>::rust::vec;
+<span class="kw">use </span><span class="kw">crate</span>::rust::vec::Vec;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">MutableSborPath</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>);
+<span class="attribute">#[derive(Eq, PartialEq, Clone)]
+</span><span class="kw">pub struct </span>MutableSborPath(Vec&lt;usize&gt;);
 
-<span class="kw">impl</span> <span class="ident">MutableSborPath</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">MutableSborPath</span>(<span class="macro">vec!</span>[])
+<span class="kw">impl </span>MutableSborPath {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        MutableSborPath(<span class="macro">vec!</span>[])
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">push</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">path</span>: <span class="ident">usize</span>) {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">push</span>(<span class="ident">path</span>);
+    <span class="kw">pub fn </span>push(<span class="kw-2">&amp;mut </span><span class="self">self</span>, path: usize) {
+        <span class="self">self</span>.<span class="number">0</span>.push(path);
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">pop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">pop</span>();
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">MutableSborPath</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SborPath</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">mutable</span>: <span class="ident">MutableSborPath</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SborPath::new</span>(<span class="ident">mutable</span>.<span class="number">0</span>)
+    <span class="kw">pub fn </span>pop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.<span class="number">0</span>.pop();
     }
 }
 
-<span class="doccomment">/// A series of indexes which describes some value in the sbor tree</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Eq</span>, <span class="ident">PartialEq</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">SborPath</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>);
-
-<span class="kw">impl</span> <span class="ident">SborPath</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">path</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SborPath</span>(<span class="ident">path</span>)
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_from_value</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Value</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Value</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">rel_path</span> <span class="op">=</span> <span class="ident">SborValueRetriever</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>);
-        <span class="ident">rel_path</span>.<span class="ident">get_from</span>(<span class="ident">value</span>)
-    }
-
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_from_value_mut</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="self">self</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Value</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Value</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">rel_path</span> <span class="op">=</span> <span class="ident">SborValueRetriever</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>);
-        <span class="ident">rel_path</span>.<span class="ident">get_from_mut</span>(<span class="ident">value</span>)
+<span class="kw">impl </span>From&lt;MutableSborPath&gt; <span class="kw">for </span>SborPath {
+    <span class="kw">fn </span>from(mutable: MutableSborPath) -&gt; <span class="self">Self </span>{
+        SborPath::new(mutable.<span class="number">0</span>)
     }
 }
 
-<span class="doccomment">/// Helper structure which helps in retrieving a value given a root value and sbor path</span>
-<span class="kw">struct</span> <span class="ident">SborValueRetriever</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">usize</span>]);
+<span class="doccomment">/// A series of indexes which describes some value in the sbor tree
+</span><span class="attribute">#[derive(Eq, PartialEq, Clone, Debug)]
+</span><span class="kw">pub struct </span>SborPath(Vec&lt;usize&gt;);
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">SborValueRetriever</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">is_empty</span>()
+<span class="kw">impl </span>SborPath {
+    <span class="kw">pub fn </span>new(path: Vec&lt;usize&gt;) -&gt; <span class="self">Self </span>{
+        SborPath(path)
     }
 
-    <span class="kw">fn</span> <span class="ident">pop</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">usize</span>, <span class="self">Self</span>) {
-        <span class="kw">let</span> (<span class="ident">index_slice</span>, <span class="ident">extended_path</span>) <span class="op">=</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">split_at</span>(<span class="number">1</span>);
-        <span class="kw">let</span> <span class="ident">index</span> <span class="op">=</span> <span class="ident">index_slice</span>[<span class="number">0</span>];
-        (<span class="ident">index</span>, <span class="ident">SborValueRetriever</span>(<span class="ident">extended_path</span>))
+    <span class="kw">pub fn </span>get_from_value&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value&gt; {
+        <span class="kw">let </span>rel_path = SborValueRetriever(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>);
+        rel_path.get_from(value)
     }
 
-    <span class="kw">fn</span> <span class="ident">get_from_vector</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">values</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">Value</span>]) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Value</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">index</span>, <span class="ident">next_path</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">pop</span>();
-        <span class="ident">values</span>
-            .<span class="ident">get</span>(<span class="ident">index</span>)
-            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">value</span><span class="op">|</span> <span class="ident">next_path</span>.<span class="ident">get_from</span>(<span class="ident">value</span>))
+    <span class="kw">pub fn </span>get_from_value_mut&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value&gt; {
+        <span class="kw">let </span>rel_path = SborValueRetriever(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>);
+        rel_path.get_from_mut(value)
+    }
+}
+
+<span class="doccomment">/// Helper structure which helps in retrieving a value given a root value and sbor path
+</span><span class="kw">struct </span>SborValueRetriever&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[usize]);
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; SborValueRetriever&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.<span class="number">0</span>.is_empty()
     }
 
-    <span class="kw">fn</span> <span class="ident">get_from</span>(<span class="self">self</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Value</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">Value</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="ident">Option::Some</span>(<span class="ident">value</span>);
+    <span class="kw">fn </span>pop(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (usize, <span class="self">Self</span>) {
+        <span class="kw">let </span>(index_slice, extended_path) = <span class="self">self</span>.<span class="number">0</span>.split_at(<span class="number">1</span>);
+        <span class="kw">let </span>index = index_slice[<span class="number">0</span>];
+        (index, SborValueRetriever(extended_path))
+    }
+
+    <span class="kw">fn </span>get_from_vector(<span class="kw-2">&amp;</span><span class="self">self</span>, values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Value]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value&gt; {
+        <span class="kw">let </span>(index, next_path) = <span class="self">self</span>.pop();
+        values
+            .get(index)
+            .and_then(|value| next_path.get_from(value))
+    }
+
+    <span class="kw">fn </span>get_from(<span class="self">self</span>, value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value&gt; {
+        <span class="kw">if </span><span class="self">self</span>.is_empty() {
+            <span class="kw">return </span>Option::Some(value);
         }
 
-        <span class="kw">match</span> <span class="ident">value</span> {
-            <span class="ident">Value::Struct</span> { <span class="ident">fields</span>: <span class="ident">vec</span> }
-            <span class="op">|</span> <span class="ident">Value::Enum</span> { <span class="ident">fields</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::Array</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::Tuple</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::List</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::Set</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::Map</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. } =&gt; <span class="self">self</span>.<span class="ident">get_from_vector</span>(<span class="ident">vec</span>),
-            <span class="ident">Value::Option</span> { <span class="ident">value</span> } =&gt; <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">as_ref</span>() {
-                <span class="ident">Option::Some</span>(<span class="ident">value</span>) =&gt; <span class="ident">Option::Some</span>(<span class="ident">value</span>),
-                <span class="ident">Option::None</span> =&gt; <span class="ident">Option::None</span>,
+        <span class="kw">match </span>value {
+            Value::Struct { fields: vec }
+            | Value::Enum { fields: vec, .. }
+            | Value::Array { elements: vec, .. }
+            | Value::Tuple { elements: vec, .. }
+            | Value::List { elements: vec, .. }
+            | Value::Set { elements: vec, .. }
+            | Value::Map { elements: vec, .. } =&gt; <span class="self">self</span>.get_from_vector(vec),
+            Value::Option { value } =&gt; <span class="kw">match </span>value.as_ref() {
+                Option::Some(value) =&gt; Option::Some(value),
+                Option::None =&gt; Option::None,
             },
-            <span class="ident">Value::Result</span> { <span class="ident">value</span> } =&gt; <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">as_ref</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">result</span>) <span class="op">|</span> <span class="prelude-val">Err</span>(<span class="ident">result</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">result</span>),
+            Value::Result { value } =&gt; <span class="kw">match </span>value.as_ref() {
+                <span class="prelude-val">Ok</span>(result) | <span class="prelude-val">Err</span>(result) =&gt; <span class="prelude-val">Some</span>(result),
             },
-            <span class="kw">_</span> =&gt; <span class="ident">Option::None</span>,
+            <span class="kw">_ </span>=&gt; Option::None,
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">get_from_vector_mut</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">values</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> [<span class="ident">Value</span>]) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Value</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">index</span>, <span class="ident">next_path</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">pop</span>();
-        <span class="ident">values</span>
-            .<span class="ident">get_mut</span>(<span class="ident">index</span>)
-            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">value</span><span class="op">|</span> <span class="ident">next_path</span>.<span class="ident">get_from_mut</span>(<span class="ident">value</span>))
+    <span class="kw">fn </span>get_from_vector_mut(<span class="kw-2">&amp;</span><span class="self">self</span>, values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[Value]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value&gt; {
+        <span class="kw">let </span>(index, next_path) = <span class="self">self</span>.pop();
+        values
+            .get_mut(index)
+            .and_then(|value| next_path.get_from_mut(value))
     }
 
-    <span class="kw">fn</span> <span class="ident">get_from_mut</span>(<span class="self">self</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Value</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="kw-2">mut</span> <span class="ident">Value</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="ident">Option::Some</span>(<span class="ident">value</span>);
+    <span class="kw">fn </span>get_from_mut(<span class="self">self</span>, value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value&gt; {
+        <span class="kw">if </span><span class="self">self</span>.is_empty() {
+            <span class="kw">return </span>Option::Some(value);
         }
 
-        <span class="kw">match</span> <span class="ident">value</span> {
-            <span class="ident">Value::Struct</span> { <span class="ident">fields</span>: <span class="ident">vec</span> }
-            <span class="op">|</span> <span class="ident">Value::Enum</span> { <span class="ident">fields</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::Array</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::Tuple</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::List</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::Set</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. }
-            <span class="op">|</span> <span class="ident">Value::Map</span> { <span class="ident">elements</span>: <span class="ident">vec</span>, .. } =&gt; <span class="self">self</span>.<span class="ident">get_from_vector_mut</span>(<span class="ident">vec</span>),
-            <span class="ident">Value::Option</span> { <span class="ident">value</span> } =&gt; <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">as_mut</span>() {
-                <span class="ident">Option::Some</span>(<span class="ident">value</span>) =&gt; <span class="ident">Option::Some</span>(<span class="ident">value</span>),
-                <span class="ident">Option::None</span> =&gt; <span class="ident">Option::None</span>,
+        <span class="kw">match </span>value {
+            Value::Struct { fields: vec }
+            | Value::Enum { fields: vec, .. }
+            | Value::Array { elements: vec, .. }
+            | Value::Tuple { elements: vec, .. }
+            | Value::List { elements: vec, .. }
+            | Value::Set { elements: vec, .. }
+            | Value::Map { elements: vec, .. } =&gt; <span class="self">self</span>.get_from_vector_mut(vec),
+            Value::Option { value } =&gt; <span class="kw">match </span>value.as_mut() {
+                Option::Some(value) =&gt; Option::Some(value),
+                Option::None =&gt; Option::None,
             },
-            <span class="ident">Value::Result</span> { <span class="ident">value</span> } =&gt; <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">as_mut</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">result</span>) <span class="op">|</span> <span class="prelude-val">Err</span>(<span class="ident">result</span>) =&gt; <span class="prelude-val">Some</span>(<span class="ident">result</span>),
+            Value::Result { value } =&gt; <span class="kw">match </span>value.as_mut() {
+                <span class="prelude-val">Ok</span>(result) | <span class="prelude-val">Err</span>(result) =&gt; <span class="prelude-val">Some</span>(result),
             },
-            <span class="kw">_</span> =&gt; <span class="ident">Option::None</span>,
+            <span class="kw">_ </span>=&gt; Option::None,
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

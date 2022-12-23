@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/wasm/cost_rules.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>cost_rules.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/wasm/cost_rules.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>cost_rules.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -305,256 +300,256 @@
 <span id="300">300</span>
 <span id="301">301</span>
 <span id="302">302</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">core::num::NonZeroU32</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>core::num::NonZeroU32;
 
-<span class="kw">use</span> <span class="ident">parity_wasm::elements::Instruction</span>::{<span class="self">self</span>, <span class="kw-2">*</span>};
-<span class="kw">use</span> <span class="ident">wasm_instrument::gas_metering::MemoryGrowCost</span>;
-<span class="kw">use</span> <span class="ident">wasm_instrument::gas_metering::Rules</span>;
+<span class="kw">use </span>parity_wasm::elements::Instruction::{<span class="self">self</span>, <span class="kw-2">*</span>};
+<span class="kw">use </span>wasm_instrument::gas_metering::MemoryGrowCost;
+<span class="kw">use </span>wasm_instrument::gas_metering::Rules;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">InstructionCostRules</span> {
-    <span class="ident">tier_1_cost</span>: <span class="ident">u32</span>,
-    <span class="ident">tier_2_cost</span>: <span class="ident">u32</span>,
-    <span class="ident">tier_3_cost</span>: <span class="ident">u32</span>,
-    <span class="ident">grow_memory_cost</span>: <span class="ident">u32</span>,
+<span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>InstructionCostRules {
+    tier_1_cost: u32,
+    tier_2_cost: u32,
+    tier_3_cost: u32,
+    grow_memory_cost: u32,
 }
 
-<span class="kw">impl</span> <span class="ident">InstructionCostRules</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">constant</span>(<span class="ident">instruction_cost</span>: <span class="ident">u32</span>, <span class="ident">grow_memory_cost</span>: <span class="ident">u32</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">tier_1_cost</span>: <span class="ident">instruction_cost</span>,
-            <span class="ident">tier_2_cost</span>: <span class="ident">instruction_cost</span>,
-            <span class="ident">tier_3_cost</span>: <span class="ident">instruction_cost</span>,
-            <span class="ident">grow_memory_cost</span>,
+<span class="kw">impl </span>InstructionCostRules {
+    <span class="kw">pub fn </span>constant(instruction_cost: u32, grow_memory_cost: u32) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            tier_1_cost: instruction_cost,
+            tier_2_cost: instruction_cost,
+            tier_3_cost: instruction_cost,
+            grow_memory_cost,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">tiered</span>(
-        <span class="ident">tier_1_cost</span>: <span class="ident">u32</span>,
-        <span class="ident">tier_2_cost</span>: <span class="ident">u32</span>,
-        <span class="ident">tier_3_cost</span>: <span class="ident">u32</span>,
-        <span class="ident">grow_memory_cost</span>: <span class="ident">u32</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">tier_1_cost</span>,
-            <span class="ident">tier_2_cost</span>,
-            <span class="ident">tier_3_cost</span>,
-            <span class="ident">grow_memory_cost</span>,
+    <span class="kw">pub fn </span>tiered(
+        tier_1_cost: u32,
+        tier_2_cost: u32,
+        tier_3_cost: u32,
+        grow_memory_cost: u32,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            tier_1_cost,
+            tier_2_cost,
+            tier_3_cost,
+            grow_memory_cost,
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Rules</span> <span class="kw">for</span> <span class="ident">InstructionCostRules</span> {
-    <span class="kw">fn</span> <span class="ident">instruction_cost</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">instruction</span>: <span class="kw-2">&amp;</span><span class="ident">Instruction</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span> {
-        <span class="comment">// TO BE FINE-TUNED</span>
-        <span class="prelude-val">Some</span>(<span class="kw">match</span> <span class="ident">instruction</span> {
-            <span class="ident">Unreachable</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">Nop</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">Block</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">Loop</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">If</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">Else</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">End</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">Br</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">BrIf</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">BrTable</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">Return</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+<span class="kw">impl </span>Rules <span class="kw">for </span>InstructionCostRules {
+    <span class="kw">fn </span>instruction_cost(<span class="kw-2">&amp;</span><span class="self">self</span>, instruction: <span class="kw-2">&amp;</span>Instruction) -&gt; <span class="prelude-ty">Option</span>&lt;u32&gt; {
+        <span class="comment">// TO BE FINE-TUNED
+        </span><span class="prelude-val">Some</span>(<span class="kw">match </span>instruction {
+            Unreachable =&gt; <span class="self">self</span>.tier_1_cost,
+            Nop =&gt; <span class="self">self</span>.tier_1_cost,
+            Block(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            Loop(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            If(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            Else =&gt; <span class="self">self</span>.tier_1_cost,
+            End =&gt; <span class="self">self</span>.tier_1_cost,
+            Br(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            BrIf(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            BrTable(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            Return =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">Call</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_3_cost</span>,
-            <span class="ident">CallIndirect</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_3_cost</span>,
+            Call(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_3_cost,
+            CallIndirect(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_3_cost,
 
-            <span class="ident">Drop</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">Select</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            Drop =&gt; <span class="self">self</span>.tier_1_cost,
+            Select =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">GetLocal</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">SetLocal</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">TeeLocal</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">GetGlobal</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_2_cost</span>,
-            <span class="ident">SetGlobal</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_2_cost</span>,
+            GetLocal(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            SetLocal(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            TeeLocal(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            GetGlobal(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_2_cost,
+            SetGlobal(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_2_cost,
 
-            <span class="ident">I32Load</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Load</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Load</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Load</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Load8S</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Load8U</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Load16S</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Load16U</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Load8S</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Load8U</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Load16S</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Load16U</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Load32S</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Load32U</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Store</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Store</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Store</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Store</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Store8</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Store16</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Store8</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Store16</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Store32</span>(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            I32Load(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Load(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Load(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Load(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Load8S(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Load8U(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Load16S(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Load16U(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Load8S(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Load8U(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Load16S(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Load16U(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Load32S(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Load32U(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Store(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Store(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Store(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Store(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Store8(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Store16(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Store8(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Store16(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Store32(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">CurrentMemory</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">GrowMemory</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_2_cost</span>,
+            CurrentMemory(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            GrowMemory(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_2_cost,
 
-            <span class="ident">I32Const</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Const</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Const</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Const</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            I32Const(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Const(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Const(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Const(<span class="kw">_</span>) =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">I32Eqz</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Eq</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Ne</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32LtS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32LtU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32GtS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32GtU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32LeS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32LeU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32GeS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32GeU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            I32Eqz =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Eq =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Ne =&gt; <span class="self">self</span>.tier_1_cost,
+            I32LtS =&gt; <span class="self">self</span>.tier_1_cost,
+            I32LtU =&gt; <span class="self">self</span>.tier_1_cost,
+            I32GtS =&gt; <span class="self">self</span>.tier_1_cost,
+            I32GtU =&gt; <span class="self">self</span>.tier_1_cost,
+            I32LeS =&gt; <span class="self">self</span>.tier_1_cost,
+            I32LeU =&gt; <span class="self">self</span>.tier_1_cost,
+            I32GeS =&gt; <span class="self">self</span>.tier_1_cost,
+            I32GeU =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">I64Eqz</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Eq</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Ne</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64LtS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64LtU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64GtS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64GtU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64LeS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64LeU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64GeS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64GeU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            I64Eqz =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Eq =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Ne =&gt; <span class="self">self</span>.tier_1_cost,
+            I64LtS =&gt; <span class="self">self</span>.tier_1_cost,
+            I64LtU =&gt; <span class="self">self</span>.tier_1_cost,
+            I64GtS =&gt; <span class="self">self</span>.tier_1_cost,
+            I64GtU =&gt; <span class="self">self</span>.tier_1_cost,
+            I64LeS =&gt; <span class="self">self</span>.tier_1_cost,
+            I64LeU =&gt; <span class="self">self</span>.tier_1_cost,
+            I64GeS =&gt; <span class="self">self</span>.tier_1_cost,
+            I64GeU =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">F32Eq</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Ne</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Lt</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Gt</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Le</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Ge</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            F32Eq =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Ne =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Lt =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Gt =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Le =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Ge =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">F64Eq</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Ne</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Lt</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Gt</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Le</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Ge</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            F64Eq =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Ne =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Lt =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Gt =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Le =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Ge =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">I32Clz</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Ctz</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Popcnt</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Add</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Sub</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Mul</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32DivS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32DivU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32RemS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32RemU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32And</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Or</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Xor</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Shl</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32ShrS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32ShrU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Rotl</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32Rotr</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            I32Clz =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Ctz =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Popcnt =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Add =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Sub =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Mul =&gt; <span class="self">self</span>.tier_1_cost,
+            I32DivS =&gt; <span class="self">self</span>.tier_1_cost,
+            I32DivU =&gt; <span class="self">self</span>.tier_1_cost,
+            I32RemS =&gt; <span class="self">self</span>.tier_1_cost,
+            I32RemU =&gt; <span class="self">self</span>.tier_1_cost,
+            I32And =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Or =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Xor =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Shl =&gt; <span class="self">self</span>.tier_1_cost,
+            I32ShrS =&gt; <span class="self">self</span>.tier_1_cost,
+            I32ShrU =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Rotl =&gt; <span class="self">self</span>.tier_1_cost,
+            I32Rotr =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">I64Clz</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Ctz</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Popcnt</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Add</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Sub</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Mul</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64DivS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64DivU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64RemS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64RemU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64And</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Or</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Xor</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Shl</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64ShrS</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64ShrU</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Rotl</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64Rotr</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Abs</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Neg</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Ceil</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Floor</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Trunc</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Nearest</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Sqrt</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Add</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Sub</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Mul</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Div</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Min</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Max</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32Copysign</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Abs</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Neg</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Ceil</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Floor</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Trunc</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Nearest</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Sqrt</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Add</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Sub</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Mul</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Div</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Min</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Max</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64Copysign</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            I64Clz =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Ctz =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Popcnt =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Add =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Sub =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Mul =&gt; <span class="self">self</span>.tier_1_cost,
+            I64DivS =&gt; <span class="self">self</span>.tier_1_cost,
+            I64DivU =&gt; <span class="self">self</span>.tier_1_cost,
+            I64RemS =&gt; <span class="self">self</span>.tier_1_cost,
+            I64RemU =&gt; <span class="self">self</span>.tier_1_cost,
+            I64And =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Or =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Xor =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Shl =&gt; <span class="self">self</span>.tier_1_cost,
+            I64ShrS =&gt; <span class="self">self</span>.tier_1_cost,
+            I64ShrU =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Rotl =&gt; <span class="self">self</span>.tier_1_cost,
+            I64Rotr =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Abs =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Neg =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Ceil =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Floor =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Trunc =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Nearest =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Sqrt =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Add =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Sub =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Mul =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Div =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Min =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Max =&gt; <span class="self">self</span>.tier_1_cost,
+            F32Copysign =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Abs =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Neg =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Ceil =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Floor =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Trunc =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Nearest =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Sqrt =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Add =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Sub =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Mul =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Div =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Min =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Max =&gt; <span class="self">self</span>.tier_1_cost,
+            F64Copysign =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">I32WrapI64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32TruncSF32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32TruncUF32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32TruncSF64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I32TruncUF64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64ExtendSI32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64ExtendUI32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64TruncSF32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64TruncUF32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64TruncSF64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64TruncUF64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32ConvertSI32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32ConvertUI32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32ConvertSI64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32ConvertUI64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32DemoteF64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64ConvertSI32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64ConvertUI32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64ConvertSI64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64ConvertUI64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64PromoteF32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            I32WrapI64 =&gt; <span class="self">self</span>.tier_1_cost,
+            I32TruncSF32 =&gt; <span class="self">self</span>.tier_1_cost,
+            I32TruncUF32 =&gt; <span class="self">self</span>.tier_1_cost,
+            I32TruncSF64 =&gt; <span class="self">self</span>.tier_1_cost,
+            I32TruncUF64 =&gt; <span class="self">self</span>.tier_1_cost,
+            I64ExtendSI32 =&gt; <span class="self">self</span>.tier_1_cost,
+            I64ExtendUI32 =&gt; <span class="self">self</span>.tier_1_cost,
+            I64TruncSF32 =&gt; <span class="self">self</span>.tier_1_cost,
+            I64TruncUF32 =&gt; <span class="self">self</span>.tier_1_cost,
+            I64TruncSF64 =&gt; <span class="self">self</span>.tier_1_cost,
+            I64TruncUF64 =&gt; <span class="self">self</span>.tier_1_cost,
+            F32ConvertSI32 =&gt; <span class="self">self</span>.tier_1_cost,
+            F32ConvertUI32 =&gt; <span class="self">self</span>.tier_1_cost,
+            F32ConvertSI64 =&gt; <span class="self">self</span>.tier_1_cost,
+            F32ConvertUI64 =&gt; <span class="self">self</span>.tier_1_cost,
+            F32DemoteF64 =&gt; <span class="self">self</span>.tier_1_cost,
+            F64ConvertSI32 =&gt; <span class="self">self</span>.tier_1_cost,
+            F64ConvertUI32 =&gt; <span class="self">self</span>.tier_1_cost,
+            F64ConvertSI64 =&gt; <span class="self">self</span>.tier_1_cost,
+            F64ConvertUI64 =&gt; <span class="self">self</span>.tier_1_cost,
+            F64PromoteF32 =&gt; <span class="self">self</span>.tier_1_cost,
 
-            <span class="ident">I32ReinterpretF32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">I64ReinterpretF64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F32ReinterpretI32</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
-            <span class="ident">F64ReinterpretI64</span> =&gt; <span class="self">self</span>.<span class="ident">tier_1_cost</span>,
+            I32ReinterpretF32 =&gt; <span class="self">self</span>.tier_1_cost,
+            I64ReinterpretF64 =&gt; <span class="self">self</span>.tier_1_cost,
+            F32ReinterpretI32 =&gt; <span class="self">self</span>.tier_1_cost,
+            F64ReinterpretI64 =&gt; <span class="self">self</span>.tier_1_cost,
         })
     }
 
-    <span class="kw">fn</span> <span class="ident">memory_grow_cost</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">MemoryGrowCost</span> {
-        <span class="ident">MemoryGrowCost::Linear</span>(
-            <span class="ident">NonZeroU32::new</span>(<span class="self">self</span>.<span class="ident">grow_memory_cost</span>).<span class="ident">expect</span>(<span class="string">&quot;GROW_MEMORY_COST value is zero&quot;</span>),
+    <span class="kw">fn </span>memory_grow_cost(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MemoryGrowCost {
+        MemoryGrowCost::Linear(
+            NonZeroU32::new(<span class="self">self</span>.grow_memory_cost).expect(<span class="string">&quot;GROW_MEMORY_COST value is zero&quot;</span>),
         )
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm::WasmModule</span>;
-    <span class="kw">use</span> <span class="ident">wabt</span>::{<span class="ident">wasm2wat</span>, <span class="ident">wat2wasm</span>};
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::wasm::WasmModule;
+    <span class="kw">use </span>wabt::{wasm2wat, wat2wasm};
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">test_cost_rules</span>() {
-        <span class="kw">let</span> <span class="ident">code</span> <span class="op">=</span> <span class="ident">wat2wasm</span>(
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_cost_rules() {
+        <span class="kw">let </span>code = wat2wasm(
             <span class="string">r#&quot;
             (module
                 (func (param $p0 i32) (result i32)
@@ -569,21 +564,21 @@
             )
             &quot;#</span>,
         )
-        .<span class="ident">unwrap</span>();
-        <span class="kw">let</span> <span class="ident">rules</span> <span class="op">=</span> <span class="ident">InstructionCostRules::tiered</span>(<span class="number">1</span>, <span class="number">5</span>, <span class="number">10</span>, <span class="number">55</span>);
-        <span class="kw">let</span> <span class="ident">transformed</span> <span class="op">=</span> <span class="ident">WasmModule::init</span>(<span class="kw-2">&amp;</span><span class="ident">code</span>)
-            .<span class="ident">unwrap</span>()
-            .<span class="ident">inject_instruction_metering</span>(<span class="kw-2">&amp;</span><span class="ident">rules</span>)
-            .<span class="ident">unwrap</span>()
-            .<span class="ident">to_bytes</span>()
-            .<span class="ident">unwrap</span>()
+        .unwrap();
+        <span class="kw">let </span>rules = InstructionCostRules::tiered(<span class="number">1</span>, <span class="number">5</span>, <span class="number">10</span>, <span class="number">55</span>);
+        <span class="kw">let </span>transformed = WasmModule::init(<span class="kw-2">&amp;</span>code)
+            .unwrap()
+            .inject_instruction_metering(<span class="kw-2">&amp;</span>rules)
+            .unwrap()
+            .to_bytes()
+            .unwrap()
             .<span class="number">0</span>;
-        <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">wasm2wat</span>(<span class="kw-2">&amp;</span><span class="ident">transformed</span>).<span class="ident">unwrap</span>());
+        <span class="macro">println!</span>(<span class="string">&quot;{}&quot;</span>, wasm2wat(<span class="kw-2">&amp;</span>transformed).unwrap());
 
-        <span class="comment">// Costs:</span>
-        <span class="comment">// 12 = 10 (local.get) + 1 (i32.const) + 1 (i32.mul)</span>
-        <span class="comment">// 1010 = 10 (local.get) + 1000 (call)</span>
-        <span class="kw">let</span> <span class="ident">expected</span> <span class="op">=</span> <span class="ident">wat2wasm</span>(
+        <span class="comment">// Costs:
+        // 12 = 10 (local.get) + 1 (i32.const) + 1 (i32.mul)
+        // 1010 = 10 (local.get) + 1000 (call)
+        </span><span class="kw">let </span>expected = wat2wasm(
             <span class="string">r#&quot;
             (module
                 (type (;0;) (func (param i32) (result i32)))
@@ -602,11 +597,10 @@
                   call 1))
             &quot;#</span>,
         )
-        .<span class="ident">unwrap</span>();
+        .unwrap();
 
-        <span class="macro">assert_eq!</span>(<span class="ident">transformed</span>, <span class="ident">expected</span>);
+        <span class="macro">assert_eq!</span>(transformed, expected);
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

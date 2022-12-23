@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/node_ref.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>node_ref.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/node_ref.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>node_ref.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -727,685 +722,685 @@
 <span id="722">722</span>
 <span id="723">723</span>
 <span id="724">724</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="comment">// TODO: still lots of unwraps</span>
+<span class="comment">// TODO: still lots of unwraps
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RENodePointer</span> {
-    <span class="ident">Heap</span> {
-        <span class="ident">frame_id</span>: <span class="ident">usize</span>,
-        <span class="ident">root</span>: <span class="ident">RENodeId</span>,
-        <span class="ident">id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>,
+</span><span class="attribute">#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>RENodePointer {
+    Heap {
+        frame_id: usize,
+        root: RENodeId,
+        id: <span class="prelude-ty">Option</span>&lt;RENodeId&gt;,
     },
-    <span class="ident">Store</span>(<span class="ident">RENodeId</span>),
+    Store(RENodeId),
 }
 
-<span class="kw">impl</span> <span class="ident">RENodePointer</span> {
-    <span class="kw">fn</span> <span class="ident">node_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">RENodeId</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodePointer::Heap</span> { <span class="ident">root</span>, <span class="ident">id</span>, .. } =&gt; <span class="ident">id</span>.<span class="ident">unwrap_or</span>(<span class="kw-2">*</span><span class="ident">root</span>),
-            <span class="ident">RENodePointer::Store</span>(<span class="ident">node_id</span>) =&gt; <span class="kw-2">*</span><span class="ident">node_id</span>,
+<span class="kw">impl </span>RENodePointer {
+    <span class="kw">fn </span>node_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RENodeId {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodePointer::Heap { root, id, .. } =&gt; id.unwrap_or(<span class="kw-2">*</span>root),
+            RENodePointer::Store(node_id) =&gt; <span class="kw-2">*</span>node_id,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">acquire_lock</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span>(
+    <span class="kw">pub fn </span>acquire_lock&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>,
-        <span class="ident">mutable</span>: <span class="ident">bool</span>,
-        <span class="ident">write_through</span>: <span class="ident">bool</span>,
-        <span class="ident">track</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">KernelError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodePointer::Store</span>(..) =&gt; {
-                <span class="ident">track</span>
-                    .<span class="ident">acquire_lock</span>(<span class="ident">substate_id</span>.<span class="ident">clone</span>(), <span class="ident">mutable</span>, <span class="ident">write_through</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">e</span> {
-                        <span class="ident">TrackError::StateTrackError</span>(<span class="ident">StateTrackError::RENodeAlreadyTouched</span>) =&gt; {
-                            <span class="ident">KernelError::RENodeAlreadyTouched</span>
+        substate_id: SubstateId,
+        mutable: bool,
+        write_through: bool,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), KernelError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodePointer::Store(..) =&gt; {
+                track
+                    .acquire_lock(substate_id.clone(), mutable, write_through)
+                    .map_err(|e| <span class="kw">match </span>e {
+                        TrackError::StateTrackError(StateTrackError::RENodeAlreadyTouched) =&gt; {
+                            KernelError::RENodeAlreadyTouched
                         }
-                        <span class="comment">// TODO: Remove when references cleaned up</span>
-                        <span class="ident">TrackError::NotFound</span> =&gt; <span class="ident">KernelError::RENodeNotFound</span>(<span class="self">self</span>.<span class="ident">node_id</span>()),
-                        <span class="ident">TrackError::Reentrancy</span> =&gt; <span class="ident">KernelError::Reentrancy</span>(<span class="ident">substate_id</span>.<span class="ident">clone</span>()),
+                        <span class="comment">// TODO: Remove when references cleaned up
+                        </span>TrackError::NotFound =&gt; KernelError::RENodeNotFound(<span class="self">self</span>.node_id()),
+                        TrackError::Reentrancy =&gt; KernelError::Reentrancy(substate_id.clone()),
                     })
             }
-            <span class="ident">RENodePointer::Heap</span> { .. } =&gt; <span class="prelude-val">Ok</span>(()),
+            RENodePointer::Heap { .. } =&gt; <span class="prelude-val">Ok</span>(()),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">release_lock</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span>(
+    <span class="kw">pub fn </span>release_lock&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>,
-        <span class="ident">write_through</span>: <span class="ident">bool</span>,
-        <span class="ident">track</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>,
+        substate_id: SubstateId,
+        write_through: bool,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
     ) {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodePointer::Store</span>(..) =&gt; <span class="ident">track</span>.<span class="ident">release_lock</span>(<span class="ident">substate_id</span>, <span class="ident">write_through</span>),
-            <span class="ident">RENodePointer::Heap</span> { .. } =&gt; {}
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodePointer::Store(..) =&gt; track.release_lock(substate_id, write_through),
+            RENodePointer::Heap { .. } =&gt; {}
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">child</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">child_id</span>: <span class="ident">RENodeId</span>) -&gt; <span class="ident">RENodePointer</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodePointer::Heap</span> { <span class="ident">frame_id</span>, <span class="ident">root</span>, .. } =&gt; <span class="ident">RENodePointer::Heap</span> {
-                <span class="ident">frame_id</span>: <span class="ident">frame_id</span>.<span class="ident">clone</span>(),
-                <span class="ident">root</span>: <span class="ident">root</span>.<span class="ident">clone</span>(),
-                <span class="ident">id</span>: <span class="ident">Option::Some</span>(<span class="ident">child_id</span>),
+    <span class="kw">pub fn </span>child(<span class="kw-2">&amp;</span><span class="self">self</span>, child_id: RENodeId) -&gt; RENodePointer {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodePointer::Heap { frame_id, root, .. } =&gt; RENodePointer::Heap {
+                frame_id: frame_id.clone(),
+                root: root.clone(),
+                id: Option::Some(child_id),
             },
-            <span class="ident">RENodePointer::Store</span>(..) =&gt; <span class="ident">RENodePointer::Store</span>(<span class="ident">child_id</span>),
+            RENodePointer::Store(..) =&gt; RENodePointer::Store(child_id),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">borrow_native_ref</span><span class="op">&lt;</span><span class="lifetime">&#39;p</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;</span><span class="self">self</span>, <span class="comment">// TODO: Consider changing this to self</span>
-        <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>,
-        <span class="ident">call_frames</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CallFrame</span><span class="op">&gt;</span>,
-        <span class="ident">track</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">NativeSubstateRef</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodePointer::Heap</span> { <span class="ident">frame_id</span>, <span class="ident">root</span>, <span class="ident">id</span> } =&gt; {
-                <span class="kw">let</span> <span class="ident">frame</span> <span class="op">=</span> <span class="ident">call_frames</span>.<span class="ident">get_mut</span>(<span class="kw-2">*</span><span class="ident">frame_id</span>).<span class="ident">unwrap</span>();
-                <span class="kw">let</span> <span class="ident">re_value</span> <span class="op">=</span> <span class="ident">frame</span>.<span class="ident">owned_heap_nodes</span>.<span class="ident">remove</span>(<span class="ident">root</span>).<span class="ident">unwrap</span>();
-                <span class="ident">NativeSubstateRef::Stack</span>(<span class="ident">re_value</span>, <span class="ident">frame_id</span>.<span class="ident">clone</span>(), <span class="ident">root</span>.<span class="ident">clone</span>(), <span class="ident">id</span>.<span class="ident">clone</span>())
+    <span class="kw">pub fn </span>borrow_native_ref&lt;<span class="lifetime">&#39;p</span>, <span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>, <span class="comment">// TODO: Consider changing this to self
+        </span>substate_id: SubstateId,
+        call_frames: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+    ) -&gt; NativeSubstateRef {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodePointer::Heap { frame_id, root, id } =&gt; {
+                <span class="kw">let </span>frame = call_frames.get_mut(<span class="kw-2">*</span>frame_id).unwrap();
+                <span class="kw">let </span>re_value = frame.owned_heap_nodes.remove(root).unwrap();
+                NativeSubstateRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
             }
-            <span class="ident">RENodePointer::Store</span>(..) =&gt; {
-                <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">track</span>.<span class="ident">take_substate</span>(<span class="ident">substate_id</span>.<span class="ident">clone</span>());
-                <span class="ident">NativeSubstateRef::Track</span>(<span class="ident">substate_id</span>.<span class="ident">clone</span>(), <span class="ident">value</span>)
+            RENodePointer::Store(..) =&gt; {
+                <span class="kw">let </span>value = track.take_substate(substate_id.clone());
+                NativeSubstateRef::Track(substate_id.clone(), value)
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_ref</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;p</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span>(
+    <span class="kw">pub fn </span>to_ref&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;p</span>, <span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">call_frames</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CallFrame</span><span class="op">&gt;</span>,
-        <span class="ident">track</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">RENodeRef</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodePointer::Heap</span> { <span class="ident">frame_id</span>, <span class="ident">root</span>, <span class="ident">id</span> } =&gt; {
-                <span class="kw">let</span> <span class="ident">frame</span> <span class="op">=</span> <span class="ident">call_frames</span>.<span class="ident">get</span>(<span class="kw-2">*</span><span class="ident">frame_id</span>).<span class="ident">unwrap</span>();
-                <span class="ident">RENodeRef::Stack</span>(<span class="ident">frame</span>.<span class="ident">owned_heap_nodes</span>.<span class="ident">get</span>(<span class="ident">root</span>).<span class="ident">unwrap</span>(), <span class="ident">id</span>.<span class="ident">clone</span>())
+        call_frames: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span>Vec&lt;CallFrame&gt;,
+        track: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+    ) -&gt; RENodeRef&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, R&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodePointer::Heap { frame_id, root, id } =&gt; {
+                <span class="kw">let </span>frame = call_frames.get(<span class="kw-2">*</span>frame_id).unwrap();
+                RENodeRef::Stack(frame.owned_heap_nodes.get(root).unwrap(), id.clone())
             }
-            <span class="ident">RENodePointer::Store</span>(<span class="ident">node_id</span>) =&gt; <span class="ident">RENodeRef::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>.<span class="ident">clone</span>()),
+            RENodePointer::Store(node_id) =&gt; RENodeRef::Track(track, node_id.clone()),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_ref_mut</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;p</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span>(
+    <span class="kw">pub fn </span>to_ref_mut&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;p</span>, <span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">call_frames</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f</span> <span class="kw-2">mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CallFrame</span><span class="op">&gt;</span>,
-        <span class="ident">track</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f</span> <span class="kw-2">mut</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">RENodeRefMut</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodePointer::Heap</span> { <span class="ident">frame_id</span>, <span class="ident">root</span>, <span class="ident">id</span> } =&gt; {
-                <span class="kw">let</span> <span class="ident">frame</span> <span class="op">=</span> <span class="ident">call_frames</span>.<span class="ident">get_mut</span>(<span class="kw-2">*</span><span class="ident">frame_id</span>).<span class="ident">unwrap</span>();
-                <span class="ident">RENodeRefMut::Stack</span>(<span class="ident">frame</span>.<span class="ident">owned_heap_nodes</span>.<span class="ident">get_mut</span>(<span class="ident">root</span>).<span class="ident">unwrap</span>(), <span class="ident">id</span>.<span class="ident">clone</span>())
+        call_frames: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span><span class="kw-2">mut </span>Vec&lt;CallFrame&gt;,
+        track: <span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span><span class="kw-2">mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+    ) -&gt; RENodeRefMut&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, R&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodePointer::Heap { frame_id, root, id } =&gt; {
+                <span class="kw">let </span>frame = call_frames.get_mut(<span class="kw-2">*</span>frame_id).unwrap();
+                RENodeRefMut::Stack(frame.owned_heap_nodes.get_mut(root).unwrap(), id.clone())
             }
-            <span class="ident">RENodePointer::Store</span>(<span class="ident">node_id</span>) =&gt; <span class="ident">RENodeRefMut::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>.<span class="ident">clone</span>()),
+            RENodePointer::Store(node_id) =&gt; RENodeRefMut::Track(track, node_id.clone()),
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">NativeSubstateRef</span> {
-    <span class="ident">Stack</span>(<span class="ident">HeapRootRENode</span>, <span class="ident">usize</span>, <span class="ident">RENodeId</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>),
-    <span class="ident">Track</span>(<span class="ident">SubstateId</span>, <span class="ident">Substate</span>),
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub enum </span>NativeSubstateRef {
+    Stack(HeapRootRENode, usize, RENodeId, <span class="prelude-ty">Option</span>&lt;RENodeId&gt;),
+    Track(SubstateId, Substate),
 }
 
-<span class="kw">impl</span> <span class="ident">NativeSubstateRef</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">bucket</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Bucket</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">NativeSubstateRef::Stack</span>(<span class="ident">root</span>, <span class="ident">_frame_id</span>, <span class="ident">_root_id</span>, <span class="ident">maybe_child</span>) =&gt; {
-                <span class="kw">match</span> <span class="ident">root</span>.<span class="ident">get_node_mut</span>(<span class="ident">maybe_child</span>.<span class="ident">as_ref</span>()) {
-                    <span class="ident">HeapRENode::Bucket</span>(<span class="ident">bucket</span>) =&gt; <span class="ident">bucket</span>,
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a bucket&quot;</span>),
+<span class="kw">impl </span>NativeSubstateRef {
+    <span class="kw">pub fn </span>bucket(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Bucket {
+        <span class="kw">match </span><span class="self">self </span>{
+            NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) =&gt; {
+                <span class="kw">match </span>root.get_node_mut(maybe_child.as_ref()) {
+                    HeapRENode::Bucket(bucket) =&gt; bucket,
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a bucket&quot;</span>),
                 }
             }
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a bucket&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a bucket&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">proof</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Proof</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">NativeSubstateRef::Stack</span>(<span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">root</span>, <span class="ident">_frame_id</span>, <span class="ident">_root_id</span>, <span class="ident">maybe_child</span>) =&gt; {
-                <span class="kw">match</span> <span class="ident">root</span>.<span class="ident">get_node_mut</span>(<span class="ident">maybe_child</span>.<span class="ident">as_ref</span>()) {
-                    <span class="ident">HeapRENode::Proof</span>(<span class="ident">proof</span>) =&gt; <span class="ident">proof</span>,
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a proof&quot;</span>),
+    <span class="kw">pub fn </span>proof(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Proof {
+        <span class="kw">match </span><span class="self">self </span>{
+            NativeSubstateRef::Stack(<span class="kw-2">ref mut </span>root, _frame_id, _root_id, maybe_child) =&gt; {
+                <span class="kw">match </span>root.get_node_mut(maybe_child.as_ref()) {
+                    HeapRENode::Proof(proof) =&gt; proof,
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a proof&quot;</span>),
                 }
             }
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a proof&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a proof&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">worktop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Worktop</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">NativeSubstateRef::Stack</span>(<span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">root</span>, <span class="ident">_frame_id</span>, <span class="ident">_root_id</span>, <span class="ident">maybe_child</span>) =&gt; {
-                <span class="kw">match</span> <span class="ident">root</span>.<span class="ident">get_node_mut</span>(<span class="ident">maybe_child</span>.<span class="ident">as_ref</span>()) {
-                    <span class="ident">HeapRENode::Worktop</span>(<span class="ident">worktop</span>) =&gt; <span class="ident">worktop</span>,
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a worktop&quot;</span>),
+    <span class="kw">pub fn </span>worktop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Worktop {
+        <span class="kw">match </span><span class="self">self </span>{
+            NativeSubstateRef::Stack(<span class="kw-2">ref mut </span>root, _frame_id, _root_id, maybe_child) =&gt; {
+                <span class="kw">match </span>root.get_node_mut(maybe_child.as_ref()) {
+                    HeapRENode::Worktop(worktop) =&gt; worktop,
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a worktop&quot;</span>),
                 }
             }
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a worktop&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a worktop&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">vault</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Vault</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">NativeSubstateRef::Stack</span>(<span class="ident">root</span>, <span class="ident">_frame_id</span>, <span class="ident">_root_id</span>, <span class="ident">maybe_child</span>) =&gt; {
-                <span class="ident">root</span>.<span class="ident">get_node_mut</span>(<span class="ident">maybe_child</span>.<span class="ident">as_ref</span>()).<span class="ident">vault_mut</span>()
+    <span class="kw">pub fn </span>vault(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Vault {
+        <span class="kw">match </span><span class="self">self </span>{
+            NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) =&gt; {
+                root.get_node_mut(maybe_child.as_ref()).vault_mut()
             }
-            <span class="ident">NativeSubstateRef::Track</span>(<span class="ident">_address</span>, <span class="ident">value</span>) =&gt; <span class="ident">value</span>.<span class="ident">vault_mut</span>(),
+            NativeSubstateRef::Track(_address, value) =&gt; value.vault_mut(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">system</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">System</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">NativeSubstateRef::Track</span>(<span class="ident">_address</span>, <span class="ident">value</span>) =&gt; <span class="ident">value</span>.<span class="ident">system_mut</span>(),
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be system&quot;</span>),
+    <span class="kw">pub fn </span>system(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>System {
+        <span class="kw">match </span><span class="self">self </span>{
+            NativeSubstateRef::Track(_address, value) =&gt; value.system_mut(),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be system&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_info</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">ComponentInfo</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">NativeSubstateRef::Stack</span>(<span class="ident">root</span>, <span class="ident">_frame_id</span>, <span class="ident">_root_id</span>, <span class="ident">maybe_child</span>) =&gt; {
-                <span class="ident">root</span>.<span class="ident">get_node_mut</span>(<span class="ident">maybe_child</span>.<span class="ident">as_ref</span>()).<span class="ident">component_info_mut</span>()
+    <span class="kw">pub fn </span>component_info(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ComponentInfo {
+        <span class="kw">match </span><span class="self">self </span>{
+            NativeSubstateRef::Stack(root, _frame_id, _root_id, maybe_child) =&gt; {
+                root.get_node_mut(maybe_child.as_ref()).component_info_mut()
             }
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a component&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be a component&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">package</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Package</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">NativeSubstateRef::Track</span>(<span class="ident">_address</span>, <span class="ident">value</span>) =&gt; <span class="ident">value</span>.<span class="ident">package</span>(),
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be tracked&quot;</span>),
+    <span class="kw">pub fn </span>package(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Package {
+        <span class="kw">match </span><span class="self">self </span>{
+            NativeSubstateRef::Track(_address, value) =&gt; value.package(),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expecting to be tracked&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_manager</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">ResourceManager</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">NativeSubstateRef::Stack</span>(<span class="ident">value</span>, <span class="ident">_frame_id</span>, <span class="ident">_root_id</span>, <span class="ident">maybe_child</span>) =&gt; <span class="ident">value</span>
-                .<span class="ident">get_node_mut</span>(<span class="ident">maybe_child</span>.<span class="ident">as_ref</span>())
-                .<span class="ident">resource_manager_mut</span>(),
-            <span class="ident">NativeSubstateRef::Track</span>(<span class="ident">_address</span>, <span class="ident">value</span>) =&gt; <span class="ident">value</span>.<span class="ident">resource_manager_mut</span>(),
+    <span class="kw">pub fn </span>resource_manager(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ResourceManager {
+        <span class="kw">match </span><span class="self">self </span>{
+            NativeSubstateRef::Stack(value, _frame_id, _root_id, maybe_child) =&gt; value
+                .get_node_mut(maybe_child.as_ref())
+                .resource_manager_mut(),
+            NativeSubstateRef::Track(_address, value) =&gt; value.resource_manager_mut(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">return_to_location</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;p</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span>(
+    <span class="kw">pub fn </span>return_to_location&lt;<span class="lifetime">&#39;a</span>, <span class="lifetime">&#39;p</span>, <span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
         <span class="self">self</span>,
-        <span class="ident">call_frames</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CallFrame</span><span class="op">&gt;</span>,
-        <span class="ident">track</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>,
+        call_frames: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
     ) {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">NativeSubstateRef::Stack</span>(<span class="ident">owned</span>, <span class="ident">frame_id</span>, <span class="ident">node_id</span>, ..) =&gt; {
-                <span class="kw">let</span> <span class="ident">frame</span> <span class="op">=</span> <span class="ident">call_frames</span>.<span class="ident">get_mut</span>(<span class="ident">frame_id</span>).<span class="ident">unwrap</span>();
-                <span class="ident">frame</span>.<span class="ident">owned_heap_nodes</span>.<span class="ident">insert</span>(<span class="ident">node_id</span>, <span class="ident">owned</span>);
+        <span class="kw">match </span><span class="self">self </span>{
+            NativeSubstateRef::Stack(owned, frame_id, node_id, ..) =&gt; {
+                <span class="kw">let </span>frame = call_frames.get_mut(frame_id).unwrap();
+                frame.owned_heap_nodes.insert(node_id, owned);
             }
-            <span class="ident">NativeSubstateRef::Track</span>(<span class="ident">substate_id</span>, <span class="ident">value</span>) =&gt; {
-                <span class="ident">track</span>.<span class="ident">write_substate</span>(<span class="ident">substate_id</span>, <span class="ident">value</span>)
+            NativeSubstateRef::Track(substate_id, value) =&gt; {
+                track.write_substate(substate_id, value)
             }
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RENodeRef</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span> {
-    <span class="ident">Stack</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;f</span> <span class="ident">HeapRootRENode</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>),
-    <span class="ident">Track</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;f</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>, <span class="ident">RENodeId</span>),
+<span class="kw">pub enum </span>RENodeRef&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, R: FeeReserve&gt; {
+    Stack(<span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span>HeapRootRENode, <span class="prelude-ty">Option</span>&lt;RENodeId&gt;),
+    Track(<span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;, RENodeId),
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span> <span class="ident">RENodeRef</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">bucket</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Bucket</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRef::Stack</span>(<span class="ident">value</span>, <span class="ident">id</span>) =&gt; <span class="ident">id</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map_or</span>(<span class="ident">value</span>.<span class="ident">root</span>(), <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">value</span>.<span class="ident">non_root</span>(<span class="ident">v</span>))
-                .<span class="ident">bucket</span>(),
-            <span class="ident">RENodeRef::Track</span>(..) =&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, R: FeeReserve&gt; RENodeRef&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, R&gt; {
+    <span class="kw">pub fn </span>bucket(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Bucket {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRef::Stack(value, id) =&gt; id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .bucket(),
+            RENodeRef::Track(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>)
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">vault</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Vault</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRef::Stack</span>(<span class="ident">value</span>, <span class="ident">id</span>) =&gt; <span class="ident">id</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map_or</span>(<span class="ident">value</span>.<span class="ident">root</span>(), <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">value</span>.<span class="ident">non_root</span>(<span class="ident">v</span>))
-                .<span class="ident">vault</span>(),
-            <span class="ident">RENodeRef::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::Vault</span>(<span class="ident">vault_id</span>) =&gt; <span class="ident">SubstateId::Vault</span>(<span class="kw-2">*</span><span class="ident">vault_id</span>),
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
+    <span class="kw">pub fn </span>vault(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vault {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRef::Stack(value, id) =&gt; id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .vault(),
+            RENodeRef::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::Vault(vault_id) =&gt; SubstateId::Vault(<span class="kw-2">*</span>vault_id),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
                 };
-                <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">substate_id</span>).<span class="ident">vault</span>()
+                track.read_substate(substate_id).vault()
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">system</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">System</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRef::Stack</span>(<span class="ident">value</span>, <span class="ident">id</span>) =&gt; <span class="ident">id</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map_or</span>(<span class="ident">value</span>.<span class="ident">root</span>(), <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">value</span>.<span class="ident">non_root</span>(<span class="ident">v</span>))
-                .<span class="ident">system</span>(),
-            <span class="ident">RENodeRef::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::System</span> =&gt; <span class="ident">SubstateId::System</span>,
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
+    <span class="kw">pub fn </span>system(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>System {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRef::Stack(value, id) =&gt; id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .system(),
+            RENodeRef::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::System =&gt; SubstateId::System,
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
                 };
-                <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">substate_id</span>).<span class="ident">system</span>()
+                track.read_substate(substate_id).system()
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_manager</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ResourceManager</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRef::Stack</span>(<span class="ident">value</span>, <span class="ident">id</span>) =&gt; <span class="ident">id</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map_or</span>(<span class="ident">value</span>.<span class="ident">root</span>(), <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">value</span>.<span class="ident">non_root</span>(<span class="ident">v</span>))
-                .<span class="ident">resource_manager</span>(),
-            <span class="ident">RENodeRef::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::ResourceManager</span>(<span class="ident">resource_address</span>) =&gt; {
-                        <span class="ident">SubstateId::ResourceManager</span>(<span class="kw-2">*</span><span class="ident">resource_address</span>)
+    <span class="kw">pub fn </span>resource_manager(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ResourceManager {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRef::Stack(value, id) =&gt; id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .resource_manager(),
+            RENodeRef::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::ResourceManager(resource_address) =&gt; {
+                        SubstateId::ResourceManager(<span class="kw-2">*</span>resource_address)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
                 };
-                <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">substate_id</span>).<span class="ident">resource_manager</span>()
+                track.read_substate(substate_id).resource_manager()
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ComponentState</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRef::Stack</span>(<span class="ident">value</span>, <span class="ident">id</span>) =&gt; <span class="ident">id</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map_or</span>(<span class="ident">value</span>.<span class="ident">root</span>(), <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">value</span>.<span class="ident">non_root</span>(<span class="ident">v</span>))
-                .<span class="ident">component_state</span>(),
-            <span class="ident">RENodeRef::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::Component</span>(<span class="ident">component_address</span>) =&gt; {
-                        <span class="ident">SubstateId::ComponentState</span>(<span class="kw-2">*</span><span class="ident">component_address</span>)
+    <span class="kw">pub fn </span>component_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ComponentState {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRef::Stack(value, id) =&gt; id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .component_state(),
+            RENodeRef::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::Component(component_address) =&gt; {
+                        SubstateId::ComponentState(<span class="kw-2">*</span>component_address)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
                 };
-                <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">substate_id</span>).<span class="ident">component_state</span>()
+                track.read_substate(substate_id).component_state()
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ComponentInfo</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRef::Stack</span>(<span class="ident">value</span>, <span class="ident">id</span>) =&gt; <span class="ident">id</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map_or</span>(<span class="ident">value</span>.<span class="ident">root</span>(), <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">value</span>.<span class="ident">non_root</span>(<span class="ident">v</span>))
-                .<span class="ident">component_info</span>(),
-            <span class="ident">RENodeRef::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::Component</span>(<span class="ident">component_address</span>) =&gt; {
-                        <span class="ident">SubstateId::ComponentInfo</span>(<span class="kw-2">*</span><span class="ident">component_address</span>)
+    <span class="kw">pub fn </span>component_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ComponentInfo {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRef::Stack(value, id) =&gt; id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .component_info(),
+            RENodeRef::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::Component(component_address) =&gt; {
+                        SubstateId::ComponentInfo(<span class="kw-2">*</span>component_address)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
                 };
-                <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">substate_id</span>).<span class="ident">component_info</span>()
+                track.read_substate(substate_id).component_info()
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">package</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Package</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRef::Stack</span>(<span class="ident">value</span>, <span class="ident">id</span>) =&gt; <span class="ident">id</span>
-                .<span class="ident">as_ref</span>()
-                .<span class="ident">map_or</span>(<span class="ident">value</span>.<span class="ident">root</span>(), <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">value</span>.<span class="ident">non_root</span>(<span class="ident">v</span>))
-                .<span class="ident">package</span>(),
-            <span class="ident">RENodeRef::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::Package</span>(<span class="ident">package_address</span>) =&gt; <span class="ident">SubstateId::Package</span>(<span class="kw-2">*</span><span class="ident">package_address</span>),
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
+    <span class="kw">pub fn </span>package(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Package {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRef::Stack(value, id) =&gt; id
+                .as_ref()
+                .map_or(value.root(), |v| value.non_root(v))
+                .package(),
+            RENodeRef::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::Package(package_address) =&gt; SubstateId::Package(<span class="kw-2">*</span>package_address),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpected&quot;</span>),
                 };
-                <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">substate_id</span>).<span class="ident">package</span>()
+                track.read_substate(substate_id).package()
             }
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RENodeRefMut</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span> {
-    <span class="ident">Stack</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;f</span> <span class="kw-2">mut</span> <span class="ident">HeapRootRENode</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>),
-    <span class="ident">Track</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;f</span> <span class="kw-2">mut</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>, <span class="ident">RENodeId</span>),
+<span class="kw">pub enum </span>RENodeRefMut&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, R: FeeReserve&gt; {
+    Stack(<span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span><span class="kw-2">mut </span>HeapRootRENode, <span class="prelude-ty">Option</span>&lt;RENodeId&gt;),
+    Track(<span class="kw-2">&amp;</span><span class="lifetime">&#39;f </span><span class="kw-2">mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;, RENodeId),
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span> <span class="ident">RENodeRefMut</span><span class="op">&lt;</span><span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_scrypto_value</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">substate_id</span>: <span class="kw-2">&amp;</span><span class="ident">SubstateId</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">RuntimeError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">substate_id</span> {
-            <span class="ident">SubstateId::ComponentInfo</span>(..) =&gt; {
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">component_info</span>().<span class="ident">info</span>()))
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, R: FeeReserve&gt; RENodeRefMut&lt;<span class="lifetime">&#39;f</span>, <span class="lifetime">&#39;s</span>, R&gt; {
+    <span class="kw">pub fn </span>read_scrypto_value(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        substate_id: <span class="kw-2">&amp;</span>SubstateId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, RuntimeError&gt; {
+        <span class="kw">match </span>substate_id {
+            SubstateId::ComponentInfo(..) =&gt; {
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span><span class="self">self</span>.component_info().info()))
             }
-            <span class="ident">SubstateId::ComponentState</span>(..) =&gt; {
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_slice</span>(<span class="self">self</span>.<span class="ident">component_state</span>().<span class="ident">state</span>())
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to decode component state&quot;</span>))
+            SubstateId::ComponentState(..) =&gt; {
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_slice(<span class="self">self</span>.component_state().state())
+                    .expect(<span class="string">&quot;Failed to decode component state&quot;</span>))
             }
-            <span class="ident">SubstateId::NonFungible</span>(.., <span class="ident">id</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">non_fungible_get</span>(<span class="ident">id</span>)),
-            <span class="ident">SubstateId::KeyValueStoreEntry</span>(.., <span class="ident">key</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="ident">kv_store_get</span>(<span class="ident">key</span>)),
-            <span class="ident">SubstateId::NonFungibleSpace</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::Vault</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::KeyValueStoreSpace</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::Package</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::ResourceManager</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::System</span>
-            <span class="op">|</span> <span class="ident">SubstateId::Bucket</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::Proof</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::Worktop</span> =&gt; {
+            SubstateId::NonFungible(.., id) =&gt; <span class="prelude-val">Ok</span>(<span class="self">self</span>.non_fungible_get(id)),
+            SubstateId::KeyValueStoreEntry(.., key) =&gt; <span class="prelude-val">Ok</span>(<span class="self">self</span>.kv_store_get(key)),
+            SubstateId::NonFungibleSpace(..)
+            | SubstateId::Vault(..)
+            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::Package(..)
+            | SubstateId::ResourceManager(..)
+            | SubstateId::System
+            | SubstateId::Bucket(..)
+            | SubstateId::Proof(..)
+            | SubstateId::Worktop =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should never have received permissions to read this native type.&quot;</span>);
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">replace_value_with_default</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">substate_id</span>: <span class="kw-2">&amp;</span><span class="ident">SubstateId</span>) {
-        <span class="kw">match</span> <span class="ident">substate_id</span> {
-            <span class="ident">SubstateId::ComponentInfo</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::ComponentState</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::NonFungibleSpace</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::KeyValueStoreSpace</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::KeyValueStoreEntry</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::Vault</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::Package</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::ResourceManager</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::System</span>
-            <span class="op">|</span> <span class="ident">SubstateId::Bucket</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::Proof</span>(..)
-            <span class="op">|</span> <span class="ident">SubstateId::Worktop</span> =&gt; {
+    <span class="kw">pub fn </span>replace_value_with_default(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId) {
+        <span class="kw">match </span>substate_id {
+            SubstateId::ComponentInfo(..)
+            | SubstateId::ComponentState(..)
+            | SubstateId::NonFungibleSpace(..)
+            | SubstateId::KeyValueStoreSpace(..)
+            | SubstateId::KeyValueStoreEntry(..)
+            | SubstateId::Vault(..)
+            | SubstateId::Package(..)
+            | SubstateId::ResourceManager(..)
+            | SubstateId::System
+            | SubstateId::Bucket(..)
+            | SubstateId::Proof(..)
+            | SubstateId::Worktop =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::NonFungible</span>(.., <span class="ident">id</span>) =&gt; <span class="self">self</span>.<span class="ident">non_fungible_remove</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>),
+            SubstateId::NonFungible(.., id) =&gt; <span class="self">self</span>.non_fungible_remove(<span class="kw-2">&amp;</span>id),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_value</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>,
-        <span class="ident">value</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">child_nodes</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRootRENode</span><span class="op">&gt;</span>,
+    <span class="kw">pub fn </span>write_value(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        substate_id: SubstateId,
+        value: ScryptoValue,
+        child_nodes: HashMap&lt;RENodeId, HeapRootRENode&gt;,
     ) {
-        <span class="kw">match</span> <span class="ident">substate_id</span> {
-            <span class="ident">SubstateId::ComponentInfo</span>(..) =&gt; {
+        <span class="kw">match </span>substate_id {
+            SubstateId::ComponentInfo(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::ComponentState</span>(..) =&gt; {
-                <span class="self">self</span>.<span class="ident">component_state_set</span>(<span class="ident">value</span>, <span class="ident">child_nodes</span>);
+            SubstateId::ComponentState(..) =&gt; {
+                <span class="self">self</span>.component_state_set(value, child_nodes);
             }
-            <span class="ident">SubstateId::KeyValueStoreSpace</span>(..) =&gt; {
+            SubstateId::KeyValueStoreSpace(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::KeyValueStoreEntry</span>(.., <span class="ident">key</span>) =&gt; {
-                <span class="self">self</span>.<span class="ident">kv_store_put</span>(<span class="ident">key</span>, <span class="ident">value</span>, <span class="ident">child_nodes</span>);
+            SubstateId::KeyValueStoreEntry(.., key) =&gt; {
+                <span class="self">self</span>.kv_store_put(key, value, child_nodes);
             }
-            <span class="ident">SubstateId::NonFungibleSpace</span>(..) =&gt; {
+            SubstateId::NonFungibleSpace(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::NonFungible</span>(.., <span class="ident">id</span>) =&gt; <span class="self">self</span>.<span class="ident">non_fungible_put</span>(<span class="ident">id</span>, <span class="ident">value</span>),
-            <span class="ident">SubstateId::Vault</span>(..) =&gt; {
+            SubstateId::NonFungible(.., id) =&gt; <span class="self">self</span>.non_fungible_put(id, value),
+            SubstateId::Vault(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::Package</span>(..) =&gt; {
+            SubstateId::Package(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::ResourceManager</span>(..) =&gt; {
+            SubstateId::ResourceManager(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::System</span> =&gt; {
+            SubstateId::System =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::Bucket</span>(..) =&gt; {
+            SubstateId::Bucket(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::Proof</span>(..) =&gt; {
+            SubstateId::Proof(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
-            <span class="ident">SubstateId::Worktop</span> =&gt; {
+            SubstateId::Worktop =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Should not get here&quot;</span>);
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">kv_store_put</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">key</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-        <span class="ident">value</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">to_store</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRootRENode</span><span class="op">&gt;</span>,
+    <span class="kw">pub fn </span>kv_store_put(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        key: Vec&lt;u8&gt;,
+        value: ScryptoValue,
+        to_store: HashMap&lt;RENodeId, HeapRootRENode&gt;,
     ) {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRefMut::Stack</span>(<span class="ident">re_value</span>, <span class="ident">id</span>) =&gt; {
-                <span class="ident">re_value</span>
-                    .<span class="ident">get_node_mut</span>(<span class="ident">id</span>.<span class="ident">as_ref</span>())
-                    .<span class="ident">kv_store_mut</span>()
-                    .<span class="ident">put</span>(<span class="ident">key</span>, <span class="ident">value</span>);
-                <span class="kw">for</span> (<span class="ident">id</span>, <span class="ident">val</span>) <span class="kw">in</span> <span class="ident">to_store</span> {
-                    <span class="ident">re_value</span>.<span class="ident">insert_non_root_nodes</span>(<span class="ident">val</span>.<span class="ident">to_nodes</span>(<span class="ident">id</span>));
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRefMut::Stack(re_value, id) =&gt; {
+                re_value
+                    .get_node_mut(id.as_ref())
+                    .kv_store_mut()
+                    .put(key, value);
+                <span class="kw">for </span>(id, val) <span class="kw">in </span>to_store {
+                    re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
-            <span class="ident">RENodeRefMut::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">parent_substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::KeyValueStore</span>(<span class="ident">kv_store_id</span>) =&gt; {
-                        <span class="ident">SubstateId::KeyValueStoreSpace</span>(<span class="kw-2">*</span><span class="ident">kv_store_id</span>)
+            RENodeRefMut::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>parent_substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::KeyValueStore(kv_store_id) =&gt; {
+                        SubstateId::KeyValueStoreSpace(<span class="kw-2">*</span>kv_store_id)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
                 };
-                <span class="ident">track</span>.<span class="ident">set_key_value</span>(
-                    <span class="ident">parent_substate_id</span>,
-                    <span class="ident">key</span>,
-                    <span class="ident">Substate::KeyValueStoreEntry</span>(<span class="ident">KeyValueStoreEntryWrapper</span>(<span class="prelude-val">Some</span>(<span class="ident">value</span>.<span class="ident">raw</span>))),
+                track.set_key_value(
+                    parent_substate_id,
+                    key,
+                    Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(<span class="prelude-val">Some</span>(value.raw))),
                 );
-                <span class="kw">for</span> (<span class="ident">id</span>, <span class="ident">val</span>) <span class="kw">in</span> <span class="ident">to_store</span> {
-                    <span class="ident">insert_non_root_nodes</span>(<span class="ident">track</span>, <span class="ident">val</span>.<span class="ident">to_nodes</span>(<span class="ident">id</span>));
+                <span class="kw">for </span>(id, val) <span class="kw">in </span>to_store {
+                    insert_non_root_nodes(track, val.to_nodes(id));
                 }
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">kv_store_get</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">key</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="ident">ScryptoValue</span> {
-        <span class="kw">let</span> <span class="ident">wrapper</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRefMut::Stack</span>(<span class="ident">re_value</span>, <span class="ident">id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">store</span> <span class="op">=</span> <span class="ident">re_value</span>.<span class="ident">get_node_mut</span>(<span class="ident">id</span>.<span class="ident">as_ref</span>()).<span class="ident">kv_store_mut</span>();
-                <span class="ident">store</span>
-                    .<span class="ident">get</span>(<span class="ident">key</span>)
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">KeyValueStoreEntryWrapper</span>(<span class="prelude-val">Some</span>(<span class="ident">v</span>.<span class="ident">raw</span>)))
-                    .<span class="ident">unwrap_or</span>(<span class="ident">KeyValueStoreEntryWrapper</span>(<span class="prelude-val">None</span>))
+    <span class="kw">pub fn </span>kv_store_get(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>[u8]) -&gt; ScryptoValue {
+        <span class="kw">let </span>wrapper = <span class="kw">match </span><span class="self">self </span>{
+            RENodeRefMut::Stack(re_value, id) =&gt; {
+                <span class="kw">let </span>store = re_value.get_node_mut(id.as_ref()).kv_store_mut();
+                store
+                    .get(key)
+                    .map(|v| KeyValueStoreEntryWrapper(<span class="prelude-val">Some</span>(v.raw)))
+                    .unwrap_or(KeyValueStoreEntryWrapper(<span class="prelude-val">None</span>))
             }
-            <span class="ident">RENodeRefMut::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">parent_substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::KeyValueStore</span>(<span class="ident">kv_store_id</span>) =&gt; {
-                        <span class="ident">SubstateId::KeyValueStoreSpace</span>(<span class="kw-2">*</span><span class="ident">kv_store_id</span>)
+            RENodeRefMut::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>parent_substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::KeyValueStore(kv_store_id) =&gt; {
+                        SubstateId::KeyValueStoreSpace(<span class="kw-2">*</span>kv_store_id)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
                 };
-                <span class="kw">let</span> <span class="ident">substate_value</span> <span class="op">=</span> <span class="ident">track</span>.<span class="ident">read_key_value</span>(<span class="ident">parent_substate_id</span>, <span class="ident">key</span>.<span class="ident">to_vec</span>());
-                <span class="ident">substate_value</span>.<span class="ident">into</span>()
+                <span class="kw">let </span>substate_value = track.read_key_value(parent_substate_id, key.to_vec());
+                substate_value.into()
             }
         };
 
-        <span class="comment">// TODO: Cleanup after adding polymorphism support for SBOR</span>
-        <span class="comment">// For now, we have to use `Vec&lt;u8&gt;` within `KeyValueStoreEntryWrapper`</span>
-        <span class="comment">// and apply the following ugly conversion.</span>
-        <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">wrapper</span>.<span class="number">0</span>.<span class="ident">map_or</span>(
-            <span class="ident">Value::Option</span> {
-                <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="ident">Option::None</span>),
+        <span class="comment">// TODO: Cleanup after adding polymorphism support for SBOR
+        // For now, we have to use `Vec&lt;u8&gt;` within `KeyValueStoreEntryWrapper`
+        // and apply the following ugly conversion.
+        </span><span class="kw">let </span>value = wrapper.<span class="number">0</span>.map_or(
+            Value::Option {
+                value: Box::new(Option::None),
             },
-            <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">Value::Option</span> {
-                <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="prelude-val">Some</span>(
-                    <span class="ident">decode_any</span>(<span class="kw-2">&amp;</span><span class="ident">v</span>).<span class="ident">expect</span>(<span class="string">&quot;Failed to decode the value in NonFungibleWrapper&quot;</span>),
+            |v| Value::Option {
+                value: Box::new(<span class="prelude-val">Some</span>(
+                    decode_any(<span class="kw-2">&amp;</span>v).expect(<span class="string">&quot;Failed to decode the value in NonFungibleWrapper&quot;</span>),
                 )),
             },
         );
 
-        <span class="ident">ScryptoValue::from_value</span>(<span class="ident">value</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;Failed to convert non-fungible value to Scrypto value&quot;</span>)
+        ScryptoValue::from_value(value)
+            .expect(<span class="string">&quot;Failed to convert non-fungible value to Scrypto value&quot;</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible_get</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">NonFungibleId</span>) -&gt; <span class="ident">ScryptoValue</span> {
-        <span class="kw">let</span> <span class="ident">wrapper</span> <span class="op">=</span> <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRefMut::Stack</span>(<span class="ident">value</span>, <span class="ident">re_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">non_fungible_set</span> <span class="op">=</span> <span class="ident">re_id</span>
-                    .<span class="ident">as_ref</span>()
-                    .<span class="ident">map_or</span>(<span class="ident">value</span>.<span class="ident">root</span>(), <span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">value</span>.<span class="ident">non_root</span>(<span class="ident">v</span>))
-                    .<span class="ident">non_fungibles</span>();
-                <span class="ident">non_fungible_set</span>
-                    .<span class="ident">get</span>(<span class="ident">id</span>)
-                    .<span class="ident">cloned</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> <span class="ident">NonFungibleWrapper</span>(<span class="prelude-val">Some</span>(<span class="ident">v</span>)))
-                    .<span class="ident">unwrap_or</span>(<span class="ident">NonFungibleWrapper</span>(<span class="prelude-val">None</span>))
+    <span class="kw">pub fn </span>non_fungible_get(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>NonFungibleId) -&gt; ScryptoValue {
+        <span class="kw">let </span>wrapper = <span class="kw">match </span><span class="self">self </span>{
+            RENodeRefMut::Stack(value, re_id) =&gt; {
+                <span class="kw">let </span>non_fungible_set = re_id
+                    .as_ref()
+                    .map_or(value.root(), |v| value.non_root(v))
+                    .non_fungibles();
+                non_fungible_set
+                    .get(id)
+                    .cloned()
+                    .map(|v| NonFungibleWrapper(<span class="prelude-val">Some</span>(v)))
+                    .unwrap_or(NonFungibleWrapper(<span class="prelude-val">None</span>))
             }
-            <span class="ident">RENodeRefMut::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">parent_substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::ResourceManager</span>(<span class="ident">resource_address</span>) =&gt; {
-                        <span class="ident">SubstateId::NonFungibleSpace</span>(<span class="kw-2">*</span><span class="ident">resource_address</span>)
+            RENodeRefMut::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>parent_substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::ResourceManager(resource_address) =&gt; {
+                        SubstateId::NonFungibleSpace(<span class="kw-2">*</span>resource_address)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
                 };
-                <span class="kw">let</span> <span class="ident">substate_value</span> <span class="op">=</span> <span class="ident">track</span>.<span class="ident">read_key_value</span>(<span class="ident">parent_substate_id</span>, <span class="ident">id</span>.<span class="ident">to_vec</span>());
-                <span class="ident">substate_value</span>.<span class="ident">into</span>()
+                <span class="kw">let </span>substate_value = track.read_key_value(parent_substate_id, id.to_vec());
+                substate_value.into()
             }
         };
 
-        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">wrapper</span>)
+        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>wrapper)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible_remove</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">NonFungibleId</span>) {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRefMut::Stack</span>(..) =&gt; {
+    <span class="kw">pub fn </span>non_fungible_remove(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>NonFungibleId) {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRefMut::Stack(..) =&gt; {
                 <span class="macro">panic!</span>(<span class="string">&quot;Not supported&quot;</span>);
             }
-            <span class="ident">RENodeRefMut::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">parent_substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::ResourceManager</span>(<span class="ident">resource_address</span>) =&gt; {
-                        <span class="ident">SubstateId::NonFungibleSpace</span>(<span class="kw-2">*</span><span class="ident">resource_address</span>)
+            RENodeRefMut::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>parent_substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::ResourceManager(resource_address) =&gt; {
+                        SubstateId::NonFungibleSpace(<span class="kw-2">*</span>resource_address)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
                 };
-                <span class="ident">track</span>.<span class="ident">set_key_value</span>(
-                    <span class="ident">parent_substate_id</span>,
-                    <span class="ident">id</span>.<span class="ident">to_vec</span>(),
-                    <span class="ident">Substate::NonFungible</span>(<span class="ident">NonFungibleWrapper</span>(<span class="prelude-val">None</span>)),
+                track.set_key_value(
+                    parent_substate_id,
+                    id.to_vec(),
+                    Substate::NonFungible(NonFungibleWrapper(<span class="prelude-val">None</span>)),
                 );
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible_put</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="ident">NonFungibleId</span>, <span class="ident">value</span>: <span class="ident">ScryptoValue</span>) {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRefMut::Stack</span>(<span class="ident">re_value</span>, <span class="ident">re_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">wrapper</span>: <span class="ident">NonFungibleWrapper</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">raw</span>)
-                    .<span class="ident">expect</span>(<span class="string">&quot;Attempted to put non-NonFungibleWrapper for non-fungible.&quot;</span>);
+    <span class="kw">pub fn </span>non_fungible_put(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: NonFungibleId, value: ScryptoValue) {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRefMut::Stack(re_value, re_id) =&gt; {
+                <span class="kw">let </span>wrapper: NonFungibleWrapper = scrypto_decode(<span class="kw-2">&amp;</span>value.raw)
+                    .expect(<span class="string">&quot;Attempted to put non-NonFungibleWrapper for non-fungible.&quot;</span>);
 
-                <span class="kw">let</span> <span class="ident">non_fungible_set</span> <span class="op">=</span> <span class="ident">re_value</span>.<span class="ident">get_node_mut</span>(<span class="ident">re_id</span>.<span class="ident">as_ref</span>()).<span class="ident">non_fungibles_mut</span>();
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">non_fungible</span>) <span class="op">=</span> <span class="ident">wrapper</span>.<span class="number">0</span> {
-                    <span class="ident">non_fungible_set</span>.<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">non_fungible</span>);
-                } <span class="kw">else</span> {
+                <span class="kw">let </span>non_fungible_set = re_value.get_node_mut(re_id.as_ref()).non_fungibles_mut();
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(non_fungible) = wrapper.<span class="number">0 </span>{
+                    non_fungible_set.insert(id, non_fungible);
+                } <span class="kw">else </span>{
                     <span class="macro">panic!</span>(<span class="string">&quot;TODO: invalidate this code path and possibly consolidate `non_fungible_remove` and `non_fungible_put`&quot;</span>)
                 }
             }
-            <span class="ident">RENodeRefMut::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">parent_substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::ResourceManager</span>(<span class="ident">resource_address</span>) =&gt; {
-                        <span class="ident">SubstateId::NonFungibleSpace</span>(<span class="kw-2">*</span><span class="ident">resource_address</span>)
+            RENodeRefMut::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>parent_substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::ResourceManager(resource_address) =&gt; {
+                        SubstateId::NonFungibleSpace(<span class="kw-2">*</span>resource_address)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
                 };
-                <span class="kw">let</span> <span class="ident">wrapper</span>: <span class="ident">NonFungibleWrapper</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">raw</span>)
-                    .<span class="ident">expect</span>(<span class="string">&quot;Attempted to put non-NonFungibleWrapper for non-fungible.&quot;</span>);
-                <span class="ident">track</span>.<span class="ident">set_key_value</span>(
-                    <span class="ident">parent_substate_id</span>,
-                    <span class="ident">id</span>.<span class="ident">to_vec</span>(),
-                    <span class="ident">Substate::NonFungible</span>(<span class="ident">wrapper</span>),
+                <span class="kw">let </span>wrapper: NonFungibleWrapper = scrypto_decode(<span class="kw-2">&amp;</span>value.raw)
+                    .expect(<span class="string">&quot;Attempted to put non-NonFungibleWrapper for non-fungible.&quot;</span>);
+                track.set_key_value(
+                    parent_substate_id,
+                    id.to_vec(),
+                    Substate::NonFungible(wrapper),
                 );
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_state_set</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">value</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">to_store</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRootRENode</span><span class="op">&gt;</span>,
+    <span class="kw">pub fn </span>component_state_set(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        value: ScryptoValue,
+        to_store: HashMap&lt;RENodeId, HeapRootRENode&gt;,
     ) {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRefMut::Stack</span>(<span class="ident">re_value</span>, <span class="ident">id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">component_state</span> <span class="op">=</span> <span class="ident">re_value</span>.<span class="ident">get_node_mut</span>(<span class="ident">id</span>.<span class="ident">as_ref</span>()).<span class="ident">component_state_mut</span>();
-                <span class="ident">component_state</span>.<span class="ident">set_state</span>(<span class="ident">value</span>.<span class="ident">raw</span>);
-                <span class="kw">for</span> (<span class="ident">id</span>, <span class="ident">val</span>) <span class="kw">in</span> <span class="ident">to_store</span> {
-                    <span class="ident">re_value</span>.<span class="ident">insert_non_root_nodes</span>(<span class="ident">val</span>.<span class="ident">to_nodes</span>(<span class="ident">id</span>));
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRefMut::Stack(re_value, id) =&gt; {
+                <span class="kw">let </span>component_state = re_value.get_node_mut(id.as_ref()).component_state_mut();
+                component_state.set_state(value.raw);
+                <span class="kw">for </span>(id, val) <span class="kw">in </span>to_store {
+                    re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
             }
-            <span class="ident">RENodeRefMut::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::Component</span>(<span class="ident">component_address</span>) =&gt; {
-                        <span class="ident">SubstateId::ComponentState</span>(<span class="kw-2">*</span><span class="ident">component_address</span>)
+            RENodeRefMut::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::Component(component_address) =&gt; {
+                        SubstateId::ComponentState(<span class="kw-2">*</span>component_address)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
                 };
-                <span class="ident">track</span>.<span class="ident">write_substate</span>(<span class="ident">substate_id</span>, <span class="ident">ComponentState::new</span>(<span class="ident">value</span>.<span class="ident">raw</span>));
-                <span class="kw">for</span> (<span class="ident">id</span>, <span class="ident">val</span>) <span class="kw">in</span> <span class="ident">to_store</span> {
-                    <span class="ident">insert_non_root_nodes</span>(<span class="ident">track</span>, <span class="ident">val</span>.<span class="ident">to_nodes</span>(<span class="ident">id</span>));
+                track.write_substate(substate_id, ComponentState::new(value.raw));
+                <span class="kw">for </span>(id, val) <span class="kw">in </span>to_store {
+                    insert_non_root_nodes(track, val.to_nodes(id));
                 }
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_info</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ComponentInfo</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRefMut::Stack</span>(<span class="ident">re_value</span>, <span class="ident">id</span>) =&gt; {
-                <span class="ident">re_value</span>.<span class="ident">get_node_mut</span>(<span class="ident">id</span>.<span class="ident">as_ref</span>()).<span class="ident">component_info</span>()
+    <span class="kw">pub fn </span>component_info(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ComponentInfo {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRefMut::Stack(re_value, id) =&gt; {
+                re_value.get_node_mut(id.as_ref()).component_info()
             }
-            <span class="ident">RENodeRefMut::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::Component</span>(<span class="ident">component_address</span>) =&gt; {
-                        <span class="ident">SubstateId::ComponentInfo</span>(<span class="kw-2">*</span><span class="ident">component_address</span>)
+            RENodeRefMut::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::Component(component_address) =&gt; {
+                        SubstateId::ComponentInfo(<span class="kw-2">*</span>component_address)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
                 };
-                <span class="kw">let</span> <span class="ident">component_val</span> <span class="op">=</span> <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">substate_id</span>);
-                <span class="ident">component_val</span>.<span class="ident">component_info</span>()
+                <span class="kw">let </span>component_val = track.read_substate(substate_id);
+                component_val.component_info()
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_state</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ComponentState</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">RENodeRefMut::Stack</span>(<span class="ident">re_value</span>, <span class="ident">id</span>) =&gt; {
-                <span class="ident">re_value</span>.<span class="ident">get_node_mut</span>(<span class="ident">id</span>.<span class="ident">as_ref</span>()).<span class="ident">component_state</span>()
+    <span class="kw">pub fn </span>component_state(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ComponentState {
+        <span class="kw">match </span><span class="self">self </span>{
+            RENodeRefMut::Stack(re_value, id) =&gt; {
+                re_value.get_node_mut(id.as_ref()).component_state()
             }
-            <span class="ident">RENodeRefMut::Track</span>(<span class="ident">track</span>, <span class="ident">node_id</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">node_id</span> {
-                    <span class="ident">RENodeId::Component</span>(<span class="ident">component_address</span>) =&gt; {
-                        <span class="ident">SubstateId::ComponentState</span>(<span class="kw-2">*</span><span class="ident">component_address</span>)
+            RENodeRefMut::Track(track, node_id) =&gt; {
+                <span class="kw">let </span>substate_id = <span class="kw">match </span>node_id {
+                    RENodeId::Component(component_address) =&gt; {
+                        SubstateId::ComponentState(<span class="kw-2">*</span>component_address)
                     }
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unexpeceted&quot;</span>),
                 };
-                <span class="kw">let</span> <span class="ident">component_val</span> <span class="op">=</span> <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">substate_id</span>);
-                <span class="ident">component_val</span>.<span class="ident">component_state</span>()
+                <span class="kw">let </span>component_val = track.read_substate(substate_id);
+                component_val.component_state()
             }
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_stored_value_update</span>(
-    <span class="ident">old</span>: <span class="kw-2">&amp;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>,
-    <span class="ident">missing</span>: <span class="kw-2">&amp;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">RuntimeError</span><span class="op">&gt;</span> {
-    <span class="comment">// TODO: optimize intersection search</span>
-    <span class="kw">for</span> <span class="ident">old_id</span> <span class="kw">in</span> <span class="ident">old</span>.<span class="ident">iter</span>() {
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">missing</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">old_id</span>) {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::StoredNodeRemoved</span>(
-                <span class="ident">old_id</span>.<span class="ident">clone</span>(),
+<span class="kw">pub fn </span>verify_stored_value_update(
+    old: <span class="kw-2">&amp;</span>HashSet&lt;RENodeId&gt;,
+    missing: <span class="kw-2">&amp;</span>HashSet&lt;RENodeId&gt;,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+    <span class="comment">// TODO: optimize intersection search
+    </span><span class="kw">for </span>old_id <span class="kw">in </span>old.iter() {
+        <span class="kw">if </span>!missing.contains(<span class="kw-2">&amp;</span>old_id) {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
+                old_id.clone(),
             )));
         }
     }
 
-    <span class="kw">for</span> <span class="ident">missing_id</span> <span class="kw">in</span> <span class="ident">missing</span>.<span class="ident">iter</span>() {
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">old</span>.<span class="ident">contains</span>(<span class="ident">missing_id</span>) {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::RENodeNotFound</span>(
-                <span class="kw-2">*</span><span class="ident">missing_id</span>,
+    <span class="kw">for </span>missing_id <span class="kw">in </span>missing.iter() {
+        <span class="kw">if </span>!old.contains(missing_id) {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::RENodeNotFound(
+                <span class="kw-2">*</span>missing_id,
             )));
         }
     }
@@ -1413,44 +1408,43 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">insert_non_root_nodes</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span>(
-    <span class="ident">track</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-    <span class="ident">values</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRENode</span><span class="op">&gt;</span>,
+<span class="kw">pub fn </span>insert_non_root_nodes&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
+    track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+    values: HashMap&lt;RENodeId, HeapRENode&gt;,
 ) {
-    <span class="kw">for</span> (<span class="ident">id</span>, <span class="ident">node</span>) <span class="kw">in</span> <span class="ident">values</span> {
-        <span class="kw">match</span> <span class="ident">node</span> {
-            <span class="ident">HeapRENode::Vault</span>(<span class="ident">vault</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">addr</span> <span class="op">=</span> <span class="ident">SubstateId::Vault</span>(<span class="ident">id</span>.<span class="ident">into</span>());
-                <span class="ident">track</span>.<span class="ident">create_uuid_substate</span>(<span class="ident">addr</span>, <span class="ident">vault</span>, <span class="bool-val">false</span>);
+    <span class="kw">for </span>(id, node) <span class="kw">in </span>values {
+        <span class="kw">match </span>node {
+            HeapRENode::Vault(vault) =&gt; {
+                <span class="kw">let </span>addr = SubstateId::Vault(id.into());
+                track.create_uuid_substate(addr, vault, <span class="bool-val">false</span>);
             }
-            <span class="ident">HeapRENode::Component</span>(<span class="ident">component</span>, <span class="ident">component_state</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">component_address</span> <span class="op">=</span> <span class="ident">id</span>.<span class="ident">into</span>();
-                <span class="ident">track</span>.<span class="ident">create_uuid_substate</span>(
-                    <span class="ident">SubstateId::ComponentInfo</span>(<span class="ident">component_address</span>),
-                    <span class="ident">component</span>,
+            HeapRENode::Component(component, component_state) =&gt; {
+                <span class="kw">let </span>component_address = id.into();
+                track.create_uuid_substate(
+                    SubstateId::ComponentInfo(component_address),
+                    component,
                     <span class="bool-val">false</span>,
                 );
-                <span class="ident">track</span>.<span class="ident">create_uuid_substate</span>(
-                    <span class="ident">SubstateId::ComponentState</span>(<span class="ident">component_address</span>),
-                    <span class="ident">component_state</span>,
+                track.create_uuid_substate(
+                    SubstateId::ComponentState(component_address),
+                    component_state,
                     <span class="bool-val">false</span>,
                 );
             }
-            <span class="ident">HeapRENode::KeyValueStore</span>(<span class="ident">store</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">id</span> <span class="op">=</span> <span class="ident">id</span>.<span class="ident">into</span>();
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::KeyValueStoreSpace</span>(<span class="ident">id</span>);
-                <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">v</span>) <span class="kw">in</span> <span class="ident">store</span>.<span class="ident">store</span> {
-                    <span class="ident">track</span>.<span class="ident">set_key_value</span>(
-                        <span class="ident">substate_id</span>.<span class="ident">clone</span>(),
-                        <span class="ident">k</span>,
-                        <span class="ident">KeyValueStoreEntryWrapper</span>(<span class="prelude-val">Some</span>(<span class="ident">v</span>.<span class="ident">raw</span>)),
+            HeapRENode::KeyValueStore(store) =&gt; {
+                <span class="kw">let </span>id = id.into();
+                <span class="kw">let </span>substate_id = SubstateId::KeyValueStoreSpace(id);
+                <span class="kw">for </span>(k, v) <span class="kw">in </span>store.store {
+                    track.set_key_value(
+                        substate_id.clone(),
+                        k,
+                        KeyValueStoreEntryWrapper(<span class="prelude-val">Some</span>(v.raw)),
                     );
                 }
             }
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Invalid node being persisted: {:?}&quot;</span>, <span class="ident">node</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Invalid node being persisted: {:?}&quot;</span>, node),
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

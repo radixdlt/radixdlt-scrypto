@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/address/decoder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>decoder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/address/decoder.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>decoder.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -104,107 +99,106 @@
 <span id="99">99</span>
 <span id="100">100</span>
 <span id="101">101</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::vec::Vec;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::component</span>::{<span class="ident">ComponentAddress</span>, <span class="ident">PackageAddress</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::core::NetworkDefinition</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource::ResourceAddress</span>;
+<span class="kw">use </span><span class="kw">crate</span>::component::{ComponentAddress, PackageAddress};
+<span class="kw">use </span><span class="kw">crate</span>::core::NetworkDefinition;
+<span class="kw">use </span><span class="kw">crate</span>::resource::ResourceAddress;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::entity::EntityType</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::errors::AddressError</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::hrpset::HrpSet</span>;
+<span class="kw">use </span><span class="kw">super</span>::entity::EntityType;
+<span class="kw">use </span><span class="kw">super</span>::errors::AddressError;
+<span class="kw">use </span><span class="kw">super</span>::hrpset::HrpSet;
 
-<span class="kw">use</span> <span class="ident">bech32</span>::{<span class="self">self</span>, <span class="ident">FromBase32</span>, <span class="ident">Variant</span>};
-<span class="kw">use</span> <span class="ident">once_cell::unsync::Lazy</span>;
+<span class="kw">use </span>bech32::{<span class="self">self</span>, FromBase32, Variant};
+<span class="kw">use </span>once_cell::unsync::Lazy;
 
-<span class="doccomment">/// Represents a decoder which understands how to decode Scrypto addresses in Bech32.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Bech32Decoder</span> {
-    <span class="kw">pub</span> <span class="ident">hrp_set</span>: <span class="ident">HrpSet</span>,
+<span class="doccomment">/// Represents a decoder which understands how to decode Scrypto addresses in Bech32.
+</span><span class="kw">pub struct </span>Bech32Decoder {
+    <span class="kw">pub </span>hrp_set: HrpSet,
 }
 
-<span class="kw">impl</span> <span class="ident">Bech32Decoder</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">for_simulator</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::new</span>(<span class="kw-2">&amp;</span><span class="ident">NetworkDefinition::simulator</span>())
+<span class="kw">impl </span>Bech32Decoder {
+    <span class="kw">pub fn </span>for_simulator() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new(<span class="kw-2">&amp;</span>NetworkDefinition::simulator())
     }
 
-    <span class="doccomment">/// Instantiates a new Bech32Decoder with the HRP corresponding to the passed network.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">network</span>: <span class="kw-2">&amp;</span><span class="ident">NetworkDefinition</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">hrp_set</span>: <span class="ident">network</span>.<span class="ident">into</span>(),
+    <span class="doccomment">/// Instantiates a new Bech32Decoder with the HRP corresponding to the passed network.
+    </span><span class="kw">pub fn </span>new(network: <span class="kw-2">&amp;</span>NetworkDefinition) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            hrp_set: network.into(),
         }
     }
 
-    <span class="doccomment">/// Decodes a package address string from a Bech32 string into a `PackageAddress` and returns an `AddressError` on</span>
-    <span class="doccomment">/// validation or decoding failure.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_and_decode_package_address</span>(
+    <span class="doccomment">/// Decodes a package address string from a Bech32 string into a `PackageAddress` and returns an `AddressError` on
+    /// validation or decoding failure.
+    </span><span class="kw">pub fn </span>validate_and_decode_package_address(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">package_address</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">PackageAddress</span>, <span class="ident">AddressError</span><span class="op">&gt;</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">PackageAddress::try_from</span>(
-            <span class="self">self</span>.<span class="ident">validate_and_decode</span>(<span class="ident">package_address</span>)<span class="question-mark">?</span>.<span class="ident">as_slice</span>(),
+        package_address: <span class="kw-2">&amp;</span>str,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;PackageAddress, AddressError&gt; {
+        <span class="prelude-val">Ok</span>(PackageAddress::try_from(
+            <span class="self">self</span>.validate_and_decode(package_address)<span class="question-mark">?</span>.as_slice(),
         )<span class="question-mark">?</span>)
     }
 
-    <span class="doccomment">/// Decodes a component address string from a Bech32 string into a `ComponentAddress` and returns an `AddressError` on</span>
-    <span class="doccomment">/// validation or decoding failure.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_and_decode_component_address</span>(
+    <span class="doccomment">/// Decodes a component address string from a Bech32 string into a `ComponentAddress` and returns an `AddressError` on
+    /// validation or decoding failure.
+    </span><span class="kw">pub fn </span>validate_and_decode_component_address(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">component_address</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ComponentAddress</span>, <span class="ident">AddressError</span><span class="op">&gt;</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">ComponentAddress::try_from</span>(
-            <span class="self">self</span>.<span class="ident">validate_and_decode</span>(<span class="ident">component_address</span>)<span class="question-mark">?</span>.<span class="ident">as_slice</span>(),
+        component_address: <span class="kw-2">&amp;</span>str,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ComponentAddress, AddressError&gt; {
+        <span class="prelude-val">Ok</span>(ComponentAddress::try_from(
+            <span class="self">self</span>.validate_and_decode(component_address)<span class="question-mark">?</span>.as_slice(),
         )<span class="question-mark">?</span>)
     }
 
-    <span class="doccomment">/// Decodes a resource address string from a Bech32 string into a `ResourceAddress` and returns an `AddressError` on</span>
-    <span class="doccomment">/// validation or decoding failure.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_and_decode_resource_address</span>(
+    <span class="doccomment">/// Decodes a resource address string from a Bech32 string into a `ResourceAddress` and returns an `AddressError` on
+    /// validation or decoding failure.
+    </span><span class="kw">pub fn </span>validate_and_decode_resource_address(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">resource_address</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span>, <span class="ident">AddressError</span><span class="op">&gt;</span> {
-        <span class="prelude-val">Ok</span>(<span class="ident">ResourceAddress::try_from</span>(
-            <span class="self">self</span>.<span class="ident">validate_and_decode</span>(<span class="ident">resource_address</span>)<span class="question-mark">?</span>.<span class="ident">as_slice</span>(),
+        resource_address: <span class="kw-2">&amp;</span>str,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceAddress, AddressError&gt; {
+        <span class="prelude-val">Ok</span>(ResourceAddress::try_from(
+            <span class="self">self</span>.validate_and_decode(resource_address)<span class="question-mark">?</span>.as_slice(),
         )<span class="question-mark">?</span>)
     }
 
-    <span class="doccomment">/// Low level method which performs the Bech32 validation and decoding of the data.</span>
-    <span class="kw">fn</span> <span class="ident">validate_and_decode</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">address</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">AddressError</span><span class="op">&gt;</span> {
-        <span class="comment">// Decode the address string</span>
-        <span class="kw">let</span> (<span class="ident">actual_hrp</span>, <span class="ident">data</span>, <span class="ident">variant</span>) <span class="op">=</span>
-            <span class="ident">bech32::decode</span>(<span class="ident">address</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> <span class="ident">AddressError::DecodingError</span>(<span class="ident">err</span>))<span class="question-mark">?</span>;
+    <span class="doccomment">/// Low level method which performs the Bech32 validation and decoding of the data.
+    </span><span class="kw">fn </span>validate_and_decode(<span class="kw-2">&amp;</span><span class="self">self</span>, address: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;, AddressError&gt; {
+        <span class="comment">// Decode the address string
+        </span><span class="kw">let </span>(actual_hrp, data, variant) =
+            bech32::decode(address).map_err(|err| AddressError::DecodingError(err))<span class="question-mark">?</span>;
 
-        <span class="comment">// Validate the Bech32 variant to ensure that is is Bech32m</span>
-        <span class="kw">match</span> <span class="ident">variant</span> {
-            <span class="ident">Variant::Bech32m</span> =&gt; {}
-            <span class="kw">_</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">AddressError::InvalidVariant</span>(<span class="ident">variant</span>)),
+        <span class="comment">// Validate the Bech32 variant to ensure that is is Bech32m
+        </span><span class="kw">match </span>variant {
+            Variant::Bech32m =&gt; {}
+            <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(AddressError::InvalidVariant(variant)),
         };
 
-        <span class="comment">// Convert the data to u8 from u5.</span>
-        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="ident">::from_base32</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> <span class="ident">AddressError::DecodingError</span>(<span class="ident">err</span>))<span class="question-mark">?</span>;
+        <span class="comment">// Convert the data to u8 from u5.
+        </span><span class="kw">let </span>data = Vec::&lt;u8&gt;::from_base32(<span class="kw-2">&amp;</span>data).map_err(|err| AddressError::DecodingError(err))<span class="question-mark">?</span>;
 
-        <span class="comment">// Obtain the HRP based on the entity byte in the data</span>
-        <span class="kw">let</span> <span class="ident">expected_hrp</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">entity_type_id</span>) <span class="op">=</span> <span class="ident">data</span>.<span class="ident">get</span>(<span class="number">0</span>) {
-            <span class="kw">let</span> <span class="ident">entity_type</span> <span class="op">=</span> <span class="ident">EntityType::try_from</span>(<span class="kw-2">*</span><span class="ident">entity_type_id</span>)
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">AddressError::InvalidEntityTypeId</span>(<span class="kw-2">*</span><span class="ident">entity_type_id</span>))<span class="question-mark">?</span>;
+        <span class="comment">// Obtain the HRP based on the entity byte in the data
+        </span><span class="kw">let </span>expected_hrp = <span class="kw">if let </span><span class="prelude-val">Some</span>(entity_type_id) = data.get(<span class="number">0</span>) {
+            <span class="kw">let </span>entity_type = EntityType::try_from(<span class="kw-2">*</span>entity_type_id)
+                .map_err(|<span class="kw">_</span>| AddressError::InvalidEntityTypeId(<span class="kw-2">*</span>entity_type_id))<span class="question-mark">?</span>;
 
-            <span class="comment">// Obtain the HRP corresponding to this entity type</span>
-            <span class="self">self</span>.<span class="ident">hrp_set</span>.<span class="ident">get_entity_hrp</span>(<span class="kw-2">&amp;</span><span class="ident">entity_type</span>)
-        } <span class="kw">else</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">AddressError::DataSectionTooShort</span>);
+            <span class="comment">// Obtain the HRP corresponding to this entity type
+            </span><span class="self">self</span>.hrp_set.get_entity_hrp(<span class="kw-2">&amp;</span>entity_type)
+        } <span class="kw">else </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(AddressError::DataSectionTooShort);
         };
 
-        <span class="comment">// Validate that the decoded HRP matches that corresponding to the entity byte</span>
-        <span class="kw">if</span> <span class="ident">actual_hrp</span> <span class="op">!</span><span class="op">=</span> <span class="ident">expected_hrp</span> {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">AddressError::InvalidHrp</span>);
+        <span class="comment">// Validate that the decoded HRP matches that corresponding to the entity byte
+        </span><span class="kw">if </span>actual_hrp != expected_hrp {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(AddressError::InvalidHrp);
         }
 
-        <span class="comment">// Validation complete, return data bytes</span>
-        <span class="prelude-val">Ok</span>(<span class="ident">data</span>)
+        <span class="comment">// Validation complete, return data bytes
+        </span><span class="prelude-val">Ok</span>(data)
     }
 }
 
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">BECH32_DECODER</span>: <span class="ident">Lazy</span><span class="op">&lt;</span><span class="ident">Bech32Decoder</span><span class="op">&gt;</span> <span class="op">=</span>
-    <span class="ident">Lazy::new</span>(<span class="op">|</span><span class="op">|</span> <span class="ident">Bech32Decoder::new</span>(<span class="kw-2">&amp;</span><span class="ident">NetworkDefinition::simulator</span>()));
+<span class="kw">pub const </span>BECH32_DECODER: Lazy&lt;Bech32Decoder&gt; =
+    Lazy::new(|| Bech32Decoder::new(<span class="kw-2">&amp;</span>NetworkDefinition::simulator()));
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

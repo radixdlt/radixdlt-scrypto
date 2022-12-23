@@ -1,1 +1,1 @@
-initSidebarItems({"mod":[["decimal",""],["integer","Definitions of safe integers and uints."],["precise_decimal",""],["rounding_mode",""]]});
+window.SIDEBAR_ITEMS = {"mod":[["decimal",""],["integer","Definitions of safe integers and uints."],["precise_decimal",""],["rounding_mode",""]]};

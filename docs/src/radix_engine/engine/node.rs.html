@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/node.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>node.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/node.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>node.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -531,534 +526,533 @@
 <span id="526">526</span>
 <span id="527">527</span>
 <span id="528">528</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="comment">// TODO: still lots of unwraps</span>
+<span class="comment">// TODO: still lots of unwraps
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Substate</span> {
-    <span class="ident">System</span>(<span class="ident">System</span>),
-    <span class="ident">Resource</span>(<span class="ident">ResourceManager</span>),
-    <span class="ident">ComponentInfo</span>(<span class="ident">ComponentInfo</span>),
-    <span class="ident">ComponentState</span>(<span class="ident">ComponentState</span>),
-    <span class="ident">Package</span>(<span class="ident">Package</span>),
-    <span class="ident">Vault</span>(<span class="ident">Vault</span>),
-    <span class="ident">NonFungible</span>(<span class="ident">NonFungibleWrapper</span>),
-    <span class="ident">KeyValueStoreEntry</span>(<span class="ident">KeyValueStoreEntryWrapper</span>),
+</span><span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>Substate {
+    System(System),
+    Resource(ResourceManager),
+    ComponentInfo(ComponentInfo),
+    ComponentState(ComponentState),
+    Package(Package),
+    Vault(Vault),
+    NonFungible(NonFungibleWrapper),
+    KeyValueStoreEntry(KeyValueStoreEntryWrapper),
 }
 
-<span class="kw">impl</span> <span class="ident">Substate</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">vault_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Vault</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::Vault</span>(<span class="ident">vault</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">vault</span>
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Substate {
+    <span class="kw">pub fn </span>vault_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Vault {
+        <span class="kw">if let </span>Substate::Vault(vault) = <span class="self">self </span>{
+            vault
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a vault&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">vault</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Vault</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::Vault</span>(<span class="ident">vault</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">vault</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>vault(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vault {
+        <span class="kw">if let </span>Substate::Vault(vault) = <span class="self">self </span>{
+            vault
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a vault&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_manager_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">ResourceManager</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::Resource</span>(<span class="ident">resource_manager</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">resource_manager</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>resource_manager_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ResourceManager {
+        <span class="kw">if let </span>Substate::Resource(resource_manager) = <span class="self">self </span>{
+            resource_manager
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a resource manager&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">system</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">System</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::System</span>(<span class="ident">system</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">system</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>system(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>System {
+        <span class="kw">if let </span>Substate::System(system) = <span class="self">self </span>{
+            system
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a system value&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">system_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">System</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::System</span>(<span class="ident">system</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">system</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>system_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>System {
+        <span class="kw">if let </span>Substate::System(system) = <span class="self">self </span>{
+            system
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a system value&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_manager</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ResourceManager</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::Resource</span>(<span class="ident">resource_manager</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">resource_manager</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>resource_manager(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ResourceManager {
+        <span class="kw">if let </span>Substate::Resource(resource_manager) = <span class="self">self </span>{
+            resource_manager
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a resource manager&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ComponentState</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::ComponentState</span>(<span class="ident">state</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">state</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>component_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ComponentState {
+        <span class="kw">if let </span>Substate::ComponentState(state) = <span class="self">self </span>{
+            state
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a component state&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ComponentInfo</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::ComponentInfo</span>(<span class="ident">component</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">component</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>component_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ComponentInfo {
+        <span class="kw">if let </span>Substate::ComponentInfo(component) = <span class="self">self </span>{
+            component
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a component info&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">ComponentInfo</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::ComponentInfo</span>(<span class="ident">component</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">component</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>component_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ComponentInfo {
+        <span class="kw">if let </span>Substate::ComponentInfo(component) = <span class="self">self </span>{
+            component
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a component&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">package</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Package</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::Package</span>(<span class="ident">package</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">package</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>package(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Package {
+        <span class="kw">if let </span>Substate::Package(package) = <span class="self">self </span>{
+            package
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a package&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">NonFungibleWrapper</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::NonFungible</span>(<span class="ident">non_fungible</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">non_fungible</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>non_fungible(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>NonFungibleWrapper {
+        <span class="kw">if let </span>Substate::NonFungible(non_fungible) = <span class="self">self </span>{
+            non_fungible
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a NonFungible&quot;</span>);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">kv_entry</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">KeyValueStoreEntryWrapper</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::KeyValueStoreEntry</span>(<span class="ident">kv_entry</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">kv_entry</span>
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>kv_entry(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>KeyValueStoreEntryWrapper {
+        <span class="kw">if let </span>Substate::KeyValueStoreEntry(kv_entry) = <span class="self">self </span>{
+            kv_entry
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a KVEntry&quot;</span>);
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">System</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="ident">Substate::System</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;Substate&gt; <span class="kw">for </span>System {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Substate {
+        Substate::System(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Package</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="ident">Substate::Package</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;Substate&gt; <span class="kw">for </span>Package {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Substate {
+        Substate::Package(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ComponentInfo</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="ident">Substate::ComponentInfo</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;Substate&gt; <span class="kw">for </span>ComponentInfo {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Substate {
+        Substate::ComponentInfo(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ComponentState</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="ident">Substate::ComponentState</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;Substate&gt; <span class="kw">for </span>ComponentState {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Substate {
+        Substate::ComponentState(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ResourceManager</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="ident">Substate::Resource</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;Substate&gt; <span class="kw">for </span>ResourceManager {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Substate {
+        Substate::Resource(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Vault</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="ident">Substate::Vault</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;Substate&gt; <span class="kw">for </span>Vault {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Substate {
+        Substate::Vault(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">NonFungibleWrapper</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="ident">Substate::NonFungible</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;Substate&gt; <span class="kw">for </span>NonFungibleWrapper {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Substate {
+        Substate::NonFungible(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">KeyValueStoreEntryWrapper</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="ident">Substate::KeyValueStoreEntry</span>(<span class="self">self</span>)
+<span class="kw">impl </span>Into&lt;Substate&gt; <span class="kw">for </span>KeyValueStoreEntryWrapper {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Substate {
+        Substate::KeyValueStoreEntry(<span class="self">self</span>)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ComponentInfo</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Substate</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ComponentInfo</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::ComponentInfo</span>(<span class="ident">component</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">component</span>
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Into&lt;ComponentInfo&gt; <span class="kw">for </span>Substate {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ComponentInfo {
+        <span class="kw">if let </span>Substate::ComponentInfo(component) = <span class="self">self </span>{
+            component
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a component info&quot;</span>);
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ComponentState</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Substate</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ComponentState</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::ComponentState</span>(<span class="ident">component_state</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">component_state</span>
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Into&lt;ComponentState&gt; <span class="kw">for </span>Substate {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ComponentState {
+        <span class="kw">if let </span>Substate::ComponentState(component_state) = <span class="self">self </span>{
+            component_state
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a component&quot;</span>);
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ResourceManager</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Substate</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">ResourceManager</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::Resource</span>(<span class="ident">resource_manager</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">resource_manager</span>
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Into&lt;ResourceManager&gt; <span class="kw">for </span>Substate {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ResourceManager {
+        <span class="kw">if let </span>Substate::Resource(resource_manager) = <span class="self">self </span>{
+            resource_manager
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a resource manager&quot;</span>);
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Package</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Substate</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Package</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::Package</span>(<span class="ident">package</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">package</span>
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Into&lt;Package&gt; <span class="kw">for </span>Substate {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Package {
+        <span class="kw">if let </span>Substate::Package(package) = <span class="self">self </span>{
+            package
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a resource manager&quot;</span>);
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">NonFungibleWrapper</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Substate</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">NonFungibleWrapper</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::NonFungible</span>(<span class="ident">non_fungible</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">non_fungible</span>
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Into&lt;NonFungibleWrapper&gt; <span class="kw">for </span>Substate {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; NonFungibleWrapper {
+        <span class="kw">if let </span>Substate::NonFungible(non_fungible) = <span class="self">self </span>{
+            non_fungible
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a non-fungible wrapper&quot;</span>);
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">KeyValueStoreEntryWrapper</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Substate</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">KeyValueStoreEntryWrapper</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::KeyValueStoreEntry</span>(<span class="ident">kv_entry</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">kv_entry</span>
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Into&lt;KeyValueStoreEntryWrapper&gt; <span class="kw">for </span>Substate {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; KeyValueStoreEntryWrapper {
+        <span class="kw">if let </span>Substate::KeyValueStoreEntry(kv_entry) = <span class="self">self </span>{
+            kv_entry
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a key value store entry wrapper&quot;</span>);
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Vault</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Substate</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Vault</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Substate::Vault</span>(<span class="ident">vault</span>) <span class="op">=</span> <span class="self">self</span> {
-            <span class="ident">vault</span>
-        } <span class="kw">else</span> {
+<span class="kw">impl </span>Into&lt;Vault&gt; <span class="kw">for </span>Substate {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Vault {
+        <span class="kw">if let </span>Substate::Vault(vault) = <span class="self">self </span>{
+            vault
+        } <span class="kw">else </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Not a vault&quot;</span>);
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HeapRENode</span> {
-    <span class="ident">Bucket</span>(<span class="ident">Bucket</span>),
-    <span class="ident">Proof</span>(<span class="ident">Proof</span>),
-    <span class="ident">Vault</span>(<span class="ident">Vault</span>),
-    <span class="ident">KeyValueStore</span>(<span class="ident">HeapKeyValueStore</span>),
-    <span class="ident">Component</span>(<span class="ident">ComponentInfo</span>, <span class="ident">ComponentState</span>),
-    <span class="ident">Worktop</span>(<span class="ident">Worktop</span>),
-    <span class="ident">Package</span>(<span class="ident">Package</span>),
-    <span class="ident">Resource</span>(<span class="ident">ResourceManager</span>, <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span>, <span class="ident">NonFungible</span><span class="op">&gt;</span><span class="op">&gt;</span>),
-    <span class="ident">System</span>(<span class="ident">System</span>),
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub enum </span>HeapRENode {
+    Bucket(Bucket),
+    Proof(Proof),
+    Vault(Vault),
+    KeyValueStore(HeapKeyValueStore),
+    Component(ComponentInfo, ComponentState),
+    Worktop(Worktop),
+    Package(Package),
+    Resource(ResourceManager, <span class="prelude-ty">Option</span>&lt;HashMap&lt;NonFungibleId, NonFungible&gt;&gt;),
+    System(System),
 }
 
-<span class="kw">impl</span> <span class="ident">HeapRENode</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_child_nodes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>, <span class="ident">RuntimeError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Component</span>(<span class="kw">_</span>, <span class="ident">component_state</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">ScryptoValue::from_slice</span>(<span class="ident">component_state</span>.<span class="ident">state</span>())
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::DecodeError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">value</span>.<span class="ident">node_ids</span>())
+<span class="kw">impl </span>HeapRENode {
+    <span class="kw">pub fn </span>get_child_nodes(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;HashSet&lt;RENodeId&gt;, RuntimeError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Component(<span class="kw">_</span>, component_state) =&gt; {
+                <span class="kw">let </span>value = ScryptoValue::from_slice(component_state.state())
+                    .map_err(|e| RuntimeError::KernelError(KernelError::DecodeError(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(value.node_ids())
             }
-            <span class="ident">HeapRENode::Resource</span>(..) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">HashSet::new</span>()),
-            <span class="ident">HeapRENode::Package</span>(..) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">HashSet::new</span>()),
-            <span class="ident">HeapRENode::Bucket</span>(..) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">HashSet::new</span>()),
-            <span class="ident">HeapRENode::Proof</span>(..) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">HashSet::new</span>()),
-            <span class="ident">HeapRENode::KeyValueStore</span>(<span class="ident">kv_store</span>) =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">child_nodes</span> <span class="op">=</span> <span class="ident">HashSet::new</span>();
-                <span class="kw">for</span> (<span class="ident">_id</span>, <span class="ident">value</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">kv_store</span>.<span class="ident">store</span> {
-                    <span class="ident">child_nodes</span>.<span class="ident">extend</span>(<span class="ident">value</span>.<span class="ident">node_ids</span>());
+            HeapRENode::Resource(..) =&gt; <span class="prelude-val">Ok</span>(HashSet::new()),
+            HeapRENode::Package(..) =&gt; <span class="prelude-val">Ok</span>(HashSet::new()),
+            HeapRENode::Bucket(..) =&gt; <span class="prelude-val">Ok</span>(HashSet::new()),
+            HeapRENode::Proof(..) =&gt; <span class="prelude-val">Ok</span>(HashSet::new()),
+            HeapRENode::KeyValueStore(kv_store) =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>child_nodes = HashSet::new();
+                <span class="kw">for </span>(_id, value) <span class="kw">in </span><span class="kw-2">&amp;</span>kv_store.store {
+                    child_nodes.extend(value.node_ids());
                 }
-                <span class="prelude-val">Ok</span>(<span class="ident">child_nodes</span>)
+                <span class="prelude-val">Ok</span>(child_nodes)
             }
-            <span class="ident">HeapRENode::Vault</span>(..) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">HashSet::new</span>()),
-            <span class="ident">HeapRENode::Worktop</span>(..) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">HashSet::new</span>()),
-            <span class="ident">HeapRENode::System</span>(..) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">HashSet::new</span>()),
+            HeapRENode::Vault(..) =&gt; <span class="prelude-val">Ok</span>(HashSet::new()),
+            HeapRENode::Worktop(..) =&gt; <span class="prelude-val">Ok</span>(HashSet::new()),
+            HeapRENode::System(..) =&gt; <span class="prelude-val">Ok</span>(HashSet::new()),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">system</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">System</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::System</span>(<span class="ident">system</span>) =&gt; <span class="ident">system</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be system&quot;</span>),
+    <span class="kw">pub fn </span>system(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>System {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::System(system) =&gt; system,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be system&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_manager</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ResourceManager</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Resource</span>(<span class="ident">resource_manager</span>, ..) =&gt; <span class="ident">resource_manager</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a resource manager&quot;</span>),
+    <span class="kw">pub fn </span>resource_manager(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ResourceManager {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Resource(resource_manager, ..) =&gt; resource_manager,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a resource manager&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_manager_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">ResourceManager</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Resource</span>(<span class="ident">resource_manager</span>, ..) =&gt; <span class="ident">resource_manager</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a resource manager&quot;</span>),
+    <span class="kw">pub fn </span>resource_manager_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ResourceManager {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Resource(resource_manager, ..) =&gt; resource_manager,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a resource manager&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungibles</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span>, <span class="ident">NonFungible</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Resource</span>(<span class="kw">_</span>, <span class="ident">non_fungibles</span>) =&gt; <span class="ident">non_fungibles</span>.<span class="ident">as_ref</span>().<span class="ident">unwrap</span>(),
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be non fungibles&quot;</span>),
+    <span class="kw">pub fn </span>non_fungibles(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>HashMap&lt;NonFungibleId, NonFungible&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Resource(<span class="kw">_</span>, non_fungibles) =&gt; non_fungibles.as_ref().unwrap(),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be non fungibles&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungibles_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span>, <span class="ident">NonFungible</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Resource</span>(<span class="kw">_</span>, <span class="ident">non_fungibles</span>) =&gt; <span class="ident">non_fungibles</span>.<span class="ident">as_mut</span>().<span class="ident">unwrap</span>(),
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be non fungibles&quot;</span>),
+    <span class="kw">pub fn </span>non_fungibles_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>HashMap&lt;NonFungibleId, NonFungible&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Resource(<span class="kw">_</span>, non_fungibles) =&gt; non_fungibles.as_mut().unwrap(),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be non fungibles&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">package</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Package</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Package</span>(<span class="ident">package</span>) =&gt; <span class="ident">package</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a package&quot;</span>),
+    <span class="kw">pub fn </span>package(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Package {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Package(package) =&gt; package,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a package&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">bucket</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Bucket</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Bucket</span>(<span class="ident">bucket</span>) =&gt; <span class="ident">bucket</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a bucket&quot;</span>),
+    <span class="kw">pub fn </span>bucket(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Bucket {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Bucket(bucket) =&gt; bucket,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a bucket&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ComponentInfo</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Component</span>(<span class="ident">component_info</span>, ..) =&gt; <span class="ident">component_info</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
+    <span class="kw">pub fn </span>component_info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ComponentInfo {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Component(component_info, ..) =&gt; component_info,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_info_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">ComponentInfo</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Component</span>(<span class="ident">component_info</span>, ..) =&gt; <span class="ident">component_info</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
+    <span class="kw">pub fn </span>component_info_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ComponentInfo {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Component(component_info, ..) =&gt; component_info,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">ComponentState</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Component</span>(<span class="kw">_</span>, <span class="ident">component_state</span>) =&gt; <span class="ident">component_state</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
+    <span class="kw">pub fn </span>component_state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ComponentState {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Component(<span class="kw">_</span>, component_state) =&gt; component_state,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">component_state_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">ComponentState</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Component</span>(<span class="kw">_</span>, <span class="ident">component_state</span>) =&gt; <span class="ident">component_state</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
+    <span class="kw">pub fn </span>component_state_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>ComponentState {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Component(<span class="kw">_</span>, component_state) =&gt; component_state,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">kv_store</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">HeapKeyValueStore</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::KeyValueStore</span>(<span class="ident">store</span>) =&gt; <span class="ident">store</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
+    <span class="kw">pub fn </span>kv_store(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>HeapKeyValueStore {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::KeyValueStore(store) =&gt; store,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">kv_store_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">HeapKeyValueStore</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::KeyValueStore</span>(<span class="ident">store</span>) =&gt; <span class="ident">store</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
+    <span class="kw">pub fn </span>kv_store_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>HeapKeyValueStore {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::KeyValueStore(store) =&gt; store,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a store&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">vault</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Vault</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Vault</span>(<span class="ident">vault</span>) =&gt; <span class="ident">vault</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a vault&quot;</span>),
+    <span class="kw">pub fn </span>vault(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vault {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Vault(vault) =&gt; vault,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a vault&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">vault_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">Vault</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Vault</span>(<span class="ident">vault</span>) =&gt; <span class="ident">vault</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a vault&quot;</span>),
+    <span class="kw">pub fn </span>vault_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Vault {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Vault(vault) =&gt; vault,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a vault&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_can_move</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">RuntimeError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Bucket</span>(<span class="ident">bucket</span>) =&gt; {
-                <span class="kw">if</span> <span class="ident">bucket</span>.<span class="ident">is_locked</span>() {
-                    <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::CantMoveLockedBucket</span>))
-                } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>verify_can_move(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Bucket(bucket) =&gt; {
+                <span class="kw">if </span>bucket.is_locked() {
+                    <span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::CantMoveLockedBucket))
+                } <span class="kw">else </span>{
                     <span class="prelude-val">Ok</span>(())
                 }
             }
-            <span class="ident">HeapRENode::Proof</span>(<span class="ident">proof</span>) =&gt; {
-                <span class="kw">if</span> <span class="ident">proof</span>.<span class="ident">is_restricted</span>() {
-                    <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(
-                        <span class="ident">KernelError::CantMoveRestrictedProof</span>,
+            HeapRENode::Proof(proof) =&gt; {
+                <span class="kw">if </span>proof.is_restricted() {
+                    <span class="prelude-val">Err</span>(RuntimeError::KernelError(
+                        KernelError::CantMoveRestrictedProof,
                     ))
-                } <span class="kw">else</span> {
+                } <span class="kw">else </span>{
                     <span class="prelude-val">Ok</span>(())
                 }
             }
-            <span class="ident">HeapRENode::KeyValueStore</span>(..) =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="ident">HeapRENode::Component</span>(..) =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="ident">HeapRENode::Vault</span>(..) =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="ident">HeapRENode::Resource</span>(..) =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="ident">HeapRENode::Package</span>(..) =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="ident">HeapRENode::Worktop</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::CantMoveWorktop</span>)),
-            <span class="ident">HeapRENode::System</span>(..) =&gt; <span class="prelude-val">Ok</span>(()),
+            HeapRENode::KeyValueStore(..) =&gt; <span class="prelude-val">Ok</span>(()),
+            HeapRENode::Component(..) =&gt; <span class="prelude-val">Ok</span>(()),
+            HeapRENode::Vault(..) =&gt; <span class="prelude-val">Ok</span>(()),
+            HeapRENode::Resource(..) =&gt; <span class="prelude-val">Ok</span>(()),
+            HeapRENode::Package(..) =&gt; <span class="prelude-val">Ok</span>(()),
+            HeapRENode::Worktop(..) =&gt; <span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::CantMoveWorktop)),
+            HeapRENode::System(..) =&gt; <span class="prelude-val">Ok</span>(()),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">verify_can_persist</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">RuntimeError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::KeyValueStore</span> { .. } =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="ident">HeapRENode::Component</span> { .. } =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="ident">HeapRENode::Vault</span>(..) =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="ident">HeapRENode::Resource</span>(..) =&gt; {
-                <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::ValueNotAllowed</span>))
+    <span class="kw">pub fn </span>verify_can_persist(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::KeyValueStore { .. } =&gt; <span class="prelude-val">Ok</span>(()),
+            HeapRENode::Component { .. } =&gt; <span class="prelude-val">Ok</span>(()),
+            HeapRENode::Vault(..) =&gt; <span class="prelude-val">Ok</span>(()),
+            HeapRENode::Resource(..) =&gt; {
+                <span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::ValueNotAllowed))
             }
-            <span class="ident">HeapRENode::Package</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::ValueNotAllowed</span>)),
-            <span class="ident">HeapRENode::Bucket</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::ValueNotAllowed</span>)),
-            <span class="ident">HeapRENode::Proof</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::ValueNotAllowed</span>)),
-            <span class="ident">HeapRENode::Worktop</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::ValueNotAllowed</span>)),
-            <span class="ident">HeapRENode::System</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::ValueNotAllowed</span>)),
+            HeapRENode::Package(..) =&gt; <span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::Bucket(..) =&gt; <span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::Proof(..) =&gt; <span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::Worktop(..) =&gt; <span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
+            HeapRENode::System(..) =&gt; <span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::ValueNotAllowed)),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_drop</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DropFailure</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HeapRENode::Package</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DropFailure::Package</span>),
-            <span class="ident">HeapRENode::Vault</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DropFailure::Vault</span>),
-            <span class="ident">HeapRENode::KeyValueStore</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DropFailure::KeyValueStore</span>),
-            <span class="ident">HeapRENode::Component</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DropFailure::Component</span>),
-            <span class="ident">HeapRENode::Bucket</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DropFailure::Bucket</span>),
-            <span class="ident">HeapRENode::Resource</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DropFailure::Resource</span>),
-            <span class="ident">HeapRENode::System</span>(..) =&gt; <span class="prelude-val">Err</span>(<span class="ident">DropFailure::System</span>),
-            <span class="ident">HeapRENode::Proof</span>(<span class="ident">proof</span>) =&gt; {
-                <span class="ident">proof</span>.<span class="ident">drop</span>();
+    <span class="kw">pub fn </span>try_drop(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), DropFailure&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            HeapRENode::Package(..) =&gt; <span class="prelude-val">Err</span>(DropFailure::Package),
+            HeapRENode::Vault(..) =&gt; <span class="prelude-val">Err</span>(DropFailure::Vault),
+            HeapRENode::KeyValueStore(..) =&gt; <span class="prelude-val">Err</span>(DropFailure::KeyValueStore),
+            HeapRENode::Component(..) =&gt; <span class="prelude-val">Err</span>(DropFailure::Component),
+            HeapRENode::Bucket(..) =&gt; <span class="prelude-val">Err</span>(DropFailure::Bucket),
+            HeapRENode::Resource(..) =&gt; <span class="prelude-val">Err</span>(DropFailure::Resource),
+            HeapRENode::System(..) =&gt; <span class="prelude-val">Err</span>(DropFailure::System),
+            HeapRENode::Proof(proof) =&gt; {
+                proof.drop();
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="ident">HeapRENode::Worktop</span>(<span class="ident">worktop</span>) =&gt; <span class="ident">worktop</span>.<span class="ident">drop</span>(),
+            HeapRENode::Worktop(worktop) =&gt; worktop.drop(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">drop_nodes</span>(<span class="ident">nodes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HeapRootRENode</span><span class="op">&gt;</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DropFailure</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">worktops</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">for</span> <span class="ident">node</span> <span class="kw">in</span> <span class="ident">nodes</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">HeapRENode::Worktop</span>(<span class="ident">worktop</span>) <span class="op">=</span> <span class="ident">node</span>.<span class="ident">root</span> {
-                <span class="ident">worktops</span>.<span class="ident">push</span>(<span class="ident">worktop</span>);
-            } <span class="kw">else</span> {
-                <span class="ident">node</span>.<span class="ident">try_drop</span>()<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>drop_nodes(nodes: Vec&lt;HeapRootRENode&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), DropFailure&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>worktops = Vec::new();
+        <span class="kw">for </span>node <span class="kw">in </span>nodes {
+            <span class="kw">if let </span>HeapRENode::Worktop(worktop) = node.root {
+                worktops.push(worktop);
+            } <span class="kw">else </span>{
+                node.try_drop()<span class="question-mark">?</span>;
             }
         }
-        <span class="kw">for</span> <span class="ident">worktop</span> <span class="kw">in</span> <span class="ident">worktops</span> {
-            <span class="ident">worktop</span>.<span class="ident">drop</span>()<span class="question-mark">?</span>;
+        <span class="kw">for </span>worktop <span class="kw">in </span>worktops {
+            worktop.drop()<span class="question-mark">?</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">HeapRootRENode</span> {
-    <span class="kw">pub</span> <span class="ident">root</span>: <span class="ident">HeapRENode</span>,
-    <span class="kw">pub</span> <span class="ident">child_nodes</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRENode</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>HeapRootRENode {
+    <span class="kw">pub </span>root: HeapRENode,
+    <span class="kw">pub </span>child_nodes: HashMap&lt;RENodeId, HeapRENode&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">HeapRootRENode</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">root</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">HeapRENode</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">root</span>
+<span class="kw">impl </span>HeapRootRENode {
+    <span class="kw">pub fn </span>root(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>HeapRENode {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.root
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">root_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">HeapRENode</span> {
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">root</span>
+    <span class="kw">pub fn </span>root_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>HeapRENode {
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>.root
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_root</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">RENodeId</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">HeapRENode</span> {
-        <span class="self">self</span>.<span class="ident">child_nodes</span>.<span class="ident">get</span>(<span class="ident">id</span>).<span class="ident">unwrap</span>()
+    <span class="kw">pub fn </span>non_root(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>RENodeId) -&gt; <span class="kw-2">&amp;</span>HeapRENode {
+        <span class="self">self</span>.child_nodes.get(id).unwrap()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_root_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">RENodeId</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">HeapRENode</span> {
-        <span class="self">self</span>.<span class="ident">child_nodes</span>.<span class="ident">get_mut</span>(<span class="ident">id</span>).<span class="ident">unwrap</span>()
+    <span class="kw">pub fn </span>non_root_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>RENodeId) -&gt; <span class="kw-2">&amp;mut </span>HeapRENode {
+        <span class="self">self</span>.child_nodes.get_mut(id).unwrap()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_node</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">HeapRENode</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">node_id</span>) <span class="op">=</span> <span class="ident">id</span> {
-            <span class="self">self</span>.<span class="ident">child_nodes</span>.<span class="ident">get</span>(<span class="ident">node_id</span>).<span class="ident">unwrap</span>()
-        } <span class="kw">else</span> {
-            <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">root</span>
+    <span class="kw">pub fn </span>get_node(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>RENodeId&gt;) -&gt; <span class="kw-2">&amp;</span>HeapRENode {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(node_id) = id {
+            <span class="self">self</span>.child_nodes.get(node_id).unwrap()
+        } <span class="kw">else </span>{
+            <span class="kw-2">&amp;</span><span class="self">self</span>.root
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_node_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="ident">HeapRENode</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">node_id</span>) <span class="op">=</span> <span class="ident">id</span> {
-            <span class="self">self</span>.<span class="ident">child_nodes</span>.<span class="ident">get_mut</span>(<span class="ident">node_id</span>).<span class="ident">unwrap</span>()
-        } <span class="kw">else</span> {
-            <span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">root</span>
+    <span class="kw">pub fn </span>get_node_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>RENodeId&gt;) -&gt; <span class="kw-2">&amp;mut </span>HeapRENode {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(node_id) = id {
+            <span class="self">self</span>.child_nodes.get_mut(node_id).unwrap()
+        } <span class="kw">else </span>{
+            <span class="kw-2">&amp;mut </span><span class="self">self</span>.root
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">insert_non_root_nodes</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">nodes</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRENode</span><span class="op">&gt;</span>) {
-        <span class="kw">for</span> (<span class="ident">id</span>, <span class="ident">node</span>) <span class="kw">in</span> <span class="ident">nodes</span> {
-            <span class="self">self</span>.<span class="ident">child_nodes</span>.<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">node</span>);
+    <span class="kw">pub fn </span>insert_non_root_nodes(<span class="kw-2">&amp;mut </span><span class="self">self</span>, nodes: HashMap&lt;RENodeId, HeapRENode&gt;) {
+        <span class="kw">for </span>(id, node) <span class="kw">in </span>nodes {
+            <span class="self">self</span>.child_nodes.insert(id, node);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_nodes</span>(<span class="self">self</span>, <span class="ident">root_id</span>: <span class="ident">RENodeId</span>) -&gt; <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRENode</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">nodes</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">child_nodes</span>;
-        <span class="ident">nodes</span>.<span class="ident">insert</span>(<span class="ident">root_id</span>, <span class="self">self</span>.<span class="ident">root</span>);
-        <span class="ident">nodes</span>
+    <span class="kw">pub fn </span>to_nodes(<span class="self">self</span>, root_id: RENodeId) -&gt; HashMap&lt;RENodeId, HeapRENode&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>nodes = <span class="self">self</span>.child_nodes;
+        nodes.insert(root_id, <span class="self">self</span>.root);
+        nodes
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">try_drop</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DropFailure</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">root</span>.<span class="ident">try_drop</span>()
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Bucket</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">HeapRootRENode</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Bucket</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">root</span> {
-            <span class="ident">HeapRENode::Bucket</span>(<span class="ident">bucket</span>) =&gt; <span class="ident">bucket</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a bucket&quot;</span>),
-        }
+    <span class="kw">pub fn </span>try_drop(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), DropFailure&gt; {
+        <span class="self">self</span>.root.try_drop()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Proof</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">HeapRootRENode</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Proof</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">root</span> {
-            <span class="ident">HeapRENode::Proof</span>(<span class="ident">proof</span>) =&gt; <span class="ident">proof</span>,
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a proof&quot;</span>),
+<span class="kw">impl </span>Into&lt;Bucket&gt; <span class="kw">for </span>HeapRootRENode {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Bucket {
+        <span class="kw">match </span><span class="self">self</span>.root {
+            HeapRENode::Bucket(bucket) =&gt; bucket,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a bucket&quot;</span>),
+        }
+    }
+}
+
+<span class="kw">impl </span>Into&lt;Proof&gt; <span class="kw">for </span>HeapRootRENode {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Proof {
+        <span class="kw">match </span><span class="self">self</span>.root {
+            HeapRENode::Proof(proof) =&gt; proof,
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected to be a proof&quot;</span>),
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/component.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>component.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/component.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>component.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -157,160 +152,159 @@
 <span id="152">152</span>
 <span id="153">153</span>
 <span id="154">154</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::SystemApi</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::{<span class="ident">convert</span>, <span class="ident">InvokeError</span>, <span class="ident">MethodAuthorization</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::{<span class="ident">WasmEngine</span>, <span class="ident">WasmInstance</span>};
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::SystemApi;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::{convert, InvokeError, MethodAuthorization};
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::{WasmEngine, WasmInstance};
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ComponentError</span> {
-    <span class="ident">InvalidRequestData</span>(<span class="ident">DecodeError</span>),
-    <span class="ident">BlueprintFunctionNotFound</span>(<span class="ident">String</span>),
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>ComponentError {
+    InvalidRequestData(DecodeError),
+    BlueprintFunctionNotFound(String),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ComponentState</span> {
-    <span class="ident">state</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>ComponentState {
+    state: Vec&lt;u8&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">ComponentState</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">state</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">ComponentState</span> { <span class="ident">state</span> }
+<span class="kw">impl </span>ComponentState {
+    <span class="kw">pub fn </span>new(state: Vec&lt;u8&gt;) -&gt; <span class="self">Self </span>{
+        ComponentState { state }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">state</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">u8</span>] {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">state</span>
+    <span class="kw">pub fn </span>state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.state
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_state</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">new_state</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) {
-        <span class="self">self</span>.<span class="ident">state</span> <span class="op">=</span> <span class="ident">new_state</span>;
+    <span class="kw">pub fn </span>set_state(<span class="kw-2">&amp;mut </span><span class="self">self</span>, new_state: Vec&lt;u8&gt;) {
+        <span class="self">self</span>.state = new_state;
     }
 }
 
-<span class="doccomment">/// A component is an instance of blueprint.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ComponentInfo</span> {
-    <span class="ident">package_address</span>: <span class="ident">PackageAddress</span>,
-    <span class="ident">blueprint_name</span>: <span class="ident">String</span>,
-    <span class="ident">access_rules</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AccessRules</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A component is an instance of blueprint.
+</span><span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>ComponentInfo {
+    package_address: PackageAddress,
+    blueprint_name: String,
+    access_rules: Vec&lt;AccessRules&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">ComponentInfo</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">package_address</span>: <span class="ident">PackageAddress</span>,
-        <span class="ident">blueprint_name</span>: <span class="ident">String</span>,
-        <span class="ident">access_rules</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AccessRules</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">package_address</span>,
-            <span class="ident">blueprint_name</span>,
-            <span class="ident">access_rules</span>,
+<span class="kw">impl </span>ComponentInfo {
+    <span class="kw">pub fn </span>new(
+        package_address: PackageAddress,
+        blueprint_name: String,
+        access_rules: Vec&lt;AccessRules&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            package_address,
+            blueprint_name,
+            access_rules,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">method_authorization</span>(
+    <span class="kw">pub fn </span>method_authorization(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">component_state</span>: <span class="kw-2">&amp;</span><span class="ident">ComponentState</span>,
-        <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Type</span>,
-        <span class="ident">method_name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
-    ) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">MethodAuthorization</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">ScryptoValue::from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">component_state</span>.<span class="ident">state</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;Failed to decode component state&quot;</span>);
+        component_state: <span class="kw-2">&amp;</span>ComponentState,
+        schema: <span class="kw-2">&amp;</span>Type,
+        method_name: <span class="kw-2">&amp;</span>str,
+    ) -&gt; Vec&lt;MethodAuthorization&gt; {
+        <span class="kw">let </span>data = ScryptoValue::from_slice(<span class="kw-2">&amp;</span>component_state.state)
+            .expect(<span class="string">&quot;Failed to decode component state&quot;</span>);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">authorizations</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">for</span> <span class="ident">auth</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">access_rules</span> {
-            <span class="kw">let</span> <span class="ident">method_auth</span> <span class="op">=</span> <span class="ident">auth</span>.<span class="ident">get</span>(<span class="ident">method_name</span>);
-            <span class="kw">let</span> <span class="ident">authorization</span> <span class="op">=</span> <span class="ident">convert</span>(<span class="ident">schema</span>, <span class="kw-2">&amp;</span><span class="ident">data</span>, <span class="ident">method_auth</span>);
-            <span class="ident">authorizations</span>.<span class="ident">push</span>(<span class="ident">authorization</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>authorizations = Vec::new();
+        <span class="kw">for </span>auth <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.access_rules {
+            <span class="kw">let </span>method_auth = auth.get(method_name);
+            <span class="kw">let </span>authorization = convert(schema, <span class="kw-2">&amp;</span>data, method_auth);
+            authorizations.push(authorization);
         }
 
-        <span class="ident">authorizations</span>
+        authorizations
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">info</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (<span class="ident">PackageAddress</span>, <span class="ident">String</span>) {
-        (<span class="self">self</span>.<span class="ident">package_address</span>.<span class="ident">clone</span>(), <span class="self">self</span>.<span class="ident">blueprint_name</span>.<span class="ident">clone</span>())
+    <span class="kw">pub fn </span>info(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; (PackageAddress, String) {
+        (<span class="self">self</span>.package_address.clone(), <span class="self">self</span>.blueprint_name.clone())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">authorization</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">AccessRules</span>] {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">access_rules</span>
+    <span class="kw">pub fn </span>authorization(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[AccessRules] {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.access_rules
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">package_address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">PackageAddress</span> {
-        <span class="self">self</span>.<span class="ident">package_address</span>.<span class="ident">clone</span>()
+    <span class="kw">pub fn </span>package_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PackageAddress {
+        <span class="self">self</span>.package_address.clone()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">blueprint_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">str</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">blueprint_name</span>
+    <span class="kw">pub fn </span>blueprint_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>str {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.blueprint_name
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">main</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">component_address</span>: <span class="ident">ComponentAddress</span>,
-        <span class="ident">component_fn</span>: <span class="ident">ComponentFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ComponentError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>main&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        component_address: ComponentAddress,
+        component_fn: ComponentFnIdentifier,
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;ComponentError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::ComponentInfo</span>(<span class="ident">component_address</span>);
-        <span class="kw">let</span> <span class="ident">node_id</span> <span class="op">=</span> <span class="ident">RENodeId::Component</span>(<span class="ident">component_address</span>);
+        <span class="kw">let </span>substate_id = SubstateId::ComponentInfo(component_address);
+        <span class="kw">let </span>node_id = RENodeId::Component(component_address);
 
-        <span class="kw">let</span> <span class="ident">rtn</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">component_fn</span> {
-            <span class="ident">ComponentFnIdentifier::AddAccessCheck</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ComponentAddAccessCheckInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ComponentError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
+        <span class="kw">let </span>rtn = <span class="kw">match </span>component_fn {
+            ComponentFnIdentifier::AddAccessCheck =&gt; {
+                <span class="kw">let </span>input: ComponentAddAccessCheckInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ComponentError::InvalidRequestData(e)))<span class="question-mark">?</span>;
 
-                <span class="comment">// Abi checks</span>
-                {
-                    <span class="kw">let</span> (<span class="ident">package_id</span>, <span class="ident">blueprint_name</span>) <span class="op">=</span> {
-                        <span class="kw">let</span> <span class="ident">component_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-                            .<span class="ident">borrow_node</span>(<span class="kw-2">&amp;</span><span class="ident">node_id</span>)
-                            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                        <span class="kw">let</span> <span class="ident">component</span> <span class="op">=</span> <span class="ident">component_ref</span>.<span class="ident">component_info</span>();
-                        <span class="kw">let</span> <span class="ident">blueprint_name</span> <span class="op">=</span> <span class="ident">component</span>.<span class="ident">blueprint_name</span>().<span class="ident">to_owned</span>();
+                <span class="comment">// Abi checks
+                </span>{
+                    <span class="kw">let </span>(package_id, blueprint_name) = {
+                        <span class="kw">let </span>component_ref = system_api
+                            .borrow_node(<span class="kw-2">&amp;</span>node_id)
+                            .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>component = component_ref.component_info();
+                        <span class="kw">let </span>blueprint_name = component.blueprint_name().to_owned();
                         (
-                            <span class="ident">RENodeId::Package</span>(<span class="ident">component</span>.<span class="ident">package_address</span>.<span class="ident">clone</span>()),
-                            <span class="ident">blueprint_name</span>,
+                            RENodeId::Package(component.package_address.clone()),
+                            blueprint_name,
                         )
                     };
 
-                    <span class="kw">let</span> <span class="ident">package_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-                        .<span class="ident">borrow_node</span>(<span class="kw-2">&amp;</span><span class="ident">package_id</span>)
-                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                    <span class="kw">let</span> <span class="ident">package</span> <span class="op">=</span> <span class="ident">package_ref</span>.<span class="ident">package</span>();
-                    <span class="kw">let</span> <span class="ident">blueprint_abi</span> <span class="op">=</span> <span class="ident">package</span>.<span class="ident">blueprint_abi</span>(<span class="kw-2">&amp;</span><span class="ident">blueprint_name</span>).<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
+                    <span class="kw">let </span>package_ref = system_api
+                        .borrow_node(<span class="kw-2">&amp;</span>package_id)
+                        .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                    <span class="kw">let </span>package = package_ref.package();
+                    <span class="kw">let </span>blueprint_abi = package.blueprint_abi(<span class="kw-2">&amp;</span>blueprint_name).expect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
                         <span class="string">&quot;Blueprint {} is not found in package node {:?}&quot;</span>,
-                        <span class="ident">blueprint_name</span>, <span class="ident">package_id</span>
+                        blueprint_name, package_id
                     ));
-                    <span class="kw">for</span> (<span class="ident">func_name</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="ident">input</span>.<span class="ident">access_rules</span>.<span class="ident">iter</span>() {
-                        <span class="kw">if</span> <span class="op">!</span><span class="ident">blueprint_abi</span>.<span class="ident">contains_fn</span>(<span class="ident">func_name</span>.<span class="ident">as_str</span>()) {
-                            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                                <span class="ident">ComponentError::BlueprintFunctionNotFound</span>(<span class="ident">func_name</span>.<span class="ident">to_string</span>()),
+                    <span class="kw">for </span>(func_name, <span class="kw">_</span>) <span class="kw">in </span>input.access_rules.iter() {
+                        <span class="kw">if </span>!blueprint_abi.contains_fn(func_name.as_str()) {
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(InvokeError::Error(
+                                ComponentError::BlueprintFunctionNotFound(func_name.to_string()),
                             ));
                         }
                     }
                 }
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ref_mut</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">substate_borrow_mut</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">component_info</span> <span class="op">=</span> <span class="ident">ref_mut</span>.<span class="ident">component_info</span>();
-                <span class="ident">component_info</span>.<span class="ident">access_rules</span>.<span class="ident">push</span>(<span class="ident">input</span>.<span class="ident">access_rules</span>);
-                <span class="ident">system_api</span>
-                    .<span class="ident">substate_return_mut</span>(<span class="ident">ref_mut</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>ref_mut = system_api
+                    .substate_borrow_mut(<span class="kw-2">&amp;</span>substate_id)
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                <span class="kw">let </span>component_info = ref_mut.component_info();
+                component_info.access_rules.push(input.access_rules);
+                system_api
+                    .substate_return_mut(ref_mut)
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
 
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
             }
         }<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">rtn</span>)
+        <span class="prelude-val">Ok</span>(rtn)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

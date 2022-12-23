@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["StateDiff",""],["VirtualSubstateId",""]]});
+window.SIDEBAR_ITEMS = {"struct":[["StateDiff",""],["VirtualSubstateId",""]]};

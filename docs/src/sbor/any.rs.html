@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/sbor/src/any.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>any.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/sbor/src/any.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>any.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -751,754 +746,753 @@
 <span id="746">746</span>
 <span id="747">747</span>
 <span id="748">748</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::path::MutableSborPath</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::path::MutableSborPath;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::decode</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::encode</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::borrow::Borrow</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::boxed::Box</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::string::String</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::type_id</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::decode::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::encode::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rust::borrow::Borrow;
+<span class="kw">use </span><span class="kw">crate</span>::rust::boxed::Box;
+<span class="kw">use </span><span class="kw">crate</span>::rust::string::String;
+<span class="kw">use </span><span class="kw">crate</span>::rust::vec::Vec;
+<span class="kw">use </span><span class="kw">crate</span>::type_id::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// Represents a SBOR value.</span>
-<span class="attribute">#[<span class="ident">cfg_attr</span>(
-    <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>,
-    <span class="ident">derive</span>(<span class="ident">serde::Serialize</span>, <span class="ident">serde::Deserialize</span>),
-    <span class="ident">serde</span>(<span class="ident">tag</span> <span class="op">=</span> <span class="string">&quot;type&quot;</span>) <span class="comment">// For JSON readability, see https://serde.rs/enum-representations.html</span>
-)]</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Value</span> {
-    <span class="ident">Unit</span>,
-    <span class="ident">Bool</span> {
-        <span class="ident">value</span>: <span class="ident">bool</span>,
+<span class="doccomment">/// Represents a SBOR value.
+</span><span class="attribute">#[cfg_attr(
+    feature = <span class="string">&quot;serde&quot;</span>,
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = <span class="string">&quot;type&quot;</span>) <span class="comment">// For JSON readability, see https://serde.rs/enum-representations.html
+</span>)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>Value {
+    Unit,
+    Bool {
+        value: bool,
     },
-    <span class="ident">I8</span> {
-        <span class="ident">value</span>: <span class="ident">i8</span>,
+    I8 {
+        value: i8,
     },
-    <span class="ident">I16</span> {
-        <span class="ident">value</span>: <span class="ident">i16</span>,
+    I16 {
+        value: i16,
     },
-    <span class="ident">I32</span> {
-        <span class="ident">value</span>: <span class="ident">i32</span>,
+    I32 {
+        value: i32,
     },
-    <span class="ident">I64</span> {
-        <span class="ident">value</span>: <span class="ident">i64</span>,
+    I64 {
+        value: i64,
     },
-    <span class="ident">I128</span> {
-        <span class="ident">value</span>: <span class="ident">i128</span>,
+    I128 {
+        value: i128,
     },
-    <span class="ident">U8</span> {
-        <span class="ident">value</span>: <span class="ident">u8</span>,
+    U8 {
+        value: u8,
     },
-    <span class="ident">U16</span> {
-        <span class="ident">value</span>: <span class="ident">u16</span>,
+    U16 {
+        value: u16,
     },
-    <span class="ident">U32</span> {
-        <span class="ident">value</span>: <span class="ident">u32</span>,
+    U32 {
+        value: u32,
     },
-    <span class="ident">U64</span> {
-        <span class="ident">value</span>: <span class="ident">u64</span>,
+    U64 {
+        value: u64,
     },
-    <span class="ident">U128</span> {
-        <span class="ident">value</span>: <span class="ident">u128</span>,
+    U128 {
+        value: u128,
     },
-    <span class="ident">String</span> {
-        <span class="ident">value</span>: <span class="ident">String</span>,
-    },
-
-    <span class="ident">Struct</span> {
-        <span class="ident">fields</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span>,
-    },
-    <span class="ident">Enum</span> {
-        <span class="ident">name</span>: <span class="ident">String</span>,
-        <span class="ident">fields</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span>,
-    },
-    <span class="prelude-ty">Option</span> {
-        <span class="ident">value</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-    },
-    <span class="prelude-ty">Result</span> {
-        <span class="ident">value</span>: <span class="ident">Box</span><span class="op">&lt;</span><span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Value</span>, <span class="ident">Value</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+    String {
+        value: String,
     },
 
-    <span class="ident">Array</span> {
-        <span class="ident">element_type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">elements</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span>,
+    Struct {
+        fields: Vec&lt;Value&gt;,
     },
-    <span class="ident">Tuple</span> {
-        <span class="ident">elements</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span>,
+    Enum {
+        name: String,
+        fields: Vec&lt;Value&gt;,
     },
-
-    <span class="ident">List</span> {
-        <span class="ident">element_type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">elements</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span>,
+    <span class="prelude-ty">Option </span>{
+        value: Box&lt;<span class="prelude-ty">Option</span>&lt;Value&gt;&gt;,
     },
-    <span class="ident">Set</span> {
-        <span class="ident">element_type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">elements</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span>,
-    },
-    <span class="ident">Map</span> {
-        <span class="ident">key_type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">value_type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">elements</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Value</span><span class="op">&gt;</span>,
+    <span class="prelude-ty">Result </span>{
+        value: Box&lt;<span class="prelude-ty">Result</span>&lt;Value, Value&gt;&gt;,
     },
 
-    <span class="ident">Custom</span> {
-        <span class="ident">type_id</span>: <span class="ident">u8</span>,
-        <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>, <span class="ident">serde</span>(<span class="ident">with</span> <span class="op">=</span> <span class="string">&quot;hex::serde&quot;</span>))]</span>
-        <span class="ident">bytes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+    Array {
+        element_type_id: u8,
+        elements: Vec&lt;Value&gt;,
+    },
+    Tuple {
+        elements: Vec&lt;Value&gt;,
+    },
+
+    List {
+        element_type_id: u8,
+        elements: Vec&lt;Value&gt;,
+    },
+    Set {
+        element_type_id: u8,
+        elements: Vec&lt;Value&gt;,
+    },
+    Map {
+        key_type_id: u8,
+        value_type_id: u8,
+        elements: Vec&lt;Value&gt;,
+    },
+
+    Custom {
+        type_id: u8,
+        <span class="attribute">#[cfg_attr(feature = <span class="string">&quot;serde&quot;</span>, serde(with = <span class="string">&quot;hex::serde&quot;</span>))]
+        </span>bytes: Vec&lt;u8&gt;,
     },
 }
 
-<span class="doccomment">/// Encodes any SBOR value into byte array.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">encode_any</span>(<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">Value</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">enc</span> <span class="op">=</span> <span class="ident">::sbor::Encoder::with_static_info</span>(<span class="kw-2">&amp;mut</span> <span class="ident">bytes</span>);
-    <span class="ident">encode_any_internal</span>(<span class="prelude-val">None</span>, <span class="ident">value</span>, <span class="kw-2">&amp;mut</span> <span class="ident">enc</span>);
-    <span class="ident">bytes</span>
+<span class="doccomment">/// Encodes any SBOR value into byte array.
+</span><span class="kw">pub fn </span>encode_any(value: <span class="kw-2">&amp;</span>Value) -&gt; Vec&lt;u8&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>bytes = Vec::new();
+    <span class="kw">let </span><span class="kw-2">mut </span>enc = ::sbor::Encoder::with_static_info(<span class="kw-2">&amp;mut </span>bytes);
+    encode_any_internal(<span class="prelude-val">None</span>, value, <span class="kw-2">&amp;mut </span>enc);
+    bytes
 }
 
-<span class="doccomment">/// Encodes any SBOR value with a given buffer</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">encode_any_with_buffer</span>(<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">Value</span>, <span class="ident">buffer</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">enc</span> <span class="op">=</span> <span class="ident">::sbor::Encoder::with_static_info</span>(<span class="ident">buffer</span>);
-    <span class="ident">encode_any_internal</span>(<span class="prelude-val">None</span>, <span class="ident">value</span>, <span class="kw-2">&amp;mut</span> <span class="ident">enc</span>);
+<span class="doccomment">/// Encodes any SBOR value with a given buffer
+</span><span class="kw">pub fn </span>encode_any_with_buffer(value: <span class="kw-2">&amp;</span>Value, buffer: <span class="kw-2">&amp;mut </span>Vec&lt;u8&gt;) {
+    <span class="kw">let </span><span class="kw-2">mut </span>enc = ::sbor::Encoder::with_static_info(buffer);
+    encode_any_internal(<span class="prelude-val">None</span>, value, <span class="kw-2">&amp;mut </span>enc);
 }
 
-<span class="kw">fn</span> <span class="ident">encode_any_internal</span>(<span class="ident">ty_ctx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">Value</span>, <span class="ident">enc</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-    <span class="kw">match</span> <span class="ident">value</span> {
-        <span class="comment">// primitive types</span>
-        <span class="ident">Value::Unit</span> =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_UNIT</span>, <span class="kw-2">&amp;</span>(), <span class="ident">enc</span>),
-        <span class="ident">Value::Bool</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_BOOL</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::I8</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_I8</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::I16</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_I16</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::I32</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_I32</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::I64</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_I64</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::I128</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_I128</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::U8</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_U8</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::U16</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_U16</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::U32</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_U32</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::U64</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_U64</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::U128</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_U128</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="ident">Value::String</span> { <span class="ident">value</span> } =&gt; <span class="ident">encode_basic</span>(<span class="ident">ty_ctx</span>, <span class="ident">TYPE_STRING</span>, <span class="ident">value</span>, <span class="ident">enc</span>),
-        <span class="comment">// struct &amp; enum</span>
-        <span class="ident">Value::Struct</span> { <span class="ident">fields</span> } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">TYPE_STRUCT</span>);
+<span class="kw">fn </span>encode_any_internal(ty_ctx: <span class="prelude-ty">Option</span>&lt;u8&gt;, value: <span class="kw-2">&amp;</span>Value, enc: <span class="kw-2">&amp;mut </span>Encoder) {
+    <span class="kw">match </span>value {
+        <span class="comment">// primitive types
+        </span>Value::Unit =&gt; encode_basic(ty_ctx, TYPE_UNIT, <span class="kw-2">&amp;</span>(), enc),
+        Value::Bool { value } =&gt; encode_basic(ty_ctx, TYPE_BOOL, value, enc),
+        Value::I8 { value } =&gt; encode_basic(ty_ctx, TYPE_I8, value, enc),
+        Value::I16 { value } =&gt; encode_basic(ty_ctx, TYPE_I16, value, enc),
+        Value::I32 { value } =&gt; encode_basic(ty_ctx, TYPE_I32, value, enc),
+        Value::I64 { value } =&gt; encode_basic(ty_ctx, TYPE_I64, value, enc),
+        Value::I128 { value } =&gt; encode_basic(ty_ctx, TYPE_I128, value, enc),
+        Value::U8 { value } =&gt; encode_basic(ty_ctx, TYPE_U8, value, enc),
+        Value::U16 { value } =&gt; encode_basic(ty_ctx, TYPE_U16, value, enc),
+        Value::U32 { value } =&gt; encode_basic(ty_ctx, TYPE_U32, value, enc),
+        Value::U64 { value } =&gt; encode_basic(ty_ctx, TYPE_U64, value, enc),
+        Value::U128 { value } =&gt; encode_basic(ty_ctx, TYPE_U128, value, enc),
+        Value::String { value } =&gt; encode_basic(ty_ctx, TYPE_STRING, value, enc),
+        <span class="comment">// struct &amp; enum
+        </span>Value::Struct { fields } =&gt; {
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(TYPE_STRUCT);
             }
-            <span class="ident">enc</span>.<span class="ident">write_static_size</span>(<span class="ident">fields</span>.<span class="ident">len</span>());
-            <span class="kw">for</span> <span class="ident">field</span> <span class="kw">in</span> <span class="ident">fields</span> {
-                <span class="ident">encode_any_internal</span>(<span class="prelude-val">None</span>, <span class="ident">field</span>, <span class="ident">enc</span>);
-            }
-        }
-        <span class="ident">Value::Enum</span> { <span class="ident">name</span>, <span class="ident">fields</span> } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">TYPE_ENUM</span>);
-            }
-            <span class="ident">name</span>.<span class="ident">encode_value</span>(<span class="ident">enc</span>);
-            <span class="ident">enc</span>.<span class="ident">write_static_size</span>(<span class="ident">fields</span>.<span class="ident">len</span>());
-            <span class="kw">for</span> <span class="ident">field</span> <span class="kw">in</span> <span class="ident">fields</span> {
-                <span class="ident">encode_any_internal</span>(<span class="prelude-val">None</span>, <span class="ident">field</span>, <span class="ident">enc</span>);
+            enc.write_static_size(fields.len());
+            <span class="kw">for </span>field <span class="kw">in </span>fields {
+                encode_any_internal(<span class="prelude-val">None</span>, field, enc);
             }
         }
-        <span class="ident">Value::Option</span> { <span class="ident">value</span> } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">TYPE_OPTION</span>);
+        Value::Enum { name, fields } =&gt; {
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(TYPE_ENUM);
             }
-            <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">borrow</span>() {
-                <span class="prelude-val">Some</span>(<span class="ident">x</span>) =&gt; {
-                    <span class="ident">enc</span>.<span class="ident">write_variant_index</span>(<span class="ident">OPTION_VARIANT_SOME</span>);
-                    <span class="ident">encode_any_internal</span>(<span class="prelude-val">None</span>, <span class="ident">x</span>, <span class="ident">enc</span>);
-                }
-                <span class="prelude-val">None</span> =&gt; {
-                    <span class="ident">enc</span>.<span class="ident">write_variant_index</span>(<span class="ident">OPTION_VARIANT_NONE</span>);
-                }
+            name.encode_value(enc);
+            enc.write_static_size(fields.len());
+            <span class="kw">for </span>field <span class="kw">in </span>fields {
+                encode_any_internal(<span class="prelude-val">None</span>, field, enc);
             }
         }
-        <span class="ident">Value::Result</span> { <span class="ident">value</span> } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">TYPE_RESULT</span>);
+        Value::Option { value } =&gt; {
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(TYPE_OPTION);
             }
-            <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">borrow</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">x</span>) =&gt; {
-                    <span class="ident">enc</span>.<span class="ident">write_variant_index</span>(<span class="ident">RESULT_VARIANT_OK</span>);
-                    <span class="ident">encode_any_internal</span>(<span class="prelude-val">None</span>, <span class="ident">x</span>, <span class="ident">enc</span>);
+            <span class="kw">match </span>value.borrow() {
+                <span class="prelude-val">Some</span>(x) =&gt; {
+                    enc.write_variant_index(OPTION_VARIANT_SOME);
+                    encode_any_internal(<span class="prelude-val">None</span>, x, enc);
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">x</span>) =&gt; {
-                    <span class="ident">enc</span>.<span class="ident">write_variant_index</span>(<span class="ident">RESULT_VARIANT_ERR</span>);
-                    <span class="ident">encode_any_internal</span>(<span class="prelude-val">None</span>, <span class="ident">x</span>, <span class="ident">enc</span>);
+                <span class="prelude-val">None </span>=&gt; {
+                    enc.write_variant_index(OPTION_VARIANT_NONE);
                 }
             }
         }
-        <span class="comment">// composite types</span>
-        <span class="ident">Value::Array</span> {
-            <span class="ident">element_type_id</span>,
-            <span class="ident">elements</span>,
+        Value::Result { value } =&gt; {
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(TYPE_RESULT);
+            }
+            <span class="kw">match </span>value.borrow() {
+                <span class="prelude-val">Ok</span>(x) =&gt; {
+                    enc.write_variant_index(RESULT_VARIANT_OK);
+                    encode_any_internal(<span class="prelude-val">None</span>, x, enc);
+                }
+                <span class="prelude-val">Err</span>(x) =&gt; {
+                    enc.write_variant_index(RESULT_VARIANT_ERR);
+                    encode_any_internal(<span class="prelude-val">None</span>, x, enc);
+                }
+            }
+        }
+        <span class="comment">// composite types
+        </span>Value::Array {
+            element_type_id,
+            elements,
         } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">TYPE_ARRAY</span>);
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(TYPE_ARRAY);
             }
-            <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>);
-            <span class="ident">enc</span>.<span class="ident">write_dynamic_size</span>(<span class="ident">elements</span>.<span class="ident">len</span>());
-            <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="ident">elements</span> {
-                <span class="ident">encode_any_internal</span>(<span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>), <span class="ident">e</span>, <span class="ident">enc</span>);
-            }
-        }
-        <span class="ident">Value::Tuple</span> { <span class="ident">elements</span> } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">TYPE_TUPLE</span>);
-            }
-            <span class="ident">enc</span>.<span class="ident">write_dynamic_size</span>(<span class="ident">elements</span>.<span class="ident">len</span>());
-            <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="ident">elements</span> {
-                <span class="ident">encode_any_internal</span>(<span class="prelude-val">None</span>, <span class="ident">e</span>, <span class="ident">enc</span>);
+            enc.write_type_id(<span class="kw-2">*</span>element_type_id);
+            enc.write_dynamic_size(elements.len());
+            <span class="kw">for </span>e <span class="kw">in </span>elements {
+                encode_any_internal(<span class="prelude-val">Some</span>(<span class="kw-2">*</span>element_type_id), e, enc);
             }
         }
-        <span class="comment">// collections</span>
-        <span class="ident">Value::List</span> {
-            <span class="ident">element_type_id</span>,
-            <span class="ident">elements</span>,
+        Value::Tuple { elements } =&gt; {
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(TYPE_TUPLE);
+            }
+            enc.write_dynamic_size(elements.len());
+            <span class="kw">for </span>e <span class="kw">in </span>elements {
+                encode_any_internal(<span class="prelude-val">None</span>, e, enc);
+            }
+        }
+        <span class="comment">// collections
+        </span>Value::List {
+            element_type_id,
+            elements,
         } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">TYPE_LIST</span>);
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(TYPE_LIST);
             }
-            <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>);
-            <span class="ident">enc</span>.<span class="ident">write_dynamic_size</span>(<span class="ident">elements</span>.<span class="ident">len</span>());
-            <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="ident">elements</span> {
-                <span class="ident">encode_any_internal</span>(<span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>), <span class="ident">e</span>, <span class="ident">enc</span>);
+            enc.write_type_id(<span class="kw-2">*</span>element_type_id);
+            enc.write_dynamic_size(elements.len());
+            <span class="kw">for </span>e <span class="kw">in </span>elements {
+                encode_any_internal(<span class="prelude-val">Some</span>(<span class="kw-2">*</span>element_type_id), e, enc);
             }
         }
-        <span class="ident">Value::Set</span> {
-            <span class="ident">element_type_id</span>,
-            <span class="ident">elements</span>,
+        Value::Set {
+            element_type_id,
+            elements,
         } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">TYPE_SET</span>);
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(TYPE_SET);
             }
-            <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>);
-            <span class="ident">enc</span>.<span class="ident">write_dynamic_size</span>(<span class="ident">elements</span>.<span class="ident">len</span>());
-            <span class="kw">for</span> <span class="ident">e</span> <span class="kw">in</span> <span class="ident">elements</span> {
-                <span class="ident">encode_any_internal</span>(<span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>), <span class="ident">e</span>, <span class="ident">enc</span>);
+            enc.write_type_id(<span class="kw-2">*</span>element_type_id);
+            enc.write_dynamic_size(elements.len());
+            <span class="kw">for </span>e <span class="kw">in </span>elements {
+                encode_any_internal(<span class="prelude-val">Some</span>(<span class="kw-2">*</span>element_type_id), e, enc);
             }
         }
-        <span class="ident">Value::Map</span> {
-            <span class="ident">key_type_id</span>,
-            <span class="ident">value_type_id</span>,
-            <span class="ident">elements</span>,
+        Value::Map {
+            key_type_id,
+            value_type_id,
+            elements,
         } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">TYPE_MAP</span>);
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(TYPE_MAP);
             }
-            <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="kw-2">*</span><span class="ident">key_type_id</span>);
-            <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="kw-2">*</span><span class="ident">value_type_id</span>);
-            <span class="ident">enc</span>.<span class="ident">write_dynamic_size</span>(<span class="ident">elements</span>.<span class="ident">len</span>() <span class="op">/</span> <span class="number">2</span>);
-            <span class="kw">for</span> <span class="ident">pair</span> <span class="kw">in</span> <span class="ident">elements</span>.<span class="ident">chunks</span>(<span class="number">2</span>) {
-                <span class="ident">encode_any_internal</span>(<span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">key_type_id</span>), <span class="kw-2">&amp;</span><span class="ident">pair</span>[<span class="number">0</span>], <span class="ident">enc</span>);
-                <span class="ident">encode_any_internal</span>(<span class="prelude-val">Some</span>(<span class="kw-2">*</span><span class="ident">value_type_id</span>), <span class="kw-2">&amp;</span><span class="ident">pair</span>[<span class="number">1</span>], <span class="ident">enc</span>);
+            enc.write_type_id(<span class="kw-2">*</span>key_type_id);
+            enc.write_type_id(<span class="kw-2">*</span>value_type_id);
+            enc.write_dynamic_size(elements.len() / <span class="number">2</span>);
+            <span class="kw">for </span>pair <span class="kw">in </span>elements.chunks(<span class="number">2</span>) {
+                encode_any_internal(<span class="prelude-val">Some</span>(<span class="kw-2">*</span>key_type_id), <span class="kw-2">&amp;</span>pair[<span class="number">0</span>], enc);
+                encode_any_internal(<span class="prelude-val">Some</span>(<span class="kw-2">*</span>value_type_id), <span class="kw-2">&amp;</span>pair[<span class="number">1</span>], enc);
             }
         }
-        <span class="comment">// custom</span>
-        <span class="ident">Value::Custom</span> { <span class="ident">type_id</span>, <span class="ident">bytes</span> } =&gt; {
-            <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-                <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="kw-2">*</span><span class="ident">type_id</span>);
+        <span class="comment">// custom
+        </span>Value::Custom { type_id, bytes } =&gt; {
+            <span class="kw">if </span>ty_ctx.is_none() {
+                enc.write_type_id(<span class="kw-2">*</span>type_id);
             }
-            <span class="ident">enc</span>.<span class="ident">write_dynamic_size</span>(<span class="ident">bytes</span>.<span class="ident">len</span>());
-            <span class="ident">enc</span>.<span class="ident">write_slice</span>(<span class="ident">bytes</span>);
+            enc.write_dynamic_size(bytes.len());
+            enc.write_slice(bytes);
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">encode_basic</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span><span class="op">&gt;</span>(<span class="ident">ty_ctx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">t</span>: <span class="ident">u8</span>, <span class="ident">v</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>, <span class="ident">enc</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Encoder</span>) {
-    <span class="kw">if</span> <span class="ident">ty_ctx</span>.<span class="ident">is_none</span>() {
-        <span class="ident">enc</span>.<span class="ident">write_type_id</span>(<span class="ident">t</span>);
+<span class="kw">fn </span>encode_basic&lt;T: Encode&gt;(ty_ctx: <span class="prelude-ty">Option</span>&lt;u8&gt;, t: u8, v: <span class="kw-2">&amp;</span>T, enc: <span class="kw-2">&amp;mut </span>Encoder) {
+    <span class="kw">if </span>ty_ctx.is_none() {
+        enc.write_type_id(t);
     }
-    <span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="ident">::encode_value</span>(<span class="ident">v</span>, <span class="ident">enc</span>);
+    &lt;T&gt;::encode_value(v, enc);
 }
 
-<span class="doccomment">/// Decode any SBOR data.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">decode_any</span>(<span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Value</span>, <span class="ident">DecodeError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">decoder</span> <span class="op">=</span> <span class="ident">Decoder::with_static_info</span>(<span class="ident">data</span>);
-    <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">decode_next</span>(<span class="prelude-val">None</span>, <span class="kw-2">&amp;mut</span> <span class="ident">decoder</span>);
-    <span class="ident">decoder</span>.<span class="ident">check_end</span>()<span class="question-mark">?</span>;
-    <span class="ident">result</span>
+<span class="doccomment">/// Decode any SBOR data.
+</span><span class="kw">pub fn </span>decode_any(data: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Value, DecodeError&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>decoder = Decoder::with_static_info(data);
+    <span class="kw">let </span>result = decode_next(<span class="prelude-val">None</span>, <span class="kw-2">&amp;mut </span>decoder);
+    decoder.check_end()<span class="question-mark">?</span>;
+    result
 }
 
-<span class="kw">fn</span> <span class="ident">decode_next</span>(<span class="ident">ty_ctx</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">dec</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Decoder</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Value</span>, <span class="ident">DecodeError</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">ty</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">ty_ctx</span> {
-        <span class="prelude-val">Some</span>(<span class="ident">t</span>) =&gt; <span class="ident">t</span>,
-        <span class="prelude-val">None</span> =&gt; <span class="ident">dec</span>.<span class="ident">read_type</span>()<span class="question-mark">?</span>,
+<span class="kw">fn </span>decode_next(ty_ctx: <span class="prelude-ty">Option</span>&lt;u8&gt;, dec: <span class="kw-2">&amp;mut </span>Decoder) -&gt; <span class="prelude-ty">Result</span>&lt;Value, DecodeError&gt; {
+    <span class="kw">let </span>ty = <span class="kw">match </span>ty_ctx {
+        <span class="prelude-val">Some</span>(t) =&gt; t,
+        <span class="prelude-val">None </span>=&gt; dec.read_type()<span class="question-mark">?</span>,
     };
 
-    <span class="kw">match</span> <span class="ident">ty</span> {
-        <span class="comment">// primitive types</span>
-        <span class="ident">TYPE_UNIT</span> =&gt; {
-            <span class="op">&lt;</span>()<span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(<span class="ident">Value::Unit</span>)
+    <span class="kw">match </span>ty {
+        <span class="comment">// primitive types
+        </span>TYPE_UNIT =&gt; {
+            &lt;()&gt;::decode_value(dec)<span class="question-mark">?</span>;
+            <span class="prelude-val">Ok</span>(Value::Unit)
         }
-        <span class="ident">TYPE_BOOL</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::Bool</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">bool</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_BOOL =&gt; <span class="prelude-val">Ok</span>(Value::Bool {
+            value: &lt;bool&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_I8</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::I8</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">i8</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_I8 =&gt; <span class="prelude-val">Ok</span>(Value::I8 {
+            value: &lt;i8&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_I16</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::I16</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">i16</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_I16 =&gt; <span class="prelude-val">Ok</span>(Value::I16 {
+            value: &lt;i16&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_I32</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::I32</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">i32</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_I32 =&gt; <span class="prelude-val">Ok</span>(Value::I32 {
+            value: &lt;i32&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_I64</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::I64</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">i64</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_I64 =&gt; <span class="prelude-val">Ok</span>(Value::I64 {
+            value: &lt;i64&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_I128</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::I128</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">i128</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_I128 =&gt; <span class="prelude-val">Ok</span>(Value::I128 {
+            value: &lt;i128&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_U8</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::U8</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_U8 =&gt; <span class="prelude-val">Ok</span>(Value::U8 {
+            value: &lt;u8&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_U16</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::U16</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">u16</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_U16 =&gt; <span class="prelude-val">Ok</span>(Value::U16 {
+            value: &lt;u16&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_U32</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::U32</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_U32 =&gt; <span class="prelude-val">Ok</span>(Value::U32 {
+            value: &lt;u32&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_U64</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::U64</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">u64</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_U64 =&gt; <span class="prelude-val">Ok</span>(Value::U64 {
+            value: &lt;u64&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_U128</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::U128</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">u128</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_U128 =&gt; <span class="prelude-val">Ok</span>(Value::U128 {
+            value: &lt;u128&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="ident">TYPE_STRING</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::String</span> {
-            <span class="ident">value</span>: <span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>,
+        TYPE_STRING =&gt; <span class="prelude-val">Ok</span>(Value::String {
+            value: &lt;String&gt;::decode_value(dec)<span class="question-mark">?</span>,
         }),
-        <span class="comment">// struct &amp; enum</span>
-        <span class="ident">TYPE_STRUCT</span> =&gt; {
-            <span class="comment">// number of fields</span>
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_dynamic_size</span>()<span class="question-mark">?</span>;
-            <span class="comment">// fields</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">len</span> {
-                <span class="ident">fields</span>.<span class="ident">push</span>(<span class="ident">decode_next</span>(<span class="prelude-val">None</span>, <span class="ident">dec</span>)<span class="question-mark">?</span>);
+        <span class="comment">// struct &amp; enum
+        </span>TYPE_STRUCT =&gt; {
+            <span class="comment">// number of fields
+            </span><span class="kw">let </span>len = dec.read_dynamic_size()<span class="question-mark">?</span>;
+            <span class="comment">// fields
+            </span><span class="kw">let </span><span class="kw-2">mut </span>fields = Vec::new();
+            <span class="kw">for _ in </span><span class="number">0</span>..len {
+                fields.push(decode_next(<span class="prelude-val">None</span>, dec)<span class="question-mark">?</span>);
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">Value::Struct</span> { <span class="ident">fields</span> })
+            <span class="prelude-val">Ok</span>(Value::Struct { fields })
         }
-        <span class="ident">TYPE_ENUM</span> =&gt; {
-            <span class="comment">// name</span>
-            <span class="kw">let</span> <span class="ident">name</span> <span class="op">=</span> <span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span><span class="ident">::decode_value</span>(<span class="ident">dec</span>)<span class="question-mark">?</span>;
-            <span class="comment">// number of fields</span>
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_dynamic_size</span>()<span class="question-mark">?</span>;
-            <span class="comment">// fields</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">len</span> {
-                <span class="ident">fields</span>.<span class="ident">push</span>(<span class="ident">decode_next</span>(<span class="prelude-val">None</span>, <span class="ident">dec</span>)<span class="question-mark">?</span>);
+        TYPE_ENUM =&gt; {
+            <span class="comment">// name
+            </span><span class="kw">let </span>name = &lt;String&gt;::decode_value(dec)<span class="question-mark">?</span>;
+            <span class="comment">// number of fields
+            </span><span class="kw">let </span>len = dec.read_dynamic_size()<span class="question-mark">?</span>;
+            <span class="comment">// fields
+            </span><span class="kw">let </span><span class="kw-2">mut </span>fields = Vec::new();
+            <span class="kw">for _ in </span><span class="number">0</span>..len {
+                fields.push(decode_next(<span class="prelude-val">None</span>, dec)<span class="question-mark">?</span>);
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">Value::Enum</span> { <span class="ident">name</span>, <span class="ident">fields</span> })
+            <span class="prelude-val">Ok</span>(Value::Enum { name, fields })
         }
-        <span class="ident">TYPE_OPTION</span> =&gt; {
-            <span class="comment">// index</span>
-            <span class="kw">let</span> <span class="ident">index</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_variant_index</span>()<span class="question-mark">?</span>;
-            <span class="comment">// optional value</span>
-            <span class="kw">match</span> <span class="ident">index</span> {
-                <span class="ident">OPTION_VARIANT_SOME</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::Option</span> {
-                    <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="prelude-val">Some</span>(<span class="ident">decode_next</span>(<span class="prelude-val">None</span>, <span class="ident">dec</span>)<span class="question-mark">?</span>)),
+        TYPE_OPTION =&gt; {
+            <span class="comment">// index
+            </span><span class="kw">let </span>index = dec.read_variant_index()<span class="question-mark">?</span>;
+            <span class="comment">// optional value
+            </span><span class="kw">match </span>index {
+                OPTION_VARIANT_SOME =&gt; <span class="prelude-val">Ok</span>(Value::Option {
+                    value: Box::new(<span class="prelude-val">Some</span>(decode_next(<span class="prelude-val">None</span>, dec)<span class="question-mark">?</span>)),
                 }),
-                <span class="ident">OPTION_VARIANT_NONE</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::Option</span> {
-                    <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="prelude-val">None</span>),
+                OPTION_VARIANT_NONE =&gt; <span class="prelude-val">Ok</span>(Value::Option {
+                    value: Box::new(<span class="prelude-val">None</span>),
                 }),
-                <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">DecodeError::InvalidIndex</span>(<span class="ident">index</span>)),
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(DecodeError::InvalidIndex(index)),
             }
         }
-        <span class="ident">TYPE_RESULT</span> =&gt; {
-            <span class="comment">// index</span>
-            <span class="kw">let</span> <span class="ident">index</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_variant_index</span>()<span class="question-mark">?</span>;
-            <span class="comment">// result value</span>
-            <span class="kw">match</span> <span class="ident">index</span> {
-                <span class="ident">RESULT_VARIANT_OK</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::Result</span> {
-                    <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="prelude-val">Ok</span>(<span class="ident">decode_next</span>(<span class="prelude-val">None</span>, <span class="ident">dec</span>)<span class="question-mark">?</span>)),
+        TYPE_RESULT =&gt; {
+            <span class="comment">// index
+            </span><span class="kw">let </span>index = dec.read_variant_index()<span class="question-mark">?</span>;
+            <span class="comment">// result value
+            </span><span class="kw">match </span>index {
+                RESULT_VARIANT_OK =&gt; <span class="prelude-val">Ok</span>(Value::Result {
+                    value: Box::new(<span class="prelude-val">Ok</span>(decode_next(<span class="prelude-val">None</span>, dec)<span class="question-mark">?</span>)),
                 }),
-                <span class="ident">RESULT_VARIANT_ERR</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">Value::Result</span> {
-                    <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="prelude-val">Err</span>(<span class="ident">decode_next</span>(<span class="prelude-val">None</span>, <span class="ident">dec</span>)<span class="question-mark">?</span>)),
+                RESULT_VARIANT_ERR =&gt; <span class="prelude-val">Ok</span>(Value::Result {
+                    value: Box::new(<span class="prelude-val">Err</span>(decode_next(<span class="prelude-val">None</span>, dec)<span class="question-mark">?</span>)),
                 }),
-                <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">DecodeError::InvalidIndex</span>(<span class="ident">index</span>)),
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(DecodeError::InvalidIndex(index)),
             }
         }
-        <span class="comment">// composite types</span>
-        <span class="ident">TYPE_ARRAY</span> =&gt; {
-            <span class="comment">// element type</span>
-            <span class="kw">let</span> <span class="ident">element_type_id</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_type</span>()<span class="question-mark">?</span>;
-            <span class="comment">// length</span>
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_dynamic_size</span>()<span class="question-mark">?</span>;
-            <span class="comment">// values</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">elements</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">len</span> {
-                <span class="ident">elements</span>.<span class="ident">push</span>(<span class="ident">decode_next</span>(<span class="prelude-val">Some</span>(<span class="ident">element_type_id</span>), <span class="ident">dec</span>)<span class="question-mark">?</span>);
+        <span class="comment">// composite types
+        </span>TYPE_ARRAY =&gt; {
+            <span class="comment">// element type
+            </span><span class="kw">let </span>element_type_id = dec.read_type()<span class="question-mark">?</span>;
+            <span class="comment">// length
+            </span><span class="kw">let </span>len = dec.read_dynamic_size()<span class="question-mark">?</span>;
+            <span class="comment">// values
+            </span><span class="kw">let </span><span class="kw-2">mut </span>elements = Vec::new();
+            <span class="kw">for _ in </span><span class="number">0</span>..len {
+                elements.push(decode_next(<span class="prelude-val">Some</span>(element_type_id), dec)<span class="question-mark">?</span>);
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">Value::Array</span> {
-                <span class="ident">element_type_id</span>,
-                <span class="ident">elements</span>,
+            <span class="prelude-val">Ok</span>(Value::Array {
+                element_type_id,
+                elements,
             })
         }
-        <span class="ident">TYPE_TUPLE</span> =&gt; {
-            <span class="comment">//length</span>
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_dynamic_size</span>()<span class="question-mark">?</span>;
-            <span class="comment">// values</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">elements</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">len</span> {
-                <span class="ident">elements</span>.<span class="ident">push</span>(<span class="ident">decode_next</span>(<span class="prelude-val">None</span>, <span class="ident">dec</span>)<span class="question-mark">?</span>);
+        TYPE_TUPLE =&gt; {
+            <span class="comment">//length
+            </span><span class="kw">let </span>len = dec.read_dynamic_size()<span class="question-mark">?</span>;
+            <span class="comment">// values
+            </span><span class="kw">let </span><span class="kw-2">mut </span>elements = Vec::new();
+            <span class="kw">for _ in </span><span class="number">0</span>..len {
+                elements.push(decode_next(<span class="prelude-val">None</span>, dec)<span class="question-mark">?</span>);
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">Value::Tuple</span> { <span class="ident">elements</span> })
+            <span class="prelude-val">Ok</span>(Value::Tuple { elements })
         }
-        <span class="comment">// collections</span>
-        <span class="ident">TYPE_LIST</span> =&gt; {
-            <span class="comment">// element type</span>
-            <span class="kw">let</span> <span class="ident">element_type_id</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_type</span>()<span class="question-mark">?</span>;
-            <span class="comment">// length</span>
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_dynamic_size</span>()<span class="question-mark">?</span>;
-            <span class="comment">// values</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">elements</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">len</span> {
-                <span class="ident">elements</span>.<span class="ident">push</span>(<span class="ident">decode_next</span>(<span class="prelude-val">Some</span>(<span class="ident">element_type_id</span>), <span class="ident">dec</span>)<span class="question-mark">?</span>);
+        <span class="comment">// collections
+        </span>TYPE_LIST =&gt; {
+            <span class="comment">// element type
+            </span><span class="kw">let </span>element_type_id = dec.read_type()<span class="question-mark">?</span>;
+            <span class="comment">// length
+            </span><span class="kw">let </span>len = dec.read_dynamic_size()<span class="question-mark">?</span>;
+            <span class="comment">// values
+            </span><span class="kw">let </span><span class="kw-2">mut </span>elements = Vec::new();
+            <span class="kw">for _ in </span><span class="number">0</span>..len {
+                elements.push(decode_next(<span class="prelude-val">Some</span>(element_type_id), dec)<span class="question-mark">?</span>);
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">Value::List</span> {
-                <span class="ident">element_type_id</span>,
-                <span class="ident">elements</span>,
+            <span class="prelude-val">Ok</span>(Value::List {
+                element_type_id,
+                elements,
             })
         }
-        <span class="ident">TYPE_SET</span> =&gt; {
-            <span class="comment">// element type</span>
-            <span class="kw">let</span> <span class="ident">element_type_id</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_type</span>()<span class="question-mark">?</span>;
-            <span class="comment">// length</span>
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_dynamic_size</span>()<span class="question-mark">?</span>;
-            <span class="comment">// values</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">elements</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">len</span> {
-                <span class="ident">elements</span>.<span class="ident">push</span>(<span class="ident">decode_next</span>(<span class="prelude-val">Some</span>(<span class="ident">element_type_id</span>), <span class="ident">dec</span>)<span class="question-mark">?</span>);
+        TYPE_SET =&gt; {
+            <span class="comment">// element type
+            </span><span class="kw">let </span>element_type_id = dec.read_type()<span class="question-mark">?</span>;
+            <span class="comment">// length
+            </span><span class="kw">let </span>len = dec.read_dynamic_size()<span class="question-mark">?</span>;
+            <span class="comment">// values
+            </span><span class="kw">let </span><span class="kw-2">mut </span>elements = Vec::new();
+            <span class="kw">for _ in </span><span class="number">0</span>..len {
+                elements.push(decode_next(<span class="prelude-val">Some</span>(element_type_id), dec)<span class="question-mark">?</span>);
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">Value::Set</span> {
-                <span class="ident">element_type_id</span>,
-                <span class="ident">elements</span>,
+            <span class="prelude-val">Ok</span>(Value::Set {
+                element_type_id,
+                elements,
             })
         }
-        <span class="ident">TYPE_MAP</span> =&gt; {
-            <span class="comment">// key type</span>
-            <span class="kw">let</span> <span class="ident">key_type_id</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_type</span>()<span class="question-mark">?</span>;
-            <span class="comment">// value type</span>
-            <span class="kw">let</span> <span class="ident">value_type_id</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_type</span>()<span class="question-mark">?</span>;
-            <span class="comment">// length</span>
-            <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_dynamic_size</span>()<span class="question-mark">?</span>;
-            <span class="comment">// elements</span>
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">elements</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">len</span> {
-                <span class="ident">elements</span>.<span class="ident">push</span>(<span class="ident">decode_next</span>(<span class="prelude-val">Some</span>(<span class="ident">key_type_id</span>), <span class="ident">dec</span>)<span class="question-mark">?</span>);
-                <span class="ident">elements</span>.<span class="ident">push</span>(<span class="ident">decode_next</span>(<span class="prelude-val">Some</span>(<span class="ident">value_type_id</span>), <span class="ident">dec</span>)<span class="question-mark">?</span>);
+        TYPE_MAP =&gt; {
+            <span class="comment">// key type
+            </span><span class="kw">let </span>key_type_id = dec.read_type()<span class="question-mark">?</span>;
+            <span class="comment">// value type
+            </span><span class="kw">let </span>value_type_id = dec.read_type()<span class="question-mark">?</span>;
+            <span class="comment">// length
+            </span><span class="kw">let </span>len = dec.read_dynamic_size()<span class="question-mark">?</span>;
+            <span class="comment">// elements
+            </span><span class="kw">let </span><span class="kw-2">mut </span>elements = Vec::new();
+            <span class="kw">for _ in </span><span class="number">0</span>..len {
+                elements.push(decode_next(<span class="prelude-val">Some</span>(key_type_id), dec)<span class="question-mark">?</span>);
+                elements.push(decode_next(<span class="prelude-val">Some</span>(value_type_id), dec)<span class="question-mark">?</span>);
             }
-            <span class="prelude-val">Ok</span>(<span class="ident">Value::Map</span> {
-                <span class="ident">key_type_id</span>,
-                <span class="ident">value_type_id</span>,
-                <span class="ident">elements</span>,
+            <span class="prelude-val">Ok</span>(Value::Map {
+                key_type_id,
+                value_type_id,
+                elements,
             })
         }
-        <span class="kw">_</span> =&gt; {
-            <span class="kw">if</span> <span class="ident">ty</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">TYPE_CUSTOM_START</span> {
-                <span class="comment">// length</span>
-                <span class="kw">let</span> <span class="ident">len</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_dynamic_size</span>()<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">slice</span> <span class="op">=</span> <span class="ident">dec</span>.<span class="ident">read_bytes</span>(<span class="ident">len</span>)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">Value::Custom</span> {
-                    <span class="ident">type_id</span>: <span class="ident">ty</span>,
-                    <span class="ident">bytes</span>: <span class="ident">slice</span>.<span class="ident">to_vec</span>(),
+        <span class="kw">_ </span>=&gt; {
+            <span class="kw">if </span>ty &gt;= TYPE_CUSTOM_START {
+                <span class="comment">// length
+                </span><span class="kw">let </span>len = dec.read_dynamic_size()<span class="question-mark">?</span>;
+                <span class="kw">let </span>slice = dec.read_bytes(len)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(Value::Custom {
+                    type_id: ty,
+                    bytes: slice.to_vec(),
                 })
-            } <span class="kw">else</span> {
-                <span class="prelude-val">Err</span>(<span class="ident">DecodeError::InvalidType</span> {
-                    <span class="ident">expected</span>: <span class="prelude-val">None</span>,
-                    <span class="ident">actual</span>: <span class="ident">ty</span>,
+            } <span class="kw">else </span>{
+                <span class="prelude-val">Err</span>(DecodeError::InvalidType {
+                    expected: <span class="prelude-val">None</span>,
+                    actual: ty,
                 })
             }
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">traverse_any</span><span class="op">&lt;</span><span class="ident">V</span>, <span class="ident">E</span><span class="op">&gt;</span>(
-    <span class="ident">path</span>: <span class="kw-2">&amp;mut</span> <span class="ident">MutableSborPath</span>,
-    <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">Value</span>,
-    <span class="ident">visitor</span>: <span class="kw-2">&amp;mut</span> <span class="ident">V</span>,
-) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">E</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">V</span>: <span class="ident">CustomValueVisitor</span><span class="op">&lt;</span><span class="prelude-val">Err</span> <span class="op">=</span> <span class="ident">E</span><span class="op">&gt;</span>,
+<span class="kw">pub fn </span>traverse_any&lt;V, E&gt;(
+    path: <span class="kw-2">&amp;mut </span>MutableSborPath,
+    value: <span class="kw-2">&amp;</span>Value,
+    visitor: <span class="kw-2">&amp;mut </span>V,
+) -&gt; <span class="prelude-ty">Result</span>&lt;(), E&gt;
+<span class="kw">where
+    </span>V: CustomValueVisitor&lt;<span class="prelude-val">Err </span>= E&gt;,
 {
-    <span class="kw">match</span> <span class="ident">value</span> {
-        <span class="comment">// primitive types</span>
-        <span class="ident">Value::Unit</span>
-        <span class="op">|</span> <span class="ident">Value::Bool</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::I8</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::I16</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::I32</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::I64</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::I128</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::U8</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::U16</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::U32</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::U64</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::U128</span> { .. }
-        <span class="op">|</span> <span class="ident">Value::String</span> { .. } =&gt; {}
-        <span class="comment">// struct &amp; enum</span>
-        <span class="ident">Value::Struct</span> { <span class="ident">fields</span> } <span class="op">|</span> <span class="ident">Value::Enum</span> { <span class="ident">fields</span>, .. } =&gt; {
-            <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">field</span>) <span class="kw">in</span> <span class="ident">fields</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-                <span class="ident">path</span>.<span class="ident">push</span>(<span class="ident">i</span>);
-                <span class="ident">traverse_any</span>(<span class="ident">path</span>, <span class="ident">field</span>, <span class="ident">visitor</span>)<span class="question-mark">?</span>;
-                <span class="ident">path</span>.<span class="ident">pop</span>();
+    <span class="kw">match </span>value {
+        <span class="comment">// primitive types
+        </span>Value::Unit
+        | Value::Bool { .. }
+        | Value::I8 { .. }
+        | Value::I16 { .. }
+        | Value::I32 { .. }
+        | Value::I64 { .. }
+        | Value::I128 { .. }
+        | Value::U8 { .. }
+        | Value::U16 { .. }
+        | Value::U32 { .. }
+        | Value::U64 { .. }
+        | Value::U128 { .. }
+        | Value::String { .. } =&gt; {}
+        <span class="comment">// struct &amp; enum
+        </span>Value::Struct { fields } | Value::Enum { fields, .. } =&gt; {
+            <span class="kw">for </span>(i, field) <span class="kw">in </span>fields.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, field, visitor)<span class="question-mark">?</span>;
+                path.pop();
             }
         }
-        <span class="ident">Value::Option</span> { <span class="ident">value</span> } =&gt; <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">borrow</span>() {
-            <span class="prelude-val">Some</span>(<span class="ident">x</span>) =&gt; {
-                <span class="ident">path</span>.<span class="ident">push</span>(<span class="number">0</span>);
-                <span class="ident">traverse_any</span>(<span class="ident">path</span>, <span class="ident">x</span>, <span class="ident">visitor</span>)<span class="question-mark">?</span>;
-                <span class="ident">path</span>.<span class="ident">pop</span>();
+        Value::Option { value } =&gt; <span class="kw">match </span>value.borrow() {
+            <span class="prelude-val">Some</span>(x) =&gt; {
+                path.push(<span class="number">0</span>);
+                traverse_any(path, x, visitor)<span class="question-mark">?</span>;
+                path.pop();
             }
-            <span class="prelude-val">None</span> =&gt; {}
+            <span class="prelude-val">None </span>=&gt; {}
         },
-        <span class="ident">Value::Result</span> { <span class="ident">value</span> } =&gt; <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">borrow</span>() {
-            <span class="prelude-val">Ok</span>(<span class="ident">x</span>) <span class="op">|</span> <span class="prelude-val">Err</span>(<span class="ident">x</span>) =&gt; {
-                <span class="ident">path</span>.<span class="ident">push</span>(<span class="number">0</span>);
-                <span class="ident">traverse_any</span>(<span class="ident">path</span>, <span class="ident">x</span>, <span class="ident">visitor</span>)<span class="question-mark">?</span>;
-                <span class="ident">path</span>.<span class="ident">pop</span>();
+        Value::Result { value } =&gt; <span class="kw">match </span>value.borrow() {
+            <span class="prelude-val">Ok</span>(x) | <span class="prelude-val">Err</span>(x) =&gt; {
+                path.push(<span class="number">0</span>);
+                traverse_any(path, x, visitor)<span class="question-mark">?</span>;
+                path.pop();
             }
         },
-        <span class="comment">// composite types</span>
-        <span class="ident">Value::Array</span> { <span class="ident">elements</span>, .. } =&gt; {
-            <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">e</span>) <span class="kw">in</span> <span class="ident">elements</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-                <span class="ident">path</span>.<span class="ident">push</span>(<span class="ident">i</span>);
-                <span class="ident">traverse_any</span>(<span class="ident">path</span>, <span class="ident">e</span>, <span class="ident">visitor</span>)<span class="question-mark">?</span>;
-                <span class="ident">path</span>.<span class="ident">pop</span>();
+        <span class="comment">// composite types
+        </span>Value::Array { elements, .. } =&gt; {
+            <span class="kw">for </span>(i, e) <span class="kw">in </span>elements.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, e, visitor)<span class="question-mark">?</span>;
+                path.pop();
             }
         }
-        <span class="ident">Value::Tuple</span> { <span class="ident">elements</span> } =&gt; {
-            <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">e</span>) <span class="kw">in</span> <span class="ident">elements</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-                <span class="ident">path</span>.<span class="ident">push</span>(<span class="ident">i</span>);
-                <span class="ident">traverse_any</span>(<span class="ident">path</span>, <span class="ident">e</span>, <span class="ident">visitor</span>)<span class="question-mark">?</span>;
-                <span class="ident">path</span>.<span class="ident">pop</span>();
+        Value::Tuple { elements } =&gt; {
+            <span class="kw">for </span>(i, e) <span class="kw">in </span>elements.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, e, visitor)<span class="question-mark">?</span>;
+                path.pop();
             }
         }
-        <span class="comment">// collections</span>
-        <span class="ident">Value::List</span> { <span class="ident">elements</span>, .. }
-        <span class="op">|</span> <span class="ident">Value::Set</span> { <span class="ident">elements</span>, .. }
-        <span class="op">|</span> <span class="ident">Value::Map</span> { <span class="ident">elements</span>, .. } =&gt; {
-            <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">e</span>) <span class="kw">in</span> <span class="ident">elements</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-                <span class="ident">path</span>.<span class="ident">push</span>(<span class="ident">i</span>);
-                <span class="ident">traverse_any</span>(<span class="ident">path</span>, <span class="ident">e</span>, <span class="ident">visitor</span>)<span class="question-mark">?</span>;
-                <span class="ident">path</span>.<span class="ident">pop</span>();
+        <span class="comment">// collections
+        </span>Value::List { elements, .. }
+        | Value::Set { elements, .. }
+        | Value::Map { elements, .. } =&gt; {
+            <span class="kw">for </span>(i, e) <span class="kw">in </span>elements.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, e, visitor)<span class="question-mark">?</span>;
+                path.pop();
             }
         }
-        <span class="comment">// custom types</span>
-        <span class="ident">Value::Custom</span> { <span class="ident">type_id</span>, <span class="ident">bytes</span> } =&gt; {
-            <span class="ident">visitor</span>.<span class="ident">visit</span>(<span class="ident">path</span>, <span class="kw-2">*</span><span class="ident">type_id</span>, <span class="ident">bytes</span>)<span class="question-mark">?</span>;
+        <span class="comment">// custom types
+        </span>Value::Custom { type_id, bytes } =&gt; {
+            visitor.visit(path, <span class="kw-2">*</span>type_id, bytes)<span class="question-mark">?</span>;
         }
     }
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">CustomValueVisitor</span> {
-    <span class="kw">type</span> <span class="prelude-val">Err</span>;
+<span class="kw">pub trait </span>CustomValueVisitor {
+    <span class="kw">type </span><span class="prelude-val">Err</span>;
 
-    <span class="kw">fn</span> <span class="ident">visit</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">path</span>: <span class="kw-2">&amp;mut</span> <span class="ident">MutableSborPath</span>,
-        <span class="ident">type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident"><span class="self">Self</span>::Err</span><span class="op">&gt;</span>;
+    <span class="kw">fn </span>visit(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        path: <span class="kw-2">&amp;mut </span>MutableSborPath,
+        type_id: u8,
+        data: <span class="kw-2">&amp;</span>[u8],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt;;
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::boxed::Box</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::collections</span>::<span class="kw-2">*</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::string::String</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::string::ToString</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec</span>;
-    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec::Vec</span>;
-    <span class="kw">use</span> <span class="kw">crate</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="kw">use </span><span class="kw">crate</span>::rust::boxed::Box;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::collections::<span class="kw-2">*</span>;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::string::String;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::string::ToString;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::vec;
+    <span class="kw">use </span><span class="kw">crate</span>::rust::vec::Vec;
+    <span class="kw">use crate</span>::<span class="kw-2">*</span>;
 
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">TypeId</span>, <span class="ident">Encode</span>)]</span>
-    <span class="kw">struct</span> <span class="ident">TestStruct</span> {
-        <span class="ident">x</span>: <span class="ident">u32</span>,
+    <span class="attribute">#[derive(TypeId, Encode)]
+    </span><span class="kw">struct </span>TestStruct {
+        x: u32,
     }
 
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">TypeId</span>, <span class="ident">Encode</span>)]</span>
-    <span class="kw">enum</span> <span class="ident">TestEnum</span> {
-        <span class="ident">A</span> { <span class="ident">x</span>: <span class="ident">u32</span> },
-        <span class="ident">B</span>(<span class="ident">u32</span>),
-        <span class="ident">C</span>,
+    <span class="attribute">#[derive(TypeId, Encode)]
+    </span><span class="kw">enum </span>TestEnum {
+        A { x: u32 },
+        B(u32),
+        C,
     }
 
-    <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">TypeId</span>, <span class="ident">Encode</span>)]</span>
-    <span class="kw">struct</span> <span class="ident">TestData</span> {
-        <span class="ident">a</span>: (),
-        <span class="ident">b</span>: <span class="ident">bool</span>,
-        <span class="ident">c</span>: <span class="ident">i8</span>,
-        <span class="ident">d</span>: <span class="ident">i16</span>,
-        <span class="ident">e</span>: <span class="ident">i32</span>,
-        <span class="ident">f</span>: <span class="ident">i64</span>,
-        <span class="ident">g</span>: <span class="ident">i128</span>,
-        <span class="ident">h</span>: <span class="ident">u8</span>,
-        <span class="ident">i</span>: <span class="ident">u16</span>,
-        <span class="ident">j</span>: <span class="ident">u32</span>,
-        <span class="ident">k</span>: <span class="ident">u64</span>,
-        <span class="ident">l</span>: <span class="ident">u128</span>,
-        <span class="ident">m</span>: <span class="ident">String</span>,
-        <span class="ident">n</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-        <span class="ident">o</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">u32</span>, <span class="ident">u32</span><span class="op">&gt;</span>,
-        <span class="ident">p</span>: [<span class="ident">u32</span>; <span class="number">3</span>],
-        <span class="ident">q</span>: (<span class="ident">u32</span>, <span class="ident">u32</span>),
-        <span class="ident">r</span>: <span class="ident">TestStruct</span>,
-        <span class="ident">s</span>: <span class="ident">TestEnum</span>,
-        <span class="ident">t</span>: <span class="ident">TestEnum</span>,
-        <span class="ident">u</span>: <span class="ident">TestEnum</span>,
-        <span class="ident">v</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-        <span class="ident">w</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-        <span class="ident">x</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">u32</span><span class="op">&gt;</span>,
-        <span class="ident">y</span>: <span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="ident">u32</span>, <span class="ident">u32</span><span class="op">&gt;</span>,
-        <span class="ident">z</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">u32</span>, <span class="ident">u32</span><span class="op">&gt;</span>,
+    <span class="attribute">#[derive(TypeId, Encode)]
+    </span><span class="kw">struct </span>TestData {
+        a: (),
+        b: bool,
+        c: i8,
+        d: i16,
+        e: i32,
+        f: i64,
+        g: i128,
+        h: u8,
+        i: u16,
+        j: u32,
+        k: u64,
+        l: u128,
+        m: String,
+        n: <span class="prelude-ty">Option</span>&lt;u32&gt;,
+        o: <span class="prelude-ty">Result</span>&lt;u32, u32&gt;,
+        p: [u32; <span class="number">3</span>],
+        q: (u32, u32),
+        r: TestStruct,
+        s: TestEnum,
+        t: TestEnum,
+        u: TestEnum,
+        v: Vec&lt;u32&gt;,
+        w: BTreeSet&lt;u32&gt;,
+        x: HashSet&lt;u32&gt;,
+        y: BTreeMap&lt;u32, u32&gt;,
+        z: HashMap&lt;u32, u32&gt;,
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_parse_normal</span>() {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set1</span> <span class="op">=</span> <span class="ident">BTreeSet::new</span>();
-        <span class="ident">set1</span>.<span class="ident">insert</span>(<span class="number">1</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">set2</span> <span class="op">=</span> <span class="ident">HashSet::new</span>();
-        <span class="ident">set2</span>.<span class="ident">insert</span>(<span class="number">2</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">map1</span> <span class="op">=</span> <span class="ident">BTreeMap::new</span>();
-        <span class="ident">map1</span>.<span class="ident">insert</span>(<span class="number">1</span>, <span class="number">2</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">map2</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="ident">map2</span>.<span class="ident">insert</span>(<span class="number">3</span>, <span class="number">4</span>);
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_parse_normal() {
+        <span class="kw">let </span><span class="kw-2">mut </span>set1 = BTreeSet::new();
+        set1.insert(<span class="number">1</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>set2 = HashSet::new();
+        set2.insert(<span class="number">2</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>map1 = BTreeMap::new();
+        map1.insert(<span class="number">1</span>, <span class="number">2</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>map2 = HashMap::new();
+        map2.insert(<span class="number">3</span>, <span class="number">4</span>);
 
-        <span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="ident">TestData</span> {
-            <span class="ident">a</span>: (),
-            <span class="ident">b</span>: <span class="bool-val">true</span>,
-            <span class="ident">c</span>: <span class="number">1</span>,
-            <span class="ident">d</span>: <span class="number">2</span>,
-            <span class="ident">e</span>: <span class="number">3</span>,
-            <span class="ident">f</span>: <span class="number">4</span>,
-            <span class="ident">g</span>: <span class="number">5</span>,
-            <span class="ident">h</span>: <span class="number">6</span>,
-            <span class="ident">i</span>: <span class="number">7</span>,
-            <span class="ident">j</span>: <span class="number">8</span>,
-            <span class="ident">k</span>: <span class="number">9</span>,
-            <span class="ident">l</span>: <span class="number">10</span>,
-            <span class="ident">m</span>: <span class="ident">String::from</span>(<span class="string">&quot;abc&quot;</span>),
-            <span class="ident">n</span>: <span class="prelude-val">Some</span>(<span class="number">1</span>),
-            <span class="ident">o</span>: <span class="prelude-val">Ok</span>(<span class="number">2</span>),
-            <span class="ident">p</span>: [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>],
-            <span class="ident">q</span>: (<span class="number">1</span>, <span class="number">2</span>),
-            <span class="ident">r</span>: <span class="ident">TestStruct</span> { <span class="ident">x</span>: <span class="number">1</span> },
-            <span class="ident">s</span>: <span class="ident">TestEnum::A</span> { <span class="ident">x</span>: <span class="number">1</span> },
-            <span class="ident">t</span>: <span class="ident">TestEnum::B</span>(<span class="number">2</span>),
-            <span class="ident">u</span>: <span class="ident">TestEnum::C</span>,
-            <span class="ident">v</span>: <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>],
-            <span class="ident">w</span>: <span class="ident">set1</span>,
-            <span class="ident">x</span>: <span class="ident">set2</span>,
-            <span class="ident">y</span>: <span class="ident">map1</span>,
-            <span class="ident">z</span>: <span class="ident">map2</span>,
+        <span class="kw">let </span>data = TestData {
+            a: (),
+            b: <span class="bool-val">true</span>,
+            c: <span class="number">1</span>,
+            d: <span class="number">2</span>,
+            e: <span class="number">3</span>,
+            f: <span class="number">4</span>,
+            g: <span class="number">5</span>,
+            h: <span class="number">6</span>,
+            i: <span class="number">7</span>,
+            j: <span class="number">8</span>,
+            k: <span class="number">9</span>,
+            l: <span class="number">10</span>,
+            m: String::from(<span class="string">&quot;abc&quot;</span>),
+            n: <span class="prelude-val">Some</span>(<span class="number">1</span>),
+            o: <span class="prelude-val">Ok</span>(<span class="number">2</span>),
+            p: [<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>],
+            q: (<span class="number">1</span>, <span class="number">2</span>),
+            r: TestStruct { x: <span class="number">1 </span>},
+            s: TestEnum::A { x: <span class="number">1 </span>},
+            t: TestEnum::B(<span class="number">2</span>),
+            u: TestEnum::C,
+            v: <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>],
+            w: set1,
+            x: set2,
+            y: map1,
+            z: map2,
         };
-        <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">encode_with_static_info</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>);
-        <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">decode_any</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let </span>bytes = encode_with_static_info(<span class="kw-2">&amp;</span>data);
+        <span class="kw">let </span>value = decode_any(<span class="kw-2">&amp;</span>bytes).unwrap();
 
         <span class="macro">assert_eq!</span>(
-            <span class="ident">Value::Struct</span> {
-                <span class="ident">fields</span>: <span class="macro">vec!</span>[
-                    <span class="ident">Value::Unit</span>,
-                    <span class="ident">Value::Bool</span> { <span class="ident">value</span>: <span class="bool-val">true</span> },
-                    <span class="ident">Value::I8</span> { <span class="ident">value</span>: <span class="number">1</span> },
-                    <span class="ident">Value::I16</span> { <span class="ident">value</span>: <span class="number">2</span> },
-                    <span class="ident">Value::I32</span> { <span class="ident">value</span>: <span class="number">3</span> },
-                    <span class="ident">Value::I64</span> { <span class="ident">value</span>: <span class="number">4</span> },
-                    <span class="ident">Value::I128</span> { <span class="ident">value</span>: <span class="number">5</span> },
-                    <span class="ident">Value::U8</span> { <span class="ident">value</span>: <span class="number">6</span> },
-                    <span class="ident">Value::U16</span> { <span class="ident">value</span>: <span class="number">7</span> },
-                    <span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">8</span> },
-                    <span class="ident">Value::U64</span> { <span class="ident">value</span>: <span class="number">9</span> },
-                    <span class="ident">Value::U128</span> { <span class="ident">value</span>: <span class="number">10</span> },
-                    <span class="ident">Value::String</span> {
-                        <span class="ident">value</span>: <span class="ident">String::from</span>(<span class="string">&quot;abc&quot;</span>)
+            Value::Struct {
+                fields: <span class="macro">vec!</span>[
+                    Value::Unit,
+                    Value::Bool { value: <span class="bool-val">true </span>},
+                    Value::I8 { value: <span class="number">1 </span>},
+                    Value::I16 { value: <span class="number">2 </span>},
+                    Value::I32 { value: <span class="number">3 </span>},
+                    Value::I64 { value: <span class="number">4 </span>},
+                    Value::I128 { value: <span class="number">5 </span>},
+                    Value::U8 { value: <span class="number">6 </span>},
+                    Value::U16 { value: <span class="number">7 </span>},
+                    Value::U32 { value: <span class="number">8 </span>},
+                    Value::U64 { value: <span class="number">9 </span>},
+                    Value::U128 { value: <span class="number">10 </span>},
+                    Value::String {
+                        value: String::from(<span class="string">&quot;abc&quot;</span>)
                     },
-                    <span class="ident">Value::Option</span> {
-                        <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="prelude-val">Some</span>(<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">1</span> }))
+                    Value::Option {
+                        value: Box::new(<span class="prelude-val">Some</span>(Value::U32 { value: <span class="number">1 </span>}))
                     },
-                    <span class="ident">Value::Result</span> {
-                        <span class="ident">value</span>: <span class="ident">Box::new</span>(<span class="prelude-val">Ok</span>(<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">2</span> }))
+                    Value::Result {
+                        value: Box::new(<span class="prelude-val">Ok</span>(Value::U32 { value: <span class="number">2 </span>}))
                     },
-                    <span class="ident">Value::Array</span> {
-                        <span class="ident">element_type_id</span>: <span class="ident">TYPE_U32</span>,
-                        <span class="ident">elements</span>: <span class="macro">vec!</span>[
-                            <span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">1</span> },
-                            <span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">2</span> },
-                            <span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">3</span> },
+                    Value::Array {
+                        element_type_id: TYPE_U32,
+                        elements: <span class="macro">vec!</span>[
+                            Value::U32 { value: <span class="number">1 </span>},
+                            Value::U32 { value: <span class="number">2 </span>},
+                            Value::U32 { value: <span class="number">3 </span>},
                         ]
                     },
-                    <span class="ident">Value::Tuple</span> {
-                        <span class="ident">elements</span>: <span class="macro">vec!</span>[<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">1</span> }, <span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">2</span> },]
+                    Value::Tuple {
+                        elements: <span class="macro">vec!</span>[Value::U32 { value: <span class="number">1 </span>}, Value::U32 { value: <span class="number">2 </span>},]
                     },
-                    <span class="ident">Value::Struct</span> {
-                        <span class="ident">fields</span>: <span class="macro">vec!</span>[<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">1</span> }]
+                    Value::Struct {
+                        fields: <span class="macro">vec!</span>[Value::U32 { value: <span class="number">1 </span>}]
                     },
-                    <span class="ident">Value::Enum</span> {
-                        <span class="ident">name</span>: <span class="string">&quot;A&quot;</span>.<span class="ident">to_string</span>(),
-                        <span class="ident">fields</span>: <span class="macro">vec!</span>[<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">1</span> }]
+                    Value::Enum {
+                        name: <span class="string">&quot;A&quot;</span>.to_string(),
+                        fields: <span class="macro">vec!</span>[Value::U32 { value: <span class="number">1 </span>}]
                     },
-                    <span class="ident">Value::Enum</span> {
-                        <span class="ident">name</span>: <span class="string">&quot;B&quot;</span>.<span class="ident">to_string</span>(),
-                        <span class="ident">fields</span>: <span class="macro">vec!</span>[<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">2</span> }]
+                    Value::Enum {
+                        name: <span class="string">&quot;B&quot;</span>.to_string(),
+                        fields: <span class="macro">vec!</span>[Value::U32 { value: <span class="number">2 </span>}]
                     },
-                    <span class="ident">Value::Enum</span> {
-                        <span class="ident">name</span>: <span class="string">&quot;C&quot;</span>.<span class="ident">to_string</span>(),
-                        <span class="ident">fields</span>: <span class="macro">vec!</span>[]
+                    Value::Enum {
+                        name: <span class="string">&quot;C&quot;</span>.to_string(),
+                        fields: <span class="macro">vec!</span>[]
                     },
-                    <span class="ident">Value::List</span> {
-                        <span class="ident">element_type_id</span>: <span class="ident">TYPE_U32</span>,
-                        <span class="ident">elements</span>: <span class="macro">vec!</span>[<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">1</span> }, <span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">2</span> },]
+                    Value::List {
+                        element_type_id: TYPE_U32,
+                        elements: <span class="macro">vec!</span>[Value::U32 { value: <span class="number">1 </span>}, Value::U32 { value: <span class="number">2 </span>},]
                     },
-                    <span class="ident">Value::Set</span> {
-                        <span class="ident">element_type_id</span>: <span class="ident">TYPE_U32</span>,
-                        <span class="ident">elements</span>: <span class="macro">vec!</span>[<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">1</span> }]
+                    Value::Set {
+                        element_type_id: TYPE_U32,
+                        elements: <span class="macro">vec!</span>[Value::U32 { value: <span class="number">1 </span>}]
                     },
-                    <span class="ident">Value::Set</span> {
-                        <span class="ident">element_type_id</span>: <span class="ident">TYPE_U32</span>,
-                        <span class="ident">elements</span>: <span class="macro">vec!</span>[<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">2</span> }]
+                    Value::Set {
+                        element_type_id: TYPE_U32,
+                        elements: <span class="macro">vec!</span>[Value::U32 { value: <span class="number">2 </span>}]
                     },
-                    <span class="ident">Value::Map</span> {
-                        <span class="ident">key_type_id</span>: <span class="ident">TYPE_U32</span>,
-                        <span class="ident">value_type_id</span>: <span class="ident">TYPE_U32</span>,
-                        <span class="ident">elements</span>: <span class="macro">vec!</span>[<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">1</span> }, <span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">2</span> }]
+                    Value::Map {
+                        key_type_id: TYPE_U32,
+                        value_type_id: TYPE_U32,
+                        elements: <span class="macro">vec!</span>[Value::U32 { value: <span class="number">1 </span>}, Value::U32 { value: <span class="number">2 </span>}]
                     },
-                    <span class="ident">Value::Map</span> {
-                        <span class="ident">key_type_id</span>: <span class="ident">TYPE_U32</span>,
-                        <span class="ident">value_type_id</span>: <span class="ident">TYPE_U32</span>,
-                        <span class="ident">elements</span>: <span class="macro">vec!</span>[<span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">3</span> }, <span class="ident">Value::U32</span> { <span class="ident">value</span>: <span class="number">4</span> }]
+                    Value::Map {
+                        key_type_id: TYPE_U32,
+                        value_type_id: TYPE_U32,
+                        elements: <span class="macro">vec!</span>[Value::U32 { value: <span class="number">3 </span>}, Value::U32 { value: <span class="number">4 </span>}]
                     }
                 ]
             },
-            <span class="ident">value</span>
+            value
         );
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes2</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">enc</span> <span class="op">=</span> <span class="ident">Encoder::with_static_info</span>(<span class="kw-2">&amp;mut</span> <span class="ident">bytes2</span>);
-        <span class="ident">encode_any_internal</span>(<span class="prelude-val">None</span>, <span class="kw-2">&amp;</span><span class="ident">value</span>, <span class="kw-2">&amp;mut</span> <span class="ident">enc</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">bytes2</span>, <span class="ident">bytes</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>bytes2 = Vec::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>enc = Encoder::with_static_info(<span class="kw-2">&amp;mut </span>bytes2);
+        encode_any_internal(<span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>value, <span class="kw-2">&amp;mut </span>enc);
+        <span class="macro">assert_eq!</span>(bytes2, bytes);
     }
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">test_parse_custom</span>() {
-        <span class="kw">let</span> <span class="ident">bytes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="op">=</span> <span class="macro">vec!</span>[<span class="number">0x80</span>, <span class="number">0x02</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x01</span>, <span class="number">0x02</span>];
-        <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">decode_any</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>).<span class="ident">unwrap</span>();
+    <span class="attribute">#[test]
+    </span><span class="kw">pub fn </span>test_parse_custom() {
+        <span class="kw">let </span>bytes: Vec&lt;u8&gt; = <span class="macro">vec!</span>[<span class="number">0x80</span>, <span class="number">0x02</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x01</span>, <span class="number">0x02</span>];
+        <span class="kw">let </span>value = decode_any(<span class="kw-2">&amp;</span>bytes).unwrap();
 
         <span class="macro">assert_eq!</span>(
-            <span class="ident">Value::Custom</span> {
-                <span class="ident">type_id</span>: <span class="number">0x80</span>,
-                <span class="ident">bytes</span>: <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>]
+            Value::Custom {
+                type_id: <span class="number">0x80</span>,
+                bytes: <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>]
             },
-            <span class="ident">value</span>
+            value
         );
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

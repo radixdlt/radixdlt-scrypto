@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/worktop.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>worktop.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/worktop.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>worktop.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -380,383 +375,382 @@
 <span id="375">375</span>
 <span id="376">376</span>
 <span id="377">377</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">DropFailure</span>, <span class="ident">HeapRENode</span>, <span class="ident">InvokeError</span>, <span class="ident">SystemApi</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::{<span class="ident">Bucket</span>, <span class="ident">ResourceContainer</span>, <span class="ident">ResourceContainerError</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::{DropFailure, HeapRENode, InvokeError, SystemApi};
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::{Bucket, ResourceContainer, ResourceContainerError};
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WorktopPutInput</span> {
-    <span class="kw">pub</span> <span class="ident">bucket</span>: <span class="ident">scrypto::resource::Bucket</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>WorktopPutInput {
+    <span class="kw">pub </span>bucket: scrypto::resource::Bucket,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WorktopTakeAmountInput</span> {
-    <span class="kw">pub</span> <span class="ident">amount</span>: <span class="ident">Decimal</span>,
-    <span class="kw">pub</span> <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>WorktopTakeAmountInput {
+    <span class="kw">pub </span>amount: Decimal,
+    <span class="kw">pub </span>resource_address: ResourceAddress,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WorktopTakeNonFungiblesInput</span> {
-    <span class="kw">pub</span> <span class="ident">ids</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>WorktopTakeNonFungiblesInput {
+    <span class="kw">pub </span>ids: BTreeSet&lt;NonFungibleId&gt;,
+    <span class="kw">pub </span>resource_address: ResourceAddress,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WorktopTakeAllInput</span> {
-    <span class="kw">pub</span> <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>WorktopTakeAllInput {
+    <span class="kw">pub </span>resource_address: ResourceAddress,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WorktopAssertContainsInput</span> {
-    <span class="kw">pub</span> <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>WorktopAssertContainsInput {
+    <span class="kw">pub </span>resource_address: ResourceAddress,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WorktopAssertContainsAmountInput</span> {
-    <span class="kw">pub</span> <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    <span class="kw">pub</span> <span class="ident">amount</span>: <span class="ident">Decimal</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>WorktopAssertContainsAmountInput {
+    <span class="kw">pub </span>resource_address: ResourceAddress,
+    <span class="kw">pub </span>amount: Decimal,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WorktopAssertContainsNonFungiblesInput</span> {
-    <span class="kw">pub</span> <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    <span class="kw">pub</span> <span class="ident">ids</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>WorktopAssertContainsNonFungiblesInput {
+    <span class="kw">pub </span>resource_address: ResourceAddress,
+    <span class="kw">pub </span>ids: BTreeSet&lt;NonFungibleId&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">WorktopDrainInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>WorktopDrainInput {}
 
-<span class="doccomment">/// Worktop collects resources from function or method returns.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Worktop</span> {
-    <span class="comment">// TODO: refactor worktop to be `HashMap&lt;ResourceAddress, BucketId&gt;`</span>
-    <span class="ident">containers</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span>, <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// Worktop collects resources from function or method returns.
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>Worktop {
+    <span class="comment">// TODO: refactor worktop to be `HashMap&lt;ResourceAddress, BucketId&gt;`
+    </span>containers: HashMap&lt;ResourceAddress, Rc&lt;RefCell&lt;ResourceContainer&gt;&gt;&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">WorktopError</span> {
-    <span class="ident">InvalidRequestData</span>(<span class="ident">DecodeError</span>),
-    <span class="ident">MethodNotFound</span>(<span class="ident">String</span>),
-    <span class="ident">ResourceContainerError</span>(<span class="ident">ResourceContainerError</span>),
-    <span class="ident">ResourceNotFound</span>(<span class="ident">ResourceAddress</span>),
-    <span class="ident">CouldNotCreateBucket</span>,
-    <span class="ident">CouldNotTakeBucket</span>,
-    <span class="ident">AssertionFailed</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>WorktopError {
+    InvalidRequestData(DecodeError),
+    MethodNotFound(String),
+    ResourceContainerError(ResourceContainerError),
+    ResourceNotFound(ResourceAddress),
+    CouldNotCreateBucket,
+    CouldNotTakeBucket,
+    AssertionFailed,
 }
 
-<span class="kw">impl</span> <span class="ident">Worktop</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">containers</span>: <span class="ident">HashMap::new</span>(),
+<span class="kw">impl </span>Worktop {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            containers: HashMap::new(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">drop</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">DropFailure</span><span class="op">&gt;</span> {
-        <span class="kw">for</span> (<span class="ident">_address</span>, <span class="ident">container</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">containers</span> {
-            <span class="kw">if</span> <span class="op">!</span><span class="ident">container</span>.<span class="ident">borrow</span>().<span class="ident">is_empty</span>() {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">DropFailure::Worktop</span>);
+    <span class="kw">pub fn </span>drop(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), DropFailure&gt; {
+        <span class="kw">for </span>(_address, container) <span class="kw">in </span><span class="self">self</span>.containers {
+            <span class="kw">if </span>!container.borrow().is_empty() {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(DropFailure::Worktop);
             }
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">put</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">other</span>: <span class="ident">Bucket</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">resource_address</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">resource_address</span>();
-        <span class="kw">let</span> <span class="ident">other_container</span> <span class="op">=</span> <span class="ident">other</span>.<span class="ident">into_container</span>()<span class="question-mark">?</span>;
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">container</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrow_container_mut</span>(<span class="ident">resource_address</span>) {
-            <span class="kw">return</span> <span class="ident">container</span>.<span class="ident">put</span>(<span class="ident">other_container</span>);
+    <span class="kw">pub fn </span>put(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: Bucket) -&gt; <span class="prelude-ty">Result</span>&lt;(), ResourceContainerError&gt; {
+        <span class="kw">let </span>resource_address = other.resource_address();
+        <span class="kw">let </span>other_container = other.into_container()<span class="question-mark">?</span>;
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>container) = <span class="self">self</span>.borrow_container_mut(resource_address) {
+            <span class="kw">return </span>container.put(other_container);
         }
-        <span class="self">self</span>.<span class="ident">put_container</span>(<span class="ident">resource_address</span>, <span class="ident">other_container</span>);
+        <span class="self">self</span>.put_container(resource_address, other_container);
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn</span> <span class="ident">take</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">amount</span>: <span class="ident">Decimal</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">container</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrow_container_mut</span>(<span class="ident">resource_address</span>) {
-            <span class="ident">container</span>.<span class="ident">take_by_amount</span>(<span class="ident">amount</span>).<span class="ident">map</span>(<span class="ident">Option::Some</span>)
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="op">!</span><span class="ident">amount</span>.<span class="ident">is_zero</span>() {
-            <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::InsufficientBalance</span>)
-        } <span class="kw">else</span> {
+    <span class="kw">fn </span>take(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;ResourceContainer&gt;, ResourceContainerError&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>container) = <span class="self">self</span>.borrow_container_mut(resource_address) {
+            container.take_by_amount(amount).map(Option::Some)
+        } <span class="kw">else if </span>!amount.is_zero() {
+            <span class="prelude-val">Err</span>(ResourceContainerError::InsufficientBalance)
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take_non_fungibles</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">ids</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">container</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrow_container_mut</span>(<span class="ident">resource_address</span>) {
-            <span class="ident">container</span>.<span class="ident">take_by_ids</span>(<span class="ident">ids</span>).<span class="ident">map</span>(<span class="ident">Option::Some</span>)
-        } <span class="kw">else</span> <span class="kw">if</span> <span class="op">!</span><span class="ident">ids</span>.<span class="ident">is_empty</span>() {
-            <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::InsufficientBalance</span>)
-        } <span class="kw">else</span> {
+    <span class="kw">pub fn </span>take_non_fungibles(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        ids: <span class="kw-2">&amp;</span>BTreeSet&lt;NonFungibleId&gt;,
+        resource_address: ResourceAddress,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;ResourceContainer&gt;, ResourceContainerError&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>container) = <span class="self">self</span>.borrow_container_mut(resource_address) {
+            container.take_by_ids(ids).map(Option::Some)
+        } <span class="kw">else if </span>!ids.is_empty() {
+            <span class="prelude-val">Err</span>(ResourceContainerError::InsufficientBalance)
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">take_all</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">container</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrow_container_mut</span>(<span class="ident">resource_address</span>) {
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="ident">container</span>.<span class="ident">take_all_liquid</span>()<span class="question-mark">?</span>))
-        } <span class="kw">else</span> {
+    <span class="kw">fn </span>take_all(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        resource_address: ResourceAddress,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;ResourceContainer&gt;, ResourceContainerError&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>container) = <span class="self">self</span>.borrow_container_mut(resource_address) {
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(container.take_all_liquid()<span class="question-mark">?</span>))
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_addresses</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">containers</span>.<span class="ident">keys</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>()
+    <span class="kw">pub fn </span>resource_addresses(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;ResourceAddress&gt; {
+        <span class="self">self</span>.containers.keys().cloned().collect()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>) -&gt; <span class="ident">Decimal</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">container</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrow_container</span>(<span class="ident">resource_address</span>) {
-            <span class="ident">container</span>.<span class="ident">total_amount</span>()
-        } <span class="kw">else</span> {
-            <span class="ident">Decimal::zero</span>()
+    <span class="kw">pub fn </span>total_amount(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_address: ResourceAddress) -&gt; Decimal {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(container) = <span class="self">self</span>.borrow_container(resource_address) {
+            container.total_amount()
+        } <span class="kw">else </span>{
+            Decimal::zero()
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_ids</span>(
+    <span class="kw">pub fn </span>total_ids(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">container</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrow_container</span>(<span class="ident">resource_address</span>) {
-            <span class="ident">container</span>.<span class="ident">total_ids</span>()
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">BTreeSet::new</span>())
+        resource_address: ResourceAddress,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeSet&lt;NonFungibleId&gt;, ResourceContainerError&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(container) = <span class="self">self</span>.borrow_container(resource_address) {
+            container.total_ids()
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Ok</span>(BTreeSet::new())
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_locked</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">for</span> <span class="ident">resource_address</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">resource_addresses</span>() {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">container</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrow_container</span>(<span class="ident">resource_address</span>) {
-                <span class="kw">if</span> <span class="ident">container</span>.<span class="ident">is_locked</span>() {
-                    <span class="kw">return</span> <span class="bool-val">true</span>;
+    <span class="kw">pub fn </span>is_locked(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">for </span>resource_address <span class="kw">in </span><span class="self">self</span>.resource_addresses() {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(container) = <span class="self">self</span>.borrow_container(resource_address) {
+                <span class="kw">if </span>container.is_locked() {
+                    <span class="kw">return </span><span class="bool-val">true</span>;
                 }
             }
         }
-        <span class="bool-val">false</span>
-    }
+        <span class="bool-val">false
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">for</span> <span class="ident">resource_address</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">resource_addresses</span>() {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">container</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrow_container</span>(<span class="ident">resource_address</span>) {
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">container</span>.<span class="ident">total_amount</span>().<span class="ident">is_zero</span>() {
-                    <span class="kw">return</span> <span class="bool-val">false</span>;
+    <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">for </span>resource_address <span class="kw">in </span><span class="self">self</span>.resource_addresses() {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(container) = <span class="self">self</span>.borrow_container(resource_address) {
+                <span class="kw">if </span>!container.total_amount().is_zero() {
+                    <span class="kw">return </span><span class="bool-val">false</span>;
                 }
             }
         }
-        <span class="bool-val">true</span>
-    }
+        <span class="bool-val">true
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_reference_for_proof</span>(
+    <span class="kw">pub fn </span>create_reference_for_proof(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">containers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">resource_address</span>).<span class="ident">map</span>(<span class="ident">Clone::clone</span>)
+        resource_address: ResourceAddress,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;Rc&lt;RefCell&lt;ResourceContainer&gt;&gt;&gt; {
+        <span class="self">self</span>.containers.get(<span class="kw-2">&amp;</span>resource_address).map(Clone::clone)
     }
 
-    <span class="kw">fn</span> <span class="ident">borrow_container</span>(
+    <span class="kw">fn </span>borrow_container(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Ref</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">containers</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">resource_address</span>).<span class="ident">map</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span>.<span class="ident">borrow</span>())
+        resource_address: ResourceAddress,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;Ref&lt;ResourceContainer&gt;&gt; {
+        <span class="self">self</span>.containers.get(<span class="kw-2">&amp;</span>resource_address).map(|c| c.borrow())
     }
 
-    <span class="kw">fn</span> <span class="ident">borrow_container_mut</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    ) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">RefMut</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">containers</span>
-            .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">resource_address</span>)
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span>.<span class="ident">borrow_mut</span>())
+    <span class="kw">fn </span>borrow_container_mut(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        resource_address: ResourceAddress,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;RefMut&lt;ResourceContainer&gt;&gt; {
+        <span class="self">self</span>.containers
+            .get(<span class="kw-2">&amp;</span>resource_address)
+            .map(|c| c.borrow_mut())
     }
 
-    <span class="comment">// Note that this method overwrites existing container if any</span>
-    <span class="kw">fn</span> <span class="ident">put_container</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>, <span class="ident">container</span>: <span class="ident">ResourceContainer</span>) {
-        <span class="self">self</span>.<span class="ident">containers</span>
-            .<span class="ident">insert</span>(<span class="ident">resource_address</span>, <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">container</span>)));
+    <span class="comment">// Note that this method overwrites existing container if any
+    </span><span class="kw">fn </span>put_container(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource_address: ResourceAddress, container: ResourceContainer) {
+        <span class="self">self</span>.containers
+            .insert(resource_address, Rc::new(RefCell::new(container)));
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">main</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">worktop_fn</span>: <span class="ident">WorktopFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">WorktopError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>main&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        worktop_fn: WorktopFnIdentifier,
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;WorktopError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-            .<span class="ident">substate_borrow_mut</span>(<span class="kw-2">&amp;</span><span class="ident">SubstateId::Worktop</span>)
-            .<span class="ident">map_err</span>(<span class="ident">InvokeError::downstream</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">worktop</span> <span class="op">=</span> <span class="ident">node_ref</span>.<span class="ident">worktop</span>();
+        <span class="kw">let </span><span class="kw-2">mut </span>node_ref = system_api
+            .substate_borrow_mut(<span class="kw-2">&amp;</span>SubstateId::Worktop)
+            .map_err(InvokeError::downstream)<span class="question-mark">?</span>;
+        <span class="kw">let </span>worktop = node_ref.worktop();
 
-        <span class="kw">let</span> <span class="ident">rtn</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">worktop_fn</span> {
-            <span class="ident">WorktopFnIdentifier::Put</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">WorktopPutInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">bucket</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_drop</span>(<span class="kw-2">&amp;</span><span class="ident">RENodeId::Bucket</span>(<span class="ident">input</span>.<span class="ident">bucket</span>.<span class="number">0</span>))
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Downstream</span>(<span class="ident">e</span>))<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="ident">worktop</span>
-                    .<span class="ident">put</span>(<span class="ident">bucket</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+        <span class="kw">let </span>rtn = <span class="kw">match </span>worktop_fn {
+            WorktopFnIdentifier::Put =&gt; {
+                <span class="kw">let </span>input: WorktopPutInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>bucket = system_api
+                    .node_drop(<span class="kw-2">&amp;</span>RENodeId::Bucket(input.bucket.<span class="number">0</span>))
+                    .map_err(|e| InvokeError::Downstream(e))<span class="question-mark">?
+                    </span>.into();
+                worktop
+                    .put(bucket)
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceContainerError(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
             }
-            <span class="ident">WorktopFnIdentifier::TakeAmount</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">WorktopTakeAmountInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">maybe_container</span> <span class="op">=</span> <span class="ident">worktop</span>
-                    .<span class="ident">take</span>(<span class="ident">input</span>.<span class="ident">amount</span>, <span class="ident">input</span>.<span class="ident">resource_address</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">resource_container</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">container</span>) <span class="op">=</span> <span class="ident">maybe_container</span> {
-                    <span class="ident">container</span>
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">resource_type</span> <span class="op">=</span> {
-                        <span class="kw">let</span> <span class="ident">node_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-                            .<span class="ident">borrow_node</span>(<span class="kw-2">&amp;</span><span class="ident">RENodeId::ResourceManager</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>))
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Downstream</span>(<span class="ident">e</span>))<span class="question-mark">?</span>;
-                        <span class="kw">let</span> <span class="ident">resource_manager</span> <span class="op">=</span> <span class="ident">node_ref</span>.<span class="ident">resource_manager</span>();
-                        <span class="ident">resource_manager</span>.<span class="ident">resource_type</span>()
+            WorktopFnIdentifier::TakeAmount =&gt; {
+                <span class="kw">let </span>input: WorktopTakeAmountInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>maybe_container = worktop
+                    .take(input.amount, input.resource_address)
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceContainerError(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>resource_container = <span class="kw">if let </span><span class="prelude-val">Some</span>(container) = maybe_container {
+                    container
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>resource_type = {
+                        <span class="kw">let </span>node_ref = system_api
+                            .borrow_node(<span class="kw-2">&amp;</span>RENodeId::ResourceManager(input.resource_address))
+                            .map_err(|e| InvokeError::Downstream(e))<span class="question-mark">?</span>;
+                        <span class="kw">let </span>resource_manager = node_ref.resource_manager();
+                        resource_manager.resource_type()
                     };
 
-                    <span class="ident">ResourceContainer::new_empty</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>, <span class="ident">resource_type</span>)
+                    ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
-                <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Bucket</span>(<span class="ident">Bucket::new</span>(<span class="ident">resource_container</span>)))
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Downstream</span>(<span class="ident">e</span>))<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(
-                    <span class="ident">bucket_id</span>,
+                <span class="kw">let </span>bucket_id = system_api
+                    .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
+                    .map_err(|e| InvokeError::Downstream(e))<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(
+                    bucket_id,
                 )))
             }
-            <span class="ident">WorktopFnIdentifier::TakeAll</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">WorktopTakeAllInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">maybe_container</span> <span class="op">=</span> <span class="ident">worktop</span>
-                    .<span class="ident">take_all</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">resource_container</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">container</span>) <span class="op">=</span> <span class="ident">maybe_container</span> {
-                    <span class="ident">container</span>
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">resource_type</span> <span class="op">=</span> {
-                        <span class="kw">let</span> <span class="ident">node_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-                            .<span class="ident">borrow_node</span>(<span class="kw-2">&amp;</span><span class="ident">RENodeId::ResourceManager</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>))
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Downstream</span>(<span class="ident">e</span>))<span class="question-mark">?</span>;
-                        <span class="kw">let</span> <span class="ident">resource_manager</span> <span class="op">=</span> <span class="ident">node_ref</span>.<span class="ident">resource_manager</span>();
-                        <span class="ident">resource_manager</span>.<span class="ident">resource_type</span>()
+            WorktopFnIdentifier::TakeAll =&gt; {
+                <span class="kw">let </span>input: WorktopTakeAllInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>maybe_container = worktop
+                    .take_all(input.resource_address)
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceContainerError(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>resource_container = <span class="kw">if let </span><span class="prelude-val">Some</span>(container) = maybe_container {
+                    container
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>resource_type = {
+                        <span class="kw">let </span>node_ref = system_api
+                            .borrow_node(<span class="kw-2">&amp;</span>RENodeId::ResourceManager(input.resource_address))
+                            .map_err(|e| InvokeError::Downstream(e))<span class="question-mark">?</span>;
+                        <span class="kw">let </span>resource_manager = node_ref.resource_manager();
+                        resource_manager.resource_type()
                     };
 
-                    <span class="ident">ResourceContainer::new_empty</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>, <span class="ident">resource_type</span>)
+                    ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
-                <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Bucket</span>(<span class="ident">Bucket::new</span>(<span class="ident">resource_container</span>)))
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Downstream</span>(<span class="ident">e</span>))<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(
-                    <span class="ident">bucket_id</span>,
+                <span class="kw">let </span>bucket_id = system_api
+                    .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
+                    .map_err(|e| InvokeError::Downstream(e))<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(
+                    bucket_id,
                 )))
             }
-            <span class="ident">WorktopFnIdentifier::TakeNonFungibles</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">WorktopTakeNonFungiblesInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">maybe_container</span> <span class="op">=</span> <span class="ident">worktop</span>
-                    .<span class="ident">take_non_fungibles</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">ids</span>, <span class="ident">input</span>.<span class="ident">resource_address</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">resource_container</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">container</span>) <span class="op">=</span> <span class="ident">maybe_container</span> {
-                    <span class="ident">container</span>
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">resource_type</span> <span class="op">=</span> {
-                        <span class="kw">let</span> <span class="ident">node_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-                            .<span class="ident">borrow_node</span>(<span class="kw-2">&amp;</span><span class="ident">RENodeId::ResourceManager</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>))
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Downstream</span>(<span class="ident">e</span>))<span class="question-mark">?</span>;
-                        <span class="kw">let</span> <span class="ident">resource_manager</span> <span class="op">=</span> <span class="ident">node_ref</span>.<span class="ident">resource_manager</span>();
-                        <span class="ident">resource_manager</span>.<span class="ident">resource_type</span>()
+            WorktopFnIdentifier::TakeNonFungibles =&gt; {
+                <span class="kw">let </span>input: WorktopTakeNonFungiblesInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>maybe_container = worktop
+                    .take_non_fungibles(<span class="kw-2">&amp;</span>input.ids, input.resource_address)
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceContainerError(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>resource_container = <span class="kw">if let </span><span class="prelude-val">Some</span>(container) = maybe_container {
+                    container
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>resource_type = {
+                        <span class="kw">let </span>node_ref = system_api
+                            .borrow_node(<span class="kw-2">&amp;</span>RENodeId::ResourceManager(input.resource_address))
+                            .map_err(|e| InvokeError::Downstream(e))<span class="question-mark">?</span>;
+                        <span class="kw">let </span>resource_manager = node_ref.resource_manager();
+                        resource_manager.resource_type()
                     };
 
-                    <span class="ident">ResourceContainer::new_empty</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>, <span class="ident">resource_type</span>)
+                    ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
-                <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Bucket</span>(<span class="ident">Bucket::new</span>(<span class="ident">resource_container</span>)))
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Downstream</span>(<span class="ident">e</span>))<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(
-                    <span class="ident">bucket_id</span>,
+                <span class="kw">let </span>bucket_id = system_api
+                    .node_create(HeapRENode::Bucket(Bucket::new(resource_container)))
+                    .map_err(|e| InvokeError::Downstream(e))<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(
+                    bucket_id,
                 )))
             }
-            <span class="ident">WorktopFnIdentifier::AssertContains</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">WorktopAssertContainsInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="ident">worktop</span>.<span class="ident">total_amount</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>).<span class="ident">is_zero</span>() {
-                    <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::AssertionFailed</span>))
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+            WorktopFnIdentifier::AssertContains =&gt; {
+                <span class="kw">let </span>input: WorktopAssertContainsInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">if </span>worktop.total_amount(input.resource_address).is_zero() {
+                    <span class="prelude-val">Err</span>(InvokeError::Error(WorktopError::AssertionFailed))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
                 }
             }
-            <span class="ident">WorktopFnIdentifier::AssertContainsAmount</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">WorktopAssertContainsAmountInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="ident">worktop</span>.<span class="ident">total_amount</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>) <span class="op">&lt;</span> <span class="ident">input</span>.<span class="ident">amount</span> {
-                    <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::AssertionFailed</span>))
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+            WorktopFnIdentifier::AssertContainsAmount =&gt; {
+                <span class="kw">let </span>input: WorktopAssertContainsAmountInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">if </span>worktop.total_amount(input.resource_address) &lt; input.amount {
+                    <span class="prelude-val">Err</span>(InvokeError::Error(WorktopError::AssertionFailed))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
                 }
             }
-            <span class="ident">WorktopFnIdentifier::AssertContainsNonFungibles</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">WorktopAssertContainsNonFungiblesInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">worktop</span>
-                    .<span class="ident">total_ids</span>(<span class="ident">input</span>.<span class="ident">resource_address</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>
-                    .<span class="ident">is_superset</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">ids</span>)
+            WorktopFnIdentifier::AssertContainsNonFungibles =&gt; {
+                <span class="kw">let </span>input: WorktopAssertContainsNonFungiblesInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">if </span>!worktop
+                    .total_ids(input.resource_address)
+                    .map_err(|e| InvokeError::Error(WorktopError::ResourceContainerError(e)))<span class="question-mark">?
+                    </span>.is_superset(<span class="kw-2">&amp;</span>input.ids)
                 {
-                    <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::AssertionFailed</span>))
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+                    <span class="prelude-val">Err</span>(InvokeError::Error(WorktopError::AssertionFailed))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
                 }
             }
-            <span class="ident">WorktopFnIdentifier::Drain</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">WorktopDrainInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buckets</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-                <span class="kw">for</span> (<span class="kw">_</span>, <span class="ident">container</span>) <span class="kw">in</span> <span class="ident">worktop</span>.<span class="ident">containers</span>.<span class="ident">drain</span>() {
-                    <span class="kw">let</span> <span class="ident">container</span> <span class="op">=</span> <span class="ident">container</span>
-                        .<span class="ident">borrow_mut</span>()
-                        .<span class="ident">take_all_liquid</span>()
-                        .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">WorktopError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">container</span>.<span class="ident">is_empty</span>() {
-                        <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                            .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Bucket</span>(<span class="ident">Bucket::new</span>(<span class="ident">container</span>)))
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Downstream</span>(<span class="ident">e</span>))<span class="question-mark">?</span>
-                            .<span class="ident">into</span>();
-                        <span class="ident">buckets</span>.<span class="ident">push</span>(<span class="ident">scrypto::resource::Bucket</span>(<span class="ident">bucket_id</span>));
+            WorktopFnIdentifier::Drain =&gt; {
+                <span class="kw">let _</span>: WorktopDrainInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(WorktopError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>buckets = Vec::new();
+                <span class="kw">for </span>(<span class="kw">_</span>, container) <span class="kw">in </span>worktop.containers.drain() {
+                    <span class="kw">let </span>container = container
+                        .borrow_mut()
+                        .take_all_liquid()
+                        .map_err(|e| InvokeError::Error(WorktopError::ResourceContainerError(e)))<span class="question-mark">?</span>;
+                    <span class="kw">if </span>!container.is_empty() {
+                        <span class="kw">let </span>bucket_id = system_api
+                            .node_create(HeapRENode::Bucket(Bucket::new(container)))
+                            .map_err(|e| InvokeError::Downstream(e))<span class="question-mark">?
+                            </span>.into();
+                        buckets.push(scrypto::resource::Bucket(bucket_id));
                     }
                 }
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">buckets</span>))
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>buckets))
             }
         }<span class="question-mark">?</span>;
 
-        <span class="ident">system_api</span>
-            .<span class="ident">substate_return_mut</span>(<span class="ident">node_ref</span>)
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Downstream</span>(<span class="ident">e</span>))<span class="question-mark">?</span>;
+        system_api
+            .substate_return_mut(node_ref)
+            .map_err(|e| InvokeError::Downstream(e))<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">rtn</span>)
+        <span class="prelude-val">Ok</span>(rtn)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

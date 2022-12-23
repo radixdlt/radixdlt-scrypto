@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/resource/proof.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>proof.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/resource/proof.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>proof.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -428,431 +423,430 @@
 <span id="423">423</span>
 <span id="424">424</span>
 <span id="425">425</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::rust::collections::BTreeSet</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident">sbor::rust::fmt</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident">sbor</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::collections::BTreeSet;
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+</span><span class="kw">use </span>sbor::rust::fmt;
+<span class="kw">use </span>sbor::rust::vec::Vec;
+<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::abi</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::core</span>::{<span class="ident">NativeFnIdentifier</span>, <span class="ident">ProofFnIdentifier</span>, <span class="ident">Receiver</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::types::RENodeId</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">api</span>::<span class="kw-2">*</span>, <span class="ident">call_engine</span>, <span class="ident">types::ProofId</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::math</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::misc</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::native_functions</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::abi::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::core::{NativeFnIdentifier, ProofFnIdentifier, Receiver};
+<span class="kw">use </span><span class="kw">crate</span>::engine::types::RENodeId;
+<span class="kw">use </span><span class="kw">crate</span>::engine::{api::<span class="kw-2">*</span>, call_engine, types::ProofId};
+<span class="kw">use </span><span class="kw">crate</span>::math::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::misc::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::native_functions;
+<span class="kw">use </span><span class="kw">crate</span>::resource::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ConsumingProofDropInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ConsumingProofDropInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ProofGetAmountInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ProofGetAmountInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ProofGetNonFungibleIdsInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ProofGetNonFungibleIdsInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ProofGetResourceAddressInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ProofGetResourceAddressInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ProofCloneInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ProofCloneInput {}
 
-<span class="doccomment">/// Represents a proof of owning some resource.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Proof</span>(<span class="kw">pub</span> <span class="ident">ProofId</span>);
+<span class="doccomment">/// Represents a proof of owning some resource.
+</span><span class="attribute">#[derive(Debug, PartialEq, Eq, Hash)]
+</span><span class="kw">pub struct </span>Proof(<span class="kw">pub </span>ProofId);
 
-<span class="comment">// TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.</span>
-<span class="doccomment">/// Specifies the validation mode that should be used for validating a `Proof`.</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ProofValidationMode</span> {
-    <span class="doccomment">/// Specifies that the `Proof` should be validated against a single `ResourceAddress`.</span>
-    <span class="ident">ValidateResourceAddress</span>(<span class="ident">ResourceAddress</span>),
+<span class="comment">// TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
+</span><span class="doccomment">/// Specifies the validation mode that should be used for validating a `Proof`.
+</span><span class="kw">pub enum </span>ProofValidationMode {
+    <span class="doccomment">/// Specifies that the `Proof` should be validated against a single `ResourceAddress`.
+    </span>ValidateResourceAddress(ResourceAddress),
 
-    <span class="doccomment">/// Specifies that the `Proof` should have its resource address validated against a set of `ResourceAddress`es. If</span>
-    <span class="doccomment">/// the `Proof`&#39;s resource address belongs to the set, then its valid.</span>
-    <span class="ident">ValidateResourceAddressBelongsTo</span>(<span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span>),
+    <span class="doccomment">/// Specifies that the `Proof` should have its resource address validated against a set of `ResourceAddress`es. If
+    /// the `Proof`&#39;s resource address belongs to the set, then its valid.
+    </span>ValidateResourceAddressBelongsTo(BTreeSet&lt;ResourceAddress&gt;),
 
-    <span class="doccomment">/// Specifies that the `Proof` should be validating for containing a specific `NonFungibleAddress`.</span>
-    <span class="ident">ValidateContainsNonFungible</span>(<span class="ident">NonFungibleAddress</span>),
+    <span class="doccomment">/// Specifies that the `Proof` should be validating for containing a specific `NonFungibleAddress`.
+    </span>ValidateContainsNonFungible(NonFungibleAddress),
 
-    <span class="doccomment">/// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleId`s</span>
-    <span class="doccomment">/// to ensure that the `Proof` contains all of the NonFungibles in the set.</span>
-    <span class="ident">ValidateContainsNonFungibles</span>(<span class="ident">ResourceAddress</span>, <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>),
+    <span class="doccomment">/// Specifies that the `Proof` should be validated against a single resource address and a set of `NonFungibleId`s
+    /// to ensure that the `Proof` contains all of the NonFungibles in the set.
+    </span>ValidateContainsNonFungibles(ResourceAddress, BTreeSet&lt;NonFungibleId&gt;),
 
-    <span class="doccomment">/// Specifies that the `Proof` should be validated for the amount of resources that it contains.</span>
-    <span class="ident">ValidateContainsAmount</span>(<span class="ident">ResourceAddress</span>, <span class="ident">Decimal</span>),
+    <span class="doccomment">/// Specifies that the `Proof` should be validated for the amount of resources that it contains.
+    </span>ValidateContainsAmount(ResourceAddress, Decimal),
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ProofValidationMode</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::ValidateResourceAddress</span>(<span class="ident">resource_address</span>)
+<span class="kw">impl </span>From&lt;ResourceAddress&gt; <span class="kw">for </span>ProofValidationMode {
+    <span class="kw">fn </span>from(resource_address: ResourceAddress) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::ValidateResourceAddress(resource_address)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">NonFungibleAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ProofValidationMode</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">non_fungible_address</span>: <span class="ident">NonFungibleAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::ValidateContainsNonFungible</span>(<span class="ident">non_fungible_address</span>)
+<span class="kw">impl </span>From&lt;NonFungibleAddress&gt; <span class="kw">for </span>ProofValidationMode {
+    <span class="kw">fn </span>from(non_fungible_address: NonFungibleAddress) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::ValidateContainsNonFungible(non_fungible_address)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">Proof</span> {
-    <span class="macro">native_functions!</span> {
-        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Proof</span>(<span class="self">self</span>.<span class="number">0</span>)), <span class="ident">NativeFnIdentifier::Proof</span> =&gt; {
-            <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-                <span class="ident">ProofFnIdentifier::Clone</span>,
-                <span class="ident">ProofCloneInput</span> {}
+<span class="kw">impl </span>Clone <span class="kw">for </span>Proof {
+    <span class="macro">native_functions! </span>{
+        Receiver::Ref(RENodeId::Proof(<span class="self">self</span>.<span class="number">0</span>)), NativeFnIdentifier::Proof =&gt; {
+            <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+                ProofFnIdentifier::Clone,
+                ProofCloneInput {}
             }
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Proof</span> {
-    <span class="doccomment">/// Validates a `Proof`&#39;s resource address creating a `ValidatedProof` if the validation succeeds.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method takes ownership of the proof and validates that its resource address matches that expected by the</span>
-    <span class="doccomment">/// caller. If the validation is successful, then a `ValidatedProof` is returned, otherwise, a `ValidateProofError`</span>
-    <span class="doccomment">/// is returned.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Example:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// ```ignore</span>
-    <span class="doccomment">/// let proof: Proof = bucket.create_proof();</span>
-    <span class="doccomment">/// match proof.validate_proof(admin_badge_resource_address) {</span>
-    <span class="doccomment">///     Ok(validated_proof) =&gt; {</span>
-    <span class="doccomment">///         info!(</span>
-    <span class="doccomment">///             &quot;Validation successful. Proof has a resource address of {} and amount of {}&quot;,</span>
-    <span class="doccomment">///             validated_proof.resource_address(),</span>
-    <span class="doccomment">///             validated_proof.amount(),</span>
-    <span class="doccomment">///         );</span>
-    <span class="doccomment">///     },</span>
-    <span class="doccomment">///     Err(error) =&gt; {</span>
-    <span class="doccomment">///         info!(&quot;Error validating proof: {:?}&quot;, error);</span>
-    <span class="doccomment">///     },</span>
-    <span class="doccomment">/// }</span>
-    <span class="doccomment">/// ```</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate_proof</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(
+<span class="kw">impl </span>Proof {
+    <span class="doccomment">/// Validates a `Proof`&#39;s resource address creating a `ValidatedProof` if the validation succeeds.
+    ///
+    /// This method takes ownership of the proof and validates that its resource address matches that expected by the
+    /// caller. If the validation is successful, then a `ValidatedProof` is returned, otherwise, a `ValidateProofError`
+    /// is returned.
+    ///
+    /// # Example:
+    ///
+    /// ```ignore
+    /// let proof: Proof = bucket.create_proof();
+    /// match proof.validate_proof(admin_badge_resource_address) {
+    ///     Ok(validated_proof) =&gt; {
+    ///         info!(
+    ///             &quot;Validation successful. Proof has a resource address of {} and amount of {}&quot;,
+    ///             validated_proof.resource_address(),
+    ///             validated_proof.amount(),
+    ///         );
+    ///     },
+    ///     Err(error) =&gt; {
+    ///         info!(&quot;Error validating proof: {:?}&quot;, error);
+    ///     },
+    /// }
+    /// ```
+    </span><span class="kw">pub fn </span>validate_proof&lt;T&gt;(
         <span class="self">self</span>,
-        <span class="ident">validation_mode</span>: <span class="ident">T</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ValidatedProof</span>, (<span class="self">Self</span>, <span class="ident">ProofValidationError</span>)<span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">ProofValidationMode</span><span class="op">&gt;</span>,
+        validation_mode: T,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ValidatedProof, (<span class="self">Self</span>, ProofValidationError)&gt;
+    <span class="kw">where
+        </span>T: Into&lt;ProofValidationMode&gt;,
     {
-        <span class="kw">let</span> <span class="ident">validation_mode</span>: <span class="ident">ProofValidationMode</span> <span class="op">=</span> <span class="ident">validation_mode</span>.<span class="ident">into</span>();
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">validate</span>(<span class="ident">validation_mode</span>) {
-            <span class="prelude-val">Ok</span>(()) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">ValidatedProof</span>(<span class="self">self</span>)),
-            <span class="prelude-val">Err</span>(<span class="ident">error</span>) =&gt; <span class="prelude-val">Err</span>((<span class="self">self</span>, <span class="ident">error</span>)),
+        <span class="kw">let </span>validation_mode: ProofValidationMode = validation_mode.into();
+        <span class="kw">match </span><span class="self">self</span>.validate(validation_mode) {
+            <span class="prelude-val">Ok</span>(()) =&gt; <span class="prelude-val">Ok</span>(ValidatedProof(<span class="self">self</span>)),
+            <span class="prelude-val">Err</span>(error) =&gt; <span class="prelude-val">Err</span>((<span class="self">self</span>, error)),
         }
     }
 
-    <span class="doccomment">/// Skips the validation process of the proof producing a validated proof **WITHOUT** performing any validation.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # WARNING:</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleId`</span>
-    <span class="doccomment">/// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any</span>
-    <span class="doccomment">/// resource address. If you call this method, you should perform your own validation.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unsafe_skip_proof_validation</span>(<span class="self">self</span>) -&gt; <span class="ident">ValidatedProof</span> {
-        <span class="ident">ValidatedProof</span>(<span class="self">self</span>)
+    <span class="doccomment">/// Skips the validation process of the proof producing a validated proof **WITHOUT** performing any validation.
+    ///
+    /// # WARNING:
+    ///
+    /// This method skips the validation of the resource address of the proof. Therefore, the data, or `NonFungibleId`
+    /// of of the returned `ValidatedProof` should **NOT** be trusted as the proof could potentially belong to any
+    /// resource address. If you call this method, you should perform your own validation.
+    </span><span class="kw">pub fn </span>unsafe_skip_proof_validation(<span class="self">self</span>) -&gt; ValidatedProof {
+        ValidatedProof(<span class="self">self</span>)
     }
 
-    <span class="doccomment">/// Converts a `ValidatedProof` into a `Proof`.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_validated_proof</span>(<span class="ident">validated_proof</span>: <span class="ident">ValidatedProof</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">validated_proof</span>.<span class="ident">into</span>()
+    <span class="doccomment">/// Converts a `ValidatedProof` into a `Proof`.
+    </span><span class="kw">pub fn </span>from_validated_proof(validated_proof: ValidatedProof) -&gt; <span class="self">Self </span>{
+        validated_proof.into()
     }
 
-    <span class="kw">fn</span> <span class="ident">validate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">validation_mode</span>: <span class="ident">ProofValidationMode</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ProofValidationError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">validation_mode</span> {
-            <span class="ident">ProofValidationMode::ValidateResourceAddress</span>(<span class="ident">resource_address</span>) =&gt; {
-                <span class="self">self</span>.<span class="ident">validate_resource_address</span>(<span class="ident">resource_address</span>)<span class="question-mark">?</span>;
+    <span class="kw">fn </span>validate(<span class="kw-2">&amp;</span><span class="self">self</span>, validation_mode: ProofValidationMode) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProofValidationError&gt; {
+        <span class="kw">match </span>validation_mode {
+            ProofValidationMode::ValidateResourceAddress(resource_address) =&gt; {
+                <span class="self">self</span>.validate_resource_address(resource_address)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="ident">ProofValidationMode::ValidateResourceAddressBelongsTo</span>(<span class="ident">resource_addresses</span>) =&gt; {
-                <span class="self">self</span>.<span class="ident">validate_resource_address_belongs_to</span>(<span class="kw-2">&amp;</span><span class="ident">resource_addresses</span>)<span class="question-mark">?</span>;
+            ProofValidationMode::ValidateResourceAddressBelongsTo(resource_addresses) =&gt; {
+                <span class="self">self</span>.validate_resource_address_belongs_to(<span class="kw-2">&amp;</span>resource_addresses)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="ident">ProofValidationMode::ValidateContainsNonFungible</span>(<span class="ident">non_fungible_address</span>) =&gt; {
-                <span class="self">self</span>.<span class="ident">validate_resource_address</span>(<span class="ident">non_fungible_address</span>.<span class="ident">resource_address</span>())<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">validate_contains_non_fungible_id</span>(<span class="ident">non_fungible_address</span>.<span class="ident">non_fungible_id</span>())<span class="question-mark">?</span>;
+            ProofValidationMode::ValidateContainsNonFungible(non_fungible_address) =&gt; {
+                <span class="self">self</span>.validate_resource_address(non_fungible_address.resource_address())<span class="question-mark">?</span>;
+                <span class="self">self</span>.validate_contains_non_fungible_id(non_fungible_address.non_fungible_id())<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="ident">ProofValidationMode::ValidateContainsNonFungibles</span>(
-                <span class="ident">resource_address</span>,
-                <span class="ident">non_fungible_ids</span>,
+            ProofValidationMode::ValidateContainsNonFungibles(
+                resource_address,
+                non_fungible_ids,
             ) =&gt; {
-                <span class="self">self</span>.<span class="ident">validate_resource_address</span>(<span class="ident">resource_address</span>)<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">validate_contains_non_fungible_ids</span>(<span class="kw-2">&amp;</span><span class="ident">non_fungible_ids</span>)<span class="question-mark">?</span>;
+                <span class="self">self</span>.validate_resource_address(resource_address)<span class="question-mark">?</span>;
+                <span class="self">self</span>.validate_contains_non_fungible_ids(<span class="kw-2">&amp;</span>non_fungible_ids)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="ident">ProofValidationMode::ValidateContainsAmount</span>(<span class="ident">resource_address</span>, <span class="ident">amount</span>) =&gt; {
-                <span class="self">self</span>.<span class="ident">validate_resource_address</span>(<span class="ident">resource_address</span>)<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">validate_contains_amount</span>(<span class="ident">amount</span>)<span class="question-mark">?</span>;
+            ProofValidationMode::ValidateContainsAmount(resource_address, amount) =&gt; {
+                <span class="self">self</span>.validate_resource_address(resource_address)<span class="question-mark">?</span>;
+                <span class="self">self</span>.validate_contains_amount(amount)<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(())
             }
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">validate_resource_address</span>(
+    <span class="kw">fn </span>validate_resource_address(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ProofValidationError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">resource_address</span>() <span class="op">==</span> <span class="ident">resource_address</span> {
+        resource_address: ResourceAddress,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProofValidationError&gt; {
+        <span class="kw">if </span><span class="self">self</span>.resource_address() == resource_address {
             <span class="prelude-val">Ok</span>(())
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">ProofValidationError::InvalidResourceAddress</span>(
-                <span class="ident">resource_address</span>,
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(ProofValidationError::InvalidResourceAddress(
+                resource_address,
             ))
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">validate_resource_address_belongs_to</span>(
+    <span class="kw">fn </span>validate_resource_address_belongs_to(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">resource_addresses</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ProofValidationError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">resource_addresses</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">resource_address</span>()) {
+        resource_addresses: <span class="kw-2">&amp;</span>BTreeSet&lt;ResourceAddress&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProofValidationError&gt; {
+        <span class="kw">if </span>resource_addresses.contains(<span class="kw-2">&amp;</span><span class="self">self</span>.resource_address()) {
             <span class="prelude-val">Ok</span>(())
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">ProofValidationError::ResourceAddressDoesNotBelongToList</span>)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(ProofValidationError::ResourceAddressDoesNotBelongToList)
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">validate_contains_non_fungible_id</span>(
+    <span class="kw">fn </span>validate_contains_non_fungible_id(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">non_fungible_id</span>: <span class="ident">NonFungibleId</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ProofValidationError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">non_fungible_ids</span>().<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">non_fungible_id</span>).<span class="ident">is_some</span>() {
+        non_fungible_id: NonFungibleId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProofValidationError&gt; {
+        <span class="kw">if </span><span class="self">self</span>.non_fungible_ids().get(<span class="kw-2">&amp;</span>non_fungible_id).is_some() {
             <span class="prelude-val">Ok</span>(())
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">ProofValidationError::NonFungibleIdNotFound</span>)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(ProofValidationError::NonFungibleIdNotFound)
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">validate_contains_non_fungible_ids</span>(
+    <span class="kw">fn </span>validate_contains_non_fungible_ids(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">expected_non_fungible_ids</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ProofValidationError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">actual_non_fungible_ids</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">non_fungible_ids</span>();
-        <span class="kw">let</span> <span class="ident">contains_all_non_fungible_ids</span> <span class="op">=</span> <span class="ident">expected_non_fungible_ids</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">all</span>(<span class="op">|</span><span class="ident">non_fungible_id</span><span class="op">|</span> <span class="ident">actual_non_fungible_ids</span>.<span class="ident">get</span>(<span class="ident">non_fungible_id</span>).<span class="ident">is_some</span>());
-        <span class="kw">if</span> <span class="ident">contains_all_non_fungible_ids</span> {
+        expected_non_fungible_ids: <span class="kw-2">&amp;</span>BTreeSet&lt;NonFungibleId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProofValidationError&gt; {
+        <span class="kw">let </span>actual_non_fungible_ids = <span class="self">self</span>.non_fungible_ids();
+        <span class="kw">let </span>contains_all_non_fungible_ids = expected_non_fungible_ids
+            .iter()
+            .all(|non_fungible_id| actual_non_fungible_ids.get(non_fungible_id).is_some());
+        <span class="kw">if </span>contains_all_non_fungible_ids {
             <span class="prelude-val">Ok</span>(())
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">ProofValidationError::NonFungibleIdNotFound</span>)
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(ProofValidationError::NonFungibleIdNotFound)
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">validate_contains_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">Decimal</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ProofValidationError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">amount</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">amount</span> {
+    <span class="kw">fn </span>validate_contains_amount(<span class="kw-2">&amp;</span><span class="self">self</span>, amount: Decimal) -&gt; <span class="prelude-ty">Result</span>&lt;(), ProofValidationError&gt; {
+        <span class="kw">if </span><span class="self">self</span>.amount() &gt;= amount {
             <span class="prelude-val">Ok</span>(())
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">ProofValidationError::InvalidAmount</span>(<span class="ident">amount</span>))
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(ProofValidationError::InvalidAmount(amount))
         }
     }
 
-    <span class="macro">native_functions!</span> {
-        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Proof</span>(<span class="self">self</span>.<span class="number">0</span>)), <span class="ident">NativeFnIdentifier::Proof</span> =&gt; {
-            <span class="kw">fn</span> <span class="ident">amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-                <span class="ident">ProofFnIdentifier::GetAmount</span>,
-                <span class="ident">ProofGetAmountInput</span> {}
+    <span class="macro">native_functions! </span>{
+        Receiver::Ref(RENodeId::Proof(<span class="self">self</span>.<span class="number">0</span>)), NativeFnIdentifier::Proof =&gt; {
+            <span class="kw">fn </span>amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+                ProofFnIdentifier::GetAmount,
+                ProofGetAmountInput {}
             }
-            <span class="kw">fn</span> <span class="ident">non_fungible_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span> {
-                <span class="ident">ProofFnIdentifier::GetNonFungibleIds</span>,
-                <span class="ident">ProofGetNonFungibleIdsInput</span> {}
+            <span class="kw">fn </span>non_fungible_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BTreeSet&lt;NonFungibleId&gt; {
+                ProofFnIdentifier::GetNonFungibleIds,
+                ProofGetNonFungibleIdsInput {}
             }
-            <span class="kw">fn</span> <span class="ident">resource_address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-                <span class="ident">ProofFnIdentifier::GetResourceAddress</span>,
-                <span class="ident">ProofGetResourceAddressInput</span> {}
+            <span class="kw">fn </span>resource_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceAddress {
+                ProofFnIdentifier::GetResourceAddress,
+                ProofGetResourceAddressInput {}
             }
         }
     }
 
-    <span class="macro">native_functions!</span> {
-        <span class="ident">Receiver::Consumed</span>(<span class="ident">RENodeId::Proof</span>(<span class="self">self</span>.<span class="number">0</span>)), <span class="ident">NativeFnIdentifier::Proof</span> =&gt; {
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">drop</span>(<span class="self">self</span>) -&gt; () {
-                <span class="ident">ProofFnIdentifier::Drop</span>,
-                <span class="ident">ConsumingProofDropInput</span> {}
+    <span class="macro">native_functions! </span>{
+        Receiver::Consumed(RENodeId::Proof(<span class="self">self</span>.<span class="number">0</span>)), NativeFnIdentifier::Proof =&gt; {
+            <span class="kw">pub fn </span>drop(<span class="self">self</span>) -&gt; () {
+                ProofFnIdentifier::Drop,
+                ConsumingProofDropInput {}
             }
         }
     }
 }
 
-<span class="doccomment">/// Represents a proof of owning some resource that has had its resource address validated.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ValidatedProof</span>(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">Proof</span>);
+<span class="doccomment">/// Represents a proof of owning some resource that has had its resource address validated.
+</span><span class="attribute">#[derive(Debug, PartialEq, Eq, Hash)]
+</span><span class="kw">pub struct </span>ValidatedProof(<span class="kw">pub</span>(<span class="kw">crate</span>) Proof);
 
-<span class="kw">impl</span> <span class="ident">Clone</span> <span class="kw">for</span> <span class="ident">ValidatedProof</span> {
-    <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">ValidatedProof</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>())
+<span class="kw">impl </span>Clone <span class="kw">for </span>ValidatedProof {
+    <span class="kw">fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        ValidatedProof(<span class="self">self</span>.<span class="number">0</span>.clone())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ValidatedProof</span> {
-    <span class="macro">native_functions!</span> {
-        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Proof</span>(<span class="self">self</span>.<span class="ident">proof_id</span>())), <span class="ident">NativeFnIdentifier::Proof</span> =&gt; {
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-                <span class="ident">ProofFnIdentifier::GetAmount</span>,
-                <span class="ident">ProofGetAmountInput</span> {}
+<span class="kw">impl </span>ValidatedProof {
+    <span class="macro">native_functions! </span>{
+        Receiver::Ref(RENodeId::Proof(<span class="self">self</span>.proof_id())), NativeFnIdentifier::Proof =&gt; {
+            <span class="kw">pub fn </span>amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+                ProofFnIdentifier::GetAmount,
+                ProofGetAmountInput {}
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span> {
-                <span class="ident">ProofFnIdentifier::GetNonFungibleIds</span>,
-                <span class="ident">ProofGetNonFungibleIdsInput</span> {}
+            <span class="kw">pub fn </span>non_fungible_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BTreeSet&lt;NonFungibleId&gt; {
+                ProofFnIdentifier::GetNonFungibleIds,
+                ProofGetNonFungibleIdsInput {}
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-                <span class="ident">ProofFnIdentifier::GetResourceAddress</span>,
-                <span class="ident">ProofGetResourceAddressInput</span> {}
+            <span class="kw">pub fn </span>resource_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceAddress {
+                ProofFnIdentifier::GetResourceAddress,
+                ProofGetResourceAddressInput {}
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">drop</span>(<span class="self">self</span>) {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">drop</span>()
+    <span class="kw">pub fn </span>drop(<span class="self">self</span>) {
+        <span class="self">self</span>.<span class="number">0</span>.drop()
     }
 
-    <span class="doccomment">/// Whether this proof includes an ownership proof of any of the given resource.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">resource_address</span>() <span class="op">==</span> <span class="ident">resource_address</span>
+    <span class="doccomment">/// Whether this proof includes an ownership proof of any of the given resource.
+    </span><span class="kw">pub fn </span>contains(<span class="kw-2">&amp;</span><span class="self">self</span>, resource_address: ResourceAddress) -&gt; bool {
+        <span class="self">self</span>.resource_address() == resource_address
     }
 
-    <span class="doccomment">/// Whether this proof includes an ownership proof of at least the given amount of resource.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">contains_resource</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">Decimal</span>, <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">resource_address</span>() <span class="op">==</span> <span class="ident">resource_address</span> <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">amount</span>() <span class="op">&gt;</span> <span class="ident">amount</span>
+    <span class="doccomment">/// Whether this proof includes an ownership proof of at least the given amount of resource.
+    </span><span class="kw">pub fn </span>contains_resource(<span class="kw-2">&amp;</span><span class="self">self</span>, amount: Decimal, resource_address: ResourceAddress) -&gt; bool {
+        <span class="self">self</span>.resource_address() == resource_address &amp;&amp; <span class="self">self</span>.amount() &gt; amount
     }
 
-    <span class="doccomment">/// Whether this proof includes an ownership proof of the given non-fungible.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">contains_non_fungible</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">non_fungible_address</span>: <span class="kw-2">&amp;</span><span class="ident">NonFungibleAddress</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">resource_address</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">non_fungible_address</span>.<span class="ident">resource_address</span>() {
-            <span class="kw">return</span> <span class="bool-val">false</span>;
+    <span class="doccomment">/// Whether this proof includes an ownership proof of the given non-fungible.
+    </span><span class="kw">pub fn </span>contains_non_fungible(<span class="kw-2">&amp;</span><span class="self">self</span>, non_fungible_address: <span class="kw-2">&amp;</span>NonFungibleAddress) -&gt; bool {
+        <span class="kw">if </span><span class="self">self</span>.resource_address() != non_fungible_address.resource_address() {
+            <span class="kw">return </span><span class="bool-val">false</span>;
         }
 
-        <span class="self">self</span>.<span class="ident">non_fungible_ids</span>()
-            .<span class="ident">iter</span>()
-            .<span class="ident">any</span>(<span class="op">|</span><span class="ident">k</span><span class="op">|</span> <span class="ident">k</span>.<span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="ident">non_fungible_address</span>.<span class="ident">non_fungible_id</span>()))
+        <span class="self">self</span>.non_fungible_ids()
+            .iter()
+            .any(|k| k.eq(<span class="kw-2">&amp;</span>non_fungible_address.non_fungible_id()))
     }
 
-    <span class="doccomment">/// Returns all the non-fungible units contained.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">/// Panics if this is not a non-fungible proof.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungibles</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NonFungibleData</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">NonFungible</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">resource_address</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">resource_address</span>();
-        <span class="self">self</span>.<span class="ident">non_fungible_ids</span>()
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">id</span><span class="op">|</span> <span class="ident">NonFungible::from</span>(<span class="ident">NonFungibleAddress::new</span>(<span class="ident">resource_address</span>, <span class="ident">id</span>.<span class="ident">clone</span>())))
-            .<span class="ident">collect</span>()
+    <span class="doccomment">/// Returns all the non-fungible units contained.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible proof.
+    </span><span class="kw">pub fn </span>non_fungibles&lt;T: NonFungibleData&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;NonFungible&lt;T&gt;&gt; {
+        <span class="kw">let </span>resource_address = <span class="self">self</span>.resource_address();
+        <span class="self">self</span>.non_fungible_ids()
+            .iter()
+            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
+            .collect()
     }
 
-    <span class="doccomment">/// Returns a singleton non-fungible id</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">/// Panics if this is not a singleton bucket</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">NonFungibleId</span> {
-        <span class="kw">let</span> <span class="ident">non_fungible_ids</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">non_fungible_ids</span>();
-        <span class="kw">if</span> <span class="ident">non_fungible_ids</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="number">1</span> {
+    <span class="doccomment">/// Returns a singleton non-fungible id
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton bucket
+    </span><span class="kw">pub fn </span>non_fungible_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NonFungibleId {
+        <span class="kw">let </span>non_fungible_ids = <span class="self">self</span>.non_fungible_ids();
+        <span class="kw">if </span>non_fungible_ids.len() != <span class="number">1 </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Expecting singleton NFT vault&quot;</span>);
         }
-        <span class="self">self</span>.<span class="ident">non_fungible_ids</span>().<span class="ident">into_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>()
+        <span class="self">self</span>.non_fungible_ids().into_iter().next().unwrap()
     }
 
-    <span class="doccomment">/// Returns a singleton non-fungible.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">/// Panics if this is not a singleton proof</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NonFungibleData</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">NonFungible</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">non_fungibles</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">non_fungibles</span>();
-        <span class="kw">if</span> <span class="ident">non_fungibles</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="number">1</span> {
+    <span class="doccomment">/// Returns a singleton non-fungible.
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton proof
+    </span><span class="kw">pub fn </span>non_fungible&lt;T: NonFungibleData&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NonFungible&lt;T&gt; {
+        <span class="kw">let </span>non_fungibles = <span class="self">self</span>.non_fungibles();
+        <span class="kw">if </span>non_fungibles.len() != <span class="number">1 </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Expecting singleton NFT proof&quot;</span>);
         }
-        <span class="ident">non_fungibles</span>.<span class="ident">into_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>()
+        non_fungibles.into_iter().next().unwrap()
     }
 
-    <span class="doccomment">/// Checks if the referenced bucket is empty.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">amount</span>() <span class="op">==</span> <span class="number">0</span>.<span class="ident">into</span>()
+    <span class="doccomment">/// Checks if the referenced bucket is empty.
+    </span><span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.amount() == <span class="number">0</span>.into()
     }
 
-    <span class="kw">fn</span> <span class="ident">proof_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ProofId</span> {
-        <span class="self">self</span>.<span class="number">0</span> .<span class="number">0</span>
-    }
+    <span class="kw">fn </span>proof_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ProofId {
+        <span class="self">self</span>.<span class="number">0 </span>.<span class="number">0
+    </span>}
 }
 
-<span class="kw">impl</span> <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Proof</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ValidatedProof</span> {
-    <span class="kw">fn</span> <span class="ident">into</span>(<span class="self">self</span>) -&gt; <span class="ident">Proof</span> {
-        <span class="self">self</span>.<span class="number">0</span>
-    }
+<span class="kw">impl </span>Into&lt;Proof&gt; <span class="kw">for </span>ValidatedProof {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; Proof {
+        <span class="self">self</span>.<span class="number">0
+    </span>}
 }
 
-<span class="comment">//========</span>
-<span class="comment">// error</span>
-<span class="comment">//========</span>
+<span class="comment">//========
+// error
+//========
 
-<span class="doccomment">/// Represents an error when decoding proof.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ParseProofError</span> {
-    <span class="ident">InvalidLength</span>(<span class="ident">usize</span>),
+</span><span class="doccomment">/// Represents an error when decoding proof.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>ParseProofError {
+    InvalidLength(usize),
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">std::error::Error</span> <span class="kw">for</span> <span class="ident">ParseProofError</span> {}
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+</span><span class="kw">impl </span>std::error::Error <span class="kw">for </span>ParseProofError {}
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">ParseProofError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
-    }
-}
-
-<span class="doccomment">/// Represents an error when validating proof.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ProofValidationError</span> {
-    <span class="ident">InvalidResourceAddress</span>(<span class="ident">ResourceAddress</span>),
-    <span class="ident">ResourceAddressDoesNotBelongToList</span>,
-    <span class="ident">DoesNotContainOneNonFungible</span>,
-    <span class="ident">NonFungibleIdNotFound</span>,
-    <span class="ident">InvalidAmount</span>(<span class="ident">Decimal</span>),
-}
-
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">std::error::Error</span> <span class="kw">for</span> <span class="ident">ProofValidationError</span> {}
-
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">ProofValidationError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+</span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>ParseProofError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
     }
 }
 
-<span class="comment">//========</span>
-<span class="comment">// binary</span>
-<span class="comment">//========</span>
+<span class="doccomment">/// Represents an error when validating proof.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>ProofValidationError {
+    InvalidResourceAddress(ResourceAddress),
+    ResourceAddressDoesNotBelongToList,
+    DoesNotContainOneNonFungible,
+    NonFungibleIdNotFound,
+    InvalidAmount(Decimal),
+}
 
-<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Proof</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">ParseProofError</span>;
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+</span><span class="kw">impl </span>std::error::Error <span class="kw">for </span>ProofValidationError {}
 
-    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">slice</span>.<span class="ident">len</span>() {
-            <span class="number">4</span> =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="ident">u32::from_le_bytes</span>(<span class="ident">copy_u8_array</span>(<span class="ident">slice</span>)))),
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">ParseProofError::InvalidLength</span>(<span class="ident">slice</span>.<span class="ident">len</span>())),
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+</span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>ProofValidationError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
+    }
+}
+
+<span class="comment">//========
+// binary
+//========
+
+</span><span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>Proof {
+    <span class="kw">type </span>Error = ParseProofError;
+
+    <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">match </span>slice.len() {
+            <span class="number">4 </span>=&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>(u32::from_le_bytes(copy_u8_array(slice)))),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(ParseProofError::InvalidLength(slice.len())),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Proof</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_vec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_le_bytes</span>().<span class="ident">to_vec</span>()
+<span class="kw">impl </span>Proof {
+    <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.to_le_bytes().to_vec()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ValidatedProof</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_vec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_vec</span>()
+<span class="kw">impl </span>ValidatedProof {
+    <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.to_vec()
     }
 }
 
-<span class="comment">// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s doesn&#39;t need to</span>
-<span class="comment">// implement the sbor::Encode and sbor::Decode traits as they are not meant to be used as arguments and returns to and</span>
-<span class="comment">// from methods. They are meant ot be used inside methods.</span>
+<span class="comment">// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s doesn&#39;t need to
+// implement the sbor::Encode and sbor::Decode traits as they are not meant to be used as arguments and returns to and
+// from methods. They are meant ot be used inside methods.
 
-<span class="macro">scrypto_type!</span>(<span class="ident">Proof</span>, <span class="ident">ScryptoType::Proof</span>, <span class="ident">Vec::new</span>());
+</span><span class="macro">scrypto_type!</span>(Proof, ScryptoType::Proof, Vec::new());
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

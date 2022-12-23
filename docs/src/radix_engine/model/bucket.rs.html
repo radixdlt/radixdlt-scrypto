@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/bucket.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>bucket.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/bucket.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>bucket.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -306,309 +301,308 @@
 <span id="301">301</span>
 <span id="302">302</span>
 <span id="303">303</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">HeapRENode</span>, <span class="ident">SystemApi</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::{
-    <span class="ident">InvokeError</span>, <span class="ident">Proof</span>, <span class="ident">ProofError</span>, <span class="ident">ResourceContainer</span>, <span class="ident">ResourceContainerError</span>, <span class="ident">ResourceContainerId</span>,
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::{HeapRENode, SystemApi};
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::{
+    InvokeError, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BucketError</span> {
-    <span class="ident">InvalidDivisibility</span>,
-    <span class="ident">InvalidRequestData</span>(<span class="ident">DecodeError</span>),
-    <span class="ident">CouldNotCreateBucket</span>,
-    <span class="ident">CouldNotTakeBucket</span>,
-    <span class="ident">ResourceContainerError</span>(<span class="ident">ResourceContainerError</span>),
-    <span class="ident">ProofError</span>(<span class="ident">ProofError</span>),
-    <span class="ident">CouldNotCreateProof</span>,
-    <span class="ident">MethodNotFound</span>(<span class="ident">BucketFnIdentifier</span>),
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>BucketError {
+    InvalidDivisibility,
+    InvalidRequestData(DecodeError),
+    CouldNotCreateBucket,
+    CouldNotTakeBucket,
+    ResourceContainerError(ResourceContainerError),
+    ProofError(ProofError),
+    CouldNotCreateProof,
+    MethodNotFound(BucketFnIdentifier),
 }
 
-<span class="doccomment">/// A transient resource container.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Bucket</span> {
-    <span class="ident">container</span>: <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A transient resource container.
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>Bucket {
+    container: Rc&lt;RefCell&lt;ResourceContainer&gt;&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">Bucket</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">container</span>: <span class="ident">ResourceContainer</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">container</span>: <span class="ident">Rc::new</span>(<span class="ident">RefCell::new</span>(<span class="ident">container</span>)),
+<span class="kw">impl </span>Bucket {
+    <span class="kw">pub fn </span>new(container: ResourceContainer) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            container: Rc::new(RefCell::new(container)),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">put</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">other</span>: <span class="ident">Bucket</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">borrow_container_mut</span>().<span class="ident">put</span>(<span class="ident">other</span>.<span class="ident">into_container</span>()<span class="question-mark">?</span>)
+    <span class="kw">fn </span>put(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: Bucket) -&gt; <span class="prelude-ty">Result</span>&lt;(), ResourceContainerError&gt; {
+        <span class="self">self</span>.borrow_container_mut().put(other.into_container()<span class="question-mark">?</span>)
     }
 
-    <span class="kw">fn</span> <span class="ident">take</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">Decimal</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">borrow_container_mut</span>().<span class="ident">take_by_amount</span>(<span class="ident">amount</span>)
+    <span class="kw">fn </span>take(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: Decimal) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, ResourceContainerError&gt; {
+        <span class="self">self</span>.borrow_container_mut().take_by_amount(amount)
     }
 
-    <span class="kw">fn</span> <span class="ident">take_non_fungibles</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">ids</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">borrow_container_mut</span>().<span class="ident">take_by_ids</span>(<span class="ident">ids</span>)
+    <span class="kw">fn </span>take_non_fungibles(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        ids: <span class="kw-2">&amp;</span>BTreeSet&lt;NonFungibleId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, ResourceContainerError&gt; {
+        <span class="self">self</span>.borrow_container_mut().take_by_ids(ids)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_proof</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">self_bucket_id</span>: <span class="ident">BucketId</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Proof</span>, <span class="ident">ProofError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">container_id</span> <span class="op">=</span> <span class="ident">ResourceContainerId::Bucket</span>(<span class="ident">self_bucket_id</span>);
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">resource_type</span>() {
-            <span class="ident">ResourceType::Fungible</span> { .. } =&gt; {
-                <span class="self">self</span>.<span class="ident">create_proof_by_amount</span>(<span class="self">self</span>.<span class="ident">total_amount</span>(), <span class="ident">container_id</span>)
+    <span class="kw">pub fn </span>create_proof(<span class="kw-2">&amp;mut </span><span class="self">self</span>, self_bucket_id: BucketId) -&gt; <span class="prelude-ty">Result</span>&lt;Proof, ProofError&gt; {
+        <span class="kw">let </span>container_id = ResourceContainerId::Bucket(self_bucket_id);
+        <span class="kw">match </span><span class="self">self</span>.resource_type() {
+            ResourceType::Fungible { .. } =&gt; {
+                <span class="self">self</span>.create_proof_by_amount(<span class="self">self</span>.total_amount(), container_id)
             }
-            <span class="ident">ResourceType::NonFungible</span> =&gt; <span class="self">self</span>.<span class="ident">create_proof_by_ids</span>(
-                <span class="kw-2">&amp;</span><span class="self">self</span>
-                    .<span class="ident">total_ids</span>()
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to list non-fungible IDs on non-fungible Bucket&quot;</span>),
-                <span class="ident">container_id</span>,
+            ResourceType::NonFungible =&gt; <span class="self">self</span>.create_proof_by_ids(
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.total_ids()
+                    .expect(<span class="string">&quot;Failed to list non-fungible IDs on non-fungible Bucket&quot;</span>),
+                container_id,
             ),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_proof_by_amount</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">amount</span>: <span class="ident">Decimal</span>,
-        <span class="ident">container_id</span>: <span class="ident">ResourceContainerId</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Proof</span>, <span class="ident">ProofError</span><span class="op">&gt;</span> {
-        <span class="comment">// lock the specified amount</span>
-        <span class="kw">let</span> <span class="ident">locked_amount_or_ids</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">borrow_container_mut</span>()
-            .<span class="ident">lock_by_amount</span>(<span class="ident">amount</span>)
-            .<span class="ident">map_err</span>(<span class="ident">ProofError::ResourceContainerError</span>)<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>create_proof_by_amount(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        amount: Decimal,
+        container_id: ResourceContainerId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Proof, ProofError&gt; {
+        <span class="comment">// lock the specified amount
+        </span><span class="kw">let </span>locked_amount_or_ids = <span class="self">self
+            </span>.borrow_container_mut()
+            .lock_by_amount(amount)
+            .map_err(ProofError::ResourceContainerError)<span class="question-mark">?</span>;
 
-        <span class="comment">// produce proof</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">evidence</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="ident">evidence</span>.<span class="ident">insert</span>(
-            <span class="ident">container_id</span>,
-            (<span class="self">self</span>.<span class="ident">container</span>.<span class="ident">clone</span>(), <span class="ident">locked_amount_or_ids</span>.<span class="ident">clone</span>()),
+        <span class="comment">// produce proof
+        </span><span class="kw">let </span><span class="kw-2">mut </span>evidence = HashMap::new();
+        evidence.insert(
+            container_id,
+            (<span class="self">self</span>.container.clone(), locked_amount_or_ids.clone()),
         );
-        <span class="ident">Proof::new</span>(
-            <span class="self">self</span>.<span class="ident">resource_address</span>(),
-            <span class="self">self</span>.<span class="ident">resource_type</span>(),
-            <span class="ident">locked_amount_or_ids</span>,
-            <span class="ident">evidence</span>,
+        Proof::new(
+            <span class="self">self</span>.resource_address(),
+            <span class="self">self</span>.resource_type(),
+            locked_amount_or_ids,
+            evidence,
         )
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_proof_by_ids</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">ids</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
-        <span class="ident">container_id</span>: <span class="ident">ResourceContainerId</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Proof</span>, <span class="ident">ProofError</span><span class="op">&gt;</span> {
-        <span class="comment">// lock the specified id set</span>
-        <span class="kw">let</span> <span class="ident">locked_amount_or_ids</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">borrow_container_mut</span>()
-            .<span class="ident">lock_by_ids</span>(<span class="ident">ids</span>)
-            .<span class="ident">map_err</span>(<span class="ident">ProofError::ResourceContainerError</span>)<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>create_proof_by_ids(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        ids: <span class="kw-2">&amp;</span>BTreeSet&lt;NonFungibleId&gt;,
+        container_id: ResourceContainerId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Proof, ProofError&gt; {
+        <span class="comment">// lock the specified id set
+        </span><span class="kw">let </span>locked_amount_or_ids = <span class="self">self
+            </span>.borrow_container_mut()
+            .lock_by_ids(ids)
+            .map_err(ProofError::ResourceContainerError)<span class="question-mark">?</span>;
 
-        <span class="comment">// produce proof</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">evidence</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="ident">evidence</span>.<span class="ident">insert</span>(
-            <span class="ident">container_id</span>,
-            (<span class="self">self</span>.<span class="ident">container</span>.<span class="ident">clone</span>(), <span class="ident">locked_amount_or_ids</span>.<span class="ident">clone</span>()),
+        <span class="comment">// produce proof
+        </span><span class="kw">let </span><span class="kw-2">mut </span>evidence = HashMap::new();
+        evidence.insert(
+            container_id,
+            (<span class="self">self</span>.container.clone(), locked_amount_or_ids.clone()),
         );
-        <span class="ident">Proof::new</span>(
-            <span class="self">self</span>.<span class="ident">resource_address</span>(),
-            <span class="self">self</span>.<span class="ident">resource_type</span>(),
-            <span class="ident">locked_amount_or_ids</span>,
-            <span class="ident">evidence</span>,
+        Proof::new(
+            <span class="self">self</span>.resource_address(),
+            <span class="self">self</span>.resource_type(),
+            locked_amount_or_ids,
+            evidence,
         )
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-        <span class="self">self</span>.<span class="ident">borrow_container</span>().<span class="ident">resource_address</span>()
+    <span class="kw">pub fn </span>resource_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceAddress {
+        <span class="self">self</span>.borrow_container().resource_address()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_type</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceType</span> {
-        <span class="self">self</span>.<span class="ident">borrow_container</span>().<span class="ident">resource_type</span>()
+    <span class="kw">pub fn </span>resource_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceType {
+        <span class="self">self</span>.borrow_container().resource_type()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-        <span class="self">self</span>.<span class="ident">borrow_container</span>().<span class="ident">total_amount</span>()
+    <span class="kw">pub fn </span>total_amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+        <span class="self">self</span>.borrow_container().total_amount()
     }
 
-    <span class="kw">fn</span> <span class="ident">total_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">borrow_container</span>().<span class="ident">total_ids</span>()
+    <span class="kw">fn </span>total_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeSet&lt;NonFungibleId&gt;, ResourceContainerError&gt; {
+        <span class="self">self</span>.borrow_container().total_ids()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_locked</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">borrow_container</span>().<span class="ident">is_locked</span>()
+    <span class="kw">pub fn </span>is_locked(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.borrow_container().is_locked()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">borrow_container</span>().<span class="ident">is_empty</span>()
+    <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.borrow_container().is_empty()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">into_container</span>(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="ident">Rc::try_unwrap</span>(<span class="self">self</span>.<span class="ident">container</span>)
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">ResourceContainerError::ContainerLocked</span>)
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span>.<span class="ident">into_inner</span>())
+    <span class="kw">pub fn </span>into_container(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, ResourceContainerError&gt; {
+        Rc::try_unwrap(<span class="self">self</span>.container)
+            .map_err(|<span class="kw">_</span>| ResourceContainerError::ContainerLocked)
+            .map(|c| c.into_inner())
     }
 
-    <span class="kw">fn</span> <span class="ident">borrow_container</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Ref</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">container</span>.<span class="ident">borrow</span>()
+    <span class="kw">fn </span>borrow_container(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Ref&lt;ResourceContainer&gt; {
+        <span class="self">self</span>.container.borrow()
     }
 
-    <span class="kw">fn</span> <span class="ident">borrow_container_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="ident">RefMut</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">container</span>.<span class="ident">borrow_mut</span>()
+    <span class="kw">fn </span>borrow_container_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; RefMut&lt;ResourceContainer&gt; {
+        <span class="self">self</span>.container.borrow_mut()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">main</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">bucket_id</span>: <span class="ident">BucketId</span>,
-        <span class="ident">bucket_fn</span>: <span class="ident">BucketFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">BucketError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>main&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        bucket_id: BucketId,
+        bucket_fn: BucketFnIdentifier,
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;BucketError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::Bucket</span>(<span class="ident">bucket_id</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-            .<span class="ident">substate_borrow_mut</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">bucket0</span> <span class="op">=</span> <span class="ident">node_ref</span>.<span class="ident">bucket</span>();
+        <span class="kw">let </span>substate_id = SubstateId::Bucket(bucket_id);
+        <span class="kw">let </span><span class="kw-2">mut </span>node_ref = system_api
+            .substate_borrow_mut(<span class="kw-2">&amp;</span>substate_id)
+            .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+        <span class="kw">let </span>bucket0 = node_ref.bucket();
 
-        <span class="kw">let</span> <span class="ident">rtn</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">bucket_fn</span> {
-            <span class="ident">BucketFnIdentifier::Take</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">BucketTakeInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">container</span> <span class="op">=</span> <span class="ident">bucket0</span>
-                    .<span class="ident">take</span>(<span class="ident">input</span>.<span class="ident">amount</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Bucket</span>(<span class="ident">Bucket::new</span>(<span class="ident">container</span>)))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(
-                    <span class="ident">bucket_id</span>,
+        <span class="kw">let </span>rtn = <span class="kw">match </span>bucket_fn {
+            BucketFnIdentifier::Take =&gt; {
+                <span class="kw">let </span>input: BucketTakeInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>container = bucket0
+                    .take(input.amount)
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceContainerError(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>bucket_id = system_api
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(
+                    bucket_id,
                 )))
             }
-            <span class="ident">BucketFnIdentifier::TakeNonFungibles</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">BucketTakeNonFungiblesInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">container</span> <span class="op">=</span> <span class="ident">bucket0</span>
-                    .<span class="ident">take_non_fungibles</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">ids</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Bucket</span>(<span class="ident">Bucket::new</span>(<span class="ident">container</span>)))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(
-                    <span class="ident">bucket_id</span>,
+            BucketFnIdentifier::TakeNonFungibles =&gt; {
+                <span class="kw">let </span>input: BucketTakeNonFungiblesInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>container = bucket0
+                    .take_non_fungibles(<span class="kw-2">&amp;</span>input.ids)
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceContainerError(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>bucket_id = system_api
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(
+                    bucket_id,
                 )))
             }
-            <span class="ident">BucketFnIdentifier::GetNonFungibleIds</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">BucketGetNonFungibleIdsInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">ids</span> <span class="op">=</span> <span class="ident">bucket0</span>
-                    .<span class="ident">total_ids</span>()
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">ids</span>))
+            BucketFnIdentifier::GetNonFungibleIds =&gt; {
+                <span class="kw">let _</span>: BucketGetNonFungibleIdsInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>ids = bucket0
+                    .total_ids()
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceContainerError(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>ids))
             }
-            <span class="ident">BucketFnIdentifier::Put</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">BucketPutInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">other_bucket</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_drop</span>(<span class="kw-2">&amp;</span><span class="ident">RENodeId::Bucket</span>(<span class="ident">input</span>.<span class="ident">bucket</span>.<span class="number">0</span>))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="ident">bucket0</span>
-                    .<span class="ident">put</span>(<span class="ident">other_bucket</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::ResourceContainerError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+            BucketFnIdentifier::Put =&gt; {
+                <span class="kw">let </span>input: BucketPutInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>other_bucket = system_api
+                    .node_drop(<span class="kw-2">&amp;</span>RENodeId::Bucket(input.bucket.<span class="number">0</span>))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?
+                    </span>.into();
+                bucket0
+                    .put(other_bucket)
+                    .map_err(|e| InvokeError::Error(BucketError::ResourceContainerError(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
             }
-            <span class="ident">BucketFnIdentifier::GetAmount</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">BucketGetAmountInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">bucket0</span>.<span class="ident">total_amount</span>()))
+            BucketFnIdentifier::GetAmount =&gt; {
+                <span class="kw">let _</span>: BucketGetAmountInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>bucket0.total_amount()))
             }
-            <span class="ident">BucketFnIdentifier::GetResourceAddress</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">BucketGetResourceAddressInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">bucket0</span>.<span class="ident">resource_address</span>()))
+            BucketFnIdentifier::GetResourceAddress =&gt; {
+                <span class="kw">let _</span>: BucketGetResourceAddressInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>bucket0.resource_address()))
             }
-            <span class="ident">BucketFnIdentifier::CreateProof</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">BucketCreateProofInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">proof</span> <span class="op">=</span> <span class="ident">bucket0</span>
-                    .<span class="ident">create_proof</span>(<span class="ident">bucket_id</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::ProofError</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">proof_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Proof</span>(<span class="ident">proof</span>))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Proof</span>(
-                    <span class="ident">proof_id</span>,
+            BucketFnIdentifier::CreateProof =&gt; {
+                <span class="kw">let _</span>: BucketCreateProofInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>proof = bucket0
+                    .create_proof(bucket_id)
+                    .map_err(|e| InvokeError::Error(BucketError::ProofError(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>proof_id = system_api
+                    .node_create(HeapRENode::Proof(proof))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Proof(
+                    proof_id,
                 )))
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::MethodNotFound</span>(<span class="ident">bucket_fn</span>))),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(InvokeError::Error(BucketError::MethodNotFound(bucket_fn))),
         }<span class="question-mark">?</span>;
 
-        <span class="ident">system_api</span>
-            .<span class="ident">substate_return_mut</span>(<span class="ident">node_ref</span>)
-            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+        system_api
+            .substate_return_mut(node_ref)
+            .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">rtn</span>)
+        <span class="prelude-val">Ok</span>(rtn)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">consuming_main</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">node_id</span>: <span class="ident">RENodeId</span>,
-        <span class="ident">bucket_fn</span>: <span class="ident">BucketFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">BucketError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>consuming_main&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        node_id: RENodeId,
+        bucket_fn: BucketFnIdentifier,
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;BucketError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">match</span> <span class="ident">bucket_fn</span> {
-            <span class="ident">BucketFnIdentifier::Burn</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ConsumingBucketBurnInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
+        <span class="kw">match </span>bucket_fn {
+            BucketFnIdentifier::Burn =&gt; {
+                <span class="kw">let _</span>: ConsumingBucketBurnInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(BucketError::InvalidRequestData(e)))<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">bucket</span>: <span class="ident">Bucket</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_drop</span>(<span class="kw-2">&amp;</span><span class="ident">node_id</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
+                <span class="kw">let </span>bucket: Bucket = system_api
+                    .node_drop(<span class="kw-2">&amp;</span>node_id)
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?
+                    </span>.into();
 
-                <span class="comment">// Notify resource manager, TODO: Should not need to notify manually</span>
-                <span class="kw">let</span> <span class="ident">resource_address</span> <span class="op">=</span> <span class="ident">bucket</span>.<span class="ident">resource_address</span>();
-                <span class="kw">let</span> <span class="ident">resource_substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::ResourceManager</span>(<span class="ident">resource_address</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">substate_borrow_mut</span>(<span class="kw-2">&amp;</span><span class="ident">resource_substate_id</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">resource_manager</span> <span class="op">=</span> <span class="ident">value</span>.<span class="ident">resource_manager</span>();
-                <span class="ident">resource_manager</span>.<span class="ident">burn</span>(<span class="ident">bucket</span>.<span class="ident">total_amount</span>());
-                <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">resource_manager</span>.<span class="ident">resource_type</span>(), <span class="ident">ResourceType::NonFungible</span>) {
-                    <span class="kw">for</span> <span class="ident">id</span> <span class="kw">in</span> <span class="ident">bucket</span>
-                        .<span class="ident">total_ids</span>()
-                        .<span class="ident">expect</span>(<span class="string">&quot;Failed to list non-fungible IDs on non-fungible Bucket&quot;</span>)
+                <span class="comment">// Notify resource manager, TODO: Should not need to notify manually
+                </span><span class="kw">let </span>resource_address = bucket.resource_address();
+                <span class="kw">let </span>resource_substate_id = SubstateId::ResourceManager(resource_address);
+                <span class="kw">let </span><span class="kw-2">mut </span>value = system_api
+                    .substate_borrow_mut(<span class="kw-2">&amp;</span>resource_substate_id)
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                <span class="kw">let </span>resource_manager = value.resource_manager();
+                resource_manager.burn(bucket.total_amount());
+                <span class="kw">if </span><span class="macro">matches!</span>(resource_manager.resource_type(), ResourceType::NonFungible) {
+                    <span class="kw">for </span>id <span class="kw">in </span>bucket
+                        .total_ids()
+                        .expect(<span class="string">&quot;Failed to list non-fungible IDs on non-fungible Bucket&quot;</span>)
                     {
-                        <span class="kw">let</span> <span class="ident">address</span> <span class="op">=</span> <span class="ident">SubstateId::NonFungible</span>(<span class="ident">resource_address</span>, <span class="ident">id</span>);
-                        <span class="ident">system_api</span>
-                            .<span class="ident">substate_take</span>(<span class="ident">address</span>)
-                            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>address = SubstateId::NonFungible(resource_address, id);
+                        system_api
+                            .substate_take(address)
+                            .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
                     }
                 }
-                <span class="ident">system_api</span>
-                    .<span class="ident">substate_return_mut</span>(<span class="ident">value</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+                system_api
+                    .substate_return_mut(value)
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
 
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">BucketError::MethodNotFound</span>(<span class="ident">bucket_fn</span>))),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(InvokeError::Error(BucketError::MethodNotFound(bucket_fn))),
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

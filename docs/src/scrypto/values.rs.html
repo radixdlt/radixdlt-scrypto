@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/values.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>values.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../scrypto/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/values.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>values.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../scrypto/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -676,679 +671,678 @@
 <span id="671">671</span>
 <span id="672">672</span>
 <span id="673">673</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::path</span>::{<span class="ident">MutableSborPath</span>, <span class="ident">SborPath</span>};
-<span class="kw">use</span> <span class="ident">sbor::rust::borrow::Borrow</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::collections::HashMap</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::collections::HashSet</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::fmt</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::format</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::string::String</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::string::ToString</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident">sbor::type_id</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">sbor</span>::{<span class="ident">any</span>::<span class="kw-2">*</span>, <span class="kw-2">*</span>};
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::path::{MutableSborPath, SborPath};
+<span class="kw">use </span>sbor::rust::borrow::Borrow;
+<span class="kw">use </span>sbor::rust::collections::HashMap;
+<span class="kw">use </span>sbor::rust::collections::HashSet;
+<span class="kw">use </span>sbor::rust::fmt;
+<span class="kw">use </span>sbor::rust::format;
+<span class="kw">use </span>sbor::rust::string::String;
+<span class="kw">use </span>sbor::rust::string::ToString;
+<span class="kw">use </span>sbor::rust::vec::Vec;
+<span class="kw">use </span>sbor::type_id::<span class="kw-2">*</span>;
+<span class="kw">use </span>sbor::{any::<span class="kw-2">*</span>, <span class="kw-2">*</span>};
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::abi</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address::AddressError</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::buffer</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::component</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::core</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::crypto</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::math</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::misc::copy_u8_array</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::abi::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::address::AddressError;
+<span class="kw">use </span><span class="kw">crate</span>::buffer::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::component::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::core::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::crypto::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::engine::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::math::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::misc::copy_u8_array;
+<span class="kw">use </span><span class="kw">crate</span>::resource::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ScryptoValueReplaceError</span> {
-    <span class="ident">ProofIdNotFound</span>(<span class="ident">ProofId</span>),
-    <span class="ident">BucketIdNotFound</span>(<span class="ident">BucketId</span>),
+<span class="kw">pub enum </span>ScryptoValueReplaceError {
+    ProofIdNotFound(ProofId),
+    BucketIdNotFound(BucketId),
 }
 
-<span class="doccomment">/// A Scrypto value is a SBOR value of which the custom types are the ones defined by `ScryptoType`.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ScryptoValue</span> {
-    <span class="kw">pub</span> <span class="ident">raw</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">dom</span>: <span class="ident">Value</span>,
-    <span class="kw">pub</span> <span class="ident">expressions</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Expression</span>, <span class="ident">SborPath</span>)<span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">bucket_ids</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketId</span>, <span class="ident">SborPath</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">proof_ids</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ProofId</span>, <span class="ident">SborPath</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">vault_ids</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">VaultId</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">kv_store_ids</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">KeyValueStoreId</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">owned_component_addresses</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">ComponentAddress</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">refed_component_addresses</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">ComponentAddress</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">resource_addresses</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A Scrypto value is a SBOR value of which the custom types are the ones defined by `ScryptoType`.
+</span><span class="attribute">#[derive(Clone, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>ScryptoValue {
+    <span class="kw">pub </span>raw: Vec&lt;u8&gt;,
+    <span class="kw">pub </span>dom: Value,
+    <span class="kw">pub </span>expressions: Vec&lt;(Expression, SborPath)&gt;,
+    <span class="kw">pub </span>bucket_ids: HashMap&lt;BucketId, SborPath&gt;,
+    <span class="kw">pub </span>proof_ids: HashMap&lt;ProofId, SborPath&gt;,
+    <span class="kw">pub </span>vault_ids: HashSet&lt;VaultId&gt;,
+    <span class="kw">pub </span>kv_store_ids: HashSet&lt;KeyValueStoreId&gt;,
+    <span class="kw">pub </span>owned_component_addresses: HashSet&lt;ComponentAddress&gt;,
+    <span class="kw">pub </span>refed_component_addresses: HashSet&lt;ComponentAddress&gt;,
+    <span class="kw">pub </span>resource_addresses: HashSet&lt;ResourceAddress&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">ScryptoValue</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unit</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::from_typed</span>(<span class="kw-2">&amp;</span>())
+<span class="kw">impl </span>ScryptoValue {
+    <span class="kw">pub fn </span>unit() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::from_typed(<span class="kw-2">&amp;</span>())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_typed</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Encode</span><span class="op">&gt;</span>(<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">scrypto_encode</span>(<span class="ident">value</span>);
-        <span class="ident"><span class="self">Self</span>::from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">bytes</span>).<span class="ident">expect</span>(<span class="string">&quot;Failed to convert trusted value into ScryptoValue&quot;</span>)
+    <span class="kw">pub fn </span>from_typed&lt;T: Encode&gt;(value: <span class="kw-2">&amp;</span>T) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>bytes = scrypto_encode(value);
+        <span class="self">Self</span>::from_slice(<span class="kw-2">&amp;</span>bytes).expect(<span class="string">&quot;Failed to convert trusted value into ScryptoValue&quot;</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_slice</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">DecodeError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">decode_any</span>(<span class="ident">slice</span>)<span class="question-mark">?</span>;
-        <span class="ident"><span class="self">Self</span>::from_value</span>(<span class="ident">value</span>)
+    <span class="kw">pub fn </span>from_slice(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodeError&gt; {
+        <span class="kw">let </span>value = decode_any(slice)<span class="question-mark">?</span>;
+        <span class="self">Self</span>::from_value(value)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_value</span>(<span class="ident">value</span>: <span class="ident">Value</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">DecodeError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">checker</span> <span class="op">=</span> <span class="ident">ScryptoCustomValueChecker::new</span>();
-        <span class="ident">traverse_any</span>(<span class="kw-2">&amp;mut</span> <span class="ident">MutableSborPath::new</span>(), <span class="kw-2">&amp;</span><span class="ident">value</span>, <span class="kw-2">&amp;mut</span> <span class="ident">checker</span>)
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">DecodeError::CustomError</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">e</span>)))<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>from_value(value: Value) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodeError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>checker = ScryptoCustomValueChecker::new();
+        traverse_any(<span class="kw-2">&amp;mut </span>MutableSborPath::new(), <span class="kw-2">&amp;</span>value, <span class="kw-2">&amp;mut </span>checker)
+            .map_err(|e| DecodeError::CustomError(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, e)))<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="ident">raw</span>: <span class="ident">encode_any</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>),
-            <span class="ident">dom</span>: <span class="ident">value</span>,
-            <span class="ident">expressions</span>: <span class="ident">checker</span>.<span class="ident">expressions</span>,
-            <span class="ident">bucket_ids</span>: <span class="ident">checker</span>
-                .<span class="ident">buckets</span>
-                .<span class="ident">drain</span>()
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">e</span>, <span class="ident">path</span>)<span class="op">|</span> (<span class="ident">e</span>.<span class="number">0</span>, <span class="ident">path</span>))
-                .<span class="ident">collect</span>(),
-            <span class="ident">proof_ids</span>: <span class="ident">checker</span>
-                .<span class="ident">proofs</span>
-                .<span class="ident">drain</span>()
-                .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">e</span>, <span class="ident">path</span>)<span class="op">|</span> (<span class="ident">e</span>.<span class="number">0</span>, <span class="ident">path</span>))
-                .<span class="ident">collect</span>(),
-            <span class="ident">vault_ids</span>: <span class="ident">checker</span>.<span class="ident">vaults</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="number">0</span>).<span class="ident">collect</span>(),
-            <span class="ident">kv_store_ids</span>: <span class="ident">checker</span>.<span class="ident">kv_stores</span>,
-            <span class="ident">owned_component_addresses</span>: <span class="ident">checker</span>.<span class="ident">components</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">e</span>.<span class="number">0</span>).<span class="ident">collect</span>(),
-            <span class="ident">refed_component_addresses</span>: <span class="ident">checker</span>.<span class="ident">ref_components</span>,
-            <span class="ident">resource_addresses</span>: <span class="ident">checker</span>.<span class="ident">resource_addresses</span>,
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            raw: encode_any(<span class="kw-2">&amp;</span>value),
+            dom: value,
+            expressions: checker.expressions,
+            bucket_ids: checker
+                .buckets
+                .drain()
+                .map(|(e, path)| (e.<span class="number">0</span>, path))
+                .collect(),
+            proof_ids: checker
+                .proofs
+                .drain()
+                .map(|(e, path)| (e.<span class="number">0</span>, path))
+                .collect(),
+            vault_ids: checker.vaults.iter().map(|e| e.<span class="number">0</span>).collect(),
+            kv_store_ids: checker.kv_stores,
+            owned_component_addresses: checker.components.iter().map(|e| e.<span class="number">0</span>).collect(),
+            refed_component_addresses: checker.ref_components,
+            resource_addresses: checker.resource_addresses,
         })
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_slice_no_custom_values</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">DecodeError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">decode_any</span>(<span class="ident">slice</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">checker</span> <span class="op">=</span> <span class="ident">ScryptoNoCustomValuesChecker</span> {};
-        <span class="ident">traverse_any</span>(<span class="kw-2">&amp;mut</span> <span class="ident">MutableSborPath::new</span>(), <span class="kw-2">&amp;</span><span class="ident">value</span>, <span class="kw-2">&amp;mut</span> <span class="ident">checker</span>)
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">DecodeError::CustomError</span>(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">e</span>)))<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="ident">raw</span>: <span class="ident">encode_any</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>),
-            <span class="ident">dom</span>: <span class="ident">value</span>,
-            <span class="ident">expressions</span>: <span class="ident">Vec::new</span>(),
-            <span class="ident">bucket_ids</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">proof_ids</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">vault_ids</span>: <span class="ident">HashSet::new</span>(),
-            <span class="ident">kv_store_ids</span>: <span class="ident">HashSet::new</span>(),
-            <span class="ident">owned_component_addresses</span>: <span class="ident">HashSet::new</span>(),
-            <span class="ident">refed_component_addresses</span>: <span class="ident">HashSet::new</span>(),
-            <span class="ident">resource_addresses</span>: <span class="ident">HashSet::new</span>(),
+    <span class="kw">pub fn </span>from_slice_no_custom_values(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodeError&gt; {
+        <span class="kw">let </span>value = decode_any(slice)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>checker = ScryptoNoCustomValuesChecker {};
+        traverse_any(<span class="kw-2">&amp;mut </span>MutableSborPath::new(), <span class="kw-2">&amp;</span>value, <span class="kw-2">&amp;mut </span>checker)
+            .map_err(|e| DecodeError::CustomError(<span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, e)))<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            raw: encode_any(<span class="kw-2">&amp;</span>value),
+            dom: value,
+            expressions: Vec::new(),
+            bucket_ids: HashMap::new(),
+            proof_ids: HashMap::new(),
+            vault_ids: HashSet::new(),
+            kv_store_ids: HashSet::new(),
+            owned_component_addresses: HashSet::new(),
+            refed_component_addresses: HashSet::new(),
+            resource_addresses: HashSet::new(),
         })
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_ids</span> <span class="op">=</span> <span class="ident">HashSet::new</span>();
-        <span class="kw">for</span> <span class="ident">vault_id</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">vault_ids</span> {
-            <span class="ident">node_ids</span>.<span class="ident">insert</span>(<span class="ident">RENodeId::Vault</span>(<span class="kw-2">*</span><span class="ident">vault_id</span>));
+    <span class="kw">pub fn </span>node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HashSet&lt;RENodeId&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>node_ids = HashSet::new();
+        <span class="kw">for </span>vault_id <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.vault_ids {
+            node_ids.insert(RENodeId::Vault(<span class="kw-2">*</span>vault_id));
         }
-        <span class="kw">for</span> <span class="ident">kv_store_id</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">kv_store_ids</span> {
-            <span class="ident">node_ids</span>.<span class="ident">insert</span>(<span class="ident">RENodeId::KeyValueStore</span>(<span class="kw-2">*</span><span class="ident">kv_store_id</span>));
+        <span class="kw">for </span>kv_store_id <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.kv_store_ids {
+            node_ids.insert(RENodeId::KeyValueStore(<span class="kw-2">*</span>kv_store_id));
         }
-        <span class="kw">for</span> <span class="ident">component_address</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">owned_component_addresses</span> {
-            <span class="ident">node_ids</span>.<span class="ident">insert</span>(<span class="ident">RENodeId::Component</span>(<span class="kw-2">*</span><span class="ident">component_address</span>));
+        <span class="kw">for </span>component_address <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.owned_component_addresses {
+            node_ids.insert(RENodeId::Component(<span class="kw-2">*</span>component_address));
         }
-        <span class="kw">for</span> (<span class="ident">bucket_id</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">bucket_ids</span> {
-            <span class="ident">node_ids</span>.<span class="ident">insert</span>(<span class="ident">RENodeId::Bucket</span>(<span class="kw-2">*</span><span class="ident">bucket_id</span>));
+        <span class="kw">for </span>(bucket_id, <span class="kw">_</span>) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.bucket_ids {
+            node_ids.insert(RENodeId::Bucket(<span class="kw-2">*</span>bucket_id));
         }
-        <span class="kw">for</span> (<span class="ident">proof_id</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">proof_ids</span> {
-            <span class="ident">node_ids</span>.<span class="ident">insert</span>(<span class="ident">RENodeId::Proof</span>(<span class="kw-2">*</span><span class="ident">proof_id</span>));
+        <span class="kw">for </span>(proof_id, <span class="kw">_</span>) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.proof_ids {
+            node_ids.insert(RENodeId::Proof(<span class="kw-2">*</span>proof_id));
         }
-        <span class="ident">node_ids</span>
+        node_ids
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">stored_node_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_ids</span> <span class="op">=</span> <span class="ident">HashSet::new</span>();
-        <span class="kw">for</span> <span class="ident">vault_id</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">vault_ids</span> {
-            <span class="ident">node_ids</span>.<span class="ident">insert</span>(<span class="ident">RENodeId::Vault</span>(<span class="kw-2">*</span><span class="ident">vault_id</span>));
+    <span class="kw">pub fn </span>stored_node_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HashSet&lt;RENodeId&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>node_ids = HashSet::new();
+        <span class="kw">for </span>vault_id <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.vault_ids {
+            node_ids.insert(RENodeId::Vault(<span class="kw-2">*</span>vault_id));
         }
-        <span class="kw">for</span> <span class="ident">kv_store_id</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">kv_store_ids</span> {
-            <span class="ident">node_ids</span>.<span class="ident">insert</span>(<span class="ident">RENodeId::KeyValueStore</span>(<span class="kw-2">*</span><span class="ident">kv_store_id</span>));
+        <span class="kw">for </span>kv_store_id <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.kv_store_ids {
+            node_ids.insert(RENodeId::KeyValueStore(<span class="kw-2">*</span>kv_store_id));
         }
-        <span class="kw">for</span> <span class="ident">component_address</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">owned_component_addresses</span> {
-            <span class="ident">node_ids</span>.<span class="ident">insert</span>(<span class="ident">RENodeId::Component</span>(<span class="kw-2">*</span><span class="ident">component_address</span>));
+        <span class="kw">for </span>component_address <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.owned_component_addresses {
+            node_ids.insert(RENodeId::Component(<span class="kw-2">*</span>component_address));
         }
-        <span class="ident">node_ids</span>
+        node_ids
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">replace_ids</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">proof_replacements</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ProofId</span>, <span class="ident">ProofId</span><span class="op">&gt;</span>,
-        <span class="ident">bucket_replacements</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketId</span>, <span class="ident">BucketId</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ScryptoValueReplaceError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_proof_ids</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="kw">for</span> (<span class="ident">proof_id</span>, <span class="ident">path</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">proof_ids</span>.<span class="ident">drain</span>() {
-            <span class="kw">let</span> <span class="ident">next_id</span> <span class="op">=</span> <span class="ident">proof_replacements</span>
-                .<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">proof_id</span>)
-                .<span class="ident">ok_or</span>(<span class="ident">ScryptoValueReplaceError::ProofIdNotFound</span>(<span class="ident">proof_id</span>))<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">get_from_value_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">dom</span>).<span class="ident">unwrap</span>();
-            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Custom</span> {
-                <span class="ident">type_id</span>: <span class="kw">_</span>,
-                <span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">bytes</span>,
-            } <span class="op">=</span> <span class="ident">value</span>
+    <span class="kw">pub fn </span>replace_ids(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        proof_replacements: <span class="kw-2">&amp;mut </span>HashMap&lt;ProofId, ProofId&gt;,
+        bucket_replacements: <span class="kw-2">&amp;mut </span>HashMap&lt;BucketId, BucketId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ScryptoValueReplaceError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>new_proof_ids = HashMap::new();
+        <span class="kw">for </span>(proof_id, path) <span class="kw">in </span><span class="self">self</span>.proof_ids.drain() {
+            <span class="kw">let </span>next_id = proof_replacements
+                .remove(<span class="kw-2">&amp;</span>proof_id)
+                .ok_or(ScryptoValueReplaceError::ProofIdNotFound(proof_id))<span class="question-mark">?</span>;
+            <span class="kw">let </span>value = path.get_from_value_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>.dom).unwrap();
+            <span class="kw">if let </span>Value::Custom {
+                type_id: <span class="kw">_</span>,
+                <span class="kw-2">ref mut </span>bytes,
+            } = value
             {
-                <span class="kw-2">*</span><span class="ident">bytes</span> <span class="op">=</span> <span class="ident">scrypto::resource::Proof</span>(<span class="ident">next_id</span>).<span class="ident">to_vec</span>();
-            } <span class="kw">else</span> {
+                <span class="kw-2">*</span>bytes = scrypto::resource::Proof(next_id).to_vec();
+            } <span class="kw">else </span>{
                 <span class="macro">panic!</span>(<span class="string">&quot;Proof Id should be custom type&quot;</span>);
             }
 
-            <span class="ident">new_proof_ids</span>.<span class="ident">insert</span>(<span class="ident">next_id</span>, <span class="ident">path</span>);
+            new_proof_ids.insert(next_id, path);
         }
-        <span class="self">self</span>.<span class="ident">proof_ids</span> <span class="op">=</span> <span class="ident">new_proof_ids</span>;
+        <span class="self">self</span>.proof_ids = new_proof_ids;
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_bucket_ids</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="kw">for</span> (<span class="ident">bucket_id</span>, <span class="ident">path</span>) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">bucket_ids</span>.<span class="ident">drain</span>() {
-            <span class="kw">let</span> <span class="ident">next_id</span> <span class="op">=</span> <span class="ident">bucket_replacements</span>
-                .<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">bucket_id</span>)
-                .<span class="ident">ok_or</span>(<span class="ident">ScryptoValueReplaceError::BucketIdNotFound</span>(<span class="ident">bucket_id</span>))<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">get_from_value_mut</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>.<span class="ident">dom</span>).<span class="ident">unwrap</span>();
-            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Custom</span> {
-                <span class="ident">type_id</span>: <span class="kw">_</span>,
-                <span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">bytes</span>,
-            } <span class="op">=</span> <span class="ident">value</span>
+        <span class="kw">let </span><span class="kw-2">mut </span>new_bucket_ids = HashMap::new();
+        <span class="kw">for </span>(bucket_id, path) <span class="kw">in </span><span class="self">self</span>.bucket_ids.drain() {
+            <span class="kw">let </span>next_id = bucket_replacements
+                .remove(<span class="kw-2">&amp;</span>bucket_id)
+                .ok_or(ScryptoValueReplaceError::BucketIdNotFound(bucket_id))<span class="question-mark">?</span>;
+            <span class="kw">let </span>value = path.get_from_value_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>.dom).unwrap();
+            <span class="kw">if let </span>Value::Custom {
+                type_id: <span class="kw">_</span>,
+                <span class="kw-2">ref mut </span>bytes,
+            } = value
             {
-                <span class="kw-2">*</span><span class="ident">bytes</span> <span class="op">=</span> <span class="ident">scrypto::resource::Bucket</span>(<span class="ident">next_id</span>).<span class="ident">to_vec</span>();
-            } <span class="kw">else</span> {
+                <span class="kw-2">*</span>bytes = scrypto::resource::Bucket(next_id).to_vec();
+            } <span class="kw">else </span>{
                 <span class="macro">panic!</span>(<span class="string">&quot;Bucket should be custom type&quot;</span>);
             }
 
-            <span class="ident">new_bucket_ids</span>.<span class="ident">insert</span>(<span class="ident">next_id</span>, <span class="ident">path</span>);
+            new_bucket_ids.insert(next_id, path);
         }
-        <span class="self">self</span>.<span class="ident">bucket_ids</span> <span class="op">=</span> <span class="ident">new_bucket_ids</span>;
+        <span class="self">self</span>.bucket_ids = new_bucket_ids;
 
-        <span class="self">self</span>.<span class="ident">raw</span> <span class="op">=</span> <span class="ident">encode_any</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">dom</span>);
+        <span class="self">self</span>.raw = encode_any(<span class="kw-2">&amp;</span><span class="self">self</span>.dom);
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">value_count</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
-        <span class="self">self</span>.<span class="ident">bucket_ids</span>.<span class="ident">len</span>()
-            <span class="op">+</span> <span class="self">self</span>.<span class="ident">proof_ids</span>.<span class="ident">len</span>()
-            <span class="op">+</span> <span class="self">self</span>.<span class="ident">vault_ids</span>.<span class="ident">len</span>()
-            <span class="op">+</span> <span class="self">self</span>.<span class="ident">owned_component_addresses</span>.<span class="ident">len</span>()
+    <span class="kw">pub fn </span>value_count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        <span class="self">self</span>.bucket_ids.len()
+            + <span class="self">self</span>.proof_ids.len()
+            + <span class="self">self</span>.vault_ids.len()
+            + <span class="self">self</span>.owned_component_addresses.len()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_string</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="ident">ScryptoValueFormatter::format_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">dom</span>, <span class="kw-2">&amp;</span><span class="ident">HashMap::new</span>(), <span class="kw-2">&amp;</span><span class="ident">HashMap::new</span>())
+    <span class="kw">pub fn </span>to_string(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        ScryptoValueFormatter::format_value(<span class="kw-2">&amp;</span><span class="self">self</span>.dom, <span class="kw-2">&amp;</span>HashMap::new(), <span class="kw-2">&amp;</span>HashMap::new())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_string_with_context</span>(
+    <span class="kw">pub fn </span>to_string_with_context(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">bucket_ids</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketId</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-        <span class="ident">proof_ids</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ProofId</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">String</span> {
-        <span class="ident">ScryptoValueFormatter::format_value</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">dom</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)
+        bucket_ids: <span class="kw-2">&amp;</span>HashMap&lt;BucketId, String&gt;,
+        proof_ids: <span class="kw-2">&amp;</span>HashMap&lt;ProofId, String&gt;,
+    ) -&gt; String {
+        ScryptoValueFormatter::format_value(<span class="kw-2">&amp;</span><span class="self">self</span>.dom, bucket_ids, proof_ids)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">ScryptoValue</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="ident">to_string</span>())
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>ScryptoValue {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.to_string())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">ScryptoValue</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="ident">to_string</span>())
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>ScryptoValue {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.to_string())
     }
 }
 
-<span class="doccomment">/// Represents an error when validating a Scrypto-specific value.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ScryptoNoCustomValuesCheckError</span> {
-    <span class="ident">CustomValueNotAllowed</span>(<span class="ident">u8</span>),
+<span class="doccomment">/// Represents an error when validating a Scrypto-specific value.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>ScryptoNoCustomValuesCheckError {
+    CustomValueNotAllowed(u8),
 }
 
-<span class="doccomment">/// A checker the check a Scrypto-specific value.</span>
-<span class="kw">struct</span> <span class="ident">ScryptoNoCustomValuesChecker</span> {}
+<span class="doccomment">/// A checker the check a Scrypto-specific value.
+</span><span class="kw">struct </span>ScryptoNoCustomValuesChecker {}
 
-<span class="kw">impl</span> <span class="ident">CustomValueVisitor</span> <span class="kw">for</span> <span class="ident">ScryptoNoCustomValuesChecker</span> {
-    <span class="kw">type</span> <span class="prelude-val">Err</span> <span class="op">=</span> <span class="ident">ScryptoNoCustomValuesCheckError</span>;
+<span class="kw">impl </span>CustomValueVisitor <span class="kw">for </span>ScryptoNoCustomValuesChecker {
+    <span class="kw">type </span><span class="prelude-val">Err </span>= ScryptoNoCustomValuesCheckError;
 
-    <span class="kw">fn</span> <span class="ident">visit</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">_path</span>: <span class="kw-2">&amp;mut</span> <span class="ident">MutableSborPath</span>,
-        <span class="ident">type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">_data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident"><span class="self">Self</span>::Err</span><span class="op">&gt;</span> {
-        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ScryptoNoCustomValuesCheckError::CustomValueNotAllowed</span>(
-            <span class="ident">type_id</span>,
+    <span class="kw">fn </span>visit(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _path: <span class="kw-2">&amp;mut </span>MutableSborPath,
+        type_id: u8,
+        _data: <span class="kw-2">&amp;</span>[u8],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(ScryptoNoCustomValuesCheckError::CustomValueNotAllowed(
+            type_id,
         ));
     }
 }
 
-<span class="doccomment">/// A checker the check a Scrypto-specific value.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ScryptoCustomValueChecker</span> {
-    <span class="kw">pub</span> <span class="ident">expressions</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Expression</span>, <span class="ident">SborPath</span>)<span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">buckets</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Bucket</span>, <span class="ident">SborPath</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">proofs</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Proof</span>, <span class="ident">SborPath</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">vaults</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">Vault</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">kv_stores</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">KeyValueStoreId</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">components</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">Component</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">ref_components</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">ComponentAddress</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">resource_addresses</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A checker the check a Scrypto-specific value.
+</span><span class="kw">pub struct </span>ScryptoCustomValueChecker {
+    <span class="kw">pub </span>expressions: Vec&lt;(Expression, SborPath)&gt;,
+    <span class="kw">pub </span>buckets: HashMap&lt;Bucket, SborPath&gt;,
+    <span class="kw">pub </span>proofs: HashMap&lt;Proof, SborPath&gt;,
+    <span class="kw">pub </span>vaults: HashSet&lt;Vault&gt;,
+    <span class="kw">pub </span>kv_stores: HashSet&lt;KeyValueStoreId&gt;,
+    <span class="kw">pub </span>components: HashSet&lt;Component&gt;,
+    <span class="kw">pub </span>ref_components: HashSet&lt;ComponentAddress&gt;,
+    <span class="kw">pub </span>resource_addresses: HashSet&lt;ResourceAddress&gt;,
 }
 
-<span class="doccomment">/// Represents an error when validating a Scrypto-specific value.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ScryptoCustomValueCheckError</span> {
-    <span class="ident">UnknownTypeId</span>(<span class="ident">u8</span>),
-    <span class="ident">InvalidDecimal</span>(<span class="ident">ParseDecimalError</span>),
-    <span class="ident">InvalidPreciseDecimal</span>(<span class="ident">ParsePreciseDecimalError</span>),
-    <span class="ident">InvalidPackageAddress</span>(<span class="ident">AddressError</span>),
-    <span class="ident">InvalidComponentAddress</span>(<span class="ident">AddressError</span>),
-    <span class="ident">InvalidResourceAddress</span>(<span class="ident">AddressError</span>),
-    <span class="ident">InvalidHash</span>(<span class="ident">ParseHashError</span>),
-    <span class="ident">InvalidEcdsaSecp256k1PublicKey</span>(<span class="ident">ParseEcdsaSecp256k1PublicKeyError</span>),
-    <span class="ident">InvalidEcdsaSecp256k1Signature</span>(<span class="ident">ParseEcdsaSecp256k1SignatureError</span>),
-    <span class="ident">InvalidEddsaEd25519PublicKey</span>(<span class="ident">ParseEddsaEd25519PublicKeyError</span>),
-    <span class="ident">InvalidEddsaEd25519Signature</span>(<span class="ident">ParseEddsaEd25519SignatureError</span>),
-    <span class="ident">InvalidBucket</span>(<span class="ident">ParseBucketError</span>),
-    <span class="ident">InvalidProof</span>(<span class="ident">ParseProofError</span>),
-    <span class="ident">InvalidKeyValueStore</span>(<span class="ident">ParseKeyValueStoreError</span>),
-    <span class="ident">InvalidVault</span>(<span class="ident">ParseVaultError</span>),
-    <span class="ident">InvalidNonFungibleId</span>(<span class="ident">ParseNonFungibleIdError</span>),
-    <span class="ident">InvalidNonFungibleAddress</span>(<span class="ident">ParseNonFungibleAddressError</span>),
-    <span class="ident">InvalidExpression</span>(<span class="ident">ParseExpressionError</span>),
-    <span class="ident">InvalidBlob</span>(<span class="ident">ParseBlobError</span>),
-    <span class="ident">DuplicateIds</span>,
+<span class="doccomment">/// Represents an error when validating a Scrypto-specific value.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>ScryptoCustomValueCheckError {
+    UnknownTypeId(u8),
+    InvalidDecimal(ParseDecimalError),
+    InvalidPreciseDecimal(ParsePreciseDecimalError),
+    InvalidPackageAddress(AddressError),
+    InvalidComponentAddress(AddressError),
+    InvalidResourceAddress(AddressError),
+    InvalidHash(ParseHashError),
+    InvalidEcdsaSecp256k1PublicKey(ParseEcdsaSecp256k1PublicKeyError),
+    InvalidEcdsaSecp256k1Signature(ParseEcdsaSecp256k1SignatureError),
+    InvalidEddsaEd25519PublicKey(ParseEddsaEd25519PublicKeyError),
+    InvalidEddsaEd25519Signature(ParseEddsaEd25519SignatureError),
+    InvalidBucket(ParseBucketError),
+    InvalidProof(ParseProofError),
+    InvalidKeyValueStore(ParseKeyValueStoreError),
+    InvalidVault(ParseVaultError),
+    InvalidNonFungibleId(ParseNonFungibleIdError),
+    InvalidNonFungibleAddress(ParseNonFungibleAddressError),
+    InvalidExpression(ParseExpressionError),
+    InvalidBlob(ParseBlobError),
+    DuplicateIds,
 }
 
-<span class="kw">impl</span> <span class="ident">ScryptoCustomValueChecker</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">expressions</span>: <span class="ident">Vec::new</span>(),
-            <span class="ident">buckets</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">proofs</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">vaults</span>: <span class="ident">HashSet::new</span>(),
-            <span class="ident">kv_stores</span>: <span class="ident">HashSet::new</span>(),
-            <span class="ident">components</span>: <span class="ident">HashSet::new</span>(),
-            <span class="ident">ref_components</span>: <span class="ident">HashSet::new</span>(),
-            <span class="ident">resource_addresses</span>: <span class="ident">HashSet::new</span>(),
+<span class="kw">impl </span>ScryptoCustomValueChecker {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            expressions: Vec::new(),
+            buckets: HashMap::new(),
+            proofs: HashMap::new(),
+            vaults: HashSet::new(),
+            kv_stores: HashSet::new(),
+            components: HashSet::new(),
+            ref_components: HashSet::new(),
+            resource_addresses: HashSet::new(),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">CustomValueVisitor</span> <span class="kw">for</span> <span class="ident">ScryptoCustomValueChecker</span> {
-    <span class="kw">type</span> <span class="prelude-val">Err</span> <span class="op">=</span> <span class="ident">ScryptoCustomValueCheckError</span>;
+<span class="kw">impl </span>CustomValueVisitor <span class="kw">for </span>ScryptoCustomValueChecker {
+    <span class="kw">type </span><span class="prelude-val">Err </span>= ScryptoCustomValueCheckError;
 
-    <span class="kw">fn</span> <span class="ident">visit</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">path</span>: <span class="kw-2">&amp;mut</span> <span class="ident">MutableSborPath</span>,
-        <span class="ident">type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident"><span class="self">Self</span>::Err</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">ScryptoType::from_id</span>(<span class="ident">type_id</span>).<span class="ident">ok_or</span>(<span class="ident"><span class="self">Self</span>::Err::UnknownTypeId</span>(<span class="ident">type_id</span>))<span class="question-mark">?</span> {
-            <span class="ident">ScryptoType::PackageAddress</span> =&gt; {
-                <span class="ident">PackageAddress::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidPackageAddress</span>)<span class="question-mark">?</span>;
+    <span class="kw">fn </span>visit(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        path: <span class="kw-2">&amp;mut </span>MutableSborPath,
+        type_id: u8,
+        data: <span class="kw-2">&amp;</span>[u8],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Err&gt; {
+        <span class="kw">match </span>ScryptoType::from_id(type_id).ok_or(<span class="self">Self</span>::Err::UnknownTypeId(type_id))<span class="question-mark">? </span>{
+            ScryptoType::PackageAddress =&gt; {
+                PackageAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::ComponentAddress</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">component_address</span> <span class="op">=</span> <span class="ident">ComponentAddress::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidComponentAddress</span>)<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">ref_components</span>.<span class="ident">insert</span>(<span class="ident">component_address</span>);
+            ScryptoType::ComponentAddress =&gt; {
+                <span class="kw">let </span>component_address = ComponentAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)<span class="question-mark">?</span>;
+                <span class="self">self</span>.ref_components.insert(component_address);
             }
-            <span class="ident">ScryptoType::Component</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">component</span> <span class="op">=</span> <span class="ident">Component::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidComponentAddress</span>)<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">components</span>.<span class="ident">insert</span>(<span class="ident">component</span>) {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ScryptoCustomValueCheckError::DuplicateIds</span>);
+            ScryptoType::Component =&gt; {
+                <span class="kw">let </span>component = Component::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)<span class="question-mark">?</span>;
+                <span class="kw">if </span>!<span class="self">self</span>.components.insert(component) {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
-            <span class="ident">ScryptoType::KeyValueStore</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">kv_store_id</span>: <span class="ident">KeyValueStoreId</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">data</span>.<span class="ident">len</span>() {
-                    <span class="number">36</span> =&gt; (
-                        <span class="ident">Hash</span>(<span class="ident">copy_u8_array</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>[<span class="number">0</span>..<span class="number">32</span>])),
-                        <span class="ident">u32::from_le_bytes</span>(<span class="ident">copy_u8_array</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>[<span class="number">32</span>..])),
+            ScryptoType::KeyValueStore =&gt; {
+                <span class="kw">let </span>kv_store_id: KeyValueStoreId = <span class="kw">match </span>data.len() {
+                    <span class="number">36 </span>=&gt; (
+                        Hash(copy_u8_array(<span class="kw-2">&amp;</span>data[<span class="number">0</span>..<span class="number">32</span>])),
+                        u32::from_le_bytes(copy_u8_array(<span class="kw-2">&amp;</span>data[<span class="number">32</span>..])),
                     ),
-                    <span class="kw">_</span> =&gt; {
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidKeyValueStore</span>(
-                            <span class="ident">ParseKeyValueStoreError::InvalidLength</span>(<span class="ident">data</span>.<span class="ident">len</span>()),
+                    <span class="kw">_ </span>=&gt; {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(ScryptoCustomValueCheckError::InvalidKeyValueStore(
+                            ParseKeyValueStoreError::InvalidLength(data.len()),
                         ))
                     }
                 };
 
-                <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">kv_stores</span>.<span class="ident">insert</span>(<span class="ident">kv_store_id</span>) {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ScryptoCustomValueCheckError::DuplicateIds</span>);
+                <span class="kw">if </span>!<span class="self">self</span>.kv_stores.insert(kv_store_id) {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
-            <span class="ident">ScryptoType::Hash</span> =&gt; {
-                <span class="ident">Hash::try_from</span>(<span class="ident">data</span>).<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidHash</span>)<span class="question-mark">?</span>;
+            ScryptoType::Hash =&gt; {
+                Hash::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidHash)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::EcdsaSecp256k1PublicKey</span> =&gt; {
-                <span class="ident">EcdsaSecp256k1PublicKey::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1PublicKey</span>)<span class="question-mark">?</span>;
+            ScryptoType::EcdsaSecp256k1PublicKey =&gt; {
+                EcdsaSecp256k1PublicKey::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1PublicKey)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::EcdsaSecp256k1Signature</span> =&gt; {
-                <span class="ident">EcdsaSecp256k1Signature::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1Signature</span>)<span class="question-mark">?</span>;
+            ScryptoType::EcdsaSecp256k1Signature =&gt; {
+                EcdsaSecp256k1Signature::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSecp256k1Signature)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::EddsaEd25519PublicKey</span> =&gt; {
-                <span class="ident">EddsaEd25519PublicKey::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidEddsaEd25519PublicKey</span>)<span class="question-mark">?</span>;
+            ScryptoType::EddsaEd25519PublicKey =&gt; {
+                EddsaEd25519PublicKey::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519PublicKey)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::EddsaEd25519Signature</span> =&gt; {
-                <span class="ident">EddsaEd25519Signature::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidEddsaEd25519Signature</span>)<span class="question-mark">?</span>;
+            ScryptoType::EddsaEd25519Signature =&gt; {
+                EddsaEd25519Signature::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEddsaEd25519Signature)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::Decimal</span> =&gt; {
-                <span class="ident">Decimal::try_from</span>(<span class="ident">data</span>).<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidDecimal</span>)<span class="question-mark">?</span>;
+            ScryptoType::Decimal =&gt; {
+                Decimal::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidDecimal)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::PreciseDecimal</span> =&gt; {
-                <span class="ident">PreciseDecimal::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidPreciseDecimal</span>)<span class="question-mark">?</span>;
+            ScryptoType::PreciseDecimal =&gt; {
+                PreciseDecimal::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidPreciseDecimal)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::Bucket</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">bucket</span> <span class="op">=</span>
-                    <span class="ident">Bucket::try_from</span>(<span class="ident">data</span>).<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidBucket</span>)<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">buckets</span>.<span class="ident">insert</span>(<span class="ident">bucket</span>, <span class="ident">path</span>.<span class="ident">clone</span>().<span class="ident">into</span>()).<span class="ident">is_some</span>() {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ScryptoCustomValueCheckError::DuplicateIds</span>);
+            ScryptoType::Bucket =&gt; {
+                <span class="kw">let </span>bucket =
+                    Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)<span class="question-mark">?</span>;
+                <span class="kw">if </span><span class="self">self</span>.buckets.insert(bucket, path.clone().into()).is_some() {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
-            <span class="ident">ScryptoType::Proof</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">proof</span> <span class="op">=</span>
-                    <span class="ident">Proof::try_from</span>(<span class="ident">data</span>).<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidProof</span>)<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="self">self</span>.<span class="ident">proofs</span>.<span class="ident">insert</span>(<span class="ident">proof</span>, <span class="ident">path</span>.<span class="ident">clone</span>().<span class="ident">into</span>()).<span class="ident">is_some</span>() {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ScryptoCustomValueCheckError::DuplicateIds</span>);
+            ScryptoType::Proof =&gt; {
+                <span class="kw">let </span>proof =
+                    Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)<span class="question-mark">?</span>;
+                <span class="kw">if </span><span class="self">self</span>.proofs.insert(proof, path.clone().into()).is_some() {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
-            <span class="ident">ScryptoType::Vault</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">vault</span> <span class="op">=</span>
-                    <span class="ident">Vault::try_from</span>(<span class="ident">data</span>).<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidVault</span>)<span class="question-mark">?</span>;
-                <span class="kw">if</span> <span class="op">!</span><span class="self">self</span>.<span class="ident">vaults</span>.<span class="ident">insert</span>(<span class="ident">vault</span>) {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ScryptoCustomValueCheckError::DuplicateIds</span>);
+            ScryptoType::Vault =&gt; {
+                <span class="kw">let </span>vault =
+                    Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)<span class="question-mark">?</span>;
+                <span class="kw">if </span>!<span class="self">self</span>.vaults.insert(vault) {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
-            <span class="ident">ScryptoType::NonFungibleId</span> =&gt; {
-                <span class="ident">NonFungibleId::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidNonFungibleId</span>)<span class="question-mark">?</span>;
+            ScryptoType::NonFungibleId =&gt; {
+                NonFungibleId::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleId)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::NonFungibleAddress</span> =&gt; {
-                <span class="ident">NonFungibleAddress::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidNonFungibleAddress</span>)<span class="question-mark">?</span>;
+            ScryptoType::NonFungibleAddress =&gt; {
+                NonFungibleAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)<span class="question-mark">?</span>;
             }
-            <span class="ident">ScryptoType::ResourceAddress</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">resource_address</span> <span class="op">=</span> <span class="ident">ResourceAddress::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidResourceAddress</span>)<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">resource_addresses</span>.<span class="ident">insert</span>(<span class="ident">resource_address</span>);
+            ScryptoType::ResourceAddress =&gt; {
+                <span class="kw">let </span>resource_address = ResourceAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)<span class="question-mark">?</span>;
+                <span class="self">self</span>.resource_addresses.insert(resource_address);
             }
-            <span class="ident">ScryptoType::Expression</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">expression</span> <span class="op">=</span> <span class="ident">Expression::try_from</span>(<span class="ident">data</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidExpression</span>)<span class="question-mark">?</span>;
-                <span class="self">self</span>.<span class="ident">expressions</span>.<span class="ident">push</span>((<span class="ident">expression</span>, <span class="ident">path</span>.<span class="ident">clone</span>().<span class="ident">into</span>()));
+            ScryptoType::Expression =&gt; {
+                <span class="kw">let </span>expression = Expression::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidExpression)<span class="question-mark">?</span>;
+                <span class="self">self</span>.expressions.push((expression, path.clone().into()));
             }
-            <span class="ident">ScryptoType::Blob</span> =&gt; {
-                <span class="ident">Blob::try_from</span>(<span class="ident">data</span>).<span class="ident">map_err</span>(<span class="ident">ScryptoCustomValueCheckError::InvalidBlob</span>)<span class="question-mark">?</span>;
+            ScryptoType::Blob =&gt; {
+                Blob::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBlob)<span class="question-mark">?</span>;
             }
         }
         <span class="prelude-val">Ok</span>(())
     }
 }
 
-<span class="doccomment">/// Utility that formats any Scrypto value.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ScryptoValueFormatter</span> {}
+<span class="doccomment">/// Utility that formats any Scrypto value.
+</span><span class="kw">pub struct </span>ScryptoValueFormatter {}
 
-<span class="kw">impl</span> <span class="ident">ScryptoValueFormatter</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">format_value</span>(
-        <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">Value</span>,
-        <span class="ident">bucket_ids</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketId</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-        <span class="ident">proof_ids</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ProofId</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">String</span> {
-        <span class="kw">match</span> <span class="ident">value</span> {
-            <span class="comment">// primitive types</span>
-            <span class="ident">Value::Unit</span> =&gt; <span class="string">&quot;()&quot;</span>.<span class="ident">to_string</span>(),
-            <span class="ident">Value::Bool</span> { <span class="ident">value</span> } =&gt; <span class="ident">value</span>.<span class="ident">to_string</span>(),
-            <span class="ident">Value::I8</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i8&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::I16</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i16&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::I32</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i32&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::I64</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i64&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::I128</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i128&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::U8</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u8&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::U16</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u16&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::U32</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u32&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::U64</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u64&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::U128</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u128&quot;</span>, <span class="ident">value</span>),
-            <span class="ident">Value::String</span> { <span class="ident">value</span> } =&gt; <span class="macro">format!</span>(<span class="string">&quot;\&quot;{}\&quot;&quot;</span>, <span class="ident">value</span>),
-            <span class="comment">// struct &amp; enum</span>
-            <span class="ident">Value::Struct</span> { <span class="ident">fields</span> } =&gt; {
+<span class="kw">impl </span>ScryptoValueFormatter {
+    <span class="kw">pub fn </span>format_value(
+        value: <span class="kw-2">&amp;</span>Value,
+        bucket_ids: <span class="kw-2">&amp;</span>HashMap&lt;BucketId, String&gt;,
+        proof_ids: <span class="kw-2">&amp;</span>HashMap&lt;ProofId, String&gt;,
+    ) -&gt; String {
+        <span class="kw">match </span>value {
+            <span class="comment">// primitive types
+            </span>Value::Unit =&gt; <span class="string">&quot;()&quot;</span>.to_string(),
+            Value::Bool { value } =&gt; value.to_string(),
+            Value::I8 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i8&quot;</span>, value),
+            Value::I16 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i16&quot;</span>, value),
+            Value::I32 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i32&quot;</span>, value),
+            Value::I64 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i64&quot;</span>, value),
+            Value::I128 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}i128&quot;</span>, value),
+            Value::U8 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u8&quot;</span>, value),
+            Value::U16 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u16&quot;</span>, value),
+            Value::U32 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u32&quot;</span>, value),
+            Value::U64 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u64&quot;</span>, value),
+            Value::U128 { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;{}u128&quot;</span>, value),
+            Value::String { value } =&gt; <span class="macro">format!</span>(<span class="string">&quot;\&quot;{}\&quot;&quot;</span>, value),
+            <span class="comment">// struct &amp; enum
+            </span>Value::Struct { fields } =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;Struct({})&quot;</span>,
-                    <span class="ident"><span class="self">Self</span>::format_elements</span>(<span class="ident">fields</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)
+                    <span class="self">Self</span>::format_elements(fields, bucket_ids, proof_ids)
                 )
             }
-            <span class="ident">Value::Enum</span> { <span class="ident">name</span>, <span class="ident">fields</span> } =&gt; {
+            Value::Enum { name, fields } =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;Enum(\&quot;{}\&quot;{}{})&quot;</span>,
-                    <span class="ident">name</span>,
-                    <span class="kw">if</span> <span class="ident">fields</span>.<span class="ident">is_empty</span>() { <span class="string">&quot;&quot;</span> } <span class="kw">else</span> { <span class="string">&quot;, &quot;</span> },
-                    <span class="ident"><span class="self">Self</span>::format_elements</span>(<span class="ident">fields</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)
+                    name,
+                    <span class="kw">if </span>fields.is_empty() { <span class="string">&quot;&quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;, &quot; </span>},
+                    <span class="self">Self</span>::format_elements(fields, bucket_ids, proof_ids)
                 )
             }
-            <span class="comment">// rust types</span>
-            <span class="ident">Value::Option</span> { <span class="ident">value</span> } =&gt; <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">borrow</span>() {
-                <span class="prelude-val">Some</span>(<span class="ident">x</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;Some({})&quot;</span>, <span class="ident"><span class="self">Self</span>::format_value</span>(<span class="ident">x</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)),
-                <span class="prelude-val">None</span> =&gt; <span class="string">&quot;None&quot;</span>.<span class="ident">to_string</span>(),
+            <span class="comment">// rust types
+            </span>Value::Option { value } =&gt; <span class="kw">match </span>value.borrow() {
+                <span class="prelude-val">Some</span>(x) =&gt; <span class="macro">format!</span>(<span class="string">&quot;Some({})&quot;</span>, <span class="self">Self</span>::format_value(x, bucket_ids, proof_ids)),
+                <span class="prelude-val">None </span>=&gt; <span class="string">&quot;None&quot;</span>.to_string(),
             },
-            <span class="ident">Value::Array</span> {
-                <span class="ident">element_type_id</span>,
-                <span class="ident">elements</span>,
+            Value::Array {
+                element_type_id,
+                elements,
             } =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;Array&lt;{}&gt;({})&quot;</span>,
-                <span class="ident"><span class="self">Self</span>::format_type_id</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>),
-                <span class="ident"><span class="self">Self</span>::format_elements</span>(<span class="ident">elements</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)
+                <span class="self">Self</span>::format_type_id(<span class="kw-2">*</span>element_type_id),
+                <span class="self">Self</span>::format_elements(elements, bucket_ids, proof_ids)
             ),
-            <span class="ident">Value::Tuple</span> { <span class="ident">elements</span> } =&gt; <span class="macro">format!</span>(
+            Value::Tuple { elements } =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;Tuple({})&quot;</span>,
-                <span class="ident"><span class="self">Self</span>::format_elements</span>(<span class="ident">elements</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)
+                <span class="self">Self</span>::format_elements(elements, bucket_ids, proof_ids)
             ),
-            <span class="ident">Value::Result</span> { <span class="ident">value</span> } =&gt; <span class="kw">match</span> <span class="ident">value</span>.<span class="ident">borrow</span>() {
-                <span class="prelude-val">Ok</span>(<span class="ident">x</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;Ok({})&quot;</span>, <span class="ident"><span class="self">Self</span>::format_value</span>(<span class="ident">x</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)),
-                <span class="prelude-val">Err</span>(<span class="ident">x</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;Err({})&quot;</span>, <span class="ident"><span class="self">Self</span>::format_value</span>(<span class="ident">x</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)),
+            Value::Result { value } =&gt; <span class="kw">match </span>value.borrow() {
+                <span class="prelude-val">Ok</span>(x) =&gt; <span class="macro">format!</span>(<span class="string">&quot;Ok({})&quot;</span>, <span class="self">Self</span>::format_value(x, bucket_ids, proof_ids)),
+                <span class="prelude-val">Err</span>(x) =&gt; <span class="macro">format!</span>(<span class="string">&quot;Err({})&quot;</span>, <span class="self">Self</span>::format_value(x, bucket_ids, proof_ids)),
             },
-            <span class="comment">// collections</span>
-            <span class="ident">Value::List</span> {
-                <span class="ident">element_type_id</span>,
-                <span class="ident">elements</span>,
+            <span class="comment">// collections
+            </span>Value::List {
+                element_type_id,
+                elements,
             } =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;Vec&lt;{}&gt;({})&quot;</span>,
-                    <span class="ident"><span class="self">Self</span>::format_type_id</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>),
-                    <span class="ident"><span class="self">Self</span>::format_elements</span>(<span class="ident">elements</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)
+                    <span class="self">Self</span>::format_type_id(<span class="kw-2">*</span>element_type_id),
+                    <span class="self">Self</span>::format_elements(elements, bucket_ids, proof_ids)
                 )
             }
-            <span class="ident">Value::Set</span> {
-                <span class="ident">element_type_id</span>,
-                <span class="ident">elements</span>,
+            Value::Set {
+                element_type_id,
+                elements,
             } =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;Set&lt;{}&gt;({})&quot;</span>,
-                <span class="ident"><span class="self">Self</span>::format_type_id</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>),
-                <span class="ident"><span class="self">Self</span>::format_elements</span>(<span class="ident">elements</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)
+                <span class="self">Self</span>::format_type_id(<span class="kw-2">*</span>element_type_id),
+                <span class="self">Self</span>::format_elements(elements, bucket_ids, proof_ids)
             ),
-            <span class="ident">Value::Map</span> {
-                <span class="ident">key_type_id</span>,
-                <span class="ident">value_type_id</span>,
-                <span class="ident">elements</span>,
+            Value::Map {
+                key_type_id,
+                value_type_id,
+                elements,
             } =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;Map&lt;{}, {}&gt;({})&quot;</span>,
-                <span class="ident"><span class="self">Self</span>::format_type_id</span>(<span class="kw-2">*</span><span class="ident">key_type_id</span>),
-                <span class="ident"><span class="self">Self</span>::format_type_id</span>(<span class="kw-2">*</span><span class="ident">value_type_id</span>),
-                <span class="ident"><span class="self">Self</span>::format_elements</span>(<span class="ident">elements</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)
+                <span class="self">Self</span>::format_type_id(<span class="kw-2">*</span>key_type_id),
+                <span class="self">Self</span>::format_type_id(<span class="kw-2">*</span>value_type_id),
+                <span class="self">Self</span>::format_elements(elements, bucket_ids, proof_ids)
             ),
-            <span class="comment">// custom types</span>
-            <span class="ident">Value::Custom</span> { <span class="ident">type_id</span>, <span class="ident">bytes</span> } =&gt; {
-                <span class="ident"><span class="self">Self</span>::from_custom_value</span>(<span class="kw-2">*</span><span class="ident">type_id</span>, <span class="ident">bytes</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>)
+            <span class="comment">// custom types
+            </span>Value::Custom { type_id, bytes } =&gt; {
+                <span class="self">Self</span>::from_custom_value(<span class="kw-2">*</span>type_id, bytes, bucket_ids, proof_ids)
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">format_type_id</span>(<span class="ident">type_id</span>: <span class="ident">u8</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">ty</span>) <span class="op">=</span> <span class="ident">ScryptoType::from_id</span>(<span class="ident">type_id</span>) {
-            <span class="kw">return</span> <span class="ident">ty</span>.<span class="ident">name</span>();
+    <span class="kw">pub fn </span>format_type_id(type_id: u8) -&gt; String {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(ty) = ScryptoType::from_id(type_id) {
+            <span class="kw">return </span>ty.name();
         }
 
-        <span class="kw">match</span> <span class="ident">type_id</span> {
-            <span class="comment">// primitive types</span>
-            <span class="ident">TYPE_UNIT</span> =&gt; <span class="string">&quot;Unit&quot;</span>,
-            <span class="ident">TYPE_BOOL</span> =&gt; <span class="string">&quot;Bool&quot;</span>,
-            <span class="ident">TYPE_I8</span> =&gt; <span class="string">&quot;I8&quot;</span>,
-            <span class="ident">TYPE_I16</span> =&gt; <span class="string">&quot;I16&quot;</span>,
-            <span class="ident">TYPE_I32</span> =&gt; <span class="string">&quot;I32&quot;</span>,
-            <span class="ident">TYPE_I64</span> =&gt; <span class="string">&quot;I64&quot;</span>,
-            <span class="ident">TYPE_I128</span> =&gt; <span class="string">&quot;I128&quot;</span>,
-            <span class="ident">TYPE_U8</span> =&gt; <span class="string">&quot;U8&quot;</span>,
-            <span class="ident">TYPE_U16</span> =&gt; <span class="string">&quot;U16&quot;</span>,
-            <span class="ident">TYPE_U32</span> =&gt; <span class="string">&quot;U32&quot;</span>,
-            <span class="ident">TYPE_U64</span> =&gt; <span class="string">&quot;U64&quot;</span>,
-            <span class="ident">TYPE_U128</span> =&gt; <span class="string">&quot;U128&quot;</span>,
-            <span class="ident">TYPE_STRING</span> =&gt; <span class="string">&quot;String&quot;</span>,
-            <span class="comment">// struct &amp; enum</span>
-            <span class="ident">TYPE_STRUCT</span> =&gt; <span class="string">&quot;Struct&quot;</span>,
-            <span class="ident">TYPE_ENUM</span> =&gt; <span class="string">&quot;Enum&quot;</span>,
-            <span class="ident">TYPE_OPTION</span> =&gt; <span class="string">&quot;Option&quot;</span>,
-            <span class="ident">TYPE_RESULT</span> =&gt; <span class="string">&quot;Result&quot;</span>,
-            <span class="comment">// composite</span>
-            <span class="ident">TYPE_ARRAY</span> =&gt; <span class="string">&quot;Array&quot;</span>,
-            <span class="ident">TYPE_TUPLE</span> =&gt; <span class="string">&quot;Tuple&quot;</span>,
-            <span class="comment">// collections</span>
-            <span class="ident">TYPE_LIST</span> =&gt; <span class="string">&quot;List&quot;</span>,
-            <span class="ident">TYPE_SET</span> =&gt; <span class="string">&quot;Set&quot;</span>,
-            <span class="ident">TYPE_MAP</span> =&gt; <span class="string">&quot;Map&quot;</span>,
-            <span class="comment">//</span>
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Illegal state&quot;</span>),
+        <span class="kw">match </span>type_id {
+            <span class="comment">// primitive types
+            </span>TYPE_UNIT =&gt; <span class="string">&quot;Unit&quot;</span>,
+            TYPE_BOOL =&gt; <span class="string">&quot;Bool&quot;</span>,
+            TYPE_I8 =&gt; <span class="string">&quot;I8&quot;</span>,
+            TYPE_I16 =&gt; <span class="string">&quot;I16&quot;</span>,
+            TYPE_I32 =&gt; <span class="string">&quot;I32&quot;</span>,
+            TYPE_I64 =&gt; <span class="string">&quot;I64&quot;</span>,
+            TYPE_I128 =&gt; <span class="string">&quot;I128&quot;</span>,
+            TYPE_U8 =&gt; <span class="string">&quot;U8&quot;</span>,
+            TYPE_U16 =&gt; <span class="string">&quot;U16&quot;</span>,
+            TYPE_U32 =&gt; <span class="string">&quot;U32&quot;</span>,
+            TYPE_U64 =&gt; <span class="string">&quot;U64&quot;</span>,
+            TYPE_U128 =&gt; <span class="string">&quot;U128&quot;</span>,
+            TYPE_STRING =&gt; <span class="string">&quot;String&quot;</span>,
+            <span class="comment">// struct &amp; enum
+            </span>TYPE_STRUCT =&gt; <span class="string">&quot;Struct&quot;</span>,
+            TYPE_ENUM =&gt; <span class="string">&quot;Enum&quot;</span>,
+            TYPE_OPTION =&gt; <span class="string">&quot;Option&quot;</span>,
+            TYPE_RESULT =&gt; <span class="string">&quot;Result&quot;</span>,
+            <span class="comment">// composite
+            </span>TYPE_ARRAY =&gt; <span class="string">&quot;Array&quot;</span>,
+            TYPE_TUPLE =&gt; <span class="string">&quot;Tuple&quot;</span>,
+            <span class="comment">// collections
+            </span>TYPE_LIST =&gt; <span class="string">&quot;List&quot;</span>,
+            TYPE_SET =&gt; <span class="string">&quot;Set&quot;</span>,
+            TYPE_MAP =&gt; <span class="string">&quot;Map&quot;</span>,
+            <span class="comment">//
+            </span><span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Illegal state&quot;</span>),
         }
-        .<span class="ident">to_string</span>()
+        .to_string()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">format_elements</span>(
-        <span class="ident">values</span>: <span class="kw-2">&amp;</span>[<span class="ident">Value</span>],
-        <span class="ident">bucket_ids</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketId</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-        <span class="ident">proof_ids</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ProofId</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">String::new</span>();
-        <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">x</span>) <span class="kw">in</span> <span class="ident">values</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-            <span class="kw">if</span> <span class="ident">i</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
-                <span class="ident">buf</span>.<span class="ident">push_str</span>(<span class="string">&quot;, &quot;</span>);
+    <span class="kw">pub fn </span>format_elements(
+        values: <span class="kw-2">&amp;</span>[Value],
+        bucket_ids: <span class="kw-2">&amp;</span>HashMap&lt;BucketId, String&gt;,
+        proof_ids: <span class="kw-2">&amp;</span>HashMap&lt;ProofId, String&gt;,
+    ) -&gt; String {
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = String::new();
+        <span class="kw">for </span>(i, x) <span class="kw">in </span>values.iter().enumerate() {
+            <span class="kw">if </span>i != <span class="number">0 </span>{
+                buf.push_str(<span class="string">&quot;, &quot;</span>);
             }
-            <span class="ident">buf</span>.<span class="ident">push_str</span>(<span class="ident"><span class="self">Self</span>::format_value</span>(<span class="ident">x</span>, <span class="ident">bucket_ids</span>, <span class="ident">proof_ids</span>).<span class="ident">as_str</span>());
+            buf.push_str(<span class="self">Self</span>::format_value(x, bucket_ids, proof_ids).as_str());
         }
-        <span class="ident">buf</span>
+        buf
     }
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_custom_value</span>(
-        <span class="ident">type_id</span>: <span class="ident">u8</span>,
-        <span class="ident">data</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
-        <span class="ident">bucket_ids</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketId</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-        <span class="ident">proof_ids</span>: <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ProofId</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="ident">String</span> {
-        <span class="kw">match</span> <span class="ident">ScryptoType::from_id</span>(<span class="ident">type_id</span>).<span class="ident">unwrap</span>() {
-            <span class="ident">ScryptoType::Decimal</span> =&gt; <span class="macro">format!</span>(<span class="string">&quot;Decimal(\&quot;{}\&quot;)&quot;</span>, <span class="ident">Decimal::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()),
-            <span class="ident">ScryptoType::PreciseDecimal</span> =&gt; {
+    <span class="kw">pub fn </span>from_custom_value(
+        type_id: u8,
+        data: <span class="kw-2">&amp;</span>[u8],
+        bucket_ids: <span class="kw-2">&amp;</span>HashMap&lt;BucketId, String&gt;,
+        proof_ids: <span class="kw-2">&amp;</span>HashMap&lt;ProofId, String&gt;,
+    ) -&gt; String {
+        <span class="kw">match </span>ScryptoType::from_id(type_id).unwrap() {
+            ScryptoType::Decimal =&gt; <span class="macro">format!</span>(<span class="string">&quot;Decimal(\&quot;{}\&quot;)&quot;</span>, Decimal::try_from(data).unwrap()),
+            ScryptoType::PreciseDecimal =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;PreciseDecimal(\&quot;{}\&quot;)&quot;</span>,
-                    <span class="ident">PreciseDecimal::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                    PreciseDecimal::try_from(data).unwrap()
                 )
             }
-            <span class="ident">ScryptoType::PackageAddress</span> =&gt; {
+            ScryptoType::PackageAddress =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;PackageAddress(\&quot;{}\&quot;)&quot;</span>,
-                    <span class="ident">PackageAddress::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                    PackageAddress::try_from(data).unwrap()
                 )
             }
-            <span class="ident">ScryptoType::ComponentAddress</span> =&gt; {
+            ScryptoType::ComponentAddress =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;ComponentAddress(\&quot;{}\&quot;)&quot;</span>,
-                    <span class="ident">ComponentAddress::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                    ComponentAddress::try_from(data).unwrap()
                 )
             }
-            <span class="ident">ScryptoType::Component</span> =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;Component(\&quot;{}\&quot;)&quot;</span>, <span class="ident">Component::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>())
+            ScryptoType::Component =&gt; {
+                <span class="macro">format!</span>(<span class="string">&quot;Component(\&quot;{}\&quot;)&quot;</span>, Component::try_from(data).unwrap())
             }
-            <span class="ident">ScryptoType::KeyValueStore</span> =&gt; <span class="macro">format!</span>(
+            ScryptoType::KeyValueStore =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;KeyValueStore(\&quot;{}\&quot;)&quot;</span>,
-                <span class="ident">KeyValueStore</span>::<span class="op">&lt;</span>(), ()<span class="op">&gt;</span><span class="ident">::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                KeyValueStore::&lt;(), ()&gt;::try_from(data).unwrap()
             ),
-            <span class="ident">ScryptoType::Hash</span> =&gt; <span class="macro">format!</span>(<span class="string">&quot;Hash(\&quot;{}\&quot;)&quot;</span>, <span class="ident">Hash::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()),
-            <span class="ident">ScryptoType::EcdsaSecp256k1PublicKey</span> =&gt; {
+            ScryptoType::Hash =&gt; <span class="macro">format!</span>(<span class="string">&quot;Hash(\&quot;{}\&quot;)&quot;</span>, Hash::try_from(data).unwrap()),
+            ScryptoType::EcdsaSecp256k1PublicKey =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;EcdsaSecp256k1PublicKey(\&quot;{}\&quot;)&quot;</span>,
-                    <span class="ident">EcdsaSecp256k1PublicKey::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                    EcdsaSecp256k1PublicKey::try_from(data).unwrap()
                 )
             }
-            <span class="ident">ScryptoType::EcdsaSecp256k1Signature</span> =&gt; {
+            ScryptoType::EcdsaSecp256k1Signature =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;EcdsaSecp256k1Signature(\&quot;{}\&quot;)&quot;</span>,
-                    <span class="ident">EcdsaSecp256k1Signature::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                    EcdsaSecp256k1Signature::try_from(data).unwrap()
                 )
             }
-            <span class="ident">ScryptoType::EddsaEd25519PublicKey</span> =&gt; {
+            ScryptoType::EddsaEd25519PublicKey =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;EddsaEd25519PublicKey(\&quot;{}\&quot;)&quot;</span>,
-                    <span class="ident">EddsaEd25519PublicKey::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                    EddsaEd25519PublicKey::try_from(data).unwrap()
                 )
             }
-            <span class="ident">ScryptoType::EddsaEd25519Signature</span> =&gt; {
+            ScryptoType::EddsaEd25519Signature =&gt; {
                 <span class="macro">format!</span>(
                     <span class="string">&quot;EddsaEd25519Signature(\&quot;{}\&quot;)&quot;</span>,
-                    <span class="ident">EddsaEd25519Signature::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                    EddsaEd25519Signature::try_from(data).unwrap()
                 )
             }
-            <span class="ident">ScryptoType::Bucket</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">bucket</span> <span class="op">=</span> <span class="ident">Bucket::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>();
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">name</span>) <span class="op">=</span> <span class="ident">bucket_ids</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">bucket</span>.<span class="number">0</span>) {
-                    <span class="macro">format!</span>(<span class="string">&quot;Bucket(\&quot;{}\&quot;)&quot;</span>, <span class="ident">name</span>)
-                } <span class="kw">else</span> {
-                    <span class="macro">format!</span>(<span class="string">&quot;Bucket({}u32)&quot;</span>, <span class="ident">bucket</span>.<span class="number">0</span>)
+            ScryptoType::Bucket =&gt; {
+                <span class="kw">let </span>bucket = Bucket::try_from(data).unwrap();
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(name) = bucket_ids.get(<span class="kw-2">&amp;</span>bucket.<span class="number">0</span>) {
+                    <span class="macro">format!</span>(<span class="string">&quot;Bucket(\&quot;{}\&quot;)&quot;</span>, name)
+                } <span class="kw">else </span>{
+                    <span class="macro">format!</span>(<span class="string">&quot;Bucket({}u32)&quot;</span>, bucket.<span class="number">0</span>)
                 }
             }
-            <span class="ident">ScryptoType::Proof</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">proof</span> <span class="op">=</span> <span class="ident">Proof::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>();
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">name</span>) <span class="op">=</span> <span class="ident">proof_ids</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">proof</span>.<span class="number">0</span>) {
-                    <span class="macro">format!</span>(<span class="string">&quot;Proof(\&quot;{}\&quot;)&quot;</span>, <span class="ident">name</span>)
-                } <span class="kw">else</span> {
-                    <span class="macro">format!</span>(<span class="string">&quot;Proof({}u32)&quot;</span>, <span class="ident">proof</span>.<span class="number">0</span>)
+            ScryptoType::Proof =&gt; {
+                <span class="kw">let </span>proof = Proof::try_from(data).unwrap();
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(name) = proof_ids.get(<span class="kw-2">&amp;</span>proof.<span class="number">0</span>) {
+                    <span class="macro">format!</span>(<span class="string">&quot;Proof(\&quot;{}\&quot;)&quot;</span>, name)
+                } <span class="kw">else </span>{
+                    <span class="macro">format!</span>(<span class="string">&quot;Proof({}u32)&quot;</span>, proof.<span class="number">0</span>)
                 }
             }
-            <span class="ident">ScryptoType::Vault</span> =&gt; <span class="macro">format!</span>(<span class="string">&quot;Vault(\&quot;{}\&quot;)&quot;</span>, <span class="ident">Vault::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()),
-            <span class="ident">ScryptoType::NonFungibleId</span> =&gt; <span class="macro">format!</span>(
+            ScryptoType::Vault =&gt; <span class="macro">format!</span>(<span class="string">&quot;Vault(\&quot;{}\&quot;)&quot;</span>, Vault::try_from(data).unwrap()),
+            ScryptoType::NonFungibleId =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;NonFungibleId(\&quot;{}\&quot;)&quot;</span>,
-                <span class="ident">NonFungibleId::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                NonFungibleId::try_from(data).unwrap()
             ),
-            <span class="ident">ScryptoType::NonFungibleAddress</span> =&gt; <span class="macro">format!</span>(
+            ScryptoType::NonFungibleAddress =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;NonFungibleAddress(\&quot;{}\&quot;)&quot;</span>,
-                <span class="ident">NonFungibleAddress::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                NonFungibleAddress::try_from(data).unwrap()
             ),
-            <span class="ident">ScryptoType::ResourceAddress</span> =&gt; <span class="macro">format!</span>(
+            ScryptoType::ResourceAddress =&gt; <span class="macro">format!</span>(
                 <span class="string">&quot;ResourceAddress(\&quot;{}\&quot;)&quot;</span>,
-                <span class="ident">ResourceAddress::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>()
+                ResourceAddress::try_from(data).unwrap()
             ),
-            <span class="ident">ScryptoType::Expression</span> =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;Expression(\&quot;{}\&quot;)&quot;</span>, <span class="ident">Expression::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>())
+            ScryptoType::Expression =&gt; {
+                <span class="macro">format!</span>(<span class="string">&quot;Expression(\&quot;{}\&quot;)&quot;</span>, Expression::try_from(data).unwrap())
             }
-            <span class="ident">ScryptoType::Blob</span> =&gt; {
-                <span class="macro">format!</span>(<span class="string">&quot;Blob(\&quot;{}\&quot;)&quot;</span>, <span class="ident">Blob::try_from</span>(<span class="ident">data</span>).<span class="ident">unwrap</span>())
+            ScryptoType::Blob =&gt; {
+                <span class="macro">format!</span>(<span class="string">&quot;Blob(\&quot;{}\&quot;)&quot;</span>, Blob::try_from(data).unwrap())
             }
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
-<span class="kw">mod</span> <span class="ident">tests</span> {
-    <span class="comment">// Note this useful idiom: importing names from outer (for mod tests) scope.</span>
-    <span class="kw">use</span> <span class="ident"><span class="kw">super</span>::rust::vec</span>;
-    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+<span class="attribute">#[cfg(test)]
+</span><span class="kw">mod </span>tests {
+    <span class="comment">// Note this useful idiom: importing names from outer (for mod tests) scope.
+    </span><span class="kw">use </span><span class="kw">super</span>::rust::vec;
+    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-    <span class="attribute">#[<span class="ident">test</span>]</span>
-    <span class="kw">fn</span> <span class="ident">should_reject_duplicate_ids</span>() {
-        <span class="kw">let</span> <span class="ident">buckets</span> <span class="op">=</span> <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[
-            <span class="ident">scrypto::resource::Bucket</span>(<span class="number">0</span>),
-            <span class="ident">scrypto::resource::Bucket</span>(<span class="number">0</span>),
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>should_reject_duplicate_ids() {
+        <span class="kw">let </span>buckets = scrypto_encode(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[
+            scrypto::resource::Bucket(<span class="number">0</span>),
+            scrypto::resource::Bucket(<span class="number">0</span>),
         ]);
-        <span class="kw">let</span> <span class="ident">error</span> <span class="op">=</span> <span class="ident">ScryptoValue::from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">buckets</span>).<span class="ident">expect_err</span>(<span class="string">&quot;Should be an error&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="ident">error</span>, <span class="ident">DecodeError::CustomError</span>(<span class="string">&quot;DuplicateIds&quot;</span>.<span class="ident">to_string</span>()));
+        <span class="kw">let </span>error = ScryptoValue::from_slice(<span class="kw-2">&amp;</span>buckets).expect_err(<span class="string">&quot;Should be an error&quot;</span>);
+        <span class="macro">assert_eq!</span>(error, DecodeError::CustomError(<span class="string">&quot;DuplicateIds&quot;</span>.to_string()));
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

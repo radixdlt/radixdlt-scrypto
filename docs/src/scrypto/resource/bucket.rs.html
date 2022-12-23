@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/resource/bucket.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>bucket.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/resource/bucket.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>bucket.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -228,231 +223,230 @@
 <span id="223">223</span>
 <span id="224">224</span>
 <span id="225">225</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::rust::collections::BTreeSet</span>;
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-<span class="kw">use</span> <span class="ident">sbor::rust::fmt</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident">sbor</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::collections::BTreeSet;
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+</span><span class="kw">use </span>sbor::rust::fmt;
+<span class="kw">use </span>sbor::rust::vec::Vec;
+<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::abi</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::buffer::scrypto_encode</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::core</span>::{
-    <span class="ident">BucketFnIdentifier</span>, <span class="ident">FnIdentifier</span>, <span class="ident">NativeFnIdentifier</span>, <span class="ident">Receiver</span>, <span class="ident">ResourceManagerFnIdentifier</span>,
+<span class="kw">use </span><span class="kw">crate</span>::abi::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::buffer::scrypto_encode;
+<span class="kw">use </span><span class="kw">crate</span>::core::{
+    BucketFnIdentifier, FnIdentifier, NativeFnIdentifier, Receiver, ResourceManagerFnIdentifier,
 };
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::types::RENodeId</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">api</span>::<span class="kw-2">*</span>, <span class="ident">call_engine</span>, <span class="ident">types::BucketId</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::math</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::misc</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::native_functions</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::engine::types::RENodeId;
+<span class="kw">use </span><span class="kw">crate</span>::engine::{api::<span class="kw-2">*</span>, call_engine, types::BucketId};
+<span class="kw">use </span><span class="kw">crate</span>::math::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::misc::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::native_functions;
+<span class="kw">use </span><span class="kw">crate</span>::resource::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ConsumingBucketBurnInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ConsumingBucketBurnInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BucketTakeInput</span> {
-    <span class="kw">pub</span> <span class="ident">amount</span>: <span class="ident">Decimal</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>BucketTakeInput {
+    <span class="kw">pub </span>amount: Decimal,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BucketPutInput</span> {
-    <span class="kw">pub</span> <span class="ident">bucket</span>: <span class="ident">scrypto::resource::Bucket</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>BucketPutInput {
+    <span class="kw">pub </span>bucket: scrypto::resource::Bucket,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BucketTakeNonFungiblesInput</span> {
-    <span class="kw">pub</span> <span class="ident">ids</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>BucketTakeNonFungiblesInput {
+    <span class="kw">pub </span>ids: BTreeSet&lt;NonFungibleId&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BucketGetNonFungibleIdsInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>BucketGetNonFungibleIdsInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BucketGetAmountInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>BucketGetAmountInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BucketGetResourceAddressInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>BucketGetResourceAddressInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">BucketCreateProofInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>BucketCreateProofInput {}
 
-<span class="doccomment">/// Represents a transient resource container.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Bucket</span>(<span class="kw">pub</span> <span class="ident">BucketId</span>);
+<span class="doccomment">/// Represents a transient resource container.
+</span><span class="attribute">#[derive(Debug, PartialEq, Eq, Hash)]
+</span><span class="kw">pub struct </span>Bucket(<span class="kw">pub </span>BucketId);
 
-<span class="kw">impl</span> <span class="ident">Bucket</span> {
-    <span class="doccomment">/// Creates a new bucket to hold resources of the given definition.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="ident">resource_address</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::CreateBucket</span>,
+<span class="kw">impl </span>Bucket {
+    <span class="doccomment">/// Creates a new bucket to hold resources of the given definition.
+    </span><span class="kw">pub fn </span>new(resource_address: ResourceAddress) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::CreateBucket,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerCreateBucketInput</span> {}),
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerCreateBucketInput {}),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="macro">native_functions!</span> {
-        <span class="ident">Receiver::Consumed</span>(<span class="ident">RENodeId::Bucket</span>(<span class="self">self</span>.<span class="number">0</span>)), <span class="ident">NativeFnIdentifier::Bucket</span> =&gt; {
-           <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">burn</span>(<span class="self">self</span>) -&gt; () {
-                <span class="ident">BucketFnIdentifier::Burn</span>,
-                <span class="ident">ConsumingBucketBurnInput</span> {}
+    <span class="macro">native_functions! </span>{
+        Receiver::Consumed(RENodeId::Bucket(<span class="self">self</span>.<span class="number">0</span>)), NativeFnIdentifier::Bucket =&gt; {
+           <span class="kw">pub fn </span>burn(<span class="self">self</span>) -&gt; () {
+                BucketFnIdentifier::Burn,
+                ConsumingBucketBurnInput {}
             }
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">take_internal</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">Decimal</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Bucket</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Bucket</span>(<span class="ident">BucketFnIdentifier::Take</span>)),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">BucketTakeInput</span> { <span class="ident">amount</span> }),
+    <span class="kw">fn </span>take_internal(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: Decimal) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::Bucket(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::Bucket(BucketFnIdentifier::Take)),
+            scrypto_encode(<span class="kw-2">&amp;</span>BucketTakeInput { amount }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="macro">native_functions!</span> {
-        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Bucket</span>(<span class="self">self</span>.<span class="number">0</span>)), <span class="ident">NativeFnIdentifier::Bucket</span> =&gt; {
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take_non_fungibles</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">non_fungible_ids</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-                <span class="ident">BucketFnIdentifier::TakeNonFungibles</span>,
-                <span class="ident">BucketTakeNonFungiblesInput</span> {
-                    <span class="ident">ids</span>: <span class="ident">non_fungible_ids</span>.<span class="ident">clone</span>()
+    <span class="macro">native_functions! </span>{
+        Receiver::Ref(RENodeId::Bucket(<span class="self">self</span>.<span class="number">0</span>)), NativeFnIdentifier::Bucket =&gt; {
+            <span class="kw">pub fn </span>take_non_fungibles(<span class="kw-2">&amp;mut </span><span class="self">self</span>, non_fungible_ids: <span class="kw-2">&amp;</span>BTreeSet&lt;NonFungibleId&gt;) -&gt; <span class="self">Self </span>{
+                BucketFnIdentifier::TakeNonFungibles,
+                BucketTakeNonFungiblesInput {
+                    ids: non_fungible_ids.clone()
                 }
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">put</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; () {
-                <span class="ident">BucketFnIdentifier::Put</span>,
-                <span class="ident">BucketPutInput</span> {
-                    <span class="ident">bucket</span>: <span class="ident">other</span>
+            <span class="kw">pub fn </span>put(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: <span class="self">Self</span>) -&gt; () {
+                BucketFnIdentifier::Put,
+                BucketPutInput {
+                    bucket: other
                 }
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span> {
-                <span class="ident">BucketFnIdentifier::GetNonFungibleIds</span>,
-                <span class="ident">BucketGetNonFungibleIdsInput</span> {
+            <span class="kw">pub fn </span>non_fungible_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; BTreeSet&lt;NonFungibleId&gt; {
+                BucketFnIdentifier::GetNonFungibleIds,
+                BucketGetNonFungibleIdsInput {
                 }
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-                <span class="ident">BucketFnIdentifier::GetAmount</span>,
-                <span class="ident">BucketGetAmountInput</span> {
+            <span class="kw">pub fn </span>amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+                BucketFnIdentifier::GetAmount,
+                BucketGetAmountInput {
                 }
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-                <span class="ident">BucketFnIdentifier::GetResourceAddress</span>,
-                <span class="ident">BucketGetResourceAddressInput</span> {
+            <span class="kw">pub fn </span>resource_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceAddress {
+                BucketFnIdentifier::GetResourceAddress,
+                BucketGetResourceAddressInput {
                 }
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_proof</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">scrypto::resource::Proof</span> {
-                <span class="ident">BucketFnIdentifier::CreateProof</span>,
-                <span class="ident">BucketCreateProofInput</span> {
+            <span class="kw">pub fn </span>create_proof(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; scrypto::resource::Proof {
+                BucketFnIdentifier::CreateProof,
+                BucketCreateProofInput {
                 }
             }
         }
     }
 
-    <span class="doccomment">/// Takes some amount of resources from this bucket.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take</span><span class="op">&lt;</span><span class="ident">A</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Decimal</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">A</span>) -&gt; <span class="self">Self</span> {
-        <span class="self">self</span>.<span class="ident">take_internal</span>(<span class="ident">amount</span>.<span class="ident">into</span>())
+    <span class="doccomment">/// Takes some amount of resources from this bucket.
+    </span><span class="kw">pub fn </span>take&lt;A: Into&lt;Decimal&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: A) -&gt; <span class="self">Self </span>{
+        <span class="self">self</span>.take_internal(amount.into())
     }
 
-    <span class="doccomment">/// Takes a specific non-fungible from this bucket.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">/// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take_non_fungible</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">non_fungible_id</span>: <span class="kw-2">&amp;</span><span class="ident">NonFungibleId</span>) -&gt; <span class="ident">Bucket</span> {
-        <span class="self">self</span>.<span class="ident">take_non_fungibles</span>(<span class="kw-2">&amp;</span><span class="ident">BTreeSet::from</span>([<span class="ident">non_fungible_id</span>.<span class="ident">clone</span>()]))
+    <span class="doccomment">/// Takes a specific non-fungible from this bucket.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
+    </span><span class="kw">pub fn </span>take_non_fungible(<span class="kw-2">&amp;mut </span><span class="self">self</span>, non_fungible_id: <span class="kw-2">&amp;</span>NonFungibleId) -&gt; Bucket {
+        <span class="self">self</span>.take_non_fungibles(<span class="kw-2">&amp;</span>BTreeSet::from([non_fungible_id.clone()]))
     }
 
-    <span class="doccomment">/// Uses resources in this bucket as authorization for an operation.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">authorize</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">FnOnce</span>() -&gt; <span class="ident">O</span>, <span class="ident">O</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>) -&gt; <span class="ident">O</span> {
-        <span class="ident">ComponentAuthZone::push</span>(<span class="self">self</span>.<span class="ident">create_proof</span>());
-        <span class="kw">let</span> <span class="ident">output</span> <span class="op">=</span> <span class="ident">f</span>();
-        <span class="ident">ComponentAuthZone::pop</span>().<span class="ident">drop</span>();
-        <span class="ident">output</span>
+    <span class="doccomment">/// Uses resources in this bucket as authorization for an operation.
+    </span><span class="kw">pub fn </span>authorize&lt;F: FnOnce() -&gt; O, O&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F) -&gt; O {
+        ComponentAuthZone::push(<span class="self">self</span>.create_proof());
+        <span class="kw">let </span>output = f();
+        ComponentAuthZone::pop().drop();
+        output
     }
 
-    <span class="doccomment">/// Checks if this bucket is empty.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">amount</span>() <span class="op">==</span> <span class="number">0</span>.<span class="ident">into</span>()
+    <span class="doccomment">/// Checks if this bucket is empty.
+    </span><span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.amount() == <span class="number">0</span>.into()
     }
 
-    <span class="doccomment">/// Returns all the non-fungible units contained.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">/// Panics if this is not a non-fungible bucket.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungibles</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NonFungibleData</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">NonFungible</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">resource_address</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">resource_address</span>();
-        <span class="self">self</span>.<span class="ident">non_fungible_ids</span>()
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">id</span><span class="op">|</span> <span class="ident">NonFungible::from</span>(<span class="ident">NonFungibleAddress::new</span>(<span class="ident">resource_address</span>, <span class="ident">id</span>.<span class="ident">clone</span>())))
-            .<span class="ident">collect</span>()
+    <span class="doccomment">/// Returns all the non-fungible units contained.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible bucket.
+    </span><span class="kw">pub fn </span>non_fungibles&lt;T: NonFungibleData&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;NonFungible&lt;T&gt;&gt; {
+        <span class="kw">let </span>resource_address = <span class="self">self</span>.resource_address();
+        <span class="self">self</span>.non_fungible_ids()
+            .iter()
+            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
+            .collect()
     }
 
-    <span class="doccomment">/// Returns a singleton non-fungible id</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">/// Panics if this is not a singleton bucket</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible_id</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">NonFungibleId</span> {
-        <span class="kw">let</span> <span class="ident">non_fungible_ids</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">non_fungible_ids</span>();
-        <span class="kw">if</span> <span class="ident">non_fungible_ids</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="number">1</span> {
+    <span class="doccomment">/// Returns a singleton non-fungible id
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton bucket
+    </span><span class="kw">pub fn </span>non_fungible_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NonFungibleId {
+        <span class="kw">let </span>non_fungible_ids = <span class="self">self</span>.non_fungible_ids();
+        <span class="kw">if </span>non_fungible_ids.len() != <span class="number">1 </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Expecting singleton NFT vault&quot;</span>);
         }
-        <span class="self">self</span>.<span class="ident">non_fungible_ids</span>().<span class="ident">into_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>()
+        <span class="self">self</span>.non_fungible_ids().into_iter().next().unwrap()
     }
 
-    <span class="doccomment">/// Returns a singleton non-fungible.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">/// Panics if this is not a singleton bucket</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NonFungibleData</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">NonFungible</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">non_fungibles</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">non_fungibles</span>();
-        <span class="kw">if</span> <span class="ident">non_fungibles</span>.<span class="ident">len</span>() <span class="op">!</span><span class="op">=</span> <span class="number">1</span> {
+    <span class="doccomment">/// Returns a singleton non-fungible.
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton bucket
+    </span><span class="kw">pub fn </span>non_fungible&lt;T: NonFungibleData&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; NonFungible&lt;T&gt; {
+        <span class="kw">let </span>non_fungibles = <span class="self">self</span>.non_fungibles();
+        <span class="kw">if </span>non_fungibles.len() != <span class="number">1 </span>{
             <span class="macro">panic!</span>(<span class="string">&quot;Expecting singleton NFT bucket&quot;</span>);
         }
-        <span class="ident">non_fungibles</span>.<span class="ident">into_iter</span>().<span class="ident">next</span>().<span class="ident">unwrap</span>()
+        non_fungibles.into_iter().next().unwrap()
     }
 }
 
-<span class="comment">//========</span>
-<span class="comment">// error</span>
-<span class="comment">//========</span>
+<span class="comment">//========
+// error
+//========
 
-<span class="doccomment">/// Represents an error when decoding bucket.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ParseBucketError</span> {
-    <span class="ident">InvalidLength</span>(<span class="ident">usize</span>),
+</span><span class="doccomment">/// Represents an error when decoding bucket.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>ParseBucketError {
+    InvalidLength(usize),
 }
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">std::error::Error</span> <span class="kw">for</span> <span class="ident">ParseBucketError</span> {}
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+</span><span class="kw">impl </span>std::error::Error <span class="kw">for </span>ParseBucketError {}
 
-<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">ParseBucketError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
+<span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+</span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>ParseBucketError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
     }
 }
 
-<span class="comment">//========</span>
-<span class="comment">// binary</span>
-<span class="comment">//========</span>
+<span class="comment">//========
+// binary
+//========
 
-<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Bucket</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">ParseBucketError</span>;
+</span><span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>Bucket {
+    <span class="kw">type </span>Error = ParseBucketError;
 
-    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">slice</span>.<span class="ident">len</span>() {
-            <span class="number">4</span> =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="ident">u32::from_le_bytes</span>(<span class="ident">copy_u8_array</span>(<span class="ident">slice</span>)))),
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">ParseBucketError::InvalidLength</span>(<span class="ident">slice</span>.<span class="ident">len</span>())),
+    <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">match </span>slice.len() {
+            <span class="number">4 </span>=&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>(u32::from_le_bytes(copy_u8_array(slice)))),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(ParseBucketError::InvalidLength(slice.len())),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Bucket</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_vec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_le_bytes</span>().<span class="ident">to_vec</span>()
+<span class="kw">impl </span>Bucket {
+    <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.to_le_bytes().to_vec()
     }
 }
 
-<span class="macro">scrypto_type!</span>(<span class="ident">Bucket</span>, <span class="ident">ScryptoType::Bucket</span>, <span class="ident">Vec::new</span>());
+<span class="macro">scrypto_type!</span>(Bucket, ScryptoType::Bucket, Vec::new());
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

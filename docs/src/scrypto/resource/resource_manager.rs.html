@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/resource/resource_manager.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/resource/resource_manager.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -434,437 +429,436 @@
 <span id="429">429</span>
 <span id="430">430</span>
 <span id="431">431</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::rust::collections::HashMap</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::fmt</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::str::FromStr</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::string::String</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident">sbor</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::collections::HashMap;
+<span class="kw">use </span>sbor::rust::fmt;
+<span class="kw">use </span>sbor::rust::str::FromStr;
+<span class="kw">use </span>sbor::rust::string::String;
+<span class="kw">use </span>sbor::rust::vec::Vec;
+<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::abi</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address</span>::{<span class="ident">AddressError</span>, <span class="ident">EntityType</span>, <span class="ident">BECH32_DECODER</span>, <span class="ident">BECH32_ENCODER</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::buffer::scrypto_encode</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::core::NativeFnIdentifier</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::core</span>::{<span class="ident">FnIdentifier</span>, <span class="ident">Receiver</span>, <span class="ident">ResourceManagerFnIdentifier</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::types::RENodeId</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">api</span>::<span class="kw-2">*</span>, <span class="ident">call_engine</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::math</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::misc</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::native_functions</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::abi::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
+<span class="kw">use </span><span class="kw">crate</span>::buffer::scrypto_encode;
+<span class="kw">use </span><span class="kw">crate</span>::core::NativeFnIdentifier;
+<span class="kw">use </span><span class="kw">crate</span>::core::{FnIdentifier, Receiver, ResourceManagerFnIdentifier};
+<span class="kw">use </span><span class="kw">crate</span>::engine::types::RENodeId;
+<span class="kw">use </span><span class="kw">crate</span>::engine::{api::<span class="kw-2">*</span>, call_engine};
+<span class="kw">use </span><span class="kw">crate</span>::math::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::misc::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::native_functions;
+<span class="kw">use </span><span class="kw">crate</span>::resource::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(
-    <span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Describe</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>,
-)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ResourceMethodAuthKey</span> {
-    <span class="ident">Mint</span>,
-    <span class="ident">Burn</span>,
-    <span class="ident">Withdraw</span>,
-    <span class="ident">Deposit</span>,
-    <span class="ident">UpdateMetadata</span>,
-    <span class="ident">UpdateNonFungibleData</span>,
+<span class="attribute">#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
+</span><span class="kw">pub enum </span>ResourceMethodAuthKey {
+    Mint,
+    Burn,
+    Withdraw,
+    Deposit,
+    UpdateMetadata,
+    UpdateNonFungibleData,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Describe</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Mutability</span> {
-    <span class="ident">LOCKED</span>,
-    <span class="ident">MUTABLE</span>(<span class="ident">AccessRule</span>),
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
+</span><span class="kw">pub enum </span>Mutability {
+    LOCKED,
+    MUTABLE(AccessRule),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerCreateInput</span> {
-    <span class="kw">pub</span> <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>,
-    <span class="kw">pub</span> <span class="ident">metadata</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">access_rules</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceMethodAuthKey</span>, (<span class="ident">AccessRule</span>, <span class="ident">Mutability</span>)<span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">mint_params</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">MintParams</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerCreateInput {
+    <span class="kw">pub </span>resource_type: ResourceType,
+    <span class="kw">pub </span>metadata: HashMap&lt;String, String&gt;,
+    <span class="kw">pub </span>access_rules: HashMap&lt;ResourceMethodAuthKey, (AccessRule, Mutability)&gt;,
+    <span class="kw">pub </span>mint_params: <span class="prelude-ty">Option</span>&lt;MintParams&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerUpdateAuthInput</span> {
-    <span class="kw">pub</span> <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey</span>,
-    <span class="kw">pub</span> <span class="ident">access_rule</span>: <span class="ident">AccessRule</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerUpdateAuthInput {
+    <span class="kw">pub </span>method: ResourceMethodAuthKey,
+    <span class="kw">pub </span>access_rule: AccessRule,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerLockAuthInput</span> {
-    <span class="kw">pub</span> <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerLockAuthInput {
+    <span class="kw">pub </span>method: ResourceMethodAuthKey,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerCreateVaultInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerCreateVaultInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerCreateBucketInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerCreateBucketInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerMintInput</span> {
-    <span class="kw">pub</span> <span class="ident">mint_params</span>: <span class="ident">MintParams</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerMintInput {
+    <span class="kw">pub </span>mint_params: MintParams,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerGetMetadataInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerGetMetadataInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerGetResourceTypeInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerGetResourceTypeInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerGetTotalSupplyInput</span> {}
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerGetTotalSupplyInput {}
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerUpdateMetadataInput</span> {
-    <span class="kw">pub</span> <span class="ident">metadata</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerUpdateMetadataInput {
+    <span class="kw">pub </span>metadata: HashMap&lt;String, String&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerUpdateNonFungibleDataInput</span> {
-    <span class="kw">pub</span> <span class="ident">id</span>: <span class="ident">NonFungibleId</span>,
-    <span class="kw">pub</span> <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerUpdateNonFungibleDataInput {
+    <span class="kw">pub </span>id: NonFungibleId,
+    <span class="kw">pub </span>data: Vec&lt;u8&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerNonFungibleExistsInput</span> {
-    <span class="kw">pub</span> <span class="ident">id</span>: <span class="ident">NonFungibleId</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerNonFungibleExistsInput {
+    <span class="kw">pub </span>id: NonFungibleId,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManagerGetNonFungibleInput</span> {
-    <span class="kw">pub</span> <span class="ident">id</span>: <span class="ident">NonFungibleId</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ResourceManagerGetNonFungibleInput {
+    <span class="kw">pub </span>id: NonFungibleId,
 }
 
-<span class="doccomment">/// Represents a resource address.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ResourceAddress</span> {
-    <span class="ident">Normal</span>([<span class="ident">u8</span>; <span class="number">26</span>]),
+<span class="doccomment">/// Represents a resource address.
+</span><span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+</span><span class="kw">pub enum </span>ResourceAddress {
+    Normal([u8; <span class="number">26</span>]),
 }
 
-<span class="kw">impl</span> <span class="ident">ResourceAddress</span> {}
+<span class="kw">impl </span>ResourceAddress {}
 
-<span class="doccomment">/// Represents a resource manager.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManager</span>(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">ResourceAddress</span>);
+<span class="doccomment">/// Represents a resource manager.
+</span><span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>ResourceManager(<span class="kw">pub</span>(<span class="kw">crate</span>) ResourceAddress);
 
-<span class="kw">impl</span> <span class="ident">ResourceManager</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_mintable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">access_rule</span>: <span class="ident">AccessRule</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::UpdateAuth</span>,
+<span class="kw">impl </span>ResourceManager {
+    <span class="kw">pub fn </span>set_mintable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::UpdateAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerUpdateAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::Mint</span>,
-                <span class="ident">access_rule</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::Mint,
+                access_rule,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_burnable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">access_rule</span>: <span class="ident">AccessRule</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::UpdateAuth</span>,
+    <span class="kw">pub fn </span>set_burnable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::UpdateAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerUpdateAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::Burn</span>,
-                <span class="ident">access_rule</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::Burn,
+                access_rule,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_withdrawable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">access_rule</span>: <span class="ident">AccessRule</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::UpdateAuth</span>,
+    <span class="kw">pub fn </span>set_withdrawable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::UpdateAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerUpdateAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::Withdraw</span>,
-                <span class="ident">access_rule</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::Withdraw,
+                access_rule,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_depositable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">access_rule</span>: <span class="ident">AccessRule</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::UpdateAuth</span>,
+    <span class="kw">pub fn </span>set_depositable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::UpdateAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerUpdateAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::Deposit</span>,
-                <span class="ident">access_rule</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::Deposit,
+                access_rule,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_updateable_metadata</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">access_rule</span>: <span class="ident">AccessRule</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::UpdateAuth</span>,
+    <span class="kw">pub fn </span>set_updateable_metadata(<span class="kw-2">&amp;</span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::UpdateAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerUpdateAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::UpdateMetadata</span>,
-                <span class="ident">access_rule</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::UpdateMetadata,
+                access_rule,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_updateable_non_fungible_data</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">access_rule</span>: <span class="ident">AccessRule</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::UpdateAuth</span>,
+    <span class="kw">pub fn </span>set_updateable_non_fungible_data(<span class="kw-2">&amp;</span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::UpdateAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerUpdateAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::UpdateNonFungibleData</span>,
-                <span class="ident">access_rule</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::UpdateNonFungibleData,
+                access_rule,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lock_mintable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::LockAuth</span>,
+    <span class="kw">pub fn </span>lock_mintable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::LockAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerLockAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::Mint</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Mint,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lock_burnable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::LockAuth</span>,
+    <span class="kw">pub fn </span>lock_burnable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::LockAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerLockAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::Burn</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Burn,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lock_withdrawable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::LockAuth</span>,
+    <span class="kw">pub fn </span>lock_withdrawable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::LockAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerLockAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::Withdraw</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Withdraw,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lock_depositable</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::LockAuth</span>,
+    <span class="kw">pub fn </span>lock_depositable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::LockAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerLockAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::Deposit</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Deposit,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lock_updateable_metadata</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::LockAuth</span>,
+    <span class="kw">pub fn </span>lock_updateable_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::LockAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerLockAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::UpdateMetadata</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::UpdateMetadata,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lock_updateable_non_fungible_data</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::LockAuth</span>,
+    <span class="kw">pub fn </span>lock_updateable_non_fungible_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::LockAuth,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerLockAuthInput</span> {
-                <span class="ident">method</span>: <span class="ident">ResourceMethodAuthKey::UpdateNonFungibleData</span>,
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::UpdateNonFungibleData,
             }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">fn</span> <span class="ident">mint_internal</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">mint_params</span>: <span class="ident">MintParams</span>) -&gt; <span class="ident">Bucket</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::Mint</span>,
+    <span class="kw">fn </span>mint_internal(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mint_params: MintParams) -&gt; Bucket {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::Mint,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerMintInput</span> { <span class="ident">mint_params</span> }),
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerMintInput { mint_params }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">fn</span> <span class="ident">update_non_fungible_data_internal</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="ident">NonFungibleId</span>, <span class="ident">data</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; () {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::UpdateNonFungibleData</span>,
+    <span class="kw">fn </span>update_non_fungible_data_internal(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: NonFungibleId, data: Vec&lt;u8&gt;) -&gt; () {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::UpdateNonFungibleData,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerUpdateNonFungibleDataInput</span> { <span class="ident">id</span>, <span class="ident">data</span> }),
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateNonFungibleDataInput { id, data }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="kw">fn</span> <span class="ident">get_non_fungible_data_internal</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="ident">NonFungibleId</span>) -&gt; [<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>; <span class="number">2</span>] {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(
-                <span class="ident">ResourceManagerFnIdentifier::GetNonFungible</span>,
+    <span class="kw">fn </span>get_non_fungible_data_internal(<span class="kw-2">&amp;</span><span class="self">self</span>, id: NonFungibleId) -&gt; [Vec&lt;u8&gt;; <span class="number">2</span>] {
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
+                ResourceManagerFnIdentifier::GetNonFungible,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ResourceManagerGetNonFungibleInput</span> { <span class="ident">id</span> }),
+            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerGetNonFungibleInput { id }),
         );
-        <span class="ident">call_engine</span>(<span class="ident">input</span>)
+        call_engine(input)
     }
 
-    <span class="macro">native_functions!</span> {
-        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="self">self</span>.<span class="number">0</span>)), <span class="ident">NativeFnIdentifier::ResourceManager</span> =&gt; {
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">metadata</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span> {
-                <span class="ident">ResourceManagerFnIdentifier::GetMetadata</span>,
-                <span class="ident">ResourceManagerGetMetadataInput</span> {}
+    <span class="macro">native_functions! </span>{
+        Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)), NativeFnIdentifier::ResourceManager =&gt; {
+            <span class="kw">pub fn </span>metadata(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HashMap&lt;String, String&gt; {
+                ResourceManagerFnIdentifier::GetMetadata,
+                ResourceManagerGetMetadataInput {}
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_type</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceType</span> {
-                <span class="ident">ResourceManagerFnIdentifier::GetResourceType</span>,
-                <span class="ident">ResourceManagerGetResourceTypeInput</span> {}
+            <span class="kw">pub fn </span>resource_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceType {
+                ResourceManagerFnIdentifier::GetResourceType,
+                ResourceManagerGetResourceTypeInput {}
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_supply</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-                <span class="ident">ResourceManagerFnIdentifier::GetTotalSupply</span>,
-                <span class="ident">ResourceManagerGetTotalSupplyInput</span> {}
+            <span class="kw">pub fn </span>total_supply(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+                ResourceManagerFnIdentifier::GetTotalSupply,
+                ResourceManagerGetTotalSupplyInput {}
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">update_metadata</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">metadata</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>) -&gt; () {
-                <span class="ident">ResourceManagerFnIdentifier::UpdateMetadata</span>,
-                <span class="ident">ResourceManagerUpdateMetadataInput</span> {
-                    <span class="ident">metadata</span>
+            <span class="kw">pub fn </span>update_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>, metadata: HashMap&lt;String, String&gt;) -&gt; () {
+                ResourceManagerFnIdentifier::UpdateMetadata,
+                ResourceManagerUpdateMetadataInput {
+                    metadata
                 }
             }
-            <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">non_fungible_exists</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">NonFungibleId</span>) -&gt; <span class="ident">bool</span> {
-                <span class="ident">ResourceManagerFnIdentifier::NonFungibleExists</span>,
-                <span class="ident">ResourceManagerNonFungibleExistsInput</span> {
-                    <span class="ident">id</span>: <span class="ident">id</span>.<span class="ident">clone</span>()
+            <span class="kw">pub fn </span>non_fungible_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>NonFungibleId) -&gt; bool {
+                ResourceManagerFnIdentifier::NonFungibleExists,
+                ResourceManagerNonFungibleExistsInput {
+                    id: id.clone()
                 }
             }
         }
     }
 
-    <span class="doccomment">/// Mints fungible resources</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mint</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Decimal</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">T</span>) -&gt; <span class="ident">Bucket</span> {
-        <span class="self">self</span>.<span class="ident">mint_internal</span>(<span class="ident">MintParams::Fungible</span> {
-            <span class="ident">amount</span>: <span class="ident">amount</span>.<span class="ident">into</span>(),
+    <span class="doccomment">/// Mints fungible resources
+    </span><span class="kw">pub fn </span>mint&lt;T: Into&lt;Decimal&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: T) -&gt; Bucket {
+        <span class="self">self</span>.mint_internal(MintParams::Fungible {
+            amount: amount.into(),
         })
     }
 
-    <span class="doccomment">/// Mints non-fungible resources</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mint_non_fungible</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NonFungibleData</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">NonFungibleId</span>, <span class="ident">data</span>: <span class="ident">T</span>) -&gt; <span class="ident">Bucket</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">entries</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="ident">entries</span>.<span class="ident">insert</span>(<span class="ident">id</span>.<span class="ident">clone</span>(), (<span class="ident">data</span>.<span class="ident">immutable_data</span>(), <span class="ident">data</span>.<span class="ident">mutable_data</span>()));
-        <span class="self">self</span>.<span class="ident">mint_internal</span>(<span class="ident">MintParams::NonFungible</span> { <span class="ident">entries</span> })
+    <span class="doccomment">/// Mints non-fungible resources
+    </span><span class="kw">pub fn </span>mint_non_fungible&lt;T: NonFungibleData&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>NonFungibleId, data: T) -&gt; Bucket {
+        <span class="kw">let </span><span class="kw-2">mut </span>entries = HashMap::new();
+        entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
+        <span class="self">self</span>.mint_internal(MintParams::NonFungible { entries })
     }
 
-    <span class="doccomment">/// Burns a bucket of resources.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">burn</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">bucket</span>: <span class="ident">Bucket</span>) {
-        <span class="ident">bucket</span>.<span class="ident">burn</span>()
+    <span class="doccomment">/// Burns a bucket of resources.
+    </span><span class="kw">pub fn </span>burn(<span class="kw-2">&amp;</span><span class="self">self</span>, bucket: Bucket) {
+        bucket.burn()
     }
 
-    <span class="doccomment">/// Returns the data of a non-fungible unit, both the immutable and mutable parts.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">/// Panics if this is not a non-fungible resource or the specified non-fungible is not found.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_non_fungible_data</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NonFungibleData</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">NonFungibleId</span>) -&gt; <span class="ident">T</span> {
-        <span class="kw">let</span> <span class="ident">non_fungible</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">get_non_fungible_data_internal</span>(<span class="ident">id</span>.<span class="ident">clone</span>());
-        <span class="ident">T::decode</span>(<span class="kw-2">&amp;</span><span class="ident">non_fungible</span>[<span class="number">0</span>], <span class="kw-2">&amp;</span><span class="ident">non_fungible</span>[<span class="number">1</span>]).<span class="ident">unwrap</span>()
+    <span class="doccomment">/// Returns the data of a non-fungible unit, both the immutable and mutable parts.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    </span><span class="kw">pub fn </span>get_non_fungible_data&lt;T: NonFungibleData&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>NonFungibleId) -&gt; T {
+        <span class="kw">let </span>non_fungible = <span class="self">self</span>.get_non_fungible_data_internal(id.clone());
+        T::decode(<span class="kw-2">&amp;</span>non_fungible[<span class="number">0</span>], <span class="kw-2">&amp;</span>non_fungible[<span class="number">1</span>]).unwrap()
     }
 
-    <span class="doccomment">/// Updates the mutable part of a non-fungible unit.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// # Panics</span>
-    <span class="doccomment">/// Panics if this is not a non-fungible resource or the specified non-fungible is not found.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">update_non_fungible_data</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">NonFungibleData</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">NonFungibleId</span>,
-        <span class="ident">new_data</span>: <span class="ident">T</span>,
+    <span class="doccomment">/// Updates the mutable part of a non-fungible unit.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
+    </span><span class="kw">pub fn </span>update_non_fungible_data&lt;T: NonFungibleData&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        id: <span class="kw-2">&amp;</span>NonFungibleId,
+        new_data: T,
     ) {
-        <span class="self">self</span>.<span class="ident">update_non_fungible_data_internal</span>(<span class="ident">id</span>.<span class="ident">clone</span>(), <span class="ident">new_data</span>.<span class="ident">mutable_data</span>())
+        <span class="self">self</span>.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
     }
 }
 
-<span class="comment">//========</span>
-<span class="comment">// binary</span>
-<span class="comment">//========</span>
+<span class="comment">//========
+// binary
+//========
 
-<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ResourceAddress</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">AddressError</span>;
+</span><span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>ResourceAddress {
+    <span class="kw">type </span>Error = AddressError;
 
-    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">slice</span>.<span class="ident">len</span>() {
-            <span class="number">27</span> =&gt; <span class="kw">match</span> <span class="ident">EntityType::try_from</span>(<span class="ident">slice</span>[<span class="number">0</span>])
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">AddressError::InvalidEntityTypeId</span>(<span class="ident">slice</span>[<span class="number">0</span>]))<span class="question-mark">?</span>
-            {
-                <span class="ident">EntityType::Resource</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::Normal</span>(<span class="ident">copy_u8_array</span>(<span class="kw-2">&amp;</span><span class="ident">slice</span>[<span class="number">1</span>..]))),
-                <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">AddressError::InvalidEntityTypeId</span>(<span class="ident">slice</span>[<span class="number">0</span>])),
+    <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">match </span>slice.len() {
+            <span class="number">27 </span>=&gt; <span class="kw">match </span>EntityType::try_from(slice[<span class="number">0</span>])
+                .map_err(|<span class="kw">_</span>| AddressError::InvalidEntityTypeId(slice[<span class="number">0</span>]))<span class="question-mark">?
+            </span>{
+                EntityType::Resource =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Normal(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">1</span>..]))),
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(AddressError::InvalidEntityTypeId(slice[<span class="number">0</span>])),
             },
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">AddressError::InvalidLength</span>(<span class="ident">slice</span>.<span class="ident">len</span>())),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(AddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ResourceAddress</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_vec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="ident">buf</span>.<span class="ident">push</span>(<span class="ident">EntityType::resource</span>(<span class="self">self</span>).<span class="ident">id</span>());
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Normal</span>(<span class="ident">v</span>) =&gt; <span class="ident">buf</span>.<span class="ident">extend</span>(<span class="ident">v</span>),
+<span class="kw">impl </span>ResourceAddress {
+    <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
+        buf.push(EntityType::resource(<span class="self">self</span>).id());
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Normal(v) =&gt; buf.extend(v),
         }
-        <span class="ident">buf</span>
+        buf
     }
 }
 
-<span class="macro">scrypto_type!</span>(<span class="ident">ResourceAddress</span>, <span class="ident">ScryptoType::ResourceAddress</span>, <span class="ident">Vec::new</span>());
+<span class="macro">scrypto_type!</span>(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
 
-<span class="comment">//======</span>
-<span class="comment">// text</span>
-<span class="comment">//======</span>
+<span class="comment">//======
+// text
+//======
 
-<span class="kw">impl</span> <span class="ident">FromStr</span> <span class="kw">for</span> <span class="ident">ResourceAddress</span> {
-    <span class="kw">type</span> <span class="prelude-val">Err</span> <span class="op">=</span> <span class="ident">AddressError</span>;
+</span><span class="kw">impl </span>FromStr <span class="kw">for </span>ResourceAddress {
+    <span class="kw">type </span><span class="prelude-val">Err </span>= AddressError;
 
-    <span class="kw">fn</span> <span class="ident">from_str</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Err</span><span class="op">&gt;</span> {
-        <span class="ident">BECH32_DECODER</span>.<span class="ident">validate_and_decode_resource_address</span>(<span class="ident">s</span>)
+    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
+        BECH32_DECODER.validate_and_decode_resource_address(s)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">ResourceAddress</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">fmt::Error</span><span class="op">&gt;</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">BECH32_ENCODER</span>.<span class="ident">encode_resource_address</span>(<span class="self">self</span>))
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>ResourceAddress {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, BECH32_ENCODER.encode_resource_address(<span class="self">self</span>))
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">ResourceAddress</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">fmt::Error</span><span class="op">&gt;</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>ResourceAddress {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

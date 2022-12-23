@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/track.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>track.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/track.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>track.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -475,478 +470,477 @@
 <span id="470">470</span>
 <span id="471">471</span>
 <span id="472">472</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">transaction::model::ExecutableTransaction</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>transaction::model::ExecutableTransaction;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::AppStateTrack</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::BaseStateTrack</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::StateTrackError</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserveError</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeSummary</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeTable</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::Bucket</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::KeyValueStoreEntryWrapper</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::NonFungibleWrapper</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::ResourceContainer</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::transaction::CommitResult</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::transaction::EntityChanges</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::transaction::RejectResult</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::transaction::TransactionOutcome</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::transaction::TransactionResult</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::engine::AppStateTrack;
+<span class="kw">use </span><span class="kw">crate</span>::engine::BaseStateTrack;
+<span class="kw">use </span><span class="kw">crate</span>::engine::StateTrackError;
+<span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserveError;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeSummary;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeTable;
+<span class="kw">use </span><span class="kw">crate</span>::ledger::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::model::Bucket;
+<span class="kw">use </span><span class="kw">crate</span>::model::KeyValueStoreEntryWrapper;
+<span class="kw">use </span><span class="kw">crate</span>::model::NonFungibleWrapper;
+<span class="kw">use </span><span class="kw">crate</span>::model::ResourceContainer;
+<span class="kw">use </span><span class="kw">crate</span>::transaction::CommitResult;
+<span class="kw">use </span><span class="kw">crate</span>::transaction::EntityChanges;
+<span class="kw">use </span><span class="kw">crate</span>::transaction::RejectResult;
+<span class="kw">use </span><span class="kw">crate</span>::transaction::TransactionOutcome;
+<span class="kw">use </span><span class="kw">crate</span>::transaction::TransactionResult;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">BorrowedSubstate</span> {
-    <span class="ident">Loaded</span>(<span class="ident">Substate</span>, <span class="ident">u32</span>),
-    <span class="ident">LoadedMut</span>(<span class="ident">Substate</span>),
-    <span class="ident">Taken</span>,
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub enum </span>BorrowedSubstate {
+    Loaded(Substate, u32),
+    LoadedMut(Substate),
+    Taken,
 }
 
-<span class="kw">impl</span> <span class="ident">BorrowedSubstate</span> {
-    <span class="kw">fn</span> <span class="ident">loaded</span>(<span class="ident">value</span>: <span class="ident">Substate</span>, <span class="ident">mutable</span>: <span class="ident">bool</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">if</span> <span class="ident">mutable</span> {
-            <span class="ident">BorrowedSubstate::LoadedMut</span>(<span class="ident">value</span>)
-        } <span class="kw">else</span> {
-            <span class="ident">BorrowedSubstate::Loaded</span>(<span class="ident">value</span>, <span class="number">1</span>)
+<span class="kw">impl </span>BorrowedSubstate {
+    <span class="kw">fn </span>loaded(value: Substate, mutable: bool) -&gt; <span class="self">Self </span>{
+        <span class="kw">if </span>mutable {
+            BorrowedSubstate::LoadedMut(value)
+        } <span class="kw">else </span>{
+            BorrowedSubstate::Loaded(value, <span class="number">1</span>)
         }
     }
 }
 
-<span class="doccomment">/// Transaction-wide states and side effects</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span> {
-    <span class="ident">application_logs</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Level</span>, <span class="ident">String</span>)<span class="op">&gt;</span>,
-    <span class="ident">new_substates</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">SubstateId</span><span class="op">&gt;</span>,
-    <span class="ident">state_track</span>: <span class="ident">AppStateTrack</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span><span class="op">&gt;</span>,
-    <span class="ident">borrowed_substates</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">SubstateId</span>, <span class="ident">BorrowedSubstate</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">fee_reserve</span>: <span class="ident">R</span>,
-    <span class="kw">pub</span> <span class="ident">fee_table</span>: <span class="ident">FeeTable</span>,
+<span class="doccomment">/// Transaction-wide states and side effects
+</span><span class="kw">pub struct </span>Track&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt; {
+    application_logs: Vec&lt;(Level, String)&gt;,
+    new_substates: Vec&lt;SubstateId&gt;,
+    state_track: AppStateTrack&lt;<span class="lifetime">&#39;s</span>&gt;,
+    borrowed_substates: HashMap&lt;SubstateId, BorrowedSubstate&gt;,
+    <span class="kw">pub </span>fee_reserve: R,
+    <span class="kw">pub </span>fee_table: FeeTable,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TrackError</span> {
-    <span class="ident">Reentrancy</span>,
-    <span class="ident">NotFound</span>,
-    <span class="ident">StateTrackError</span>(<span class="ident">StateTrackError</span>),
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub enum </span>TrackError {
+    Reentrancy,
+    NotFound,
+    StateTrackError(StateTrackError),
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TrackReceipt</span> {
-    <span class="kw">pub</span> <span class="ident">fee_summary</span>: <span class="ident">FeeSummary</span>,
-    <span class="kw">pub</span> <span class="ident">application_logs</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Level</span>, <span class="ident">String</span>)<span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">result</span>: <span class="ident">TransactionResult</span>,
+<span class="kw">pub struct </span>TrackReceipt {
+    <span class="kw">pub </span>fee_summary: FeeSummary,
+    <span class="kw">pub </span>application_logs: Vec&lt;(Level, String)&gt;,
+    <span class="kw">pub </span>result: TransactionResult,
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">PreExecutionError</span> {
-    <span class="kw">pub</span> <span class="ident">fee_summary</span>: <span class="ident">FeeSummary</span>,
-    <span class="kw">pub</span> <span class="ident">error</span>: <span class="ident">FeeReserveError</span>,
+<span class="kw">pub struct </span>PreExecutionError {
+    <span class="kw">pub </span>fee_summary: FeeSummary,
+    <span class="kw">pub </span>error: FeeReserveError,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">substate_store</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="kw">dyn</span> <span class="ident">ReadableSubstateStore</span>,
-        <span class="ident">fee_reserve</span>: <span class="ident">R</span>,
-        <span class="ident">fee_table</span>: <span class="ident">FeeTable</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">base_state_track</span> <span class="op">=</span> <span class="ident">BaseStateTrack::new</span>(<span class="ident">substate_store</span>);
-        <span class="kw">let</span> <span class="ident">state_track</span> <span class="op">=</span> <span class="ident">AppStateTrack::new</span>(<span class="ident">base_state_track</span>);
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt; Track&lt;<span class="lifetime">&#39;s</span>, R&gt; {
+    <span class="kw">pub fn </span>new(
+        substate_store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw">dyn </span>ReadableSubstateStore,
+        fee_reserve: R,
+        fee_table: FeeTable,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>base_state_track = BaseStateTrack::new(substate_store);
+        <span class="kw">let </span>state_track = AppStateTrack::new(base_state_track);
 
-        <span class="self">Self</span> {
-            <span class="ident">application_logs</span>: <span class="ident">Vec::new</span>(),
-            <span class="ident">new_substates</span>: <span class="ident">Vec::new</span>(),
-            <span class="ident">state_track</span>,
-            <span class="ident">borrowed_substates</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">fee_reserve</span>,
-            <span class="ident">fee_table</span>,
+        <span class="self">Self </span>{
+            application_logs: Vec::new(),
+            new_substates: Vec::new(),
+            state_track,
+            borrowed_substates: HashMap::new(),
+            fee_reserve,
+            fee_table,
         }
     }
 
-    <span class="doccomment">/// Adds a log message.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_log</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">level</span>: <span class="ident">Level</span>, <span class="ident">message</span>: <span class="ident">String</span>) {
-        <span class="self">self</span>.<span class="ident">application_logs</span>.<span class="ident">push</span>((<span class="ident">level</span>, <span class="ident">message</span>));
+    <span class="doccomment">/// Adds a log message.
+    </span><span class="kw">pub fn </span>add_log(<span class="kw-2">&amp;mut </span><span class="self">self</span>, level: Level, message: String) {
+        <span class="self">self</span>.application_logs.push((level, message));
     }
 
-    <span class="doccomment">/// Creates a row with the given key/value</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">create_uuid_substate</span><span class="op">&lt;</span><span class="ident">V</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>,
-        <span class="ident">value</span>: <span class="ident">V</span>,
-        <span class="ident">is_root</span>: <span class="ident">bool</span>,
+    <span class="doccomment">/// Creates a row with the given key/value
+    </span><span class="kw">pub fn </span>create_uuid_substate&lt;V: Into&lt;Substate&gt;&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        substate_id: SubstateId,
+        value: V,
+        is_root: bool,
     ) {
-        <span class="self">self</span>.<span class="ident">new_substates</span>.<span class="ident">push</span>(<span class="ident">substate_id</span>.<span class="ident">clone</span>());
-        <span class="self">self</span>.<span class="ident">state_track</span>
-            .<span class="ident">put_substate</span>(<span class="ident">substate_id</span>.<span class="ident">clone</span>(), <span class="ident">value</span>.<span class="ident">into</span>());
-        <span class="kw">if</span> <span class="ident">is_root</span> {
-            <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">set_substate_root</span>(<span class="ident">substate_id</span>);
+        <span class="self">self</span>.new_substates.push(substate_id.clone());
+        <span class="self">self</span>.state_track
+            .put_substate(substate_id.clone(), value.into());
+        <span class="kw">if </span>is_root {
+            <span class="self">self</span>.state_track.set_substate_root(substate_id);
         }
     }
 
-    <span class="comment">// TODO: Clean this up</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_root</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">substate_id</span>: <span class="kw-2">&amp;</span><span class="ident">SubstateId</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">is_root</span>(<span class="ident">substate_id</span>)
+    <span class="comment">// TODO: Clean this up
+    </span><span class="kw">pub fn </span>is_root(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId) -&gt; bool {
+        <span class="self">self</span>.state_track.is_root(substate_id)
     }
 
-    <span class="comment">// TODO: to read/write a value owned by track requires three coordinated steps:</span>
-    <span class="comment">// 1. Attempt to acquire the lock</span>
-    <span class="comment">// 2. Apply the operation</span>
-    <span class="comment">// 3. Release lock</span>
-    <span class="comment">//</span>
-    <span class="comment">// A better idea is properly to move the lock-unlock logic into the operation themselves OR to have a</span>
-    <span class="comment">// representation of locked resource and apply operation on top of it.</span>
-    <span class="comment">//</span>
-    <span class="comment">// Also enables us to store state associated with the lock, like the `write_through` flag.</span>
+    <span class="comment">// TODO: to read/write a value owned by track requires three coordinated steps:
+    // 1. Attempt to acquire the lock
+    // 2. Apply the operation
+    // 3. Release lock
+    //
+    // A better idea is properly to move the lock-unlock logic into the operation themselves OR to have a
+    // representation of locked resource and apply operation on top of it.
+    //
+    // Also enables us to store state associated with the lock, like the `write_through` flag.
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">acquire_lock</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>,
-        <span class="ident">mutable</span>: <span class="ident">bool</span>,
-        <span class="ident">write_through</span>: <span class="ident">bool</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">TrackError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">current</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">borrowed_substates</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>) {
-            <span class="kw">if</span> <span class="ident">mutable</span> {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">TrackError::Reentrancy</span>);
-            } <span class="kw">else</span> {
-                <span class="kw">match</span> <span class="ident">current</span> {
-                    <span class="ident">BorrowedSubstate::Taken</span> <span class="op">|</span> <span class="ident">BorrowedSubstate::LoadedMut</span>(..) =&gt; {
+    </span><span class="kw">pub fn </span>acquire_lock(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        substate_id: SubstateId,
+        mutable: bool,
+        write_through: bool,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), TrackError&gt; {
+        <span class="kw">if let </span><span class="prelude-val">Some</span>(current) = <span class="self">self</span>.borrowed_substates.get_mut(<span class="kw-2">&amp;</span>substate_id) {
+            <span class="kw">if </span>mutable {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(TrackError::Reentrancy);
+            } <span class="kw">else </span>{
+                <span class="kw">match </span>current {
+                    BorrowedSubstate::Taken | BorrowedSubstate::LoadedMut(..) =&gt; {
                         <span class="macro">panic!</span>(<span class="string">&quot;Should never get here&quot;</span>)
                     }
-                    <span class="ident">BorrowedSubstate::Loaded</span>(<span class="kw">_</span>, <span class="kw-2">ref</span> <span class="kw-2">mut</span> <span class="ident">count</span>) =&gt; <span class="kw-2">*</span><span class="ident">count</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">count</span> <span class="op">+</span> <span class="number">1</span>,
+                    BorrowedSubstate::Loaded(<span class="kw">_</span>, <span class="kw-2">ref mut </span>count) =&gt; <span class="kw-2">*</span>count = <span class="kw-2">*</span>count + <span class="number">1</span>,
                 }
-                <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+                <span class="kw">return </span><span class="prelude-val">Ok</span>(());
             }
         }
 
-        <span class="kw">if</span> <span class="ident">write_through</span> {
-            <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="self">self</span>
-                .<span class="ident">state_track</span>
-                .<span class="ident">get_substate_from_base</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-                .<span class="ident">map_err</span>(<span class="ident">TrackError::StateTrackError</span>)<span class="question-mark">?</span>
-                .<span class="ident">ok_or</span>(<span class="ident">TrackError::NotFound</span>)<span class="question-mark">?</span>;
-            <span class="self">self</span>.<span class="ident">borrowed_substates</span>.<span class="ident">insert</span>(
-                <span class="ident">substate_id</span>.<span class="ident">clone</span>(),
-                <span class="ident">BorrowedSubstate::loaded</span>(<span class="ident">value</span>, <span class="ident">mutable</span>),
+        <span class="kw">if </span>write_through {
+            <span class="kw">let </span>value = <span class="self">self
+                </span>.state_track
+                .get_substate_from_base(<span class="kw-2">&amp;</span>substate_id)
+                .map_err(TrackError::StateTrackError)<span class="question-mark">?
+                </span>.ok_or(TrackError::NotFound)<span class="question-mark">?</span>;
+            <span class="self">self</span>.borrowed_substates.insert(
+                substate_id.clone(),
+                BorrowedSubstate::loaded(value, mutable),
             );
             <span class="prelude-val">Ok</span>(())
-        } <span class="kw">else</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">substate</span>) <span class="op">=</span> <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">get_substate</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>) {
-                <span class="kw">let</span> <span class="ident">substate</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">substate_id</span> {
-                    <span class="ident">SubstateId::ComponentInfo</span>(..)
-                    <span class="op">|</span> <span class="ident">SubstateId::ResourceManager</span>(..)
-                    <span class="op">|</span> <span class="ident">SubstateId::Vault</span>(..)
-                    <span class="op">|</span> <span class="ident">SubstateId::Package</span>(..)
-                    <span class="op">|</span> <span class="ident">SubstateId::ComponentState</span>(..)
-                    <span class="op">|</span> <span class="ident">SubstateId::System</span> =&gt; <span class="ident">substate</span>,
-                    <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(
+        } <span class="kw">else </span>{
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(substate) = <span class="self">self</span>.state_track.get_substate(<span class="kw-2">&amp;</span>substate_id) {
+                <span class="kw">let </span>substate = <span class="kw">match </span>substate_id {
+                    SubstateId::ComponentInfo(..)
+                    | SubstateId::ResourceManager(..)
+                    | SubstateId::Vault(..)
+                    | SubstateId::Package(..)
+                    | SubstateId::ComponentState(..)
+                    | SubstateId::System =&gt; substate,
+                    <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(
                         <span class="string">&quot;Attempting to borrow unsupported substate {:?}&quot;</span>,
-                        <span class="ident">substate_id</span>
+                        substate_id
                     ),
                 };
 
-                <span class="self">self</span>.<span class="ident">borrowed_substates</span>.<span class="ident">insert</span>(
-                    <span class="ident">substate_id</span>.<span class="ident">clone</span>(),
-                    <span class="ident">BorrowedSubstate::loaded</span>(<span class="ident">substate</span>, <span class="ident">mutable</span>),
+                <span class="self">self</span>.borrowed_substates.insert(
+                    substate_id.clone(),
+                    BorrowedSubstate::loaded(substate, mutable),
                 );
                 <span class="prelude-val">Ok</span>(())
-            } <span class="kw">else</span> {
-                <span class="prelude-val">Err</span>(<span class="ident">TrackError::NotFound</span>)
+            } <span class="kw">else </span>{
+                <span class="prelude-val">Err</span>(TrackError::NotFound)
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">release_lock</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>, <span class="ident">write_through</span>: <span class="ident">bool</span>) {
-        <span class="kw">let</span> <span class="ident">borrowed</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">borrowed_substates</span>
-            .<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;Attempted to release lock on never borrowed substate&quot;</span>);
+    <span class="kw">pub fn </span>release_lock(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId, write_through: bool) {
+        <span class="kw">let </span>borrowed = <span class="self">self
+            </span>.borrowed_substates
+            .remove(<span class="kw-2">&amp;</span>substate_id)
+            .expect(<span class="string">&quot;Attempted to release lock on never borrowed substate&quot;</span>);
 
-        <span class="kw">if</span> <span class="ident">write_through</span> {
-            <span class="kw">match</span> <span class="ident">borrowed</span> {
-                <span class="ident">BorrowedSubstate::Taken</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Value was never returned&quot;</span>),
-                <span class="ident">BorrowedSubstate::LoadedMut</span>(<span class="ident">value</span>) =&gt; {
-                    <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">put_substate_to_base</span>(<span class="ident">substate_id</span>, <span class="ident">value</span>);
+        <span class="kw">if </span>write_through {
+            <span class="kw">match </span>borrowed {
+                BorrowedSubstate::Taken =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Value was never returned&quot;</span>),
+                BorrowedSubstate::LoadedMut(value) =&gt; {
+                    <span class="self">self</span>.state_track.put_substate_to_base(substate_id, value);
                 }
-                <span class="ident">BorrowedSubstate::Loaded</span>(<span class="ident">value</span>, <span class="kw-2">mut</span> <span class="ident">count</span>) =&gt; {
-                    <span class="ident">count</span> <span class="op">=</span> <span class="ident">count</span> <span class="op">-</span> <span class="number">1</span>;
-                    <span class="kw">if</span> <span class="ident">count</span> <span class="op">==</span> <span class="number">0</span> {
-                        <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">put_substate_to_base</span>(<span class="ident">substate_id</span>, <span class="ident">value</span>);
-                    } <span class="kw">else</span> {
-                        <span class="self">self</span>.<span class="ident">borrowed_substates</span>
-                            .<span class="ident">insert</span>(<span class="ident">substate_id</span>, <span class="ident">BorrowedSubstate::Loaded</span>(<span class="ident">value</span>, <span class="ident">count</span>));
+                BorrowedSubstate::Loaded(value, <span class="kw-2">mut </span>count) =&gt; {
+                    count = count - <span class="number">1</span>;
+                    <span class="kw">if </span>count == <span class="number">0 </span>{
+                        <span class="self">self</span>.state_track.put_substate_to_base(substate_id, value);
+                    } <span class="kw">else </span>{
+                        <span class="self">self</span>.borrowed_substates
+                            .insert(substate_id, BorrowedSubstate::Loaded(value, count));
                     }
                 }
             }
-        } <span class="kw">else</span> {
-            <span class="kw">match</span> <span class="ident">borrowed</span> {
-                <span class="ident">BorrowedSubstate::Taken</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Value was never returned&quot;</span>),
-                <span class="ident">BorrowedSubstate::LoadedMut</span>(<span class="ident">value</span>) =&gt; {
-                    <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">put_substate</span>(<span class="ident">substate_id</span>, <span class="ident">value</span>);
+        } <span class="kw">else </span>{
+            <span class="kw">match </span>borrowed {
+                BorrowedSubstate::Taken =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Value was never returned&quot;</span>),
+                BorrowedSubstate::LoadedMut(value) =&gt; {
+                    <span class="self">self</span>.state_track.put_substate(substate_id, value);
                 }
-                <span class="ident">BorrowedSubstate::Loaded</span>(<span class="ident">value</span>, <span class="kw-2">mut</span> <span class="ident">count</span>) =&gt; {
-                    <span class="ident">count</span> <span class="op">=</span> <span class="ident">count</span> <span class="op">-</span> <span class="number">1</span>;
-                    <span class="kw">if</span> <span class="ident">count</span> <span class="op">==</span> <span class="number">0</span> {
-                        <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">put_substate</span>(<span class="ident">substate_id</span>, <span class="ident">value</span>);
-                    } <span class="kw">else</span> {
-                        <span class="self">self</span>.<span class="ident">borrowed_substates</span>
-                            .<span class="ident">insert</span>(<span class="ident">substate_id</span>, <span class="ident">BorrowedSubstate::Loaded</span>(<span class="ident">value</span>, <span class="ident">count</span>));
+                BorrowedSubstate::Loaded(value, <span class="kw-2">mut </span>count) =&gt; {
+                    count = count - <span class="number">1</span>;
+                    <span class="kw">if </span>count == <span class="number">0 </span>{
+                        <span class="self">self</span>.state_track.put_substate(substate_id, value);
+                    } <span class="kw">else </span>{
+                        <span class="self">self</span>.borrowed_substates
+                            .insert(substate_id, BorrowedSubstate::Loaded(value, count));
                     }
                 }
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_substate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Substate</span> {
-        <span class="kw">match</span> <span class="self">self</span>
-            .<span class="ident">borrowed_substates</span>
-            .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-            .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Substate {:?} was never locked&quot;</span>, <span class="ident">substate_id</span>))
+    <span class="kw">pub fn </span>read_substate(<span class="kw-2">&amp;</span><span class="self">self</span>, substate_id: SubstateId) -&gt; <span class="kw-2">&amp;</span>Substate {
+        <span class="kw">match </span><span class="self">self
+            </span>.borrowed_substates
+            .get(<span class="kw-2">&amp;</span>substate_id)
+            .expect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Substate {:?} was never locked&quot;</span>, substate_id))
         {
-            <span class="ident">BorrowedSubstate::LoadedMut</span>(<span class="ident">substate</span>) =&gt; <span class="ident">substate</span>,
-            <span class="ident">BorrowedSubstate::Loaded</span>(<span class="ident">substate</span>, ..) =&gt; <span class="ident">substate</span>,
-            <span class="ident">BorrowedSubstate::Taken</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Substate was already taken&quot;</span>),
+            BorrowedSubstate::LoadedMut(substate) =&gt; substate,
+            BorrowedSubstate::Loaded(substate, ..) =&gt; substate,
+            BorrowedSubstate::Taken =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Substate was already taken&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take_substate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="kw">match</span> <span class="self">self</span>
-            .<span class="ident">borrowed_substates</span>
-            .<span class="ident">insert</span>(<span class="ident">substate_id</span>.<span class="ident">clone</span>(), <span class="ident">BorrowedSubstate::Taken</span>)
-            .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Substate {:?} was never locked&quot;</span>, <span class="ident">substate_id</span>))
+    <span class="kw">pub fn </span>take_substate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId) -&gt; Substate {
+        <span class="kw">match </span><span class="self">self
+            </span>.borrowed_substates
+            .insert(substate_id.clone(), BorrowedSubstate::Taken)
+            .expect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Substate {:?} was never locked&quot;</span>, substate_id))
         {
-            <span class="ident">BorrowedSubstate::LoadedMut</span>(<span class="ident">value</span>) =&gt; <span class="ident">value</span>,
-            <span class="ident">BorrowedSubstate::Loaded</span>(..) =&gt; {
-                <span class="macro">panic!</span>(<span class="string">&quot;Cannot take value on immutable: {:?}&quot;</span>, <span class="ident">substate_id</span>)
+            BorrowedSubstate::LoadedMut(value) =&gt; value,
+            BorrowedSubstate::Loaded(..) =&gt; {
+                <span class="macro">panic!</span>(<span class="string">&quot;Cannot take value on immutable: {:?}&quot;</span>, substate_id)
             }
-            <span class="ident">BorrowedSubstate::Taken</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Substate was already taken&quot;</span>),
+            BorrowedSubstate::Taken =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Substate was already taken&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">write_substate</span><span class="op">&lt;</span><span class="ident">V</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>, <span class="ident">value</span>: <span class="ident">V</span>) {
-        <span class="kw">let</span> <span class="ident">cur_value</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">borrowed_substates</span>
-            .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-            .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Substate {:?} was never locked&quot;</span>, <span class="ident">substate_id</span>));
-        <span class="kw">match</span> <span class="ident">cur_value</span> {
-            <span class="ident">BorrowedSubstate::Loaded</span>(..) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot write to immutable&quot;</span>),
-            <span class="ident">BorrowedSubstate::LoadedMut</span>(..) <span class="op">|</span> <span class="ident">BorrowedSubstate::Taken</span> =&gt; {}
+    <span class="kw">pub fn </span>write_substate&lt;V: Into&lt;Substate&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId, value: V) {
+        <span class="kw">let </span>cur_value = <span class="self">self
+            </span>.borrowed_substates
+            .get(<span class="kw-2">&amp;</span>substate_id)
+            .expect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Substate {:?} was never locked&quot;</span>, substate_id));
+        <span class="kw">match </span>cur_value {
+            BorrowedSubstate::Loaded(..) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Cannot write to immutable&quot;</span>),
+            BorrowedSubstate::LoadedMut(..) | BorrowedSubstate::Taken =&gt; {}
         }
 
-        <span class="self">self</span>.<span class="ident">borrowed_substates</span>
-            .<span class="ident">insert</span>(<span class="ident">substate_id</span>, <span class="ident">BorrowedSubstate::LoadedMut</span>(<span class="ident">value</span>.<span class="ident">into</span>()));
+        <span class="self">self</span>.borrowed_substates
+            .insert(substate_id, BorrowedSubstate::LoadedMut(value.into()));
     }
 
-    <span class="doccomment">/// Returns the value of a key value pair</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">read_key_value</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">parent_address</span>: <span class="ident">SubstateId</span>, <span class="ident">key</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="ident">Substate</span> {
-        <span class="comment">// TODO: consider using a single address as function input</span>
-        <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">parent_address</span> {
-            <span class="ident">SubstateId::NonFungibleSpace</span>(<span class="ident">resource_address</span>) =&gt; {
-                <span class="ident">SubstateId::NonFungible</span>(<span class="ident">resource_address</span>, <span class="ident">NonFungibleId</span>(<span class="ident">key</span>))
+    <span class="doccomment">/// Returns the value of a key value pair
+    </span><span class="kw">pub fn </span>read_key_value(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parent_address: SubstateId, key: Vec&lt;u8&gt;) -&gt; Substate {
+        <span class="comment">// TODO: consider using a single address as function input
+        </span><span class="kw">let </span>substate_id = <span class="kw">match </span>parent_address {
+            SubstateId::NonFungibleSpace(resource_address) =&gt; {
+                SubstateId::NonFungible(resource_address, NonFungibleId(key))
             }
-            <span class="ident">SubstateId::KeyValueStoreSpace</span>(<span class="ident">kv_store_id</span>) =&gt; {
-                <span class="ident">SubstateId::KeyValueStoreEntry</span>(<span class="ident">kv_store_id</span>, <span class="ident">key</span>)
+            SubstateId::KeyValueStoreSpace(kv_store_id) =&gt; {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key)
             }
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unsupported key value&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unsupported key value&quot;</span>),
         };
 
-        <span class="kw">match</span> <span class="ident">parent_address</span> {
-            <span class="ident">SubstateId::NonFungibleSpace</span>(<span class="kw">_</span>) =&gt; <span class="self">self</span>
-                .<span class="ident">state_track</span>
-                .<span class="ident">get_substate</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-                .<span class="ident">unwrap_or</span>(<span class="ident">Substate::NonFungible</span>(<span class="ident">NonFungibleWrapper</span>(<span class="prelude-val">None</span>))),
-            <span class="ident">SubstateId::KeyValueStoreSpace</span>(..) =&gt; <span class="self">self</span>
-                .<span class="ident">state_track</span>
-                .<span class="ident">get_substate</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-                .<span class="ident">unwrap_or</span>(<span class="ident">Substate::KeyValueStoreEntry</span>(<span class="ident">KeyValueStoreEntryWrapper</span>(
+        <span class="kw">match </span>parent_address {
+            SubstateId::NonFungibleSpace(<span class="kw">_</span>) =&gt; <span class="self">self
+                </span>.state_track
+                .get_substate(<span class="kw-2">&amp;</span>substate_id)
+                .unwrap_or(Substate::NonFungible(NonFungibleWrapper(<span class="prelude-val">None</span>))),
+            SubstateId::KeyValueStoreSpace(..) =&gt; <span class="self">self
+                </span>.state_track
+                .get_substate(<span class="kw-2">&amp;</span>substate_id)
+                .unwrap_or(Substate::KeyValueStoreEntry(KeyValueStoreEntryWrapper(
                     <span class="prelude-val">None</span>,
                 ))),
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Invalid keyed value address {:?}&quot;</span>, <span class="ident">parent_address</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Invalid keyed value address {:?}&quot;</span>, parent_address),
         }
     }
 
-    <span class="doccomment">/// Sets a key value</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">set_key_value</span><span class="op">&lt;</span><span class="ident">V</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">Substate</span><span class="op">&gt;</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">parent_substate_id</span>: <span class="ident">SubstateId</span>,
-        <span class="ident">key</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>,
-        <span class="ident">value</span>: <span class="ident">V</span>,
+    <span class="doccomment">/// Sets a key value
+    </span><span class="kw">pub fn </span>set_key_value&lt;V: Into&lt;Substate&gt;&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        parent_substate_id: SubstateId,
+        key: Vec&lt;u8&gt;,
+        value: V,
     ) {
-        <span class="comment">// TODO: consider using a single address as function input</span>
-        <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">parent_substate_id</span> {
-            <span class="ident">SubstateId::NonFungibleSpace</span>(<span class="ident">resource_address</span>) =&gt; {
-                <span class="ident">SubstateId::NonFungible</span>(<span class="ident">resource_address</span>, <span class="ident">NonFungibleId</span>(<span class="ident">key</span>.<span class="ident">clone</span>()))
+        <span class="comment">// TODO: consider using a single address as function input
+        </span><span class="kw">let </span>substate_id = <span class="kw">match </span>parent_substate_id {
+            SubstateId::NonFungibleSpace(resource_address) =&gt; {
+                SubstateId::NonFungible(resource_address, NonFungibleId(key.clone()))
             }
-            <span class="ident">SubstateId::KeyValueStoreSpace</span>(<span class="ident">kv_store_id</span>) =&gt; {
-                <span class="ident">SubstateId::KeyValueStoreEntry</span>(<span class="ident">kv_store_id</span>, <span class="ident">key</span>.<span class="ident">clone</span>())
+            SubstateId::KeyValueStoreSpace(kv_store_id) =&gt; {
+                SubstateId::KeyValueStoreEntry(kv_store_id, key.clone())
             }
-            <span class="kw">_</span> =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unsupported key value&quot;</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unsupported key value&quot;</span>),
         };
 
-        <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">put_substate</span>(<span class="ident">substate_id</span>, <span class="ident">value</span>.<span class="ident">into</span>());
+        <span class="self">self</span>.state_track.put_substate(substate_id, value.into());
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">apply_pre_execution_costs</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">ExecutableTransaction</span><span class="op">&gt;</span>(
-        <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">transaction</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">PreExecutionError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">fee_reserve</span>
-            .<span class="ident">consume</span>(<span class="self">self</span>.<span class="ident">fee_table</span>.<span class="ident">tx_base_fee</span>(), <span class="string">&quot;base_fee&quot;</span>, <span class="bool-val">false</span>)
-            .<span class="ident">and_then</span>(<span class="op">|</span>()<span class="op">|</span> {
-                <span class="self">self</span>.<span class="ident">fee_reserve</span>.<span class="ident">consume</span>(
-                    <span class="self">self</span>.<span class="ident">fee_table</span>.<span class="ident">tx_manifest_decoding_per_byte</span>()
-                        <span class="op">*</span> <span class="ident">transaction</span>.<span class="ident">manifest_instructions_size</span>() <span class="kw">as</span> <span class="ident">u32</span>,
+    <span class="kw">pub fn </span>apply_pre_execution_costs&lt;T: ExecutableTransaction&gt;(
+        <span class="kw-2">mut </span><span class="self">self</span>,
+        transaction: <span class="kw-2">&amp;</span>T,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, PreExecutionError&gt; {
+        <span class="kw">let </span>result = <span class="self">self
+            </span>.fee_reserve
+            .consume(<span class="self">self</span>.fee_table.tx_base_fee(), <span class="string">&quot;base_fee&quot;</span>, <span class="bool-val">false</span>)
+            .and_then(|()| {
+                <span class="self">self</span>.fee_reserve.consume(
+                    <span class="self">self</span>.fee_table.tx_manifest_decoding_per_byte()
+                        * transaction.manifest_instructions_size() <span class="kw">as </span>u32,
                     <span class="string">&quot;decode_manifest&quot;</span>,
                     <span class="bool-val">false</span>,
                 )
             })
-            .<span class="ident">and_then</span>(<span class="op">|</span>()<span class="op">|</span> {
-                <span class="self">self</span>.<span class="ident">fee_reserve</span>.<span class="ident">consume</span>(
-                    <span class="self">self</span>.<span class="ident">fee_table</span>.<span class="ident">tx_manifest_verification_per_byte</span>()
-                        <span class="op">*</span> <span class="ident">transaction</span>.<span class="ident">manifest_instructions_size</span>() <span class="kw">as</span> <span class="ident">u32</span>,
+            .and_then(|()| {
+                <span class="self">self</span>.fee_reserve.consume(
+                    <span class="self">self</span>.fee_table.tx_manifest_verification_per_byte()
+                        * transaction.manifest_instructions_size() <span class="kw">as </span>u32,
                     <span class="string">&quot;verify_manifest&quot;</span>,
                     <span class="bool-val">false</span>,
                 )
             })
-            .<span class="ident">and_then</span>(<span class="op">|</span>()<span class="op">|</span> {
-                <span class="self">self</span>.<span class="ident">fee_reserve</span>.<span class="ident">consume</span>(
-                    <span class="self">self</span>.<span class="ident">fee_table</span>.<span class="ident">tx_signature_verification_per_sig</span>()
-                        <span class="op">*</span> <span class="ident">transaction</span>.<span class="ident">initial_proofs</span>().<span class="ident">len</span>() <span class="kw">as</span> <span class="ident">u32</span>,
+            .and_then(|()| {
+                <span class="self">self</span>.fee_reserve.consume(
+                    <span class="self">self</span>.fee_table.tx_signature_verification_per_sig()
+                        * transaction.initial_proofs().len() <span class="kw">as </span>u32,
                     <span class="string">&quot;verify_signatures&quot;</span>,
                     <span class="bool-val">false</span>,
                 )
             })
-            .<span class="ident">and_then</span>(<span class="op">|</span>()<span class="op">|</span> {
-                <span class="self">self</span>.<span class="ident">fee_reserve</span>.<span class="ident">consume</span>(
-                    <span class="ident">transaction</span>.<span class="ident">blobs</span>().<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">b</span><span class="op">|</span> <span class="ident">b</span>.<span class="ident">len</span>()).<span class="ident">sum</span>::<span class="op">&lt;</span><span class="ident">usize</span><span class="op">&gt;</span>() <span class="kw">as</span> <span class="ident">u32</span>
-                        <span class="op">*</span> <span class="self">self</span>.<span class="ident">fee_table</span>.<span class="ident">tx_blob_price_per_byte</span>(),
+            .and_then(|()| {
+                <span class="self">self</span>.fee_reserve.consume(
+                    transaction.blobs().iter().map(|b| b.len()).sum::&lt;usize&gt;() <span class="kw">as </span>u32
+                        * <span class="self">self</span>.fee_table.tx_blob_price_per_byte(),
                     <span class="string">&quot;blobs&quot;</span>,
                     <span class="bool-val">true</span>,
                 )
             });
 
-        <span class="kw">match</span> <span class="ident">result</span> {
+        <span class="kw">match </span>result {
             <span class="prelude-val">Ok</span>(()) =&gt; <span class="prelude-val">Ok</span>(<span class="self">self</span>),
-            <span class="prelude-val">Err</span>(<span class="ident">error</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">PreExecutionError</span> {
-                <span class="ident">fee_summary</span>: <span class="self">self</span>.<span class="ident">fee_reserve</span>.<span class="ident">finalize</span>(),
-                <span class="ident">error</span>,
+            <span class="prelude-val">Err</span>(error) =&gt; <span class="prelude-val">Err</span>(PreExecutionError {
+                fee_summary: <span class="self">self</span>.fee_reserve.finalize(),
+                error,
             }),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">finalize</span>(
-        <span class="kw-2">mut</span> <span class="self">self</span>,
-        <span class="ident">invoke_result</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="ident">RuntimeError</span><span class="op">&gt;</span>,
-        <span class="ident">resource_changes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResourceChange</span><span class="op">&gt;</span>, <span class="comment">// TODO: wrong abstraction, resource change should be derived from track instead of kernel</span>
-    ) -&gt; <span class="ident">TrackReceipt</span> {
-        <span class="kw">let</span> <span class="ident">is_success</span> <span class="op">=</span> <span class="ident">invoke_result</span>.<span class="ident">is_ok</span>();
+    <span class="kw">pub fn </span>finalize(
+        <span class="kw-2">mut </span><span class="self">self</span>,
+        invoke_result: <span class="prelude-ty">Result</span>&lt;Vec&lt;Vec&lt;u8&gt;&gt;, RuntimeError&gt;,
+        resource_changes: Vec&lt;ResourceChange&gt;, <span class="comment">// TODO: wrong abstraction, resource change should be derived from track instead of kernel
+    </span>) -&gt; TrackReceipt {
+        <span class="kw">let </span>is_success = invoke_result.is_ok();
 
-        <span class="comment">// Commit/rollback application state changes</span>
-        <span class="kw">if</span> <span class="ident">is_success</span> {
-            <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">commit</span>();
-            <span class="macro">assert!</span>(<span class="self">self</span>.<span class="ident">borrowed_substates</span>.<span class="ident">is_empty</span>())
-        } <span class="kw">else</span> {
-            <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">rollback</span>();
-            <span class="self">self</span>.<span class="ident">borrowed_substates</span>.<span class="ident">clear</span>();
-            <span class="self">self</span>.<span class="ident">new_substates</span>.<span class="ident">clear</span>();
+        <span class="comment">// Commit/rollback application state changes
+        </span><span class="kw">if </span>is_success {
+            <span class="self">self</span>.state_track.commit();
+            <span class="macro">assert!</span>(<span class="self">self</span>.borrowed_substates.is_empty())
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.state_track.rollback();
+            <span class="self">self</span>.borrowed_substates.clear();
+            <span class="self">self</span>.new_substates.clear();
         }
 
-        <span class="comment">// Close fee reserve</span>
-        <span class="kw">let</span> <span class="ident">fee_summary</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">fee_reserve</span>.<span class="ident">finalize</span>();
-        <span class="kw">let</span> <span class="ident">is_rejection</span> <span class="op">=</span> <span class="op">!</span><span class="ident">fee_summary</span>.<span class="ident">loan_fully_repaid</span>;
+        <span class="comment">// Close fee reserve
+        </span><span class="kw">let </span>fee_summary = <span class="self">self</span>.fee_reserve.finalize();
+        <span class="kw">let </span>is_rejection = !fee_summary.loan_fully_repaid;
 
-        <span class="comment">// Commit fee state changes</span>
-        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">is_rejection</span> {
-            <span class="ident">TransactionResult::Reject</span>(<span class="ident">RejectResult</span> {
-                <span class="ident">error</span>: <span class="kw">match</span> <span class="ident">invoke_result</span> {
-                    <span class="prelude-val">Ok</span>(..) =&gt; <span class="ident">RejectionError::SuccessButFeeLoanNotRepaid</span>,
-                    <span class="prelude-val">Err</span>(<span class="ident">error</span>) =&gt; <span class="ident">RejectionError::ErrorBeforeFeeLoanRepaid</span>(<span class="ident">error</span>),
+        <span class="comment">// Commit fee state changes
+        </span><span class="kw">let </span>result = <span class="kw">if </span>is_rejection {
+            TransactionResult::Reject(RejectResult {
+                error: <span class="kw">match </span>invoke_result {
+                    <span class="prelude-val">Ok</span>(..) =&gt; RejectionError::SuccessButFeeLoanNotRepaid,
+                    <span class="prelude-val">Err</span>(error) =&gt; RejectionError::ErrorBeforeFeeLoanRepaid(error),
                 },
             })
-        } <span class="kw">else</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">required</span> <span class="op">=</span> <span class="ident">fee_summary</span>.<span class="ident">burned</span> <span class="op">+</span> <span class="ident">fee_summary</span>.<span class="ident">tipped</span>;
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">collector</span> <span class="op">=</span> <span class="ident">ResourceContainer::new_empty</span>(
-                <span class="ident">RADIX_TOKEN</span>,
-                <span class="ident">ResourceType::Fungible</span> { <span class="ident">divisibility</span>: <span class="number">18</span> },
+        } <span class="kw">else </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>required = fee_summary.burned + fee_summary.tipped;
+            <span class="kw">let </span><span class="kw-2">mut </span>collector = ResourceContainer::new_empty(
+                RADIX_TOKEN,
+                ResourceType::Fungible { divisibility: <span class="number">18 </span>},
             );
-            <span class="kw">for</span> (<span class="ident">vault_id</span>, <span class="kw-2">mut</span> <span class="ident">locked</span>, <span class="ident">contingent</span>) <span class="kw">in</span> <span class="ident">fee_summary</span>.<span class="ident">payments</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>().<span class="ident">rev</span>() {
-                <span class="kw">let</span> <span class="ident">amount</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">contingent</span> {
-                    <span class="kw">if</span> <span class="ident">is_success</span> {
-                        <span class="ident">Decimal::min</span>(<span class="ident">locked</span>.<span class="ident">liquid_amount</span>(), <span class="ident">required</span>)
-                    } <span class="kw">else</span> {
-                        <span class="ident">Decimal::zero</span>()
+            <span class="kw">for </span>(vault_id, <span class="kw-2">mut </span>locked, contingent) <span class="kw">in </span>fee_summary.payments.iter().cloned().rev() {
+                <span class="kw">let </span>amount = <span class="kw">if </span>contingent {
+                    <span class="kw">if </span>is_success {
+                        Decimal::min(locked.liquid_amount(), required)
+                    } <span class="kw">else </span>{
+                        Decimal::zero()
                     }
-                } <span class="kw">else</span> {
-                    <span class="ident">Decimal::min</span>(<span class="ident">locked</span>.<span class="ident">liquid_amount</span>(), <span class="ident">required</span>)
+                } <span class="kw">else </span>{
+                    Decimal::min(locked.liquid_amount(), required)
                 };
 
-                <span class="comment">// Deduct fee required</span>
-                <span class="ident">required</span> <span class="op">=</span> <span class="ident">required</span> <span class="op">-</span> <span class="ident">amount</span>;
+                <span class="comment">// Deduct fee required
+                </span>required = required - amount;
 
-                <span class="comment">// Collect fees into collector</span>
-                <span class="ident">collector</span>
-                    .<span class="ident">put</span>(
-                        <span class="ident">locked</span>
-                            .<span class="ident">take_by_amount</span>(<span class="ident">amount</span>)
-                            .<span class="ident">expect</span>(<span class="string">&quot;Failed to extract locked fee&quot;</span>),
+                <span class="comment">// Collect fees into collector
+                </span>collector
+                    .put(
+                        locked
+                            .take_by_amount(amount)
+                            .expect(<span class="string">&quot;Failed to extract locked fee&quot;</span>),
                     )
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to add fee to fee collector&quot;</span>);
+                    .expect(<span class="string">&quot;Failed to add fee to fee collector&quot;</span>);
 
-                <span class="comment">// Refund overpayment</span>
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::Vault</span>(<span class="ident">vault_id</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">substate</span> <span class="op">=</span> <span class="self">self</span>
-                    .<span class="ident">state_track</span>
-                    .<span class="ident">get_substate_from_base</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to fetch a fee-locking vault&quot;</span>)
-                    .<span class="ident">expect</span>(<span class="string">&quot;Vault not found&quot;</span>);
-                <span class="ident">substate</span>
-                    .<span class="ident">vault_mut</span>()
-                    .<span class="ident">put</span>(<span class="ident">Bucket::new</span>(<span class="ident">locked</span>))
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to put a fee-locking vault&quot;</span>);
-                <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">put_substate_to_base</span>(<span class="ident">substate_id</span>, <span class="ident">substate</span>);
+                <span class="comment">// Refund overpayment
+                </span><span class="kw">let </span>substate_id = SubstateId::Vault(vault_id);
+                <span class="kw">let </span><span class="kw-2">mut </span>substate = <span class="self">self
+                    </span>.state_track
+                    .get_substate_from_base(<span class="kw-2">&amp;</span>substate_id)
+                    .expect(<span class="string">&quot;Failed to fetch a fee-locking vault&quot;</span>)
+                    .expect(<span class="string">&quot;Vault not found&quot;</span>);
+                substate
+                    .vault_mut()
+                    .put(Bucket::new(locked))
+                    .expect(<span class="string">&quot;Failed to put a fee-locking vault&quot;</span>);
+                <span class="self">self</span>.state_track.put_substate_to_base(substate_id, substate);
             }
 
-            <span class="comment">// TODO: update XRD supply or disable it</span>
-            <span class="comment">// TODO: pay tips to the lead validator</span>
+            <span class="comment">// TODO: update XRD supply or disable it
+            // TODO: pay tips to the lead validator
 
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_component_addresses</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_resource_addresses</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">new_package_addresses</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="ident">substate_id</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">new_substates</span> {
-                <span class="kw">match</span> <span class="ident">substate_id</span> {
-                    <span class="ident">SubstateId::ComponentInfo</span>(<span class="ident">component_address</span>) =&gt; {
-                        <span class="ident">new_component_addresses</span>.<span class="ident">push</span>(<span class="ident">component_address</span>)
+            </span><span class="kw">let </span><span class="kw-2">mut </span>new_component_addresses = Vec::new();
+            <span class="kw">let </span><span class="kw-2">mut </span>new_resource_addresses = Vec::new();
+            <span class="kw">let </span><span class="kw-2">mut </span>new_package_addresses = Vec::new();
+            <span class="kw">for </span>substate_id <span class="kw">in </span><span class="self">self</span>.new_substates {
+                <span class="kw">match </span>substate_id {
+                    SubstateId::ComponentInfo(component_address) =&gt; {
+                        new_component_addresses.push(component_address)
                     }
-                    <span class="ident">SubstateId::ResourceManager</span>(<span class="ident">resource_address</span>) =&gt; {
-                        <span class="ident">new_resource_addresses</span>.<span class="ident">push</span>(<span class="ident">resource_address</span>)
+                    SubstateId::ResourceManager(resource_address) =&gt; {
+                        new_resource_addresses.push(resource_address)
                     }
-                    <span class="ident">SubstateId::Package</span>(<span class="ident">package_address</span>) =&gt; {
-                        <span class="ident">new_package_addresses</span>.<span class="ident">push</span>(<span class="ident">package_address</span>)
+                    SubstateId::Package(package_address) =&gt; {
+                        new_package_addresses.push(package_address)
                     }
-                    <span class="kw">_</span> =&gt; {}
+                    <span class="kw">_ </span>=&gt; {}
                 }
             }
 
-            <span class="ident">TransactionResult::Commit</span>(<span class="ident">CommitResult</span> {
-                <span class="ident">outcome</span>: <span class="kw">match</span> <span class="ident">invoke_result</span> {
-                    <span class="prelude-val">Ok</span>(<span class="ident">output</span>) =&gt; <span class="ident">TransactionOutcome::Success</span>(<span class="ident">output</span>),
-                    <span class="prelude-val">Err</span>(<span class="ident">error</span>) =&gt; <span class="ident">TransactionOutcome::Failure</span>(<span class="ident">error</span>),
+            TransactionResult::Commit(CommitResult {
+                outcome: <span class="kw">match </span>invoke_result {
+                    <span class="prelude-val">Ok</span>(output) =&gt; TransactionOutcome::Success(output),
+                    <span class="prelude-val">Err</span>(error) =&gt; TransactionOutcome::Failure(error),
                 },
-                <span class="ident">state_updates</span>: <span class="self">self</span>.<span class="ident">state_track</span>.<span class="ident">into_base</span>().<span class="ident">generate_diff</span>(),
-                <span class="ident">entity_changes</span>: <span class="ident">EntityChanges</span> {
-                    <span class="ident">new_package_addresses</span>,
-                    <span class="ident">new_component_addresses</span>,
-                    <span class="ident">new_resource_addresses</span>,
+                state_updates: <span class="self">self</span>.state_track.into_base().generate_diff(),
+                entity_changes: EntityChanges {
+                    new_package_addresses,
+                    new_component_addresses,
+                    new_resource_addresses,
                 },
-                <span class="ident">resource_changes</span>,
+                resource_changes,
             })
         };
 
-        <span class="ident">TrackReceipt</span> {
-            <span class="ident">fee_summary</span>,
-            <span class="ident">application_logs</span>: <span class="self">self</span>.<span class="ident">application_logs</span>,
-            <span class="ident">result</span>,
+        TrackReceipt {
+            fee_summary,
+            application_logs: <span class="self">self</span>.application_logs,
+            result,
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

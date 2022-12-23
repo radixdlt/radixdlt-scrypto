@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/ledger/memory.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/ledger/memory.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -76,79 +71,78 @@
 <span id="71">71</span>
 <span id="72">72</span>
 <span id="73">73</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::Substate</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger</span>::{<span class="ident">OutputValue</span>, <span class="ident">WriteableSubstateStore</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::Substate;
+<span class="kw">use </span><span class="kw">crate</span>::ledger::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::ledger::{OutputValue, WriteableSubstateStore};
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// A substate store that stores all typed substates in host memory.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TypedInMemorySubstateStore</span> {
-    <span class="ident">substates</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">SubstateId</span>, <span class="ident">OutputValue</span><span class="op">&gt;</span>,
-    <span class="ident">root_substates</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">SubstateId</span><span class="op">&gt;</span>,
+<span class="doccomment">/// A substate store that stores all typed substates in host memory.
+</span><span class="attribute">#[derive(Debug, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>TypedInMemorySubstateStore {
+    substates: HashMap&lt;SubstateId, OutputValue&gt;,
+    root_substates: HashSet&lt;SubstateId&gt;,
 }
 
-<span class="kw">impl</span> <span class="ident">TypedInMemorySubstateStore</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">substates</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">root_substates</span>: <span class="ident">HashSet::new</span>(),
+<span class="kw">impl </span>TypedInMemorySubstateStore {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            substates: HashMap::new(),
+            root_substates: HashSet::new(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">with_bootstrap</span>() -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">substate_store</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::new</span>();
-        <span class="ident">bootstrap</span>(<span class="ident">substate_store</span>)
+    <span class="kw">pub fn </span>with_bootstrap() -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>substate_store = <span class="self">Self</span>::new();
+        bootstrap(substate_store)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">TypedInMemorySubstateStore</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::new</span>()
+<span class="kw">impl </span>Default <span class="kw">for </span>TypedInMemorySubstateStore {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ReadableSubstateStore</span> <span class="kw">for</span> <span class="ident">TypedInMemorySubstateStore</span> {
-    <span class="kw">fn</span> <span class="ident">get_substate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">substate_id</span>: <span class="kw-2">&amp;</span><span class="ident">SubstateId</span>) -&gt; <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">OutputValue</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">substates</span>.<span class="ident">get</span>(<span class="ident">substate_id</span>).<span class="ident">cloned</span>()
+<span class="kw">impl </span>ReadableSubstateStore <span class="kw">for </span>TypedInMemorySubstateStore {
+    <span class="kw">fn </span>get_substate(<span class="kw-2">&amp;</span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId) -&gt; <span class="prelude-ty">Option</span>&lt;OutputValue&gt; {
+        <span class="self">self</span>.substates.get(substate_id).cloned()
     }
 
-    <span class="kw">fn</span> <span class="ident">is_root</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">substate_id</span>: <span class="kw-2">&amp;</span><span class="ident">SubstateId</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">root_substates</span>.<span class="ident">contains</span>(<span class="ident">substate_id</span>)
-    }
-}
-
-<span class="kw">impl</span> <span class="ident">WriteableSubstateStore</span> <span class="kw">for</span> <span class="ident">TypedInMemorySubstateStore</span> {
-    <span class="kw">fn</span> <span class="ident">put_substate</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>, <span class="ident">substate</span>: <span class="ident">OutputValue</span>) {
-        <span class="self">self</span>.<span class="ident">substates</span>.<span class="ident">insert</span>(<span class="ident">substate_id</span>, <span class="ident">substate</span>);
-    }
-
-    <span class="kw">fn</span> <span class="ident">set_root</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">substate_id</span>: <span class="ident">SubstateId</span>) {
-        <span class="self">self</span>.<span class="ident">root_substates</span>.<span class="ident">insert</span>(<span class="ident">substate_id</span>);
+    <span class="kw">fn </span>is_root(<span class="kw-2">&amp;</span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId) -&gt; bool {
+        <span class="self">self</span>.root_substates.contains(substate_id)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">QueryableSubstateStore</span> <span class="kw">for</span> <span class="ident">TypedInMemorySubstateStore</span> {
-    <span class="kw">fn</span> <span class="ident">get_kv_store_entries</span>(
+<span class="kw">impl </span>WriteableSubstateStore <span class="kw">for </span>TypedInMemorySubstateStore {
+    <span class="kw">fn </span>put_substate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId, substate: OutputValue) {
+        <span class="self">self</span>.substates.insert(substate_id, substate);
+    }
+
+    <span class="kw">fn </span>set_root(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId) {
+        <span class="self">self</span>.root_substates.insert(substate_id);
+    }
+}
+
+<span class="kw">impl </span>QueryableSubstateStore <span class="kw">for </span>TypedInMemorySubstateStore {
+    <span class="kw">fn </span>get_kv_store_entries(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">kv_store_id</span>: <span class="kw-2">&amp;</span><span class="ident">KeyValueStoreId</span>,
-    ) -&gt; <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">sbor::rust::vec::Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">Substate</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">substates</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">filter_map</span>(<span class="op">|</span>(<span class="ident">key</span>, <span class="ident">value</span>)<span class="op">|</span> {
-                <span class="kw">if</span> <span class="kw">let</span> <span class="ident">SubstateId::KeyValueStoreEntry</span>(<span class="ident">id</span>, <span class="ident">key</span>) <span class="op">=</span> <span class="ident">key</span> {
-                    <span class="kw">if</span> <span class="ident">id</span> <span class="op">==</span> <span class="ident">kv_store_id</span> {
-                        <span class="prelude-val">Some</span>((<span class="ident">key</span>.<span class="ident">clone</span>(), <span class="ident">value</span>.<span class="ident">substate</span>.<span class="ident">clone</span>()))
-                    } <span class="kw">else</span> {
-                        <span class="prelude-val">None</span>
-                    }
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
-                }
+        kv_store_id: <span class="kw-2">&amp;</span>KeyValueStoreId,
+    ) -&gt; HashMap&lt;sbor::rust::vec::Vec&lt;u8&gt;, Substate&gt; {
+        <span class="self">self</span>.substates
+            .iter()
+            .filter_map(|(key, value)| {
+                <span class="kw">if let </span>SubstateId::KeyValueStoreEntry(id, key) = key {
+                    <span class="kw">if </span>id == kv_store_id {
+                        <span class="prelude-val">Some</span>((key.clone(), value.substate.clone()))
+                    } <span class="kw">else </span>{
+                        <span class="prelude-val">None
+                    </span>}
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>}
             })
-            .<span class="ident">collect</span>()
+            .collect()
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

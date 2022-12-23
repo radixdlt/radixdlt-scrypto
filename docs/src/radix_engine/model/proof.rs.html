@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/proof.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>proof.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/proof.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>proof.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -412,415 +407,414 @@
 <span id="407">407</span>
 <span id="408">408</span>
 <span id="409">409</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">HeapRENode</span>, <span class="ident">SystemApi</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::ProofError::UnknownMethod</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::{
-    <span class="ident">InvokeError</span>, <span class="ident">LockedAmountOrIds</span>, <span class="ident">ResourceContainer</span>, <span class="ident">ResourceContainerError</span>, <span class="ident">ResourceContainerId</span>,
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::{HeapRENode, SystemApi};
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::ProofError::UnknownMethod;
+<span class="kw">use </span><span class="kw">crate</span>::model::{
+    InvokeError, LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Proof</span> {
-    <span class="doccomment">/// The resource address.</span>
-    <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-    <span class="doccomment">/// The resource type.</span>
-    <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>,
-    <span class="doccomment">/// Whether movement of this proof is restricted.</span>
-    <span class="ident">restricted</span>: <span class="ident">bool</span>,
-    <span class="doccomment">/// The total locked amount or non-fungible ids.</span>
-    <span class="ident">total_locked</span>: <span class="ident">LockedAmountOrIds</span>,
-    <span class="doccomment">/// The supporting containers.</span>
-    <span class="ident">evidence</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceContainerId</span>, (<span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="ident">LockedAmountOrIds</span>)<span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>Proof {
+    <span class="doccomment">/// The resource address.
+    </span>resource_address: ResourceAddress,
+    <span class="doccomment">/// The resource type.
+    </span>resource_type: ResourceType,
+    <span class="doccomment">/// Whether movement of this proof is restricted.
+    </span>restricted: bool,
+    <span class="doccomment">/// The total locked amount or non-fungible ids.
+    </span>total_locked: LockedAmountOrIds,
+    <span class="doccomment">/// The supporting containers.
+    </span>evidence: HashMap&lt;ResourceContainerId, (Rc&lt;RefCell&lt;ResourceContainer&gt;&gt;, LockedAmountOrIds)&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ProofError</span> {
-    <span class="doccomment">/// Error produced by a resource container.</span>
-    <span class="ident">ResourceContainerError</span>(<span class="ident">ResourceContainerError</span>),
-    <span class="doccomment">/// Can&#39;t generate zero-amount or empty non-fungible set proofs.</span>
-    <span class="ident">EmptyProofNotAllowed</span>,
-    <span class="doccomment">/// The base proofs are not enough to cover the requested amount or non-fungible ids.</span>
-    <span class="ident">InsufficientBaseProofs</span>,
-    <span class="doccomment">/// Can&#39;t apply a non-fungible operation on fungible proofs.</span>
-    <span class="ident">NonFungibleOperationNotAllowed</span>,
-    <span class="doccomment">/// Can&#39;t apply a fungible operation on non-fungible proofs.</span>
-    <span class="ident">FungibleOperationNotAllowed</span>,
-    <span class="ident">CouldNotCreateProof</span>,
-    <span class="ident">InvalidRequestData</span>(<span class="ident">DecodeError</span>),
-    <span class="ident">UnknownMethod</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>ProofError {
+    <span class="doccomment">/// Error produced by a resource container.
+    </span>ResourceContainerError(ResourceContainerError),
+    <span class="doccomment">/// Can&#39;t generate zero-amount or empty non-fungible set proofs.
+    </span>EmptyProofNotAllowed,
+    <span class="doccomment">/// The base proofs are not enough to cover the requested amount or non-fungible ids.
+    </span>InsufficientBaseProofs,
+    <span class="doccomment">/// Can&#39;t apply a non-fungible operation on fungible proofs.
+    </span>NonFungibleOperationNotAllowed,
+    <span class="doccomment">/// Can&#39;t apply a fungible operation on non-fungible proofs.
+    </span>FungibleOperationNotAllowed,
+    CouldNotCreateProof,
+    InvalidRequestData(DecodeError),
+    UnknownMethod,
 }
 
-<span class="kw">impl</span> <span class="ident">Proof</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>,
-        <span class="ident">total_locked</span>: <span class="ident">LockedAmountOrIds</span>,
-        <span class="ident">evidence</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceContainerId</span>, (<span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span><span class="op">&gt;</span><span class="op">&gt;</span>, <span class="ident">LockedAmountOrIds</span>)<span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Proof</span>, <span class="ident">ProofError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">total_locked</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ProofError::EmptyProofNotAllowed</span>);
+<span class="kw">impl </span>Proof {
+    <span class="kw">pub fn </span>new(
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+        total_locked: LockedAmountOrIds,
+        evidence: HashMap&lt;ResourceContainerId, (Rc&lt;RefCell&lt;ResourceContainer&gt;&gt;, LockedAmountOrIds)&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Proof, ProofError&gt; {
+        <span class="kw">if </span>total_locked.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ProofError::EmptyProofNotAllowed);
         }
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span> {
-            <span class="ident">resource_address</span>,
-            <span class="ident">resource_type</span>,
-            <span class="ident">restricted</span>: <span class="bool-val">false</span>,
-            <span class="ident">total_locked</span>,
-            <span class="ident">evidence</span>,
+        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+            resource_address,
+            resource_type,
+            restricted: <span class="bool-val">false</span>,
+            total_locked,
+            evidence,
         })
     }
 
-    <span class="doccomment">/// Computes the locked amount or non-fungible IDs, in total and per resource container.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">compute_total_locked</span>(
-        <span class="ident">proofs</span>: <span class="kw-2">&amp;</span>[<span class="ident">Proof</span>],
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>,
+    <span class="doccomment">/// Computes the locked amount or non-fungible IDs, in total and per resource container.
+    </span><span class="kw">pub fn </span>compute_total_locked(
+        proofs: <span class="kw-2">&amp;</span>[Proof],
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
     ) -&gt; (
-        <span class="ident">LockedAmountOrIds</span>,
-        <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceContainerId</span>, <span class="ident">LockedAmountOrIds</span><span class="op">&gt;</span>,
+        LockedAmountOrIds,
+        HashMap&lt;ResourceContainerId, LockedAmountOrIds&gt;,
     ) {
-        <span class="comment">// filter proofs by resource address and restricted flag</span>
-        <span class="kw">let</span> <span class="ident">proofs</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">Proof</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">proofs</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">filter</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">p</span>.<span class="ident">resource_address</span>() <span class="op">==</span> <span class="ident">resource_address</span> <span class="op">&amp;&amp;</span> <span class="op">!</span><span class="ident">p</span>.<span class="ident">is_restricted</span>())
-            .<span class="ident">collect</span>();
+        <span class="comment">// filter proofs by resource address and restricted flag
+        </span><span class="kw">let </span>proofs: Vec&lt;<span class="kw-2">&amp;</span>Proof&gt; = proofs
+            .iter()
+            .filter(|p| p.resource_address() == resource_address &amp;&amp; !p.is_restricted())
+            .collect();
 
-        <span class="comment">// calculate the max locked amount (or ids) of each container</span>
-        <span class="kw">match</span> <span class="ident">resource_type</span> {
-            <span class="ident">ResourceType::Fungible</span> { .. } =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max</span> <span class="op">=</span> <span class="ident">HashMap</span>::<span class="op">&lt;</span><span class="ident">ResourceContainerId</span>, <span class="ident">Decimal</span><span class="op">&gt;</span><span class="ident">::new</span>();
-                <span class="kw">for</span> <span class="ident">proof</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">proofs</span> {
-                    <span class="kw">for</span> (<span class="ident">container_id</span>, (<span class="kw">_</span>, <span class="ident">locked_amount_or_ids</span>)) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">proof</span>.<span class="ident">evidence</span> {
-                        <span class="kw">let</span> <span class="ident">new_amount</span> <span class="op">=</span> <span class="ident">locked_amount_or_ids</span>.<span class="ident">amount</span>();
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">existing</span>) <span class="op">=</span> <span class="ident">max</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">container_id</span>) {
-                            <span class="kw-2">*</span><span class="ident">existing</span> <span class="op">=</span> <span class="ident">Decimal::max</span>(<span class="kw-2">*</span><span class="ident">existing</span>, <span class="ident">new_amount</span>);
-                        } <span class="kw">else</span> {
-                            <span class="ident">max</span>.<span class="ident">insert</span>(<span class="ident">container_id</span>.<span class="ident">clone</span>(), <span class="ident">new_amount</span>);
+        <span class="comment">// calculate the max locked amount (or ids) of each container
+        </span><span class="kw">match </span>resource_type {
+            ResourceType::Fungible { .. } =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>max = HashMap::&lt;ResourceContainerId, Decimal&gt;::new();
+                <span class="kw">for </span>proof <span class="kw">in </span><span class="kw-2">&amp;</span>proofs {
+                    <span class="kw">for </span>(container_id, (<span class="kw">_</span>, locked_amount_or_ids)) <span class="kw">in </span><span class="kw-2">&amp;</span>proof.evidence {
+                        <span class="kw">let </span>new_amount = locked_amount_or_ids.amount();
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(existing) = max.get_mut(<span class="kw-2">&amp;</span>container_id) {
+                            <span class="kw-2">*</span>existing = Decimal::max(<span class="kw-2">*</span>existing, new_amount);
+                        } <span class="kw">else </span>{
+                            max.insert(container_id.clone(), new_amount);
                         }
                     }
                 }
-                <span class="kw">let</span> <span class="ident">total</span> <span class="op">=</span> <span class="ident">max</span>
-                    .<span class="ident">values</span>()
-                    .<span class="ident">cloned</span>()
-                    .<span class="ident">reduce</span>(<span class="op">|</span><span class="ident">a</span>, <span class="ident">b</span><span class="op">|</span> <span class="ident">a</span> <span class="op">+</span> <span class="ident">b</span>)
-                    .<span class="ident">unwrap_or_default</span>();
-                <span class="kw">let</span> <span class="ident">per_container</span> <span class="op">=</span> <span class="ident">max</span>
-                    .<span class="ident">into_iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">k</span>, <span class="ident">v</span>)<span class="op">|</span> (<span class="ident">k</span>, <span class="ident">LockedAmountOrIds::Amount</span>(<span class="ident">v</span>)))
-                    .<span class="ident">collect</span>();
-                (<span class="ident">LockedAmountOrIds::Amount</span>(<span class="ident">total</span>), <span class="ident">per_container</span>)
+                <span class="kw">let </span>total = max
+                    .values()
+                    .cloned()
+                    .reduce(|a, b| a + b)
+                    .unwrap_or_default();
+                <span class="kw">let </span>per_container = max
+                    .into_iter()
+                    .map(|(k, v)| (k, LockedAmountOrIds::Amount(v)))
+                    .collect();
+                (LockedAmountOrIds::Amount(total), per_container)
             }
-            <span class="ident">ResourceType::NonFungible</span> =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max</span> <span class="op">=</span> <span class="ident">HashMap</span>::<span class="op">&lt;</span><span class="ident">ResourceContainerId</span>, <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::new</span>();
-                <span class="kw">for</span> <span class="ident">proof</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">proofs</span> {
-                    <span class="kw">for</span> (<span class="ident">container_id</span>, (<span class="kw">_</span>, <span class="ident">locked_amount_or_ids</span>)) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">proof</span>.<span class="ident">evidence</span> {
-                        <span class="kw">let</span> <span class="ident">new_ids</span> <span class="op">=</span> <span class="ident">locked_amount_or_ids</span>
-                            .<span class="ident">ids</span>()
-                            .<span class="ident">expect</span>(<span class="string">&quot;Failed to list non-fungible IDS on non-fungible proof&quot;</span>);
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">ids</span>) <span class="op">=</span> <span class="ident">max</span>.<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">container_id</span>) {
-                            <span class="ident">ids</span>.<span class="ident">extend</span>(<span class="ident">new_ids</span>);
-                        } <span class="kw">else</span> {
-                            <span class="ident">max</span>.<span class="ident">insert</span>(<span class="ident">container_id</span>.<span class="ident">clone</span>(), <span class="ident">new_ids</span>);
+            ResourceType::NonFungible =&gt; {
+                <span class="kw">let </span><span class="kw-2">mut </span>max = HashMap::&lt;ResourceContainerId, BTreeSet&lt;NonFungibleId&gt;&gt;::new();
+                <span class="kw">for </span>proof <span class="kw">in </span><span class="kw-2">&amp;</span>proofs {
+                    <span class="kw">for </span>(container_id, (<span class="kw">_</span>, locked_amount_or_ids)) <span class="kw">in </span><span class="kw-2">&amp;</span>proof.evidence {
+                        <span class="kw">let </span>new_ids = locked_amount_or_ids
+                            .ids()
+                            .expect(<span class="string">&quot;Failed to list non-fungible IDS on non-fungible proof&quot;</span>);
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(ids) = max.get_mut(<span class="kw-2">&amp;</span>container_id) {
+                            ids.extend(new_ids);
+                        } <span class="kw">else </span>{
+                            max.insert(container_id.clone(), new_ids);
                         }
                     }
                 }
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">total</span> <span class="op">=</span> <span class="ident">BTreeSet</span>::<span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span><span class="ident">::new</span>();
-                <span class="kw">for</span> <span class="ident">value</span> <span class="kw">in</span> <span class="ident">max</span>.<span class="ident">values</span>() {
-                    <span class="ident">total</span>.<span class="ident">extend</span>(<span class="ident">value</span>.<span class="ident">clone</span>());
+                <span class="kw">let </span><span class="kw-2">mut </span>total = BTreeSet::&lt;NonFungibleId&gt;::new();
+                <span class="kw">for </span>value <span class="kw">in </span>max.values() {
+                    total.extend(value.clone());
                 }
-                <span class="kw">let</span> <span class="ident">per_container</span> <span class="op">=</span> <span class="ident">max</span>
-                    .<span class="ident">into_iter</span>()
-                    .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">k</span>, <span class="ident">v</span>)<span class="op">|</span> (<span class="ident">k</span>, <span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">v</span>)))
-                    .<span class="ident">collect</span>();
-                (<span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">total</span>), <span class="ident">per_container</span>)
+                <span class="kw">let </span>per_container = max
+                    .into_iter()
+                    .map(|(k, v)| (k, LockedAmountOrIds::Ids(v)))
+                    .collect();
+                (LockedAmountOrIds::Ids(total), per_container)
             }
         }
     }
 
-    <span class="doccomment">/// Creates a composite proof from proofs. This method will generate a max proof.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">compose</span>(
-        <span class="ident">proofs</span>: <span class="kw-2">&amp;</span>[<span class="ident">Proof</span>],
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Proof</span>, <span class="ident">ProofError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">total</span>, <span class="kw">_</span>) <span class="op">=</span> <span class="ident"><span class="self">Self</span>::compute_total_locked</span>(<span class="ident">proofs</span>, <span class="ident">resource_address</span>, <span class="ident">resource_type</span>);
-        <span class="kw">match</span> <span class="ident">total</span> {
-            <span class="ident">LockedAmountOrIds::Amount</span>(<span class="ident">amount</span>) =&gt; {
-                <span class="ident"><span class="self">Self</span>::compose_by_amount</span>(<span class="ident">proofs</span>, <span class="ident">amount</span>, <span class="ident">resource_address</span>, <span class="ident">resource_type</span>)
+    <span class="doccomment">/// Creates a composite proof from proofs. This method will generate a max proof.
+    </span><span class="kw">pub fn </span>compose(
+        proofs: <span class="kw-2">&amp;</span>[Proof],
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Proof, ProofError&gt; {
+        <span class="kw">let </span>(total, <span class="kw">_</span>) = <span class="self">Self</span>::compute_total_locked(proofs, resource_address, resource_type);
+        <span class="kw">match </span>total {
+            LockedAmountOrIds::Amount(amount) =&gt; {
+                <span class="self">Self</span>::compose_by_amount(proofs, amount, resource_address, resource_type)
             }
-            <span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">ids</span>) =&gt; {
-                <span class="ident"><span class="self">Self</span>::compose_by_ids</span>(<span class="ident">proofs</span>, <span class="kw-2">&amp;</span><span class="ident">ids</span>, <span class="ident">resource_address</span>, <span class="ident">resource_type</span>)
+            LockedAmountOrIds::Ids(ids) =&gt; {
+                <span class="self">Self</span>::compose_by_ids(proofs, <span class="kw-2">&amp;</span>ids, resource_address, resource_type)
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">compose_by_amount</span>(
-        <span class="ident">proofs</span>: <span class="kw-2">&amp;</span>[<span class="ident">Proof</span>],
-        <span class="ident">amount</span>: <span class="ident">Decimal</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Proof</span>, <span class="ident">ProofError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">total_locked</span>, <span class="kw-2">mut</span> <span class="ident">per_container</span>) <span class="op">=</span>
-            <span class="ident"><span class="self">Self</span>::compute_total_locked</span>(<span class="ident">proofs</span>, <span class="ident">resource_address</span>, <span class="ident">resource_type</span>);
+    <span class="kw">pub fn </span>compose_by_amount(
+        proofs: <span class="kw-2">&amp;</span>[Proof],
+        amount: Decimal,
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Proof, ProofError&gt; {
+        <span class="kw">let </span>(total_locked, <span class="kw-2">mut </span>per_container) =
+            <span class="self">Self</span>::compute_total_locked(proofs, resource_address, resource_type);
 
-        <span class="kw">match</span> <span class="ident">total_locked</span> {
-            <span class="ident">LockedAmountOrIds::Amount</span>(<span class="ident">locked_amount</span>) =&gt; {
-                <span class="kw">if</span> <span class="ident">amount</span> <span class="op">&gt;</span> <span class="ident">locked_amount</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ProofError::InsufficientBaseProofs</span>);
+        <span class="kw">match </span>total_locked {
+            LockedAmountOrIds::Amount(locked_amount) =&gt; {
+                <span class="kw">if </span>amount &gt; locked_amount {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ProofError::InsufficientBaseProofs);
                 }
 
-                <span class="comment">// Locked the max (or needed) amount from the containers, in the order that the containers were referenced.</span>
-                <span class="comment">// TODO: observe the performance/feedback of this container selection algorithm and decide next steps</span>
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">evidence</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">remaining</span> <span class="op">=</span> <span class="ident">amount</span>.<span class="ident">clone</span>();
-                <span class="lifetime">&#39;outer</span>: <span class="kw">for</span> <span class="ident">proof</span> <span class="kw">in</span> <span class="ident">proofs</span> {
-                    <span class="kw">for</span> (<span class="ident">container_id</span>, (<span class="ident">container</span>, <span class="kw">_</span>)) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">proof</span>.<span class="ident">evidence</span> {
-                        <span class="kw">if</span> <span class="ident">remaining</span>.<span class="ident">is_zero</span>() {
-                            <span class="kw">break</span> <span class="lifetime">&#39;outer</span>;
+                <span class="comment">// Locked the max (or needed) amount from the containers, in the order that the containers were referenced.
+                // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
+                </span><span class="kw">let </span><span class="kw-2">mut </span>evidence = HashMap::new();
+                <span class="kw">let </span><span class="kw-2">mut </span>remaining = amount.clone();
+                <span class="lifetime">&#39;outer</span>: <span class="kw">for </span>proof <span class="kw">in </span>proofs {
+                    <span class="kw">for </span>(container_id, (container, <span class="kw">_</span>)) <span class="kw">in </span><span class="kw-2">&amp;</span>proof.evidence {
+                        <span class="kw">if </span>remaining.is_zero() {
+                            <span class="kw">break </span><span class="lifetime">&#39;outer</span>;
                         }
 
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">quota</span>) <span class="op">=</span> <span class="ident">per_container</span>.<span class="ident">remove</span>(<span class="ident">container_id</span>) {
-                            <span class="kw">let</span> <span class="ident">amount</span> <span class="op">=</span> <span class="ident">Decimal::min</span>(<span class="ident">remaining</span>, <span class="ident">quota</span>.<span class="ident">amount</span>());
-                            <span class="ident">container</span>
-                                .<span class="ident">borrow_mut</span>()
-                                .<span class="ident">lock_by_amount</span>(<span class="ident">amount</span>)
-                                .<span class="ident">map_err</span>(<span class="ident">ProofError::ResourceContainerError</span>)<span class="question-mark">?</span>;
-                            <span class="ident">remaining</span> <span class="op">-</span><span class="op">=</span> <span class="ident">amount</span>;
-                            <span class="ident">evidence</span>.<span class="ident">insert</span>(
-                                <span class="ident">container_id</span>.<span class="ident">clone</span>(),
-                                (<span class="ident">container</span>.<span class="ident">clone</span>(), <span class="ident">LockedAmountOrIds::Amount</span>(<span class="ident">amount</span>)),
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(quota) = per_container.remove(container_id) {
+                            <span class="kw">let </span>amount = Decimal::min(remaining, quota.amount());
+                            container
+                                .borrow_mut()
+                                .lock_by_amount(amount)
+                                .map_err(ProofError::ResourceContainerError)<span class="question-mark">?</span>;
+                            remaining -= amount;
+                            evidence.insert(
+                                container_id.clone(),
+                                (container.clone(), LockedAmountOrIds::Amount(amount)),
                             );
                         }
                     }
                 }
 
-                <span class="ident">Proof::new</span>(
-                    <span class="ident">resource_address</span>,
-                    <span class="ident">resource_type</span>,
-                    <span class="ident">LockedAmountOrIds::Amount</span>(<span class="ident">amount</span>),
-                    <span class="ident">evidence</span>,
+                Proof::new(
+                    resource_address,
+                    resource_type,
+                    LockedAmountOrIds::Amount(amount),
+                    evidence,
                 )
             }
-            <span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">locked_ids</span>) =&gt; {
-                <span class="kw">if</span> <span class="ident">amount</span> <span class="op">&gt;</span> <span class="ident">locked_ids</span>.<span class="ident">len</span>().<span class="ident">into</span>() {
-                    <span class="prelude-val">Err</span>(<span class="ident">ProofError::InsufficientBaseProofs</span>)
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">n</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">amount</span>
-                        .<span class="ident">to_string</span>()
-                        .<span class="ident">parse</span>()
-                        .<span class="ident">expect</span>(<span class="string">&quot;Failed to convert non-fungible amount to usize&quot;</span>);
-                    <span class="kw">let</span> <span class="ident">ids</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">locked_ids</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>().<span class="ident">take</span>(<span class="ident">n</span>).<span class="ident">collect</span>();
-                    <span class="ident"><span class="self">Self</span>::compose_by_ids</span>(<span class="ident">proofs</span>, <span class="kw-2">&amp;</span><span class="ident">ids</span>, <span class="ident">resource_address</span>, <span class="ident">resource_type</span>)
+            LockedAmountOrIds::Ids(locked_ids) =&gt; {
+                <span class="kw">if </span>amount &gt; locked_ids.len().into() {
+                    <span class="prelude-val">Err</span>(ProofError::InsufficientBaseProofs)
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>n: usize = amount
+                        .to_string()
+                        .parse()
+                        .expect(<span class="string">&quot;Failed to convert non-fungible amount to usize&quot;</span>);
+                    <span class="kw">let </span>ids: BTreeSet&lt;NonFungibleId&gt; = locked_ids.iter().cloned().take(n).collect();
+                    <span class="self">Self</span>::compose_by_ids(proofs, <span class="kw-2">&amp;</span>ids, resource_address, resource_type)
                 }
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">compose_by_ids</span>(
-        <span class="ident">proofs</span>: <span class="kw-2">&amp;</span>[<span class="ident">Proof</span>],
-        <span class="ident">ids</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Proof</span>, <span class="ident">ProofError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">total_locked</span>, <span class="kw-2">mut</span> <span class="ident">per_container</span>) <span class="op">=</span>
-            <span class="ident"><span class="self">Self</span>::compute_total_locked</span>(<span class="ident">proofs</span>, <span class="ident">resource_address</span>, <span class="ident">resource_type</span>);
+    <span class="kw">pub fn </span>compose_by_ids(
+        proofs: <span class="kw-2">&amp;</span>[Proof],
+        ids: <span class="kw-2">&amp;</span>BTreeSet&lt;NonFungibleId&gt;,
+        resource_address: ResourceAddress,
+        resource_type: ResourceType,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Proof, ProofError&gt; {
+        <span class="kw">let </span>(total_locked, <span class="kw-2">mut </span>per_container) =
+            <span class="self">Self</span>::compute_total_locked(proofs, resource_address, resource_type);
 
-        <span class="kw">match</span> <span class="ident">total_locked</span> {
-            <span class="ident">LockedAmountOrIds::Amount</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(<span class="ident">ProofError::NonFungibleOperationNotAllowed</span>),
-            <span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">locked_ids</span>) =&gt; {
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">locked_ids</span>.<span class="ident">is_superset</span>(<span class="ident">ids</span>) {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ProofError::InsufficientBaseProofs</span>);
+        <span class="kw">match </span>total_locked {
+            LockedAmountOrIds::Amount(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(ProofError::NonFungibleOperationNotAllowed),
+            LockedAmountOrIds::Ids(locked_ids) =&gt; {
+                <span class="kw">if </span>!locked_ids.is_superset(ids) {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ProofError::InsufficientBaseProofs);
                 }
 
-                <span class="comment">// Locked the max (or needed) ids from the containers, in the order that the containers were referenced.</span>
-                <span class="comment">// TODO: observe the performance/feedback of this container selection algorithm and decide next steps</span>
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">evidence</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">remaining</span> <span class="op">=</span> <span class="ident">ids</span>.<span class="ident">clone</span>();
-                <span class="lifetime">&#39;outer</span>: <span class="kw">for</span> <span class="ident">proof</span> <span class="kw">in</span> <span class="ident">proofs</span> {
-                    <span class="kw">for</span> (<span class="ident">container_id</span>, (<span class="ident">container</span>, <span class="kw">_</span>)) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">proof</span>.<span class="ident">evidence</span> {
-                        <span class="kw">if</span> <span class="ident">remaining</span>.<span class="ident">is_empty</span>() {
-                            <span class="kw">break</span> <span class="lifetime">&#39;outer</span>;
+                <span class="comment">// Locked the max (or needed) ids from the containers, in the order that the containers were referenced.
+                // TODO: observe the performance/feedback of this container selection algorithm and decide next steps
+                </span><span class="kw">let </span><span class="kw-2">mut </span>evidence = HashMap::new();
+                <span class="kw">let </span><span class="kw-2">mut </span>remaining = ids.clone();
+                <span class="lifetime">&#39;outer</span>: <span class="kw">for </span>proof <span class="kw">in </span>proofs {
+                    <span class="kw">for </span>(container_id, (container, <span class="kw">_</span>)) <span class="kw">in </span><span class="kw-2">&amp;</span>proof.evidence {
+                        <span class="kw">if </span>remaining.is_empty() {
+                            <span class="kw">break </span><span class="lifetime">&#39;outer</span>;
                         }
 
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">quota</span>) <span class="op">=</span> <span class="ident">per_container</span>.<span class="ident">remove</span>(<span class="ident">container_id</span>) {
-                            <span class="kw">let</span> <span class="ident">ids</span> <span class="op">=</span> <span class="ident">remaining</span>
-                                .<span class="ident">intersection</span>(<span class="kw-2">&amp;</span><span class="ident">quota</span>.<span class="ident">ids</span>().<span class="ident">expect</span>(
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(quota) = per_container.remove(container_id) {
+                            <span class="kw">let </span>ids = remaining
+                                .intersection(<span class="kw-2">&amp;</span>quota.ids().expect(
                                     <span class="string">&quot;Failed to list non-fungible ids on non-fungible resource&quot;</span>,
                                 ))
-                                .<span class="ident">cloned</span>()
-                                .<span class="ident">collect</span>();
-                            <span class="ident">container</span>
-                                .<span class="ident">borrow_mut</span>()
-                                .<span class="ident">lock_by_ids</span>(<span class="kw-2">&amp;</span><span class="ident">ids</span>)
-                                .<span class="ident">map_err</span>(<span class="ident">ProofError::ResourceContainerError</span>)<span class="question-mark">?</span>;
-                            <span class="kw">for</span> <span class="ident">id</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">ids</span> {
-                                <span class="ident">remaining</span>.<span class="ident">remove</span>(<span class="ident">id</span>);
+                                .cloned()
+                                .collect();
+                            container
+                                .borrow_mut()
+                                .lock_by_ids(<span class="kw-2">&amp;</span>ids)
+                                .map_err(ProofError::ResourceContainerError)<span class="question-mark">?</span>;
+                            <span class="kw">for </span>id <span class="kw">in </span><span class="kw-2">&amp;</span>ids {
+                                remaining.remove(id);
                             }
-                            <span class="ident">evidence</span>.<span class="ident">insert</span>(
-                                <span class="ident">container_id</span>.<span class="ident">clone</span>(),
-                                (<span class="ident">container</span>.<span class="ident">clone</span>(), <span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">ids</span>)),
+                            evidence.insert(
+                                container_id.clone(),
+                                (container.clone(), LockedAmountOrIds::Ids(ids)),
                             );
                         }
                     }
                 }
 
-                <span class="ident">Proof::new</span>(
-                    <span class="ident">resource_address</span>,
-                    <span class="ident">resource_type</span>,
-                    <span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">ids</span>.<span class="ident">clone</span>()),
-                    <span class="ident">evidence</span>,
+                Proof::new(
+                    resource_address,
+                    resource_type,
+                    LockedAmountOrIds::Ids(ids.clone()),
+                    evidence,
                 )
             }
         }
     }
 
-    <span class="doccomment">/// Makes a clone of this proof.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Note that cloning a proof will update the ref count of the locked</span>
-    <span class="doccomment">/// resources in the source containers.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">clone</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">for</span> (<span class="kw">_</span>, (<span class="ident">container</span>, <span class="ident">locked_amount_or_ids</span>)) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">evidence</span> {
-            <span class="kw">match</span> <span class="ident">locked_amount_or_ids</span> {
-                <span class="ident">LockedAmountOrIds::Amount</span>(<span class="ident">amount</span>) =&gt; {
-                    <span class="ident">container</span>
-                        .<span class="ident">borrow_mut</span>()
-                        .<span class="ident">lock_by_amount</span>(<span class="kw-2">*</span><span class="ident">amount</span>)
-                        .<span class="ident">expect</span>(<span class="string">&quot;Failed to clone a proof&quot;</span>);
+    <span class="doccomment">/// Makes a clone of this proof.
+    ///
+    /// Note that cloning a proof will update the ref count of the locked
+    /// resources in the source containers.
+    </span><span class="kw">pub fn </span>clone(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self </span>{
+        <span class="kw">for </span>(<span class="kw">_</span>, (container, locked_amount_or_ids)) <span class="kw">in </span><span class="kw-2">&amp;</span><span class="self">self</span>.evidence {
+            <span class="kw">match </span>locked_amount_or_ids {
+                LockedAmountOrIds::Amount(amount) =&gt; {
+                    container
+                        .borrow_mut()
+                        .lock_by_amount(<span class="kw-2">*</span>amount)
+                        .expect(<span class="string">&quot;Failed to clone a proof&quot;</span>);
                 }
-                <span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">ids</span>) =&gt; {
-                    <span class="ident">container</span>
-                        .<span class="ident">borrow_mut</span>()
-                        .<span class="ident">lock_by_ids</span>(<span class="ident">ids</span>)
-                        .<span class="ident">expect</span>(<span class="string">&quot;Failed to clone a proof&quot;</span>);
+                LockedAmountOrIds::Ids(ids) =&gt; {
+                    container
+                        .borrow_mut()
+                        .lock_by_ids(ids)
+                        .expect(<span class="string">&quot;Failed to clone a proof&quot;</span>);
                 }
             }
         }
-        <span class="self">Self</span> {
-            <span class="ident">resource_address</span>: <span class="self">self</span>.<span class="ident">resource_address</span>.<span class="ident">clone</span>(),
-            <span class="ident">resource_type</span>: <span class="self">self</span>.<span class="ident">resource_type</span>.<span class="ident">clone</span>(),
-            <span class="ident">restricted</span>: <span class="self">self</span>.<span class="ident">restricted</span>,
-            <span class="ident">total_locked</span>: <span class="self">self</span>.<span class="ident">total_locked</span>.<span class="ident">clone</span>(),
-            <span class="ident">evidence</span>: <span class="self">self</span>.<span class="ident">evidence</span>.<span class="ident">clone</span>(),
+        <span class="self">Self </span>{
+            resource_address: <span class="self">self</span>.resource_address.clone(),
+            resource_type: <span class="self">self</span>.resource_type.clone(),
+            restricted: <span class="self">self</span>.restricted,
+            total_locked: <span class="self">self</span>.total_locked.clone(),
+            evidence: <span class="self">self</span>.evidence.clone(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">drop</span>(<span class="self">self</span>) {
-        <span class="kw">for</span> (<span class="kw">_</span>, (<span class="ident">container</span>, <span class="ident">locked_amount_or_ids</span>)) <span class="kw">in</span> <span class="self">self</span>.<span class="ident">evidence</span> {
-            <span class="ident">container</span>.<span class="ident">borrow_mut</span>().<span class="ident">unlock</span>(<span class="ident">locked_amount_or_ids</span>);
+    <span class="kw">pub fn </span>drop(<span class="self">self</span>) {
+        <span class="kw">for </span>(<span class="kw">_</span>, (container, locked_amount_or_ids)) <span class="kw">in </span><span class="self">self</span>.evidence {
+            container.borrow_mut().unlock(locked_amount_or_ids);
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">change_to_unrestricted</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">restricted</span> <span class="op">=</span> <span class="bool-val">false</span>;
+    <span class="kw">pub fn </span>change_to_unrestricted(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.restricted = <span class="bool-val">false</span>;
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">change_to_restricted</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">restricted</span> <span class="op">=</span> <span class="bool-val">true</span>;
+    <span class="kw">pub fn </span>change_to_restricted(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.restricted = <span class="bool-val">true</span>;
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-        <span class="self">self</span>.<span class="ident">resource_address</span>
+    <span class="kw">pub fn </span>resource_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceAddress {
+        <span class="self">self</span>.resource_address
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-        <span class="self">self</span>.<span class="ident">total_locked</span>.<span class="ident">amount</span>()
+    <span class="kw">pub fn </span>total_amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+        <span class="self">self</span>.total_locked.amount()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ProofError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">total_locked</span>
-            .<span class="ident">ids</span>()
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ProofError::NonFungibleOperationNotAllowed</span>))
+    <span class="kw">pub fn </span>total_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeSet&lt;NonFungibleId&gt;, InvokeError&lt;ProofError&gt;&gt; {
+        <span class="self">self</span>.total_locked
+            .ids()
+            .map_err(|<span class="kw">_</span>| InvokeError::Error(ProofError::NonFungibleOperationNotAllowed))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_restricted</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">restricted</span>
+    <span class="kw">pub fn </span>is_restricted(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.restricted
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">main</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">proof_id</span>: <span class="ident">ProofId</span>,
-        <span class="ident">proof_fn</span>: <span class="ident">ProofFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ProofError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>main&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        proof_id: ProofId,
+        proof_fn: ProofFnIdentifier,
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;ProofError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::Proof</span>(<span class="ident">proof_id</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">node_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-            .<span class="ident">substate_borrow_mut</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">proof</span> <span class="op">=</span> <span class="ident">node_ref</span>.<span class="ident">proof</span>();
+        <span class="kw">let </span>substate_id = SubstateId::Proof(proof_id);
+        <span class="kw">let </span><span class="kw-2">mut </span>node_ref = system_api
+            .substate_borrow_mut(<span class="kw-2">&amp;</span>substate_id)
+            .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+        <span class="kw">let </span>proof = node_ref.proof();
 
-        <span class="kw">let</span> <span class="ident">rtn</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">proof_fn</span> {
-            <span class="ident">ProofFnIdentifier::GetAmount</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ProofGetAmountInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ProofError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">proof</span>.<span class="ident">total_amount</span>()))
+        <span class="kw">let </span>rtn = <span class="kw">match </span>proof_fn {
+            ProofFnIdentifier::GetAmount =&gt; {
+                <span class="kw">let _</span>: ProofGetAmountInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>proof.total_amount()))
             }
-            <span class="ident">ProofFnIdentifier::GetNonFungibleIds</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ProofGetNonFungibleIdsInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ProofError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">ids</span> <span class="op">=</span> <span class="ident">proof</span>.<span class="ident">total_ids</span>()<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">ids</span>))
+            ProofFnIdentifier::GetNonFungibleIds =&gt; {
+                <span class="kw">let _</span>: ProofGetNonFungibleIdsInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>ids = proof.total_ids()<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>ids))
             }
-            <span class="ident">ProofFnIdentifier::GetResourceAddress</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ProofGetResourceAddressInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ProofError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">proof</span>.<span class="ident">resource_address</span>()))
+            ProofFnIdentifier::GetResourceAddress =&gt; {
+                <span class="kw">let _</span>: ProofGetResourceAddressInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>proof.resource_address()))
             }
-            <span class="ident">ProofFnIdentifier::Clone</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ProofCloneInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ProofError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">cloned_proof</span> <span class="op">=</span> <span class="ident">proof</span>.<span class="ident">clone</span>();
-                <span class="kw">let</span> <span class="ident">proof_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Proof</span>(<span class="ident">cloned_proof</span>))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Proof</span>(
-                    <span class="ident">proof_id</span>,
+            ProofFnIdentifier::Clone =&gt; {
+                <span class="kw">let _</span>: ProofCloneInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>cloned_proof = proof.clone();
+                <span class="kw">let </span>proof_id = system_api
+                    .node_create(HeapRENode::Proof(cloned_proof))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Proof(
+                    proof_id,
                 )))
             }
-            <span class="kw">_</span> =&gt; <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">ProofError::UnknownMethod</span>)),
+            <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(InvokeError::Error(ProofError::UnknownMethod)),
         }<span class="question-mark">?</span>;
 
-        <span class="ident">system_api</span>
-            .<span class="ident">substate_return_mut</span>(<span class="ident">node_ref</span>)
-            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">rtn</span>)
+        system_api
+            .substate_return_mut(node_ref)
+            .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(rtn)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">main_consume</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">node_id</span>: <span class="ident">RENodeId</span>,
-        <span class="ident">proof_fn</span>: <span class="ident">ProofFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ProofError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>main_consume&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        node_id: RENodeId,
+        proof_fn: ProofFnIdentifier,
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;ProofError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">let</span> <span class="ident">proof</span>: <span class="ident">Proof</span> <span class="op">=</span> <span class="ident">system_api</span>
-            .<span class="ident">node_drop</span>(<span class="kw-2">&amp;</span><span class="ident">node_id</span>)
-            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-            .<span class="ident">into</span>();
-        <span class="kw">match</span> <span class="ident">proof_fn</span> {
-            <span class="ident">ProofFnIdentifier::Drop</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ConsumingProofDropInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ProofError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="ident">proof</span>.<span class="ident">drop</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+        <span class="kw">let </span>proof: Proof = system_api
+            .node_drop(<span class="kw-2">&amp;</span>node_id)
+            .map_err(InvokeError::Downstream)<span class="question-mark">?
+            </span>.into();
+        <span class="kw">match </span>proof_fn {
+            ProofFnIdentifier::Drop =&gt; {
+                <span class="kw">let _</span>: ConsumingProofDropInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ProofError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                proof.drop();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">UnknownMethod</span>)),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(InvokeError::Error(UnknownMethod)),
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

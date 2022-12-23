@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/transaction/transaction_receipt.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>transaction_receipt.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/transaction/transaction_receipt.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>transaction_receipt.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -334,330 +329,330 @@
 <span id="329">329</span>
 <span id="330">330</span>
 <span id="331">331</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">colored</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">scrypto::core::NetworkDefinition</span>;
-<span class="kw">use</span> <span class="ident">transaction::model</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>colored::<span class="kw-2">*</span>;
+<span class="kw">use </span>scrypto::core::NetworkDefinition;
+<span class="kw">use </span>transaction::model::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">RejectionError</span>, <span class="ident">ResourceChange</span>, <span class="ident">RuntimeError</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeSummary</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::state_manager::StateDiff</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::engine::{RejectionError, ResourceChange, RuntimeError};
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeSummary;
+<span class="kw">use </span><span class="kw">crate</span>::state_manager::StateDiff;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TransactionContents</span> {
-    <span class="kw">pub</span> <span class="ident">instructions</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Instruction</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>TransactionContents {
+    <span class="kw">pub </span>instructions: Vec&lt;Instruction&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TransactionExecution</span> {
-    <span class="kw">pub</span> <span class="ident">fee_summary</span>: <span class="ident">FeeSummary</span>,
-    <span class="kw">pub</span> <span class="ident">application_logs</span>: <span class="ident">Vec</span><span class="op">&lt;</span>(<span class="ident">Level</span>, <span class="ident">String</span>)<span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>TransactionExecution {
+    <span class="kw">pub </span>fee_summary: FeeSummary,
+    <span class="kw">pub </span>application_logs: Vec&lt;(Level, String)&gt;,
 }
 
-<span class="doccomment">/// Captures whether a transaction should be committed, and its other results</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TransactionResult</span> {
-    <span class="ident">Commit</span>(<span class="ident">CommitResult</span>),
-    <span class="ident">Reject</span>(<span class="ident">RejectResult</span>),
+<span class="doccomment">/// Captures whether a transaction should be committed, and its other results
+</span><span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>TransactionResult {
+    Commit(CommitResult),
+    Reject(RejectResult),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CommitResult</span> {
-    <span class="kw">pub</span> <span class="ident">outcome</span>: <span class="ident">TransactionOutcome</span>,
-    <span class="kw">pub</span> <span class="ident">state_updates</span>: <span class="ident">StateDiff</span>,
-    <span class="kw">pub</span> <span class="ident">entity_changes</span>: <span class="ident">EntityChanges</span>,
-    <span class="kw">pub</span> <span class="ident">resource_changes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResourceChange</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>CommitResult {
+    <span class="kw">pub </span>outcome: TransactionOutcome,
+    <span class="kw">pub </span>state_updates: StateDiff,
+    <span class="kw">pub </span>entity_changes: EntityChanges,
+    <span class="kw">pub </span>resource_changes: Vec&lt;ResourceChange&gt;,
 }
 
-<span class="doccomment">/// Captures whether a transaction&#39;s commit outcome is Success or Failure</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TransactionOutcome</span> {
-    <span class="ident">Success</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>),
-    <span class="ident">Failure</span>(<span class="ident">RuntimeError</span>),
+<span class="doccomment">/// Captures whether a transaction&#39;s commit outcome is Success or Failure
+</span><span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>TransactionOutcome {
+    Success(Vec&lt;Vec&lt;u8&gt;&gt;),
+    Failure(RuntimeError),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">EntityChanges</span> {
-    <span class="kw">pub</span> <span class="ident">new_package_addresses</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PackageAddress</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">new_component_addresses</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ComponentAddress</span><span class="op">&gt;</span>,
-    <span class="kw">pub</span> <span class="ident">new_resource_addresses</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>EntityChanges {
+    <span class="kw">pub </span>new_package_addresses: Vec&lt;PackageAddress&gt;,
+    <span class="kw">pub </span>new_component_addresses: Vec&lt;ComponentAddress&gt;,
+    <span class="kw">pub </span>new_resource_addresses: Vec&lt;ResourceAddress&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RejectResult</span> {
-    <span class="kw">pub</span> <span class="ident">error</span>: <span class="ident">RejectionError</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>RejectResult {
+    <span class="kw">pub </span>error: RejectionError,
 }
 
-<span class="doccomment">/// Represents a transaction receipt.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TransactionReceipt</span> {
-    <span class="kw">pub</span> <span class="ident">contents</span>: <span class="ident">TransactionContents</span>,
-    <span class="kw">pub</span> <span class="ident">execution</span>: <span class="ident">TransactionExecution</span>, <span class="comment">// THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED</span>
-    <span class="kw">pub</span> <span class="ident">result</span>: <span class="ident">TransactionResult</span>,
+<span class="doccomment">/// Represents a transaction receipt.
+</span><span class="attribute">#[derive(TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>TransactionReceipt {
+    <span class="kw">pub </span>contents: TransactionContents,
+    <span class="kw">pub </span>execution: TransactionExecution, <span class="comment">// THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
+    </span><span class="kw">pub </span>result: TransactionResult,
 }
 
-<span class="kw">impl</span> <span class="ident">TransactionReceipt</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_commit</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="macro">matches!</span>(<span class="self">self</span>.<span class="ident">result</span>, <span class="ident">TransactionResult::Commit</span>(<span class="kw">_</span>))
+<span class="kw">impl </span>TransactionReceipt {
+    <span class="kw">pub fn </span>is_commit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="macro">matches!</span>(<span class="self">self</span>.result, TransactionResult::Commit(<span class="kw">_</span>))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_rejection</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="macro">matches!</span>(<span class="self">self</span>.<span class="ident">result</span>, <span class="ident">TransactionResult::Reject</span>(<span class="kw">_</span>))
+    <span class="kw">pub fn </span>is_rejection(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="macro">matches!</span>(<span class="self">self</span>.result, TransactionResult::Reject(<span class="kw">_</span>))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_commit</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">CommitResult</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">result</span> {
-            <span class="ident">TransactionResult::Commit</span>(<span class="ident">c</span>) =&gt; <span class="ident">c</span>,
-            <span class="ident">TransactionResult::Reject</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Transaction was rejected&quot;</span>),
+    <span class="kw">pub fn </span>expect_commit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>CommitResult {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.result {
+            TransactionResult::Commit(c) =&gt; c,
+            TransactionResult::Reject(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Transaction was rejected&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_rejection</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">RejectionError</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">result</span> {
-            <span class="ident">TransactionResult::Commit</span>(..) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected rejection but was commit&quot;</span>),
-            <span class="ident">TransactionResult::Reject</span>(<span class="kw-2">ref</span> <span class="ident">r</span>) =&gt; <span class="kw-2">&amp;</span><span class="ident">r</span>.<span class="ident">error</span>,
+    <span class="kw">pub fn </span>expect_rejection(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>RejectionError {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.result {
+            TransactionResult::Commit(..) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected rejection but was commit&quot;</span>),
+            TransactionResult::Reject(<span class="kw-2">ref </span>r) =&gt; <span class="kw-2">&amp;</span>r.error,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_commit_success</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">result</span> {
-            <span class="ident">TransactionResult::Commit</span>(<span class="ident">c</span>) =&gt; <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">c</span>.<span class="ident">outcome</span> {
-                <span class="ident">TransactionOutcome::Success</span>(<span class="ident">x</span>) =&gt; <span class="ident">x</span>,
-                <span class="ident">TransactionOutcome::Failure</span>(<span class="ident">err</span>) =&gt; {
-                    <span class="macro">panic!</span>(<span class="string">&quot;Expected success but was failed:\n{:?}&quot;</span>, <span class="ident">err</span>)
+    <span class="kw">pub fn </span>expect_commit_success(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.result {
+            TransactionResult::Commit(c) =&gt; <span class="kw">match </span><span class="kw-2">&amp;</span>c.outcome {
+                TransactionOutcome::Success(x) =&gt; x,
+                TransactionOutcome::Failure(err) =&gt; {
+                    <span class="macro">panic!</span>(<span class="string">&quot;Expected success but was failed:\n{:?}&quot;</span>, err)
                 }
             },
-            <span class="ident">TransactionResult::Reject</span>(<span class="ident">err</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Transaction was rejected:\n{:?}&quot;</span>, <span class="ident">err</span>),
+            TransactionResult::Reject(err) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Transaction was rejected:\n{:?}&quot;</span>, err),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_commit_failure</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">RuntimeError</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">result</span> {
-            <span class="ident">TransactionResult::Commit</span>(<span class="ident">c</span>) =&gt; <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">c</span>.<span class="ident">outcome</span> {
-                <span class="ident">TransactionOutcome::Success</span>(<span class="kw">_</span>) =&gt; {
+    <span class="kw">pub fn </span>expect_commit_failure(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>RuntimeError {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.result {
+            TransactionResult::Commit(c) =&gt; <span class="kw">match </span><span class="kw-2">&amp;</span>c.outcome {
+                TransactionOutcome::Success(<span class="kw">_</span>) =&gt; {
                     <span class="macro">panic!</span>(<span class="string">&quot;Expected failure but was success&quot;</span>)
                 }
-                <span class="ident">TransactionOutcome::Failure</span>(<span class="ident">err</span>) =&gt; <span class="ident">err</span>,
+                TransactionOutcome::Failure(err) =&gt; err,
             },
-            <span class="ident">TransactionResult::Reject</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Transaction was rejected&quot;</span>),
+            TransactionResult::Reject(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Transaction was rejected&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">expect_specific_failure</span><span class="op">&lt;</span><span class="ident">F</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="ident">F</span>)
-    <span class="kw">where</span>
-        <span class="ident">F</span>: <span class="ident">FnOnce</span>(<span class="kw-2">&amp;</span><span class="ident">RuntimeError</span>) -&gt; <span class="ident">bool</span>,
+    <span class="kw">pub fn </span>expect_specific_failure&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F)
+    <span class="kw">where
+        </span>F: FnOnce(<span class="kw-2">&amp;</span>RuntimeError) -&gt; bool,
     {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">result</span> {
-            <span class="ident">TransactionResult::Commit</span>(<span class="ident">c</span>) =&gt; <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">c</span>.<span class="ident">outcome</span> {
-                <span class="ident">TransactionOutcome::Success</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected failure but was success&quot;</span>),
-                <span class="ident">TransactionOutcome::Failure</span>(<span class="ident">err</span>) =&gt; {
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">f</span>(<span class="kw-2">&amp;</span><span class="ident">err</span>) {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.result {
+            TransactionResult::Commit(c) =&gt; <span class="kw">match </span><span class="kw-2">&amp;</span>c.outcome {
+                TransactionOutcome::Success(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected failure but was success&quot;</span>),
+                TransactionOutcome::Failure(err) =&gt; {
+                    <span class="kw">if </span>!f(<span class="kw-2">&amp;</span>err) {
                         <span class="macro">panic!</span>(
                             <span class="string">&quot;Expected specific failure but was different error:\n{:?}&quot;</span>,
-                            <span class="self">self</span>
-                        );
+                            <span class="self">self
+                        </span>);
                     }
                 }
             },
-            <span class="ident">TransactionResult::Reject</span>(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Transaction was rejected&quot;</span>),
+            TransactionResult::Reject(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Transaction was rejected&quot;</span>),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">output</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Decode</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">nth</span>: <span class="ident">usize</span>) -&gt; <span class="ident">T</span> {
-        <span class="ident">scrypto_decode</span>::<span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">expect_commit_success</span>()[<span class="ident">nth</span>][..])
-            .<span class="ident">expect</span>(<span class="string">&quot;Wrong instruction output type!&quot;</span>)
+    <span class="kw">pub fn </span>output&lt;T: Decode&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, nth: usize) -&gt; T {
+        scrypto_decode::&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>.expect_commit_success()[nth][..])
+            .expect(<span class="string">&quot;Wrong instruction output type!&quot;</span>)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_package_addresses</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">PackageAddress</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">commit</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">expect_commit</span>();
-        <span class="kw-2">&amp;</span><span class="ident">commit</span>.<span class="ident">entity_changes</span>.<span class="ident">new_package_addresses</span>
+    <span class="kw">pub fn </span>new_package_addresses(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;PackageAddress&gt; {
+        <span class="kw">let </span>commit = <span class="self">self</span>.expect_commit();
+        <span class="kw-2">&amp;</span>commit.entity_changes.new_package_addresses
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_component_addresses</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ComponentAddress</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">commit</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">expect_commit</span>();
-        <span class="kw-2">&amp;</span><span class="ident">commit</span>.<span class="ident">entity_changes</span>.<span class="ident">new_component_addresses</span>
+    <span class="kw">pub fn </span>new_component_addresses(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;ComponentAddress&gt; {
+        <span class="kw">let </span>commit = <span class="self">self</span>.expect_commit();
+        <span class="kw-2">&amp;</span>commit.entity_changes.new_component_addresses
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_resource_addresses</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">commit</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">expect_commit</span>();
-        <span class="kw-2">&amp;</span><span class="ident">commit</span>.<span class="ident">entity_changes</span>.<span class="ident">new_resource_addresses</span>
+    <span class="kw">pub fn </span>new_resource_addresses(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;ResourceAddress&gt; {
+        <span class="kw">let </span>commit = <span class="self">self</span>.expect_commit();
+        <span class="kw-2">&amp;</span>commit.entity_changes.new_resource_addresses
     }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">prefix</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">list</span>:<span class="ident">expr</span>) =&gt; {
-        <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">i</span> <span class="op">==</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">list</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">1</span> {
-            <span class="string">&quot;└─&quot;</span>
-        } <span class="kw">else</span> {
-            <span class="string">&quot;├─&quot;</span>
-        }
+<span class="macro">macro_rules! </span>prefix {
+    (<span class="macro-nonterminal">$i</span>:expr, <span class="macro-nonterminal">$list</span>:expr) =&gt; {
+        <span class="kw">if </span><span class="macro-nonterminal">$i </span>== <span class="macro-nonterminal">$list</span>.len() - <span class="number">1 </span>{
+            <span class="string">&quot;└─&quot;
+        </span>} <span class="kw">else </span>{
+            <span class="string">&quot;├─&quot;
+        </span>}
     };
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">TransactionReceipt</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span><span class="op">&lt;</span><span class="lifetime">&#39;_</span><span class="op">&gt;</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="kw">let</span> <span class="ident">contents</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">contents</span>;
-        <span class="kw">let</span> <span class="ident">execution</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">execution</span>;
-        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">result</span>;
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>TransactionReceipt {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">let </span>contents = <span class="kw-2">&amp;</span><span class="self">self</span>.contents;
+        <span class="kw">let </span>execution = <span class="kw-2">&amp;</span><span class="self">self</span>.execution;
+        <span class="kw">let </span>result = <span class="kw-2">&amp;</span><span class="self">self</span>.result;
 
         <span class="macro">write!</span>(
-            <span class="ident">f</span>,
+            f,
             <span class="string">&quot;{} {}&quot;</span>,
-            <span class="string">&quot;Transaction Status:&quot;</span>.<span class="ident">bold</span>().<span class="ident">green</span>(),
-            <span class="kw">match</span> <span class="ident">result</span> {
-                <span class="ident">TransactionResult::Commit</span>(<span class="ident">c</span>) =&gt; <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">c</span>.<span class="ident">outcome</span> {
-                    <span class="ident">TransactionOutcome::Success</span>(<span class="kw">_</span>) =&gt; <span class="string">&quot;COMMITTED SUCCESS&quot;</span>.<span class="ident">green</span>(),
-                    <span class="ident">TransactionOutcome::Failure</span>(<span class="ident">e</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;COMMITTED FAILURE: {}&quot;</span>, <span class="ident">e</span>).<span class="ident">red</span>(),
+            <span class="string">&quot;Transaction Status:&quot;</span>.bold().green(),
+            <span class="kw">match </span>result {
+                TransactionResult::Commit(c) =&gt; <span class="kw">match </span><span class="kw-2">&amp;</span>c.outcome {
+                    TransactionOutcome::Success(<span class="kw">_</span>) =&gt; <span class="string">&quot;COMMITTED SUCCESS&quot;</span>.green(),
+                    TransactionOutcome::Failure(e) =&gt; <span class="macro">format!</span>(<span class="string">&quot;COMMITTED FAILURE: {}&quot;</span>, e).red(),
                 },
-                <span class="ident">TransactionResult::Reject</span>(<span class="ident">r</span>) =&gt; <span class="macro">format!</span>(<span class="string">&quot;REJECTED: {}&quot;</span>, <span class="ident">r</span>.<span class="ident">error</span>).<span class="ident">red</span>(),
+                TransactionResult::Reject(r) =&gt; <span class="macro">format!</span>(<span class="string">&quot;REJECTED: {}&quot;</span>, r.error).red(),
             },
         )<span class="question-mark">?</span>;
 
         <span class="macro">write!</span>(
-            <span class="ident">f</span>,
+            f,
             <span class="string">&quot;\n{} {} XRD burned, {} XRD tipped to validators&quot;</span>,
-            <span class="string">&quot;Transaction Fee:&quot;</span>.<span class="ident">bold</span>().<span class="ident">green</span>(),
-            <span class="ident">execution</span>.<span class="ident">fee_summary</span>.<span class="ident">burned</span>,
-            <span class="ident">execution</span>.<span class="ident">fee_summary</span>.<span class="ident">tipped</span>,
+            <span class="string">&quot;Transaction Fee:&quot;</span>.bold().green(),
+            execution.fee_summary.burned,
+            execution.fee_summary.tipped,
         )<span class="question-mark">?</span>;
 
         <span class="macro">write!</span>(
-            <span class="ident">f</span>,
+            f,
             <span class="string">&quot;\n{} {} limit, {} consumed, {} XRD per cost unit&quot;</span>,
-            <span class="string">&quot;Cost Units:&quot;</span>.<span class="ident">bold</span>().<span class="ident">green</span>(),
-            <span class="ident">execution</span>.<span class="ident">fee_summary</span>.<span class="ident">cost_unit_limit</span>,
-            <span class="ident">execution</span>.<span class="ident">fee_summary</span>.<span class="ident">cost_unit_consumed</span>,
-            <span class="ident">execution</span>.<span class="ident">fee_summary</span>.<span class="ident">cost_unit_price</span>,
+            <span class="string">&quot;Cost Units:&quot;</span>.bold().green(),
+            execution.fee_summary.cost_unit_limit,
+            execution.fee_summary.cost_unit_consumed,
+            execution.fee_summary.cost_unit_price,
         )<span class="question-mark">?</span>;
 
         <span class="macro">write!</span>(
-            <span class="ident">f</span>,
+            f,
             <span class="string">&quot;\n{} {}&quot;</span>,
-            <span class="string">&quot;Logs:&quot;</span>.<span class="ident">bold</span>().<span class="ident">green</span>(),
-            <span class="ident">execution</span>.<span class="ident">application_logs</span>.<span class="ident">len</span>()
+            <span class="string">&quot;Logs:&quot;</span>.bold().green(),
+            execution.application_logs.len()
         )<span class="question-mark">?</span>;
-        <span class="kw">for</span> (<span class="ident">i</span>, (<span class="ident">level</span>, <span class="ident">msg</span>)) <span class="kw">in</span> <span class="ident">execution</span>.<span class="ident">application_logs</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
-            <span class="kw">let</span> (<span class="ident">l</span>, <span class="ident">m</span>) <span class="op">=</span> <span class="kw">match</span> <span class="ident">level</span> {
-                <span class="ident">Level::Error</span> =&gt; (<span class="string">&quot;ERROR&quot;</span>.<span class="ident">red</span>(), <span class="ident">msg</span>.<span class="ident">red</span>()),
-                <span class="ident">Level::Warn</span> =&gt; (<span class="string">&quot;WARN&quot;</span>.<span class="ident">yellow</span>(), <span class="ident">msg</span>.<span class="ident">yellow</span>()),
-                <span class="ident">Level::Info</span> =&gt; (<span class="string">&quot;INFO&quot;</span>.<span class="ident">green</span>(), <span class="ident">msg</span>.<span class="ident">green</span>()),
-                <span class="ident">Level::Debug</span> =&gt; (<span class="string">&quot;DEBUG&quot;</span>.<span class="ident">cyan</span>(), <span class="ident">msg</span>.<span class="ident">cyan</span>()),
-                <span class="ident">Level::Trace</span> =&gt; (<span class="string">&quot;TRACE&quot;</span>.<span class="ident">normal</span>(), <span class="ident">msg</span>.<span class="ident">normal</span>()),
+        <span class="kw">for </span>(i, (level, msg)) <span class="kw">in </span>execution.application_logs.iter().enumerate() {
+            <span class="kw">let </span>(l, m) = <span class="kw">match </span>level {
+                Level::Error =&gt; (<span class="string">&quot;ERROR&quot;</span>.red(), msg.red()),
+                Level::Warn =&gt; (<span class="string">&quot;WARN&quot;</span>.yellow(), msg.yellow()),
+                Level::Info =&gt; (<span class="string">&quot;INFO&quot;</span>.green(), msg.green()),
+                Level::Debug =&gt; (<span class="string">&quot;DEBUG&quot;</span>.cyan(), msg.cyan()),
+                Level::Trace =&gt; (<span class="string">&quot;TRACE&quot;</span>.normal(), msg.normal()),
             };
             <span class="macro">write!</span>(
-                <span class="ident">f</span>,
+                f,
                 <span class="string">&quot;\n{} [{:5}] {}&quot;</span>,
-                <span class="macro">prefix!</span>(<span class="ident">i</span>, <span class="ident">execution</span>.<span class="ident">application_logs</span>),
-                <span class="ident">l</span>,
-                <span class="ident">m</span>
+                <span class="macro">prefix!</span>(i, execution.application_logs),
+                l,
+                m
             )<span class="question-mark">?</span>;
         }
 
-        <span class="comment">// TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting</span>
-        <span class="kw">let</span> <span class="ident">bech32_encoder</span> <span class="op">=</span> <span class="ident">Bech32Encoder::new</span>(<span class="kw-2">&amp;</span><span class="ident">NetworkDefinition::simulator</span>());
+        <span class="comment">// TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
+        </span><span class="kw">let </span>bech32_encoder = Bech32Encoder::new(<span class="kw-2">&amp;</span>NetworkDefinition::simulator());
 
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;\n{}&quot;</span>, <span class="string">&quot;Instructions:&quot;</span>.<span class="ident">bold</span>().<span class="ident">green</span>())<span class="question-mark">?</span>;
-        <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">inst</span>) <span class="kw">in</span> <span class="ident">contents</span>.<span class="ident">instructions</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
+        <span class="macro">write!</span>(f, <span class="string">&quot;\n{}&quot;</span>, <span class="string">&quot;Instructions:&quot;</span>.bold().green())<span class="question-mark">?</span>;
+        <span class="kw">for </span>(i, inst) <span class="kw">in </span>contents.instructions.iter().enumerate() {
             <span class="macro">write!</span>(
-                <span class="ident">f</span>,
+                f,
                 <span class="string">&quot;\n{} {}&quot;</span>,
-                <span class="macro">prefix!</span>(<span class="ident">i</span>, <span class="ident">contents</span>.<span class="ident">instructions</span>),
-                <span class="kw">match</span> <span class="ident">inst</span> {
-                    <span class="ident">Instruction::CallFunction</span> {
-                        <span class="ident">fn_identifier</span>: <span class="ident">FnIdentifier::Scrypto</span> {
-                            <span class="ident">package_address</span>,
-                            <span class="ident">blueprint_name</span>,
-                            <span class="ident">ident</span>,
+                <span class="macro">prefix!</span>(i, contents.instructions),
+                <span class="kw">match </span>inst {
+                    Instruction::CallFunction {
+                        fn_identifier: FnIdentifier::Scrypto {
+                            package_address,
+                            blueprint_name,
+                            ident,
                         },
-                        <span class="ident">args</span>,
+                        args,
                     } =&gt; <span class="macro">format!</span>(
                         <span class="string">&quot;CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, args: {:?} }}&quot;</span>,
-                        <span class="ident">bech32_encoder</span>.<span class="ident">encode_package_address</span>(<span class="kw-2">&amp;</span><span class="ident">package_address</span>),
-                        <span class="ident">blueprint_name</span>,
-                        <span class="ident">ident</span>,
-                        <span class="ident">ScryptoValue::from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>).<span class="ident">expect</span>(<span class="string">&quot;Failed parse call data&quot;</span>)
+                        bech32_encoder.encode_package_address(<span class="kw-2">&amp;</span>package_address),
+                        blueprint_name,
+                        ident,
+                        ScryptoValue::from_slice(<span class="kw-2">&amp;</span>args).expect(<span class="string">&quot;Failed parse call data&quot;</span>)
                     ),
-                    <span class="ident">Instruction::CallMethod</span> {
-                        <span class="ident">method_identifier</span>,
-                        <span class="ident">args</span>,
+                    Instruction::CallMethod {
+                        method_identifier,
+                        args,
                     } =&gt; {
-                        <span class="kw">match</span> <span class="ident">method_identifier</span> {
-                            <span class="ident">MethodIdentifier::Scrypto</span> {
-                                <span class="ident">component_address</span>,
-                                <span class="ident">ident</span>
+                        <span class="kw">match </span>method_identifier {
+                            MethodIdentifier::Scrypto {
+                                component_address,
+                                ident
                             } =&gt; {
                                 <span class="macro">format!</span>(
                                     <span class="string">&quot;CallMethod {{ component_address: {}, method_name: {:?}, args: {:?} }}&quot;</span>,
-                                    <span class="ident">bech32_encoder</span>.<span class="ident">encode_component_address</span>(<span class="kw-2">&amp;</span><span class="ident">component_address</span>),
-                                    <span class="ident">ident</span>,
-                                    <span class="ident">ScryptoValue::from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>).<span class="ident">expect</span>(<span class="string">&quot;Failed to parse call data&quot;</span>)
+                                    bech32_encoder.encode_component_address(<span class="kw-2">&amp;</span>component_address),
+                                    ident,
+                                    ScryptoValue::from_slice(<span class="kw-2">&amp;</span>args).expect(<span class="string">&quot;Failed to parse call data&quot;</span>)
                                 )
                             },
-                            <span class="ident">MethodIdentifier::Native</span> { <span class="ident">receiver</span>, <span class="ident">native_fn_identifier</span> } =&gt; {
+                            MethodIdentifier::Native { receiver, native_fn_identifier } =&gt; {
                                 <span class="macro">format!</span>(
                                     <span class="string">&quot;CallNativeMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}&quot;</span>,
-                                    <span class="ident">receiver</span>,
-                                    <span class="ident">native_fn_identifier</span>,
-                                    <span class="ident">ScryptoValue::from_slice</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>).<span class="ident">expect</span>(<span class="string">&quot;Failed to parse call data&quot;</span>)
+                                    receiver,
+                                    native_fn_identifier,
+                                    ScryptoValue::from_slice(<span class="kw-2">&amp;</span>args).expect(<span class="string">&quot;Failed to parse call data&quot;</span>)
                                 )
                             }
                         }
                     },
-                    <span class="ident">Instruction::PublishPackage</span> { .. } =&gt; <span class="string">&quot;PublishPackage {..}&quot;</span>.<span class="ident">to_owned</span>(),
-                    <span class="ident">i</span> @ <span class="kw">_</span> =&gt; <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="ident">i</span>),
+                    Instruction::PublishPackage { .. } =&gt; <span class="string">&quot;PublishPackage {..}&quot;</span>.to_owned(),
+                    i @ <span class="kw">_ </span>=&gt; <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, i),
                 }
             )<span class="question-mark">?</span>;
         }
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">TransactionResult::Commit</span>(<span class="ident">c</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">result</span> {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="ident">TransactionOutcome::Success</span>(<span class="ident">outputs</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">c</span>.<span class="ident">outcome</span> {
-                <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;\n{}&quot;</span>, <span class="string">&quot;Instruction Outputs:&quot;</span>.<span class="ident">bold</span>().<span class="ident">green</span>())<span class="question-mark">?</span>;
-                <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">output</span>) <span class="kw">in</span> <span class="ident">outputs</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
+        <span class="kw">if let </span>TransactionResult::Commit(c) = <span class="kw-2">&amp;</span>result {
+            <span class="kw">if let </span>TransactionOutcome::Success(outputs) = <span class="kw-2">&amp;</span>c.outcome {
+                <span class="macro">write!</span>(f, <span class="string">&quot;\n{}&quot;</span>, <span class="string">&quot;Instruction Outputs:&quot;</span>.bold().green())<span class="question-mark">?</span>;
+                <span class="kw">for </span>(i, output) <span class="kw">in </span>outputs.iter().enumerate() {
                     <span class="macro">write!</span>(
-                        <span class="ident">f</span>,
+                        f,
                         <span class="string">&quot;\n{} {:?}&quot;</span>,
-                        <span class="macro">prefix!</span>(<span class="ident">i</span>, <span class="ident">outputs</span>),
-                        <span class="ident">ScryptoValue::from_slice</span>(<span class="ident">output</span>).<span class="ident">expect</span>(<span class="string">&quot;Failed to parse return data&quot;</span>)
+                        <span class="macro">prefix!</span>(i, outputs),
+                        ScryptoValue::from_slice(output).expect(<span class="string">&quot;Failed to parse return data&quot;</span>)
                     )<span class="question-mark">?</span>;
                 }
             }
         }
 
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">TransactionResult::Commit</span>(<span class="ident">c</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">result</span> {
+        <span class="kw">if let </span>TransactionResult::Commit(c) = <span class="kw-2">&amp;</span>result {
             <span class="macro">write!</span>(
-                <span class="ident">f</span>,
+                f,
                 <span class="string">&quot;\n{} {}&quot;</span>,
-                <span class="string">&quot;New Entities:&quot;</span>.<span class="ident">bold</span>().<span class="ident">green</span>(),
-                <span class="ident">c</span>.<span class="ident">entity_changes</span>.<span class="ident">new_package_addresses</span>.<span class="ident">len</span>()
-                    <span class="op">+</span> <span class="ident">c</span>.<span class="ident">entity_changes</span>.<span class="ident">new_component_addresses</span>.<span class="ident">len</span>()
-                    <span class="op">+</span> <span class="ident">c</span>.<span class="ident">entity_changes</span>.<span class="ident">new_resource_addresses</span>.<span class="ident">len</span>()
+                <span class="string">&quot;New Entities:&quot;</span>.bold().green(),
+                c.entity_changes.new_package_addresses.len()
+                    + c.entity_changes.new_component_addresses.len()
+                    + c.entity_changes.new_resource_addresses.len()
             )<span class="question-mark">?</span>;
 
-            <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">package_address</span>) <span class="kw">in</span> <span class="ident">c</span>.<span class="ident">entity_changes</span>.<span class="ident">new_package_addresses</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>() {
+            <span class="kw">for </span>(i, package_address) <span class="kw">in </span>c.entity_changes.new_package_addresses.iter().enumerate() {
                 <span class="macro">write!</span>(
-                    <span class="ident">f</span>,
+                    f,
                     <span class="string">&quot;\n{} Package: {}&quot;</span>,
-                    <span class="macro">prefix!</span>(<span class="ident">i</span>, <span class="ident">c</span>.<span class="ident">entity_changes</span>.<span class="ident">new_package_addresses</span>),
-                    <span class="ident">bech32_encoder</span>.<span class="ident">encode_package_address</span>(<span class="ident">package_address</span>)
+                    <span class="macro">prefix!</span>(i, c.entity_changes.new_package_addresses),
+                    bech32_encoder.encode_package_address(package_address)
                 )<span class="question-mark">?</span>;
             }
-            <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">component_address</span>) <span class="kw">in</span>
-                <span class="ident">c</span>.<span class="ident">entity_changes</span>.<span class="ident">new_component_addresses</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>()
+            <span class="kw">for </span>(i, component_address) <span class="kw">in
+                </span>c.entity_changes.new_component_addresses.iter().enumerate()
             {
                 <span class="macro">write!</span>(
-                    <span class="ident">f</span>,
+                    f,
                     <span class="string">&quot;\n{} Component: {}&quot;</span>,
-                    <span class="macro">prefix!</span>(<span class="ident">i</span>, <span class="ident">c</span>.<span class="ident">entity_changes</span>.<span class="ident">new_component_addresses</span>),
-                    <span class="ident">bech32_encoder</span>.<span class="ident">encode_component_address</span>(<span class="ident">component_address</span>)
+                    <span class="macro">prefix!</span>(i, c.entity_changes.new_component_addresses),
+                    bech32_encoder.encode_component_address(component_address)
                 )<span class="question-mark">?</span>;
             }
-            <span class="kw">for</span> (<span class="ident">i</span>, <span class="ident">resource_address</span>) <span class="kw">in</span> <span class="ident">c</span>.<span class="ident">entity_changes</span>.<span class="ident">new_resource_addresses</span>.<span class="ident">iter</span>().<span class="ident">enumerate</span>()
+            <span class="kw">for </span>(i, resource_address) <span class="kw">in </span>c.entity_changes.new_resource_addresses.iter().enumerate()
             {
                 <span class="macro">write!</span>(
-                    <span class="ident">f</span>,
+                    f,
                     <span class="string">&quot;\n{} Resource: {}&quot;</span>,
-                    <span class="macro">prefix!</span>(<span class="ident">i</span>, <span class="ident">c</span>.<span class="ident">entity_changes</span>.<span class="ident">new_resource_addresses</span>),
-                    <span class="ident">bech32_encoder</span>.<span class="ident">encode_resource_address</span>(<span class="ident">resource_address</span>)
+                    <span class="macro">prefix!</span>(i, c.entity_changes.new_resource_addresses),
+                    bech32_encoder.encode_resource_address(resource_address)
                 )<span class="question-mark">?</span>;
             }
         }
@@ -666,5 +661,4 @@
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/resource.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/resource.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -407,410 +402,409 @@
 <span id="402">402</span>
 <span id="403">403</span>
 <span id="404">404</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// Represents an error when manipulating resources in a container.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ResourceContainerError</span> {
-    <span class="doccomment">/// Resource addresses do not match.</span>
-    <span class="ident">ResourceAddressNotMatching</span>,
-    <span class="doccomment">/// The amount is invalid, according to the resource divisibility.</span>
-    <span class="ident">InvalidAmount</span>(<span class="ident">Decimal</span>, <span class="ident">u8</span>),
-    <span class="doccomment">/// The balance is not enough.</span>
-    <span class="ident">InsufficientBalance</span>,
-    <span class="doccomment">/// Fungible operation on non-fungible resource is not allowed.</span>
-    <span class="ident">FungibleOperationNotAllowed</span>,
-    <span class="doccomment">/// Non-fungible operation on fungible resource is not allowed.</span>
-    <span class="ident">NonFungibleOperationNotAllowed</span>,
-    <span class="doccomment">/// Resource container is locked because there exists proof(s).</span>
-    <span class="ident">ContainerLocked</span>,
+<span class="doccomment">/// Represents an error when manipulating resources in a container.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>ResourceContainerError {
+    <span class="doccomment">/// Resource addresses do not match.
+    </span>ResourceAddressNotMatching,
+    <span class="doccomment">/// The amount is invalid, according to the resource divisibility.
+    </span>InvalidAmount(Decimal, u8),
+    <span class="doccomment">/// The balance is not enough.
+    </span>InsufficientBalance,
+    <span class="doccomment">/// Fungible operation on non-fungible resource is not allowed.
+    </span>FungibleOperationNotAllowed,
+    <span class="doccomment">/// Non-fungible operation on fungible resource is not allowed.
+    </span>NonFungibleOperationNotAllowed,
+    <span class="doccomment">/// Resource container is locked because there exists proof(s).
+    </span>ContainerLocked,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ResourceContainer</span> {
-    <span class="ident">Fungible</span> {
-        <span class="doccomment">/// The resource address.</span>
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="doccomment">/// The resource divisibility.</span>
-        <span class="ident">divisibility</span>: <span class="ident">u8</span>,
-        <span class="doccomment">/// The locked amounts and the corresponding times of being locked.</span>
-        <span class="ident">locked_amounts</span>: <span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="ident">Decimal</span>, <span class="ident">usize</span><span class="op">&gt;</span>,
-        <span class="doccomment">/// The liquid amount.</span>
-        <span class="ident">liquid_amount</span>: <span class="ident">Decimal</span>,
+<span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>ResourceContainer {
+    Fungible {
+        <span class="doccomment">/// The resource address.
+        </span>resource_address: ResourceAddress,
+        <span class="doccomment">/// The resource divisibility.
+        </span>divisibility: u8,
+        <span class="doccomment">/// The locked amounts and the corresponding times of being locked.
+        </span>locked_amounts: BTreeMap&lt;Decimal, usize&gt;,
+        <span class="doccomment">/// The liquid amount.
+        </span>liquid_amount: Decimal,
     },
-    <span class="ident">NonFungible</span> {
-        <span class="doccomment">/// The resource address.</span>
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="doccomment">/// The locked non-fungible ids and the corresponding times of being locked.</span>
-        <span class="ident">locked_ids</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span>, <span class="ident">usize</span><span class="op">&gt;</span>,
-        <span class="doccomment">/// The liquid non-fungible ids.</span>
-        <span class="ident">liquid_ids</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
+    NonFungible {
+        <span class="doccomment">/// The resource address.
+        </span>resource_address: ResourceAddress,
+        <span class="doccomment">/// The locked non-fungible ids and the corresponding times of being locked.
+        </span>locked_ids: HashMap&lt;NonFungibleId, usize&gt;,
+        <span class="doccomment">/// The liquid non-fungible ids.
+        </span>liquid_ids: BTreeSet&lt;NonFungibleId&gt;,
     },
 }
 
-<span class="doccomment">/// The locked amount or non-fungible IDs.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Invariant: always consistent with resource fungibility.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">LockedAmountOrIds</span> {
-    <span class="ident">Amount</span>(<span class="ident">Decimal</span>),
-    <span class="ident">Ids</span>(<span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>),
+<span class="doccomment">/// The locked amount or non-fungible IDs.
+///
+/// Invariant: always consistent with resource fungibility.
+</span><span class="attribute">#[derive(Debug, Clone)]
+</span><span class="kw">pub enum </span>LockedAmountOrIds {
+    Amount(Decimal),
+    Ids(BTreeSet&lt;NonFungibleId&gt;),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Hash</span>, <span class="ident">Eq</span>, <span class="ident">PartialEq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ResourceContainerId</span> {
-    <span class="ident">Bucket</span>(<span class="ident">BucketId</span>),
-    <span class="ident">Vault</span>(<span class="ident">VaultId</span>),
-    <span class="ident">Worktop</span>(<span class="ident">u32</span>, <span class="ident">ResourceAddress</span>),
+<span class="attribute">#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+</span><span class="kw">pub enum </span>ResourceContainerId {
+    Bucket(BucketId),
+    Vault(VaultId),
+    Worktop(u32, ResourceAddress),
 }
 
-<span class="kw">impl</span> <span class="ident">LockedAmountOrIds</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">amount</span>().<span class="ident">is_zero</span>()
+<span class="kw">impl </span>LockedAmountOrIds {
+    <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.amount().is_zero()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Amount</span>(<span class="ident">amount</span>) =&gt; <span class="ident">amount</span>.<span class="ident">clone</span>(),
-            <span class="ident"><span class="self">Self</span>::Ids</span>(<span class="ident">ids</span>) =&gt; <span class="ident">ids</span>.<span class="ident">len</span>().<span class="ident">into</span>(),
+    <span class="kw">pub fn </span>amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Amount(amount) =&gt; amount.clone(),
+            <span class="self">Self</span>::Ids(ids) =&gt; ids.len().into(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>, ()<span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Amount</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(()),
-            <span class="ident"><span class="self">Self</span>::Ids</span>(<span class="ident">ids</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="ident">ids</span>.<span class="ident">clone</span>()),
+    <span class="kw">pub fn </span>ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeSet&lt;NonFungibleId&gt;, ()&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Amount(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(()),
+            <span class="self">Self</span>::Ids(ids) =&gt; <span class="prelude-val">Ok</span>(ids.clone()),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ResourceContainer</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_fungible</span>(
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">divisibility</span>: <span class="ident">u8</span>,
-        <span class="ident">amount</span>: <span class="ident">Decimal</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::Fungible</span> {
-            <span class="ident">resource_address</span>,
-            <span class="ident">divisibility</span>,
-            <span class="ident">locked_amounts</span>: <span class="ident">BTreeMap::new</span>(),
-            <span class="ident">liquid_amount</span>: <span class="ident">amount</span>,
+<span class="kw">impl </span>ResourceContainer {
+    <span class="kw">pub fn </span>new_fungible(
+        resource_address: ResourceAddress,
+        divisibility: u8,
+        amount: Decimal,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::Fungible {
+            resource_address,
+            divisibility,
+            locked_amounts: BTreeMap::new(),
+            liquid_amount: amount,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_non_fungible</span>(
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">ids</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::NonFungible</span> {
-            <span class="ident">resource_address</span>,
-            <span class="ident">locked_ids</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">liquid_ids</span>: <span class="ident">ids</span>.<span class="ident">clone</span>(),
+    <span class="kw">pub fn </span>new_non_fungible(
+        resource_address: ResourceAddress,
+        ids: BTreeSet&lt;NonFungibleId&gt;,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::NonFungible {
+            resource_address,
+            locked_ids: HashMap::new(),
+            liquid_ids: ids.clone(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_empty</span>(<span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>, <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">match</span> <span class="ident">resource_type</span> {
-            <span class="ident">ResourceType::Fungible</span> { <span class="ident">divisibility</span> } =&gt; {
-                <span class="ident"><span class="self">Self</span>::new_fungible</span>(<span class="ident">resource_address</span>, <span class="ident">divisibility</span>, <span class="ident">Decimal::zero</span>())
+    <span class="kw">pub fn </span>new_empty(resource_address: ResourceAddress, resource_type: ResourceType) -&gt; <span class="self">Self </span>{
+        <span class="kw">match </span>resource_type {
+            ResourceType::Fungible { divisibility } =&gt; {
+                <span class="self">Self</span>::new_fungible(resource_address, divisibility, Decimal::zero())
             }
-            <span class="ident">ResourceType::NonFungible</span> =&gt; <span class="ident"><span class="self">Self</span>::new_non_fungible</span>(<span class="ident">resource_address</span>, <span class="ident">BTreeSet::new</span>()),
+            ResourceType::NonFungible =&gt; <span class="self">Self</span>::new_non_fungible(resource_address, BTreeSet::new()),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">put</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="comment">// check resource address</span>
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">resource_address</span>() <span class="op">!</span><span class="op">=</span> <span class="ident">other</span>.<span class="ident">resource_address</span>() {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::ResourceAddressNotMatching</span>);
+    <span class="kw">pub fn </span>put(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), ResourceContainerError&gt; {
+        <span class="comment">// check resource address
+        </span><span class="kw">if </span><span class="self">self</span>.resource_address() != other.resource_address() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ResourceContainerError::ResourceAddressNotMatching);
         }
 
-        <span class="comment">// Invariant: owned container should always be free</span>
-        <span class="macro">assert!</span>(<span class="op">!</span><span class="ident">other</span>.<span class="ident">is_locked</span>());
+        <span class="comment">// Invariant: owned container should always be free
+        </span><span class="macro">assert!</span>(!other.is_locked());
 
-        <span class="comment">// update liquidity</span>
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Fungible</span> { <span class="ident">liquid_amount</span>, .. } =&gt; {
-                <span class="kw-2">*</span><span class="ident">liquid_amount</span> <span class="op">+</span><span class="op">=</span> <span class="ident">other</span>.<span class="ident">liquid_amount</span>();
+        <span class="comment">// update liquidity
+        </span><span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Fungible { liquid_amount, .. } =&gt; {
+                <span class="kw-2">*</span>liquid_amount += other.liquid_amount();
             }
-            <span class="ident"><span class="self">Self</span>::NonFungible</span> { <span class="ident">liquid_ids</span>, .. } =&gt; {
-                <span class="ident">liquid_ids</span>.<span class="ident">extend</span>(<span class="ident">other</span>.<span class="ident">liquid_ids</span>()<span class="question-mark">?</span>);
+            <span class="self">Self</span>::NonFungible { liquid_ids, .. } =&gt; {
+                liquid_ids.extend(other.liquid_ids()<span class="question-mark">?</span>);
             }
         }
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take_by_amount</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">Decimal</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="comment">// check amount granularity</span>
-        <span class="kw">let</span> <span class="ident">divisibility</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">resource_type</span>().<span class="ident">divisibility</span>();
-        <span class="ident"><span class="self">Self</span>::check_amount</span>(<span class="ident">amount</span>, <span class="ident">divisibility</span>)<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>take_by_amount(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: Decimal) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ResourceContainerError&gt; {
+        <span class="comment">// check amount granularity
+        </span><span class="kw">let </span>divisibility = <span class="self">self</span>.resource_type().divisibility();
+        <span class="self">Self</span>::check_amount(amount, divisibility)<span class="question-mark">?</span>;
 
-        <span class="comment">// deduct from liquidity pool</span>
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Fungible</span> { <span class="ident">liquid_amount</span>, .. } =&gt; {
-                <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">liquid_amount</span> <span class="op">&lt;</span> <span class="ident">amount</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::InsufficientBalance</span>);
+        <span class="comment">// deduct from liquidity pool
+        </span><span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Fungible { liquid_amount, .. } =&gt; {
+                <span class="kw">if </span><span class="kw-2">*</span>liquid_amount &lt; amount {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ResourceContainerError::InsufficientBalance);
                 }
-                <span class="kw-2">*</span><span class="ident">liquid_amount</span> <span class="op">=</span> <span class="kw-2">*</span><span class="ident">liquid_amount</span> <span class="op">-</span> <span class="ident">amount</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::new_fungible</span>(
-                    <span class="self">self</span>.<span class="ident">resource_address</span>(),
-                    <span class="ident">divisibility</span>,
-                    <span class="ident">amount</span>,
+                <span class="kw-2">*</span>liquid_amount = <span class="kw-2">*</span>liquid_amount - amount;
+                <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new_fungible(
+                    <span class="self">self</span>.resource_address(),
+                    divisibility,
+                    amount,
                 ))
             }
-            <span class="ident"><span class="self">Self</span>::NonFungible</span> { <span class="ident">liquid_ids</span>, .. } =&gt; {
-                <span class="kw">if</span> <span class="ident">Decimal::from</span>(<span class="ident">liquid_ids</span>.<span class="ident">len</span>()) <span class="op">&lt;</span> <span class="ident">amount</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::InsufficientBalance</span>);
+            <span class="self">Self</span>::NonFungible { liquid_ids, .. } =&gt; {
+                <span class="kw">if </span>Decimal::from(liquid_ids.len()) &lt; amount {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ResourceContainerError::InsufficientBalance);
                 }
-                <span class="kw">let</span> <span class="ident">n</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">amount</span>
-                    .<span class="ident">to_string</span>()
-                    .<span class="ident">parse</span>()
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to convert amount to usize&quot;</span>);
-                <span class="kw">let</span> <span class="ident">ids</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">liquid_ids</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>().<span class="ident">take</span>(<span class="ident">n</span>).<span class="ident">collect</span>();
-                <span class="self">self</span>.<span class="ident">take_by_ids</span>(<span class="kw-2">&amp;</span><span class="ident">ids</span>)
+                <span class="kw">let </span>n: usize = amount
+                    .to_string()
+                    .parse()
+                    .expect(<span class="string">&quot;Failed to convert amount to usize&quot;</span>);
+                <span class="kw">let </span>ids: BTreeSet&lt;NonFungibleId&gt; = liquid_ids.iter().cloned().take(n).collect();
+                <span class="self">self</span>.take_by_ids(<span class="kw-2">&amp;</span>ids)
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take_by_ids</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">ids</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Fungible</span> { .. } =&gt; <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::NonFungibleOperationNotAllowed</span>),
-            <span class="ident"><span class="self">Self</span>::NonFungible</span> { <span class="ident">liquid_ids</span>, .. } =&gt; {
-                <span class="kw">for</span> <span class="ident">id</span> <span class="kw">in</span> <span class="ident">ids</span> {
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">liquid_ids</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>) {
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::InsufficientBalance</span>);
+    <span class="kw">pub fn </span>take_by_ids(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        ids: <span class="kw-2">&amp;</span>BTreeSet&lt;NonFungibleId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ResourceContainerError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Fungible { .. } =&gt; <span class="prelude-val">Err</span>(ResourceContainerError::NonFungibleOperationNotAllowed),
+            <span class="self">Self</span>::NonFungible { liquid_ids, .. } =&gt; {
+                <span class="kw">for </span>id <span class="kw">in </span>ids {
+                    <span class="kw">if </span>!liquid_ids.remove(<span class="kw-2">&amp;</span>id) {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(ResourceContainerError::InsufficientBalance);
                     }
                 }
-                <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::new_non_fungible</span>(<span class="self">self</span>.<span class="ident">resource_address</span>(), <span class="ident">ids</span>.<span class="ident">clone</span>()))
+                <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new_non_fungible(<span class="self">self</span>.resource_address(), ids.clone()))
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take_all_liquid</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">take_by_amount</span>(<span class="self">self</span>.<span class="ident">liquid_amount</span>())
+    <span class="kw">pub fn </span>take_all_liquid(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, ResourceContainerError&gt; {
+        <span class="self">self</span>.take_by_amount(<span class="self">self</span>.liquid_amount())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lock_by_amount</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">amount</span>: <span class="ident">Decimal</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LockedAmountOrIds</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="comment">// check amount granularity</span>
-        <span class="kw">let</span> <span class="ident">divisibility</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">resource_type</span>().<span class="ident">divisibility</span>();
-        <span class="ident"><span class="self">Self</span>::check_amount</span>(<span class="ident">amount</span>, <span class="ident">divisibility</span>)<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>lock_by_amount(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        amount: Decimal,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockedAmountOrIds, ResourceContainerError&gt; {
+        <span class="comment">// check amount granularity
+        </span><span class="kw">let </span>divisibility = <span class="self">self</span>.resource_type().divisibility();
+        <span class="self">Self</span>::check_amount(amount, divisibility)<span class="question-mark">?</span>;
 
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Fungible</span> {
-                <span class="ident">locked_amounts</span>,
-                <span class="ident">liquid_amount</span>,
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Fungible {
+                locked_amounts,
+                liquid_amount,
                 ..
             } =&gt; {
-                <span class="kw">let</span> <span class="ident">max_locked</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::largest_key</span>(<span class="ident">locked_amounts</span>);
-                <span class="kw">if</span> <span class="ident">amount</span> <span class="op">&gt;</span> <span class="ident">max_locked</span> {
-                    <span class="kw">let</span> <span class="ident">delta</span> <span class="op">=</span> <span class="ident">amount</span> <span class="op">-</span> <span class="ident">max_locked</span>;
-                    <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">liquid_amount</span> <span class="op">&gt;</span><span class="op">=</span> <span class="ident">delta</span> {
-                        <span class="kw-2">*</span><span class="ident">liquid_amount</span> <span class="op">-</span><span class="op">=</span> <span class="ident">delta</span>;
-                    } <span class="kw">else</span> {
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::InsufficientBalance</span>);
+                <span class="kw">let </span>max_locked = <span class="self">Self</span>::largest_key(locked_amounts);
+                <span class="kw">if </span>amount &gt; max_locked {
+                    <span class="kw">let </span>delta = amount - max_locked;
+                    <span class="kw">if </span><span class="kw-2">*</span>liquid_amount &gt;= delta {
+                        <span class="kw-2">*</span>liquid_amount -= delta;
+                    } <span class="kw">else </span>{
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(ResourceContainerError::InsufficientBalance);
                     }
                 }
 
-                <span class="ident">locked_amounts</span>.<span class="ident">insert</span>(
-                    <span class="ident">amount</span>,
-                    <span class="ident">locked_amounts</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">amount</span>).<span class="ident">cloned</span>().<span class="ident">unwrap_or</span>(<span class="number">0</span>) <span class="op">+</span> <span class="number">1</span>,
+                locked_amounts.insert(
+                    amount,
+                    locked_amounts.get(<span class="kw-2">&amp;</span>amount).cloned().unwrap_or(<span class="number">0</span>) + <span class="number">1</span>,
                 );
 
-                <span class="prelude-val">Ok</span>(<span class="ident">LockedAmountOrIds::Amount</span>(<span class="ident">amount</span>))
+                <span class="prelude-val">Ok</span>(LockedAmountOrIds::Amount(amount))
             }
-            <span class="ident"><span class="self">Self</span>::NonFungible</span> {
-                <span class="ident">locked_ids</span>,
-                <span class="ident">liquid_ids</span>,
+            <span class="self">Self</span>::NonFungible {
+                locked_ids,
+                liquid_ids,
                 ..
             } =&gt; {
-                <span class="kw">if</span> <span class="ident">Decimal::from</span>(<span class="ident">locked_ids</span>.<span class="ident">len</span>() <span class="op">+</span> <span class="ident">liquid_ids</span>.<span class="ident">len</span>()) <span class="op">&lt;</span> <span class="ident">amount</span> {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::InsufficientBalance</span>);
+                <span class="kw">if </span>Decimal::from(locked_ids.len() + liquid_ids.len()) &lt; amount {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(ResourceContainerError::InsufficientBalance);
                 }
 
-                <span class="kw">let</span> <span class="ident">n</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">amount</span>
-                    .<span class="ident">to_string</span>()
-                    .<span class="ident">parse</span>()
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to convert amount to usize&quot;</span>);
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ids</span>: <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">locked_ids</span>.<span class="ident">keys</span>().<span class="ident">cloned</span>().<span class="ident">take</span>(<span class="ident">n</span>).<span class="ident">collect</span>();
-                <span class="kw">if</span> <span class="ident">ids</span>.<span class="ident">len</span>() <span class="op">&lt;</span> <span class="ident">n</span> {
-                    <span class="ident">ids</span>.<span class="ident">extend</span>(<span class="ident">liquid_ids</span>.<span class="ident">iter</span>().<span class="ident">cloned</span>().<span class="ident">take</span>(<span class="ident">n</span> <span class="op">-</span> <span class="ident">ids</span>.<span class="ident">len</span>()));
+                <span class="kw">let </span>n: usize = amount
+                    .to_string()
+                    .parse()
+                    .expect(<span class="string">&quot;Failed to convert amount to usize&quot;</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>ids: BTreeSet&lt;NonFungibleId&gt; = locked_ids.keys().cloned().take(n).collect();
+                <span class="kw">if </span>ids.len() &lt; n {
+                    ids.extend(liquid_ids.iter().cloned().take(n - ids.len()));
                 }
 
-                <span class="self">self</span>.<span class="ident">lock_by_ids</span>(<span class="kw-2">&amp;</span><span class="ident">ids</span>)
+                <span class="self">self</span>.lock_by_ids(<span class="kw-2">&amp;</span>ids)
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">lock_by_ids</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">ids</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">LockedAmountOrIds</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::NonFungible</span> {
-                <span class="ident">locked_ids</span>,
-                <span class="ident">liquid_ids</span>,
+    <span class="kw">pub fn </span>lock_by_ids(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        ids: <span class="kw-2">&amp;</span>BTreeSet&lt;NonFungibleId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockedAmountOrIds, ResourceContainerError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::NonFungible {
+                locked_ids,
+                liquid_ids,
                 ..
             } =&gt; {
-                <span class="kw">for</span> <span class="ident">id</span> <span class="kw">in</span> <span class="ident">ids</span> {
-                    <span class="kw">if</span> <span class="ident">liquid_ids</span>.<span class="ident">remove</span>(<span class="ident">id</span>) {
-                        <span class="comment">// if the non-fungible is liquid, move it to locked.</span>
-                        <span class="ident">locked_ids</span>.<span class="ident">insert</span>(<span class="ident">id</span>.<span class="ident">clone</span>(), <span class="number">1</span>);
-                    } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">cnt</span>) <span class="op">=</span> <span class="ident">locked_ids</span>.<span class="ident">get_mut</span>(<span class="ident">id</span>) {
-                        <span class="comment">// if the non-fungible is locked, increase the ref count.</span>
-                        <span class="kw-2">*</span><span class="ident">cnt</span> <span class="op">+</span><span class="op">=</span> <span class="number">1</span>;
-                    } <span class="kw">else</span> {
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::InsufficientBalance</span>);
+                <span class="kw">for </span>id <span class="kw">in </span>ids {
+                    <span class="kw">if </span>liquid_ids.remove(id) {
+                        <span class="comment">// if the non-fungible is liquid, move it to locked.
+                        </span>locked_ids.insert(id.clone(), <span class="number">1</span>);
+                    } <span class="kw">else if let </span><span class="prelude-val">Some</span>(cnt) = locked_ids.get_mut(id) {
+                        <span class="comment">// if the non-fungible is locked, increase the ref count.
+                        </span><span class="kw-2">*</span>cnt += <span class="number">1</span>;
+                    } <span class="kw">else </span>{
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(ResourceContainerError::InsufficientBalance);
                     }
                 }
 
-                <span class="prelude-val">Ok</span>(<span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">ids</span>.<span class="ident">clone</span>()))
+                <span class="prelude-val">Ok</span>(LockedAmountOrIds::Ids(ids.clone()))
             }
-            <span class="ident"><span class="self">Self</span>::Fungible</span> { .. } =&gt; <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::NonFungibleOperationNotAllowed</span>),
+            <span class="self">Self</span>::Fungible { .. } =&gt; <span class="prelude-val">Err</span>(ResourceContainerError::NonFungibleOperationNotAllowed),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">largest_key</span>(<span class="ident">map</span>: <span class="kw-2">&amp;</span><span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="ident">Decimal</span>, <span class="ident">usize</span><span class="op">&gt;</span>) -&gt; <span class="ident">Decimal</span> {
-        <span class="comment">// TODO: remove loop once `last_key_value` is stable.</span>
-        <span class="ident">map</span>.<span class="ident">keys</span>().<span class="ident">cloned</span>().<span class="ident">max</span>().<span class="ident">unwrap_or</span>(<span class="ident">Decimal::zero</span>())
+    <span class="kw">fn </span>largest_key(map: <span class="kw-2">&amp;</span>BTreeMap&lt;Decimal, usize&gt;) -&gt; Decimal {
+        <span class="comment">// TODO: remove loop once `last_key_value` is stable.
+        </span>map.keys().cloned().max().unwrap_or(Decimal::zero())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">unlock</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">resource</span>: <span class="ident">LockedAmountOrIds</span>) {
-        <span class="kw">match</span> <span class="ident">resource</span> {
-            <span class="ident">LockedAmountOrIds::Amount</span>(<span class="ident">amount</span>) =&gt; <span class="kw">match</span> <span class="self">self</span> {
-                <span class="ident"><span class="self">Self</span>::Fungible</span> {
-                    <span class="ident">locked_amounts</span>,
-                    <span class="ident">liquid_amount</span>,
+    <span class="kw">pub fn </span>unlock(<span class="kw-2">&amp;mut </span><span class="self">self</span>, resource: LockedAmountOrIds) {
+        <span class="kw">match </span>resource {
+            LockedAmountOrIds::Amount(amount) =&gt; <span class="kw">match </span><span class="self">self </span>{
+                <span class="self">Self</span>::Fungible {
+                    locked_amounts,
+                    liquid_amount,
                     ..
                 } =&gt; {
-                    <span class="kw">let</span> <span class="ident">max_locked</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::largest_key</span>(<span class="ident">locked_amounts</span>);
-                    <span class="kw">let</span> <span class="ident">count</span> <span class="op">=</span> <span class="ident">locked_amounts</span>
-                        .<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">amount</span>)
-                        .<span class="ident">expect</span>(<span class="string">&quot;Attempted to unlock an amount that is not locked in container&quot;</span>);
-                    <span class="kw">if</span> <span class="ident">count</span> <span class="op">&gt;</span> <span class="number">1</span> {
-                        <span class="ident">locked_amounts</span>.<span class="ident">insert</span>(<span class="ident">amount</span>, <span class="ident">count</span> <span class="op">-</span> <span class="number">1</span>);
-                    } <span class="kw">else</span> {
-                        <span class="kw">let</span> <span class="ident">new_max_locked</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::largest_key</span>(<span class="ident">locked_amounts</span>);
-                        <span class="kw-2">*</span><span class="ident">liquid_amount</span> <span class="op">+</span><span class="op">=</span> <span class="ident">max_locked</span> <span class="op">-</span> <span class="ident">new_max_locked</span>;
+                    <span class="kw">let </span>max_locked = <span class="self">Self</span>::largest_key(locked_amounts);
+                    <span class="kw">let </span>count = locked_amounts
+                        .remove(<span class="kw-2">&amp;</span>amount)
+                        .expect(<span class="string">&quot;Attempted to unlock an amount that is not locked in container&quot;</span>);
+                    <span class="kw">if </span>count &gt; <span class="number">1 </span>{
+                        locked_amounts.insert(amount, count - <span class="number">1</span>);
+                    } <span class="kw">else </span>{
+                        <span class="kw">let </span>new_max_locked = <span class="self">Self</span>::largest_key(locked_amounts);
+                        <span class="kw-2">*</span>liquid_amount += max_locked - new_max_locked;
                     }
                 }
-                <span class="ident"><span class="self">Self</span>::NonFungible</span> { .. } =&gt; {
+                <span class="self">Self</span>::NonFungible { .. } =&gt; {
                     <span class="macro">panic!</span>(<span class="string">&quot;Attempted to unlock amount of non-fungible resource&quot;</span>)
                 }
             },
-            <span class="ident">LockedAmountOrIds::Ids</span>(<span class="ident">ids</span>) =&gt; <span class="kw">match</span> <span class="self">self</span> {
-                <span class="ident"><span class="self">Self</span>::NonFungible</span> {
-                    <span class="ident">locked_ids</span>,
-                    <span class="ident">liquid_ids</span>,
+            LockedAmountOrIds::Ids(ids) =&gt; <span class="kw">match </span><span class="self">self </span>{
+                <span class="self">Self</span>::NonFungible {
+                    locked_ids,
+                    liquid_ids,
                     ..
                 } =&gt; {
-                    <span class="kw">for</span> <span class="ident">id</span> <span class="kw">in</span> <span class="ident">ids</span> {
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">cnt</span>) <span class="op">=</span> <span class="ident">locked_ids</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>) {
-                            <span class="kw">if</span> <span class="ident">cnt</span> <span class="op">&gt;</span> <span class="number">1</span> {
-                                <span class="ident">locked_ids</span>.<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">cnt</span> <span class="op">-</span> <span class="number">1</span>);
-                            } <span class="kw">else</span> {
-                                <span class="ident">liquid_ids</span>.<span class="ident">insert</span>(<span class="ident">id</span>);
+                    <span class="kw">for </span>id <span class="kw">in </span>ids {
+                        <span class="kw">if let </span><span class="prelude-val">Some</span>(cnt) = locked_ids.remove(<span class="kw-2">&amp;</span>id) {
+                            <span class="kw">if </span>cnt &gt; <span class="number">1 </span>{
+                                locked_ids.insert(id, cnt - <span class="number">1</span>);
+                            } <span class="kw">else </span>{
+                                liquid_ids.insert(id);
                             }
-                        } <span class="kw">else</span> {
+                        } <span class="kw">else </span>{
                             <span class="macro">panic!</span>(<span class="string">&quot;Attempted to unlock a non-fungible that is not locked in container&quot;</span>);
                         }
                     }
                 }
-                <span class="ident"><span class="self">Self</span>::Fungible</span> { .. } =&gt; {
+                <span class="self">Self</span>::Fungible { .. } =&gt; {
                     <span class="macro">panic!</span>(<span class="string">&quot;Attempted to unlock non-fungibles of fungible resource&quot;</span>)
                 }
             },
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_locked_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">ResourceContainer::Fungible</span> { <span class="ident">locked_amounts</span>, .. } =&gt; <span class="ident"><span class="self">Self</span>::largest_key</span>(<span class="ident">locked_amounts</span>),
-            <span class="ident">ResourceContainer::NonFungible</span> { <span class="ident">locked_ids</span>, .. } =&gt; <span class="ident">locked_ids</span>.<span class="ident">len</span>().<span class="ident">into</span>(),
+    <span class="kw">pub fn </span>max_locked_amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+        <span class="kw">match </span><span class="self">self </span>{
+            ResourceContainer::Fungible { locked_amounts, .. } =&gt; <span class="self">Self</span>::largest_key(locked_amounts),
+            ResourceContainer::NonFungible { locked_ids, .. } =&gt; locked_ids.len().into(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">max_locked_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">ResourceContainer::Fungible</span> { .. } =&gt; {
-                <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::NonFungibleOperationNotAllowed</span>)
+    <span class="kw">pub fn </span>max_locked_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeSet&lt;NonFungibleId&gt;, ResourceContainerError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            ResourceContainer::Fungible { .. } =&gt; {
+                <span class="prelude-val">Err</span>(ResourceContainerError::NonFungibleOperationNotAllowed)
             }
-            <span class="ident">ResourceContainer::NonFungible</span> { <span class="ident">locked_ids</span>, .. } =&gt; {
-                <span class="prelude-val">Ok</span>(<span class="ident">locked_ids</span>.<span class="ident">keys</span>().<span class="ident">cloned</span>().<span class="ident">collect</span>())
+            ResourceContainer::NonFungible { locked_ids, .. } =&gt; {
+                <span class="prelude-val">Ok</span>(locked_ids.keys().cloned().collect())
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">liquid_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Fungible</span> { <span class="ident">liquid_amount</span>, .. } =&gt; <span class="kw-2">*</span><span class="ident">liquid_amount</span>,
-            <span class="ident"><span class="self">Self</span>::NonFungible</span> { <span class="ident">liquid_ids</span>, .. } =&gt; <span class="ident">liquid_ids</span>.<span class="ident">len</span>().<span class="ident">into</span>(),
+    <span class="kw">pub fn </span>liquid_amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Fungible { liquid_amount, .. } =&gt; <span class="kw-2">*</span>liquid_amount,
+            <span class="self">Self</span>::NonFungible { liquid_ids, .. } =&gt; liquid_ids.len().into(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">liquid_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Fungible</span> { .. } =&gt; <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::NonFungibleOperationNotAllowed</span>),
-            <span class="ident"><span class="self">Self</span>::NonFungible</span> { <span class="ident">liquid_ids</span>, .. } =&gt; <span class="prelude-val">Ok</span>(<span class="ident">liquid_ids</span>.<span class="ident">clone</span>()),
+    <span class="kw">pub fn </span>liquid_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeSet&lt;NonFungibleId&gt;, ResourceContainerError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Fungible { .. } =&gt; <span class="prelude-val">Err</span>(ResourceContainerError::NonFungibleOperationNotAllowed),
+            <span class="self">Self</span>::NonFungible { liquid_ids, .. } =&gt; <span class="prelude-val">Ok</span>(liquid_ids.clone()),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-        <span class="self">self</span>.<span class="ident">max_locked_amount</span>() <span class="op">+</span> <span class="self">self</span>.<span class="ident">liquid_amount</span>()
+    <span class="kw">pub fn </span>total_amount(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+        <span class="self">self</span>.max_locked_amount() + <span class="self">self</span>.liquid_amount()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span><span class="op">&gt;</span>, <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">total</span> <span class="op">=</span> <span class="ident">BTreeSet::new</span>();
-        <span class="ident">total</span>.<span class="ident">extend</span>(<span class="self">self</span>.<span class="ident">max_locked_ids</span>()<span class="question-mark">?</span>);
-        <span class="ident">total</span>.<span class="ident">extend</span>(<span class="self">self</span>.<span class="ident">liquid_ids</span>()<span class="question-mark">?</span>);
-        <span class="prelude-val">Ok</span>(<span class="ident">total</span>)
+    <span class="kw">pub fn </span>total_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;BTreeSet&lt;NonFungibleId&gt;, ResourceContainerError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>total = BTreeSet::new();
+        total.extend(<span class="self">self</span>.max_locked_ids()<span class="question-mark">?</span>);
+        total.extend(<span class="self">self</span>.liquid_ids()<span class="question-mark">?</span>);
+        <span class="prelude-val">Ok</span>(total)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_locked</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Fungible</span> { <span class="ident">locked_amounts</span>, .. } =&gt; <span class="op">!</span><span class="ident">locked_amounts</span>.<span class="ident">is_empty</span>(),
-            <span class="ident"><span class="self">Self</span>::NonFungible</span> { <span class="ident">locked_ids</span>, .. } =&gt; <span class="op">!</span><span class="ident">locked_ids</span>.<span class="ident">is_empty</span>(),
+    <span class="kw">pub fn </span>is_locked(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Fungible { locked_amounts, .. } =&gt; !locked_amounts.is_empty(),
+            <span class="self">Self</span>::NonFungible { locked_ids, .. } =&gt; !locked_ids.is_empty(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">is_empty</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">bool</span> {
-        <span class="self">self</span>.<span class="ident">total_amount</span>().<span class="ident">is_zero</span>()
+    <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.total_amount().is_zero()
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceAddress</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Fungible</span> {
-                <span class="ident">resource_address</span>, ..
+    <span class="kw">pub fn </span>resource_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceAddress {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Fungible {
+                resource_address, ..
             }
-            <span class="op">|</span> <span class="ident"><span class="self">Self</span>::NonFungible</span> {
-                <span class="ident">resource_address</span>, ..
-            } =&gt; <span class="kw-2">*</span><span class="ident">resource_address</span>,
+            | <span class="self">Self</span>::NonFungible {
+                resource_address, ..
+            } =&gt; <span class="kw-2">*</span>resource_address,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_type</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceType</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Fungible</span> { <span class="ident">divisibility</span>, .. } =&gt; <span class="ident">ResourceType::Fungible</span> {
-                <span class="ident">divisibility</span>: <span class="kw-2">*</span><span class="ident">divisibility</span>,
+    <span class="kw">pub fn </span>resource_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceType {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Fungible { divisibility, .. } =&gt; ResourceType::Fungible {
+                divisibility: <span class="kw-2">*</span>divisibility,
             },
-            <span class="ident"><span class="self">Self</span>::NonFungible</span> { .. } =&gt; <span class="ident">ResourceType::NonFungible</span>,
+            <span class="self">Self</span>::NonFungible { .. } =&gt; ResourceType::NonFungible,
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">check_amount</span>(<span class="ident">amount</span>: <span class="ident">Decimal</span>, <span class="ident">divisibility</span>: <span class="ident">u8</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">ResourceContainerError</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="ident">amount</span>.<span class="ident">is_negative</span>()
-            <span class="op">|</span><span class="op">|</span> <span class="ident">amount</span>.<span class="number">0</span> <span class="op">%</span> <span class="ident">I256::from</span>(<span class="number">10i128</span>.<span class="ident">pow</span>((<span class="number">18</span> <span class="op">-</span> <span class="ident">divisibility</span>).<span class="ident">into</span>())) <span class="op">!</span><span class="op">=</span> <span class="ident">I256::from</span>(<span class="number">0</span>)
+    <span class="kw">fn </span>check_amount(amount: Decimal, divisibility: u8) -&gt; <span class="prelude-ty">Result</span>&lt;(), ResourceContainerError&gt; {
+        <span class="kw">if </span>amount.is_negative()
+            || amount.<span class="number">0 </span>% I256::from(<span class="number">10i128</span>.pow((<span class="number">18 </span>- divisibility).into())) != I256::from(<span class="number">0</span>)
         {
-            <span class="prelude-val">Err</span>(<span class="ident">ResourceContainerError::InvalidAmount</span>(<span class="ident">amount</span>, <span class="ident">divisibility</span>))
-        } <span class="kw">else</span> {
+            <span class="prelude-val">Err</span>(ResourceContainerError::InvalidAmount(amount, divisibility))
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(())
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,1 +1,1 @@
-initSidebarItems({"trait":[["PrimIntExt",""]]});
+window.SIDEBAR_ITEMS = {"trait":[["PrimIntExt",""]]};

@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/macros.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>macros.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../scrypto/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/macros.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>macros.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../scrypto/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -601,604 +596,603 @@
 <span id="596">596</span>
 <span id="597">597</span>
 <span id="598">598</span>
-</pre><pre class="rust"><code><span class="doccomment">/// Creates a `Decimal` from literals.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// let a = dec!(1);</span>
-<span class="doccomment">/// let b = dec!(&quot;1.1&quot;);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">dec</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">literal</span>) =&gt; {
-        <span class="ident">scrypto::math::Decimal::from</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>)
+</pre><pre class="rust"><code><span class="doccomment">/// Creates a `Decimal` from literals.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// let a = dec!(1);
+/// let b = dec!(&quot;1.1&quot;);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>dec {
+    (<span class="macro-nonterminal">$x</span>:literal) =&gt; {
+        scrypto::math::Decimal::from(<span class="macro-nonterminal">$x</span>)
     };
 
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">base</span>:<span class="ident">literal</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">shift</span>:<span class="ident">literal</span>) =&gt; {
-        <span class="comment">// Base can be any type that converts into a Decimal, and shift must support</span>
-        <span class="comment">// comparison and `-` unary operation, enforced by rustc.</span>
-        {
-            <span class="kw">let</span> <span class="ident">base</span> <span class="op">=</span> <span class="ident">scrypto::math::Decimal::from</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">base</span>);
-            <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">shift</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">0</span> {
-                <span class="ident">base</span> <span class="op">*</span> <span class="ident">scrypto::math::Decimal::try_from</span>(
-                    <span class="ident">scrypto::math::I256::from</span>(<span class="number">10u8</span>)
-                        .<span class="ident">pow</span>(<span class="ident">u32::try_from</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">shift</span>).<span class="ident">expect</span>(<span class="string">&quot;Shift overflow&quot;</span>)),
+    (<span class="macro-nonterminal">$base</span>:literal, <span class="macro-nonterminal">$shift</span>:literal) =&gt; {
+        <span class="comment">// Base can be any type that converts into a Decimal, and shift must support
+        // comparison and `-` unary operation, enforced by rustc.
+        </span>{
+            <span class="kw">let </span>base = scrypto::math::Decimal::from(<span class="macro-nonterminal">$base</span>);
+            <span class="kw">if </span><span class="macro-nonterminal">$shift </span>&gt;= <span class="number">0 </span>{
+                base * scrypto::math::Decimal::try_from(
+                    scrypto::math::I256::from(<span class="number">10u8</span>)
+                        .pow(u32::try_from(<span class="macro-nonterminal">$shift</span>).expect(<span class="string">&quot;Shift overflow&quot;</span>)),
                 )
-                .<span class="ident">expect</span>(<span class="string">&quot;Shift overflow&quot;</span>)
-            } <span class="kw">else</span> {
-                <span class="ident">base</span> <span class="op">/</span> <span class="ident">scrypto::math::Decimal::try_from</span>(
-                    <span class="ident">scrypto::math::I256::from</span>(<span class="number">10u8</span>)
-                        .<span class="ident">pow</span>(<span class="ident">u32::try_from</span>(<span class="op">-</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">shift</span>).<span class="ident">expect</span>(<span class="string">&quot;Shift overflow&quot;</span>)),
+                .expect(<span class="string">&quot;Shift overflow&quot;</span>)
+            } <span class="kw">else </span>{
+                base / scrypto::math::Decimal::try_from(
+                    scrypto::math::I256::from(<span class="number">10u8</span>)
+                        .pow(u32::try_from(-<span class="macro-nonterminal">$shift</span>).expect(<span class="string">&quot;Shift overflow&quot;</span>)),
                 )
-                .<span class="ident">expect</span>(<span class="string">&quot;Shift overflow&quot;</span>)
+                .expect(<span class="string">&quot;Shift overflow&quot;</span>)
             }
         }
     };
 }
 
-<span class="doccomment">/// Creates a safe integer from literals.</span>
-<span class="doccomment">/// You must specify the type of the</span>
-<span class="doccomment">/// integer you want to create.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// let a: I256 = i!(21);</span>
-<span class="doccomment">/// let b: U512 = i!(&quot;1156&quot;);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">i</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">expr</span>) =&gt; {
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>.<span class="ident">try_into</span>().<span class="ident">expect</span>(<span class="string">&quot;Parse Error&quot;</span>)
+<span class="doccomment">/// Creates a safe integer from literals.
+/// You must specify the type of the
+/// integer you want to create.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// let a: I256 = i!(21);
+/// let b: U512 = i!(&quot;1156&quot;);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>i {
+    (<span class="macro-nonterminal">$x</span>:expr) =&gt; {
+        <span class="macro-nonterminal">$x</span>.try_into().expect(<span class="string">&quot;Parse Error&quot;</span>)
     };
 }
 
-<span class="doccomment">/// Creates a `PreciseDecimal` from literals.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// let a = pdec!(1);</span>
-<span class="doccomment">/// let b = pdec!(&quot;1.1&quot;);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">pdec</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>:<span class="ident">literal</span>) =&gt; {
-        <span class="ident">scrypto::math::PreciseDecimal::from</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">x</span>)
+<span class="doccomment">/// Creates a `PreciseDecimal` from literals.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// let a = pdec!(1);
+/// let b = pdec!(&quot;1.1&quot;);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>pdec {
+    (<span class="macro-nonterminal">$x</span>:literal) =&gt; {
+        scrypto::math::PreciseDecimal::from(<span class="macro-nonterminal">$x</span>)
     };
 
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">base</span>:<span class="ident">literal</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">shift</span>:<span class="ident">literal</span>) =&gt; {
-        <span class="comment">// Base can be any type that converts into a PreciseDecimal, and shift must support</span>
-        <span class="comment">// comparison and `-` unary operation, enforced by rustc.</span>
-        {
-            <span class="kw">let</span> <span class="ident">base</span> <span class="op">=</span> <span class="ident">scrypto::math::PreciseDecimal::from</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">base</span>);
-            <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">shift</span> <span class="op">&gt;</span><span class="op">=</span> <span class="number">0</span> {
-                <span class="ident">base</span> <span class="op">*</span> <span class="ident">scrypto::math::PreciseDecimal::try_from</span>(
-                    <span class="ident">scrypto::math::I512::from</span>(<span class="number">10u8</span>)
-                        .<span class="ident">pow</span>(<span class="ident">u32::try_from</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">shift</span>).<span class="ident">expect</span>(<span class="string">&quot;Shift overflow&quot;</span>)),
+    (<span class="macro-nonterminal">$base</span>:literal, <span class="macro-nonterminal">$shift</span>:literal) =&gt; {
+        <span class="comment">// Base can be any type that converts into a PreciseDecimal, and shift must support
+        // comparison and `-` unary operation, enforced by rustc.
+        </span>{
+            <span class="kw">let </span>base = scrypto::math::PreciseDecimal::from(<span class="macro-nonterminal">$base</span>);
+            <span class="kw">if </span><span class="macro-nonterminal">$shift </span>&gt;= <span class="number">0 </span>{
+                base * scrypto::math::PreciseDecimal::try_from(
+                    scrypto::math::I512::from(<span class="number">10u8</span>)
+                        .pow(u32::try_from(<span class="macro-nonterminal">$shift</span>).expect(<span class="string">&quot;Shift overflow&quot;</span>)),
                 )
-                .<span class="ident">expect</span>(<span class="string">&quot;Shift overflow&quot;</span>)
-            } <span class="kw">else</span> {
-                <span class="ident">base</span> <span class="op">/</span> <span class="ident">scrypto::math::PreciseDecimal::try_from</span>(
-                    <span class="ident">scrypto::math::I512::from</span>(<span class="number">10u8</span>)
-                        .<span class="ident">pow</span>(<span class="ident">u32::try_from</span>(<span class="op">-</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">shift</span>).<span class="ident">expect</span>(<span class="string">&quot;Shift overflow&quot;</span>)),
+                .expect(<span class="string">&quot;Shift overflow&quot;</span>)
+            } <span class="kw">else </span>{
+                base / scrypto::math::PreciseDecimal::try_from(
+                    scrypto::math::I512::from(<span class="number">10u8</span>)
+                        .pow(u32::try_from(-<span class="macro-nonterminal">$shift</span>).expect(<span class="string">&quot;Shift overflow&quot;</span>)),
                 )
-                .<span class="ident">expect</span>(<span class="string">&quot;Shift overflow&quot;</span>)
+                .expect(<span class="string">&quot;Shift overflow&quot;</span>)
             }
         }
     };
 }
 
-<span class="doccomment">/// Constructs argument list for Scrypto function/method invocation.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// let args = args!(&quot;1.1&quot;, 100u32);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">args</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>: <span class="ident">expr</span>),<span class="kw-2">*</span>) =&gt; {{
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
+<span class="doccomment">/// Constructs argument list for Scrypto function/method invocation.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// let args = args!(&quot;1.1&quot;, 100u32);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>args {
+    ($(<span class="macro-nonterminal">$args</span>: expr),<span class="kw-2">*</span>) =&gt; {{
+        <span class="kw">let </span><span class="kw-2">mut </span>fields = Vec::new();
         $(
-            <span class="kw">let</span> <span class="ident">encoded</span> <span class="op">=</span> <span class="ident">::scrypto::buffer::scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>);
-            <span class="ident">fields</span>.<span class="ident">push</span>(<span class="ident">::sbor::decode_any</span>(<span class="kw-2">&amp;</span><span class="ident">encoded</span>).<span class="ident">unwrap</span>());
-        )<span class="op">*</span>
-        <span class="kw">let</span> <span class="ident">input_struct</span> <span class="op">=</span> <span class="ident">::sbor::Value::Struct</span> {
-            <span class="ident">fields</span>,
+            <span class="kw">let </span>encoded = ::scrypto::buffer::scrypto_encode(<span class="kw-2">&amp;</span><span class="macro-nonterminal">$args</span>);
+            fields.push(::sbor::decode_any(<span class="kw-2">&amp;</span>encoded).unwrap());
+        )*
+        <span class="kw">let </span>input_struct = ::sbor::Value::Struct {
+            fields,
         };
-        <span class="ident">::sbor::encode_any</span>(<span class="kw-2">&amp;</span><span class="ident">input_struct</span>)
+        ::sbor::encode_any(<span class="kw-2">&amp;</span>input_struct)
     }};
 }
 
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">args_from_value_vec</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>: <span class="ident">expr</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">input_struct</span> <span class="op">=</span> <span class="ident">::sbor::Value::Struct</span> { <span class="ident">fields</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span> };
-        <span class="ident">::sbor::encode_any</span>(<span class="kw-2">&amp;</span><span class="ident">input_struct</span>)
+<span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>args_from_value_vec {
+    (<span class="macro-nonterminal">$args</span>: expr) =&gt; {{
+        <span class="kw">let </span>input_struct = ::sbor::Value::Struct { fields: <span class="macro-nonterminal">$args </span>};
+        ::sbor::encode_any(<span class="kw-2">&amp;</span>input_struct)
     }};
 }
 
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">args_from_bytes_vec</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>: <span class="ident">expr</span>) =&gt; {{
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">fields</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="kw">for</span> <span class="ident">arg</span> <span class="kw">in</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span> {
-            <span class="ident">fields</span>.<span class="ident">push</span>(<span class="ident">::sbor::decode_any</span>(<span class="kw-2">&amp;</span><span class="ident">arg</span>).<span class="ident">unwrap</span>());
+<span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>args_from_bytes_vec {
+    (<span class="macro-nonterminal">$args</span>: expr) =&gt; {{
+        <span class="kw">let </span><span class="kw-2">mut </span>fields = Vec::new();
+        <span class="kw">for </span>arg <span class="kw">in </span><span class="macro-nonterminal">$args </span>{
+            fields.push(::sbor::decode_any(<span class="kw-2">&amp;</span>arg).unwrap());
         }
-        <span class="kw">let</span> <span class="ident">input_struct</span> <span class="op">=</span> <span class="ident">::sbor::Value::Struct</span> { <span class="ident">fields</span> };
-        <span class="ident">::sbor::encode_any</span>(<span class="kw-2">&amp;</span><span class="ident">input_struct</span>)
+        <span class="kw">let </span>input_struct = ::sbor::Value::Struct { fields };
+        ::sbor::encode_any(<span class="kw-2">&amp;</span>input_struct)
     }};
 }
 
-<span class="doccomment">/// Logs an `ERROR` message.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// error!(&quot;Input number: {}&quot;, 100);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">error</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>: <span class="ident">expr</span>),<span class="op">+</span>) =&gt; {{
-        <span class="ident">::scrypto::core::Logger::log</span>(<span class="ident">scrypto::core::Level::Error</span>, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>),<span class="op">+</span>));
+<span class="doccomment">/// Logs an `ERROR` message.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// error!(&quot;Input number: {}&quot;, 100);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>error {
+    ($(<span class="macro-nonterminal">$args</span>: expr),+) =&gt; {{
+        ::scrypto::core::Logger::log(scrypto::core::Level::Error, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$args</span>),+));
     }};
 }
 
-<span class="doccomment">/// Logs a `WARN` message.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// warn!(&quot;Input number: {}&quot;, 100);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">warn</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>: <span class="ident">expr</span>),<span class="op">+</span>) =&gt; {{
-        <span class="ident">::scrypto::core::Logger::log</span>(<span class="ident">scrypto::core::Level::Warn</span>, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>),<span class="op">+</span>));
+<span class="doccomment">/// Logs a `WARN` message.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// warn!(&quot;Input number: {}&quot;, 100);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>warn {
+    ($(<span class="macro-nonterminal">$args</span>: expr),+) =&gt; {{
+        ::scrypto::core::Logger::log(scrypto::core::Level::Warn, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$args</span>),+));
     }};
 }
 
-<span class="doccomment">/// Logs an `INFO` message.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// info!(&quot;Input number: {}&quot;, 100);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">info</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>: <span class="ident">expr</span>),<span class="op">+</span>) =&gt; {{
-        <span class="ident">::scrypto::core::Logger::log</span>(<span class="ident">scrypto::core::Level::Info</span>, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>),<span class="op">+</span>));
+<span class="doccomment">/// Logs an `INFO` message.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// info!(&quot;Input number: {}&quot;, 100);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>info {
+    ($(<span class="macro-nonterminal">$args</span>: expr),+) =&gt; {{
+        ::scrypto::core::Logger::log(scrypto::core::Level::Info, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$args</span>),+));
     }};
 }
 
-<span class="doccomment">/// Logs a `DEBUG` message.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// debug!(&quot;Input number: {}&quot;, 100);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">debug</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>: <span class="ident">expr</span>),<span class="op">+</span>) =&gt; {{
-        <span class="ident">::scrypto::core::Logger::log</span>(<span class="ident">scrypto::core::Level::Debug</span>, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>),<span class="op">+</span>));
+<span class="doccomment">/// Logs a `DEBUG` message.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// debug!(&quot;Input number: {}&quot;, 100);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>debug {
+    ($(<span class="macro-nonterminal">$args</span>: expr),+) =&gt; {{
+        ::scrypto::core::Logger::log(scrypto::core::Level::Debug, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$args</span>),+));
     }};
 }
 
-<span class="doccomment">/// Logs a `TRACE` message.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// trace!(&quot;Input number: {}&quot;, 100);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">trace</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>: <span class="ident">expr</span>),<span class="op">+</span>) =&gt; {{
-        <span class="ident">::scrypto::core::Logger::log</span>(<span class="ident">scrypto::core::Level::Trace</span>, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>),<span class="op">+</span>));
+<span class="doccomment">/// Logs a `TRACE` message.
+///
+/// # Example
+/// ```no_run
+/// use scrypto::prelude::*;
+///
+/// trace!(&quot;Input number: {}&quot;, 100);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>trace {
+    ($(<span class="macro-nonterminal">$args</span>: expr),+) =&gt; {{
+        ::scrypto::core::Logger::log(scrypto::core::Level::Trace, <span class="macro">::sbor::rust::format!</span>($(<span class="macro-nonterminal">$args</span>),+));
     }};
 }
 
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">this_package</span> {
+<span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>this_package {
     () =&gt; {
         <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>)
     };
 }
 
-<span class="doccomment">/// Includes the WASM file of a Scrypto package.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Notes:</span>
-<span class="doccomment">/// * This macro will NOT compile the package;</span>
-<span class="doccomment">/// * The binary name is normally the package name with `-` replaced with `_`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```ignore</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// // This package</span>
-<span class="doccomment">/// let wasm1 = include_code!(&quot;bin_name&quot;);</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// // Another package</span>
-<span class="doccomment">/// let wasm2 = include_code!(&quot;/path/to/package&quot;, &quot;bin_name&quot;);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">include_code</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bin_name</span>: <span class="ident">expr</span>) =&gt; {
+<span class="doccomment">/// Includes the WASM file of a Scrypto package.
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The binary name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let wasm1 = include_code!(&quot;bin_name&quot;);
+///
+/// // Another package
+/// let wasm2 = include_code!(&quot;/path/to/package&quot;, &quot;bin_name&quot;);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>include_code {
+    (<span class="macro-nonterminal">$bin_name</span>: expr) =&gt; {
         <span class="macro">include_bytes!</span>(<span class="macro">concat!</span>(
             <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
             <span class="string">&quot;/target/wasm32-unknown-unknown/release/&quot;</span>,
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bin_name</span>,
-            <span class="string">&quot;.wasm&quot;</span>
-        ))
+            <span class="macro-nonterminal">$bin_name</span>,
+            <span class="string">&quot;.wasm&quot;
+        </span>))
     };
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">package_dir</span>: <span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bin_name</span>: <span class="ident">expr</span>) =&gt; {
+    (<span class="macro-nonterminal">$package_dir</span>: expr, <span class="macro-nonterminal">$bin_name</span>: expr) =&gt; {
         <span class="macro">include_bytes!</span>(<span class="macro">concat!</span>(
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">package_dir</span>,
+            <span class="macro-nonterminal">$package_dir</span>,
             <span class="string">&quot;/target/wasm32-unknown-unknown/release/&quot;</span>,
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bin_name</span>,
-            <span class="string">&quot;.wasm&quot;</span>
-        ))
+            <span class="macro-nonterminal">$bin_name</span>,
+            <span class="string">&quot;.wasm&quot;
+        </span>))
     };
 }
 
-<span class="doccomment">/// Includes the ABI file of a Scrypto package.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// Notes:</span>
-<span class="doccomment">/// * This macro will NOT compile the package;</span>
-<span class="doccomment">/// * The binary name is normally the package name with `-` replaced with `_`.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Example</span>
-<span class="doccomment">/// ```ignore</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// // This package</span>
-<span class="doccomment">/// let abi1 = include_abi!(&quot;bin_name&quot;);</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// // Another package</span>
-<span class="doccomment">/// let abi2 = include_abi!(&quot;/path/to/package&quot;, &quot;bin_name&quot;);</span>
-<span class="doccomment">/// ```</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">include_abi</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">bin_name</span>: <span class="ident">expr</span>) =&gt; {
+<span class="doccomment">/// Includes the ABI file of a Scrypto package.
+///
+/// Notes:
+/// * This macro will NOT compile the package;
+/// * The binary name is normally the package name with `-` replaced with `_`.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// // This package
+/// let abi1 = include_abi!(&quot;bin_name&quot;);
+///
+/// // Another package
+/// let abi2 = include_abi!(&quot;/path/to/package&quot;, &quot;bin_name&quot;);
+/// ```
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>include_abi {
+    (<span class="macro-nonterminal">$bin_name</span>: expr) =&gt; {
         <span class="macro">include_bytes!</span>(<span class="macro">concat!</span>(
             <span class="macro">env!</span>(<span class="string">&quot;CARGO_MANIFEST_DIR&quot;</span>),
             <span class="string">&quot;/target/wasm32-unknown-unknown/release/&quot;</span>,
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bin_name</span>,
-            <span class="string">&quot;.abi&quot;</span>
-        ))
+            <span class="macro-nonterminal">$bin_name</span>,
+            <span class="string">&quot;.abi&quot;
+        </span>))
     };
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">package_dir</span>: <span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bin_name</span>: <span class="ident">expr</span>) =&gt; {
+    (<span class="macro-nonterminal">$package_dir</span>: expr, <span class="macro-nonterminal">$bin_name</span>: expr) =&gt; {
         <span class="macro">include_bytes!</span>(<span class="macro">concat!</span>(
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">package_dir</span>,
+            <span class="macro-nonterminal">$package_dir</span>,
             <span class="string">&quot;/target/wasm32-unknown-unknown/release/&quot;</span>,
-            <span class="macro-nonterminal">$</span><span class="macro-nonterminal">bin_name</span>,
-            <span class="string">&quot;.abi&quot;</span>
-        ))
+            <span class="macro-nonterminal">$bin_name</span>,
+            <span class="string">&quot;.abi&quot;
+        </span>))
     };
 }
 
-<span class="doccomment">/// Generates a bridge/stub to make package calls to a blueprint.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// You can also use this to make calls to the component itself.</span>
-<span class="doccomment">/// If you just wish to make calls to an instantiated component, see the [external_component]! macro.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">/// use sbor::{TypeId, Encode, Decode, Describe};</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// #[derive(TypeId, Encode, Decode, Describe)]</span>
-<span class="doccomment">/// enum DepositResult {</span>
-<span class="doccomment">///     Success,</span>
-<span class="doccomment">///     Failure</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// external_blueprint! {</span>
-<span class="doccomment">///     {</span>
-<span class="doccomment">///         package: &quot;package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n&quot;,</span>
-<span class="doccomment">///         blueprint: &quot;CustomAccount&quot;</span>
-<span class="doccomment">///     },</span>
-<span class="doccomment">///     CustomAccount {</span>
-<span class="doccomment">///         fn instantiate_global(account_name: &amp;str) -&gt; ComponentAddress;</span>
-<span class="doccomment">///         fn deposit(&amp;mut self, b: Bucket) -&gt; DepositResult;</span>
-<span class="doccomment">///         fn deposit_no_return(&amp;mut self, b: Bucket);</span>
-<span class="doccomment">///         fn read_balance(&amp;self) -&gt; Decimal;</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// fn create_custom_accounts() {</span>
-<span class="doccomment">///     let new_account_address = CustomAccount::instantiate_global(&quot;account_name&quot;);</span>
-<span class="doccomment">///     let mut account = CustomAccount::from(new_account_address);</span>
-<span class="doccomment">///</span>
-<span class="doccomment">///     let empty_bucket = Bucket::new(ResourceAddress::from_str(&quot;resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag&quot;).unwrap());</span>
-<span class="doccomment">///     account.deposit(empty_bucket);</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// fn bridge_to_existing_account(component_address: ComponentAddress) {</span>
-<span class="doccomment">///     let existing_account = CustomAccount::from(component_address);</span>
-<span class="doccomment">///     let balance = existing_account.read_balance();</span>
-<span class="doccomment">///     // ...</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Related</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// - Replaces the import! macro for importing an abi, using a more concise, readable syntax.</span>
-<span class="doccomment">/// - Similar to the [external_component]! macro, which is used for making cross-component calls to an already-instantiated component.</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">external_blueprint</span> {
+<span class="doccomment">/// Generates a bridge/stub to make package calls to a blueprint.
+///
+/// You can also use this to make calls to the component itself.
+/// If you just wish to make calls to an instantiated component, see the [external_component]! macro.
+///
+/// # Examples
+/// ```no_run
+/// use scrypto::prelude::*;
+/// use sbor::{TypeId, Encode, Decode, Describe};
+///
+/// #[derive(TypeId, Encode, Decode, Describe)]
+/// enum DepositResult {
+///     Success,
+///     Failure
+/// }
+///
+/// external_blueprint! {
+///     {
+///         package: &quot;package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n&quot;,
+///         blueprint: &quot;CustomAccount&quot;
+///     },
+///     CustomAccount {
+///         fn instantiate_global(account_name: &amp;str) -&gt; ComponentAddress;
+///         fn deposit(&amp;mut self, b: Bucket) -&gt; DepositResult;
+///         fn deposit_no_return(&amp;mut self, b: Bucket);
+///         fn read_balance(&amp;self) -&gt; Decimal;
+///     }
+/// }
+///
+/// fn create_custom_accounts() {
+///     let new_account_address = CustomAccount::instantiate_global(&quot;account_name&quot;);
+///     let mut account = CustomAccount::from(new_account_address);
+///
+///     let empty_bucket = Bucket::new(ResourceAddress::from_str(&quot;resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag&quot;).unwrap());
+///     account.deposit(empty_bucket);
+/// }
+///
+/// fn bridge_to_existing_account(component_address: ComponentAddress) {
+///     let existing_account = CustomAccount::from(component_address);
+///     let balance = existing_account.read_balance();
+///     // ...
+/// }
+/// ```
+///
+/// # Related
+///
+/// - Replaces the import! macro for importing an abi, using a more concise, readable syntax.
+/// - Similar to the [external_component]! macro, which is used for making cross-component calls to an already-instantiated component.
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>external_blueprint {
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_ident</span>:<span class="ident">ident</span> {
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_contents</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
+        <span class="macro-nonterminal">$blueprint_ident</span>:ident {
+            $(<span class="macro-nonterminal">$blueprint_contents</span>:tt)*
         }
     ) =&gt; {
 
-        <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">::sbor::TypeId</span>, <span class="ident">::sbor::Encode</span>, <span class="ident">::sbor::Decode</span>, <span class="ident">::sbor::Describe</span>)]</span>
-        <span class="kw">struct</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_ident</span> {
-            <span class="ident">component_address</span>: <span class="ident">::scrypto::component::ComponentAddress</span>,
+        <span class="attribute">#[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        </span><span class="kw">struct </span><span class="macro-nonterminal">$blueprint_ident </span>{
+            component_address: ::scrypto::component::ComponentAddress,
         }
 
-        <span class="comment">// We allow dead code because it&#39;s used for importing interfaces, and not all the interface might be used</span>
-        <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>, <span class="ident">unused_imports</span>)]</span>
-        <span class="kw">impl</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_ident</span> {
+        <span class="comment">// We allow dead code because it&#39;s used for importing interfaces, and not all the interface might be used
+        </span><span class="attribute">#[allow(dead_code, unused_imports)]
+        </span><span class="kw">impl </span><span class="macro-nonterminal">$blueprint_ident </span>{
             <span class="macro">::scrypto::external_interface_members!</span>(
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>,
-                $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_contents</span>)<span class="op">*</span>
+                <span class="macro-nonterminal">$blueprint_context</span>,
+                $(<span class="macro-nonterminal">$blueprint_contents</span>)*
             );
         }
 
-        <span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">::scrypto::component::ComponentAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_ident</span> {
-            <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">component_address</span>: <span class="ident">::scrypto::component::ComponentAddress</span>) -&gt; <span class="self">Self</span> {
-                <span class="self">Self</span> {
-                    <span class="ident">component_address</span>
+        <span class="kw">impl </span>From&lt;::scrypto::component::ComponentAddress&gt; <span class="kw">for </span><span class="macro-nonterminal">$blueprint_ident </span>{
+            <span class="kw">fn </span>from(component_address: ::scrypto::component::ComponentAddress) -&gt; <span class="self">Self </span>{
+                <span class="self">Self </span>{
+                    component_address
                 }
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_ident</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">::scrypto::component::ComponentAddress</span> {
-            <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">a</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_ident</span>) -&gt; <span class="ident">::scrypto::component::ComponentAddress</span> {
-                <span class="ident">a</span>.<span class="ident">component_address</span>
+        <span class="kw">impl </span>From&lt;<span class="macro-nonterminal">$blueprint_ident</span>&gt; <span class="kw">for </span>::scrypto::component::ComponentAddress {
+            <span class="kw">fn </span>from(a: <span class="macro-nonterminal">$blueprint_ident</span>) -&gt; ::scrypto::component::ComponentAddress {
+                a.component_address
             }
         }
     };
 }
 
-<span class="doccomment">/// Generates a bridge/stub to make cross-component calls.</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Examples</span>
-<span class="doccomment">/// ```no_run</span>
-<span class="doccomment">/// use scrypto::prelude::*;</span>
-<span class="doccomment">/// use sbor::{TypeId, Encode, Decode, Describe};</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// #[derive(TypeId, Encode, Decode, Describe)]</span>
-<span class="doccomment">/// enum DepositResult {</span>
-<span class="doccomment">///     Success,</span>
-<span class="doccomment">///     Failure</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// external_component! {</span>
-<span class="doccomment">///     AccountInterface {</span>
-<span class="doccomment">///         fn deposit(&amp;mut self, b: Bucket) -&gt; DepositResult;</span>
-<span class="doccomment">///         fn deposit_no_return(&amp;mut self, b: Bucket);</span>
-<span class="doccomment">///         fn read_balance(&amp;self) -&gt; Decimal;</span>
-<span class="doccomment">///     }</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// fn bridge_to_existing_account(component_address: ComponentAddress) {</span>
-<span class="doccomment">///     let existing_account = AccountInterface::from(component_address);</span>
-<span class="doccomment">///     let balance = existing_account.read_balance();</span>
-<span class="doccomment">///     // ...</span>
-<span class="doccomment">/// }</span>
-<span class="doccomment">/// ```</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// # Related</span>
-<span class="doccomment">///</span>
-<span class="doccomment">/// - Similar to the [external_blueprint] macro, but the external_component can be used without knowing the package and blueprint addresses.</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">external_component</span> {
+<span class="doccomment">/// Generates a bridge/stub to make cross-component calls.
+///
+/// # Examples
+/// ```no_run
+/// use scrypto::prelude::*;
+/// use sbor::{TypeId, Encode, Decode, Describe};
+///
+/// #[derive(TypeId, Encode, Decode, Describe)]
+/// enum DepositResult {
+///     Success,
+///     Failure
+/// }
+///
+/// external_component! {
+///     AccountInterface {
+///         fn deposit(&amp;mut self, b: Bucket) -&gt; DepositResult;
+///         fn deposit_no_return(&amp;mut self, b: Bucket);
+///         fn read_balance(&amp;self) -&gt; Decimal;
+///     }
+/// }
+///
+/// fn bridge_to_existing_account(component_address: ComponentAddress) {
+///     let existing_account = AccountInterface::from(component_address);
+///     let balance = existing_account.read_balance();
+///     // ...
+/// }
+/// ```
+///
+/// # Related
+///
+/// - Similar to the [external_blueprint] macro, but the external_component can be used without knowing the package and blueprint addresses.
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>external_component {
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">component_ident</span>:<span class="ident">ident</span> {
-            $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">component_methods</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$component_ident</span>:ident {
+            $(<span class="macro-nonterminal">$component_methods</span>:tt)*
         }
     ) =&gt; {
 
-        <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">::sbor::TypeId</span>, <span class="ident">::sbor::Encode</span>, <span class="ident">::sbor::Decode</span>, <span class="ident">::sbor::Describe</span>)]</span>
-        <span class="kw">struct</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">component_ident</span> {
-            <span class="ident">component_address</span>: <span class="ident">::scrypto::component::ComponentAddress</span>,
+        <span class="attribute">#[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        </span><span class="kw">struct </span><span class="macro-nonterminal">$component_ident </span>{
+            component_address: ::scrypto::component::ComponentAddress,
         }
 
-        <span class="comment">// We allow dead code because it&#39;s used for importing interfaces, and not all the interface might be used</span>
-        <span class="attribute">#[<span class="ident">allow</span>(<span class="ident">dead_code</span>, <span class="ident">unused_imports</span>)]</span>
-        <span class="kw">impl</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">component_ident</span> {
-            <span class="macro">::scrypto::external_interface_members!</span>((), $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">component_methods</span>)<span class="kw-2">*</span>);
+        <span class="comment">// We allow dead code because it&#39;s used for importing interfaces, and not all the interface might be used
+        </span><span class="attribute">#[allow(dead_code, unused_imports)]
+        </span><span class="kw">impl </span><span class="macro-nonterminal">$component_ident </span>{
+            <span class="macro">::scrypto::external_interface_members!</span>((), $(<span class="macro-nonterminal">$component_methods</span>)<span class="kw-2">*</span>);
         }
 
-        <span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">::scrypto::component::ComponentAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">component_ident</span> {
-            <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">component_address</span>: <span class="ident">::scrypto::component::ComponentAddress</span>) -&gt; <span class="self">Self</span> {
-                <span class="self">Self</span> {
-                    <span class="ident">component_address</span>
+        <span class="kw">impl </span>From&lt;::scrypto::component::ComponentAddress&gt; <span class="kw">for </span><span class="macro-nonterminal">$component_ident </span>{
+            <span class="kw">fn </span>from(component_address: ::scrypto::component::ComponentAddress) -&gt; <span class="self">Self </span>{
+                <span class="self">Self </span>{
+                    component_address
                 }
             }
         }
 
-        <span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">component_ident</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">::scrypto::component::ComponentAddress</span> {
-            <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">a</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">component_ident</span>) -&gt; <span class="ident">::scrypto::component::ComponentAddress</span> {
-                <span class="ident">a</span>.<span class="ident">component_address</span>
+        <span class="kw">impl </span>From&lt;<span class="macro-nonterminal">$component_ident</span>&gt; <span class="kw">for </span>::scrypto::component::ComponentAddress {
+            <span class="kw">fn </span>from(a: <span class="macro-nonterminal">$component_ident</span>) -&gt; ::scrypto::component::ComponentAddress {
+                a.component_address
             }
         }
     };
 }
 
-<span class="comment">// This is a TT-Muncher, a useful guide for this type of use case is here: https://adventures.michaelfbryan.com/posts/non-trivial-macros/</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">external_interface_members</span> {
+<span class="comment">// This is a TT-Muncher, a useful guide for this type of use case is here: https://adventures.michaelfbryan.com/posts/non-trivial-macros/
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>external_interface_members {
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>:<span class="ident">ident</span>(<span class="kw-2">&amp;</span><span class="self">self</span>$(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>:<span class="ident">ident</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>:<span class="ident">ty</span>)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_output</span>:<span class="ident">ty</span>;
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
+        <span class="kw">fn </span><span class="macro-nonterminal">$method_name</span>:ident(<span class="kw-2">&amp;</span><span class="self">self</span>$(, <span class="macro-nonterminal">$method_args</span>:ident: <span class="macro-nonterminal">$method_types</span>:ty)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$method_output</span>:ty;
+        $(<span class="macro-nonterminal">$rest</span>:tt)*
     ) =&gt; {
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_output</span> {
-            <span class="ident">::scrypto::core::Runtime::call_method</span>(
-                <span class="self">self</span>.<span class="ident">component_address</span>,
-                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>),
-                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>),<span class="kw-2">*</span>)
+        <span class="kw">pub fn </span><span class="macro-nonterminal">$method_name</span>(<span class="kw-2">&amp;</span><span class="self">self </span>$(, <span class="macro-nonterminal">$method_args</span>: <span class="macro-nonterminal">$method_types</span>)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$method_output </span>{
+            ::scrypto::core::Runtime::call_method(
+                <span class="self">self</span>.component_address,
+                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$method_name</span>),
+                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$method_args</span>),<span class="kw-2">*</span>)
             )
         }
-        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="kw-2">*</span>);
+        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$blueprint_context</span>, $(<span class="macro-nonterminal">$rest</span>)<span class="kw-2">*</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>:<span class="ident">ident</span>(<span class="kw-2">&amp;</span><span class="self">self</span>$(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>:<span class="ident">ident</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>:<span class="ident">ty</span>)<span class="kw-2">*</span>);
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
+        <span class="kw">fn </span><span class="macro-nonterminal">$method_name</span>:ident(<span class="kw-2">&amp;</span><span class="self">self</span>$(, <span class="macro-nonterminal">$method_args</span>:ident: <span class="macro-nonterminal">$method_types</span>:ty)<span class="kw-2">*</span>);
+        $(<span class="macro-nonterminal">$rest</span>:tt)*
     ) =&gt; {
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>)<span class="kw-2">*</span>) {
-            <span class="ident">::scrypto::core::Runtime::call_method</span>(
-                <span class="self">self</span>.<span class="ident">component_address</span>,
-                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>),
-                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>),<span class="kw-2">*</span>)
+        <span class="kw">pub fn </span><span class="macro-nonterminal">$method_name</span>(<span class="kw-2">&amp;</span><span class="self">self </span>$(, <span class="macro-nonterminal">$method_args</span>: <span class="macro-nonterminal">$method_types</span>)<span class="kw-2">*</span>) {
+            ::scrypto::core::Runtime::call_method(
+                <span class="self">self</span>.component_address,
+                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$method_name</span>),
+                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$method_args</span>),<span class="kw-2">*</span>)
             )
         }
-        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="kw-2">*</span>);
+        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$blueprint_context</span>, $(<span class="macro-nonterminal">$rest</span>)<span class="kw-2">*</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>:<span class="ident">ident</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>$(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>:<span class="ident">ident</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>:<span class="ident">ty</span>)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_output</span>:<span class="ident">ty</span>;
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
+        <span class="kw">fn </span><span class="macro-nonterminal">$method_name</span>:ident(<span class="kw-2">&amp;mut </span><span class="self">self</span>$(, <span class="macro-nonterminal">$method_args</span>:ident: <span class="macro-nonterminal">$method_types</span>:ty)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$method_output</span>:ty;
+        $(<span class="macro-nonterminal">$rest</span>:tt)*
     ) =&gt; {
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_output</span> {
-            <span class="ident">::scrypto::core::Runtime::call_method</span>(
-                <span class="self">self</span>.<span class="ident">component_address</span>,
-                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>),
-                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>),<span class="kw-2">*</span>)
+        <span class="kw">pub fn </span><span class="macro-nonterminal">$method_name</span>(<span class="kw-2">&amp;mut </span><span class="self">self </span>$(, <span class="macro-nonterminal">$method_args</span>: <span class="macro-nonterminal">$method_types</span>)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$method_output </span>{
+            ::scrypto::core::Runtime::call_method(
+                <span class="self">self</span>.component_address,
+                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$method_name</span>),
+                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$method_args</span>),<span class="kw-2">*</span>)
             )
         }
-        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="kw-2">*</span>);
+        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$blueprint_context</span>, $(<span class="macro-nonterminal">$rest</span>)<span class="kw-2">*</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>:<span class="ident">ident</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>$(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>:<span class="ident">ident</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>:<span class="ident">ty</span>)<span class="kw-2">*</span>);
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
+        <span class="kw">fn </span><span class="macro-nonterminal">$method_name</span>:ident(<span class="kw-2">&amp;mut </span><span class="self">self</span>$(, <span class="macro-nonterminal">$method_args</span>:ident: <span class="macro-nonterminal">$method_types</span>:ty)<span class="kw-2">*</span>);
+        $(<span class="macro-nonterminal">$rest</span>:tt)*
     ) =&gt; {
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span> $(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>)<span class="kw-2">*</span>) {
-            <span class="ident">::scrypto::core::Runtime::call_method</span>(
-                <span class="self">self</span>.<span class="ident">component_address</span>,
-                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>),
-                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>),<span class="kw-2">*</span>)
+        <span class="kw">pub fn </span><span class="macro-nonterminal">$method_name</span>(<span class="kw-2">&amp;mut </span><span class="self">self </span>$(, <span class="macro-nonterminal">$method_args</span>: <span class="macro-nonterminal">$method_types</span>)<span class="kw-2">*</span>) {
+            ::scrypto::core::Runtime::call_method(
+                <span class="self">self</span>.component_address,
+                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$method_name</span>),
+                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$method_args</span>),<span class="kw-2">*</span>)
             )
         }
-        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="kw-2">*</span>);
+        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$blueprint_context</span>, $(<span class="macro-nonterminal">$rest</span>)<span class="kw-2">*</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>:<span class="ident">ident</span>(<span class="self">self</span>$(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>:<span class="ident">ident</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>:<span class="ident">ty</span>)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_output</span>:<span class="ident">ty</span>;
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
+        <span class="kw">fn </span><span class="macro-nonterminal">$method_name</span>:ident(<span class="self">self</span>$(, <span class="macro-nonterminal">$method_args</span>:ident: <span class="macro-nonterminal">$method_types</span>:ty)<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$method_output</span>:ty;
+        $(<span class="macro-nonterminal">$rest</span>:tt)*
     ) =&gt; {
         <span class="macro">compile_error!</span>(<span class="string">&quot;Components cannot define methods taking self. Did you mean &amp;self or &amp;mut self instead?&quot;</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_name</span>:<span class="ident">ident</span>(<span class="self">self</span>$(, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_args</span>:<span class="ident">ident</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">method_types</span>:<span class="ident">ty</span>)<span class="kw-2">*</span>);
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
+        <span class="kw">fn </span><span class="macro-nonterminal">$method_name</span>:ident(<span class="self">self</span>$(, <span class="macro-nonterminal">$method_args</span>:ident: <span class="macro-nonterminal">$method_types</span>:ty)<span class="kw-2">*</span>);
+        $(<span class="macro-nonterminal">$rest</span>:tt)*
     ) =&gt; {
         <span class="macro">compile_error!</span>(<span class="string">&quot;Components cannot define methods taking self. Did you mean &amp;self or &amp;mut self instead?&quot;</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_name</span>:<span class="ident">ident</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_args</span>:<span class="ident">ident</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_types</span>:<span class="ident">ty</span>),<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_output</span>:<span class="ident">ty</span>;
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
+        <span class="kw">fn </span><span class="macro-nonterminal">$func_name</span>:ident($(<span class="macro-nonterminal">$func_args</span>:ident: <span class="macro-nonterminal">$func_types</span>:ty),<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$func_output</span>:ty;
+        $(<span class="macro-nonterminal">$rest</span>:tt)*
     ) =&gt; {
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_name</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_args</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_types</span>),<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_output</span> {
-            <span class="ident">::scrypto::core::Runtime::call_function</span>(
-                <span class="ident">::scrypto::component::PackageAddress::from_str</span>(<span class="macro">::scrypto::package_address_from_context!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>)).<span class="ident">unwrap</span>(),
-                <span class="macro">::scrypto::blueprint_name_from_context!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>),
-                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_name</span>),
-                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_args</span>),<span class="kw-2">*</span>)
+        <span class="kw">pub fn </span><span class="macro-nonterminal">$func_name</span>($(<span class="macro-nonterminal">$func_args</span>: <span class="macro-nonterminal">$func_types</span>),<span class="kw-2">*</span>) -&gt; <span class="macro-nonterminal">$func_output </span>{
+            ::scrypto::core::Runtime::call_function(
+                ::scrypto::component::PackageAddress::from_str(<span class="macro">::scrypto::package_address_from_context!</span>(<span class="macro-nonterminal">$blueprint_context</span>)).unwrap(),
+                <span class="macro">::scrypto::blueprint_name_from_context!</span>(<span class="macro-nonterminal">$blueprint_context</span>),
+                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$func_name</span>),
+                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$func_args</span>),<span class="kw-2">*</span>)
             )
         }
-        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="kw-2">*</span>);
+        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$blueprint_context</span>, $(<span class="macro-nonterminal">$rest</span>)<span class="kw-2">*</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
-        <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_name</span>:<span class="ident">ident</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_args</span>:<span class="ident">ident</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_types</span>:<span class="ident">ty</span>),<span class="kw-2">*</span>);
-        $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">*</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
+        <span class="kw">fn </span><span class="macro-nonterminal">$func_name</span>:ident($(<span class="macro-nonterminal">$func_args</span>:ident: <span class="macro-nonterminal">$func_types</span>:ty),<span class="kw-2">*</span>);
+        $(<span class="macro-nonterminal">$rest</span>:tt)*
     ) =&gt; {
-        <span class="kw">pub</span> <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_name</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_args</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_types</span>),<span class="kw-2">*</span>) {
-            <span class="kw">use</span> <span class="ident">::scrypto::rust::str::FromStr</span>;
-            <span class="ident">::scrypto::core::Runtime::call_function</span>(
-                <span class="ident">::scrypto::component::PackageAddress::from_str</span>(<span class="macro">::scrypto::package_address_from_context!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>)).<span class="ident">unwrap</span>(),
-                <span class="macro">::scrypto::blueprint_name_from_context!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>),
-                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_name</span>),
-                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">func_args</span>),<span class="kw-2">*</span>)
+        <span class="kw">pub fn </span><span class="macro-nonterminal">$func_name</span>($(<span class="macro-nonterminal">$func_args</span>: <span class="macro-nonterminal">$func_types</span>),<span class="kw-2">*</span>) {
+            <span class="kw">use </span>::scrypto::rust::str::FromStr;
+            ::scrypto::core::Runtime::call_function(
+                ::scrypto::component::PackageAddress::from_str(<span class="macro">::scrypto::package_address_from_context!</span>(<span class="macro-nonterminal">$blueprint_context</span>)).unwrap(),
+                <span class="macro">::scrypto::blueprint_name_from_context!</span>(<span class="macro-nonterminal">$blueprint_context</span>),
+                <span class="macro">stringify!</span>(<span class="macro-nonterminal">$func_name</span>),
+                <span class="macro">::scrypto::args!</span>($(<span class="macro-nonterminal">$func_args</span>),<span class="kw-2">*</span>)
             )
         }
-        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>, $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="kw-2">*</span>);
+        <span class="macro">::scrypto::external_interface_members!</span>(<span class="macro-nonterminal">$blueprint_context</span>, $(<span class="macro-nonterminal">$rest</span>)<span class="kw-2">*</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>,
+        <span class="macro-nonterminal">$blueprint_context</span>:tt,
     ) =&gt; {}
 }
 
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">package_address_from_context</span> {
+<span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>package_address_from_context {
     (
         {
-            <span class="ident">package</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">package_address</span>:<span class="ident">literal</span>,
-            <span class="ident">blueprint</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_logical_name</span>:<span class="ident">literal</span> $(,)<span class="question-mark">?</span>
-        }
+            package: <span class="macro-nonterminal">$package_address</span>:literal,
+            blueprint: <span class="macro-nonterminal">$blueprint_logical_name</span>:literal $(,)<span class="question-mark">?
+        </span>}
     ) =&gt; {
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">package_address</span>
-    };
-    <span class="comment">// This macro is only called when used for blueprint function calls (instead of component method calls)</span>
-    <span class="comment">//    () is the context passed into the external_interface_members macro by the external_component macro,</span>
-    <span class="comment">//    which doesn&#39;t support function calls. So when we detect a () parameter, then we assume we&#39;re</span>
-    <span class="comment">//    being called from the external_component macro, and can give a more useful error message.</span>
-    () =&gt; {
+        <span class="macro-nonterminal">$package_address
+    </span>};
+    <span class="comment">// This macro is only called when used for blueprint function calls (instead of component method calls)
+    //    () is the context passed into the external_interface_members macro by the external_component macro,
+    //    which doesn&#39;t support function calls. So when we detect a () parameter, then we assume we&#39;re
+    //    being called from the external_component macro, and can give a more useful error message.
+    </span>() =&gt; {
         <span class="macro">compile_error!</span>(<span class="string">&quot;Cannot call package functions (ie without &amp;self or &amp;mut self) on a external_component - use a external_blueprint instead.&quot;</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt
     ) =&gt; {
         <span class="macro">compile_error!</span>(<span class="string">&quot;Unknown blueprint context - use { package: \&quot;&lt;PACKAGE_HEX_ADDRESS&gt;\&quot;, blueprint: \&quot;&lt;BLUEPRINT_LOGICAL_NAME&gt;\&quot; }&quot;</span>)
     }
 }
 
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">blueprint_name_from_context</span> {
+<span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>blueprint_name_from_context {
     (
         {
-            <span class="ident">package</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">package_address</span>:<span class="ident">literal</span>,
-            <span class="ident">blueprint</span>: <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_logical_name</span>:<span class="ident">literal</span> $(,)<span class="question-mark">?</span>
-        }
+            package: <span class="macro-nonterminal">$package_address</span>:literal,
+            blueprint: <span class="macro-nonterminal">$blueprint_logical_name</span>:literal $(,)<span class="question-mark">?
+        </span>}
     ) =&gt; {
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_logical_name</span>
-    };
-    <span class="comment">// This macro is only called when used for blueprint function calls (instead of component method calls)</span>
-    <span class="comment">//    () is the context passed into the external_interface_members macro by the external_component macro,</span>
-    <span class="comment">//    which doesn&#39;t support function calls. So when we detect a () parameter, then we assume we&#39;re</span>
-    <span class="comment">//    being called from the external_component macro, and can give a more useful error message.</span>
-    () =&gt; {
+        <span class="macro-nonterminal">$blueprint_logical_name
+    </span>};
+    <span class="comment">// This macro is only called when used for blueprint function calls (instead of component method calls)
+    //    () is the context passed into the external_interface_members macro by the external_component macro,
+    //    which doesn&#39;t support function calls. So when we detect a () parameter, then we assume we&#39;re
+    //    being called from the external_component macro, and can give a more useful error message.
+    </span>() =&gt; {
         <span class="macro">compile_error!</span>(<span class="string">&quot;Cannot call package functions (ie without &amp;self or &amp;mut self) on a external_component - use a external_blueprint instead.&quot;</span>);
     };
     (
-        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">blueprint_context</span>:<span class="ident">tt</span>
+        <span class="macro-nonterminal">$blueprint_context</span>:tt
     ) =&gt; {
         <span class="macro">compile_error!</span>(<span class="string">&quot;Unknown blueprint context - use { package: \&quot;&lt;PACKAGE_HEX_ADDRESS&gt;\&quot;, blueprint: \&quot;&lt;BLUEPRINT_LOGICAL_NAME&gt;\&quot; }&quot;</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

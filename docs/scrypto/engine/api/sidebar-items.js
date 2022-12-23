@@ -1,1 +1,1 @@
-initSidebarItems({"enum":[["RadixEngineInput",""]]});
+window.SIDEBAR_ITEMS = {"enum":[["RadixEngineInput",""]]};

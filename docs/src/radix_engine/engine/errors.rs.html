@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/errors.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>errors.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/errors.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>errors.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -159,162 +154,161 @@
 <span id="154">154</span>
 <span id="155">155</span>
 <span id="156">156</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">transaction::errors</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>transaction::errors::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::REActor</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserveError</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm::WasmError</span>;
-<span class="kw">use</span> <span class="ident">sbor</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::engine::REActor;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserveError;
+<span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::WasmError;
+<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// Represents an error which causes a tranasction to be rejected.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RejectionError</span> {
-    <span class="ident">SuccessButFeeLoanNotRepaid</span>,
-    <span class="ident">ErrorBeforeFeeLoanRepaid</span>(<span class="ident">RuntimeError</span>),
+<span class="doccomment">/// Represents an error which causes a tranasction to be rejected.
+</span><span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>RejectionError {
+    SuccessButFeeLoanNotRepaid,
+    ErrorBeforeFeeLoanRepaid(RuntimeError),
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">RejectionError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>RejectionError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
     }
 }
 
-<span class="doccomment">/// Represents an error when executing a transaction.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">RuntimeError</span> {
-    <span class="doccomment">/// An error occurred within the kernel.</span>
-    <span class="ident">KernelError</span>(<span class="ident">KernelError</span>),
+<span class="doccomment">/// Represents an error when executing a transaction.
+</span><span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>RuntimeError {
+    <span class="doccomment">/// An error occurred within the kernel.
+    </span>KernelError(KernelError),
 
-    <span class="doccomment">/// An error occurred within a kernel module.</span>
-    <span class="ident">ModuleError</span>(<span class="ident">ModuleError</span>),
+    <span class="doccomment">/// An error occurred within a kernel module.
+    </span>ModuleError(ModuleError),
 
-    <span class="doccomment">/// An error occurred within application logic, like the RE models.</span>
-    <span class="ident">ApplicationError</span>(<span class="ident">ApplicationError</span>),
+    <span class="doccomment">/// An error occurred within application logic, like the RE models.
+    </span>ApplicationError(ApplicationError),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">TypeId</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">KernelError</span> {
-    <span class="comment">// invocation</span>
-    <span class="ident">WasmError</span>(<span class="ident">WasmError</span>),
-    <span class="ident">InvokeMethodInvalidReceiver</span>(<span class="ident">RENodeId</span>),
-    <span class="ident">InvokeMethodInvalidReferencePass</span>(<span class="ident">RENodeId</span>),
-    <span class="ident">InvokeMethodInvalidReferenceReturn</span>(<span class="ident">RENodeId</span>),
-    <span class="ident">MaxCallDepthLimitReached</span>,
-    <span class="ident">MethodNotFound</span>(<span class="ident">FnIdentifier</span>),
-    <span class="ident">InvalidFnInput</span> { <span class="ident">fn_identifier</span>: <span class="ident">FnIdentifier</span> },
-    <span class="ident">InvalidFnOutput</span> { <span class="ident">fn_identifier</span>: <span class="ident">FnIdentifier</span> },
+<span class="attribute">#[derive(Debug, Encode, Decode, TypeId)]
+</span><span class="kw">pub enum </span>KernelError {
+    <span class="comment">// invocation
+    </span>WasmError(WasmError),
+    InvokeMethodInvalidReceiver(RENodeId),
+    InvokeMethodInvalidReferencePass(RENodeId),
+    InvokeMethodInvalidReferenceReturn(RENodeId),
+    MaxCallDepthLimitReached,
+    MethodNotFound(FnIdentifier),
+    InvalidFnInput { fn_identifier: FnIdentifier },
+    InvalidFnOutput { fn_identifier: FnIdentifier },
 
-    <span class="comment">// ID allocation</span>
-    <span class="ident">IdAllocationError</span>(<span class="ident">IdAllocationError</span>),
+    <span class="comment">// ID allocation
+    </span>IdAllocationError(IdAllocationError),
 
-    <span class="comment">// SBOR decoding</span>
-    <span class="ident">DecodeError</span>(<span class="ident">DecodeError</span>),
+    <span class="comment">// SBOR decoding
+    </span>DecodeError(DecodeError),
 
-    <span class="comment">// RENode</span>
-    <span class="ident">BucketNotFound</span>(<span class="ident">BucketId</span>),
-    <span class="ident">ProofNotFound</span>(<span class="ident">ProofId</span>),
-    <span class="ident">PackageNotFound</span>(<span class="ident">PackageAddress</span>),
-    <span class="ident">BlueprintNotFound</span>(<span class="ident">PackageAddress</span>, <span class="ident">String</span>),
-    <span class="ident">ResourceManagerNotFound</span>(<span class="ident">ResourceAddress</span>),
-    <span class="ident">WorktopNotFound</span>,
-    <span class="ident">RENodeNotFound</span>(<span class="ident">RENodeId</span>),
-    <span class="ident">StoredNodeRemoved</span>(<span class="ident">RENodeId</span>),
-    <span class="ident">RENodeGlobalizeTypeNotAllowed</span>(<span class="ident">RENodeId</span>),
-    <span class="ident">RENodeCreateInvalidPermission</span>,
-    <span class="ident">RENodeCreateNodeNotFound</span>(<span class="ident">RENodeId</span>),
-    <span class="ident">RENodeAlreadyTouched</span>,
-    <span class="ident">RENodeNotInTrack</span>,
+    <span class="comment">// RENode
+    </span>BucketNotFound(BucketId),
+    ProofNotFound(ProofId),
+    PackageNotFound(PackageAddress),
+    BlueprintNotFound(PackageAddress, String),
+    ResourceManagerNotFound(ResourceAddress),
+    WorktopNotFound,
+    RENodeNotFound(RENodeId),
+    StoredNodeRemoved(RENodeId),
+    RENodeGlobalizeTypeNotAllowed(RENodeId),
+    RENodeCreateInvalidPermission,
+    RENodeCreateNodeNotFound(RENodeId),
+    RENodeAlreadyTouched,
+    RENodeNotInTrack,
 
-    <span class="comment">// Substate</span>
-    <span class="ident">Reentrancy</span>(<span class="ident">SubstateId</span>),
-    <span class="ident">SubstateReadNotReadable</span>(<span class="ident">REActor</span>, <span class="ident">SubstateId</span>),
-    <span class="ident">SubstateWriteNotWriteable</span>(<span class="ident">REActor</span>, <span class="ident">SubstateId</span>),
-    <span class="ident">SubstateReadSubstateNotFound</span>(<span class="ident">SubstateId</span>),
+    <span class="comment">// Substate
+    </span>Reentrancy(SubstateId),
+    SubstateReadNotReadable(REActor, SubstateId),
+    SubstateWriteNotWriteable(REActor, SubstateId),
+    SubstateReadSubstateNotFound(SubstateId),
 
-    <span class="comment">// constraints</span>
-    <span class="ident">ValueNotAllowed</span>,
-    <span class="ident">BucketNotAllowed</span>,
-    <span class="ident">ProofNotAllowed</span>,
-    <span class="ident">VaultNotAllowed</span>,
-    <span class="ident">KeyValueStoreNotAllowed</span>,
-    <span class="ident">CantMoveLockedBucket</span>,
-    <span class="ident">CantMoveRestrictedProof</span>,
-    <span class="ident">CantMoveWorktop</span>,
-    <span class="ident">CantMoveAuthZone</span>,
-    <span class="ident">DropFailure</span>(<span class="ident">DropFailure</span>),
+    <span class="comment">// constraints
+    </span>ValueNotAllowed,
+    BucketNotAllowed,
+    ProofNotAllowed,
+    VaultNotAllowed,
+    KeyValueStoreNotAllowed,
+    CantMoveLockedBucket,
+    CantMoveRestrictedProof,
+    CantMoveWorktop,
+    CantMoveAuthZone,
+    DropFailure(DropFailure),
 
-    <span class="ident">BlobNotFound</span>(<span class="ident">Hash</span>),
+    BlobNotFound(Hash),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">TypeId</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ModuleError</span> {
-    <span class="ident">AuthorizationError</span> {
-        <span class="ident">function</span>: <span class="ident">FnIdentifier</span>,
-        <span class="ident">authorization</span>: <span class="ident">MethodAuthorization</span>,
-        <span class="ident">error</span>: <span class="ident">MethodAuthorizationError</span>,
+<span class="attribute">#[derive(Debug, Encode, Decode, TypeId)]
+</span><span class="kw">pub enum </span>ModuleError {
+    AuthorizationError {
+        function: FnIdentifier,
+        authorization: MethodAuthorization,
+        error: MethodAuthorizationError,
     },
 
-    <span class="ident">CostingError</span>(<span class="ident">FeeReserveError</span>),
+    CostingError(FeeReserveError),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span> {
-    <span class="ident">Error</span>(<span class="ident">E</span>),
-    <span class="ident">Downstream</span>(<span class="ident">RuntimeError</span>),
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub enum </span>InvokeError&lt;E&gt; {
+    Error(E),
+    Downstream(RuntimeError),
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span> <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">E</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">error</span>(<span class="ident">error</span>: <span class="ident">E</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">InvokeError::Error</span>(<span class="ident">error</span>)
+<span class="kw">impl</span>&lt;E&gt; InvokeError&lt;E&gt; {
+    <span class="kw">pub fn </span>error(error: E) -&gt; <span class="self">Self </span>{
+        InvokeError::Error(error)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">downstream</span>(<span class="ident">runtime_error</span>: <span class="ident">RuntimeError</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">InvokeError::Downstream</span>(<span class="ident">runtime_error</span>)
+    <span class="kw">pub fn </span>downstream(runtime_error: RuntimeError) -&gt; <span class="self">Self </span>{
+        InvokeError::Downstream(runtime_error)
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ApplicationError</span> {
-    <span class="ident">TransactionProcessorError</span>(<span class="ident">TransactionProcessorError</span>),
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>ApplicationError {
+    TransactionProcessorError(TransactionProcessorError),
 
-    <span class="ident">PackageError</span>(<span class="ident">PackageError</span>),
+    PackageError(PackageError),
 
-    <span class="ident">SystemError</span>(<span class="ident">SystemError</span>),
+    SystemError(SystemError),
 
-    <span class="ident">ResourceManagerError</span>(<span class="ident">ResourceManagerError</span>),
+    ResourceManagerError(ResourceManagerError),
 
-    <span class="ident">ComponentError</span>(<span class="ident">ComponentError</span>),
+    ComponentError(ComponentError),
 
-    <span class="ident">BucketError</span>(<span class="ident">BucketError</span>),
+    BucketError(BucketError),
 
-    <span class="ident">ProofError</span>(<span class="ident">ProofError</span>),
+    ProofError(ProofError),
 
-    <span class="ident">VaultError</span>(<span class="ident">VaultError</span>),
+    VaultError(VaultError),
 
-    <span class="ident">WorktopError</span>(<span class="ident">WorktopError</span>),
+    WorktopError(WorktopError),
 
-    <span class="ident">AuthZoneError</span>(<span class="ident">AuthZoneError</span>),
+    AuthZoneError(AuthZoneError),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">TypeId</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">DropFailure</span> {
-    <span class="ident">System</span>,
-    <span class="ident">Resource</span>,
-    <span class="ident">Component</span>,
-    <span class="ident">Bucket</span>,
-    <span class="ident">Worktop</span>,
-    <span class="ident">Vault</span>,
-    <span class="ident">Package</span>,
-    <span class="ident">KeyValueStore</span>,
+<span class="attribute">#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
+</span><span class="kw">pub enum </span>DropFailure {
+    System,
+    Resource,
+    Component,
+    Bucket,
+    Worktop,
+    Vault,
+    Package,
+    KeyValueStore,
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">RuntimeError</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="ident">fmt::Result</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>RuntimeError {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

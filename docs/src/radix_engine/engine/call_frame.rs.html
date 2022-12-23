@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/call_frame.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>call_frame.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/call_frame.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>call_frame.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -117,120 +112,119 @@
 <span id="112">112</span>
 <span id="113">113</span>
 <span id="114">114</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
 
-<span class="comment">// TODO: reduce fields visibility</span>
+<span class="comment">// TODO: reduce fields visibility
 
-<span class="doccomment">/// A call frame is the basic unit that forms a transaction call stack, which keeps track of the</span>
-<span class="doccomment">/// owned objects by this function.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">CallFrame</span> {
-    <span class="doccomment">/// The frame id</span>
-    <span class="kw">pub</span> <span class="ident">depth</span>: <span class="ident">usize</span>,
-    <span class="doccomment">/// The running actor of this frame</span>
-    <span class="kw">pub</span> <span class="ident">actor</span>: <span class="ident">REActor</span>,
+</span><span class="doccomment">/// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
+/// owned objects by this function.
+</span><span class="kw">pub struct </span>CallFrame {
+    <span class="doccomment">/// The frame id
+    </span><span class="kw">pub </span>depth: usize,
+    <span class="doccomment">/// The running actor of this frame
+    </span><span class="kw">pub </span>actor: REActor,
 
-    <span class="doccomment">/// All ref values accessible by this call frame. The value may be located in one of the following:</span>
-    <span class="doccomment">/// 1. borrowed values</span>
-    <span class="doccomment">/// 2. track</span>
-    <span class="kw">pub</span> <span class="ident">node_refs</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">RENodePointer</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// All ref values accessible by this call frame. The value may be located in one of the following:
+    /// 1. borrowed values
+    /// 2. track
+    </span><span class="kw">pub </span>node_refs: HashMap&lt;RENodeId, RENodePointer&gt;,
 
-    <span class="doccomment">/// Owned Values</span>
-    <span class="kw">pub</span> <span class="ident">owned_heap_nodes</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRootRENode</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// Owned Values
+    </span><span class="kw">pub </span>owned_heap_nodes: HashMap&lt;RENodeId, HeapRootRENode&gt;,
 
-    <span class="kw">pub</span> <span class="ident">auth_zone</span>: <span class="ident">AuthZone</span>,
+    <span class="kw">pub </span>auth_zone: AuthZone,
 }
 
-<span class="kw">impl</span> <span class="ident">CallFrame</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_root</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">depth</span>: <span class="number">0</span>,
-            <span class="ident">actor</span>: <span class="ident">REActor</span> {
-                <span class="comment">// Temporary</span>
-                <span class="ident">fn_identifier</span>: <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::TransactionProcessor</span>(
-                    <span class="ident">TransactionProcessorFnIdentifier::Run</span>,
+<span class="kw">impl </span>CallFrame {
+    <span class="kw">pub fn </span>new_root() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            depth: <span class="number">0</span>,
+            actor: REActor {
+                <span class="comment">// Temporary
+                </span>fn_identifier: FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+                    TransactionProcessorFnIdentifier::Run,
                 )),
-                <span class="ident">receiver</span>: <span class="prelude-val">None</span>,
+                receiver: <span class="prelude-val">None</span>,
             },
-            <span class="ident">node_refs</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">owned_heap_nodes</span>: <span class="ident">HashMap::new</span>(),
-            <span class="ident">auth_zone</span>: <span class="ident">AuthZone::new</span>(),
+            node_refs: HashMap::new(),
+            owned_heap_nodes: HashMap::new(),
+            auth_zone: AuthZone::new(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_child</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">depth</span>: <span class="ident">usize</span>,
-        <span class="ident">actor</span>: <span class="ident">REActor</span>,
-        <span class="ident">owned_heap_nodes</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRootRENode</span><span class="op">&gt;</span>,
-        <span class="ident">node_refs</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">RENodePointer</span><span class="op">&gt;</span>,
-        <span class="ident">_system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="self">Self</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>new_child&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        depth: usize,
+        actor: REActor,
+        owned_heap_nodes: HashMap&lt;RENodeId, HeapRootRENode&gt;,
+        node_refs: HashMap&lt;RENodeId, RENodePointer&gt;,
+        _system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="self">Self
+    </span><span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">let</span> <span class="ident">auth_zone</span> <span class="op">=</span> <span class="ident">AuthZone::new</span>();
+        <span class="kw">let </span>auth_zone = AuthZone::new();
 
-        <span class="self">Self</span> {
-            <span class="ident">depth</span>,
-            <span class="ident">actor</span>,
-            <span class="ident">node_refs</span>,
-            <span class="ident">owned_heap_nodes</span>,
-            <span class="ident">auth_zone</span>,
+        <span class="self">Self </span>{
+            depth,
+            actor,
+            node_refs,
+            owned_heap_nodes,
+            auth_zone,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">drop_owned_values</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">RuntimeError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">values</span> <span class="op">=</span> <span class="self">self</span>
-            .<span class="ident">owned_heap_nodes</span>
-            .<span class="ident">drain</span>()
-            .<span class="ident">map</span>(<span class="op">|</span>(<span class="ident">_id</span>, <span class="ident">value</span>)<span class="op">|</span> <span class="ident">value</span>)
-            .<span class="ident">collect</span>();
-        <span class="ident">HeapRENode::drop_nodes</span>(<span class="ident">values</span>)
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::DropFailure</span>(<span class="ident">e</span>)))
+    <span class="kw">pub fn </span>drop_owned_values(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+        <span class="kw">let </span>values = <span class="self">self
+            </span>.owned_heap_nodes
+            .drain()
+            .map(|(_id, value)| value)
+            .collect();
+        HeapRENode::drop_nodes(values)
+            .map_err(|e| RuntimeError::KernelError(KernelError::DropFailure(e)))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">take_available_values</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">node_ids</span>: <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>,
-        <span class="ident">persist_only</span>: <span class="ident">bool</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">HeapRootRENode</span><span class="op">&gt;</span>, <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>), <span class="ident">RuntimeError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> (<span class="ident">taken</span>, <span class="ident">missing</span>) <span class="op">=</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">taken_values</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">missing_values</span> <span class="op">=</span> <span class="ident">HashSet::new</span>();
+    <span class="kw">pub fn </span>take_available_values(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        node_ids: HashSet&lt;RENodeId&gt;,
+        persist_only: bool,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(HashMap&lt;RENodeId, HeapRootRENode&gt;, HashSet&lt;RENodeId&gt;), RuntimeError&gt; {
+        <span class="kw">let </span>(taken, missing) = {
+            <span class="kw">let </span><span class="kw-2">mut </span>taken_values = HashMap::new();
+            <span class="kw">let </span><span class="kw-2">mut </span>missing_values = HashSet::new();
 
-            <span class="kw">for</span> <span class="ident">id</span> <span class="kw">in</span> <span class="ident">node_ids</span> {
-                <span class="kw">let</span> <span class="ident">maybe</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">owned_heap_nodes</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">id</span>);
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">value</span>) <span class="op">=</span> <span class="ident">maybe</span> {
-                    <span class="ident">value</span>.<span class="ident">root</span>().<span class="ident">verify_can_move</span>()<span class="question-mark">?</span>;
-                    <span class="kw">if</span> <span class="ident">persist_only</span> {
-                        <span class="ident">value</span>.<span class="ident">root</span>().<span class="ident">verify_can_persist</span>()<span class="question-mark">?</span>;
+            <span class="kw">for </span>id <span class="kw">in </span>node_ids {
+                <span class="kw">let </span>maybe = <span class="self">self</span>.owned_heap_nodes.remove(<span class="kw-2">&amp;</span>id);
+                <span class="kw">if let </span><span class="prelude-val">Some</span>(value) = maybe {
+                    value.root().verify_can_move()<span class="question-mark">?</span>;
+                    <span class="kw">if </span>persist_only {
+                        value.root().verify_can_persist()<span class="question-mark">?</span>;
                     }
-                    <span class="ident">taken_values</span>.<span class="ident">insert</span>(<span class="ident">id</span>, <span class="ident">value</span>);
-                } <span class="kw">else</span> {
-                    <span class="ident">missing_values</span>.<span class="ident">insert</span>(<span class="ident">id</span>);
+                    taken_values.insert(id, value);
+                } <span class="kw">else </span>{
+                    missing_values.insert(id);
                 }
             }
 
-            (<span class="ident">taken_values</span>, <span class="ident">missing_values</span>)
+            (taken_values, missing_values)
         };
 
-        <span class="comment">// Moved values must have their references removed</span>
-        <span class="kw">for</span> (<span class="ident">id</span>, <span class="ident">value</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">taken</span> {
-            <span class="self">self</span>.<span class="ident">node_refs</span>.<span class="ident">remove</span>(<span class="ident">id</span>);
-            <span class="kw">for</span> (<span class="ident">id</span>, ..) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">child_nodes</span> {
-                <span class="self">self</span>.<span class="ident">node_refs</span>.<span class="ident">remove</span>(<span class="ident">id</span>);
+        <span class="comment">// Moved values must have their references removed
+        </span><span class="kw">for </span>(id, value) <span class="kw">in </span><span class="kw-2">&amp;</span>taken {
+            <span class="self">self</span>.node_refs.remove(id);
+            <span class="kw">for </span>(id, ..) <span class="kw">in </span><span class="kw-2">&amp;</span>value.child_nodes {
+                <span class="self">self</span>.node_refs.remove(id);
             }
         }
 
-        <span class="prelude-val">Ok</span>((<span class="ident">taken</span>, <span class="ident">missing</span>))
+        <span class="prelude-val">Ok</span>((taken, missing))
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

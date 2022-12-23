@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/system.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>system.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/system.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>system.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -64,67 +59,66 @@
 <span id="59">59</span>
 <span id="60">60</span>
 <span id="61">61</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::SystemApi</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::InvokeError</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::SystemApi;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::InvokeError;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SystemError</span> {
-    <span class="ident">InvalidRequestData</span>(<span class="ident">DecodeError</span>),
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>SystemError {
+    InvalidRequestData(DecodeError),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">System</span> {
-    <span class="kw">pub</span> <span class="ident">epoch</span>: <span class="ident">u64</span>,
+<span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>System {
+    <span class="kw">pub </span>epoch: u64,
 }
 
-<span class="kw">impl</span> <span class="ident">System</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">main</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">system_fn</span>: <span class="ident">SystemFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">SystemError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+<span class="kw">impl </span>System {
+    <span class="kw">pub fn </span>main&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        system_fn: SystemFnIdentifier,
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;SystemError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">match</span> <span class="ident">system_fn</span> {
-            <span class="ident">SystemFnIdentifier::GetCurrentEpoch</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">SystemGetCurrentEpochInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">SystemError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">node_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">borrow_node</span>(<span class="kw-2">&amp;</span><span class="ident">RENodeId::System</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">node_ref</span>.<span class="ident">system</span>().<span class="ident">epoch</span>))
+        <span class="kw">match </span>system_fn {
+            SystemFnIdentifier::GetCurrentEpoch =&gt; {
+                <span class="kw">let _</span>: SystemGetCurrentEpochInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>node_ref = system_api
+                    .borrow_node(<span class="kw-2">&amp;</span>RENodeId::System)
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>node_ref.system().epoch))
             }
-            <span class="ident">SystemFnIdentifier::SetEpoch</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">SystemSetEpochInput</span> { <span class="ident">epoch</span> } <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">SystemError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">system_node_ref</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">substate_borrow_mut</span>(<span class="kw-2">&amp;</span><span class="ident">SubstateId::System</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                <span class="ident">system_node_ref</span>.<span class="ident">system</span>().<span class="ident">epoch</span> <span class="op">=</span> <span class="ident">epoch</span>;
-                <span class="ident">system_api</span>
-                    .<span class="ident">substate_return_mut</span>(<span class="ident">system_node_ref</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+            SystemFnIdentifier::SetEpoch =&gt; {
+                <span class="kw">let </span>SystemSetEpochInput { epoch } = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>system_node_ref = system_api
+                    .substate_borrow_mut(<span class="kw-2">&amp;</span>SubstateId::System)
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                system_node_ref.system().epoch = epoch;
+                system_api
+                    .substate_return_mut(system_node_ref)
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
             }
-            <span class="ident">SystemFnIdentifier::GetTransactionHash</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">SystemGetTransactionHashInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">SystemError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">system_api</span>
-                        .<span class="ident">transaction_hash</span>()
-                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>,
+            SystemFnIdentifier::GetTransactionHash =&gt; {
+                <span class="kw">let _</span>: SystemGetTransactionHashInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(SystemError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(
+                    <span class="kw-2">&amp;</span>system_api
+                        .transaction_hash()
+                        .map_err(InvokeError::Downstream)<span class="question-mark">?</span>,
                 ))
             }
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

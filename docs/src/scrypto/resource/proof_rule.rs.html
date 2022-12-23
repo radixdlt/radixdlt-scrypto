@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/resource/proof_rule.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>proof_rule.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/resource/proof_rule.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>proof_rule.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -422,221 +417,221 @@
 <span id="417">417</span>
 <span id="418">418</span>
 <span id="419">419</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::describe</span>::{<span class="ident">Fields</span>, <span class="ident">Variant</span>};
-<span class="kw">use</span> <span class="ident">sbor::rust::borrow::ToOwned</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::boxed::Box</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::string::ToString</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::vec</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident">sbor</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">scrypto::math::Decimal</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::describe::{Fields, Variant};
+<span class="kw">use </span>sbor::rust::borrow::ToOwned;
+<span class="kw">use </span>sbor::rust::boxed::Box;
+<span class="kw">use </span>sbor::rust::string::ToString;
+<span class="kw">use </span>sbor::rust::vec;
+<span class="kw">use </span>sbor::rust::vec::Vec;
+<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
+<span class="kw">use </span>scrypto::math::Decimal;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::api::RadixEngineInput</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::call_engine</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::types::ProofId</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource::AccessRuleNode</span>::{<span class="ident">AllOf</span>, <span class="ident">AnyOf</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::engine::api::RadixEngineInput;
+<span class="kw">use </span><span class="kw">crate</span>::engine::call_engine;
+<span class="kw">use </span><span class="kw">crate</span>::engine::types::ProofId;
+<span class="kw">use </span><span class="kw">crate</span>::resource::AccessRuleNode::{AllOf, AnyOf};
+<span class="kw">use </span><span class="kw">crate</span>::resource::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Describe</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SoftDecimal</span> {
-    <span class="ident">Static</span>(<span class="ident">Decimal</span>),
-    <span class="ident">Dynamic</span>(<span class="ident">SchemaPath</span>),
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+</span><span class="kw">pub enum </span>SoftDecimal {
+    Static(Decimal),
+    Dynamic(SchemaPath),
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Decimal</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftDecimal</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">amount</span>: <span class="ident">Decimal</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftDecimal::Static</span>(<span class="ident">amount</span>)
+<span class="kw">impl </span>From&lt;Decimal&gt; <span class="kw">for </span>SoftDecimal {
+    <span class="kw">fn </span>from(amount: Decimal) -&gt; <span class="self">Self </span>{
+        SoftDecimal::Static(amount)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">SchemaPath</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftDecimal</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="ident">SchemaPath</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftDecimal::Dynamic</span>(<span class="ident">path</span>)
+<span class="kw">impl </span>From&lt;SchemaPath&gt; <span class="kw">for </span>SoftDecimal {
+    <span class="kw">fn </span>from(path: SchemaPath) -&gt; <span class="self">Self </span>{
+        SoftDecimal::Dynamic(path)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftDecimal</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">schema_path</span>: <span class="ident">SchemaPath</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">parse</span>().<span class="ident">expect</span>(<span class="string">&quot;Could not decode path&quot;</span>);
-        <span class="ident">SoftDecimal::Dynamic</span>(<span class="ident">schema_path</span>)
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>str&gt; <span class="kw">for </span>SoftDecimal {
+    <span class="kw">fn </span>from(path: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>schema_path: SchemaPath = path.parse().expect(<span class="string">&quot;Could not decode path&quot;</span>);
+        SoftDecimal::Dynamic(schema_path)
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Describe</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SoftCount</span> {
-    <span class="ident">Static</span>(<span class="ident">u8</span>),
-    <span class="ident">Dynamic</span>(<span class="ident">SchemaPath</span>),
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+</span><span class="kw">pub enum </span>SoftCount {
+    Static(u8),
+    Dynamic(SchemaPath),
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftCount</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">count</span>: <span class="ident">u8</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftCount::Static</span>(<span class="ident">count</span>)
+<span class="kw">impl </span>From&lt;u8&gt; <span class="kw">for </span>SoftCount {
+    <span class="kw">fn </span>from(count: u8) -&gt; <span class="self">Self </span>{
+        SoftCount::Static(count)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">SchemaPath</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftCount</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="ident">SchemaPath</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftCount::Dynamic</span>(<span class="ident">path</span>)
+<span class="kw">impl </span>From&lt;SchemaPath&gt; <span class="kw">for </span>SoftCount {
+    <span class="kw">fn </span>from(path: SchemaPath) -&gt; <span class="self">Self </span>{
+        SoftCount::Dynamic(path)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftCount</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">schema_path</span>: <span class="ident">SchemaPath</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">parse</span>().<span class="ident">expect</span>(<span class="string">&quot;Could not decode path&quot;</span>);
-        <span class="ident">SoftCount::Dynamic</span>(<span class="ident">schema_path</span>)
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>str&gt; <span class="kw">for </span>SoftCount {
+    <span class="kw">fn </span>from(path: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>schema_path: SchemaPath = path.parse().expect(<span class="string">&quot;Could not decode path&quot;</span>);
+        SoftCount::Dynamic(schema_path)
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Describe</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SoftResource</span> {
-    <span class="ident">Static</span>(<span class="ident">ResourceAddress</span>),
-    <span class="ident">Dynamic</span>(<span class="ident">SchemaPath</span>),
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+</span><span class="kw">pub enum </span>SoftResource {
+    Static(ResourceAddress),
+    Dynamic(SchemaPath),
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResource</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftResource::Static</span>(<span class="ident">resource_address</span>)
+<span class="kw">impl </span>From&lt;ResourceAddress&gt; <span class="kw">for </span>SoftResource {
+    <span class="kw">fn </span>from(resource_address: ResourceAddress) -&gt; <span class="self">Self </span>{
+        SoftResource::Static(resource_address)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">SchemaPath</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResource</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="ident">SchemaPath</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftResource::Dynamic</span>(<span class="ident">path</span>)
+<span class="kw">impl </span>From&lt;SchemaPath&gt; <span class="kw">for </span>SoftResource {
+    <span class="kw">fn </span>from(path: SchemaPath) -&gt; <span class="self">Self </span>{
+        SoftResource::Dynamic(path)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResource</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">schema_path</span>: <span class="ident">SchemaPath</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">parse</span>().<span class="ident">expect</span>(<span class="string">&quot;Could not decode path&quot;</span>);
-        <span class="ident">SoftResource::Dynamic</span>(<span class="ident">schema_path</span>)
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>str&gt; <span class="kw">for </span>SoftResource {
+    <span class="kw">fn </span>from(path: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>schema_path: SchemaPath = path.parse().expect(<span class="string">&quot;Could not decode path&quot;</span>);
+        SoftResource::Dynamic(schema_path)
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Describe</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SoftResourceOrNonFungible</span> {
-    <span class="ident">StaticNonFungible</span>(<span class="ident">NonFungibleAddress</span>),
-    <span class="ident">StaticResource</span>(<span class="ident">ResourceAddress</span>),
-    <span class="ident">Dynamic</span>(<span class="ident">SchemaPath</span>),
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+</span><span class="kw">pub enum </span>SoftResourceOrNonFungible {
+    StaticNonFungible(NonFungibleAddress),
+    StaticResource(ResourceAddress),
+    Dynamic(SchemaPath),
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">NonFungibleAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResourceOrNonFungible</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">non_fungible_address</span>: <span class="ident">NonFungibleAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftResourceOrNonFungible::StaticNonFungible</span>(<span class="ident">non_fungible_address</span>)
+<span class="kw">impl </span>From&lt;NonFungibleAddress&gt; <span class="kw">for </span>SoftResourceOrNonFungible {
+    <span class="kw">fn </span>from(non_fungible_address: NonFungibleAddress) -&gt; <span class="self">Self </span>{
+        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResourceOrNonFungible</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftResourceOrNonFungible::StaticResource</span>(<span class="ident">resource_address</span>)
+<span class="kw">impl </span>From&lt;ResourceAddress&gt; <span class="kw">for </span>SoftResourceOrNonFungible {
+    <span class="kw">fn </span>from(resource_address: ResourceAddress) -&gt; <span class="self">Self </span>{
+        SoftResourceOrNonFungible::StaticResource(resource_address)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">SchemaPath</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResourceOrNonFungible</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="ident">SchemaPath</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftResourceOrNonFungible::Dynamic</span>(<span class="ident">path</span>)
+<span class="kw">impl </span>From&lt;SchemaPath&gt; <span class="kw">for </span>SoftResourceOrNonFungible {
+    <span class="kw">fn </span>from(path: SchemaPath) -&gt; <span class="self">Self </span>{
+        SoftResourceOrNonFungible::Dynamic(path)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResourceOrNonFungible</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">schema_path</span>: <span class="ident">SchemaPath</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">parse</span>().<span class="ident">expect</span>(<span class="string">&quot;Could not decode path&quot;</span>);
-        <span class="ident">SoftResourceOrNonFungible::Dynamic</span>(<span class="ident">schema_path</span>)
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>str&gt; <span class="kw">for </span>SoftResourceOrNonFungible {
+    <span class="kw">fn </span>from(path: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>schema_path: SchemaPath = path.parse().expect(<span class="string">&quot;Could not decode path&quot;</span>);
+        SoftResourceOrNonFungible::Dynamic(schema_path)
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Describe</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">SoftResourceOrNonFungibleList</span> {
-    <span class="ident">Static</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">SoftResourceOrNonFungible</span><span class="op">&gt;</span>),
-    <span class="ident">Dynamic</span>(<span class="ident">SchemaPath</span>),
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+</span><span class="kw">pub enum </span>SoftResourceOrNonFungibleList {
+    Static(Vec&lt;SoftResourceOrNonFungible&gt;),
+    Dynamic(SchemaPath),
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">SchemaPath</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResourceOrNonFungibleList</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="ident">SchemaPath</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftResourceOrNonFungibleList::Dynamic</span>(<span class="ident">path</span>)
+<span class="kw">impl </span>From&lt;SchemaPath&gt; <span class="kw">for </span>SoftResourceOrNonFungibleList {
+    <span class="kw">fn </span>from(path: SchemaPath) -&gt; <span class="self">Self </span>{
+        SoftResourceOrNonFungibleList::Dynamic(path)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">str</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResourceOrNonFungibleList</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">path</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">schema_path</span>: <span class="ident">SchemaPath</span> <span class="op">=</span> <span class="ident">path</span>.<span class="ident">parse</span>().<span class="ident">expect</span>(<span class="string">&quot;Could not decode path&quot;</span>);
-        <span class="ident">SoftResourceOrNonFungibleList::Dynamic</span>(<span class="ident">schema_path</span>)
+<span class="kw">impl </span>From&lt;<span class="kw-2">&amp;</span>str&gt; <span class="kw">for </span>SoftResourceOrNonFungibleList {
+    <span class="kw">fn </span>from(path: <span class="kw-2">&amp;</span>str) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>schema_path: SchemaPath = path.parse().expect(<span class="string">&quot;Could not decode path&quot;</span>);
+        SoftResourceOrNonFungibleList::Dynamic(schema_path)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">SoftResourceOrNonFungibleList</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">SoftResourceOrNonFungible</span><span class="op">&gt;</span>,
+<span class="kw">impl</span>&lt;T&gt; From&lt;Vec&lt;T&gt;&gt; <span class="kw">for </span>SoftResourceOrNonFungibleList
+<span class="kw">where
+    </span>T: Into&lt;SoftResourceOrNonFungible&gt;,
 {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">addresses</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">SoftResourceOrNonFungibleList::Static</span>(<span class="ident">addresses</span>.<span class="ident">into_iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">a</span><span class="op">|</span> <span class="ident">a</span>.<span class="ident">into</span>()).<span class="ident">collect</span>())
+    <span class="kw">fn </span>from(addresses: Vec&lt;T&gt;) -&gt; <span class="self">Self </span>{
+        SoftResourceOrNonFungibleList::Static(addresses.into_iter().map(|a| a.into()).collect())
     }
 }
 
-<span class="doccomment">/// Resource Proof Rules</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Describe</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ProofRule</span> {
-    <span class="ident">Require</span>(<span class="ident">SoftResourceOrNonFungible</span>),
-    <span class="ident">AmountOf</span>(<span class="ident">SoftDecimal</span>, <span class="ident">SoftResource</span>),
-    <span class="ident">CountOf</span>(<span class="ident">SoftCount</span>, <span class="ident">SoftResourceOrNonFungibleList</span>),
-    <span class="ident">AllOf</span>(<span class="ident">SoftResourceOrNonFungibleList</span>),
-    <span class="ident">AnyOf</span>(<span class="ident">SoftResourceOrNonFungibleList</span>),
+<span class="doccomment">/// Resource Proof Rules
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, Ord, PartialOrd)]
+</span><span class="kw">pub enum </span>ProofRule {
+    Require(SoftResourceOrNonFungible),
+    AmountOf(SoftDecimal, SoftResource),
+    CountOf(SoftCount, SoftResourceOrNonFungibleList),
+    AllOf(SoftResourceOrNonFungibleList),
+    AnyOf(SoftResourceOrNonFungibleList),
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">NonFungibleAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ProofRule</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">non_fungible_address</span>: <span class="ident">NonFungibleAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">ProofRule::Require</span>(<span class="ident">non_fungible_address</span>.<span class="ident">into</span>())
+<span class="kw">impl </span>From&lt;NonFungibleAddress&gt; <span class="kw">for </span>ProofRule {
+    <span class="kw">fn </span>from(non_fungible_address: NonFungibleAddress) -&gt; <span class="self">Self </span>{
+        ProofRule::Require(non_fungible_address.into())
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ProofRule</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">ProofRule::Require</span>(<span class="ident">resource_address</span>.<span class="ident">into</span>())
+<span class="kw">impl </span>From&lt;ResourceAddress&gt; <span class="kw">for </span>ProofRule {
+    <span class="kw">fn </span>from(resource_address: ResourceAddress) -&gt; <span class="self">Self </span>{
+        ProofRule::Require(resource_address.into())
     }
 }
 
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">resource_list</span> {
-  ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">resource</span>: <span class="ident">expr</span>),<span class="kw-2">*</span>) =&gt; ({
-      <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">list</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">::scrypto::resource::SoftResourceOrNonFungible</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
+<span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>resource_list {
+  ($(<span class="macro-nonterminal">$resource</span>: expr),<span class="kw-2">*</span>) =&gt; ({
+      <span class="kw">let </span><span class="kw-2">mut </span>list: Vec&lt;::scrypto::resource::SoftResourceOrNonFungible&gt; = Vec::new();
       $(
-        <span class="ident">list</span>.<span class="ident">push</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">resource</span>.<span class="ident">into</span>());
-      )<span class="op">*</span>
-      <span class="ident">::scrypto::resource::SoftResourceOrNonFungibleList::Static</span>(<span class="ident">list</span>)
+        list.push(<span class="macro-nonterminal">$resource</span>.into());
+      )*
+      ::scrypto::resource::SoftResourceOrNonFungibleList::Static(list)
   });
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">AccessRuleNode</span> {
-    <span class="ident">ProofRule</span>(<span class="ident">ProofRule</span>),
-    <span class="ident">AnyOf</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AccessRuleNode</span><span class="op">&gt;</span>),
-    <span class="ident">AllOf</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">AccessRuleNode</span><span class="op">&gt;</span>),
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Ord, PartialOrd)]
+</span><span class="kw">pub enum </span>AccessRuleNode {
+    ProofRule(ProofRule),
+    AnyOf(Vec&lt;AccessRuleNode&gt;),
+    AllOf(Vec&lt;AccessRuleNode&gt;),
 }
 
-<span class="comment">// FIXME: describe types with cycles</span>
-<span class="kw">impl</span> <span class="ident">Describe</span> <span class="kw">for</span> <span class="ident">AccessRuleNode</span> {
-    <span class="kw">fn</span> <span class="ident">describe</span>() -&gt; <span class="ident">sbor::describe::Type</span> {
-        <span class="ident">sbor::describe::Type::Enum</span> {
-            <span class="ident">name</span>: <span class="string">&quot;AccessRuleNode&quot;</span>.<span class="ident">to_owned</span>(),
-            <span class="ident">variants</span>: <span class="macro">vec!</span>[
-                <span class="ident">Variant</span> {
-                    <span class="ident">name</span>: <span class="string">&quot;ProofRule&quot;</span>.<span class="ident">to_string</span>(),
-                    <span class="ident">fields</span>: <span class="ident">Fields::Unnamed</span> {
-                        <span class="ident">unnamed</span>: <span class="macro">vec!</span>[<span class="ident">Type::Any</span>],
+<span class="comment">// FIXME: describe types with cycles
+</span><span class="kw">impl </span>Describe <span class="kw">for </span>AccessRuleNode {
+    <span class="kw">fn </span>describe() -&gt; sbor::describe::Type {
+        sbor::describe::Type::Enum {
+            name: <span class="string">&quot;AccessRuleNode&quot;</span>.to_owned(),
+            variants: <span class="macro">vec!</span>[
+                Variant {
+                    name: <span class="string">&quot;ProofRule&quot;</span>.to_string(),
+                    fields: Fields::Unnamed {
+                        unnamed: <span class="macro">vec!</span>[Type::Any],
                     },
                 },
-                <span class="ident">Variant</span> {
-                    <span class="ident">name</span>: <span class="string">&quot;AnyOf&quot;</span>.<span class="ident">to_string</span>(),
-                    <span class="ident">fields</span>: <span class="ident">Fields::Unnamed</span> {
-                        <span class="ident">unnamed</span>: <span class="macro">vec!</span>[<span class="ident">Type::Vec</span> {
-                            <span class="ident">element</span>: <span class="ident">Box::new</span>(<span class="ident">Type::Any</span>),
+                Variant {
+                    name: <span class="string">&quot;AnyOf&quot;</span>.to_string(),
+                    fields: Fields::Unnamed {
+                        unnamed: <span class="macro">vec!</span>[Type::Vec {
+                            element: Box::new(Type::Any),
                         }],
                     },
                 },
-                <span class="ident">Variant</span> {
-                    <span class="ident">name</span>: <span class="string">&quot;AllOf&quot;</span>.<span class="ident">to_string</span>(),
-                    <span class="ident">fields</span>: <span class="ident">Fields::Unnamed</span> {
-                        <span class="ident">unnamed</span>: <span class="macro">vec!</span>[<span class="ident">Type::Vec</span> {
-                            <span class="ident">element</span>: <span class="ident">Box::new</span>(<span class="ident">Type::Any</span>),
+                Variant {
+                    name: <span class="string">&quot;AllOf&quot;</span>.to_string(),
+                    fields: Fields::Unnamed {
+                        unnamed: <span class="macro">vec!</span>[Type::Vec {
+                            element: Box::new(Type::Any),
                         }],
                     },
                 },
@@ -645,202 +640,201 @@
     }
 }
 
-<span class="kw">impl</span> <span class="ident">AccessRuleNode</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">or</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="ident">AccessRuleNode</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">AccessRuleNode::AnyOf</span>(<span class="kw-2">mut</span> <span class="ident">rules</span>) =&gt; {
-                <span class="ident">rules</span>.<span class="ident">push</span>(<span class="ident">other</span>);
-                <span class="ident">AnyOf</span>(<span class="ident">rules</span>)
+<span class="kw">impl </span>AccessRuleNode {
+    <span class="kw">pub fn </span>or(<span class="self">self</span>, other: AccessRuleNode) -&gt; <span class="self">Self </span>{
+        <span class="kw">match </span><span class="self">self </span>{
+            AccessRuleNode::AnyOf(<span class="kw-2">mut </span>rules) =&gt; {
+                rules.push(other);
+                AnyOf(rules)
             }
-            <span class="kw">_</span> =&gt; <span class="ident">AnyOf</span>(<span class="macro">vec!</span>[<span class="self">self</span>, <span class="ident">other</span>]),
+            <span class="kw">_ </span>=&gt; AnyOf(<span class="macro">vec!</span>[<span class="self">self</span>, other]),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">and</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="ident">AccessRuleNode</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">AccessRuleNode::AllOf</span>(<span class="kw-2">mut</span> <span class="ident">rules</span>) =&gt; {
-                <span class="ident">rules</span>.<span class="ident">push</span>(<span class="ident">other</span>);
-                <span class="ident">AllOf</span>(<span class="ident">rules</span>)
+    <span class="kw">pub fn </span>and(<span class="self">self</span>, other: AccessRuleNode) -&gt; <span class="self">Self </span>{
+        <span class="kw">match </span><span class="self">self </span>{
+            AccessRuleNode::AllOf(<span class="kw-2">mut </span>rules) =&gt; {
+                rules.push(other);
+                AllOf(rules)
             }
-            <span class="kw">_</span> =&gt; <span class="ident">AllOf</span>(<span class="macro">vec!</span>[<span class="self">self</span>, <span class="ident">other</span>]),
+            <span class="kw">_ </span>=&gt; AllOf(<span class="macro">vec!</span>[<span class="self">self</span>, other]),
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">require</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">resource</span>: <span class="ident">T</span>) -&gt; <span class="ident">ProofRule</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">SoftResourceOrNonFungible</span><span class="op">&gt;</span>,
+<span class="kw">pub fn </span>require&lt;T&gt;(resource: T) -&gt; ProofRule
+<span class="kw">where
+    </span>T: Into&lt;SoftResourceOrNonFungible&gt;,
 {
-    <span class="ident">ProofRule::Require</span>(<span class="ident">resource</span>.<span class="ident">into</span>())
+    ProofRule::Require(resource.into())
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">require_any_of</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">resources</span>: <span class="ident">T</span>) -&gt; <span class="ident">ProofRule</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">SoftResourceOrNonFungibleList</span><span class="op">&gt;</span>,
+<span class="kw">pub fn </span>require_any_of&lt;T&gt;(resources: T) -&gt; ProofRule
+<span class="kw">where
+    </span>T: Into&lt;SoftResourceOrNonFungibleList&gt;,
 {
-    <span class="ident">ProofRule::AnyOf</span>(<span class="ident">resources</span>.<span class="ident">into</span>())
+    ProofRule::AnyOf(resources.into())
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">require_all_of</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">resources</span>: <span class="ident">T</span>) -&gt; <span class="ident">ProofRule</span>
-<span class="kw">where</span>
-    <span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">SoftResourceOrNonFungibleList</span><span class="op">&gt;</span>,
+<span class="kw">pub fn </span>require_all_of&lt;T&gt;(resources: T) -&gt; ProofRule
+<span class="kw">where
+    </span>T: Into&lt;SoftResourceOrNonFungibleList&gt;,
 {
-    <span class="ident">ProofRule::AllOf</span>(<span class="ident">resources</span>.<span class="ident">into</span>())
+    ProofRule::AllOf(resources.into())
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">require_n_of</span><span class="op">&lt;</span><span class="ident">C</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">count</span>: <span class="ident">C</span>, <span class="ident">resources</span>: <span class="ident">T</span>) -&gt; <span class="ident">ProofRule</span>
-<span class="kw">where</span>
-    <span class="ident">C</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">SoftCount</span><span class="op">&gt;</span>,
-    <span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">SoftResourceOrNonFungibleList</span><span class="op">&gt;</span>,
+<span class="kw">pub fn </span>require_n_of&lt;C, T&gt;(count: C, resources: T) -&gt; ProofRule
+<span class="kw">where
+    </span>C: Into&lt;SoftCount&gt;,
+    T: Into&lt;SoftResourceOrNonFungibleList&gt;,
 {
-    <span class="ident">ProofRule::CountOf</span>(<span class="ident">count</span>.<span class="ident">into</span>(), <span class="ident">resources</span>.<span class="ident">into</span>())
+    ProofRule::CountOf(count.into(), resources.into())
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">require_amount</span><span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">T</span><span class="op">&gt;</span>(<span class="ident">amount</span>: <span class="ident">D</span>, <span class="ident">resource</span>: <span class="ident">T</span>) -&gt; <span class="ident">ProofRule</span>
-<span class="kw">where</span>
-    <span class="ident">D</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">SoftDecimal</span><span class="op">&gt;</span>,
-    <span class="ident">T</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">SoftResource</span><span class="op">&gt;</span>,
+<span class="kw">pub fn </span>require_amount&lt;D, T&gt;(amount: D, resource: T) -&gt; ProofRule
+<span class="kw">where
+    </span>D: Into&lt;SoftDecimal&gt;,
+    T: Into&lt;SoftResource&gt;,
 {
-    <span class="ident">ProofRule::AmountOf</span>(<span class="ident">amount</span>.<span class="ident">into</span>(), <span class="ident">resource</span>.<span class="ident">into</span>())
+    ProofRule::AmountOf(amount.into(), resource.into())
 }
 
-<span class="comment">// TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.</span>
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">access_and_or</span> {
-    (<span class="op">|</span><span class="op">|</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>:<span class="ident">tt</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">or</span>(<span class="ident">next</span>)
+<span class="comment">// TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.
+</span><span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>access_and_or {
+    (|| <span class="macro-nonterminal">$tt</span>:tt) =&gt; {{
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$tt</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| e.or(next)
     }};
-    (<span class="op">|</span><span class="op">|</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>:<span class="ident">tt</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">or</span>(<span class="ident">next</span>)
+    (|| <span class="macro-nonterminal">$right1</span>:ident <span class="macro-nonterminal">$right2</span>:tt) =&gt; {{
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right1 $right2</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| e.or(next)
     }};
-    (<span class="op">|</span><span class="op">|</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>:<span class="ident">tt</span> <span class="op">&amp;&amp;</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>(<span class="op">&amp;&amp;</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="op">+</span>);
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">or</span>(<span class="ident">f</span>(<span class="ident">next</span>))
+    (|| <span class="macro-nonterminal">$right</span>:tt &amp;&amp; $(<span class="macro-nonterminal">$rest</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>(&amp;&amp; $(<span class="macro-nonterminal">$rest</span>)+);
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| e.or(f(next))
     }};
-    (<span class="op">|</span><span class="op">|</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>:<span class="ident">tt</span> <span class="op">|</span><span class="op">|</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>(<span class="op">|</span><span class="op">|</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="op">+</span>);
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">e</span>.<span class="ident">or</span>(<span class="ident">next</span>))
+    (|| <span class="macro-nonterminal">$right</span>:tt || $(<span class="macro-nonterminal">$rest</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>(|| $(<span class="macro-nonterminal">$rest</span>)+);
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| f(e.or(next))
     }};
-    (<span class="op">|</span><span class="op">|</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>:<span class="ident">tt</span> <span class="op">&amp;&amp;</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>(<span class="op">&amp;&amp;</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="op">+</span>);
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">or</span>(<span class="ident">f</span>(<span class="ident">next</span>))
+    (|| <span class="macro-nonterminal">$right1</span>:ident <span class="macro-nonterminal">$right2</span>:tt &amp;&amp; $(<span class="macro-nonterminal">$rest</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>(&amp;&amp; $(<span class="macro-nonterminal">$rest</span>)+);
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right1 $right2</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| e.or(f(next))
     }};
-    (<span class="op">|</span><span class="op">|</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>:<span class="ident">tt</span> <span class="op">|</span><span class="op">|</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>(<span class="op">|</span><span class="op">|</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="op">+</span>);
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">e</span>.<span class="ident">or</span>(<span class="ident">next</span>))
+    (|| <span class="macro-nonterminal">$right1</span>:ident <span class="macro-nonterminal">$right2</span>:tt || $(<span class="macro-nonterminal">$rest</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>(|| $(<span class="macro-nonterminal">$rest</span>)+);
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right1 $right2</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| f(e.or(next))
     }};
 
-    (<span class="op">&amp;&amp;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>:<span class="ident">tt</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">and</span>(<span class="ident">next</span>)
+    (&amp;&amp; <span class="macro-nonterminal">$tt</span>:tt) =&gt; {{
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$tt</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| e.and(next)
     }};
-    (<span class="op">&amp;&amp;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>:<span class="ident">tt</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">e</span>.<span class="ident">and</span>(<span class="ident">next</span>)
+    (&amp;&amp; <span class="macro-nonterminal">$right1</span>:ident <span class="macro-nonterminal">$right2</span>:tt) =&gt; {{
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right1 $right2</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| e.and(next)
     }};
-    (<span class="op">&amp;&amp;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>:<span class="ident">tt</span> <span class="op">&amp;&amp;</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>(<span class="op">&amp;&amp;</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="op">+</span>);
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">e</span>.<span class="ident">and</span>(<span class="ident">next</span>))
+    (&amp;&amp; <span class="macro-nonterminal">$right</span>:tt &amp;&amp; $(<span class="macro-nonterminal">$rest</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>(&amp;&amp; $(<span class="macro-nonterminal">$rest</span>)+);
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| f(e.and(next))
     }};
-    (<span class="op">&amp;&amp;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>:<span class="ident">tt</span> <span class="op">|</span><span class="op">|</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>(<span class="op">|</span><span class="op">|</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="op">+</span>);
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">e</span>.<span class="ident">and</span>(<span class="ident">next</span>))
+    (&amp;&amp; <span class="macro-nonterminal">$right</span>:tt || $(<span class="macro-nonterminal">$rest</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>(|| $(<span class="macro-nonterminal">$rest</span>)+);
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| f(e.and(next))
     }};
-    (<span class="op">&amp;&amp;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>:<span class="ident">tt</span> <span class="op">&amp;&amp;</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>(<span class="op">&amp;&amp;</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="op">+</span>);
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">e</span>.<span class="ident">and</span>(<span class="ident">next</span>))
+    (&amp;&amp; <span class="macro-nonterminal">$right1</span>:ident <span class="macro-nonterminal">$right2</span>:tt &amp;&amp; $(<span class="macro-nonterminal">$rest</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>(&amp;&amp; $(<span class="macro-nonterminal">$rest</span>)+);
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right1 $right2</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| f(e.and(next))
     }};
-    (<span class="op">&amp;&amp;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>:<span class="ident">tt</span> <span class="op">|</span><span class="op">|</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>(<span class="op">|</span><span class="op">|</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rest</span>)<span class="op">+</span>);
-        <span class="kw">let</span> <span class="ident">next</span> <span class="op">=</span> <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right1</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">right2</span>);
-        <span class="kw">move</span> <span class="op">|</span><span class="ident">e</span>: <span class="ident">AccessRuleNode</span><span class="op">|</span> <span class="ident">f</span>(<span class="ident">e</span>.<span class="ident">and</span>(<span class="ident">next</span>))
-    }};
-}
-
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">access_rule_node</span> {
-    <span class="comment">// Handle leaves</span>
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rule</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>:<span class="ident">tt</span>) =&gt; {{ <span class="ident">::scrypto::resource::AccessRuleNode::ProofRule</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">rule</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">args</span>) }};
-
-    <span class="comment">// Handle group</span>
-    (($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>:<span class="ident">tt</span>)<span class="op">+</span>)) =&gt; {{ <span class="macro">access_rule_node!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>)<span class="op">+</span>) }};
-
-    <span class="comment">// Handle and/or logic</span>
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">left1</span>:<span class="ident">ident</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">left2</span>:<span class="ident">tt</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>)<span class="op">+</span>);
-        <span class="ident">f</span>(<span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">left1</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">left2</span>))
-    }};
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">left</span>:<span class="ident">tt</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="kw">let</span> <span class="ident">f</span> <span class="op">=</span> <span class="macro">access_and_or!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">right</span>)<span class="op">+</span>);
-        <span class="ident">f</span>(<span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">left</span>))
+    (&amp;&amp; <span class="macro-nonterminal">$right1</span>:ident <span class="macro-nonterminal">$right2</span>:tt || $(<span class="macro-nonterminal">$rest</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>(|| $(<span class="macro-nonterminal">$rest</span>)+);
+        <span class="kw">let </span>next = <span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$right1 $right2</span>);
+        <span class="kw">move </span>|e: AccessRuleNode| f(e.and(next))
     }};
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">Describe</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">Ord</span>, <span class="ident">PartialOrd</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">AccessRule</span> {
-    <span class="ident">AllowAll</span>,
-    <span class="ident">DenyAll</span>,
-    <span class="ident">Protected</span>(<span class="ident">AccessRuleNode</span>),
+<span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>access_rule_node {
+    <span class="comment">// Handle leaves
+    </span>(<span class="macro-nonterminal">$rule</span>:ident <span class="macro-nonterminal">$args</span>:tt) =&gt; {{ ::scrypto::resource::AccessRuleNode::ProofRule(<span class="macro-nonterminal">$rule $args</span>) }};
+
+    <span class="comment">// Handle group
+    </span>(($(<span class="macro-nonterminal">$tt</span>:tt)+)) =&gt; {{ <span class="macro">access_rule_node!</span>($(<span class="macro-nonterminal">$tt</span>)+) }};
+
+    <span class="comment">// Handle and/or logic
+    </span>(<span class="macro-nonterminal">$left1</span>:ident <span class="macro-nonterminal">$left2</span>:tt $(<span class="macro-nonterminal">$right</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>($(<span class="macro-nonterminal">$right</span>)+);
+        f(<span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$left1 $left2</span>))
+    }};
+    (<span class="macro-nonterminal">$left</span>:tt $(<span class="macro-nonterminal">$right</span>:tt)+) =&gt; {{
+        <span class="kw">let </span>f = <span class="macro">access_and_or!</span>($(<span class="macro-nonterminal">$right</span>)+);
+        f(<span class="macro">access_rule_node!</span>(<span class="macro-nonterminal">$left</span>))
+    }};
 }
 
-<span class="kw">impl</span> <span class="ident">AccessRule</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check</span><span class="op">&lt;</span><span class="lifetime">&#39;p</span>, <span class="ident">P</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="ident">AccessRuleCheckInput</span><span class="op">&lt;</span><span class="lifetime">&#39;p</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">proofs</span>: <span class="ident">P</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">let</span> <span class="ident">access_rule_check_input</span>: <span class="ident">AccessRuleCheckInput</span> <span class="op">=</span> <span class="ident">proofs</span>.<span class="ident">into</span>();
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span>
-            <span class="ident">RadixEngineInput::CheckAccessRule</span>(<span class="self">self</span>.<span class="ident">clone</span>(), <span class="ident">access_rule_check_input</span>.<span class="ident">proof_ids</span>());
-        <span class="kw">let</span> <span class="ident">output</span>: <span class="ident">bool</span> <span class="op">=</span> <span class="ident">call_engine</span>(<span class="ident">input</span>);
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode, Ord, PartialOrd)]
+</span><span class="kw">pub enum </span>AccessRule {
+    AllowAll,
+    DenyAll,
+    Protected(AccessRuleNode),
+}
 
-        <span class="ident">output</span>
+<span class="kw">impl </span>AccessRule {
+    <span class="kw">pub fn </span>check&lt;<span class="lifetime">&#39;p</span>, P: Into&lt;AccessRuleCheckInput&lt;<span class="lifetime">&#39;p</span>&gt;&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, proofs: P) -&gt; bool {
+        <span class="kw">let </span>access_rule_check_input: AccessRuleCheckInput = proofs.into();
+        <span class="kw">let </span>input =
+            RadixEngineInput::CheckAccessRule(<span class="self">self</span>.clone(), access_rule_check_input.proof_ids());
+        <span class="kw">let </span>output: bool = call_engine(input);
+
+        output
     }
 }
 
-<span class="attribute">#[<span class="ident">macro_export</span>]</span>
-<span class="macro">macro_rules!</span> <span class="ident">rule</span> {
-    (<span class="ident">allow_all</span>) =&gt; {{
-        <span class="ident">::scrypto::resource::AccessRule::AllowAll</span>
+<span class="attribute">#[macro_export]
+</span><span class="macro">macro_rules! </span>rule {
+    (allow_all) =&gt; {{
+        ::scrypto::resource::AccessRule::AllowAll
     }};
-    (<span class="ident">deny_all</span>) =&gt; {{
-        <span class="ident">::scrypto::resource::AccessRule::DenyAll</span>
+    (deny_all) =&gt; {{
+        ::scrypto::resource::AccessRule::DenyAll
     }};
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>:<span class="ident">tt</span>)<span class="op">+</span>) =&gt; {{
-        <span class="ident">::scrypto::resource::AccessRule::Protected</span>(<span class="macro">access_rule_node!</span>($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">tt</span>)<span class="op">+</span>))
+    ($(<span class="macro-nonterminal">$tt</span>:tt)+) =&gt; {{
+        ::scrypto::resource::AccessRule::Protected(<span class="macro">access_rule_node!</span>($(<span class="macro-nonterminal">$tt</span>)+))
     }};
 }
 
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">AccessRuleCheckInput</span><span class="op">&lt;</span><span class="lifetime">&#39;p</span><span class="op">&gt;</span> {
-    <span class="ident">Proofs</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;p</span> [<span class="ident">Proof</span>]),
-    <span class="ident">ValidatedProofs</span>(<span class="kw-2">&amp;</span><span class="lifetime">&#39;p</span> [<span class="ident">ValidatedProof</span>]),
+<span class="kw">pub enum </span>AccessRuleCheckInput&lt;<span class="lifetime">&#39;p</span>&gt; {
+    Proofs(<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>[Proof]),
+    ValidatedProofs(<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>[ValidatedProof]),
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;p</span><span class="op">&gt;</span> <span class="ident">AccessRuleCheckInput</span><span class="op">&lt;</span><span class="lifetime">&#39;p</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">proof_ids</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ProofId</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Proofs</span>(<span class="ident">proofs</span>) =&gt; <span class="ident">proofs</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">proof</span><span class="op">|</span> <span class="ident">proof</span>.<span class="number">0</span>).<span class="ident">collect</span>(),
-            <span class="ident"><span class="self">Self</span>::ValidatedProofs</span>(<span class="ident">proofs</span>) =&gt; <span class="ident">proofs</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">proof</span><span class="op">|</span> <span class="ident">proof</span>.<span class="number">0</span> .<span class="number">0</span>).<span class="ident">collect</span>(),
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;p</span>&gt; AccessRuleCheckInput&lt;<span class="lifetime">&#39;p</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>proof_ids(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;ProofId&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Proofs(proofs) =&gt; proofs.iter().map(|proof| proof.<span class="number">0</span>).collect(),
+            <span class="self">Self</span>::ValidatedProofs(proofs) =&gt; proofs.iter().map(|proof| proof.<span class="number">0 </span>.<span class="number">0</span>).collect(),
         }
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;p</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;p</span> [<span class="ident">Proof</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">AccessRuleCheckInput</span><span class="op">&lt;</span><span class="lifetime">&#39;p</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">proofs</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;p</span> [<span class="ident">Proof</span>]) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::Proofs</span>(<span class="ident">proofs</span>)
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;p</span>&gt; From&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>[Proof]&gt; <span class="kw">for </span>AccessRuleCheckInput&lt;<span class="lifetime">&#39;p</span>&gt; {
+    <span class="kw">fn </span>from(proofs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;p </span>[Proof]) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::Proofs(proofs)
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">From</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">ValidatedProof</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">AccessRuleCheckInput</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">proofs</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> [<span class="ident">ValidatedProof</span>]) -&gt; <span class="self">Self</span> {
-        <span class="ident"><span class="self">Self</span>::ValidatedProofs</span>(<span class="ident">proofs</span>)
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; From&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ValidatedProof]&gt; <span class="kw">for </span>AccessRuleCheckInput&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">fn </span>from(proofs: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[ValidatedProof]) -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::ValidatedProofs(proofs)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

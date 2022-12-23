@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/method_authorization.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>method_authorization.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/method_authorization.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>method_authorization.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -205,182 +200,182 @@
 <span id="200">200</span>
 <span id="201">201</span>
 <span id="202">202</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::method_authorization::MethodAuthorizationError::NotAuthorized</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::{<span class="ident">AuthZone</span>, <span class="ident">Proof</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::model::method_authorization::MethodAuthorizationError::NotAuthorized;
+<span class="kw">use </span><span class="kw">crate</span>::model::{AuthZone, Proof};
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">MethodAuthorizationError</span> {
-    <span class="ident">NotAuthorized</span>,
-    <span class="ident">UnsupportedMethod</span>,
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>MethodAuthorizationError {
+    NotAuthorized,
+    UnsupportedMethod,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HardDecimal</span> {
-    <span class="ident">Amount</span>(<span class="ident">Decimal</span>),
-    <span class="ident">SoftDecimalNotFound</span>,
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>HardDecimal {
+    Amount(Decimal),
+    SoftDecimalNotFound,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HardCount</span> {
-    <span class="ident">Count</span>(<span class="ident">u8</span>),
-    <span class="ident">SoftCountNotFound</span>,
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>HardCount {
+    Count(u8),
+    SoftCountNotFound,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HardResourceOrNonFungible</span> {
-    <span class="ident">NonFungible</span>(<span class="ident">NonFungibleAddress</span>),
-    <span class="ident">Resource</span>(<span class="ident">ResourceAddress</span>),
-    <span class="ident">SoftResourceNotFound</span>,
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>HardResourceOrNonFungible {
+    NonFungible(NonFungibleAddress),
+    Resource(ResourceAddress),
+    SoftResourceNotFound,
 }
 
-<span class="kw">impl</span> <span class="ident">HardResourceOrNonFungible</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">proof_matches</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">proof</span>: <span class="kw-2">&amp;</span><span class="ident">Proof</span>) -&gt; <span class="ident">bool</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HardResourceOrNonFungible::NonFungible</span>(<span class="ident">non_fungible_address</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">proof_resource_address</span> <span class="op">=</span> <span class="ident">proof</span>.<span class="ident">resource_address</span>();
-                <span class="ident">proof_resource_address</span> <span class="op">==</span> <span class="ident">non_fungible_address</span>.<span class="ident">resource_address</span>()
-                    <span class="op">&amp;&amp;</span> <span class="kw">match</span> <span class="ident">proof</span>.<span class="ident">total_ids</span>() {
-                        <span class="prelude-val">Ok</span>(<span class="ident">ids</span>) =&gt; <span class="ident">ids</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">non_fungible_address</span>.<span class="ident">non_fungible_id</span>()),
+<span class="kw">impl </span>HardResourceOrNonFungible {
+    <span class="kw">pub fn </span>proof_matches(<span class="kw-2">&amp;</span><span class="self">self</span>, proof: <span class="kw-2">&amp;</span>Proof) -&gt; bool {
+        <span class="kw">match </span><span class="self">self </span>{
+            HardResourceOrNonFungible::NonFungible(non_fungible_address) =&gt; {
+                <span class="kw">let </span>proof_resource_address = proof.resource_address();
+                proof_resource_address == non_fungible_address.resource_address()
+                    &amp;&amp; <span class="kw">match </span>proof.total_ids() {
+                        <span class="prelude-val">Ok</span>(ids) =&gt; ids.contains(<span class="kw-2">&amp;</span>non_fungible_address.non_fungible_id()),
                         <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; <span class="bool-val">false</span>,
                     }
             }
-            <span class="ident">HardResourceOrNonFungible::Resource</span>(<span class="ident">resource_address</span>) =&gt; {
-                <span class="kw">let</span> <span class="ident">proof_resource_address</span> <span class="op">=</span> <span class="ident">proof</span>.<span class="ident">resource_address</span>();
-                <span class="ident">proof_resource_address</span> <span class="op">==</span> <span class="kw-2">*</span><span class="ident">resource_address</span>
+            HardResourceOrNonFungible::Resource(resource_address) =&gt; {
+                <span class="kw">let </span>proof_resource_address = proof.resource_address();
+                proof_resource_address == <span class="kw-2">*</span>resource_address
             }
-            <span class="ident">HardResourceOrNonFungible::SoftResourceNotFound</span> =&gt; <span class="bool-val">false</span>,
+            HardResourceOrNonFungible::SoftResourceNotFound =&gt; <span class="bool-val">false</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check_has_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">Decimal</span>, <span class="ident">auth_zones</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">AuthZone</span>]) -&gt; <span class="ident">bool</span> {
-        <span class="kw">for</span> <span class="ident">auth_zone</span> <span class="kw">in</span> <span class="ident">auth_zones</span> {
-            <span class="comment">// FIXME: Need to check the composite max amount rather than just each proof individually</span>
-            <span class="kw">if</span> <span class="ident">auth_zone</span>
-                .<span class="ident">proofs</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">any</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">proof_matches</span>(<span class="ident">p</span>) <span class="op">&amp;&amp;</span> <span class="ident">p</span>.<span class="ident">total_amount</span>() <span class="op">&gt;</span><span class="op">=</span> <span class="ident">amount</span>)
+    <span class="kw">pub fn </span>check_has_amount(<span class="kw-2">&amp;</span><span class="self">self</span>, amount: Decimal, auth_zones: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>AuthZone]) -&gt; bool {
+        <span class="kw">for </span>auth_zone <span class="kw">in </span>auth_zones {
+            <span class="comment">// FIXME: Need to check the composite max amount rather than just each proof individually
+            </span><span class="kw">if </span>auth_zone
+                .proofs
+                .iter()
+                .any(|p| <span class="self">self</span>.proof_matches(p) &amp;&amp; p.total_amount() &gt;= amount)
             {
-                <span class="kw">return</span> <span class="bool-val">true</span>;
+                <span class="kw">return </span><span class="bool-val">true</span>;
             }
         }
 
-        <span class="bool-val">false</span>
-    }
+        <span class="bool-val">false
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">auth_zones</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">AuthZone</span>]) -&gt; <span class="ident">bool</span> {
-        <span class="kw">for</span> <span class="ident">auth_zone</span> <span class="kw">in</span> <span class="ident">auth_zones</span> {
-            <span class="kw">if</span> <span class="ident">auth_zone</span>.<span class="ident">proofs</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="self">self</span>.<span class="ident">proof_matches</span>(<span class="ident">p</span>)) {
-                <span class="kw">return</span> <span class="bool-val">true</span>;
+    <span class="kw">pub fn </span>check(<span class="kw-2">&amp;</span><span class="self">self</span>, auth_zones: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>AuthZone]) -&gt; bool {
+        <span class="kw">for </span>auth_zone <span class="kw">in </span>auth_zones {
+            <span class="kw">if </span>auth_zone.proofs.iter().any(|p| <span class="self">self</span>.proof_matches(p)) {
+                <span class="kw">return </span><span class="bool-val">true</span>;
             }
         }
 
-        <span class="bool-val">false</span>
+        <span class="bool-val">false
+    </span>}
+}
+
+<span class="kw">impl </span>From&lt;NonFungibleAddress&gt; <span class="kw">for </span>HardResourceOrNonFungible {
+    <span class="kw">fn </span>from(non_fungible_address: NonFungibleAddress) -&gt; <span class="self">Self </span>{
+        HardResourceOrNonFungible::NonFungible(non_fungible_address)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">NonFungibleAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">HardResourceOrNonFungible</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">non_fungible_address</span>: <span class="ident">NonFungibleAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">HardResourceOrNonFungible::NonFungible</span>(<span class="ident">non_fungible_address</span>)
+<span class="kw">impl </span>From&lt;ResourceAddress&gt; <span class="kw">for </span>HardResourceOrNonFungible {
+    <span class="kw">fn </span>from(resource_address: ResourceAddress) -&gt; <span class="self">Self </span>{
+        HardResourceOrNonFungible::Resource(resource_address)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">ResourceAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">HardResourceOrNonFungible</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="ident">HardResourceOrNonFungible::Resource</span>(<span class="ident">resource_address</span>)
-    }
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>HardProofRuleResourceList {
+    List(Vec&lt;HardResourceOrNonFungible&gt;),
+    SoftResourceListNotFound,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HardProofRuleResourceList</span> {
-    <span class="ident">List</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HardResourceOrNonFungible</span><span class="op">&gt;</span>),
-    <span class="ident">SoftResourceListNotFound</span>,
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>HardProofRule {
+    Require(HardResourceOrNonFungible),
+    AmountOf(HardDecimal, HardResourceOrNonFungible),
+    AllOf(HardProofRuleResourceList),
+    AnyOf(HardProofRuleResourceList),
+    CountOf(HardCount, HardProofRuleResourceList),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HardProofRule</span> {
-    <span class="ident">Require</span>(<span class="ident">HardResourceOrNonFungible</span>),
-    <span class="ident">AmountOf</span>(<span class="ident">HardDecimal</span>, <span class="ident">HardResourceOrNonFungible</span>),
-    <span class="ident">AllOf</span>(<span class="ident">HardProofRuleResourceList</span>),
-    <span class="ident">AnyOf</span>(<span class="ident">HardProofRuleResourceList</span>),
-    <span class="ident">CountOf</span>(<span class="ident">HardCount</span>, <span class="ident">HardProofRuleResourceList</span>),
-}
-
-<span class="kw">impl</span> <span class="ident">HardProofRule</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">auth_zones</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">AuthZone</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">MethodAuthorizationError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HardProofRule::Require</span>(<span class="ident">resource</span>) =&gt; {
-                <span class="kw">if</span> <span class="ident">resource</span>.<span class="ident">check</span>(<span class="ident">auth_zones</span>) {
+<span class="kw">impl </span>HardProofRule {
+    <span class="kw">pub fn </span>check(<span class="kw-2">&amp;</span><span class="self">self</span>, auth_zones: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>AuthZone]) -&gt; <span class="prelude-ty">Result</span>&lt;(), MethodAuthorizationError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            HardProofRule::Require(resource) =&gt; {
+                <span class="kw">if </span>resource.check(auth_zones) {
                     <span class="prelude-val">Ok</span>(())
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Err</span>(<span class="ident">NotAuthorized</span>)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Err</span>(NotAuthorized)
                 }
             }
-            <span class="ident">HardProofRule::AmountOf</span>(<span class="ident">HardDecimal::Amount</span>(<span class="ident">amount</span>), <span class="ident">resource</span>) =&gt; {
-                <span class="kw">if</span> <span class="ident">resource</span>.<span class="ident">check_has_amount</span>(<span class="kw-2">*</span><span class="ident">amount</span>, <span class="ident">auth_zones</span>) {
+            HardProofRule::AmountOf(HardDecimal::Amount(amount), resource) =&gt; {
+                <span class="kw">if </span>resource.check_has_amount(<span class="kw-2">*</span>amount, auth_zones) {
                     <span class="prelude-val">Ok</span>(())
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">Err</span>(<span class="ident">NotAuthorized</span>)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Err</span>(NotAuthorized)
                 }
             }
-            <span class="ident">HardProofRule::AllOf</span>(<span class="ident">HardProofRuleResourceList::List</span>(<span class="ident">resources</span>)) =&gt; {
-                <span class="kw">for</span> <span class="ident">resource</span> <span class="kw">in</span> <span class="ident">resources</span> {
-                    <span class="kw">if</span> <span class="op">!</span><span class="ident">resource</span>.<span class="ident">check</span>(<span class="ident">auth_zones</span>) {
-                        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">NotAuthorized</span>);
+            HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) =&gt; {
+                <span class="kw">for </span>resource <span class="kw">in </span>resources {
+                    <span class="kw">if </span>!resource.check(auth_zones) {
+                        <span class="kw">return </span><span class="prelude-val">Err</span>(NotAuthorized);
                     }
                 }
 
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="ident">HardProofRule::AnyOf</span>(<span class="ident">HardProofRuleResourceList::List</span>(<span class="ident">resources</span>)) =&gt; {
-                <span class="kw">for</span> <span class="ident">resource</span> <span class="kw">in</span> <span class="ident">resources</span> {
-                    <span class="kw">if</span> <span class="ident">resource</span>.<span class="ident">check</span>(<span class="ident">auth_zones</span>) {
-                        <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+            HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) =&gt; {
+                <span class="kw">for </span>resource <span class="kw">in </span>resources {
+                    <span class="kw">if </span>resource.check(auth_zones) {
+                        <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                     }
                 }
 
-                <span class="prelude-val">Err</span>(<span class="ident">NotAuthorized</span>)
+                <span class="prelude-val">Err</span>(NotAuthorized)
             }
-            <span class="ident">HardProofRule::CountOf</span>(
-                <span class="ident">HardCount::Count</span>(<span class="ident">count</span>),
-                <span class="ident">HardProofRuleResourceList::List</span>(<span class="ident">resources</span>),
+            HardProofRule::CountOf(
+                HardCount::Count(count),
+                HardProofRuleResourceList::List(resources),
             ) =&gt; {
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">left</span> <span class="op">=</span> <span class="ident">count</span>.<span class="ident">clone</span>();
-                <span class="kw">for</span> <span class="ident">resource</span> <span class="kw">in</span> <span class="ident">resources</span> {
-                    <span class="kw">if</span> <span class="ident">resource</span>.<span class="ident">check</span>(<span class="ident">auth_zones</span>) {
-                        <span class="ident">left</span> <span class="op">-</span><span class="op">=</span> <span class="number">1</span>;
-                        <span class="kw">if</span> <span class="ident">left</span> <span class="op">==</span> <span class="number">0</span> {
-                            <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+                <span class="kw">let </span><span class="kw-2">mut </span>left = count.clone();
+                <span class="kw">for </span>resource <span class="kw">in </span>resources {
+                    <span class="kw">if </span>resource.check(auth_zones) {
+                        left -= <span class="number">1</span>;
+                        <span class="kw">if </span>left == <span class="number">0 </span>{
+                            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
                         }
                     }
                 }
-                <span class="prelude-val">Err</span>(<span class="ident">NotAuthorized</span>)
+                <span class="prelude-val">Err</span>(NotAuthorized)
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">NotAuthorized</span>),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(NotAuthorized),
         }
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">HardAuthRule</span> {
-    <span class="ident">ProofRule</span>(<span class="ident">HardProofRule</span>),
-    <span class="ident">AnyOf</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HardAuthRule</span><span class="op">&gt;</span>),
-    <span class="ident">AllOf</span>(<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">HardAuthRule</span><span class="op">&gt;</span>),
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>HardAuthRule {
+    ProofRule(HardProofRule),
+    AnyOf(Vec&lt;HardAuthRule&gt;),
+    AllOf(Vec&lt;HardAuthRule&gt;),
 }
 
-<span class="kw">impl</span> <span class="ident">HardAuthRule</span> {
-    <span class="kw">fn</span> <span class="ident">check</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">auth_zones</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">AuthZone</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">MethodAuthorizationError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">HardAuthRule::ProofRule</span>(<span class="ident">rule</span>) =&gt; <span class="ident">rule</span>.<span class="ident">check</span>(<span class="ident">auth_zones</span>),
-            <span class="ident">HardAuthRule::AnyOf</span>(<span class="ident">rules</span>) =&gt; {
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">rules</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="ident">r</span>.<span class="ident">check</span>(<span class="ident">auth_zones</span>).<span class="ident">is_ok</span>()) {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">NotAuthorized</span>);
+<span class="kw">impl </span>HardAuthRule {
+    <span class="kw">fn </span>check(<span class="kw-2">&amp;</span><span class="self">self</span>, auth_zones: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>AuthZone]) -&gt; <span class="prelude-ty">Result</span>&lt;(), MethodAuthorizationError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            HardAuthRule::ProofRule(rule) =&gt; rule.check(auth_zones),
+            HardAuthRule::AnyOf(rules) =&gt; {
+                <span class="kw">if </span>!rules.iter().any(|r| r.check(auth_zones).is_ok()) {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(NotAuthorized);
                 }
                 <span class="prelude-val">Ok</span>(())
             }
-            <span class="ident">HardAuthRule::AllOf</span>(<span class="ident">rules</span>) =&gt; {
-                <span class="kw">if</span> <span class="ident">rules</span>.<span class="ident">iter</span>().<span class="ident">any</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="ident">r</span>.<span class="ident">check</span>(<span class="ident">auth_zones</span>).<span class="ident">is_err</span>()) {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">NotAuthorized</span>);
+            HardAuthRule::AllOf(rules) =&gt; {
+                <span class="kw">if </span>rules.iter().any(|r| r.check(auth_zones).is_err()) {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(NotAuthorized);
                 }
                 <span class="prelude-val">Ok</span>(())
             }
@@ -388,25 +383,24 @@
     }
 }
 
-<span class="doccomment">/// Authorization of a method call</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">MethodAuthorization</span> {
-    <span class="ident">Protected</span>(<span class="ident">HardAuthRule</span>),
-    <span class="ident">AllowAll</span>,
-    <span class="ident">DenyAll</span>,
-    <span class="ident">Unsupported</span>,
+<span class="doccomment">/// Authorization of a method call
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>MethodAuthorization {
+    Protected(HardAuthRule),
+    AllowAll,
+    DenyAll,
+    Unsupported,
 }
 
-<span class="kw">impl</span> <span class="ident">MethodAuthorization</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">auth_zones</span>: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span><span class="ident">AuthZone</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">MethodAuthorizationError</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident">MethodAuthorization::Protected</span>(<span class="ident">rule</span>) =&gt; <span class="ident">rule</span>.<span class="ident">check</span>(<span class="ident">auth_zones</span>),
-            <span class="ident">MethodAuthorization::AllowAll</span> =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="ident">MethodAuthorization::DenyAll</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">MethodAuthorizationError::NotAuthorized</span>),
-            <span class="ident">MethodAuthorization::Unsupported</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">MethodAuthorizationError::UnsupportedMethod</span>),
+<span class="kw">impl </span>MethodAuthorization {
+    <span class="kw">pub fn </span>check(<span class="kw-2">&amp;</span><span class="self">self</span>, auth_zones: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>AuthZone]) -&gt; <span class="prelude-ty">Result</span>&lt;(), MethodAuthorizationError&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            MethodAuthorization::Protected(rule) =&gt; rule.check(auth_zones),
+            MethodAuthorization::AllowAll =&gt; <span class="prelude-val">Ok</span>(()),
+            MethodAuthorization::DenyAll =&gt; <span class="prelude-val">Err</span>(MethodAuthorizationError::NotAuthorized),
+            MethodAuthorization::Unsupported =&gt; <span class="prelude-val">Err</span>(MethodAuthorizationError::UnsupportedMethod),
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

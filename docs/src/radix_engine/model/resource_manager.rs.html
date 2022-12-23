@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/resource_manager.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/resource_manager.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -662,665 +657,664 @@
 <span id="657">657</span>
 <span id="658">658</span>
 <span id="659">659</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">HeapRENode</span>, <span class="ident">SystemApi</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::resource_manager::ResourceMethodRule</span>::{<span class="ident">Protected</span>, <span class="ident">Public</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::ResourceManagerError::InvalidMethod</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::{<span class="ident">convert</span>, <span class="ident">MethodAuthorization</span>, <span class="ident">ResourceContainer</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::{<span class="ident">Bucket</span>, <span class="ident">NonFungible</span>, <span class="ident">Vault</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::{<span class="ident">InvokeError</span>, <span class="ident">NonFungibleWrapper</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::AccessRule</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types::ResourceMethodAuthKey</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::{HeapRENode, SystemApi};
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::resource_manager::ResourceMethodRule::{Protected, Public};
+<span class="kw">use </span><span class="kw">crate</span>::model::ResourceManagerError::InvalidMethod;
+<span class="kw">use </span><span class="kw">crate</span>::model::{convert, MethodAuthorization, ResourceContainer};
+<span class="kw">use </span><span class="kw">crate</span>::model::{Bucket, NonFungible, Vault};
+<span class="kw">use </span><span class="kw">crate</span>::model::{InvokeError, NonFungibleWrapper};
+<span class="kw">use </span><span class="kw">crate</span>::types::AccessRule::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::ResourceMethodAuthKey::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
 
-<span class="doccomment">/// Converts soft authorization rule to a hard authorization rule.</span>
-<span class="doccomment">/// Currently required as all auth is defined by soft authorization rules.</span>
-<span class="macro">macro_rules!</span> <span class="ident">convert_auth</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">auth</span>:<span class="ident">expr</span>) =&gt; {
-        <span class="ident">convert</span>(<span class="kw-2">&amp;</span><span class="ident">Type::Unit</span>, <span class="kw-2">&amp;</span><span class="ident">ScryptoValue::unit</span>(), <span class="kw-2">&amp;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">auth</span>)
+<span class="doccomment">/// Converts soft authorization rule to a hard authorization rule.
+/// Currently required as all auth is defined by soft authorization rules.
+</span><span class="macro">macro_rules! </span>convert_auth {
+    (<span class="macro-nonterminal">$auth</span>:expr) =&gt; {
+        convert(<span class="kw-2">&amp;</span>Type::Unit, <span class="kw-2">&amp;</span>ScryptoValue::unit(), <span class="kw-2">&amp;</span><span class="macro-nonterminal">$auth</span>)
     };
 }
 
-<span class="doccomment">/// Represents an error when accessing a bucket.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ResourceManagerError</span> {
-    <span class="ident">InvalidDivisibility</span>,
-    <span class="ident">InvalidAmount</span>(<span class="ident">Decimal</span>, <span class="ident">u8</span>),
-    <span class="ident">InvalidResourceFlags</span>(<span class="ident">u64</span>),
-    <span class="ident">InvalidMintPermission</span>,
-    <span class="ident">ResourceTypeDoesNotMatch</span>,
-    <span class="ident">MaxMintAmountExceeded</span>,
-    <span class="ident">InvalidNonFungibleData</span>,
-    <span class="ident">NonFungibleAlreadyExists</span>(<span class="ident">NonFungibleAddress</span>),
-    <span class="ident">NonFungibleNotFound</span>(<span class="ident">NonFungibleAddress</span>),
-    <span class="ident">InvalidRequestData</span>(<span class="ident">DecodeError</span>),
-    <span class="ident">MethodNotFound</span>(<span class="ident">String</span>),
-    <span class="ident">CouldNotCreateBucket</span>,
-    <span class="ident">CouldNotCreateVault</span>,
-    <span class="ident">InvalidMethod</span>,
+<span class="doccomment">/// Represents an error when accessing a bucket.
+</span><span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>ResourceManagerError {
+    InvalidDivisibility,
+    InvalidAmount(Decimal, u8),
+    InvalidResourceFlags(u64),
+    InvalidMintPermission,
+    ResourceTypeDoesNotMatch,
+    MaxMintAmountExceeded,
+    InvalidNonFungibleData,
+    NonFungibleAlreadyExists(NonFungibleAddress),
+    NonFungibleNotFound(NonFungibleAddress),
+    InvalidRequestData(DecodeError),
+    MethodNotFound(String),
+    CouldNotCreateBucket,
+    CouldNotCreateVault,
+    InvalidMethod,
 }
 
-<span class="kw">enum</span> <span class="ident">MethodAccessRuleMethod</span> {
-    <span class="ident">Lock</span>(),
-    <span class="ident">Update</span>(<span class="ident">AccessRule</span>),
+<span class="kw">enum </span>MethodAccessRuleMethod {
+    Lock(),
+    Update(AccessRule),
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">struct</span> <span class="ident">MethodAccessRule</span> {
-    <span class="ident">auth</span>: <span class="ident">MethodAuthorization</span>,
-    <span class="ident">update_auth</span>: <span class="ident">MethodAuthorization</span>,
+<span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+</span><span class="kw">struct </span>MethodAccessRule {
+    auth: MethodAuthorization,
+    update_auth: MethodAuthorization,
 }
 
-<span class="kw">impl</span> <span class="ident">MethodAccessRule</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">entry</span>: (<span class="ident">AccessRule</span>, <span class="ident">Mutability</span>)) -&gt; <span class="self">Self</span> {
-        <span class="ident">MethodAccessRule</span> {
-            <span class="ident">auth</span>: <span class="macro">convert_auth!</span>(<span class="ident">entry</span>.<span class="number">0</span>),
-            <span class="ident">update_auth</span>: <span class="kw">match</span> <span class="ident">entry</span>.<span class="number">1</span> {
-                <span class="ident">Mutability::LOCKED</span> =&gt; <span class="ident">MethodAuthorization::DenyAll</span>,
-                <span class="ident">Mutability::MUTABLE</span>(<span class="ident">method_auth</span>) =&gt; <span class="macro">convert_auth!</span>(<span class="ident">method_auth</span>),
+<span class="kw">impl </span>MethodAccessRule {
+    <span class="kw">pub fn </span>new(entry: (AccessRule, Mutability)) -&gt; <span class="self">Self </span>{
+        MethodAccessRule {
+            auth: <span class="macro">convert_auth!</span>(entry.<span class="number">0</span>),
+            update_auth: <span class="kw">match </span>entry.<span class="number">1 </span>{
+                Mutability::LOCKED =&gt; MethodAuthorization::DenyAll,
+                Mutability::MUTABLE(method_auth) =&gt; <span class="macro">convert_auth!</span>(method_auth),
             },
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_method_auth</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">auth</span>
+    <span class="kw">pub fn </span>get_method_auth(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>MethodAuthorization {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.auth
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_update_auth</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">method</span>: <span class="ident">MethodAccessRuleMethod</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization</span> {
-        <span class="kw">match</span> <span class="ident">method</span> {
-            <span class="ident">MethodAccessRuleMethod::Lock</span>() <span class="op">|</span> <span class="ident">MethodAccessRuleMethod::Update</span>(<span class="kw">_</span>) =&gt; <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">update_auth</span>,
+    <span class="kw">pub fn </span>get_update_auth(<span class="kw-2">&amp;</span><span class="self">self</span>, method: MethodAccessRuleMethod) -&gt; <span class="kw-2">&amp;</span>MethodAuthorization {
+        <span class="kw">match </span>method {
+            MethodAccessRuleMethod::Lock() | MethodAccessRuleMethod::Update(<span class="kw">_</span>) =&gt; <span class="kw-2">&amp;</span><span class="self">self</span>.update_auth,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">main</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">method</span>: <span class="ident">MethodAccessRuleMethod</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ResourceManagerError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">method</span> {
-            <span class="ident">MethodAccessRuleMethod::Lock</span>() =&gt; <span class="self">self</span>.<span class="ident">lock</span>(),
-            <span class="ident">MethodAccessRuleMethod::Update</span>(<span class="ident">method_auth</span>) =&gt; {
-                <span class="self">self</span>.<span class="ident">update</span>(<span class="ident">method_auth</span>);
+    <span class="kw">pub fn </span>main(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        method: MethodAccessRuleMethod,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;ResourceManagerError&gt;&gt; {
+        <span class="kw">match </span>method {
+            MethodAccessRuleMethod::Lock() =&gt; <span class="self">self</span>.lock(),
+            MethodAccessRuleMethod::Update(method_auth) =&gt; {
+                <span class="self">self</span>.update(method_auth);
             }
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+        <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
     }
 
-    <span class="kw">fn</span> <span class="ident">update</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">method_auth</span>: <span class="ident">AccessRule</span>) {
-        <span class="self">self</span>.<span class="ident">auth</span> <span class="op">=</span> <span class="macro">convert_auth!</span>(<span class="ident">method_auth</span>)
+    <span class="kw">fn </span>update(<span class="kw-2">&amp;mut </span><span class="self">self</span>, method_auth: AccessRule) {
+        <span class="self">self</span>.auth = <span class="macro">convert_auth!</span>(method_auth)
     }
 
-    <span class="kw">fn</span> <span class="ident">lock</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
-        <span class="self">self</span>.<span class="ident">update_auth</span> <span class="op">=</span> <span class="ident">MethodAuthorization::DenyAll</span>;
+    <span class="kw">fn </span>lock(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.update_auth = MethodAuthorization::DenyAll;
     }
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">enum</span> <span class="ident">ResourceMethodRule</span> {
-    <span class="ident">Public</span>,
-    <span class="ident">Protected</span>(<span class="ident">ResourceMethodAuthKey</span>),
+<span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+</span><span class="kw">enum </span>ResourceMethodRule {
+    Public,
+    Protected(ResourceMethodAuthKey),
 }
 
-<span class="doccomment">/// The definition of a resource.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ResourceManager</span> {
-    <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>,
-    <span class="ident">metadata</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-    <span class="ident">method_table</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceManagerFnIdentifier</span>, <span class="ident">ResourceMethodRule</span><span class="op">&gt;</span>,
-    <span class="ident">vault_method_table</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">VaultFnIdentifier</span>, <span class="ident">ResourceMethodRule</span><span class="op">&gt;</span>,
-    <span class="ident">bucket_method_table</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketFnIdentifier</span>, <span class="ident">ResourceMethodRule</span><span class="op">&gt;</span>,
-    <span class="ident">authorization</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceMethodAuthKey</span>, <span class="ident">MethodAccessRule</span><span class="op">&gt;</span>,
-    <span class="ident">total_supply</span>: <span class="ident">Decimal</span>,
+<span class="doccomment">/// The definition of a resource.
+</span><span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>ResourceManager {
+    resource_type: ResourceType,
+    metadata: HashMap&lt;String, String&gt;,
+    method_table: HashMap&lt;ResourceManagerFnIdentifier, ResourceMethodRule&gt;,
+    vault_method_table: HashMap&lt;VaultFnIdentifier, ResourceMethodRule&gt;,
+    bucket_method_table: HashMap&lt;BucketFnIdentifier, ResourceMethodRule&gt;,
+    authorization: HashMap&lt;ResourceMethodAuthKey, MethodAccessRule&gt;,
+    total_supply: Decimal,
 }
 
-<span class="kw">impl</span> <span class="ident">ResourceManager</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">resource_type</span>: <span class="ident">ResourceType</span>,
-        <span class="ident">metadata</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-        <span class="kw-2">mut</span> <span class="ident">auth</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceMethodAuthKey</span>, (<span class="ident">AccessRule</span>, <span class="ident">Mutability</span>)<span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ResourceManagerError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">vault_method_table</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">VaultFnIdentifier</span>, <span class="ident">ResourceMethodRule</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::LockFee</span>, <span class="ident">Protected</span>(<span class="ident">Withdraw</span>));
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::LockContingentFee</span>, <span class="ident">Protected</span>(<span class="ident">Withdraw</span>));
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::Take</span>, <span class="ident">Protected</span>(<span class="ident">Withdraw</span>));
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::Put</span>, <span class="ident">Protected</span>(<span class="ident">Deposit</span>));
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::GetAmount</span>, <span class="ident">Public</span>);
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::GetResourceAddress</span>, <span class="ident">Public</span>);
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::GetNonFungibleIds</span>, <span class="ident">Public</span>);
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::CreateProof</span>, <span class="ident">Public</span>);
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::CreateProofByAmount</span>, <span class="ident">Public</span>);
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::CreateProofByIds</span>, <span class="ident">Public</span>);
-        <span class="ident">vault_method_table</span>.<span class="ident">insert</span>(<span class="ident">VaultFnIdentifier::TakeNonFungibles</span>, <span class="ident">Protected</span>(<span class="ident">Withdraw</span>));
+<span class="kw">impl </span>ResourceManager {
+    <span class="kw">pub fn </span>new(
+        resource_type: ResourceType,
+        metadata: HashMap&lt;String, String&gt;,
+        <span class="kw-2">mut </span>auth: HashMap&lt;ResourceMethodAuthKey, (AccessRule, Mutability)&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, InvokeError&lt;ResourceManagerError&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>vault_method_table: HashMap&lt;VaultFnIdentifier, ResourceMethodRule&gt; = HashMap::new();
+        vault_method_table.insert(VaultFnIdentifier::LockFee, Protected(Withdraw));
+        vault_method_table.insert(VaultFnIdentifier::LockContingentFee, Protected(Withdraw));
+        vault_method_table.insert(VaultFnIdentifier::Take, Protected(Withdraw));
+        vault_method_table.insert(VaultFnIdentifier::Put, Protected(Deposit));
+        vault_method_table.insert(VaultFnIdentifier::GetAmount, Public);
+        vault_method_table.insert(VaultFnIdentifier::GetResourceAddress, Public);
+        vault_method_table.insert(VaultFnIdentifier::GetNonFungibleIds, Public);
+        vault_method_table.insert(VaultFnIdentifier::CreateProof, Public);
+        vault_method_table.insert(VaultFnIdentifier::CreateProofByAmount, Public);
+        vault_method_table.insert(VaultFnIdentifier::CreateProofByIds, Public);
+        vault_method_table.insert(VaultFnIdentifier::TakeNonFungibles, Protected(Withdraw));
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bucket_method_table</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketFnIdentifier</span>, <span class="ident">ResourceMethodRule</span><span class="op">&gt;</span> <span class="op">=</span>
-            <span class="ident">HashMap::new</span>();
-        <span class="ident">bucket_method_table</span>.<span class="ident">insert</span>(<span class="ident">BucketFnIdentifier::Burn</span>, <span class="ident">Protected</span>(<span class="ident">Burn</span>));
+        <span class="kw">let </span><span class="kw-2">mut </span>bucket_method_table: HashMap&lt;BucketFnIdentifier, ResourceMethodRule&gt; =
+            HashMap::new();
+        bucket_method_table.insert(BucketFnIdentifier::Burn, Protected(Burn));
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">method_table</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceManagerFnIdentifier</span>, <span class="ident">ResourceMethodRule</span><span class="op">&gt;</span> <span class="op">=</span>
-            <span class="ident">HashMap::new</span>();
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(<span class="ident">ResourceManagerFnIdentifier::Mint</span>, <span class="ident">Protected</span>(<span class="ident">Mint</span>));
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(
-            <span class="ident">ResourceManagerFnIdentifier::UpdateMetadata</span>,
-            <span class="ident">Protected</span>(<span class="ident">UpdateMetadata</span>),
+        <span class="kw">let </span><span class="kw-2">mut </span>method_table: HashMap&lt;ResourceManagerFnIdentifier, ResourceMethodRule&gt; =
+            HashMap::new();
+        method_table.insert(ResourceManagerFnIdentifier::Mint, Protected(Mint));
+        method_table.insert(
+            ResourceManagerFnIdentifier::UpdateMetadata,
+            Protected(UpdateMetadata),
         );
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(<span class="ident">ResourceManagerFnIdentifier::CreateBucket</span>, <span class="ident">Public</span>);
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(<span class="ident">ResourceManagerFnIdentifier::GetMetadata</span>, <span class="ident">Public</span>);
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(<span class="ident">ResourceManagerFnIdentifier::GetResourceType</span>, <span class="ident">Public</span>);
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(<span class="ident">ResourceManagerFnIdentifier::GetTotalSupply</span>, <span class="ident">Public</span>);
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(<span class="ident">ResourceManagerFnIdentifier::CreateVault</span>, <span class="ident">Public</span>);
+        method_table.insert(ResourceManagerFnIdentifier::CreateBucket, Public);
+        method_table.insert(ResourceManagerFnIdentifier::GetMetadata, Public);
+        method_table.insert(ResourceManagerFnIdentifier::GetResourceType, Public);
+        method_table.insert(ResourceManagerFnIdentifier::GetTotalSupply, Public);
+        method_table.insert(ResourceManagerFnIdentifier::CreateVault, Public);
 
-        <span class="comment">// Non Fungible methods</span>
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(
-            <span class="ident">ResourceManagerFnIdentifier::UpdateNonFungibleData</span>,
-            <span class="ident">Protected</span>(<span class="ident">UpdateNonFungibleData</span>),
+        <span class="comment">// Non Fungible methods
+        </span>method_table.insert(
+            ResourceManagerFnIdentifier::UpdateNonFungibleData,
+            Protected(UpdateNonFungibleData),
         );
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(<span class="ident">ResourceManagerFnIdentifier::NonFungibleExists</span>, <span class="ident">Public</span>);
-        <span class="ident">method_table</span>.<span class="ident">insert</span>(<span class="ident">ResourceManagerFnIdentifier::GetNonFungible</span>, <span class="ident">Public</span>);
+        method_table.insert(ResourceManagerFnIdentifier::NonFungibleExists, Public);
+        method_table.insert(ResourceManagerFnIdentifier::GetNonFungible, Public);
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">authorization</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ResourceMethodAuthKey</span>, <span class="ident">MethodAccessRule</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-        <span class="kw">for</span> (<span class="ident">auth_entry_key</span>, <span class="ident">default</span>) <span class="kw">in</span> [
-            (<span class="ident">Mint</span>, (<span class="ident">DenyAll</span>, <span class="ident">LOCKED</span>)),
-            (<span class="ident">Burn</span>, (<span class="ident">DenyAll</span>, <span class="ident">LOCKED</span>)),
-            (<span class="ident">Withdraw</span>, (<span class="ident">AllowAll</span>, <span class="ident">LOCKED</span>)),
-            (<span class="ident">Deposit</span>, (<span class="ident">AllowAll</span>, <span class="ident">LOCKED</span>)),
-            (<span class="ident">UpdateMetadata</span>, (<span class="ident">DenyAll</span>, <span class="ident">LOCKED</span>)),
-            (<span class="ident">UpdateNonFungibleData</span>, (<span class="ident">DenyAll</span>, <span class="ident">LOCKED</span>)),
+        <span class="kw">let </span><span class="kw-2">mut </span>authorization: HashMap&lt;ResourceMethodAuthKey, MethodAccessRule&gt; = HashMap::new();
+        <span class="kw">for </span>(auth_entry_key, default) <span class="kw">in </span>[
+            (Mint, (DenyAll, LOCKED)),
+            (Burn, (DenyAll, LOCKED)),
+            (Withdraw, (AllowAll, LOCKED)),
+            (Deposit, (AllowAll, LOCKED)),
+            (UpdateMetadata, (DenyAll, LOCKED)),
+            (UpdateNonFungibleData, (DenyAll, LOCKED)),
         ] {
-            <span class="kw">let</span> <span class="ident">entry</span> <span class="op">=</span> <span class="ident">auth</span>.<span class="ident">remove</span>(<span class="kw-2">&amp;</span><span class="ident">auth_entry_key</span>).<span class="ident">unwrap_or</span>(<span class="ident">default</span>);
-            <span class="ident">authorization</span>.<span class="ident">insert</span>(<span class="ident">auth_entry_key</span>, <span class="ident">MethodAccessRule::new</span>(<span class="ident">entry</span>));
+            <span class="kw">let </span>entry = auth.remove(<span class="kw-2">&amp;</span>auth_entry_key).unwrap_or(default);
+            authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
         }
 
-        <span class="kw">let</span> <span class="ident">resource_manager</span> <span class="op">=</span> <span class="self">Self</span> {
-            <span class="ident">resource_type</span>,
-            <span class="ident">metadata</span>,
-            <span class="ident">method_table</span>,
-            <span class="ident">vault_method_table</span>,
-            <span class="ident">bucket_method_table</span>,
-            <span class="ident">authorization</span>,
-            <span class="ident">total_supply</span>: <span class="number">0</span>.<span class="ident">into</span>(),
+        <span class="kw">let </span>resource_manager = <span class="self">Self </span>{
+            resource_type,
+            metadata,
+            method_table,
+            vault_method_table,
+            bucket_method_table,
+            authorization,
+            total_supply: <span class="number">0</span>.into(),
         };
 
-        <span class="prelude-val">Ok</span>(<span class="ident">resource_manager</span>)
+        <span class="prelude-val">Ok</span>(resource_manager)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_vault_auth</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">vault_fn</span>: <span class="ident">VaultFnIdentifier</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">vault_method_table</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">vault_fn</span>) {
-            <span class="prelude-val">None</span> =&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization::Unsupported</span>,
-            <span class="prelude-val">Some</span>(<span class="ident">Public</span>) =&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization::AllowAll</span>,
-            <span class="prelude-val">Some</span>(<span class="ident">Protected</span>(<span class="ident">auth_key</span>)) =&gt; <span class="self">self</span>
-                .<span class="ident">authorization</span>
-                .<span class="ident">get</span>(<span class="ident">auth_key</span>)
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Authorization for {:?} not specified&quot;</span>, <span class="ident">vault_fn</span>))
-                .<span class="ident">get_method_auth</span>(),
+    <span class="kw">pub fn </span>get_vault_auth(<span class="kw-2">&amp;</span><span class="self">self</span>, vault_fn: VaultFnIdentifier) -&gt; <span class="kw-2">&amp;</span>MethodAuthorization {
+        <span class="kw">match </span><span class="self">self</span>.vault_method_table.get(<span class="kw-2">&amp;</span>vault_fn) {
+            <span class="prelude-val">None </span>=&gt; <span class="kw-2">&amp;</span>MethodAuthorization::Unsupported,
+            <span class="prelude-val">Some</span>(Public) =&gt; <span class="kw-2">&amp;</span>MethodAuthorization::AllowAll,
+            <span class="prelude-val">Some</span>(Protected(auth_key)) =&gt; <span class="self">self
+                </span>.authorization
+                .get(auth_key)
+                .expect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Authorization for {:?} not specified&quot;</span>, vault_fn))
+                .get_method_auth(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_bucket_auth</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">bucket_fn</span>: <span class="ident">BucketFnIdentifier</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization</span> {
-        <span class="kw">match</span> <span class="self">self</span>.<span class="ident">bucket_method_table</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">bucket_fn</span>) {
-            <span class="prelude-val">None</span> =&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization::Unsupported</span>,
-            <span class="prelude-val">Some</span>(<span class="ident">Public</span>) =&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization::AllowAll</span>,
-            <span class="prelude-val">Some</span>(<span class="ident">Protected</span>(<span class="ident">method</span>)) =&gt; <span class="self">self</span>
-                .<span class="ident">authorization</span>
-                .<span class="ident">get</span>(<span class="ident">method</span>)
-                .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Authorization for {:?} not specified&quot;</span>, <span class="ident">bucket_fn</span>))
-                .<span class="ident">get_method_auth</span>(),
+    <span class="kw">pub fn </span>get_bucket_auth(<span class="kw-2">&amp;</span><span class="self">self</span>, bucket_fn: BucketFnIdentifier) -&gt; <span class="kw-2">&amp;</span>MethodAuthorization {
+        <span class="kw">match </span><span class="self">self</span>.bucket_method_table.get(<span class="kw-2">&amp;</span>bucket_fn) {
+            <span class="prelude-val">None </span>=&gt; <span class="kw-2">&amp;</span>MethodAuthorization::Unsupported,
+            <span class="prelude-val">Some</span>(Public) =&gt; <span class="kw-2">&amp;</span>MethodAuthorization::AllowAll,
+            <span class="prelude-val">Some</span>(Protected(method)) =&gt; <span class="self">self
+                </span>.authorization
+                .get(method)
+                .expect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Authorization for {:?} not specified&quot;</span>, bucket_fn))
+                .get_method_auth(),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">get_auth</span>(
+    <span class="kw">pub fn </span>get_auth(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="ident">fn_identifier</span>: <span class="ident">ResourceManagerFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>,
-    ) -&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization</span> {
-        <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">fn_identifier</span> {
-            <span class="ident">ResourceManagerFnIdentifier::UpdateAuth</span> =&gt; {
-                <span class="comment">// FIXME we can&#39;t assume the input always match the function identifier</span>
-                <span class="comment">// especially for the auth module code path</span>
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerUpdateAuthInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>).<span class="ident">unwrap</span>();
-                <span class="kw">match</span> <span class="self">self</span>.<span class="ident">authorization</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">method</span>) {
-                    <span class="prelude-val">None</span> =&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization::Unsupported</span>,
-                    <span class="prelude-val">Some</span>(<span class="ident">entry</span>) =&gt; {
-                        <span class="ident">entry</span>.<span class="ident">get_update_auth</span>(<span class="ident">MethodAccessRuleMethod::Update</span>(<span class="ident">input</span>.<span class="ident">access_rule</span>))
+        fn_identifier: ResourceManagerFnIdentifier,
+        args: <span class="kw-2">&amp;</span>ScryptoValue,
+    ) -&gt; <span class="kw-2">&amp;</span>MethodAuthorization {
+        <span class="kw">match </span><span class="kw-2">&amp;</span>fn_identifier {
+            ResourceManagerFnIdentifier::UpdateAuth =&gt; {
+                <span class="comment">// FIXME we can&#39;t assume the input always match the function identifier
+                // especially for the auth module code path
+                </span><span class="kw">let </span>input: ResourceManagerUpdateAuthInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw).unwrap();
+                <span class="kw">match </span><span class="self">self</span>.authorization.get(<span class="kw-2">&amp;</span>input.method) {
+                    <span class="prelude-val">None </span>=&gt; <span class="kw-2">&amp;</span>MethodAuthorization::Unsupported,
+                    <span class="prelude-val">Some</span>(entry) =&gt; {
+                        entry.get_update_auth(MethodAccessRuleMethod::Update(input.access_rule))
                     }
                 }
             }
-            <span class="ident">ResourceManagerFnIdentifier::LockAuth</span> =&gt; {
-                <span class="comment">// FIXME we can&#39;t assume the input always match the function identifier</span>
-                <span class="comment">// especially for the auth module code path</span>
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerLockAuthInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>).<span class="ident">unwrap</span>();
-                <span class="kw">match</span> <span class="self">self</span>.<span class="ident">authorization</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">method</span>) {
-                    <span class="prelude-val">None</span> =&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization::Unsupported</span>,
-                    <span class="prelude-val">Some</span>(<span class="ident">entry</span>) =&gt; <span class="ident">entry</span>.<span class="ident">get_update_auth</span>(<span class="ident">MethodAccessRuleMethod::Lock</span>()),
+            ResourceManagerFnIdentifier::LockAuth =&gt; {
+                <span class="comment">// FIXME we can&#39;t assume the input always match the function identifier
+                // especially for the auth module code path
+                </span><span class="kw">let </span>input: ResourceManagerLockAuthInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw).unwrap();
+                <span class="kw">match </span><span class="self">self</span>.authorization.get(<span class="kw-2">&amp;</span>input.method) {
+                    <span class="prelude-val">None </span>=&gt; <span class="kw-2">&amp;</span>MethodAuthorization::Unsupported,
+                    <span class="prelude-val">Some</span>(entry) =&gt; entry.get_update_auth(MethodAccessRuleMethod::Lock()),
                 }
             }
-            <span class="kw">_</span> =&gt; <span class="kw">match</span> <span class="self">self</span>.<span class="ident">method_table</span>.<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">fn_identifier</span>) {
-                <span class="prelude-val">None</span> =&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization::Unsupported</span>,
-                <span class="prelude-val">Some</span>(<span class="ident">Public</span>) =&gt; <span class="kw-2">&amp;</span><span class="ident">MethodAuthorization::AllowAll</span>,
-                <span class="prelude-val">Some</span>(<span class="ident">Protected</span>(<span class="ident">method</span>)) =&gt; <span class="self">self</span>
-                    .<span class="ident">authorization</span>
-                    .<span class="ident">get</span>(<span class="ident">method</span>)
-                    .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Authorization for {:?} not specified&quot;</span>, <span class="ident">method</span>))
-                    .<span class="ident">get_method_auth</span>(),
+            <span class="kw">_ </span>=&gt; <span class="kw">match </span><span class="self">self</span>.method_table.get(<span class="kw-2">&amp;</span>fn_identifier) {
+                <span class="prelude-val">None </span>=&gt; <span class="kw-2">&amp;</span>MethodAuthorization::Unsupported,
+                <span class="prelude-val">Some</span>(Public) =&gt; <span class="kw-2">&amp;</span>MethodAuthorization::AllowAll,
+                <span class="prelude-val">Some</span>(Protected(method)) =&gt; <span class="self">self
+                    </span>.authorization
+                    .get(method)
+                    .expect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">&quot;Authorization for {:?} not specified&quot;</span>, method))
+                    .get_method_auth(),
             },
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">resource_type</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">ResourceType</span> {
-        <span class="self">self</span>.<span class="ident">resource_type</span>
+    <span class="kw">pub fn </span>resource_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceType {
+        <span class="self">self</span>.resource_type
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">metadata</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span> {
-        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">metadata</span>
+    <span class="kw">pub fn </span>metadata(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>HashMap&lt;String, String&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.metadata
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">total_supply</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Decimal</span> {
-        <span class="self">self</span>.<span class="ident">total_supply</span>
+    <span class="kw">pub fn </span>total_supply(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+        <span class="self">self</span>.total_supply
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mint</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">mint_params</span>: <span class="ident">MintParams</span>,
-        <span class="ident">self_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ResourceManagerError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>mint&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        mint_params: MintParams,
+        self_address: ResourceAddress,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, InvokeError&lt;ResourceManagerError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">match</span> <span class="ident">mint_params</span> {
-            <span class="ident">MintParams::Fungible</span> { <span class="ident">amount</span> } =&gt; <span class="self">self</span>.<span class="ident">mint_fungible</span>(<span class="ident">amount</span>, <span class="ident">self_address</span>),
-            <span class="ident">MintParams::NonFungible</span> { <span class="ident">entries</span> } =&gt; {
-                <span class="self">self</span>.<span class="ident">mint_non_fungibles</span>(<span class="ident">entries</span>, <span class="ident">self_address</span>, <span class="ident">system_api</span>)
+        <span class="kw">match </span>mint_params {
+            MintParams::Fungible { amount } =&gt; <span class="self">self</span>.mint_fungible(amount, self_address),
+            MintParams::NonFungible { entries } =&gt; {
+                <span class="self">self</span>.mint_non_fungibles(entries, self_address, system_api)
             }
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mint_fungible</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">amount</span>: <span class="ident">Decimal</span>,
-        <span class="ident">self_address</span>: <span class="ident">ResourceAddress</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ResourceManagerError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">ResourceType::Fungible</span> { <span class="ident">divisibility</span> } <span class="op">=</span> <span class="self">self</span>.<span class="ident">resource_type</span> {
-            <span class="comment">// check amount</span>
-            <span class="self">self</span>.<span class="ident">check_amount</span>(<span class="ident">amount</span>)<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>mint_fungible(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        amount: Decimal,
+        self_address: ResourceAddress,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, InvokeError&lt;ResourceManagerError&gt;&gt; {
+        <span class="kw">if let </span>ResourceType::Fungible { divisibility } = <span class="self">self</span>.resource_type {
+            <span class="comment">// check amount
+            </span><span class="self">self</span>.check_amount(amount)<span class="question-mark">?</span>;
 
-            <span class="comment">// Practically impossible to overflow the Decimal type with this limit in place.</span>
-            <span class="kw">if</span> <span class="ident">amount</span> <span class="op">&gt;</span> <span class="macro">dec!</span>(<span class="string">&quot;1000000000000000000&quot;</span>) {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                    <span class="ident">ResourceManagerError::MaxMintAmountExceeded</span>,
+            <span class="comment">// Practically impossible to overflow the Decimal type with this limit in place.
+            </span><span class="kw">if </span>amount &gt; <span class="macro">dec!</span>(<span class="string">&quot;1000000000000000000&quot;</span>) {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(InvokeError::Error(
+                    ResourceManagerError::MaxMintAmountExceeded,
                 ));
             }
 
-            <span class="self">self</span>.<span class="ident">total_supply</span> <span class="op">+</span><span class="op">=</span> <span class="ident">amount</span>;
+            <span class="self">self</span>.total_supply += amount;
 
-            <span class="prelude-val">Ok</span>(<span class="ident">ResourceContainer::new_fungible</span>(
-                <span class="ident">self_address</span>,
-                <span class="ident">divisibility</span>,
-                <span class="ident">amount</span>,
+            <span class="prelude-val">Ok</span>(ResourceContainer::new_fungible(
+                self_address,
+                divisibility,
+                amount,
             ))
-        } <span class="kw">else</span> {
-            <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                <span class="ident">ResourceManagerError::ResourceTypeDoesNotMatch</span>,
+        } <span class="kw">else </span>{
+            <span class="prelude-val">Err</span>(InvokeError::Error(
+                ResourceManagerError::ResourceTypeDoesNotMatch,
             ))
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">mint_non_fungibles</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">entries</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span>, (<span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>)<span class="op">&gt;</span>,
-        <span class="ident">self_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ResourceContainer</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ResourceManagerError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>mint_non_fungibles&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        entries: HashMap&lt;NonFungibleId, (Vec&lt;u8&gt;, Vec&lt;u8&gt;)&gt;,
+        self_address: ResourceAddress,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, InvokeError&lt;ResourceManagerError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="comment">// check resource type</span>
-        <span class="kw">if</span> <span class="op">!</span><span class="macro">matches!</span>(<span class="self">self</span>.<span class="ident">resource_type</span>, <span class="ident">ResourceType::NonFungible</span>) {
-            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                <span class="ident">ResourceManagerError::ResourceTypeDoesNotMatch</span>,
+        <span class="comment">// check resource type
+        </span><span class="kw">if </span>!<span class="macro">matches!</span>(<span class="self">self</span>.resource_type, ResourceType::NonFungible) {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(InvokeError::Error(
+                ResourceManagerError::ResourceTypeDoesNotMatch,
             ));
         }
 
-        <span class="comment">// check amount</span>
-        <span class="kw">let</span> <span class="ident">amount</span>: <span class="ident">Decimal</span> <span class="op">=</span> <span class="ident">entries</span>.<span class="ident">len</span>().<span class="ident">into</span>();
-        <span class="self">self</span>.<span class="ident">check_amount</span>(<span class="ident">amount</span>)<span class="question-mark">?</span>;
+        <span class="comment">// check amount
+        </span><span class="kw">let </span>amount: Decimal = entries.len().into();
+        <span class="self">self</span>.check_amount(amount)<span class="question-mark">?</span>;
 
-        <span class="self">self</span>.<span class="ident">total_supply</span> <span class="op">+</span><span class="op">=</span> <span class="ident">amount</span>;
+        <span class="self">self</span>.total_supply += amount;
 
-        <span class="comment">// Allocate non-fungibles</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ids</span> <span class="op">=</span> <span class="ident">BTreeSet::new</span>();
-        <span class="kw">for</span> (<span class="ident">id</span>, <span class="ident">data</span>) <span class="kw">in</span> <span class="ident">entries</span> {
-            <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">system_api</span>
-                .<span class="ident">substate_read</span>(<span class="ident">SubstateId::NonFungible</span>(<span class="ident">self_address</span>, <span class="ident">id</span>.<span class="ident">clone</span>()))
-                .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-            <span class="kw">let</span> <span class="ident">wrapper</span>: <span class="ident">NonFungibleWrapper</span> <span class="op">=</span>
-                <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">raw</span>).<span class="ident">expect</span>(<span class="string">&quot;Failed to decode NonFungibleWrapper substate&quot;</span>);
-            <span class="kw">if</span> <span class="ident">wrapper</span>.<span class="number">0</span>.<span class="ident">is_some</span>() {
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                    <span class="ident">ResourceManagerError::NonFungibleAlreadyExists</span>(<span class="ident">NonFungibleAddress::new</span>(
-                        <span class="ident">self_address</span>,
-                        <span class="ident">id</span>.<span class="ident">clone</span>(),
+        <span class="comment">// Allocate non-fungibles
+        </span><span class="kw">let </span><span class="kw-2">mut </span>ids = BTreeSet::new();
+        <span class="kw">for </span>(id, data) <span class="kw">in </span>entries {
+            <span class="kw">let </span>value = system_api
+                .substate_read(SubstateId::NonFungible(self_address, id.clone()))
+                .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+            <span class="kw">let </span>wrapper: NonFungibleWrapper =
+                scrypto_decode(<span class="kw-2">&amp;</span>value.raw).expect(<span class="string">&quot;Failed to decode NonFungibleWrapper substate&quot;</span>);
+            <span class="kw">if </span>wrapper.<span class="number">0</span>.is_some() {
+                <span class="kw">return </span><span class="prelude-val">Err</span>(InvokeError::Error(
+                    ResourceManagerError::NonFungibleAlreadyExists(NonFungibleAddress::new(
+                        self_address,
+                        id.clone(),
                     )),
                 ));
             }
 
-            <span class="kw">let</span> <span class="ident">non_fungible</span> <span class="op">=</span> <span class="ident">NonFungible::new</span>(<span class="ident">data</span>.<span class="number">0</span>, <span class="ident">data</span>.<span class="number">1</span>);
-            <span class="ident">system_api</span>
-                .<span class="ident">substate_write</span>(
-                    <span class="ident">SubstateId::NonFungible</span>(<span class="ident">self_address</span>, <span class="ident">id</span>.<span class="ident">clone</span>()),
-                    <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">NonFungibleWrapper</span>(<span class="prelude-val">Some</span>(<span class="ident">non_fungible</span>))),
+            <span class="kw">let </span>non_fungible = NonFungible::new(data.<span class="number">0</span>, data.<span class="number">1</span>);
+            system_api
+                .substate_write(
+                    SubstateId::NonFungible(self_address, id.clone()),
+                    ScryptoValue::from_typed(<span class="kw-2">&amp;</span>NonFungibleWrapper(<span class="prelude-val">Some</span>(non_fungible))),
                 )
-                .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-            <span class="ident">ids</span>.<span class="ident">insert</span>(<span class="ident">id</span>);
+                .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+            ids.insert(id);
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">ResourceContainer::new_non_fungible</span>(<span class="ident">self_address</span>, <span class="ident">ids</span>))
+        <span class="prelude-val">Ok</span>(ResourceContainer::new_non_fungible(self_address, ids))
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">burn</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">Decimal</span>) {
-        <span class="self">self</span>.<span class="ident">total_supply</span> <span class="op">-</span><span class="op">=</span> <span class="ident">amount</span>;
+    <span class="kw">pub fn </span>burn(<span class="kw-2">&amp;mut </span><span class="self">self</span>, amount: Decimal) {
+        <span class="self">self</span>.total_supply -= amount;
     }
 
-    <span class="kw">fn</span> <span class="ident">update_metadata</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">new_metadata</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">String</span>, <span class="ident">String</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ResourceManagerError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="ident">metadata</span> <span class="op">=</span> <span class="ident">new_metadata</span>;
+    <span class="kw">fn </span>update_metadata(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        new_metadata: HashMap&lt;String, String&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), InvokeError&lt;ResourceManagerError&gt;&gt; {
+        <span class="self">self</span>.metadata = new_metadata;
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn</span> <span class="ident">check_amount</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">amount</span>: <span class="ident">Decimal</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ResourceManagerError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">divisibility</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">resource_type</span>.<span class="ident">divisibility</span>();
+    <span class="kw">fn </span>check_amount(<span class="kw-2">&amp;</span><span class="self">self</span>, amount: Decimal) -&gt; <span class="prelude-ty">Result</span>&lt;(), InvokeError&lt;ResourceManagerError&gt;&gt; {
+        <span class="kw">let </span>divisibility = <span class="self">self</span>.resource_type.divisibility();
 
-        <span class="kw">if</span> <span class="ident">amount</span>.<span class="ident">is_negative</span>()
-            <span class="op">|</span><span class="op">|</span> <span class="ident">amount</span>.<span class="number">0</span> <span class="op">%</span> <span class="ident">I256::from</span>(<span class="number">10i128</span>.<span class="ident">pow</span>((<span class="number">18</span> <span class="op">-</span> <span class="ident">divisibility</span>).<span class="ident">into</span>())) <span class="op">!</span><span class="op">=</span> <span class="ident">I256::from</span>(<span class="number">0</span>)
+        <span class="kw">if </span>amount.is_negative()
+            || amount.<span class="number">0 </span>% I256::from(<span class="number">10i128</span>.pow((<span class="number">18 </span>- divisibility).into())) != I256::from(<span class="number">0</span>)
         {
-            <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidAmount</span>(
-                <span class="ident">amount</span>,
-                <span class="ident">divisibility</span>,
+            <span class="prelude-val">Err</span>(InvokeError::Error(ResourceManagerError::InvalidAmount(
+                amount,
+                divisibility,
             )))
-        } <span class="kw">else</span> {
+        } <span class="kw">else </span>{
             <span class="prelude-val">Ok</span>(())
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">static_main</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">resource_manager_fn</span>: <span class="ident">ResourceManagerFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ResourceManagerError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>static_main&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        resource_manager_fn: ResourceManagerFnIdentifier,
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;ResourceManagerError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">match</span> <span class="ident">resource_manager_fn</span> {
-            <span class="ident">ResourceManagerFnIdentifier::Create</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerCreateInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
+        <span class="kw">match </span>resource_manager_fn {
+            ResourceManagerFnIdentifier::Create =&gt; {
+                <span class="kw">let </span>input: ResourceManagerCreateInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">resource_manager</span> <span class="op">=</span>
-                    <span class="ident">ResourceManager::new</span>(<span class="ident">input</span>.<span class="ident">resource_type</span>, <span class="ident">input</span>.<span class="ident">metadata</span>, <span class="ident">input</span>.<span class="ident">access_rules</span>)<span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>resource_manager =
+                    ResourceManager::new(input.resource_type, input.metadata, input.access_rules)<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">resource_node_id</span> <span class="op">=</span> <span class="kw">if</span> <span class="macro">matches!</span>(<span class="ident">input</span>.<span class="ident">resource_type</span>, <span class="ident">ResourceType::NonFungible</span>) {
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">non_fungibles</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">NonFungibleId</span>, <span class="ident">NonFungible</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">mint_params</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">mint_params</span> {
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">MintParams::NonFungible</span> { <span class="ident">entries</span> } <span class="op">=</span> <span class="ident">mint_params</span> {
-                            <span class="kw">for</span> (<span class="ident">non_fungible_id</span>, <span class="ident">data</span>) <span class="kw">in</span> <span class="ident">entries</span> {
-                                <span class="kw">let</span> <span class="ident">non_fungible</span> <span class="op">=</span> <span class="ident">NonFungible::new</span>(<span class="ident">data</span>.<span class="number">0</span>.<span class="ident">clone</span>(), <span class="ident">data</span>.<span class="number">1</span>.<span class="ident">clone</span>());
-                                <span class="ident">non_fungibles</span>.<span class="ident">insert</span>(<span class="ident">non_fungible_id</span>.<span class="ident">clone</span>(), <span class="ident">non_fungible</span>);
+                <span class="kw">let </span>resource_node_id = <span class="kw">if </span><span class="macro">matches!</span>(input.resource_type, ResourceType::NonFungible) {
+                    <span class="kw">let </span><span class="kw-2">mut </span>non_fungibles: HashMap&lt;NonFungibleId, NonFungible&gt; = HashMap::new();
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(mint_params) = <span class="kw-2">&amp;</span>input.mint_params {
+                        <span class="kw">if let </span>MintParams::NonFungible { entries } = mint_params {
+                            <span class="kw">for </span>(non_fungible_id, data) <span class="kw">in </span>entries {
+                                <span class="kw">let </span>non_fungible = NonFungible::new(data.<span class="number">0</span>.clone(), data.<span class="number">1</span>.clone());
+                                non_fungibles.insert(non_fungible_id.clone(), non_fungible);
                             }
-                            <span class="ident">resource_manager</span>.<span class="ident">total_supply</span> <span class="op">=</span> <span class="ident">entries</span>.<span class="ident">len</span>().<span class="ident">into</span>();
-                        } <span class="kw">else</span> {
-                            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                                <span class="ident">ResourceManagerError::ResourceTypeDoesNotMatch</span>,
+                            resource_manager.total_supply = entries.len().into();
+                        } <span class="kw">else </span>{
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(InvokeError::Error(
+                                ResourceManagerError::ResourceTypeDoesNotMatch,
                             ));
                         }
                     }
-                    <span class="ident">system_api</span>
-                        .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Resource</span>(<span class="ident">resource_manager</span>, <span class="prelude-val">Some</span>(<span class="ident">non_fungibles</span>)))
-                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                } <span class="kw">else</span> {
-                    <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">mint_params</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">mint_params</span> {
-                        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">MintParams::Fungible</span> { <span class="ident">amount</span> } <span class="op">=</span> <span class="ident">mint_params</span> {
-                            <span class="ident">resource_manager</span>.<span class="ident">check_amount</span>(<span class="kw-2">*</span><span class="ident">amount</span>)<span class="question-mark">?</span>;
-                            <span class="comment">// TODO: refactor this into mint function</span>
-                            <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">amount</span> <span class="op">&gt;</span> <span class="macro">dec!</span>(<span class="string">&quot;1000000000000000000&quot;</span>) {
-                                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                                    <span class="ident">ResourceManagerError::MaxMintAmountExceeded</span>,
+                    system_api
+                        .node_create(HeapRENode::Resource(resource_manager, <span class="prelude-val">Some</span>(non_fungibles)))
+                        .map_err(InvokeError::Downstream)<span class="question-mark">?
+                </span>} <span class="kw">else </span>{
+                    <span class="kw">if let </span><span class="prelude-val">Some</span>(mint_params) = <span class="kw-2">&amp;</span>input.mint_params {
+                        <span class="kw">if let </span>MintParams::Fungible { amount } = mint_params {
+                            resource_manager.check_amount(<span class="kw-2">*</span>amount)<span class="question-mark">?</span>;
+                            <span class="comment">// TODO: refactor this into mint function
+                            </span><span class="kw">if </span><span class="kw-2">*</span>amount &gt; <span class="macro">dec!</span>(<span class="string">&quot;1000000000000000000&quot;</span>) {
+                                <span class="kw">return </span><span class="prelude-val">Err</span>(InvokeError::Error(
+                                    ResourceManagerError::MaxMintAmountExceeded,
                                 ));
                             }
-                            <span class="ident">resource_manager</span>.<span class="ident">total_supply</span> <span class="op">=</span> <span class="ident">amount</span>.<span class="ident">clone</span>();
-                        } <span class="kw">else</span> {
-                            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                                <span class="ident">ResourceManagerError::ResourceTypeDoesNotMatch</span>,
+                            resource_manager.total_supply = amount.clone();
+                        } <span class="kw">else </span>{
+                            <span class="kw">return </span><span class="prelude-val">Err</span>(InvokeError::Error(
+                                ResourceManagerError::ResourceTypeDoesNotMatch,
                             ));
                         }
                     }
-                    <span class="ident">system_api</span>
-                        .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Resource</span>(<span class="ident">resource_manager</span>, <span class="prelude-val">None</span>))
-                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                };
-                <span class="kw">let</span> <span class="ident">resource_address</span> <span class="op">=</span> <span class="ident">resource_node_id</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
+                    system_api
+                        .node_create(HeapRENode::Resource(resource_manager, <span class="prelude-val">None</span>))
+                        .map_err(InvokeError::Downstream)<span class="question-mark">?
+                </span>};
+                <span class="kw">let </span>resource_address = resource_node_id.clone().into();
 
-                <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">mint_params</span>) <span class="op">=</span> <span class="ident">input</span>.<span class="ident">mint_params</span> {
-                    <span class="kw">let</span> <span class="ident">container</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">mint_params</span> {
-                        <span class="ident">MintParams::NonFungible</span> { <span class="ident">entries</span> } =&gt; {
-                            <span class="kw">let</span> <span class="ident">ids</span> <span class="op">=</span> <span class="ident">entries</span>.<span class="ident">into_keys</span>().<span class="ident">collect</span>();
-                            <span class="ident">ResourceContainer::new_non_fungible</span>(<span class="ident">resource_address</span>, <span class="ident">ids</span>)
+                <span class="kw">let </span>bucket_id = <span class="kw">if let </span><span class="prelude-val">Some</span>(mint_params) = input.mint_params {
+                    <span class="kw">let </span>container = <span class="kw">match </span>mint_params {
+                        MintParams::NonFungible { entries } =&gt; {
+                            <span class="kw">let </span>ids = entries.into_keys().collect();
+                            ResourceContainer::new_non_fungible(resource_address, ids)
                         }
-                        <span class="ident">MintParams::Fungible</span> { <span class="ident">amount</span> } =&gt; <span class="ident">ResourceContainer::new_fungible</span>(
-                            <span class="ident">resource_address</span>,
-                            <span class="ident">input</span>.<span class="ident">resource_type</span>.<span class="ident">divisibility</span>(),
-                            <span class="ident">amount</span>,
+                        MintParams::Fungible { amount } =&gt; ResourceContainer::new_fungible(
+                            resource_address,
+                            input.resource_type.divisibility(),
+                            amount,
                         ),
                     };
-                    <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                        .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Bucket</span>(<span class="ident">Bucket::new</span>(<span class="ident">container</span>)))
-                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                        .<span class="ident">into</span>();
-                    <span class="prelude-val">Some</span>(<span class="ident">scrypto::resource::Bucket</span>(<span class="ident">bucket_id</span>))
-                } <span class="kw">else</span> {
-                    <span class="prelude-val">None</span>
-                };
+                    <span class="kw">let </span>bucket_id = system_api
+                        .node_create(HeapRENode::Bucket(Bucket::new(container)))
+                        .map_err(InvokeError::Downstream)<span class="question-mark">?
+                        </span>.into();
+                    <span class="prelude-val">Some</span>(scrypto::resource::Bucket(bucket_id))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>};
 
-                <span class="ident">system_api</span>
-                    .<span class="ident">node_globalize</span>(<span class="ident">resource_node_id</span>)
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+                system_api
+                    .node_globalize(resource_node_id)
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
 
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>(<span class="ident">resource_address</span>, <span class="ident">bucket_id</span>)))
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>(resource_address, bucket_id)))
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">InvalidMethod</span>)),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(InvokeError::Error(InvalidMethod)),
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">main</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">resource_address</span>: <span class="ident">ResourceAddress</span>,
-        <span class="ident">resource_manager_fn</span>: <span class="ident">ResourceManagerFnIdentifier</span>,
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">ResourceManagerError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>main&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        resource_address: ResourceAddress,
+        resource_manager_fn: ResourceManagerFnIdentifier,
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;ResourceManagerError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::ResourceManager</span>(<span class="ident">resource_address</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">ref_mut</span> <span class="op">=</span> <span class="ident">system_api</span>
-            .<span class="ident">substate_borrow_mut</span>(<span class="kw-2">&amp;</span><span class="ident">substate_id</span>)
-            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-        <span class="kw">let</span> <span class="ident">resource_manager</span> <span class="op">=</span> <span class="ident">ref_mut</span>.<span class="ident">resource_manager</span>();
+        <span class="kw">let </span>substate_id = SubstateId::ResourceManager(resource_address);
+        <span class="kw">let </span><span class="kw-2">mut </span>ref_mut = system_api
+            .substate_borrow_mut(<span class="kw-2">&amp;</span>substate_id)
+            .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+        <span class="kw">let </span>resource_manager = ref_mut.resource_manager();
 
-        <span class="kw">let</span> <span class="ident">rtn</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">resource_manager_fn</span> {
-            <span class="ident">ResourceManagerFnIdentifier::UpdateAuth</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerUpdateAuthInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">method_entry</span> <span class="op">=</span> <span class="ident">resource_manager</span>
-                    .<span class="ident">authorization</span>
-                    .<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">method</span>)
-                    .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
+        <span class="kw">let </span>rtn = <span class="kw">match </span>resource_manager_fn {
+            ResourceManagerFnIdentifier::UpdateAuth =&gt; {
+                <span class="kw">let </span>input: ResourceManagerUpdateAuthInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>method_entry = resource_manager
+                    .authorization
+                    .get_mut(<span class="kw-2">&amp;</span>input.method)
+                    .expect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
                         <span class="string">&quot;Authorization for {:?} not specified&quot;</span>,
-                        <span class="ident">input</span>.<span class="ident">method</span>
+                        input.method
                     ));
-                <span class="ident">method_entry</span>.<span class="ident">main</span>(<span class="ident">MethodAccessRuleMethod::Update</span>(<span class="ident">input</span>.<span class="ident">access_rule</span>))
+                method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
             }
-            <span class="ident">ResourceManagerFnIdentifier::LockAuth</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerLockAuthInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">method_entry</span> <span class="op">=</span> <span class="ident">resource_manager</span>
-                    .<span class="ident">authorization</span>
-                    .<span class="ident">get_mut</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">method</span>)
-                    .<span class="ident">expect</span>(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
+            ResourceManagerFnIdentifier::LockAuth =&gt; {
+                <span class="kw">let </span>input: ResourceManagerLockAuthInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>method_entry = resource_manager
+                    .authorization
+                    .get_mut(<span class="kw-2">&amp;</span>input.method)
+                    .expect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
                         <span class="string">&quot;Authorization for {:?} not specified&quot;</span>,
-                        <span class="ident">input</span>.<span class="ident">method</span>
+                        input.method
                     ));
-                <span class="ident">method_entry</span>.<span class="ident">main</span>(<span class="ident">MethodAccessRuleMethod::Lock</span>())
+                method_entry.main(MethodAccessRuleMethod::Lock())
             }
-            <span class="ident">ResourceManagerFnIdentifier::CreateVault</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ResourceManagerCreateVaultInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">container</span> <span class="op">=</span> <span class="ident">ResourceContainer::new_empty</span>(
-                    <span class="ident">resource_address</span>,
-                    <span class="ident">resource_manager</span>.<span class="ident">resource_type</span>(),
+            ResourceManagerFnIdentifier::CreateVault =&gt; {
+                <span class="kw">let _</span>: ResourceManagerCreateVaultInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>container = ResourceContainer::new_empty(
+                    resource_address,
+                    resource_manager.resource_type(),
                 );
-                <span class="kw">let</span> <span class="ident">vault_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Vault</span>(<span class="ident">Vault::new</span>(<span class="ident">container</span>)))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Vault</span>(
-                    <span class="ident">vault_id</span>,
+                <span class="kw">let </span>vault_id = system_api
+                    .node_create(HeapRENode::Vault(Vault::new(container)))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Vault(
+                    vault_id,
                 )))
             }
-            <span class="ident">ResourceManagerFnIdentifier::CreateBucket</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ResourceManagerCreateBucketInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">container</span> <span class="op">=</span> <span class="ident">ResourceContainer::new_empty</span>(
-                    <span class="ident">resource_address</span>,
-                    <span class="ident">resource_manager</span>.<span class="ident">resource_type</span>(),
+            ResourceManagerFnIdentifier::CreateBucket =&gt; {
+                <span class="kw">let _</span>: ResourceManagerCreateBucketInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>container = ResourceContainer::new_empty(
+                    resource_address,
+                    resource_manager.resource_type(),
                 );
-                <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Bucket</span>(<span class="ident">Bucket::new</span>(<span class="ident">container</span>)))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(
-                    <span class="ident">bucket_id</span>,
+                <span class="kw">let </span>bucket_id = system_api
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(
+                    bucket_id,
                 )))
             }
-            <span class="ident">ResourceManagerFnIdentifier::Mint</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerMintInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">container</span> <span class="op">=</span>
-                    <span class="ident">resource_manager</span>.<span class="ident">mint</span>(<span class="ident">input</span>.<span class="ident">mint_params</span>, <span class="ident">resource_address</span>, <span class="ident">system_api</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Bucket</span>(<span class="ident">Bucket::new</span>(<span class="ident">container</span>)))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>
-                    .<span class="ident">into</span>();
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(
-                    <span class="ident">bucket_id</span>,
+            ResourceManagerFnIdentifier::Mint =&gt; {
+                <span class="kw">let </span>input: ResourceManagerMintInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>container =
+                    resource_manager.mint(input.mint_params, resource_address, system_api)<span class="question-mark">?</span>;
+                <span class="kw">let </span>bucket_id = system_api
+                    .node_create(HeapRENode::Bucket(Bucket::new(container)))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?
+                    </span>.into();
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(
+                    bucket_id,
                 )))
             }
-            <span class="ident">ResourceManagerFnIdentifier::GetMetadata</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ResourceManagerGetMetadataInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">resource_manager</span>.<span class="ident">metadata</span>))
+            ResourceManagerFnIdentifier::GetMetadata =&gt; {
+                <span class="kw">let _</span>: ResourceManagerGetMetadataInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>resource_manager.metadata))
             }
-            <span class="ident">ResourceManagerFnIdentifier::GetResourceType</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ResourceManagerGetResourceTypeInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">resource_manager</span>.<span class="ident">resource_type</span>))
+            ResourceManagerFnIdentifier::GetResourceType =&gt; {
+                <span class="kw">let _</span>: ResourceManagerGetResourceTypeInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>resource_manager.resource_type))
             }
-            <span class="ident">ResourceManagerFnIdentifier::GetTotalSupply</span> =&gt; {
-                <span class="kw">let</span> <span class="kw">_</span>: <span class="ident">ResourceManagerGetTotalSupplyInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">resource_manager</span>.<span class="ident">total_supply</span>))
+            ResourceManagerFnIdentifier::GetTotalSupply =&gt; {
+                <span class="kw">let _</span>: ResourceManagerGetTotalSupplyInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>resource_manager.total_supply))
             }
-            <span class="ident">ResourceManagerFnIdentifier::UpdateMetadata</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerUpdateMetadataInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="ident">resource_manager</span>.<span class="ident">update_metadata</span>(<span class="ident">input</span>.<span class="ident">metadata</span>)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+            ResourceManagerFnIdentifier::UpdateMetadata =&gt; {
+                <span class="kw">let </span>input: ResourceManagerUpdateMetadataInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                resource_manager.update_metadata(input.metadata)<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
             }
-            <span class="ident">ResourceManagerFnIdentifier::UpdateNonFungibleData</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerUpdateNonFungibleDataInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
+            ResourceManagerFnIdentifier::UpdateNonFungibleData =&gt; {
+                <span class="kw">let </span>input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
 
-                <span class="comment">// Read current value</span>
-                <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">substate_read</span>(<span class="ident">SubstateId::NonFungible</span>(
-                        <span class="ident">resource_address</span>.<span class="ident">clone</span>(),
-                        <span class="ident">input</span>.<span class="ident">id</span>.<span class="ident">clone</span>(),
+                <span class="comment">// Read current value
+                </span><span class="kw">let </span>value = system_api
+                    .substate_read(SubstateId::NonFungible(
+                        resource_address.clone(),
+                        input.id.clone(),
                     ))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">wrapper</span>: <span class="ident">NonFungibleWrapper</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">raw</span>)
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to decode NonFungibleWrapper substate&quot;</span>);
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                <span class="kw">let </span>wrapper: NonFungibleWrapper = scrypto_decode(<span class="kw-2">&amp;</span>value.raw)
+                    .expect(<span class="string">&quot;Failed to decode NonFungibleWrapper substate&quot;</span>);
 
-                <span class="comment">// Write new value</span>
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">mut</span> <span class="ident">non_fungible</span>) <span class="op">=</span> <span class="ident">wrapper</span>.<span class="number">0</span> {
-                    <span class="ident">non_fungible</span>.<span class="ident">set_mutable_data</span>(<span class="ident">input</span>.<span class="ident">data</span>);
-                    <span class="ident">system_api</span>
-                        .<span class="ident">substate_write</span>(
-                            <span class="ident">SubstateId::NonFungible</span>(<span class="ident">resource_address</span>.<span class="ident">clone</span>(), <span class="ident">input</span>.<span class="ident">id</span>.<span class="ident">clone</span>()),
-                            <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">NonFungibleWrapper</span>(<span class="prelude-val">Some</span>(<span class="ident">non_fungible</span>))),
+                <span class="comment">// Write new value
+                </span><span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>non_fungible) = wrapper.<span class="number">0 </span>{
+                    non_fungible.set_mutable_data(input.data);
+                    system_api
+                        .substate_write(
+                            SubstateId::NonFungible(resource_address.clone(), input.id.clone()),
+                            ScryptoValue::from_typed(<span class="kw-2">&amp;</span>NonFungibleWrapper(<span class="prelude-val">Some</span>(non_fungible))),
                         )
-                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                } <span class="kw">else</span> {
-                    <span class="kw">let</span> <span class="ident">non_fungible_address</span> <span class="op">=</span>
-                        <span class="ident">NonFungibleAddress::new</span>(<span class="ident">resource_address</span>.<span class="ident">clone</span>(), <span class="ident">input</span>.<span class="ident">id</span>);
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                        <span class="ident">ResourceManagerError::NonFungibleNotFound</span>(<span class="ident">non_fungible_address</span>.<span class="ident">clone</span>()),
+                        .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>non_fungible_address =
+                        NonFungibleAddress::new(resource_address.clone(), input.id);
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(InvokeError::Error(
+                        ResourceManagerError::NonFungibleNotFound(non_fungible_address.clone()),
                     ));
                 }
 
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>()))
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>()))
             }
-            <span class="ident">ResourceManagerFnIdentifier::NonFungibleExists</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerNonFungibleExistsInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
+            ResourceManagerFnIdentifier::NonFungibleExists =&gt; {
+                <span class="kw">let </span>input: ResourceManagerNonFungibleExistsInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">substate_read</span>(<span class="ident">SubstateId::NonFungible</span>(<span class="ident">resource_address</span>.<span class="ident">clone</span>(), <span class="ident">input</span>.<span class="ident">id</span>))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">wrapper</span>: <span class="ident">NonFungibleWrapper</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">raw</span>)
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to decode NonFungibleWrapper substate&quot;</span>);
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">wrapper</span>.<span class="number">0</span>.<span class="ident">is_some</span>()))
+                <span class="kw">let </span>value = system_api
+                    .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                <span class="kw">let </span>wrapper: NonFungibleWrapper = scrypto_decode(<span class="kw-2">&amp;</span>value.raw)
+                    .expect(<span class="string">&quot;Failed to decode NonFungibleWrapper substate&quot;</span>);
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>wrapper.<span class="number">0</span>.is_some()))
             }
-            <span class="ident">ResourceManagerFnIdentifier::GetNonFungible</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">ResourceManagerGetNonFungibleInput</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">args</span>.<span class="ident">raw</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="ident">InvokeError::Error</span>(<span class="ident">ResourceManagerError::InvalidRequestData</span>(<span class="ident">e</span>)))<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">non_fungible_address</span> <span class="op">=</span>
-                    <span class="ident">NonFungibleAddress::new</span>(<span class="ident">resource_address</span>.<span class="ident">clone</span>(), <span class="ident">input</span>.<span class="ident">id</span>.<span class="ident">clone</span>());
-                <span class="kw">let</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">substate_read</span>(<span class="ident">SubstateId::NonFungible</span>(<span class="ident">resource_address</span>.<span class="ident">clone</span>(), <span class="ident">input</span>.<span class="ident">id</span>))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
-                <span class="kw">let</span> <span class="ident">wrapper</span>: <span class="ident">NonFungibleWrapper</span> <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">raw</span>)
-                    .<span class="ident">expect</span>(<span class="string">&quot;Failed to decode NonFungibleWrapper substate&quot;</span>);
-                <span class="kw">let</span> <span class="ident">non_fungible</span> <span class="op">=</span> <span class="ident">wrapper</span>.<span class="number">0</span>.<span class="ident">ok_or</span>(<span class="ident">InvokeError::Error</span>(
-                    <span class="ident">ResourceManagerError::NonFungibleNotFound</span>(<span class="ident">non_fungible_address</span>),
+            ResourceManagerFnIdentifier::GetNonFungible =&gt; {
+                <span class="kw">let </span>input: ResourceManagerGetNonFungibleInput = scrypto_decode(<span class="kw-2">&amp;</span>args.raw)
+                    .map_err(|e| InvokeError::Error(ResourceManagerError::InvalidRequestData(e)))<span class="question-mark">?</span>;
+                <span class="kw">let </span>non_fungible_address =
+                    NonFungibleAddress::new(resource_address.clone(), input.id.clone());
+                <span class="kw">let </span>value = system_api
+                    .substate_read(SubstateId::NonFungible(resource_address.clone(), input.id))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
+                <span class="kw">let </span>wrapper: NonFungibleWrapper = scrypto_decode(<span class="kw-2">&amp;</span>value.raw)
+                    .expect(<span class="string">&quot;Failed to decode NonFungibleWrapper substate&quot;</span>);
+                <span class="kw">let </span>non_fungible = wrapper.<span class="number">0</span>.ok_or(InvokeError::Error(
+                    ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                 ))<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span>[
-                    <span class="ident">non_fungible</span>.<span class="ident">immutable_data</span>(),
-                    <span class="ident">non_fungible</span>.<span class="ident">mutable_data</span>(),
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(<span class="kw-2">&amp;</span>[
+                    non_fungible.immutable_data(),
+                    non_fungible.mutable_data(),
                 ]))
             }
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(<span class="ident">InvalidMethod</span>)),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(InvokeError::Error(InvalidMethod)),
         }<span class="question-mark">?</span>;
 
-        <span class="ident">system_api</span>
-            .<span class="ident">substate_return_mut</span>(<span class="ident">ref_mut</span>)
-            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+        system_api
+            .substate_return_mut(ref_mut)
+            .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="ident">rtn</span>)
+        <span class="prelude-val">Ok</span>(rtn)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/auth_converter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>auth_converter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/auth_converter.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>auth_converter.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -266,269 +261,268 @@
 <span id="261">261</span>
 <span id="262">262</span>
 <span id="263">263</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::method_authorization</span>::{
-    <span class="ident">HardAuthRule</span>, <span class="ident">HardCount</span>, <span class="ident">HardDecimal</span>, <span class="ident">HardProofRule</span>, <span class="ident">HardProofRuleResourceList</span>,
-    <span class="ident">HardResourceOrNonFungible</span>,
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::model::method_authorization::{
+    HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
+    HardResourceOrNonFungible,
 };
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::MethodAuthorization</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::model::MethodAuthorization;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="kw">fn</span> <span class="ident">soft_to_hard_decimal</span>(
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Type</span>,
-    <span class="ident">soft_decimal</span>: <span class="kw-2">&amp;</span><span class="ident">SoftDecimal</span>,
-    <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>,
-) -&gt; <span class="ident">HardDecimal</span> {
-    <span class="kw">match</span> <span class="ident">soft_decimal</span> {
-        <span class="ident">SoftDecimal::Static</span>(<span class="ident">amount</span>) =&gt; <span class="ident">HardDecimal::Amount</span>(<span class="ident">amount</span>.<span class="ident">clone</span>()),
-        <span class="ident">SoftDecimal::Dynamic</span>(<span class="ident">schema_path</span>) =&gt; {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sbor_path</span>) <span class="op">=</span> <span class="ident">schema_path</span>.<span class="ident">to_sbor_path</span>(<span class="ident">schema</span>) {
-                <span class="kw">match</span> <span class="ident">sbor_path</span>.<span class="ident">get_from_value</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">dom</span>) {
-                    <span class="prelude-val">Some</span>(<span class="ident">Value::Custom</span> { <span class="ident">type_id</span>, <span class="ident">bytes</span> }) =&gt; {
-                        <span class="kw">match</span> <span class="ident">ScryptoType::from_id</span>(<span class="kw-2">*</span><span class="ident">type_id</span>)
-                            .<span class="ident">expect</span>(<span class="string">&quot;ScryptoValue contains invalid SBOR type ID&quot;</span>)
+<span class="kw">fn </span>soft_to_hard_decimal(
+    schema: <span class="kw-2">&amp;</span>Type,
+    soft_decimal: <span class="kw-2">&amp;</span>SoftDecimal,
+    value: <span class="kw-2">&amp;</span>ScryptoValue,
+) -&gt; HardDecimal {
+    <span class="kw">match </span>soft_decimal {
+        SoftDecimal::Static(amount) =&gt; HardDecimal::Amount(amount.clone()),
+        SoftDecimal::Dynamic(schema_path) =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(sbor_path) = schema_path.to_sbor_path(schema) {
+                <span class="kw">match </span>sbor_path.get_from_value(<span class="kw-2">&amp;</span>value.dom) {
+                    <span class="prelude-val">Some</span>(Value::Custom { type_id, bytes }) =&gt; {
+                        <span class="kw">match </span>ScryptoType::from_id(<span class="kw-2">*</span>type_id)
+                            .expect(<span class="string">&quot;ScryptoValue contains invalid SBOR type ID&quot;</span>)
                         {
-                            <span class="ident">ScryptoType::Decimal</span> =&gt; {
-                                <span class="ident">HardDecimal::Amount</span>(<span class="ident">Decimal::try_from</span>(<span class="ident">bytes</span>.<span class="ident">as_slice</span>()).<span class="ident">expect</span>(
+                            ScryptoType::Decimal =&gt; {
+                                HardDecimal::Amount(Decimal::try_from(bytes.as_slice()).expect(
                                     <span class="string">&quot;ScryptoValue contains mismatching SBOR type ID and value&quot;</span>,
                                 ))
                             }
-                            <span class="kw">_</span> =&gt; <span class="ident">HardDecimal::SoftDecimalNotFound</span>,
+                            <span class="kw">_ </span>=&gt; HardDecimal::SoftDecimalNotFound,
                         }
                     }
-                    <span class="kw">_</span> =&gt; <span class="ident">HardDecimal::SoftDecimalNotFound</span>,
+                    <span class="kw">_ </span>=&gt; HardDecimal::SoftDecimalNotFound,
                 }
-            } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="ident">HardDecimal::SoftDecimalNotFound</span>;
+            } <span class="kw">else </span>{
+                <span class="kw">return </span>HardDecimal::SoftDecimalNotFound;
             }
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">soft_to_hard_count</span>(<span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Type</span>, <span class="ident">soft_count</span>: <span class="kw-2">&amp;</span><span class="ident">SoftCount</span>, <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>) -&gt; <span class="ident">HardCount</span> {
-    <span class="kw">match</span> <span class="ident">soft_count</span> {
-        <span class="ident">SoftCount::Static</span>(<span class="ident">count</span>) =&gt; <span class="ident">HardCount::Count</span>(<span class="ident">count</span>.<span class="ident">clone</span>()),
-        <span class="ident">SoftCount::Dynamic</span>(<span class="ident">schema_path</span>) =&gt; {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sbor_path</span>) <span class="op">=</span> <span class="ident">schema_path</span>.<span class="ident">to_sbor_path</span>(<span class="ident">schema</span>) {
-                <span class="kw">match</span> <span class="ident">sbor_path</span>.<span class="ident">get_from_value</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">dom</span>) {
-                    <span class="prelude-val">Some</span>(<span class="ident">Value::U8</span> { <span class="ident">value</span> }) =&gt; <span class="ident">HardCount::Count</span>(<span class="ident">value</span>.<span class="ident">clone</span>()),
-                    <span class="kw">_</span> =&gt; <span class="ident">HardCount::SoftCountNotFound</span>,
+<span class="kw">fn </span>soft_to_hard_count(schema: <span class="kw-2">&amp;</span>Type, soft_count: <span class="kw-2">&amp;</span>SoftCount, value: <span class="kw-2">&amp;</span>ScryptoValue) -&gt; HardCount {
+    <span class="kw">match </span>soft_count {
+        SoftCount::Static(count) =&gt; HardCount::Count(count.clone()),
+        SoftCount::Dynamic(schema_path) =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(sbor_path) = schema_path.to_sbor_path(schema) {
+                <span class="kw">match </span>sbor_path.get_from_value(<span class="kw-2">&amp;</span>value.dom) {
+                    <span class="prelude-val">Some</span>(Value::U8 { value }) =&gt; HardCount::Count(value.clone()),
+                    <span class="kw">_ </span>=&gt; HardCount::SoftCountNotFound,
                 }
-            } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="ident">HardCount::SoftCountNotFound</span>;
+            } <span class="kw">else </span>{
+                <span class="kw">return </span>HardCount::SoftCountNotFound;
             }
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">soft_to_hard_resource_list</span>(
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Type</span>,
-    <span class="ident">list</span>: <span class="kw-2">&amp;</span><span class="ident">SoftResourceOrNonFungibleList</span>,
-    <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>,
-) -&gt; <span class="ident">HardProofRuleResourceList</span> {
-    <span class="kw">match</span> <span class="ident">list</span> {
-        <span class="ident">SoftResourceOrNonFungibleList::Static</span>(<span class="ident">resources</span>) =&gt; {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">hard_resources</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-            <span class="kw">for</span> <span class="ident">soft_resource</span> <span class="kw">in</span> <span class="ident">resources</span> {
-                <span class="kw">let</span> <span class="ident">resource</span> <span class="op">=</span> <span class="ident">soft_to_hard_resource_or_non_fungible</span>(<span class="ident">schema</span>, <span class="ident">soft_resource</span>, <span class="ident">value</span>);
-                <span class="ident">hard_resources</span>.<span class="ident">push</span>(<span class="ident">resource</span>);
+<span class="kw">fn </span>soft_to_hard_resource_list(
+    schema: <span class="kw-2">&amp;</span>Type,
+    list: <span class="kw-2">&amp;</span>SoftResourceOrNonFungibleList,
+    value: <span class="kw-2">&amp;</span>ScryptoValue,
+) -&gt; HardProofRuleResourceList {
+    <span class="kw">match </span>list {
+        SoftResourceOrNonFungibleList::Static(resources) =&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>hard_resources = Vec::new();
+            <span class="kw">for </span>soft_resource <span class="kw">in </span>resources {
+                <span class="kw">let </span>resource = soft_to_hard_resource_or_non_fungible(schema, soft_resource, value);
+                hard_resources.push(resource);
             }
-            <span class="ident">HardProofRuleResourceList::List</span>(<span class="ident">hard_resources</span>)
+            HardProofRuleResourceList::List(hard_resources)
         }
-        <span class="ident">SoftResourceOrNonFungibleList::Dynamic</span>(<span class="ident">schema_path</span>) =&gt; {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sbor_path</span>) <span class="op">=</span> <span class="ident">schema_path</span>.<span class="ident">to_sbor_path</span>(<span class="ident">schema</span>) {
-                <span class="kw">match</span> <span class="ident">sbor_path</span>.<span class="ident">get_from_value</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">dom</span>) {
-                    <span class="prelude-val">Some</span>(<span class="ident">Value::List</span> {
-                        <span class="ident">element_type_id</span>,
-                        <span class="ident">elements</span>,
-                    }) =&gt; <span class="kw">match</span> <span class="ident">ScryptoType::from_id</span>(<span class="kw-2">*</span><span class="ident">element_type_id</span>).<span class="ident">expect</span>(<span class="string">&quot;ScryptoValue contains invalid SBOR type ID&quot;</span>) {
-                        <span class="ident">ScryptoType::ResourceAddress</span> =&gt; <span class="ident">HardProofRuleResourceList::List</span>(
-                            <span class="ident">elements</span>
-                                .<span class="ident">iter</span>()
-                                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> {
-                                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Custom</span> { <span class="ident">bytes</span>, .. } <span class="op">=</span> <span class="ident">v</span> {
-                                        <span class="kw">return</span> <span class="ident">ResourceAddress::try_from</span>(<span class="ident">bytes</span>.<span class="ident">as_slice</span>())
-                                            .<span class="ident">expect</span>(<span class="string">&quot;ScryptoValue contains mismatching SBOR type ID and value&quot;</span>)
-                                            .<span class="ident">into</span>();
+        SoftResourceOrNonFungibleList::Dynamic(schema_path) =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(sbor_path) = schema_path.to_sbor_path(schema) {
+                <span class="kw">match </span>sbor_path.get_from_value(<span class="kw-2">&amp;</span>value.dom) {
+                    <span class="prelude-val">Some</span>(Value::List {
+                        element_type_id,
+                        elements,
+                    }) =&gt; <span class="kw">match </span>ScryptoType::from_id(<span class="kw-2">*</span>element_type_id).expect(<span class="string">&quot;ScryptoValue contains invalid SBOR type ID&quot;</span>) {
+                        ScryptoType::ResourceAddress =&gt; HardProofRuleResourceList::List(
+                            elements
+                                .iter()
+                                .map(|v| {
+                                    <span class="kw">if let </span>Value::Custom { bytes, .. } = v {
+                                        <span class="kw">return </span>ResourceAddress::try_from(bytes.as_slice())
+                                            .expect(<span class="string">&quot;ScryptoValue contains mismatching SBOR type ID and value&quot;</span>)
+                                            .into();
                                     }
                                     <span class="macro">panic!</span>(<span class="string">&quot;Unexpected type&quot;</span>);
                                 })
-                                .<span class="ident">collect</span>(),
+                                .collect(),
                         ),
-                        <span class="ident">ScryptoType::NonFungibleAddress</span> =&gt; <span class="ident">HardProofRuleResourceList::List</span>(
-                            <span class="ident">elements</span>
-                                .<span class="ident">iter</span>()
-                                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> {
-                                    <span class="kw">if</span> <span class="kw">let</span> <span class="ident">Value::Custom</span> { <span class="ident">bytes</span>, .. } <span class="op">=</span> <span class="ident">v</span> {
-                                        <span class="kw">return</span> <span class="ident">NonFungibleAddress::try_from</span>(<span class="ident">bytes</span>.<span class="ident">as_slice</span>())
-                                            .<span class="ident">expect</span>(<span class="string">&quot;ScryptoValue contains mismatching SBOR type ID and value&quot;</span>)
-                                            .<span class="ident">into</span>();
+                        ScryptoType::NonFungibleAddress =&gt; HardProofRuleResourceList::List(
+                            elements
+                                .iter()
+                                .map(|v| {
+                                    <span class="kw">if let </span>Value::Custom { bytes, .. } = v {
+                                        <span class="kw">return </span>NonFungibleAddress::try_from(bytes.as_slice())
+                                            .expect(<span class="string">&quot;ScryptoValue contains mismatching SBOR type ID and value&quot;</span>)
+                                            .into();
                                     }
                                     <span class="macro">panic!</span>(<span class="string">&quot;Unexpected type&quot;</span>);
                                 })
-                                .<span class="ident">collect</span>(),
+                                .collect(),
                         ),
-                        <span class="kw">_</span> =&gt; <span class="ident">HardProofRuleResourceList::SoftResourceListNotFound</span>,
+                        <span class="kw">_ </span>=&gt; HardProofRuleResourceList::SoftResourceListNotFound,
                     },
-                    <span class="kw">_</span> =&gt; <span class="ident">HardProofRuleResourceList::SoftResourceListNotFound</span>,
+                    <span class="kw">_ </span>=&gt; HardProofRuleResourceList::SoftResourceListNotFound,
                 }
-            } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="ident">HardProofRuleResourceList::SoftResourceListNotFound</span>;
+            } <span class="kw">else </span>{
+                <span class="kw">return </span>HardProofRuleResourceList::SoftResourceListNotFound;
             }
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">soft_to_hard_resource</span>(
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Type</span>,
-    <span class="ident">soft_resource</span>: <span class="kw-2">&amp;</span><span class="ident">SoftResource</span>,
-    <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>,
-) -&gt; <span class="ident">HardResourceOrNonFungible</span> {
-    <span class="kw">match</span> <span class="ident">soft_resource</span> {
-        <span class="ident">SoftResource::Dynamic</span>(<span class="ident">schema_path</span>) =&gt; {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sbor_path</span>) <span class="op">=</span> <span class="ident">schema_path</span>.<span class="ident">to_sbor_path</span>(<span class="ident">schema</span>) {
-                <span class="kw">match</span> <span class="ident">sbor_path</span>.<span class="ident">get_from_value</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">dom</span>) {
-                    <span class="prelude-val">Some</span>(<span class="ident">Value::Custom</span> { <span class="ident">type_id</span>, <span class="ident">bytes</span> }) =&gt; {
-                        <span class="kw">match</span> <span class="ident">ScryptoType::from_id</span>(<span class="kw-2">*</span><span class="ident">type_id</span>)
-                            .<span class="ident">expect</span>(<span class="string">&quot;ScryptoValue contains invalid SBOR type ID&quot;</span>)
+<span class="kw">fn </span>soft_to_hard_resource(
+    schema: <span class="kw-2">&amp;</span>Type,
+    soft_resource: <span class="kw-2">&amp;</span>SoftResource,
+    value: <span class="kw-2">&amp;</span>ScryptoValue,
+) -&gt; HardResourceOrNonFungible {
+    <span class="kw">match </span>soft_resource {
+        SoftResource::Dynamic(schema_path) =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(sbor_path) = schema_path.to_sbor_path(schema) {
+                <span class="kw">match </span>sbor_path.get_from_value(<span class="kw-2">&amp;</span>value.dom) {
+                    <span class="prelude-val">Some</span>(Value::Custom { type_id, bytes }) =&gt; {
+                        <span class="kw">match </span>ScryptoType::from_id(<span class="kw-2">*</span>type_id)
+                            .expect(<span class="string">&quot;ScryptoValue contains invalid SBOR type ID&quot;</span>)
                         {
-                            <span class="ident">ScryptoType::ResourceAddress</span> =&gt; {
-                                <span class="ident">ResourceAddress::try_from</span>(<span class="ident">bytes</span>.<span class="ident">as_slice</span>())
-                                    .<span class="ident">expect</span>(
+                            ScryptoType::ResourceAddress =&gt; {
+                                ResourceAddress::try_from(bytes.as_slice())
+                                    .expect(
                                         <span class="string">&quot;ScryptoValue contains mismatching SBOR type ID and value&quot;</span>,
                                     )
-                                    .<span class="ident">into</span>()
+                                    .into()
                             }
-                            <span class="kw">_</span> =&gt; <span class="ident">HardResourceOrNonFungible::SoftResourceNotFound</span>,
+                            <span class="kw">_ </span>=&gt; HardResourceOrNonFungible::SoftResourceNotFound,
                         }
                     }
-                    <span class="kw">_</span> =&gt; <span class="ident">HardResourceOrNonFungible::SoftResourceNotFound</span>,
+                    <span class="kw">_ </span>=&gt; HardResourceOrNonFungible::SoftResourceNotFound,
                 }
-            } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="ident">HardResourceOrNonFungible::SoftResourceNotFound</span>;
+            } <span class="kw">else </span>{
+                <span class="kw">return </span>HardResourceOrNonFungible::SoftResourceNotFound;
             }
         }
-        <span class="ident">SoftResource::Static</span>(<span class="ident">resource_def_id</span>) =&gt; {
-            <span class="ident">HardResourceOrNonFungible::Resource</span>(<span class="ident">resource_def_id</span>.<span class="ident">clone</span>())
+        SoftResource::Static(resource_def_id) =&gt; {
+            HardResourceOrNonFungible::Resource(resource_def_id.clone())
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">soft_to_hard_resource_or_non_fungible</span>(
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Type</span>,
-    <span class="ident">proof_rule_resource</span>: <span class="kw-2">&amp;</span><span class="ident">SoftResourceOrNonFungible</span>,
-    <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>,
-) -&gt; <span class="ident">HardResourceOrNonFungible</span> {
-    <span class="kw">match</span> <span class="ident">proof_rule_resource</span> {
-        <span class="ident">SoftResourceOrNonFungible::Dynamic</span>(<span class="ident">schema_path</span>) =&gt; {
-            <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">sbor_path</span>) <span class="op">=</span> <span class="ident">schema_path</span>.<span class="ident">to_sbor_path</span>(<span class="ident">schema</span>) {
-                <span class="kw">match</span> <span class="ident">sbor_path</span>.<span class="ident">get_from_value</span>(<span class="kw-2">&amp;</span><span class="ident">value</span>.<span class="ident">dom</span>) {
-                    <span class="prelude-val">Some</span>(<span class="ident">Value::Custom</span> { <span class="ident">type_id</span>, <span class="ident">bytes</span> }) =&gt; {
-                        <span class="kw">match</span> <span class="ident">ScryptoType::from_id</span>(<span class="kw-2">*</span><span class="ident">type_id</span>)
-                            .<span class="ident">expect</span>(<span class="string">&quot;ScryptoValue contains invalid SBOR type ID&quot;</span>)
+<span class="kw">fn </span>soft_to_hard_resource_or_non_fungible(
+    schema: <span class="kw-2">&amp;</span>Type,
+    proof_rule_resource: <span class="kw-2">&amp;</span>SoftResourceOrNonFungible,
+    value: <span class="kw-2">&amp;</span>ScryptoValue,
+) -&gt; HardResourceOrNonFungible {
+    <span class="kw">match </span>proof_rule_resource {
+        SoftResourceOrNonFungible::Dynamic(schema_path) =&gt; {
+            <span class="kw">if let </span><span class="prelude-val">Some</span>(sbor_path) = schema_path.to_sbor_path(schema) {
+                <span class="kw">match </span>sbor_path.get_from_value(<span class="kw-2">&amp;</span>value.dom) {
+                    <span class="prelude-val">Some</span>(Value::Custom { type_id, bytes }) =&gt; {
+                        <span class="kw">match </span>ScryptoType::from_id(<span class="kw-2">*</span>type_id)
+                            .expect(<span class="string">&quot;ScryptoValue contains invalid SBOR type ID&quot;</span>)
                         {
-                            <span class="ident">ScryptoType::ResourceAddress</span> =&gt; {
-                                <span class="ident">ResourceAddress::try_from</span>(<span class="ident">bytes</span>.<span class="ident">as_slice</span>())
-                                    .<span class="ident">expect</span>(
+                            ScryptoType::ResourceAddress =&gt; {
+                                ResourceAddress::try_from(bytes.as_slice())
+                                    .expect(
                                         <span class="string">&quot;ScryptoValue contains mismatching SBOR type ID and value&quot;</span>,
                                     )
-                                    .<span class="ident">into</span>()
+                                    .into()
                             }
-                            <span class="ident">ScryptoType::NonFungibleAddress</span> =&gt; {
-                                <span class="ident">NonFungibleAddress::try_from</span>(<span class="ident">bytes</span>.<span class="ident">as_slice</span>())
-                                    .<span class="ident">expect</span>(
+                            ScryptoType::NonFungibleAddress =&gt; {
+                                NonFungibleAddress::try_from(bytes.as_slice())
+                                    .expect(
                                         <span class="string">&quot;ScryptoValue contains mismatching SBOR type ID and value&quot;</span>,
                                     )
-                                    .<span class="ident">into</span>()
+                                    .into()
                             }
-                            <span class="kw">_</span> =&gt; <span class="ident">HardResourceOrNonFungible::SoftResourceNotFound</span>,
+                            <span class="kw">_ </span>=&gt; HardResourceOrNonFungible::SoftResourceNotFound,
                         }
                     }
-                    <span class="kw">_</span> =&gt; <span class="ident">HardResourceOrNonFungible::SoftResourceNotFound</span>,
+                    <span class="kw">_ </span>=&gt; HardResourceOrNonFungible::SoftResourceNotFound,
                 }
-            } <span class="kw">else</span> {
-                <span class="kw">return</span> <span class="ident">HardResourceOrNonFungible::SoftResourceNotFound</span>;
+            } <span class="kw">else </span>{
+                <span class="kw">return </span>HardResourceOrNonFungible::SoftResourceNotFound;
             }
         }
-        <span class="ident">SoftResourceOrNonFungible::StaticNonFungible</span>(<span class="ident">non_fungible_address</span>) =&gt; {
-            <span class="ident">HardResourceOrNonFungible::NonFungible</span>(<span class="ident">non_fungible_address</span>.<span class="ident">clone</span>())
+        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address) =&gt; {
+            HardResourceOrNonFungible::NonFungible(non_fungible_address.clone())
         }
-        <span class="ident">SoftResourceOrNonFungible::StaticResource</span>(<span class="ident">resource_def_id</span>) =&gt; {
-            <span class="ident">HardResourceOrNonFungible::Resource</span>(<span class="ident">resource_def_id</span>.<span class="ident">clone</span>())
-        }
-    }
-}
-
-<span class="kw">fn</span> <span class="ident">soft_to_hard_proof_rule</span>(
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Type</span>,
-    <span class="ident">proof_rule</span>: <span class="kw-2">&amp;</span><span class="ident">ProofRule</span>,
-    <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>,
-) -&gt; <span class="ident">HardProofRule</span> {
-    <span class="kw">match</span> <span class="ident">proof_rule</span> {
-        <span class="ident">ProofRule::Require</span>(<span class="ident">soft_resource_or_non_fungible</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">resource</span> <span class="op">=</span>
-                <span class="ident">soft_to_hard_resource_or_non_fungible</span>(<span class="ident">schema</span>, <span class="ident">soft_resource_or_non_fungible</span>, <span class="ident">value</span>);
-            <span class="ident">HardProofRule::Require</span>(<span class="ident">resource</span>)
-        }
-        <span class="ident">ProofRule::AmountOf</span>(<span class="ident">soft_decimal</span>, <span class="ident">soft_resource</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">resource</span> <span class="op">=</span> <span class="ident">soft_to_hard_resource</span>(<span class="ident">schema</span>, <span class="ident">soft_resource</span>, <span class="ident">value</span>);
-            <span class="kw">let</span> <span class="ident">hard_decimal</span> <span class="op">=</span> <span class="ident">soft_to_hard_decimal</span>(<span class="ident">schema</span>, <span class="ident">soft_decimal</span>, <span class="ident">value</span>);
-            <span class="ident">HardProofRule::AmountOf</span>(<span class="ident">hard_decimal</span>, <span class="ident">resource</span>)
-        }
-        <span class="ident">ProofRule::AllOf</span>(<span class="ident">resources</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">hard_resources</span> <span class="op">=</span> <span class="ident">soft_to_hard_resource_list</span>(<span class="ident">schema</span>, <span class="ident">resources</span>, <span class="ident">value</span>);
-            <span class="ident">HardProofRule::AllOf</span>(<span class="ident">hard_resources</span>)
-        }
-        <span class="ident">ProofRule::AnyOf</span>(<span class="ident">resources</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">hard_resources</span> <span class="op">=</span> <span class="ident">soft_to_hard_resource_list</span>(<span class="ident">schema</span>, <span class="ident">resources</span>, <span class="ident">value</span>);
-            <span class="ident">HardProofRule::AnyOf</span>(<span class="ident">hard_resources</span>)
-        }
-        <span class="ident">ProofRule::CountOf</span>(<span class="ident">soft_count</span>, <span class="ident">resources</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">hard_count</span> <span class="op">=</span> <span class="ident">soft_to_hard_count</span>(<span class="ident">schema</span>, <span class="ident">soft_count</span>, <span class="ident">value</span>);
-            <span class="kw">let</span> <span class="ident">hard_resources</span> <span class="op">=</span> <span class="ident">soft_to_hard_resource_list</span>(<span class="ident">schema</span>, <span class="ident">resources</span>, <span class="ident">value</span>);
-            <span class="ident">HardProofRule::CountOf</span>(<span class="ident">hard_count</span>, <span class="ident">hard_resources</span>)
+        SoftResourceOrNonFungible::StaticResource(resource_def_id) =&gt; {
+            HardResourceOrNonFungible::Resource(resource_def_id.clone())
         }
     }
 }
 
-<span class="kw">fn</span> <span class="ident">soft_to_hard_auth_rule</span>(
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Type</span>,
-    <span class="ident">auth_rule</span>: <span class="kw-2">&amp;</span><span class="ident">AccessRuleNode</span>,
-    <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>,
-) -&gt; <span class="ident">HardAuthRule</span> {
-    <span class="kw">match</span> <span class="ident">auth_rule</span> {
-        <span class="ident">AccessRuleNode::ProofRule</span>(<span class="ident">proof_rule</span>) =&gt; {
-            <span class="ident">HardAuthRule::ProofRule</span>(<span class="ident">soft_to_hard_proof_rule</span>(<span class="ident">schema</span>, <span class="ident">proof_rule</span>, <span class="ident">value</span>))
+<span class="kw">fn </span>soft_to_hard_proof_rule(
+    schema: <span class="kw-2">&amp;</span>Type,
+    proof_rule: <span class="kw-2">&amp;</span>ProofRule,
+    value: <span class="kw-2">&amp;</span>ScryptoValue,
+) -&gt; HardProofRule {
+    <span class="kw">match </span>proof_rule {
+        ProofRule::Require(soft_resource_or_non_fungible) =&gt; {
+            <span class="kw">let </span>resource =
+                soft_to_hard_resource_or_non_fungible(schema, soft_resource_or_non_fungible, value);
+            HardProofRule::Require(resource)
         }
-        <span class="ident">AccessRuleNode::AnyOf</span>(<span class="ident">rules</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">hard_rules</span> <span class="op">=</span> <span class="ident">rules</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="ident">soft_to_hard_auth_rule</span>(<span class="ident">schema</span>, <span class="ident">r</span>, <span class="ident">value</span>))
-                .<span class="ident">collect</span>();
-            <span class="ident">HardAuthRule::AnyOf</span>(<span class="ident">hard_rules</span>)
+        ProofRule::AmountOf(soft_decimal, soft_resource) =&gt; {
+            <span class="kw">let </span>resource = soft_to_hard_resource(schema, soft_resource, value);
+            <span class="kw">let </span>hard_decimal = soft_to_hard_decimal(schema, soft_decimal, value);
+            HardProofRule::AmountOf(hard_decimal, resource)
         }
-        <span class="ident">AccessRuleNode::AllOf</span>(<span class="ident">rules</span>) =&gt; {
-            <span class="kw">let</span> <span class="ident">hard_rules</span> <span class="op">=</span> <span class="ident">rules</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">r</span><span class="op">|</span> <span class="ident">soft_to_hard_auth_rule</span>(<span class="ident">schema</span>, <span class="ident">r</span>, <span class="ident">value</span>))
-                .<span class="ident">collect</span>();
-            <span class="ident">HardAuthRule::AllOf</span>(<span class="ident">hard_rules</span>)
+        ProofRule::AllOf(resources) =&gt; {
+            <span class="kw">let </span>hard_resources = soft_to_hard_resource_list(schema, resources, value);
+            HardProofRule::AllOf(hard_resources)
+        }
+        ProofRule::AnyOf(resources) =&gt; {
+            <span class="kw">let </span>hard_resources = soft_to_hard_resource_list(schema, resources, value);
+            HardProofRule::AnyOf(hard_resources)
+        }
+        ProofRule::CountOf(soft_count, resources) =&gt; {
+            <span class="kw">let </span>hard_count = soft_to_hard_count(schema, soft_count, value);
+            <span class="kw">let </span>hard_resources = soft_to_hard_resource_list(schema, resources, value);
+            HardProofRule::CountOf(hard_count, hard_resources)
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">convert</span>(
-    <span class="ident">schema</span>: <span class="kw-2">&amp;</span><span class="ident">Type</span>,
-    <span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>,
-    <span class="ident">method_auth</span>: <span class="kw-2">&amp;</span><span class="ident">AccessRule</span>,
-) -&gt; <span class="ident">MethodAuthorization</span> {
-    <span class="kw">match</span> <span class="ident">method_auth</span> {
-        <span class="ident">AccessRule::Protected</span>(<span class="ident">auth_rule</span>) =&gt; {
-            <span class="ident">MethodAuthorization::Protected</span>(<span class="ident">soft_to_hard_auth_rule</span>(<span class="ident">schema</span>, <span class="ident">auth_rule</span>, <span class="ident">value</span>))
+<span class="kw">fn </span>soft_to_hard_auth_rule(
+    schema: <span class="kw-2">&amp;</span>Type,
+    auth_rule: <span class="kw-2">&amp;</span>AccessRuleNode,
+    value: <span class="kw-2">&amp;</span>ScryptoValue,
+) -&gt; HardAuthRule {
+    <span class="kw">match </span>auth_rule {
+        AccessRuleNode::ProofRule(proof_rule) =&gt; {
+            HardAuthRule::ProofRule(soft_to_hard_proof_rule(schema, proof_rule, value))
         }
-        <span class="ident">AccessRule::AllowAll</span> =&gt; <span class="ident">MethodAuthorization::AllowAll</span>,
-        <span class="ident">AccessRule::DenyAll</span> =&gt; <span class="ident">MethodAuthorization::DenyAll</span>,
+        AccessRuleNode::AnyOf(rules) =&gt; {
+            <span class="kw">let </span>hard_rules = rules
+                .iter()
+                .map(|r| soft_to_hard_auth_rule(schema, r, value))
+                .collect();
+            HardAuthRule::AnyOf(hard_rules)
+        }
+        AccessRuleNode::AllOf(rules) =&gt; {
+            <span class="kw">let </span>hard_rules = rules
+                .iter()
+                .map(|r| soft_to_hard_auth_rule(schema, r, value))
+                .collect();
+            HardAuthRule::AllOf(hard_rules)
+        }
+    }
+}
+
+<span class="kw">pub fn </span>convert(
+    schema: <span class="kw-2">&amp;</span>Type,
+    value: <span class="kw-2">&amp;</span>ScryptoValue,
+    method_auth: <span class="kw-2">&amp;</span>AccessRule,
+) -&gt; MethodAuthorization {
+    <span class="kw">match </span>method_auth {
+        AccessRule::Protected(auth_rule) =&gt; {
+            MethodAuthorization::Protected(soft_to_hard_auth_rule(schema, auth_rule, value))
+        }
+        AccessRule::AllowAll =&gt; MethodAuthorization::AllowAll,
+        AccessRule::DenyAll =&gt; MethodAuthorization::DenyAll,
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

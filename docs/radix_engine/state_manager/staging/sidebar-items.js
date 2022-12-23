@@ -1,1 +1,1 @@
-initSidebarItems({"struct":[["StagedSubstateStore",""],["StagedSubstateStoreManager","Structure which manages the acyclic graph"]]});
+window.SIDEBAR_ITEMS = {"struct":[["StagedSubstateStore",""],["StagedSubstateStoreManager","Structure which manages the acyclic graph"]]};

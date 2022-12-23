@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/sbor/src/type_id.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>type_id.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/sbor/src/type_id.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>type_id.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -239,242 +234,241 @@
 <span id="234">234</span>
 <span id="235">235</span>
 <span id="236">236</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::boxed::Box</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::cell::RefCell</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::collections</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::rc::Rc</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::string::String</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::rust::vec::Vec</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::rust::boxed::Box;
+<span class="kw">use </span><span class="kw">crate</span>::rust::cell::RefCell;
+<span class="kw">use </span><span class="kw">crate</span>::rust::collections::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rust::rc::Rc;
+<span class="kw">use </span><span class="kw">crate</span>::rust::string::String;
+<span class="kw">use </span><span class="kw">crate</span>::rust::vec::Vec;
 
-<span class="comment">// primitive types</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_UNIT</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x00</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_BOOL</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x01</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_I8</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x02</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_I16</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x03</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_I32</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x04</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_I64</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x05</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_I128</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x06</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_U8</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x07</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_U16</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x08</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_U32</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x09</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_U64</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x0a</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_U128</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x0b</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_STRING</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x0c</span>;
+<span class="comment">// primitive types
+</span><span class="kw">pub const </span>TYPE_UNIT: u8 = <span class="number">0x00</span>;
+<span class="kw">pub const </span>TYPE_BOOL: u8 = <span class="number">0x01</span>;
+<span class="kw">pub const </span>TYPE_I8: u8 = <span class="number">0x02</span>;
+<span class="kw">pub const </span>TYPE_I16: u8 = <span class="number">0x03</span>;
+<span class="kw">pub const </span>TYPE_I32: u8 = <span class="number">0x04</span>;
+<span class="kw">pub const </span>TYPE_I64: u8 = <span class="number">0x05</span>;
+<span class="kw">pub const </span>TYPE_I128: u8 = <span class="number">0x06</span>;
+<span class="kw">pub const </span>TYPE_U8: u8 = <span class="number">0x07</span>;
+<span class="kw">pub const </span>TYPE_U16: u8 = <span class="number">0x08</span>;
+<span class="kw">pub const </span>TYPE_U32: u8 = <span class="number">0x09</span>;
+<span class="kw">pub const </span>TYPE_U64: u8 = <span class="number">0x0a</span>;
+<span class="kw">pub const </span>TYPE_U128: u8 = <span class="number">0x0b</span>;
+<span class="kw">pub const </span>TYPE_STRING: u8 = <span class="number">0x0c</span>;
 
-<span class="comment">// struct and enum</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_STRUCT</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x10</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_ENUM</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x11</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_OPTION</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x12</span>; <span class="comment">// enum Option&lt;T&gt; { Some(T), None }</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_RESULT</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x13</span>; <span class="comment">// enum Result&lt;T, E&gt; { Ok(T), Err(E) }</span>
+<span class="comment">// struct and enum
+</span><span class="kw">pub const </span>TYPE_STRUCT: u8 = <span class="number">0x10</span>;
+<span class="kw">pub const </span>TYPE_ENUM: u8 = <span class="number">0x11</span>;
+<span class="kw">pub const </span>TYPE_OPTION: u8 = <span class="number">0x12</span>; <span class="comment">// enum Option&lt;T&gt; { Some(T), None }
+</span><span class="kw">pub const </span>TYPE_RESULT: u8 = <span class="number">0x13</span>; <span class="comment">// enum Result&lt;T, E&gt; { Ok(T), Err(E) }
 
-<span class="comment">// composite types</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_ARRAY</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x20</span>; <span class="comment">// [T; N]</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_TUPLE</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x21</span>; <span class="comment">// (A, B, C)</span>
+// composite types
+</span><span class="kw">pub const </span>TYPE_ARRAY: u8 = <span class="number">0x20</span>; <span class="comment">// [T; N]
+</span><span class="kw">pub const </span>TYPE_TUPLE: u8 = <span class="number">0x21</span>; <span class="comment">// (A, B, C)
 
-<span class="comment">// collections</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_LIST</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x30</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_SET</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x31</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_MAP</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x32</span>;
+// collections
+</span><span class="kw">pub const </span>TYPE_LIST: u8 = <span class="number">0x30</span>;
+<span class="kw">pub const </span>TYPE_SET: u8 = <span class="number">0x31</span>;
+<span class="kw">pub const </span>TYPE_MAP: u8 = <span class="number">0x32</span>;
 
-<span class="comment">// custom types start from 0x80 and values are encoded as `len + data`</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">TYPE_CUSTOM_START</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x80</span>;
+<span class="comment">// custom types start from 0x80 and values are encoded as `len + data`
+</span><span class="kw">pub const </span>TYPE_CUSTOM_START: u8 = <span class="number">0x80</span>;
 
-<span class="comment">// enum variant indices</span>
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">OPTION_VARIANT_SOME</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x00</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">OPTION_VARIANT_NONE</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x01</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">RESULT_VARIANT_OK</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x00</span>;
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">RESULT_VARIANT_ERR</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">0x01</span>;
+<span class="comment">// enum variant indices
+</span><span class="kw">pub const </span>OPTION_VARIANT_SOME: u8 = <span class="number">0x00</span>;
+<span class="kw">pub const </span>OPTION_VARIANT_NONE: u8 = <span class="number">0x01</span>;
+<span class="kw">pub const </span>RESULT_VARIANT_OK: u8 = <span class="number">0x00</span>;
+<span class="kw">pub const </span>RESULT_VARIANT_ERR: u8 = <span class="number">0x01</span>;
 
-<span class="doccomment">/// A SBOR type ID.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">TypeId</span> {
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span>;
+<span class="doccomment">/// A SBOR type ID.
+</span><span class="kw">pub trait </span>TypeId {
+    <span class="kw">fn </span>type_id() -&gt; u8;
 }
 
-<span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> () {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_UNIT</span>
+<span class="kw">impl </span>TypeId <span class="kw">for </span>() {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_UNIT
     }
 }
 
-<span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">bool</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_BOOL</span>
+<span class="kw">impl </span>TypeId <span class="kw">for </span>bool {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_BOOL
     }
 }
 
-<span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">i8</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_I8</span>
+<span class="kw">impl </span>TypeId <span class="kw">for </span>i8 {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_I8
     }
 }
-<span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">u8</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_U8</span>
+<span class="kw">impl </span>TypeId <span class="kw">for </span>u8 {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_U8
     }
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">type_id_int</span> {
-    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">type_id</span>:<span class="ident">ident</span>) =&gt; {
-        <span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="kw">type</span> {
-            <span class="attribute">#[<span class="macro-nonterminal">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-                <span class="macro-nonterminal">$</span><span class="macro-nonterminal">type_id</span>
+<span class="macro">macro_rules! </span>type_id_int {
+    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ident</span>, <span class="macro-nonterminal">$type_id</span>:ident) =&gt; {
+        <span class="kw">impl </span>TypeId <span class="kw">for </span><span class="macro-nonterminal">$</span><span class="kw">type </span>{
+            <span class="attribute">#[<span class="macro-nonterminal">inline</span>]
+            </span><span class="kw">fn </span>type_id() -&gt; u8 {
+                <span class="macro-nonterminal">$type_id
+            </span>}
+        }
+    };
+}
+
+<span class="macro">type_id_int!</span>(i16, TYPE_I16);
+<span class="macro">type_id_int!</span>(i32, TYPE_I32);
+<span class="macro">type_id_int!</span>(i64, TYPE_I64);
+<span class="macro">type_id_int!</span>(i128, TYPE_I128);
+<span class="macro">type_id_int!</span>(u16, TYPE_U16);
+<span class="macro">type_id_int!</span>(u32, TYPE_U32);
+<span class="macro">type_id_int!</span>(u64, TYPE_U64);
+<span class="macro">type_id_int!</span>(u128, TYPE_U128);
+
+<span class="kw">impl </span>TypeId <span class="kw">for </span>isize {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        i64::type_id()
+    }
+}
+
+<span class="kw">impl </span>TypeId <span class="kw">for </span>usize {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        u64::type_id()
+    }
+}
+
+<span class="kw">impl </span>TypeId <span class="kw">for </span>str {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_STRING
+    }
+}
+
+<span class="kw">impl </span>TypeId <span class="kw">for </span><span class="kw-2">&amp;</span>str {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_STRING
+    }
+}
+
+<span class="kw">impl </span>TypeId <span class="kw">for </span>String {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_STRING
+    }
+}
+
+<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span><span class="prelude-ty">Option</span>&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_OPTION
+    }
+}
+
+<span class="kw">impl</span>&lt;T: TypeId&gt; TypeId <span class="kw">for </span>Box&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        T::type_id()
+    }
+}
+
+<span class="kw">impl</span>&lt;T: TypeId&gt; TypeId <span class="kw">for </span>Rc&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        T::type_id()
+    }
+}
+
+<span class="kw">impl</span>&lt;T: TypeId&gt; TypeId <span class="kw">for </span>RefCell&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        T::type_id()
+    }
+}
+
+<span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; TypeId <span class="kw">for </span>[T; N] {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_ARRAY
+    }
+}
+<span class="macro">macro_rules! </span>type_id_tuple {
+    (<span class="macro-nonterminal">$n</span>:tt $(<span class="macro-nonterminal">$idx</span>:tt <span class="macro-nonterminal">$name</span>:ident)+) =&gt; {
+        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$name</span>),+&gt; TypeId <span class="kw">for </span>($(<span class="macro-nonterminal">$name</span>,)+) {
+            <span class="attribute">#[inline]
+            </span><span class="kw">fn </span>type_id() -&gt; u8 {
+                TYPE_TUPLE
             }
         }
     };
 }
 
-<span class="macro">type_id_int!</span>(<span class="ident">i16</span>, <span class="ident">TYPE_I16</span>);
-<span class="macro">type_id_int!</span>(<span class="ident">i32</span>, <span class="ident">TYPE_I32</span>);
-<span class="macro">type_id_int!</span>(<span class="ident">i64</span>, <span class="ident">TYPE_I64</span>);
-<span class="macro">type_id_int!</span>(<span class="ident">i128</span>, <span class="ident">TYPE_I128</span>);
-<span class="macro">type_id_int!</span>(<span class="ident">u16</span>, <span class="ident">TYPE_U16</span>);
-<span class="macro">type_id_int!</span>(<span class="ident">u32</span>, <span class="ident">TYPE_U32</span>);
-<span class="macro">type_id_int!</span>(<span class="ident">u64</span>, <span class="ident">TYPE_U64</span>);
-<span class="macro">type_id_int!</span>(<span class="ident">u128</span>, <span class="ident">TYPE_U128</span>);
+<span class="macro">type_id_tuple! </span>{ <span class="number">2 0 </span>A <span class="number">1 </span>B }
+<span class="macro">type_id_tuple! </span>{ <span class="number">3 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C }
+<span class="macro">type_id_tuple! </span>{ <span class="number">4 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D }
+<span class="macro">type_id_tuple! </span>{ <span class="number">5 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E }
+<span class="macro">type_id_tuple! </span>{ <span class="number">6 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F }
+<span class="macro">type_id_tuple! </span>{ <span class="number">7 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G }
+<span class="macro">type_id_tuple! </span>{ <span class="number">8 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G <span class="number">7 </span>H }
+<span class="macro">type_id_tuple! </span>{ <span class="number">9 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G <span class="number">7 </span>H <span class="number">8 </span>I }
+<span class="macro">type_id_tuple! </span>{ <span class="number">10 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G <span class="number">7 </span>H <span class="number">8 </span>I <span class="number">9 </span>J }
 
-<span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">isize</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">i64::type_id</span>()
+<span class="kw">impl</span>&lt;T, E&gt; TypeId <span class="kw">for </span><span class="prelude-ty">Result</span>&lt;T, E&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_RESULT
     }
 }
 
-<span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">usize</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">u64::type_id</span>()
+<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span>Vec&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_LIST
     }
 }
 
-<span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">str</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_STRING</span>
+<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span>[T] {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_LIST
     }
 }
 
-<span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="ident">str</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_STRING</span>
+<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span>BTreeSet&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_SET
     }
 }
 
-<span class="kw">impl</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">String</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_STRING</span>
+<span class="kw">impl</span>&lt;K, V&gt; TypeId <span class="kw">for </span>BTreeMap&lt;K, V&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_MAP
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_OPTION</span>
+<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span>HashSet&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_SET
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">TypeId</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">Box</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">T::type_id</span>()
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">TypeId</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">Rc</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">T::type_id</span>()
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">TypeId</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">RefCell</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">T::type_id</span>()
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="kw">const</span> <span class="ident">N</span>: <span class="ident">usize</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> [<span class="ident">T</span>; <span class="ident">N</span>] {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_ARRAY</span>
-    }
-}
-<span class="macro">macro_rules!</span> <span class="ident">type_id_tuple</span> {
-    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">n</span>:<span class="ident">tt</span> $(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">idx</span>:<span class="ident">tt</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span>)<span class="op">+</span>) =&gt; {
-        <span class="kw">impl</span><span class="op">&lt;</span>$(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>),<span class="op">+</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>,)<span class="op">+</span>) {
-            <span class="attribute">#[<span class="ident">inline</span>]</span>
-            <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-                <span class="ident">TYPE_TUPLE</span>
-            }
-        }
-    };
-}
-
-<span class="macro">type_id_tuple!</span> { <span class="number">2</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> }
-<span class="macro">type_id_tuple!</span> { <span class="number">3</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> }
-<span class="macro">type_id_tuple!</span> { <span class="number">4</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> }
-<span class="macro">type_id_tuple!</span> { <span class="number">5</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> }
-<span class="macro">type_id_tuple!</span> { <span class="number">6</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> }
-<span class="macro">type_id_tuple!</span> { <span class="number">7</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> <span class="number">6</span> <span class="ident">G</span> }
-<span class="macro">type_id_tuple!</span> { <span class="number">8</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> <span class="number">6</span> <span class="ident">G</span> <span class="number">7</span> <span class="ident">H</span> }
-<span class="macro">type_id_tuple!</span> { <span class="number">9</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> <span class="number">6</span> <span class="ident">G</span> <span class="number">7</span> <span class="ident">H</span> <span class="number">8</span> <span class="ident">I</span> }
-<span class="macro">type_id_tuple!</span> { <span class="number">10</span> <span class="number">0</span> <span class="ident">A</span> <span class="number">1</span> <span class="ident">B</span> <span class="number">2</span> <span class="ident">C</span> <span class="number">3</span> <span class="ident">D</span> <span class="number">4</span> <span class="ident">E</span> <span class="number">5</span> <span class="ident">F</span> <span class="number">6</span> <span class="ident">G</span> <span class="number">7</span> <span class="ident">H</span> <span class="number">8</span> <span class="ident">I</span> <span class="number">9</span> <span class="ident">J</span> }
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">E</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_RESULT</span>
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_LIST</span>
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> [<span class="ident">T</span>] {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_LIST</span>
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">BTreeSet</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_SET</span>
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_MAP</span>
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">HashSet</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_SET</span>
-    }
-}
-
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> <span class="ident">TypeId</span> <span class="kw">for</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
-    <span class="attribute">#[<span class="ident">inline</span>]</span>
-    <span class="kw">fn</span> <span class="ident">type_id</span>() -&gt; <span class="ident">u8</span> {
-        <span class="ident">TYPE_MAP</span>
+<span class="kw">impl</span>&lt;K, V&gt; TypeId <span class="kw">for </span>HashMap&lt;K, V&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+        TYPE_MAP
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

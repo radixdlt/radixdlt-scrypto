@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/transaction_processor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>transaction_processor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/model/transaction_processor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>transaction_processor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -751,754 +746,753 @@
 <span id="746">746</span>
 <span id="747">747</span>
 <span id="748">748</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">transaction::errors::IdAllocationError</span>;
-<span class="kw">use</span> <span class="ident">transaction::model</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident">transaction::validation</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>transaction::errors::IdAllocationError;
+<span class="kw">use </span>transaction::model::<span class="kw-2">*</span>;
+<span class="kw">use </span>transaction::validation::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">HeapRENode</span>, <span class="ident">SystemApi</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::worktop</span>::{
-    <span class="ident">WorktopAssertContainsAmountInput</span>, <span class="ident">WorktopAssertContainsInput</span>,
-    <span class="ident">WorktopAssertContainsNonFungiblesInput</span>, <span class="ident">WorktopDrainInput</span>, <span class="ident">WorktopPutInput</span>,
-    <span class="ident">WorktopTakeAllInput</span>, <span class="ident">WorktopTakeAmountInput</span>, <span class="ident">WorktopTakeNonFungiblesInput</span>,
+<span class="kw">use </span><span class="kw">crate</span>::engine::{HeapRENode, SystemApi};
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::worktop::{
+    WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
+    WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
+    WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
 };
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model::InvokeError</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::model::InvokeError;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">super</span>::Worktop</span>;
+<span class="kw">use </span><span class="kw">super</span>::Worktop;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TransactionProcessorRunInput</span> {
-    <span class="kw">pub</span> <span class="ident">instructions</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Instruction</span><span class="op">&gt;</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>TransactionProcessorRunInput {
+    <span class="kw">pub </span>instructions: Vec&lt;Instruction&gt;,
 }
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">TransactionProcessorError</span> {
-    <span class="ident">InvalidRequestData</span>(<span class="ident">DecodeError</span>),
-    <span class="ident">InvalidMethod</span>,
-    <span class="ident">BucketNotFound</span>(<span class="ident">BucketId</span>),
-    <span class="ident">ProofNotFound</span>(<span class="ident">ProofId</span>),
-    <span class="ident">IdAllocationError</span>(<span class="ident">IdAllocationError</span>),
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>TransactionProcessorError {
+    InvalidRequestData(DecodeError),
+    InvalidMethod,
+    BucketNotFound(BucketId),
+    ProofNotFound(ProofId),
+    IdAllocationError(IdAllocationError),
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TransactionProcessor</span> {}
+<span class="kw">pub struct </span>TransactionProcessor {}
 
-<span class="kw">impl</span> <span class="ident">TransactionProcessor</span> {
-    <span class="kw">fn</span> <span class="ident">replace_node_id</span>(
-        <span class="ident">node_id</span>: <span class="ident">RENodeId</span>,
-        <span class="ident">proof_id_mapping</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ProofId</span>, <span class="ident">ProofId</span><span class="op">&gt;</span>,
-        <span class="ident">bucket_id_mapping</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketId</span>, <span class="ident">BucketId</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">RENodeId</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">TransactionProcessorError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">node_id</span> {
-            <span class="ident">RENodeId::Bucket</span>(<span class="ident">bucket_id</span>) =&gt; <span class="ident">bucket_id_mapping</span>
-                .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">bucket_id</span>)
-                .<span class="ident">cloned</span>()
-                .<span class="ident">map</span>(<span class="ident">RENodeId::Bucket</span>)
-                .<span class="ident">ok_or</span>(<span class="ident">InvokeError::Error</span>(
-                    <span class="ident">TransactionProcessorError::BucketNotFound</span>(<span class="ident">bucket_id</span>),
+<span class="kw">impl </span>TransactionProcessor {
+    <span class="kw">fn </span>replace_node_id(
+        node_id: RENodeId,
+        proof_id_mapping: <span class="kw-2">&amp;mut </span>HashMap&lt;ProofId, ProofId&gt;,
+        bucket_id_mapping: <span class="kw-2">&amp;mut </span>HashMap&lt;BucketId, BucketId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;RENodeId, InvokeError&lt;TransactionProcessorError&gt;&gt; {
+        <span class="kw">match </span>node_id {
+            RENodeId::Bucket(bucket_id) =&gt; bucket_id_mapping
+                .get(<span class="kw-2">&amp;</span>bucket_id)
+                .cloned()
+                .map(RENodeId::Bucket)
+                .ok_or(InvokeError::Error(
+                    TransactionProcessorError::BucketNotFound(bucket_id),
                 )),
-            <span class="ident">RENodeId::Proof</span>(<span class="ident">proof_id</span>) =&gt; <span class="ident">proof_id_mapping</span>
-                .<span class="ident">get</span>(<span class="kw-2">&amp;</span><span class="ident">proof_id</span>)
-                .<span class="ident">cloned</span>()
-                .<span class="ident">map</span>(<span class="ident">RENodeId::Proof</span>)
-                .<span class="ident">ok_or</span>(<span class="ident">InvokeError::Error</span>(
-                    <span class="ident">TransactionProcessorError::ProofNotFound</span>(<span class="ident">proof_id</span>),
+            RENodeId::Proof(proof_id) =&gt; proof_id_mapping
+                .get(<span class="kw-2">&amp;</span>proof_id)
+                .cloned()
+                .map(RENodeId::Proof)
+                .ok_or(InvokeError::Error(
+                    TransactionProcessorError::ProofNotFound(proof_id),
                 )),
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident">node_id</span>),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(node_id),
         }
     }
 
-    <span class="kw">fn</span> <span class="ident">replace_receiver</span>(
-        <span class="ident">receiver</span>: <span class="ident">Receiver</span>,
-        <span class="ident">proof_id_mapping</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ProofId</span>, <span class="ident">ProofId</span><span class="op">&gt;</span>,
-        <span class="ident">bucket_id_mapping</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketId</span>, <span class="ident">BucketId</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Receiver</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">TransactionProcessorError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">receiver</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">receiver</span> {
-            <span class="ident">Receiver::Ref</span>(<span class="ident">node_id</span>) =&gt; <span class="ident">Receiver::Ref</span>(<span class="ident"><span class="self">Self</span>::replace_node_id</span>(
-                <span class="ident">node_id</span>,
-                <span class="ident">proof_id_mapping</span>,
-                <span class="ident">bucket_id_mapping</span>,
+    <span class="kw">fn </span>replace_receiver(
+        receiver: Receiver,
+        proof_id_mapping: <span class="kw-2">&amp;mut </span>HashMap&lt;ProofId, ProofId&gt;,
+        bucket_id_mapping: <span class="kw-2">&amp;mut </span>HashMap&lt;BucketId, BucketId&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Receiver, InvokeError&lt;TransactionProcessorError&gt;&gt; {
+        <span class="kw">let </span>receiver = <span class="kw">match </span>receiver {
+            Receiver::Ref(node_id) =&gt; Receiver::Ref(<span class="self">Self</span>::replace_node_id(
+                node_id,
+                proof_id_mapping,
+                bucket_id_mapping,
             )<span class="question-mark">?</span>),
-            <span class="ident">Receiver::Consumed</span>(<span class="ident">node_id</span>) =&gt; <span class="ident">Receiver::Consumed</span>(<span class="ident"><span class="self">Self</span>::replace_node_id</span>(
-                <span class="ident">node_id</span>,
-                <span class="ident">proof_id_mapping</span>,
-                <span class="ident">bucket_id_mapping</span>,
+            Receiver::Consumed(node_id) =&gt; Receiver::Consumed(<span class="self">Self</span>::replace_node_id(
+                node_id,
+                proof_id_mapping,
+                bucket_id_mapping,
             )<span class="question-mark">?</span>),
-            <span class="ident">Receiver::CurrentAuthZone</span> =&gt; <span class="ident">Receiver::CurrentAuthZone</span>,
+            Receiver::CurrentAuthZone =&gt; Receiver::CurrentAuthZone,
         };
 
-        <span class="prelude-val">Ok</span>(<span class="ident">receiver</span>)
+        <span class="prelude-val">Ok</span>(receiver)
     }
 
-    <span class="kw">fn</span> <span class="ident">replace_ids</span>(
-        <span class="ident">proof_id_mapping</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">ProofId</span>, <span class="ident">ProofId</span><span class="op">&gt;</span>,
-        <span class="ident">bucket_id_mapping</span>: <span class="kw-2">&amp;mut</span> <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">BucketId</span>, <span class="ident">BucketId</span><span class="op">&gt;</span>,
-        <span class="kw-2">mut</span> <span class="ident">value</span>: <span class="ident">ScryptoValue</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">TransactionProcessorError</span><span class="op">&gt;</span><span class="op">&gt;</span> {
-        <span class="ident">value</span>
-            .<span class="ident">replace_ids</span>(<span class="ident">proof_id_mapping</span>, <span class="ident">bucket_id_mapping</span>)
-            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> <span class="kw">match</span> <span class="ident">e</span> {
-                <span class="ident">ScryptoValueReplaceError::BucketIdNotFound</span>(<span class="ident">bucket_id</span>) =&gt; {
-                    <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::BucketNotFound</span>(<span class="ident">bucket_id</span>))
+    <span class="kw">fn </span>replace_ids(
+        proof_id_mapping: <span class="kw-2">&amp;mut </span>HashMap&lt;ProofId, ProofId&gt;,
+        bucket_id_mapping: <span class="kw-2">&amp;mut </span>HashMap&lt;BucketId, BucketId&gt;,
+        <span class="kw-2">mut </span>value: ScryptoValue,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;TransactionProcessorError&gt;&gt; {
+        value
+            .replace_ids(proof_id_mapping, bucket_id_mapping)
+            .map_err(|e| <span class="kw">match </span>e {
+                ScryptoValueReplaceError::BucketIdNotFound(bucket_id) =&gt; {
+                    InvokeError::Error(TransactionProcessorError::BucketNotFound(bucket_id))
                 }
-                <span class="ident">ScryptoValueReplaceError::ProofIdNotFound</span>(<span class="ident">proof_id</span>) =&gt; {
-                    <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::ProofNotFound</span>(<span class="ident">proof_id</span>))
+                ScryptoValueReplaceError::ProofIdNotFound(proof_id) =&gt; {
+                    InvokeError::Error(TransactionProcessorError::ProofNotFound(proof_id))
                 }
             })<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="ident">value</span>)
+        <span class="prelude-val">Ok</span>(value)
     }
 
-    <span class="kw">fn</span> <span class="ident">process_expressions</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">args</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">TransactionProcessorError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">fn </span>process_expressions&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        args: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;TransactionProcessorError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">value</span> <span class="op">=</span> <span class="ident">args</span>.<span class="ident">dom</span>;
-        <span class="kw">for</span> (<span class="ident">expression</span>, <span class="ident">path</span>) <span class="kw">in</span> <span class="ident">args</span>.<span class="ident">expressions</span> {
-            <span class="kw">match</span> <span class="ident">expression</span>.<span class="number">0</span>.<span class="ident">as_str</span>() {
-                <span class="string">&quot;ENTIRE_WORKTOP&quot;</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">buckets</span> <span class="op">=</span> <span class="ident">system_api</span>
-                        .<span class="ident">invoke_method</span>(
-                            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                <span class="ident">WorktopFnIdentifier::Drain</span>,
+        <span class="kw">let </span><span class="kw-2">mut </span>value = args.dom;
+        <span class="kw">for </span>(expression, path) <span class="kw">in </span>args.expressions {
+            <span class="kw">match </span>expression.<span class="number">0</span>.as_str() {
+                <span class="string">&quot;ENTIRE_WORKTOP&quot; </span>=&gt; {
+                    <span class="kw">let </span>buckets = system_api
+                        .invoke_method(
+                            Receiver::Ref(RENodeId::Worktop),
+                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                WorktopFnIdentifier::Drain,
                             )),
-                            <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopDrainInput</span> {}),
+                            ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopDrainInput {}),
                         )
-                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">result</span><span class="op">|</span> {
-                            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buckets</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-                            <span class="kw">for</span> (<span class="ident">bucket_id</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="ident">result</span>.<span class="ident">bucket_ids</span> {
-                                <span class="ident">buckets</span>.<span class="ident">push</span>(<span class="ident">scrypto::resource::Bucket</span>(<span class="ident">bucket_id</span>));
+                        .map_err(InvokeError::Downstream)
+                        .map(|result| {
+                            <span class="kw">let </span><span class="kw-2">mut </span>buckets = Vec::new();
+                            <span class="kw">for </span>(bucket_id, <span class="kw">_</span>) <span class="kw">in </span>result.bucket_ids {
+                                buckets.push(scrypto::resource::Bucket(bucket_id));
                             }
-                            <span class="ident">buckets</span>
+                            buckets
                         })<span class="question-mark">?</span>;
 
-                    <span class="kw">let</span> <span class="ident">val</span> <span class="op">=</span> <span class="ident">path</span>
-                        .<span class="ident">get_from_value_mut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">value</span>)
-                        .<span class="ident">expect</span>(<span class="string">&quot;Failed to locate an expression value using SBOR path&quot;</span>);
-                    <span class="kw-2">*</span><span class="ident">val</span> <span class="op">=</span>
-                        <span class="ident">decode_any</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">buckets</span>)).<span class="ident">expect</span>(<span class="string">&quot;Failed to decode Vec&lt;Bucket&gt;&quot;</span>)
+                    <span class="kw">let </span>val = path
+                        .get_from_value_mut(<span class="kw-2">&amp;mut </span>value)
+                        .expect(<span class="string">&quot;Failed to locate an expression value using SBOR path&quot;</span>);
+                    <span class="kw-2">*</span>val =
+                        decode_any(<span class="kw-2">&amp;</span>scrypto_encode(<span class="kw-2">&amp;</span>buckets)).expect(<span class="string">&quot;Failed to decode Vec&lt;Bucket&gt;&quot;</span>)
                 }
-                <span class="string">&quot;ENTIRE_AUTH_ZONE&quot;</span> =&gt; {
-                    <span class="kw">let</span> <span class="ident">auth_zone</span> <span class="op">=</span> <span class="ident">system_api</span>.<span class="ident">auth_zone</span>(<span class="number">1</span>);
-                    <span class="kw">let</span> <span class="ident">proofs</span> <span class="op">=</span> <span class="ident">auth_zone</span>.<span class="ident">drain</span>();
-                    <span class="kw">let</span> <span class="ident">node_ids</span>: <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">RENodeId</span><span class="op">&gt;</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">TransactionProcessorError</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span>
-                        <span class="ident">proofs</span>
-                            .<span class="ident">into_iter</span>()
-                            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">proof</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Proof</span>(<span class="ident">proof</span>))
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
+                <span class="string">&quot;ENTIRE_AUTH_ZONE&quot; </span>=&gt; {
+                    <span class="kw">let </span>auth_zone = system_api.auth_zone(<span class="number">1</span>);
+                    <span class="kw">let </span>proofs = auth_zone.drain();
+                    <span class="kw">let </span>node_ids: <span class="prelude-ty">Result</span>&lt;Vec&lt;RENodeId&gt;, InvokeError&lt;TransactionProcessorError&gt;&gt; =
+                        proofs
+                            .into_iter()
+                            .map(|proof| {
+                                system_api
+                                    .node_create(HeapRENode::Proof(proof))
+                                    .map_err(InvokeError::Downstream)
                             })
-                            .<span class="ident">collect</span>();
+                            .collect();
 
-                    <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">proofs</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-                    <span class="kw">for</span> <span class="ident">node_id</span> <span class="kw">in</span> <span class="ident">node_ids</span><span class="question-mark">?</span> {
-                        <span class="kw">let</span> <span class="ident">proof_id</span>: <span class="ident">ProofId</span> <span class="op">=</span> <span class="ident">node_id</span>.<span class="ident">into</span>();
-                        <span class="ident">proofs</span>.<span class="ident">push</span>(<span class="ident">scrypto::resource::Proof</span>(<span class="ident">proof_id</span>));
+                    <span class="kw">let </span><span class="kw-2">mut </span>proofs = Vec::new();
+                    <span class="kw">for </span>node_id <span class="kw">in </span>node_ids<span class="question-mark">? </span>{
+                        <span class="kw">let </span>proof_id: ProofId = node_id.into();
+                        proofs.push(scrypto::resource::Proof(proof_id));
                     }
 
-                    <span class="kw">let</span> <span class="ident">val</span> <span class="op">=</span> <span class="ident">path</span>
-                        .<span class="ident">get_from_value_mut</span>(<span class="kw-2">&amp;mut</span> <span class="ident">value</span>)
-                        .<span class="ident">expect</span>(<span class="string">&quot;Failed to locate an expression value using SBOR path&quot;</span>);
-                    <span class="kw-2">*</span><span class="ident">val</span> <span class="op">=</span>
-                        <span class="ident">decode_any</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">proofs</span>)).<span class="ident">expect</span>(<span class="string">&quot;Failed to decode Vec&lt;Proof&gt;&quot;</span>)
+                    <span class="kw">let </span>val = path
+                        .get_from_value_mut(<span class="kw-2">&amp;mut </span>value)
+                        .expect(<span class="string">&quot;Failed to locate an expression value using SBOR path&quot;</span>);
+                    <span class="kw-2">*</span>val =
+                        decode_any(<span class="kw-2">&amp;</span>scrypto_encode(<span class="kw-2">&amp;</span>proofs)).expect(<span class="string">&quot;Failed to decode Vec&lt;Proof&gt;&quot;</span>)
                 }
-                <span class="kw">_</span> =&gt; {} <span class="comment">// no-op</span>
-            }
+                <span class="kw">_ </span>=&gt; {} <span class="comment">// no-op
+            </span>}
         }
 
-        <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_value</span>(<span class="ident">value</span>)
-            .<span class="ident">expect</span>(<span class="string">&quot;Value became invalid post expression transformation&quot;</span>))
+        <span class="prelude-val">Ok</span>(ScryptoValue::from_value(value)
+            .expect(<span class="string">&quot;Value became invalid post expression transformation&quot;</span>))
     }
 
-    <span class="kw">fn</span> <span class="ident">first_bucket</span>(<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>) -&gt; <span class="ident">BucketId</span> {
-        <span class="kw-2">*</span><span class="ident">value</span>
-            .<span class="ident">bucket_ids</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">next</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;No bucket found in value&quot;</span>)
-            .<span class="number">0</span>
-    }
+    <span class="kw">fn </span>first_bucket(value: <span class="kw-2">&amp;</span>ScryptoValue) -&gt; BucketId {
+        <span class="kw-2">*</span>value
+            .bucket_ids
+            .iter()
+            .next()
+            .expect(<span class="string">&quot;No bucket found in value&quot;</span>)
+            .<span class="number">0
+    </span>}
 
-    <span class="kw">fn</span> <span class="ident">first_proof</span>(<span class="ident">value</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>) -&gt; <span class="ident">ProofId</span> {
-        <span class="kw-2">*</span><span class="ident">value</span>
-            .<span class="ident">proof_ids</span>
-            .<span class="ident">iter</span>()
-            .<span class="ident">next</span>()
-            .<span class="ident">expect</span>(<span class="string">&quot;No proof found in value&quot;</span>)
-            .<span class="number">0</span>
-    }
+    <span class="kw">fn </span>first_proof(value: <span class="kw-2">&amp;</span>ScryptoValue) -&gt; ProofId {
+        <span class="kw-2">*</span>value
+            .proof_ids
+            .iter()
+            .next()
+            .expect(<span class="string">&quot;No proof found in value&quot;</span>)
+            .<span class="number">0
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">static_main</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">Y</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>(
-        <span class="ident">transaction_processor_fn</span>: <span class="ident">TransactionProcessorFnIdentifier</span>,
-        <span class="ident">call_data</span>: <span class="ident">ScryptoValue</span>,
-        <span class="ident">system_api</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Y</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ScryptoValue</span>, <span class="ident">InvokeError</span><span class="op">&lt;</span><span class="ident">TransactionProcessorError</span><span class="op">&gt;</span><span class="op">&gt;</span>
-    <span class="kw">where</span>
-        <span class="ident">Y</span>: <span class="ident">SystemApi</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">W</span>, <span class="ident">I</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-        <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-        <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
-        <span class="ident">R</span>: <span class="ident">FeeReserve</span>,
+    <span class="kw">pub fn </span>static_main&lt;<span class="lifetime">&#39;s</span>, Y, W, I, R&gt;(
+        transaction_processor_fn: TransactionProcessorFnIdentifier,
+        call_data: ScryptoValue,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, InvokeError&lt;TransactionProcessorError&gt;&gt;
+    <span class="kw">where
+        </span>Y: SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;,
+        W: WasmEngine&lt;I&gt;,
+        I: WasmInstance,
+        R: FeeReserve,
     {
-        <span class="kw">match</span> <span class="ident">transaction_processor_fn</span> {
-            <span class="ident">TransactionProcessorFnIdentifier::Run</span> =&gt; {
-                <span class="kw">let</span> <span class="ident">input</span>: <span class="ident">TransactionProcessorRunInput</span> <span class="op">=</span>
-                    <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">call_data</span>.<span class="ident">raw</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                        <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::InvalidRequestData</span>(<span class="ident">e</span>))
+        <span class="kw">match </span>transaction_processor_fn {
+            TransactionProcessorFnIdentifier::Run =&gt; {
+                <span class="kw">let </span>input: TransactionProcessorRunInput =
+                    scrypto_decode(<span class="kw-2">&amp;</span>call_data.raw).map_err(|e| {
+                        InvokeError::Error(TransactionProcessorError::InvalidRequestData(e))
                     })<span class="question-mark">?</span>;
 
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">proof_id_mapping</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bucket_id_mapping</span> <span class="op">=</span> <span class="ident">HashMap::new</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">outputs</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">id_allocator</span> <span class="op">=</span> <span class="ident">IdAllocator::new</span>(<span class="ident">IdSpace::Transaction</span>);
+                <span class="kw">let </span><span class="kw-2">mut </span>proof_id_mapping = HashMap::new();
+                <span class="kw">let </span><span class="kw-2">mut </span>bucket_id_mapping = HashMap::new();
+                <span class="kw">let </span><span class="kw-2">mut </span>outputs = Vec::new();
+                <span class="kw">let </span><span class="kw-2">mut </span>id_allocator = IdAllocator::new(IdSpace::Transaction);
 
-                <span class="kw">let</span> <span class="ident">_worktop_id</span> <span class="op">=</span> <span class="ident">system_api</span>
-                    .<span class="ident">node_create</span>(<span class="ident">HeapRENode::Worktop</span>(<span class="ident">Worktop::new</span>()))
-                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+                <span class="kw">let </span>_worktop_id = system_api
+                    .node_create(HeapRENode::Worktop(Worktop::new()))
+                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
 
-                <span class="kw">for</span> <span class="ident">inst</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">instructions</span>.<span class="ident">clone</span>() {
-                    <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">inst</span> {
-                        <span class="ident">Instruction::TakeFromWorktop</span> { <span class="ident">resource_address</span> } =&gt; <span class="ident">id_allocator</span>
-                            .<span class="ident">new_bucket_id</span>()
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                                <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::IdAllocationError</span>(<span class="ident">e</span>))
+                <span class="kw">for </span>inst <span class="kw">in </span><span class="kw-2">&amp;</span>input.instructions.clone() {
+                    <span class="kw">let </span>result = <span class="kw">match </span>inst {
+                        Instruction::TakeFromWorktop { resource_address } =&gt; id_allocator
+                            .new_bucket_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">new_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                            <span class="ident">WorktopFnIdentifier::TakeAll</span>,
+                            .and_then(|new_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Ref(RENodeId::Worktop),
+                                        FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                            WorktopFnIdentifier::TakeAll,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopTakeAllInput</span> {
-                                            <span class="ident">resource_address</span>: <span class="kw-2">*</span><span class="ident">resource_address</span>,
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopTakeAllInput {
+                                            resource_address: <span class="kw-2">*</span>resource_address,
                                         }),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">rtn</span><span class="op">|</span> {
-                                        <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::first_bucket</span>(<span class="kw-2">&amp;</span><span class="ident">rtn</span>);
-                                        <span class="ident">bucket_id_mapping</span>.<span class="ident">insert</span>(<span class="ident">new_id</span>, <span class="ident">bucket_id</span>);
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(<span class="ident">new_id</span>))
+                                    .map_err(InvokeError::Downstream)
+                                    .map(|rtn| {
+                                        <span class="kw">let </span>bucket_id = <span class="self">Self</span>::first_bucket(<span class="kw-2">&amp;</span>rtn);
+                                        bucket_id_mapping.insert(new_id, bucket_id);
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(new_id))
                                     })
                             }),
-                        <span class="ident">Instruction::TakeFromWorktopByAmount</span> {
-                            <span class="ident">amount</span>,
-                            <span class="ident">resource_address</span>,
-                        } =&gt; <span class="ident">id_allocator</span>
-                            .<span class="ident">new_bucket_id</span>()
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                                <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::IdAllocationError</span>(<span class="ident">e</span>))
+                        Instruction::TakeFromWorktopByAmount {
+                            amount,
+                            resource_address,
+                        } =&gt; id_allocator
+                            .new_bucket_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">new_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                            <span class="ident">WorktopFnIdentifier::TakeAmount</span>,
+                            .and_then(|new_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Ref(RENodeId::Worktop),
+                                        FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                            WorktopFnIdentifier::TakeAmount,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopTakeAmountInput</span> {
-                                            <span class="ident">amount</span>: <span class="kw-2">*</span><span class="ident">amount</span>,
-                                            <span class="ident">resource_address</span>: <span class="kw-2">*</span><span class="ident">resource_address</span>,
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopTakeAmountInput {
+                                            amount: <span class="kw-2">*</span>amount,
+                                            resource_address: <span class="kw-2">*</span>resource_address,
                                         }),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">rtn</span><span class="op">|</span> {
-                                        <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::first_bucket</span>(<span class="kw-2">&amp;</span><span class="ident">rtn</span>);
-                                        <span class="ident">bucket_id_mapping</span>.<span class="ident">insert</span>(<span class="ident">new_id</span>, <span class="ident">bucket_id</span>);
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(<span class="ident">new_id</span>))
+                                    .map_err(InvokeError::Downstream)
+                                    .map(|rtn| {
+                                        <span class="kw">let </span>bucket_id = <span class="self">Self</span>::first_bucket(<span class="kw-2">&amp;</span>rtn);
+                                        bucket_id_mapping.insert(new_id, bucket_id);
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(new_id))
                                     })
                             }),
-                        <span class="ident">Instruction::TakeFromWorktopByIds</span> {
-                            <span class="ident">ids</span>,
-                            <span class="ident">resource_address</span>,
-                        } =&gt; <span class="ident">id_allocator</span>
-                            .<span class="ident">new_bucket_id</span>()
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                                <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::IdAllocationError</span>(<span class="ident">e</span>))
+                        Instruction::TakeFromWorktopByIds {
+                            ids,
+                            resource_address,
+                        } =&gt; id_allocator
+                            .new_bucket_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">new_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                            <span class="ident">WorktopFnIdentifier::TakeNonFungibles</span>,
+                            .and_then(|new_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Ref(RENodeId::Worktop),
+                                        FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                            WorktopFnIdentifier::TakeNonFungibles,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopTakeNonFungiblesInput</span> {
-                                            <span class="ident">ids</span>: <span class="ident">ids</span>.<span class="ident">clone</span>(),
-                                            <span class="ident">resource_address</span>: <span class="kw-2">*</span><span class="ident">resource_address</span>,
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopTakeNonFungiblesInput {
+                                            ids: ids.clone(),
+                                            resource_address: <span class="kw-2">*</span>resource_address,
                                         }),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">rtn</span><span class="op">|</span> {
-                                        <span class="kw">let</span> <span class="ident">bucket_id</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::first_bucket</span>(<span class="kw-2">&amp;</span><span class="ident">rtn</span>);
-                                        <span class="ident">bucket_id_mapping</span>.<span class="ident">insert</span>(<span class="ident">new_id</span>, <span class="ident">bucket_id</span>);
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Bucket</span>(<span class="ident">new_id</span>))
+                                    .map_err(InvokeError::Downstream)
+                                    .map(|rtn| {
+                                        <span class="kw">let </span>bucket_id = <span class="self">Self</span>::first_bucket(<span class="kw-2">&amp;</span>rtn);
+                                        bucket_id_mapping.insert(new_id, bucket_id);
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Bucket(new_id))
                                     })
                             }),
-                        <span class="ident">Instruction::ReturnToWorktop</span> { <span class="ident">bucket_id</span> } =&gt; <span class="ident">bucket_id_mapping</span>
-                            .<span class="ident">remove</span>(<span class="ident">bucket_id</span>)
-                            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">real_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                            <span class="ident">WorktopFnIdentifier::Put</span>,
+                        Instruction::ReturnToWorktop { bucket_id } =&gt; bucket_id_mapping
+                            .remove(bucket_id)
+                            .map(|real_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Ref(RENodeId::Worktop),
+                                        FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                            WorktopFnIdentifier::Put,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopPutInput</span> {
-                                            <span class="ident">bucket</span>: <span class="ident">scrypto::resource::Bucket</span>(<span class="ident">real_id</span>),
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopPutInput {
+                                            bucket: scrypto::resource::Bucket(real_id),
                                         }),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
+                                    .map_err(InvokeError::Downstream)
                             })
-                            .<span class="ident">unwrap_or</span>(<span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                                <span class="ident">TransactionProcessorError::BucketNotFound</span>(<span class="kw-2">*</span><span class="ident">bucket_id</span>),
+                            .unwrap_or(<span class="prelude-val">Err</span>(InvokeError::Error(
+                                TransactionProcessorError::BucketNotFound(<span class="kw-2">*</span>bucket_id),
                             ))),
-                        <span class="ident">Instruction::AssertWorktopContains</span> { <span class="ident">resource_address</span> } =&gt; <span class="ident">system_api</span>
-                            .<span class="ident">invoke_method</span>(
-                                <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                                <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                    <span class="ident">WorktopFnIdentifier::AssertContains</span>,
+                        Instruction::AssertWorktopContains { resource_address } =&gt; system_api
+                            .invoke_method(
+                                Receiver::Ref(RENodeId::Worktop),
+                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                    WorktopFnIdentifier::AssertContains,
                                 )),
-                                <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopAssertContainsInput</span> {
-                                    <span class="ident">resource_address</span>: <span class="kw-2">*</span><span class="ident">resource_address</span>,
+                                ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopAssertContainsInput {
+                                    resource_address: <span class="kw-2">*</span>resource_address,
                                 }),
                             )
-                            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>),
-                        <span class="ident">Instruction::AssertWorktopContainsByAmount</span> {
-                            <span class="ident">amount</span>,
-                            <span class="ident">resource_address</span>,
-                        } =&gt; <span class="ident">system_api</span>
-                            .<span class="ident">invoke_method</span>(
-                                <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                                <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                    <span class="ident">WorktopFnIdentifier::AssertContainsAmount</span>,
+                            .map_err(InvokeError::Downstream),
+                        Instruction::AssertWorktopContainsByAmount {
+                            amount,
+                            resource_address,
+                        } =&gt; system_api
+                            .invoke_method(
+                                Receiver::Ref(RENodeId::Worktop),
+                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                    WorktopFnIdentifier::AssertContainsAmount,
                                 )),
-                                <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopAssertContainsAmountInput</span> {
-                                    <span class="ident">amount</span>: <span class="kw-2">*</span><span class="ident">amount</span>,
-                                    <span class="ident">resource_address</span>: <span class="kw-2">*</span><span class="ident">resource_address</span>,
+                                ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopAssertContainsAmountInput {
+                                    amount: <span class="kw-2">*</span>amount,
+                                    resource_address: <span class="kw-2">*</span>resource_address,
                                 }),
                             )
-                            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>),
-                        <span class="ident">Instruction::AssertWorktopContainsByIds</span> {
-                            <span class="ident">ids</span>,
-                            <span class="ident">resource_address</span>,
-                        } =&gt; <span class="ident">system_api</span>
-                            .<span class="ident">invoke_method</span>(
-                                <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                                <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                    <span class="ident">WorktopFnIdentifier::AssertContainsNonFungibles</span>,
+                            .map_err(InvokeError::Downstream),
+                        Instruction::AssertWorktopContainsByIds {
+                            ids,
+                            resource_address,
+                        } =&gt; system_api
+                            .invoke_method(
+                                Receiver::Ref(RENodeId::Worktop),
+                                FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                    WorktopFnIdentifier::AssertContainsNonFungibles,
                                 )),
-                                <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopAssertContainsNonFungiblesInput</span> {
-                                    <span class="ident">ids</span>: <span class="ident">ids</span>.<span class="ident">clone</span>(),
-                                    <span class="ident">resource_address</span>: <span class="kw-2">*</span><span class="ident">resource_address</span>,
+                                ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopAssertContainsNonFungiblesInput {
+                                    ids: ids.clone(),
+                                    resource_address: <span class="kw-2">*</span>resource_address,
                                 }),
                             )
-                            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>),
+                            .map_err(InvokeError::Downstream),
 
-                        <span class="ident">Instruction::PopFromAuthZone</span> {} =&gt; <span class="ident">id_allocator</span>
-                            .<span class="ident">new_proof_id</span>()
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                                <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::IdAllocationError</span>(<span class="ident">e</span>))
+                        Instruction::PopFromAuthZone {} =&gt; id_allocator
+                            .new_proof_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">new_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::CurrentAuthZone</span>,
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::AuthZone</span>(
-                                            <span class="ident">AuthZoneFnIdentifier::Pop</span>,
+                            .and_then(|new_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::CurrentAuthZone,
+                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                            AuthZoneFnIdentifier::Pop,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">AuthZonePopInput</span> {}),
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>AuthZonePopInput {}),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">rtn</span><span class="op">|</span> {
-                                        <span class="kw">let</span> <span class="ident">proof_id</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::first_proof</span>(<span class="kw-2">&amp;</span><span class="ident">rtn</span>);
-                                        <span class="ident">proof_id_mapping</span>.<span class="ident">insert</span>(<span class="ident">new_id</span>, <span class="ident">proof_id</span>);
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Proof</span>(<span class="ident">new_id</span>))
+                                    .map_err(InvokeError::Downstream)
+                                    .map(|rtn| {
+                                        <span class="kw">let </span>proof_id = <span class="self">Self</span>::first_proof(<span class="kw-2">&amp;</span>rtn);
+                                        proof_id_mapping.insert(new_id, proof_id);
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        <span class="ident">Instruction::ClearAuthZone</span> =&gt; {
-                            <span class="ident">proof_id_mapping</span>.<span class="ident">clear</span>();
-                            <span class="ident">system_api</span>
-                                .<span class="ident">invoke_method</span>(
-                                    <span class="ident">Receiver::CurrentAuthZone</span>,
-                                    <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::AuthZone</span>(
-                                        <span class="ident">AuthZoneFnIdentifier::Clear</span>,
+                        Instruction::ClearAuthZone =&gt; {
+                            proof_id_mapping.clear();
+                            system_api
+                                .invoke_method(
+                                    Receiver::CurrentAuthZone,
+                                    FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                        AuthZoneFnIdentifier::Clear,
                                     )),
-                                    <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">AuthZoneClearInput</span> {}),
+                                    ScryptoValue::from_typed(<span class="kw-2">&amp;</span>AuthZoneClearInput {}),
                                 )
-                                .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
+                                .map_err(InvokeError::Downstream)
                         }
-                        <span class="ident">Instruction::PushToAuthZone</span> { <span class="ident">proof_id</span> } =&gt; <span class="ident">proof_id_mapping</span>
-                            .<span class="ident">remove</span>(<span class="ident">proof_id</span>)
-                            .<span class="ident">ok_or</span>(<span class="ident">InvokeError::Error</span>(
-                                <span class="ident">TransactionProcessorError::ProofNotFound</span>(<span class="kw-2">*</span><span class="ident">proof_id</span>),
+                        Instruction::PushToAuthZone { proof_id } =&gt; proof_id_mapping
+                            .remove(proof_id)
+                            .ok_or(InvokeError::Error(
+                                TransactionProcessorError::ProofNotFound(<span class="kw-2">*</span>proof_id),
                             ))
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">real_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::CurrentAuthZone</span>,
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::AuthZone</span>(
-                                            <span class="ident">AuthZoneFnIdentifier::Push</span>,
+                            .and_then(|real_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::CurrentAuthZone,
+                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                            AuthZoneFnIdentifier::Push,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">AuthZonePushInput</span> {
-                                            <span class="ident">proof</span>: <span class="ident">scrypto::resource::Proof</span>(<span class="ident">real_id</span>),
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>AuthZonePushInput {
+                                            proof: scrypto::resource::Proof(real_id),
                                         }),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
+                                    .map_err(InvokeError::Downstream)
                             }),
-                        <span class="ident">Instruction::CreateProofFromAuthZone</span> { <span class="ident">resource_address</span> } =&gt; <span class="ident">id_allocator</span>
-                            .<span class="ident">new_proof_id</span>()
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                                <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::IdAllocationError</span>(<span class="ident">e</span>))
+                        Instruction::CreateProofFromAuthZone { resource_address } =&gt; id_allocator
+                            .new_proof_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">new_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::CurrentAuthZone</span>,
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::AuthZone</span>(
-                                            <span class="ident">AuthZoneFnIdentifier::CreateProof</span>,
+                            .and_then(|new_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::CurrentAuthZone,
+                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                            AuthZoneFnIdentifier::CreateProof,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">AuthZoneCreateProofInput</span> {
-                                            <span class="ident">resource_address</span>: <span class="kw-2">*</span><span class="ident">resource_address</span>,
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>AuthZoneCreateProofInput {
+                                            resource_address: <span class="kw-2">*</span>resource_address,
                                         }),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">rtn</span><span class="op">|</span> {
-                                        <span class="kw">let</span> <span class="ident">proof_id</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::first_proof</span>(<span class="kw-2">&amp;</span><span class="ident">rtn</span>);
-                                        <span class="ident">proof_id_mapping</span>.<span class="ident">insert</span>(<span class="ident">new_id</span>, <span class="ident">proof_id</span>);
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Proof</span>(<span class="ident">new_id</span>))
+                                    .map_err(InvokeError::Downstream)
+                                    .map(|rtn| {
+                                        <span class="kw">let </span>proof_id = <span class="self">Self</span>::first_proof(<span class="kw-2">&amp;</span>rtn);
+                                        proof_id_mapping.insert(new_id, proof_id);
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        <span class="ident">Instruction::CreateProofFromAuthZoneByAmount</span> {
-                            <span class="ident">amount</span>,
-                            <span class="ident">resource_address</span>,
-                        } =&gt; <span class="ident">id_allocator</span>
-                            .<span class="ident">new_proof_id</span>()
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                                <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::IdAllocationError</span>(<span class="ident">e</span>))
+                        Instruction::CreateProofFromAuthZoneByAmount {
+                            amount,
+                            resource_address,
+                        } =&gt; id_allocator
+                            .new_proof_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">new_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::CurrentAuthZone</span>,
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::AuthZone</span>(
-                                            <span class="ident">AuthZoneFnIdentifier::CreateProofByAmount</span>,
+                            .and_then(|new_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::CurrentAuthZone,
+                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                            AuthZoneFnIdentifier::CreateProofByAmount,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(
-                                            <span class="kw-2">&amp;</span><span class="ident">AuthZoneCreateProofByAmountInput</span> {
-                                                <span class="ident">amount</span>: <span class="kw-2">*</span><span class="ident">amount</span>,
-                                                <span class="ident">resource_address</span>: <span class="kw-2">*</span><span class="ident">resource_address</span>,
+                                        ScryptoValue::from_typed(
+                                            <span class="kw-2">&amp;</span>AuthZoneCreateProofByAmountInput {
+                                                amount: <span class="kw-2">*</span>amount,
+                                                resource_address: <span class="kw-2">*</span>resource_address,
                                             },
                                         ),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">rtn</span><span class="op">|</span> {
-                                        <span class="kw">let</span> <span class="ident">proof_id</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::first_proof</span>(<span class="kw-2">&amp;</span><span class="ident">rtn</span>);
-                                        <span class="ident">proof_id_mapping</span>.<span class="ident">insert</span>(<span class="ident">new_id</span>, <span class="ident">proof_id</span>);
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Proof</span>(<span class="ident">new_id</span>))
+                                    .map_err(InvokeError::Downstream)
+                                    .map(|rtn| {
+                                        <span class="kw">let </span>proof_id = <span class="self">Self</span>::first_proof(<span class="kw-2">&amp;</span>rtn);
+                                        proof_id_mapping.insert(new_id, proof_id);
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        <span class="ident">Instruction::CreateProofFromAuthZoneByIds</span> {
-                            <span class="ident">ids</span>,
-                            <span class="ident">resource_address</span>,
-                        } =&gt; <span class="ident">id_allocator</span>
-                            .<span class="ident">new_proof_id</span>()
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                                <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::IdAllocationError</span>(<span class="ident">e</span>))
+                        Instruction::CreateProofFromAuthZoneByIds {
+                            ids,
+                            resource_address,
+                        } =&gt; id_allocator
+                            .new_proof_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">new_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::CurrentAuthZone</span>,
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::AuthZone</span>(
-                                            <span class="ident">AuthZoneFnIdentifier::CreateProofByIds</span>,
+                            .and_then(|new_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::CurrentAuthZone,
+                                        FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                            AuthZoneFnIdentifier::CreateProofByIds,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">AuthZoneCreateProofByIdsInput</span> {
-                                            <span class="ident">ids</span>: <span class="ident">ids</span>.<span class="ident">clone</span>(),
-                                            <span class="ident">resource_address</span>: <span class="kw-2">*</span><span class="ident">resource_address</span>,
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>AuthZoneCreateProofByIdsInput {
+                                            ids: ids.clone(),
+                                            resource_address: <span class="kw-2">*</span>resource_address,
                                         }),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">rtn</span><span class="op">|</span> {
-                                        <span class="kw">let</span> <span class="ident">proof_id</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::first_proof</span>(<span class="kw-2">&amp;</span><span class="ident">rtn</span>);
-                                        <span class="ident">proof_id_mapping</span>.<span class="ident">insert</span>(<span class="ident">new_id</span>, <span class="ident">proof_id</span>);
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Proof</span>(<span class="ident">new_id</span>))
+                                    .map_err(InvokeError::Downstream)
+                                    .map(|rtn| {
+                                        <span class="kw">let </span>proof_id = <span class="self">Self</span>::first_proof(<span class="kw-2">&amp;</span>rtn);
+                                        proof_id_mapping.insert(new_id, proof_id);
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        <span class="ident">Instruction::CreateProofFromBucket</span> { <span class="ident">bucket_id</span> } =&gt; <span class="ident">id_allocator</span>
-                            .<span class="ident">new_proof_id</span>()
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                                <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::IdAllocationError</span>(<span class="ident">e</span>))
+                        Instruction::CreateProofFromBucket { bucket_id } =&gt; id_allocator
+                            .new_proof_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">new_id</span><span class="op">|</span> {
-                                <span class="ident">bucket_id_mapping</span>
-                                    .<span class="ident">get</span>(<span class="ident">bucket_id</span>)
-                                    .<span class="ident">cloned</span>()
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">real_bucket_id</span><span class="op">|</span> (<span class="ident">new_id</span>, <span class="ident">real_bucket_id</span>))
-                                    .<span class="ident">ok_or</span>(<span class="ident">InvokeError::Error</span>(
-                                        <span class="ident">TransactionProcessorError::BucketNotFound</span>(<span class="ident">new_id</span>),
+                            .and_then(|new_id| {
+                                bucket_id_mapping
+                                    .get(bucket_id)
+                                    .cloned()
+                                    .map(|real_bucket_id| (new_id, real_bucket_id))
+                                    .ok_or(InvokeError::Error(
+                                        TransactionProcessorError::BucketNotFound(new_id),
                                     ))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span>(<span class="ident">new_id</span>, <span class="ident">real_bucket_id</span>)<span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Bucket</span>(<span class="ident">real_bucket_id</span>)),
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Bucket</span>(
-                                            <span class="ident">BucketFnIdentifier::CreateProof</span>,
+                            .and_then(|(new_id, real_bucket_id)| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Ref(RENodeId::Bucket(real_bucket_id)),
+                                        FnIdentifier::Native(NativeFnIdentifier::Bucket(
+                                            BucketFnIdentifier::CreateProof,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">BucketCreateProofInput</span> {}),
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>BucketCreateProofInput {}),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">rtn</span><span class="op">|</span> {
-                                        <span class="kw">let</span> <span class="ident">proof_id</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::first_proof</span>(<span class="kw-2">&amp;</span><span class="ident">rtn</span>);
-                                        <span class="ident">proof_id_mapping</span>.<span class="ident">insert</span>(<span class="ident">new_id</span>, <span class="ident">proof_id</span>);
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Proof</span>(<span class="ident">new_id</span>))
+                                    .map_err(InvokeError::Downstream)
+                                    .map(|rtn| {
+                                        <span class="kw">let </span>proof_id = <span class="self">Self</span>::first_proof(<span class="kw-2">&amp;</span>rtn);
+                                        proof_id_mapping.insert(new_id, proof_id);
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        <span class="ident">Instruction::CloneProof</span> { <span class="ident">proof_id</span> } =&gt; <span class="ident">id_allocator</span>
-                            .<span class="ident">new_proof_id</span>()
-                            .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">e</span><span class="op">|</span> {
-                                <span class="ident">InvokeError::Error</span>(<span class="ident">TransactionProcessorError::IdAllocationError</span>(<span class="ident">e</span>))
+                        Instruction::CloneProof { proof_id } =&gt; id_allocator
+                            .new_proof_id()
+                            .map_err(|e| {
+                                InvokeError::Error(TransactionProcessorError::IdAllocationError(e))
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">new_id</span><span class="op">|</span> {
-                                <span class="ident">proof_id_mapping</span>
-                                    .<span class="ident">get</span>(<span class="ident">proof_id</span>)
-                                    .<span class="ident">cloned</span>()
-                                    .<span class="ident">map</span>(<span class="op">|</span><span class="ident">real_id</span><span class="op">|</span> {
-                                        <span class="ident">system_api</span>
-                                            .<span class="ident">invoke_method</span>(
-                                                <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Proof</span>(<span class="ident">real_id</span>)),
-                                                <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Proof</span>(
-                                                    <span class="ident">ProofFnIdentifier::Clone</span>,
+                            .and_then(|new_id| {
+                                proof_id_mapping
+                                    .get(proof_id)
+                                    .cloned()
+                                    .map(|real_id| {
+                                        system_api
+                                            .invoke_method(
+                                                Receiver::Ref(RENodeId::Proof(real_id)),
+                                                FnIdentifier::Native(NativeFnIdentifier::Proof(
+                                                    ProofFnIdentifier::Clone,
                                                 )),
-                                                <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">ProofCloneInput</span> {}),
+                                                ScryptoValue::from_typed(<span class="kw-2">&amp;</span>ProofCloneInput {}),
                                             )
-                                            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">v</span><span class="op">|</span> {
-                                                <span class="kw">let</span> <span class="ident">cloned_proof_id</span> <span class="op">=</span> <span class="ident"><span class="self">Self</span>::first_proof</span>(<span class="kw-2">&amp;</span><span class="ident">v</span>);
-                                                <span class="ident">proof_id_mapping</span>.<span class="ident">insert</span>(<span class="ident">new_id</span>, <span class="ident">cloned_proof_id</span>);
-                                                <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">scrypto::resource::Proof</span>(
-                                                    <span class="ident">new_id</span>,
+                                            .map_err(InvokeError::Downstream)
+                                            .map(|v| {
+                                                <span class="kw">let </span>cloned_proof_id = <span class="self">Self</span>::first_proof(<span class="kw-2">&amp;</span>v);
+                                                proof_id_mapping.insert(new_id, cloned_proof_id);
+                                                ScryptoValue::from_typed(<span class="kw-2">&amp;</span>scrypto::resource::Proof(
+                                                    new_id,
                                                 ))
                                             })
                                     })
-                                    .<span class="ident">unwrap_or</span>(<span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                                        <span class="ident">TransactionProcessorError::ProofNotFound</span>(<span class="kw-2">*</span><span class="ident">proof_id</span>),
+                                    .unwrap_or(<span class="prelude-val">Err</span>(InvokeError::Error(
+                                        TransactionProcessorError::ProofNotFound(<span class="kw-2">*</span>proof_id),
                                     )))
                             }),
-                        <span class="ident">Instruction::DropProof</span> { <span class="ident">proof_id</span> } =&gt; <span class="ident">proof_id_mapping</span>
-                            .<span class="ident">remove</span>(<span class="ident">proof_id</span>)
-                            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">real_id</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::Consumed</span>(<span class="ident">RENodeId::Proof</span>(<span class="ident">real_id</span>)),
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Proof</span>(
-                                            <span class="ident">ProofFnIdentifier::Drop</span>,
+                        Instruction::DropProof { proof_id } =&gt; proof_id_mapping
+                            .remove(proof_id)
+                            .map(|real_id| {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Consumed(RENodeId::Proof(real_id)),
+                                        FnIdentifier::Native(NativeFnIdentifier::Proof(
+                                            ProofFnIdentifier::Drop,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">ConsumingProofDropInput</span> {}),
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>ConsumingProofDropInput {}),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
+                                    .map_err(InvokeError::Downstream)
                             })
-                            .<span class="ident">unwrap_or</span>(<span class="prelude-val">Err</span>(<span class="ident">InvokeError::Error</span>(
-                                <span class="ident">TransactionProcessorError::ProofNotFound</span>(<span class="kw-2">*</span><span class="ident">proof_id</span>),
+                            .unwrap_or(<span class="prelude-val">Err</span>(InvokeError::Error(
+                                TransactionProcessorError::ProofNotFound(<span class="kw-2">*</span>proof_id),
                             ))),
-                        <span class="ident">Instruction::DropAllProofs</span> =&gt; {
-                            <span class="kw">for</span> (<span class="kw">_</span>, <span class="ident">real_id</span>) <span class="kw">in</span> <span class="ident">proof_id_mapping</span>.<span class="ident">drain</span>() {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_method</span>(
-                                        <span class="ident">Receiver::Consumed</span>(<span class="ident">RENodeId::Proof</span>(<span class="ident">real_id</span>)),
-                                        <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Proof</span>(
-                                            <span class="ident">ProofFnIdentifier::Drop</span>,
+                        Instruction::DropAllProofs =&gt; {
+                            <span class="kw">for </span>(<span class="kw">_</span>, real_id) <span class="kw">in </span>proof_id_mapping.drain() {
+                                system_api
+                                    .invoke_method(
+                                        Receiver::Consumed(RENodeId::Proof(real_id)),
+                                        FnIdentifier::Native(NativeFnIdentifier::Proof(
+                                            ProofFnIdentifier::Drop,
                                         )),
-                                        <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">ConsumingProofDropInput</span> {}),
+                                        ScryptoValue::from_typed(<span class="kw-2">&amp;</span>ConsumingProofDropInput {}),
                                     )
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+                                    .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
                             }
-                            <span class="ident">system_api</span>
-                                .<span class="ident">invoke_method</span>(
-                                    <span class="ident">Receiver::CurrentAuthZone</span>,
-                                    <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::AuthZone</span>(
-                                        <span class="ident">AuthZoneFnIdentifier::Clear</span>,
+                            system_api
+                                .invoke_method(
+                                    Receiver::CurrentAuthZone,
+                                    FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                        AuthZoneFnIdentifier::Clear,
                                     )),
-                                    <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">AuthZoneClearInput</span> {}),
+                                    ScryptoValue::from_typed(<span class="kw-2">&amp;</span>AuthZoneClearInput {}),
                                 )
-                                .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
+                                .map_err(InvokeError::Downstream)
                         }
-                        <span class="ident">Instruction::CallFunction</span> {
-                            <span class="ident">fn_identifier</span>,
-                            <span class="ident">args</span>,
+                        Instruction::CallFunction {
+                            fn_identifier,
+                            args,
                         } =&gt; {
-                            <span class="ident"><span class="self">Self</span>::replace_ids</span>(
-                                <span class="kw-2">&amp;mut</span> <span class="ident">proof_id_mapping</span>,
-                                <span class="kw-2">&amp;mut</span> <span class="ident">bucket_id_mapping</span>,
-                                <span class="ident">ScryptoValue::from_slice</span>(<span class="ident">args</span>)
-                                    .<span class="ident">expect</span>(<span class="string">&quot;Invalid CALL_FUNCTION arguments&quot;</span>),
+                            <span class="self">Self</span>::replace_ids(
+                                <span class="kw-2">&amp;mut </span>proof_id_mapping,
+                                <span class="kw-2">&amp;mut </span>bucket_id_mapping,
+                                ScryptoValue::from_slice(args)
+                                    .expect(<span class="string">&quot;Invalid CALL_FUNCTION arguments&quot;</span>),
                             )
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">call_data</span><span class="op">|</span> <span class="ident"><span class="self">Self</span>::process_expressions</span>(<span class="ident">call_data</span>, <span class="ident">system_api</span>))
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">call_data</span><span class="op">|</span> {
-                                <span class="ident">system_api</span>
-                                    .<span class="ident">invoke_function</span>(<span class="ident">fn_identifier</span>.<span class="ident">clone</span>(), <span class="ident">call_data</span>)
-                                    .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
+                            .and_then(|call_data| <span class="self">Self</span>::process_expressions(call_data, system_api))
+                            .and_then(|call_data| {
+                                system_api
+                                    .invoke_function(fn_identifier.clone(), call_data)
+                                    .map_err(InvokeError::Downstream)
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">result</span><span class="op">|</span> {
-                                <span class="comment">// Auto move into auth_zone</span>
-                                <span class="kw">for</span> (<span class="ident">proof_id</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">result</span>.<span class="ident">proof_ids</span> {
-                                    <span class="ident">system_api</span>
-                                        .<span class="ident">invoke_method</span>(
-                                            <span class="ident">Receiver::CurrentAuthZone</span>,
-                                            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::AuthZone</span>(
-                                                <span class="ident">AuthZoneFnIdentifier::Push</span>,
+                            .and_then(|result| {
+                                <span class="comment">// Auto move into auth_zone
+                                </span><span class="kw">for </span>(proof_id, <span class="kw">_</span>) <span class="kw">in </span><span class="kw-2">&amp;</span>result.proof_ids {
+                                    system_api
+                                        .invoke_method(
+                                            Receiver::CurrentAuthZone,
+                                            FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                                AuthZoneFnIdentifier::Push,
                                             )),
-                                            <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">AuthZonePushInput</span> {
-                                                <span class="ident">proof</span>: <span class="ident">scrypto::resource::Proof</span>(<span class="kw-2">*</span><span class="ident">proof_id</span>),
+                                            ScryptoValue::from_typed(<span class="kw-2">&amp;</span>AuthZonePushInput {
+                                                proof: scrypto::resource::Proof(<span class="kw-2">*</span>proof_id),
                                             }),
                                         )
-                                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+                                        .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
                                 }
-                                <span class="comment">// Auto move into worktop</span>
-                                <span class="kw">for</span> (<span class="ident">bucket_id</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">result</span>.<span class="ident">bucket_ids</span> {
-                                    <span class="ident">system_api</span>
-                                        .<span class="ident">invoke_method</span>(
-                                            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                                            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                                <span class="ident">WorktopFnIdentifier::Put</span>,
+                                <span class="comment">// Auto move into worktop
+                                </span><span class="kw">for </span>(bucket_id, <span class="kw">_</span>) <span class="kw">in </span><span class="kw-2">&amp;</span>result.bucket_ids {
+                                    system_api
+                                        .invoke_method(
+                                            Receiver::Ref(RENodeId::Worktop),
+                                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                                WorktopFnIdentifier::Put,
                                             )),
-                                            <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopPutInput</span> {
-                                                <span class="ident">bucket</span>: <span class="ident">scrypto::resource::Bucket</span>(<span class="kw-2">*</span><span class="ident">bucket_id</span>),
+                                            ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopPutInput {
+                                                bucket: scrypto::resource::Bucket(<span class="kw-2">*</span>bucket_id),
                                             }),
                                         )
-                                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+                                        .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
                                 }
-                                <span class="prelude-val">Ok</span>(<span class="ident">result</span>)
+                                <span class="prelude-val">Ok</span>(result)
                             })
                         }
-                        <span class="ident">Instruction::CallMethod</span> {
-                            <span class="ident">method_identifier</span>,
-                            <span class="ident">args</span>,
+                        Instruction::CallMethod {
+                            method_identifier,
+                            args,
                         } =&gt; {
-                            <span class="ident"><span class="self">Self</span>::replace_ids</span>(
-                                <span class="kw-2">&amp;mut</span> <span class="ident">proof_id_mapping</span>,
-                                <span class="kw-2">&amp;mut</span> <span class="ident">bucket_id_mapping</span>,
-                                <span class="ident">ScryptoValue::from_slice</span>(<span class="ident">args</span>)
-                                    .<span class="ident">expect</span>(<span class="string">&quot;Invalid CALL_METHOD arguments&quot;</span>),
+                            <span class="self">Self</span>::replace_ids(
+                                <span class="kw-2">&amp;mut </span>proof_id_mapping,
+                                <span class="kw-2">&amp;mut </span>bucket_id_mapping,
+                                ScryptoValue::from_slice(args)
+                                    .expect(<span class="string">&quot;Invalid CALL_METHOD arguments&quot;</span>),
                             )
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">call_data</span><span class="op">|</span> <span class="ident"><span class="self">Self</span>::process_expressions</span>(<span class="ident">call_data</span>, <span class="ident">system_api</span>))
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">call_data</span><span class="op">|</span> {
-                                <span class="comment">// TODO: Move this into preprocessor step</span>
-                                <span class="kw">match</span> <span class="ident">method_identifier</span> {
-                                    <span class="ident">MethodIdentifier::Scrypto</span> {
-                                        <span class="ident">component_address</span>,
-                                        <span class="ident">ident</span>,
-                                    } =&gt; <span class="ident">system_api</span>
-                                        .<span class="ident">substate_read</span>(<span class="ident">SubstateId::ComponentInfo</span>(
-                                            <span class="kw-2">*</span><span class="ident">component_address</span>,
+                            .and_then(|call_data| <span class="self">Self</span>::process_expressions(call_data, system_api))
+                            .and_then(|call_data| {
+                                <span class="comment">// TODO: Move this into preprocessor step
+                                </span><span class="kw">match </span>method_identifier {
+                                    MethodIdentifier::Scrypto {
+                                        component_address,
+                                        ident,
+                                    } =&gt; system_api
+                                        .substate_read(SubstateId::ComponentInfo(
+                                            <span class="kw-2">*</span>component_address,
                                         ))
-                                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
-                                        .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">s</span><span class="op">|</span> {
-                                            <span class="kw">let</span> (<span class="ident">package_address</span>, <span class="ident">blueprint_name</span>): (
-                                                <span class="ident">PackageAddress</span>,
-                                                <span class="ident">String</span>,
-                                            ) <span class="op">=</span> <span class="ident">scrypto_decode</span>(<span class="kw-2">&amp;</span><span class="ident">s</span>.<span class="ident">raw</span>)
-                                                .<span class="ident">expect</span>(<span class="string">&quot;Failed to decode ComponentInfo substate&quot;</span>);
+                                        .map_err(InvokeError::Downstream)
+                                        .and_then(|s| {
+                                            <span class="kw">let </span>(package_address, blueprint_name): (
+                                                PackageAddress,
+                                                String,
+                                            ) = scrypto_decode(<span class="kw-2">&amp;</span>s.raw)
+                                                .expect(<span class="string">&quot;Failed to decode ComponentInfo substate&quot;</span>);
 
-                                            <span class="ident">system_api</span>
-                                                .<span class="ident">invoke_method</span>(
-                                                    <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Component</span>(
-                                                        <span class="kw-2">*</span><span class="ident">component_address</span>,
+                                            system_api
+                                                .invoke_method(
+                                                    Receiver::Ref(RENodeId::Component(
+                                                        <span class="kw-2">*</span>component_address,
                                                     )),
-                                                    <span class="ident">FnIdentifier::Scrypto</span> {
-                                                        <span class="ident">ident</span>: <span class="ident">ident</span>.<span class="ident">to_string</span>(),
-                                                        <span class="ident">package_address</span>,
-                                                        <span class="ident">blueprint_name</span>,
+                                                    FnIdentifier::Scrypto {
+                                                        ident: ident.to_string(),
+                                                        package_address,
+                                                        blueprint_name,
                                                     },
-                                                    <span class="ident">call_data</span>,
+                                                    call_data,
                                                 )
-                                                .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
+                                                .map_err(InvokeError::Downstream)
                                         }),
-                                    <span class="ident">MethodIdentifier::Native</span> {
-                                        <span class="ident">receiver</span>,
-                                        <span class="ident">native_fn_identifier</span>,
-                                    } =&gt; <span class="ident"><span class="self">Self</span>::replace_receiver</span>(
-                                        <span class="ident">receiver</span>.<span class="ident">clone</span>(),
-                                        <span class="kw-2">&amp;mut</span> <span class="ident">proof_id_mapping</span>,
-                                        <span class="kw-2">&amp;mut</span> <span class="ident">bucket_id_mapping</span>,
+                                    MethodIdentifier::Native {
+                                        receiver,
+                                        native_fn_identifier,
+                                    } =&gt; <span class="self">Self</span>::replace_receiver(
+                                        receiver.clone(),
+                                        <span class="kw-2">&amp;mut </span>proof_id_mapping,
+                                        <span class="kw-2">&amp;mut </span>bucket_id_mapping,
                                     )
-                                    .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">receiver</span><span class="op">|</span> {
-                                        <span class="ident">system_api</span>
-                                            .<span class="ident">invoke_method</span>(
-                                                <span class="ident">receiver</span>,
-                                                <span class="ident">FnIdentifier::Native</span>(<span class="ident">native_fn_identifier</span>.<span class="ident">clone</span>()),
-                                                <span class="ident">call_data</span>,
+                                    .and_then(|receiver| {
+                                        system_api
+                                            .invoke_method(
+                                                receiver,
+                                                FnIdentifier::Native(native_fn_identifier.clone()),
+                                                call_data,
                                             )
-                                            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)
+                                            .map_err(InvokeError::Downstream)
                                     }),
                                 }
                             })
-                            .<span class="ident">and_then</span>(<span class="op">|</span><span class="ident">result</span><span class="op">|</span> {
-                                <span class="comment">// Auto move into auth_zone</span>
-                                <span class="kw">for</span> (<span class="ident">proof_id</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">result</span>.<span class="ident">proof_ids</span> {
-                                    <span class="ident">system_api</span>
-                                        .<span class="ident">invoke_method</span>(
-                                            <span class="ident">Receiver::CurrentAuthZone</span>,
-                                            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::AuthZone</span>(
-                                                <span class="ident">AuthZoneFnIdentifier::Push</span>,
+                            .and_then(|result| {
+                                <span class="comment">// Auto move into auth_zone
+                                </span><span class="kw">for </span>(proof_id, <span class="kw">_</span>) <span class="kw">in </span><span class="kw-2">&amp;</span>result.proof_ids {
+                                    system_api
+                                        .invoke_method(
+                                            Receiver::CurrentAuthZone,
+                                            FnIdentifier::Native(NativeFnIdentifier::AuthZone(
+                                                AuthZoneFnIdentifier::Push,
                                             )),
-                                            <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">AuthZonePushInput</span> {
-                                                <span class="ident">proof</span>: <span class="ident">scrypto::resource::Proof</span>(<span class="kw-2">*</span><span class="ident">proof_id</span>),
+                                            ScryptoValue::from_typed(<span class="kw-2">&amp;</span>AuthZonePushInput {
+                                                proof: scrypto::resource::Proof(<span class="kw-2">*</span>proof_id),
                                             }),
                                         )
-                                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>)<span class="question-mark">?</span>;
+                                        .map_err(InvokeError::Downstream)<span class="question-mark">?</span>;
                                 }
-                                <span class="comment">// Auto move into worktop</span>
-                                <span class="kw">for</span> (<span class="ident">bucket_id</span>, <span class="kw">_</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">result</span>.<span class="ident">bucket_ids</span> {
-                                    <span class="ident">system_api</span>
-                                        .<span class="ident">invoke_method</span>(
-                                            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Worktop</span>),
-                                            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Worktop</span>(
-                                                <span class="ident">WorktopFnIdentifier::Put</span>,
+                                <span class="comment">// Auto move into worktop
+                                </span><span class="kw">for </span>(bucket_id, <span class="kw">_</span>) <span class="kw">in </span><span class="kw-2">&amp;</span>result.bucket_ids {
+                                    system_api
+                                        .invoke_method(
+                                            Receiver::Ref(RENodeId::Worktop),
+                                            FnIdentifier::Native(NativeFnIdentifier::Worktop(
+                                                WorktopFnIdentifier::Put,
                                             )),
-                                            <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">WorktopPutInput</span> {
-                                                <span class="ident">bucket</span>: <span class="ident">scrypto::resource::Bucket</span>(<span class="kw-2">*</span><span class="ident">bucket_id</span>),
+                                            ScryptoValue::from_typed(<span class="kw-2">&amp;</span>WorktopPutInput {
+                                                bucket: scrypto::resource::Bucket(<span class="kw-2">*</span>bucket_id),
                                             }),
                                         )
-                                        .<span class="ident">map_err</span>(<span class="ident">InvokeError::downstream</span>)<span class="question-mark">?</span>;
+                                        .map_err(InvokeError::downstream)<span class="question-mark">?</span>;
                                 }
-                                <span class="prelude-val">Ok</span>(<span class="ident">result</span>)
+                                <span class="prelude-val">Ok</span>(result)
                             })
                         }
-                        <span class="ident">Instruction::PublishPackage</span> { <span class="ident">code</span>, <span class="ident">abi</span> } =&gt; <span class="ident">system_api</span>
-                            .<span class="ident">invoke_function</span>(
-                                <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Package</span>(
-                                    <span class="ident">PackageFnIdentifier::Publish</span>,
+                        Instruction::PublishPackage { code, abi } =&gt; system_api
+                            .invoke_function(
+                                FnIdentifier::Native(NativeFnIdentifier::Package(
+                                    PackageFnIdentifier::Publish,
                                 )),
-                                <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">PackagePublishInput</span> {
-                                    <span class="ident">code</span>: <span class="ident">code</span>.<span class="ident">clone</span>(),
-                                    <span class="ident">abi</span>: <span class="ident">abi</span>.<span class="ident">clone</span>(),
+                                ScryptoValue::from_typed(<span class="kw-2">&amp;</span>PackagePublishInput {
+                                    code: code.clone(),
+                                    abi: abi.clone(),
                                 }),
                             )
-                            .<span class="ident">map_err</span>(<span class="ident">InvokeError::Downstream</span>),
+                            .map_err(InvokeError::Downstream),
                     }<span class="question-mark">?</span>;
-                    <span class="ident">outputs</span>.<span class="ident">push</span>(<span class="ident">result</span>);
+                    outputs.push(result);
                 }
 
-                <span class="prelude-val">Ok</span>(<span class="ident">ScryptoValue::from_typed</span>(
-                    <span class="kw-2">&amp;</span><span class="ident">outputs</span>
-                        .<span class="ident">into_iter</span>()
-                        .<span class="ident">map</span>(<span class="op">|</span><span class="ident">sv</span><span class="op">|</span> <span class="ident">sv</span>.<span class="ident">raw</span>)
-                        .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>(),
+                <span class="prelude-val">Ok</span>(ScryptoValue::from_typed(
+                    <span class="kw-2">&amp;</span>outputs
+                        .into_iter()
+                        .map(|sv| sv.raw)
+                        .collect::&lt;Vec&lt;Vec&lt;u8&gt;&gt;&gt;(),
                 ))
             }
         }
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

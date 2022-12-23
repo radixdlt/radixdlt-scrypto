@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/modules/auth_module.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>auth_module.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../radix_engine/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/modules/auth_module.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>auth_module.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../radix_engine/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -141,39 +136,39 @@
 <span id="136">136</span>
 <span id="137">137</span>
 <span id="138">138</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee::FeeReserve</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
+<span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AuthModule</span>;
+<span class="kw">pub struct </span>AuthModule;
 
-<span class="kw">impl</span> <span class="ident">AuthModule</span> {
-    <span class="kw">fn</span> <span class="ident">auth</span>(
-        <span class="ident">function</span>: <span class="kw-2">&amp;</span><span class="ident">FnIdentifier</span>,
-        <span class="ident">method_auths</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">MethodAuthorization</span><span class="op">&gt;</span>,
-        <span class="ident">call_frames</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CallFrame</span><span class="op">&gt;</span>, <span class="comment">// TODO remove this once heap is implemented</span>
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">RuntimeError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">auth_zones</span> <span class="op">=</span> <span class="macro">vec!</span>[
-            <span class="kw-2">&amp;</span><span class="ident">call_frames</span>
-                .<span class="ident">last</span>()
-                .<span class="ident">expect</span>(<span class="string">&quot;Current call frame does not exist&quot;</span>)
-                .<span class="ident">auth_zone</span>,
+<span class="kw">impl </span>AuthModule {
+    <span class="kw">fn </span>auth(
+        function: <span class="kw-2">&amp;</span>FnIdentifier,
+        method_auths: Vec&lt;MethodAuthorization&gt;,
+        call_frames: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;, <span class="comment">// TODO remove this once heap is implemented
+    </span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>auth_zones = <span class="macro">vec!</span>[
+            <span class="kw-2">&amp;</span>call_frames
+                .last()
+                .expect(<span class="string">&quot;Current call frame does not exist&quot;</span>)
+                .auth_zone,
         ];
-        <span class="comment">// FIXME: This is wrong as it allows extern component calls to use caller&#39;s auth zone</span>
-        <span class="comment">// Also, need to add a test for this</span>
-        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">frame</span>) <span class="op">=</span> <span class="ident">call_frames</span>.<span class="ident">iter</span>().<span class="ident">rev</span>().<span class="ident">nth</span>(<span class="number">1</span>) {
-            <span class="ident">auth_zones</span>.<span class="ident">push</span>(<span class="kw-2">&amp;</span><span class="ident">frame</span>.<span class="ident">auth_zone</span>);
+        <span class="comment">// FIXME: This is wrong as it allows extern component calls to use caller&#39;s auth zone
+        // Also, need to add a test for this
+        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(frame) = call_frames.iter().rev().nth(<span class="number">1</span>) {
+            auth_zones.push(<span class="kw-2">&amp;</span>frame.auth_zone);
         }
 
-        <span class="comment">// Authorization check</span>
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">method_auths</span>.<span class="ident">is_empty</span>() {
-            <span class="kw">for</span> <span class="ident">method_auth</span> <span class="kw">in</span> <span class="ident">method_auths</span> {
-                <span class="ident">method_auth</span>.<span class="ident">check</span>(<span class="kw-2">&amp;</span><span class="ident">auth_zones</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">error</span><span class="op">|</span> {
-                    <span class="ident">RuntimeError::ModuleError</span>(<span class="ident">ModuleError::AuthorizationError</span> {
-                        <span class="ident">function</span>: <span class="ident">function</span>.<span class="ident">clone</span>(),
-                        <span class="ident">authorization</span>: <span class="ident">method_auth</span>,
-                        <span class="ident">error</span>,
+        <span class="comment">// Authorization check
+        </span><span class="kw">if </span>!method_auths.is_empty() {
+            <span class="kw">for </span>method_auth <span class="kw">in </span>method_auths {
+                method_auth.check(<span class="kw-2">&amp;</span>auth_zones).map_err(|error| {
+                    RuntimeError::ModuleError(ModuleError::AuthorizationError {
+                        function: function.clone(),
+                        authorization: method_auth,
+                        error,
                     })
                 })<span class="question-mark">?</span>;
             }
@@ -182,103 +177,102 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">receiver_auth</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span>(
-        <span class="ident">function</span>: <span class="kw-2">&amp;</span><span class="ident">FnIdentifier</span>,
-        <span class="ident">receiver</span>: <span class="ident">Receiver</span>,
-        <span class="ident">input</span>: <span class="kw-2">&amp;</span><span class="ident">ScryptoValue</span>,
-        <span class="ident">node_pointer</span>: <span class="ident">RENodePointer</span>,
-        <span class="ident">call_frames</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CallFrame</span><span class="op">&gt;</span>,
-        <span class="ident">track</span>: <span class="kw-2">&amp;mut</span> <span class="ident">Track</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="ident">R</span><span class="op">&gt;</span>,
-    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">RuntimeError</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">auth</span> <span class="op">=</span> <span class="kw">match</span> (<span class="ident">receiver</span>, <span class="ident">function</span>) {
+    <span class="kw">pub fn </span>receiver_auth&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
+        function: <span class="kw-2">&amp;</span>FnIdentifier,
+        receiver: Receiver,
+        input: <span class="kw-2">&amp;</span>ScryptoValue,
+        node_pointer: RENodePointer,
+        call_frames: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+        <span class="kw">let </span>auth = <span class="kw">match </span>(receiver, function) {
             (
-                <span class="ident">Receiver::Consumed</span>(<span class="ident">RENodeId::Bucket</span>(..)),
-                <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Bucket</span>(<span class="ident">bucket_fn</span>)),
+                Receiver::Consumed(RENodeId::Bucket(..)),
+                FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
             ) =&gt; {
-                <span class="kw">let</span> <span class="ident">resource_address</span> <span class="op">=</span> {
-                    <span class="kw">let</span> <span class="ident">node_ref</span> <span class="op">=</span> <span class="ident">node_pointer</span>.<span class="ident">to_ref</span>(<span class="ident">call_frames</span>, <span class="ident">track</span>);
-                    <span class="ident">node_ref</span>.<span class="ident">bucket</span>().<span class="ident">resource_address</span>()
+                <span class="kw">let </span>resource_address = {
+                    <span class="kw">let </span>node_ref = node_pointer.to_ref(call_frames, track);
+                    node_ref.bucket().resource_address()
                 };
-                <span class="kw">let</span> <span class="ident">resource_manager</span> <span class="op">=</span> <span class="ident">track</span>
-                    .<span class="ident">read_substate</span>(<span class="ident">SubstateId::ResourceManager</span>(<span class="ident">resource_address</span>))
-                    .<span class="ident">resource_manager</span>();
-                <span class="kw">let</span> <span class="ident">method_auth</span> <span class="op">=</span> <span class="ident">resource_manager</span>.<span class="ident">get_bucket_auth</span>(<span class="kw-2">*</span><span class="ident">bucket_fn</span>);
-                <span class="macro">vec!</span>[<span class="ident">method_auth</span>.<span class="ident">clone</span>()]
+                <span class="kw">let </span>resource_manager = track
+                    .read_substate(SubstateId::ResourceManager(resource_address))
+                    .resource_manager();
+                <span class="kw">let </span>method_auth = resource_manager.get_bucket_auth(<span class="kw-2">*</span>bucket_fn);
+                <span class="macro">vec!</span>[method_auth.clone()]
             }
             (
-                <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::ResourceManager</span>(<span class="ident">resource_address</span>)),
-                <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::ResourceManager</span>(<span class="ident">fn_ident</span>)),
+                Receiver::Ref(RENodeId::ResourceManager(resource_address)),
+                FnIdentifier::Native(NativeFnIdentifier::ResourceManager(fn_ident)),
             ) =&gt; {
-                <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::ResourceManager</span>(<span class="ident">resource_address</span>);
-                <span class="kw">let</span> <span class="ident">resource_manager</span> <span class="op">=</span> <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">substate_id</span>.<span class="ident">clone</span>()).<span class="ident">resource_manager</span>();
-                <span class="kw">let</span> <span class="ident">method_auth</span> <span class="op">=</span> <span class="ident">resource_manager</span>.<span class="ident">get_auth</span>(<span class="kw-2">*</span><span class="ident">fn_ident</span>, <span class="kw-2">&amp;</span><span class="ident">input</span>).<span class="ident">clone</span>();
-                <span class="macro">vec!</span>[<span class="ident">method_auth</span>]
+                <span class="kw">let </span>substate_id = SubstateId::ResourceManager(resource_address);
+                <span class="kw">let </span>resource_manager = track.read_substate(substate_id.clone()).resource_manager();
+                <span class="kw">let </span>method_auth = resource_manager.get_auth(<span class="kw-2">*</span>fn_ident, <span class="kw-2">&amp;</span>input).clone();
+                <span class="macro">vec!</span>[method_auth]
             }
             (
-                <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::System</span>),
-                <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::System</span>(<span class="ident">SystemFnIdentifier::SetEpoch</span>)),
+                Receiver::Ref(RENodeId::System),
+                FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
             ) =&gt; {
-                <span class="macro">vec!</span>[<span class="ident">MethodAuthorization::Protected</span>(<span class="ident">HardAuthRule::ProofRule</span>(
-                    <span class="ident">HardProofRule::Require</span>(<span class="ident">HardResourceOrNonFungible::Resource</span>(<span class="ident">SYSTEM_TOKEN</span>)),
+                <span class="macro">vec!</span>[MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                    HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN)),
                 ))]
             }
-            (<span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Component</span>(..)), <span class="ident">FnIdentifier::Native</span>(..)) =&gt; {
-                <span class="kw">match</span> <span class="ident">node_pointer</span> {
-                    <span class="ident">RENodePointer::Store</span>(..) =&gt; <span class="macro">vec!</span>[<span class="ident">MethodAuthorization::DenyAll</span>],
-                    <span class="ident">RENodePointer::Heap</span> { .. } =&gt; <span class="macro">vec!</span>[],
+            (Receiver::Ref(RENodeId::Component(..)), FnIdentifier::Native(..)) =&gt; {
+                <span class="kw">match </span>node_pointer {
+                    RENodePointer::Store(..) =&gt; <span class="macro">vec!</span>[MethodAuthorization::DenyAll],
+                    RENodePointer::Heap { .. } =&gt; <span class="macro">vec!</span>[],
                 }
             }
             (
-                <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Component</span>(..)),
-                <span class="ident">FnIdentifier::Scrypto</span> {
-                    <span class="ident">package_address</span>,
-                    <span class="ident">blueprint_name</span>,
-                    <span class="ident">ident</span>,
+                Receiver::Ref(RENodeId::Component(..)),
+                FnIdentifier::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ident,
                 },
             ) =&gt; {
-                <span class="comment">// Assume that package_address/blueprint is the original impl of Component for now</span>
-                <span class="comment">// TODO: Remove this assumption</span>
+                <span class="comment">// Assume that package_address/blueprint is the original impl of Component for now
+                // TODO: Remove this assumption
 
-                <span class="kw">let</span> <span class="ident">package_substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::Package</span>(<span class="kw-2">*</span><span class="ident">package_address</span>);
-                <span class="kw">let</span> <span class="ident">package</span> <span class="op">=</span> <span class="ident">track</span>.<span class="ident">read_substate</span>(<span class="ident">package_substate_id</span>.<span class="ident">clone</span>()).<span class="ident">package</span>();
-                <span class="kw">let</span> <span class="ident">abi</span> <span class="op">=</span> <span class="ident">package</span>
-                    .<span class="ident">blueprint_abi</span>(<span class="ident">blueprint_name</span>)
-                    .<span class="ident">expect</span>(<span class="string">&quot;Blueprint not found for existing component&quot;</span>);
-                <span class="kw">let</span> <span class="ident">fn_abi</span> <span class="op">=</span> <span class="ident">abi</span>.<span class="ident">get_fn_abi</span>(<span class="ident">ident</span>).<span class="ident">ok_or</span>(<span class="ident">RuntimeError::KernelError</span>(
-                    <span class="ident">KernelError::MethodNotFound</span>(<span class="ident">function</span>.<span class="ident">clone</span>()),
-                ))<span class="question-mark">?</span>; <span class="comment">// TODO: Move this check into kernel</span>
-                <span class="kw">if</span> <span class="op">!</span><span class="ident">fn_abi</span>.<span class="ident">input</span>.<span class="ident">matches</span>(<span class="kw-2">&amp;</span><span class="ident">input</span>.<span class="ident">dom</span>) {
-                    <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">RuntimeError::KernelError</span>(<span class="ident">KernelError::InvalidFnInput</span> {
-                        <span class="ident">fn_identifier</span>: <span class="ident">function</span>.<span class="ident">clone</span>(),
+                </span><span class="kw">let </span>package_substate_id = SubstateId::Package(<span class="kw-2">*</span>package_address);
+                <span class="kw">let </span>package = track.read_substate(package_substate_id.clone()).package();
+                <span class="kw">let </span>abi = package
+                    .blueprint_abi(blueprint_name)
+                    .expect(<span class="string">&quot;Blueprint not found for existing component&quot;</span>);
+                <span class="kw">let </span>fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
+                    KernelError::MethodNotFound(function.clone()),
+                ))<span class="question-mark">?</span>; <span class="comment">// TODO: Move this check into kernel
+                </span><span class="kw">if </span>!fn_abi.input.matches(<span class="kw-2">&amp;</span>input.dom) {
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::InvalidFnInput {
+                        fn_identifier: function.clone(),
                     }));
                 }
 
                 {
-                    <span class="kw">let</span> <span class="ident">value_ref</span> <span class="op">=</span> <span class="ident">node_pointer</span>.<span class="ident">to_ref</span>(<span class="ident">call_frames</span>, <span class="ident">track</span>);
-                    <span class="kw">let</span> <span class="ident">component</span> <span class="op">=</span> <span class="ident">value_ref</span>.<span class="ident">component_info</span>();
-                    <span class="kw">let</span> <span class="ident">component_state</span> <span class="op">=</span> <span class="ident">value_ref</span>.<span class="ident">component_state</span>();
-                    <span class="ident">component</span>.<span class="ident">method_authorization</span>(<span class="ident">component_state</span>, <span class="kw-2">&amp;</span><span class="ident">abi</span>.<span class="ident">structure</span>, <span class="ident">ident</span>)
+                    <span class="kw">let </span>value_ref = node_pointer.to_ref(call_frames, track);
+                    <span class="kw">let </span>component = value_ref.component_info();
+                    <span class="kw">let </span>component_state = value_ref.component_state();
+                    component.method_authorization(component_state, <span class="kw-2">&amp;</span>abi.structure, ident)
                 }
             }
             (
-                <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Vault</span>(..)),
-                <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Vault</span>(<span class="ident">vault_fn</span>)),
+                Receiver::Ref(RENodeId::Vault(..)),
+                FnIdentifier::Native(NativeFnIdentifier::Vault(vault_fn)),
             ) =&gt; {
-                <span class="kw">let</span> <span class="ident">resource_address</span> <span class="op">=</span> {
-                    <span class="kw">let</span> <span class="ident">node_ref</span> <span class="op">=</span> <span class="ident">node_pointer</span>.<span class="ident">to_ref</span>(<span class="ident">call_frames</span>, <span class="ident">track</span>);
-                    <span class="ident">node_ref</span>.<span class="ident">vault</span>().<span class="ident">resource_address</span>()
+                <span class="kw">let </span>resource_address = {
+                    <span class="kw">let </span>node_ref = node_pointer.to_ref(call_frames, track);
+                    node_ref.vault().resource_address()
                 };
-                <span class="kw">let</span> <span class="ident">resource_manager</span> <span class="op">=</span> <span class="ident">track</span>
-                    .<span class="ident">read_substate</span>(<span class="ident">SubstateId::ResourceManager</span>(<span class="ident">resource_address</span>))
-                    .<span class="ident">resource_manager</span>();
-                <span class="macro">vec!</span>[<span class="ident">resource_manager</span>.<span class="ident">get_vault_auth</span>(<span class="kw-2">*</span><span class="ident">vault_fn</span>).<span class="ident">clone</span>()]
+                <span class="kw">let </span>resource_manager = track
+                    .read_substate(SubstateId::ResourceManager(resource_address))
+                    .resource_manager();
+                <span class="macro">vec!</span>[resource_manager.get_vault_auth(<span class="kw-2">*</span>vault_fn).clone()]
             }
-            <span class="kw">_</span> =&gt; <span class="macro">vec!</span>[],
+            <span class="kw">_ </span>=&gt; <span class="macro">vec!</span>[],
         };
 
-        <span class="ident"><span class="self">Self</span>::auth</span>(<span class="ident">function</span>, <span class="ident">auth</span>, <span class="ident">call_frames</span>)
+        <span class="self">Self</span>::auth(function, auth, call_frames)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

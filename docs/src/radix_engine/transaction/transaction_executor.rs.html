@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/transaction/transaction_executor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>transaction_executor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/transaction/transaction_executor.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>transaction_executor.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -245,248 +240,247 @@
 <span id="240">240</span>
 <span id="241">241</span>
 <span id="242">242</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">transaction::model</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>transaction::model::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::constants</span>::{<span class="ident">DEFAULT_COST_UNIT_PRICE</span>, <span class="ident">DEFAULT_MAX_CALL_DEPTH</span>, <span class="ident">DEFAULT_SYSTEM_LOAN</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::Track</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::fee</span>::{<span class="ident">FeeReserve</span>, <span class="ident">FeeTable</span>, <span class="ident">SystemLoanFeeReserve</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::ledger</span>::{<span class="ident">ReadableSubstateStore</span>, <span class="ident">WriteableSubstateStore</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::model</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::transaction</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::types</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::wasm</span>::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::constants::{DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN};
+<span class="kw">use </span><span class="kw">crate</span>::engine::Track;
+<span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::fee::{FeeReserve, FeeTable, SystemLoanFeeReserve};
+<span class="kw">use </span><span class="kw">crate</span>::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+<span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::transaction::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FeeReserveConfig</span> {
-    <span class="kw">pub</span> <span class="ident">cost_unit_price</span>: <span class="ident">Decimal</span>,
-    <span class="kw">pub</span> <span class="ident">system_loan</span>: <span class="ident">u32</span>,
+<span class="kw">pub struct </span>FeeReserveConfig {
+    <span class="kw">pub </span>cost_unit_price: Decimal,
+    <span class="kw">pub </span>system_loan: u32,
 }
 
-<span class="kw">impl</span> <span class="ident">FeeReserveConfig</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">standard</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">cost_unit_price</span>: <span class="ident">DEFAULT_COST_UNIT_PRICE</span>
-                .<span class="ident">parse</span>()
-                .<span class="ident">expect</span>(<span class="string">&quot;Invalid cost unit price&quot;</span>),
-            <span class="ident">system_loan</span>: <span class="ident">DEFAULT_SYSTEM_LOAN</span>,
+<span class="kw">impl </span>FeeReserveConfig {
+    <span class="kw">pub fn </span>standard() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            cost_unit_price: DEFAULT_COST_UNIT_PRICE
+                .parse()
+                .expect(<span class="string">&quot;Invalid cost unit price&quot;</span>),
+            system_loan: DEFAULT_SYSTEM_LOAN,
         }
     }
 }
 
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ExecutionConfig</span> {
-    <span class="kw">pub</span> <span class="ident">max_call_depth</span>: <span class="ident">usize</span>,
-    <span class="kw">pub</span> <span class="ident">trace</span>: <span class="ident">bool</span>,
+<span class="kw">pub struct </span>ExecutionConfig {
+    <span class="kw">pub </span>max_call_depth: usize,
+    <span class="kw">pub </span>trace: bool,
 }
 
-<span class="kw">impl</span> <span class="ident">Default</span> <span class="kw">for</span> <span class="ident">ExecutionConfig</span> {
-    <span class="kw">fn</span> <span class="ident">default</span>() -&gt; <span class="self">Self</span> {
-        <span class="ident">ExecutionConfig::standard</span>()
+<span class="kw">impl </span>Default <span class="kw">for </span>ExecutionConfig {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        ExecutionConfig::standard()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ExecutionConfig</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">standard</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">max_call_depth</span>: <span class="ident">DEFAULT_MAX_CALL_DEPTH</span>,
-            <span class="ident">trace</span>: <span class="bool-val">false</span>,
+<span class="kw">impl </span>ExecutionConfig {
+    <span class="kw">pub fn </span>standard() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            trace: <span class="bool-val">false</span>,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">debug</span>() -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">max_call_depth</span>: <span class="ident">DEFAULT_MAX_CALL_DEPTH</span>,
-            <span class="ident">trace</span>: <span class="bool-val">true</span>,
+    <span class="kw">pub fn </span>debug() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            max_call_depth: DEFAULT_MAX_CALL_DEPTH,
+            trace: <span class="bool-val">true</span>,
         }
     }
 }
 
-<span class="doccomment">/// An executor that runs transactions.</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">TransactionExecutor</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="ident">S</span>, <span class="ident">W</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span>,
-    <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-    <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
+<span class="doccomment">/// An executor that runs transactions.
+</span><span class="kw">pub struct </span>TransactionExecutor&lt;<span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, S, W, I&gt;
+<span class="kw">where
+    </span>S: ReadableSubstateStore,
+    W: WasmEngine&lt;I&gt;,
+    I: WasmInstance,
 {
-    <span class="ident">substate_store</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="kw-2">mut</span> <span class="ident">S</span>,
-    <span class="ident">wasm_engine</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="kw-2">mut</span> <span class="ident">W</span>,
-    <span class="ident">wasm_instrumenter</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="kw-2">mut</span> <span class="ident">WasmInstrumenter</span>,
-    <span class="ident">phantom</span>: <span class="ident">PhantomData</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
+    substate_store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>S,
+    wasm_engine: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span><span class="kw-2">mut </span>W,
+    wasm_instrumenter: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span><span class="kw-2">mut </span>WasmInstrumenter,
+    phantom: PhantomData&lt;I&gt;,
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="ident">S</span>, <span class="ident">W</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">TransactionExecutor</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="ident">S</span>, <span class="ident">W</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span>,
-    <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-    <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, S, W, I&gt; TransactionExecutor&lt;<span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, S, W, I&gt;
+<span class="kw">where
+    </span>S: ReadableSubstateStore,
+    W: WasmEngine&lt;I&gt;,
+    I: WasmInstance,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(
-        <span class="ident">substate_store</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s</span> <span class="kw-2">mut</span> <span class="ident">S</span>,
-        <span class="ident">wasm_engine</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="kw-2">mut</span> <span class="ident">W</span>,
-        <span class="ident">wasm_instrumenter</span>: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w</span> <span class="kw-2">mut</span> <span class="ident">WasmInstrumenter</span>,
-    ) -&gt; <span class="self">Self</span> {
-        <span class="self">Self</span> {
-            <span class="ident">substate_store</span>,
-            <span class="ident">wasm_engine</span>,
-            <span class="ident">wasm_instrumenter</span>,
-            <span class="ident">phantom</span>: <span class="ident">PhantomData</span>,
+    <span class="kw">pub fn </span>new(
+        substate_store: <span class="kw-2">&amp;</span><span class="lifetime">&#39;s </span><span class="kw-2">mut </span>S,
+        wasm_engine: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span><span class="kw-2">mut </span>W,
+        wasm_instrumenter: <span class="kw-2">&amp;</span><span class="lifetime">&#39;w </span><span class="kw-2">mut </span>WasmInstrumenter,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            substate_store,
+            wasm_engine,
+            wasm_instrumenter,
+            phantom: PhantomData,
         }
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">execute</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">ExecutableTransaction</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">transaction</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>,
-        <span class="ident">fee_reserve_config</span>: <span class="kw-2">&amp;</span><span class="ident">FeeReserveConfig</span>,
-        <span class="ident">execution_config</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionConfig</span>,
-    ) -&gt; <span class="ident">TransactionReceipt</span> {
-        <span class="kw">let</span> <span class="ident">fee_reserve</span> <span class="op">=</span> <span class="ident">SystemLoanFeeReserve::new</span>(
-            <span class="ident">transaction</span>.<span class="ident">cost_unit_limit</span>(),
-            <span class="ident">transaction</span>.<span class="ident">tip_percentage</span>(),
-            <span class="ident">fee_reserve_config</span>.<span class="ident">cost_unit_price</span>,
-            <span class="ident">fee_reserve_config</span>.<span class="ident">system_loan</span>,
+    <span class="kw">pub fn </span>execute&lt;T: ExecutableTransaction&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        transaction: <span class="kw-2">&amp;</span>T,
+        fee_reserve_config: <span class="kw-2">&amp;</span>FeeReserveConfig,
+        execution_config: <span class="kw-2">&amp;</span>ExecutionConfig,
+    ) -&gt; TransactionReceipt {
+        <span class="kw">let </span>fee_reserve = SystemLoanFeeReserve::new(
+            transaction.cost_unit_limit(),
+            transaction.tip_percentage(),
+            fee_reserve_config.cost_unit_price,
+            fee_reserve_config.system_loan,
         );
 
-        <span class="self">self</span>.<span class="ident">execute_with_fee_reserve</span>(<span class="ident">transaction</span>, <span class="ident">execution_config</span>, <span class="ident">fee_reserve</span>)
+        <span class="self">self</span>.execute_with_fee_reserve(transaction, execution_config, fee_reserve)
     }
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">execute_with_fee_reserve</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">ExecutableTransaction</span>, <span class="ident">R</span>: <span class="ident">FeeReserve</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">transaction</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>,
-        <span class="ident">execution_config</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionConfig</span>,
-        <span class="ident">fee_reserve</span>: <span class="ident">R</span>,
-    ) -&gt; <span class="ident">TransactionReceipt</span> {
-        <span class="kw">let</span> <span class="ident">transaction_hash</span> <span class="op">=</span> <span class="ident">transaction</span>.<span class="ident">transaction_hash</span>();
-        <span class="kw">let</span> <span class="ident">initial_proofs</span> <span class="op">=</span> <span class="ident">transaction</span>.<span class="ident">initial_proofs</span>();
-        <span class="kw">let</span> <span class="ident">instructions</span> <span class="op">=</span> <span class="ident">transaction</span>.<span class="ident">instructions</span>().<span class="ident">to_vec</span>();
-        <span class="kw">let</span> <span class="ident">blobs</span>: <span class="ident">HashMap</span><span class="op">&lt;</span><span class="ident">Hash</span>, <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">transaction</span>
-            .<span class="ident">blobs</span>()
-            .<span class="ident">iter</span>()
-            .<span class="ident">map</span>(<span class="op">|</span><span class="ident">b</span><span class="op">|</span> (<span class="ident">hash</span>(<span class="ident">b</span>), <span class="ident">b</span>.<span class="ident">clone</span>()))
-            .<span class="ident">collect</span>();
+    <span class="kw">pub fn </span>execute_with_fee_reserve&lt;T: ExecutableTransaction, R: FeeReserve&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        transaction: <span class="kw-2">&amp;</span>T,
+        execution_config: <span class="kw-2">&amp;</span>ExecutionConfig,
+        fee_reserve: R,
+    ) -&gt; TransactionReceipt {
+        <span class="kw">let </span>transaction_hash = transaction.transaction_hash();
+        <span class="kw">let </span>initial_proofs = transaction.initial_proofs();
+        <span class="kw">let </span>instructions = transaction.instructions().to_vec();
+        <span class="kw">let </span>blobs: HashMap&lt;Hash, Vec&lt;u8&gt;&gt; = transaction
+            .blobs()
+            .iter()
+            .map(|b| (hash(b), b.clone()))
+            .collect();
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-        <span class="kw">if</span> <span class="ident">execution_config</span>.<span class="ident">trace</span> {
+        <span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+        </span><span class="kw">if </span>execution_config.trace {
             <span class="macro">println!</span>(<span class="string">&quot;{:-^80}&quot;</span>, <span class="string">&quot;Transaction Metadata&quot;</span>);
-            <span class="macro">println!</span>(<span class="string">&quot;Transaction hash: {}&quot;</span>, <span class="ident">transaction_hash</span>);
-            <span class="macro">println!</span>(<span class="string">&quot;Transaction proofs: {:?}&quot;</span>, <span class="ident">initial_proofs</span>);
-            <span class="macro">println!</span>(<span class="string">&quot;Number of unique blobs: {}&quot;</span>, <span class="ident">blobs</span>.<span class="ident">len</span>());
+            <span class="macro">println!</span>(<span class="string">&quot;Transaction hash: {}&quot;</span>, transaction_hash);
+            <span class="macro">println!</span>(<span class="string">&quot;Transaction proofs: {:?}&quot;</span>, initial_proofs);
+            <span class="macro">println!</span>(<span class="string">&quot;Number of unique blobs: {}&quot;</span>, blobs.len());
 
             <span class="macro">println!</span>(<span class="string">&quot;{:-^80}&quot;</span>, <span class="string">&quot;Engine Execution Log&quot;</span>);
         }
 
-        <span class="comment">// Prepare state track and execution trace</span>
-        <span class="kw">let</span> <span class="ident">track</span> <span class="op">=</span> <span class="ident">Track::new</span>(<span class="self">self</span>.<span class="ident">substate_store</span>, <span class="ident">fee_reserve</span>, <span class="ident">FeeTable::new</span>());
+        <span class="comment">// Prepare state track and execution trace
+        </span><span class="kw">let </span>track = Track::new(<span class="self">self</span>.substate_store, fee_reserve, FeeTable::new());
 
-        <span class="comment">// Apply pre execution costing</span>
-        <span class="kw">let</span> <span class="ident">pre_execution_result</span> <span class="op">=</span> <span class="ident">track</span>.<span class="ident">apply_pre_execution_costs</span>(<span class="ident">transaction</span>);
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">track</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">pre_execution_result</span> {
-            <span class="prelude-val">Ok</span>(<span class="ident">track</span>) =&gt; <span class="ident">track</span>,
-            <span class="prelude-val">Err</span>(<span class="ident">err</span>) =&gt; {
-                <span class="kw">return</span> <span class="ident">TransactionReceipt</span> {
-                    <span class="ident">contents</span>: <span class="ident">TransactionContents</span> { <span class="ident">instructions</span> },
-                    <span class="ident">execution</span>: <span class="ident">TransactionExecution</span> {
-                        <span class="ident">fee_summary</span>: <span class="ident">err</span>.<span class="ident">fee_summary</span>,
-                        <span class="ident">application_logs</span>: <span class="macro">vec!</span>[],
+        <span class="comment">// Apply pre execution costing
+        </span><span class="kw">let </span>pre_execution_result = track.apply_pre_execution_costs(transaction);
+        <span class="kw">let </span><span class="kw-2">mut </span>track = <span class="kw">match </span>pre_execution_result {
+            <span class="prelude-val">Ok</span>(track) =&gt; track,
+            <span class="prelude-val">Err</span>(err) =&gt; {
+                <span class="kw">return </span>TransactionReceipt {
+                    contents: TransactionContents { instructions },
+                    execution: TransactionExecution {
+                        fee_summary: err.fee_summary,
+                        application_logs: <span class="macro">vec!</span>[],
                     },
-                    <span class="ident">result</span>: <span class="ident">TransactionResult::Reject</span>(<span class="ident">RejectResult</span> {
-                        <span class="ident">error</span>: <span class="ident">RejectionError::ErrorBeforeFeeLoanRepaid</span>(<span class="ident">RuntimeError::ModuleError</span>(
-                            <span class="ident">ModuleError::CostingError</span>(<span class="ident">err</span>.<span class="ident">error</span>),
+                    result: TransactionResult::Reject(RejectResult {
+                        error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
+                            ModuleError::CostingError(err.error),
                         )),
                     }),
                 };
             }
         };
 
-        <span class="comment">// Invoke the function/method</span>
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">execution_trace</span> <span class="op">=</span> <span class="ident">ExecutionTrace::new</span>();
-        <span class="kw">let</span> <span class="ident">invoke_result</span> <span class="op">=</span> {
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">modules</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="op">&lt;</span><span class="ident">Box</span><span class="op">&lt;</span><span class="kw">dyn</span> <span class="ident">Module</span><span class="op">&lt;</span><span class="ident">R</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="ident">::new</span>();
-            <span class="kw">if</span> <span class="ident">execution_config</span>.<span class="ident">trace</span> {
-                <span class="ident">modules</span>.<span class="ident">push</span>(<span class="ident">Box::new</span>(<span class="ident">LoggerModule::new</span>()));
+        <span class="comment">// Invoke the function/method
+        </span><span class="kw">let </span><span class="kw-2">mut </span>execution_trace = ExecutionTrace::new();
+        <span class="kw">let </span>invoke_result = {
+            <span class="kw">let </span><span class="kw-2">mut </span>modules = Vec::&lt;Box&lt;<span class="kw">dyn </span>Module&lt;R&gt;&gt;&gt;::new();
+            <span class="kw">if </span>execution_config.trace {
+                modules.push(Box::new(LoggerModule::new()));
             }
-            <span class="ident">modules</span>.<span class="ident">push</span>(<span class="ident">Box::new</span>(<span class="ident">CostingModule::default</span>()));
-            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">kernel</span> <span class="op">=</span> <span class="ident">Kernel::new</span>(
-                <span class="ident">transaction_hash</span>,
-                <span class="ident">initial_proofs</span>,
-                <span class="kw-2">&amp;</span><span class="ident">blobs</span>,
-                <span class="ident">execution_config</span>.<span class="ident">max_call_depth</span>,
-                <span class="kw-2">&amp;mut</span> <span class="ident">track</span>,
-                <span class="self">self</span>.<span class="ident">wasm_engine</span>,
-                <span class="self">self</span>.<span class="ident">wasm_instrumenter</span>,
-                <span class="ident">WasmMeteringParams::new</span>(<span class="ident">InstructionCostRules::tiered</span>(<span class="number">1</span>, <span class="number">5</span>, <span class="number">10</span>, <span class="number">5000</span>), <span class="number">512</span>), <span class="comment">// TODO: add to ExecutionConfig</span>
-                <span class="kw-2">&amp;mut</span> <span class="ident">execution_trace</span>,
-                <span class="ident">modules</span>,
+            modules.push(Box::new(CostingModule::default()));
+            <span class="kw">let </span><span class="kw-2">mut </span>kernel = Kernel::new(
+                transaction_hash,
+                initial_proofs,
+                <span class="kw-2">&amp;</span>blobs,
+                execution_config.max_call_depth,
+                <span class="kw-2">&amp;mut </span>track,
+                <span class="self">self</span>.wasm_engine,
+                <span class="self">self</span>.wasm_instrumenter,
+                WasmMeteringParams::new(InstructionCostRules::tiered(<span class="number">1</span>, <span class="number">5</span>, <span class="number">10</span>, <span class="number">5000</span>), <span class="number">512</span>), <span class="comment">// TODO: add to ExecutionConfig
+                </span><span class="kw-2">&amp;mut </span>execution_trace,
+                modules,
             );
-            <span class="ident">kernel</span>
-                .<span class="ident">invoke_function</span>(
-                    <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::TransactionProcessor</span>(
-                        <span class="ident">TransactionProcessorFnIdentifier::Run</span>,
+            kernel
+                .invoke_function(
+                    FnIdentifier::Native(NativeFnIdentifier::TransactionProcessor(
+                        TransactionProcessorFnIdentifier::Run,
                     )),
-                    <span class="ident">ScryptoValue::from_typed</span>(<span class="kw-2">&amp;</span><span class="ident">TransactionProcessorRunInput</span> {
-                        <span class="ident">instructions</span>: <span class="ident">instructions</span>.<span class="ident">clone</span>(),
+                    ScryptoValue::from_typed(<span class="kw-2">&amp;</span>TransactionProcessorRunInput {
+                        instructions: instructions.clone(),
                     }),
                 )
-                .<span class="ident">map</span>(<span class="op">|</span><span class="ident">o</span><span class="op">|</span> {
-                    <span class="ident">scrypto_decode</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">o</span>.<span class="ident">raw</span>)
-                        .<span class="ident">expect</span>(<span class="string">&quot;TransactionProcessor returned data of unexpected type&quot;</span>)
+                .map(|o| {
+                    scrypto_decode::&lt;Vec&lt;Vec&lt;u8&gt;&gt;&gt;(<span class="kw-2">&amp;</span>o.raw)
+                        .expect(<span class="string">&quot;TransactionProcessor returned data of unexpected type&quot;</span>)
                 })
         };
 
-        <span class="comment">// Produce the final transaction receipt</span>
-        <span class="kw">let</span> <span class="ident">execution_trace_receipt</span> <span class="op">=</span> <span class="ident">execution_trace</span>.<span class="ident">to_receipt</span>();
-        <span class="kw">let</span> <span class="ident">track_receipt</span> <span class="op">=</span> <span class="ident">track</span>.<span class="ident">finalize</span>(<span class="ident">invoke_result</span>, <span class="ident">execution_trace_receipt</span>.<span class="ident">resource_changes</span>);
+        <span class="comment">// Produce the final transaction receipt
+        </span><span class="kw">let </span>execution_trace_receipt = execution_trace.to_receipt();
+        <span class="kw">let </span>track_receipt = track.finalize(invoke_result, execution_trace_receipt.resource_changes);
 
-        <span class="kw">let</span> <span class="ident">receipt</span> <span class="op">=</span> <span class="ident">TransactionReceipt</span> {
-            <span class="ident">contents</span>: <span class="ident">TransactionContents</span> { <span class="ident">instructions</span> },
-            <span class="ident">execution</span>: <span class="ident">TransactionExecution</span> {
-                <span class="ident">fee_summary</span>: <span class="ident">track_receipt</span>.<span class="ident">fee_summary</span>,
-                <span class="ident">application_logs</span>: <span class="ident">track_receipt</span>.<span class="ident">application_logs</span>,
+        <span class="kw">let </span>receipt = TransactionReceipt {
+            contents: TransactionContents { instructions },
+            execution: TransactionExecution {
+                fee_summary: track_receipt.fee_summary,
+                application_logs: track_receipt.application_logs,
             },
-            <span class="ident">result</span>: <span class="ident">track_receipt</span>.<span class="ident">result</span>,
+            result: track_receipt.result,
         };
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">not</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;alloc&quot;</span>))]</span>
-        <span class="kw">if</span> <span class="ident">execution_config</span>.<span class="ident">trace</span> {
+        <span class="attribute">#[cfg(not(feature = <span class="string">&quot;alloc&quot;</span>))]
+        </span><span class="kw">if </span>execution_config.trace {
             <span class="macro">println!</span>(<span class="string">&quot;{:-^80}&quot;</span>, <span class="string">&quot;Cost Analysis&quot;</span>);
-            <span class="kw">let</span> <span class="ident">break_down</span> <span class="op">=</span> <span class="ident">receipt</span>
-                .<span class="ident">execution</span>
-                .<span class="ident">fee_summary</span>
-                .<span class="ident">cost_breakdown</span>
-                .<span class="ident">iter</span>()
-                .<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">BTreeMap</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">String</span>, <span class="kw-2">&amp;</span><span class="ident">u32</span><span class="op">&gt;</span><span class="op">&gt;</span>();
-            <span class="kw">for</span> (<span class="ident">k</span>, <span class="ident">v</span>) <span class="kw">in</span> <span class="ident">break_down</span> {
-                <span class="macro">println!</span>(<span class="string">&quot;{:&lt;30}: {:&gt;8}&quot;</span>, <span class="ident">k</span>, <span class="ident">v</span>);
+            <span class="kw">let </span>break_down = receipt
+                .execution
+                .fee_summary
+                .cost_breakdown
+                .iter()
+                .collect::&lt;BTreeMap&lt;<span class="kw-2">&amp;</span>String, <span class="kw-2">&amp;</span>u32&gt;&gt;();
+            <span class="kw">for </span>(k, v) <span class="kw">in </span>break_down {
+                <span class="macro">println!</span>(<span class="string">&quot;{:&lt;30}: {:&gt;8}&quot;</span>, k, v);
             }
 
             <span class="macro">println!</span>(<span class="string">&quot;{:-^80}&quot;</span>, <span class="string">&quot;Application Logs&quot;</span>);
-            <span class="kw">for</span> (<span class="ident">level</span>, <span class="ident">message</span>) <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="ident">receipt</span>.<span class="ident">execution</span>.<span class="ident">application_logs</span> {
-                <span class="macro">println!</span>(<span class="string">&quot;[{}] {}&quot;</span>, <span class="ident">level</span>, <span class="ident">message</span>);
+            <span class="kw">for </span>(level, message) <span class="kw">in </span><span class="kw-2">&amp;</span>receipt.execution.application_logs {
+                <span class="macro">println!</span>(<span class="string">&quot;[{}] {}&quot;</span>, level, message);
             }
-            <span class="kw">if</span> <span class="ident">receipt</span>.<span class="ident">execution</span>.<span class="ident">application_logs</span>.<span class="ident">is_empty</span>() {
+            <span class="kw">if </span>receipt.execution.application_logs.is_empty() {
                 <span class="macro">println!</span>(<span class="string">&quot;None&quot;</span>);
             }
         }
-        <span class="ident">receipt</span>
+        receipt
     }
 }
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="ident">S</span>, <span class="ident">W</span>, <span class="ident">I</span><span class="op">&gt;</span> <span class="ident">TransactionExecutor</span><span class="op">&lt;</span><span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, <span class="ident">S</span>, <span class="ident">W</span>, <span class="ident">I</span><span class="op">&gt;</span>
-<span class="kw">where</span>
-    <span class="ident">S</span>: <span class="ident">ReadableSubstateStore</span> <span class="op">+</span> <span class="ident">WriteableSubstateStore</span>,
-    <span class="ident">W</span>: <span class="ident">WasmEngine</span><span class="op">&lt;</span><span class="ident">I</span><span class="op">&gt;</span>,
-    <span class="ident">I</span>: <span class="ident">WasmInstance</span>,
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, S, W, I&gt; TransactionExecutor&lt;<span class="lifetime">&#39;s</span>, <span class="lifetime">&#39;w</span>, S, W, I&gt;
+<span class="kw">where
+    </span>S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine&lt;I&gt;,
+    I: WasmInstance,
 {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">execute_and_commit</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">ExecutableTransaction</span><span class="op">&gt;</span>(
-        <span class="kw-2">&amp;mut</span> <span class="self">self</span>,
-        <span class="ident">transaction</span>: <span class="kw-2">&amp;</span><span class="ident">T</span>,
-        <span class="ident">fee_reserve_config</span>: <span class="kw-2">&amp;</span><span class="ident">FeeReserveConfig</span>,
-        <span class="ident">execution_config</span>: <span class="kw-2">&amp;</span><span class="ident">ExecutionConfig</span>,
-    ) -&gt; <span class="ident">TransactionReceipt</span> {
-        <span class="kw">let</span> <span class="ident">receipt</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">execute</span>(<span class="ident">transaction</span>, <span class="ident">fee_reserve_config</span>, <span class="ident">execution_config</span>);
-        <span class="kw">if</span> <span class="kw">let</span> <span class="ident">TransactionResult::Commit</span>(<span class="ident">commit</span>) <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">receipt</span>.<span class="ident">result</span> {
-            <span class="ident">commit</span>.<span class="ident">state_updates</span>.<span class="ident">commit</span>(<span class="self">self</span>.<span class="ident">substate_store</span>);
+    <span class="kw">pub fn </span>execute_and_commit&lt;T: ExecutableTransaction&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        transaction: <span class="kw-2">&amp;</span>T,
+        fee_reserve_config: <span class="kw-2">&amp;</span>FeeReserveConfig,
+        execution_config: <span class="kw-2">&amp;</span>ExecutionConfig,
+    ) -&gt; TransactionReceipt {
+        <span class="kw">let </span>receipt = <span class="self">self</span>.execute(transaction, fee_reserve_config, execution_config);
+        <span class="kw">if let </span>TransactionResult::Commit(commit) = <span class="kw-2">&amp;</span>receipt.result {
+            commit.state_updates.commit(<span class="self">self</span>.substate_store);
         }
-        <span class="ident">receipt</span>
+        receipt
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

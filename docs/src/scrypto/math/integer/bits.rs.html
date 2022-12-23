@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/math/integer/bits.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>bits.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script src="../../../../crates.js"></script><script defer src="../../../../main.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../scrypto/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/math/integer/bits.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>bits.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../scrypto/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -625,628 +620,627 @@
 <span id="620">620</span>
 <span id="621">621</span>
 <span id="622">622</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use super</span>::<span class="kw-2">*</span>;
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PrimIntExt</span> {
-    <span class="kw">type</span> <span class="ident">Output</span>;
-    <span class="kw">fn</span> <span class="ident">rotate_left</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span>;
-    <span class="kw">fn</span> <span class="ident">rotate_right</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span>;
+<span class="kw">pub trait </span>PrimIntExt {
+    <span class="kw">type </span>Output;
+    <span class="kw">fn </span>rotate_left(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="self">Self</span>;
+    <span class="kw">fn </span>rotate_right(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="self">Self</span>;
 }
 
-<span class="macro">macro_rules!</span> <span class="ident">checked_int_impl_large</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>:<span class="ident">ident</span>),<span class="kw-2">*</span>) =&gt; {
-        <span class="macro">paste!</span> {
+<span class="macro">macro_rules! </span>checked_int_impl_large {
+    ($(<span class="macro-nonterminal">$t</span>:ident),<span class="kw-2">*</span>) =&gt; {
+        <span class="macro">paste! </span>{
             $(
-                <span class="kw">impl</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                    <span class="doccomment">/// Returns the number of ones in the binary representation of `self`.</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// # Examples</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// Basic usage:</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                    <span class="doccomment">///</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n = &quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::by(0b01001100u8);&quot;</span>]</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// assert_eq!(n.count_ones(), 3);</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">inline</span>]</span>
-                    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">alias</span> <span class="op">=</span> <span class="string">&quot;popcount&quot;</span>)]</span>
-                    <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">alias</span> <span class="op">=</span> <span class="string">&quot;popcnt&quot;</span>)]</span>
-                    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                          without modifying the original&quot;</span>]</span>
-                    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">count_ones</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-                        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_vec</span>().<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">count_ones</span>()).<span class="ident">sum</span>()
+                <span class="kw">impl </span><span class="macro-nonterminal">$t </span>{
+                    <span class="doccomment">/// Returns the number of ones in the binary representation of `self`.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                    </span><span class="doccomment">///
+                    </span><span class="attribute">#[doc = <span class="string">&quot;let n = &quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::by(0b01001100u8);&quot;</span>]
+                    </span><span class="doccomment">///
+                    /// assert_eq!(n.count_ones(), 3);
+                    /// ```
+                    </span><span class="attribute">#[inline]
+                    #[doc(alias = <span class="string">&quot;popcount&quot;</span>)]
+                    #[doc(alias = <span class="string">&quot;popcnt&quot;</span>)]
+                    #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                          without modifying the original&quot;</span>]
+                    </span><span class="kw">pub fn </span>count_ones(<span class="self">self</span>) -&gt; u32 {
+                        <span class="self">self</span>.<span class="number">0</span>.to_vec().iter().map(|<span class="kw-2">&amp;</span>x| x.count_ones()).sum()
                     }
 
-                    <span class="doccomment">/// Returns the number of zeros in the binary representation of `self`.</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// # Examples</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                    <span class="doccomment">/// Which explains why `I8` is used here.</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// Basic usage:</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                    <span class="doccomment">///</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="macro">concat!</span>(<span class="string">&quot;assert_eq!(&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>),
-                        <span class="string">&quot;::by(0i8).count_zeros(), &quot;</span>, <span class="macro">stringify!</span>(<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span><span class="op">&gt;</span><span class="ident">::BITS</span>), <span class="string">&quot;);&quot;</span>)]</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">inline</span>]</span>
-                    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                          without modifying the original&quot;</span>]</span>
-                    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">count_zeros</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-                        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_vec</span>().<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="kw-2">&amp;</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">count_zeros</span>()).<span class="ident">sum</span>()
+                    <span class="doccomment">/// Returns the number of zeros in the binary representation of `self`.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Please note that this example is shared between large integer types.
+                    /// Which explains why `I8` is used here.
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                    </span><span class="doccomment">///
+                    </span><span class="attribute">#[doc = <span class="macro">concat!</span>(<span class="string">&quot;assert_eq!(&quot;</span>, <span class="macro">stringify!</span>(<span class="macro-nonterminal">$t</span>),
+                        <span class="string">&quot;::by(0i8).count_zeros(), &quot;</span>, <span class="macro">stringify!</span>(&lt;<span class="macro-nonterminal">$t</span>&gt;::BITS), <span class="string">&quot;);&quot;</span>)]
+                    </span><span class="doccomment">/// ```
+                    </span><span class="attribute">#[inline]
+                    #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                          without modifying the original&quot;</span>]
+                    </span><span class="kw">pub fn </span>count_zeros(<span class="self">self</span>) -&gt; u32 {
+                        <span class="self">self</span>.<span class="number">0</span>.to_vec().iter().map(|<span class="kw-2">&amp;</span>x| x.count_zeros()).sum()
                     }
 
-                    <span class="doccomment">/// Returns the number of trailing zeros in the binary representation of `self`.</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// # Examples</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                    <span class="doccomment">/// Which explains why `I8` is used here.</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// Basic usage:</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                    <span class="doccomment">///</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n = I8::by(0b0101000u8);&quot;</span>]</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// assert_eq!(n.trailing_zeros(), 3);</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">inline</span>]</span>
-                    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                          without modifying the original&quot;</span>]</span>
-                    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">trailing_zeros</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">zeros</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="number">0</span>;
-                        <span class="kw">for</span> <span class="ident">byte</span> <span class="kw">in</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_vec</span>().<span class="ident">iter</span>() {
-                            <span class="kw">let</span> <span class="ident">x</span> <span class="op">=</span> <span class="ident">byte</span>.<span class="ident">trailing_zeros</span>();
-                            <span class="kw">if</span> <span class="ident">x</span> <span class="op">!</span><span class="op">=</span> <span class="number">8</span> {
-                                <span class="kw">return</span> <span class="ident">zeros</span> <span class="op">+</span> <span class="ident">x</span>;
+                    <span class="doccomment">/// Returns the number of trailing zeros in the binary representation of `self`.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Please note that this example is shared between large integer types.
+                    /// Which explains why `I8` is used here.
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                    </span><span class="doccomment">///
+                    </span><span class="attribute">#[doc = <span class="string">&quot;let n = I8::by(0b0101000u8);&quot;</span>]
+                    </span><span class="doccomment">///
+                    /// assert_eq!(n.trailing_zeros(), 3);
+                    /// ```
+                    </span><span class="attribute">#[inline]
+                    #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                          without modifying the original&quot;</span>]
+                    </span><span class="kw">pub fn </span>trailing_zeros(<span class="self">self</span>) -&gt; u32 {
+                        <span class="kw">let </span><span class="kw-2">mut </span>zeros: u32 = <span class="number">0</span>;
+                        <span class="kw">for </span>byte <span class="kw">in </span><span class="self">self</span>.<span class="number">0</span>.to_vec().iter() {
+                            <span class="kw">let </span>x = byte.trailing_zeros();
+                            <span class="kw">if </span>x != <span class="number">8 </span>{
+                                <span class="kw">return </span>zeros + x;
                             }
-                            <span class="ident">zeros</span> <span class="op">+</span><span class="op">=</span> <span class="number">8</span>;
+                            zeros += <span class="number">8</span>;
                         }
-                        <span class="ident">zeros</span>
+                        zeros
                     }
 
-                    <span class="doccomment">/// Reverses the byte order of the integer.</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// # Examples</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                    <span class="doccomment">/// Which explains why `I16` is used here.</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// Basic usage:</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                    <span class="doccomment">///</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n: I16  = I16::by(0b0000000_01010101i16);&quot;</span>]</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(n, I16::by(85));&quot;</span>]</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// let m = n.swap_bytes();</span>
-                    <span class="doccomment">///</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(m, I16::by(0b01010101_00000000i16));&quot;</span>]</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(m, I16::by(21760i16));&quot;</span>]</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">inline</span>]</span>
-                    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                          without modifying the original&quot;</span>]</span>
-                    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">swap_bytes</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-                        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">into_iter</span>().<span class="ident">rev</span>().<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">try_into</span>().<span class="ident">unwrap</span>())
+                    <span class="doccomment">/// Reverses the byte order of the integer.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Please note that this example is shared between large integer types.
+                    /// Which explains why `I16` is used here.
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                    </span><span class="doccomment">///
+                    </span><span class="attribute">#[doc = <span class="string">&quot;let n: I16  = I16::by(0b0000000_01010101i16);&quot;</span>]
+                    #[doc = <span class="string">&quot;assert_eq!(n, I16::by(85));&quot;</span>]
+                    </span><span class="doccomment">///
+                    /// let m = n.swap_bytes();
+                    ///
+                    </span><span class="attribute">#[doc = <span class="string">&quot;assert_eq!(m, I16::by(0b01010101_00000000i16));&quot;</span>]
+                    #[doc = <span class="string">&quot;assert_eq!(m, I16::by(21760i16));&quot;</span>]
+                    </span><span class="doccomment">/// ```
+                    </span><span class="attribute">#[inline]
+                    #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                          without modifying the original&quot;</span>]
+                    </span><span class="kw">pub fn </span>swap_bytes(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+                        <span class="macro-nonterminal">$t</span>(<span class="self">self</span>.<span class="number">0</span>.into_iter().rev().collect::&lt;Vec&lt;u8&gt;&gt;().try_into().unwrap())
                     }
 
-                    <span class="doccomment">/// Reverses the bit pattern of the integer.</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// # Examples</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                    <span class="doccomment">/// Which explains why `I16` is used here.</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// Basic usage:</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                    <span class="doccomment">///</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n: I16  = I16::by(0b0000000_01010101i16);&quot;</span>]</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(n, I16::by(85i16));&quot;</span>]</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// let m = n.reverse_bits();</span>
-                    <span class="doccomment">///</span>
-                    <span class="doccomment">/// assert_eq!(m.0 as u16, 0b10101010_00000000);</span>
-                    <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(m, I16::by(-22016i16));&quot;</span>]</span>
-                    <span class="doccomment">/// ```</span>
-                    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                          without modifying the original&quot;</span>]</span>
-                    <span class="attribute">#[<span class="ident">inline</span>]</span>
-                    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">reverse_bits</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-                        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">into_iter</span>().<span class="ident">rev</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">x</span>.<span class="ident">reverse_bits</span>()).<span class="ident">collect</span>::<span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>().<span class="ident">try_into</span>().<span class="ident">unwrap</span>())
+                    <span class="doccomment">/// Reverses the bit pattern of the integer.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Please note that this example is shared between large integer types.
+                    /// Which explains why `I16` is used here.
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                    </span><span class="doccomment">///
+                    </span><span class="attribute">#[doc = <span class="string">&quot;let n: I16  = I16::by(0b0000000_01010101i16);&quot;</span>]
+                    #[doc = <span class="string">&quot;assert_eq!(n, I16::by(85i16));&quot;</span>]
+                    </span><span class="doccomment">///
+                    /// let m = n.reverse_bits();
+                    ///
+                    /// assert_eq!(m.0 as u16, 0b10101010_00000000);
+                    </span><span class="attribute">#[doc = <span class="string">&quot;assert_eq!(m, I16::by(-22016i16));&quot;</span>]
+                    </span><span class="doccomment">/// ```
+                    </span><span class="attribute">#[must_use = <span class="string">&quot;this returns the result of the operation, \
+                          without modifying the original&quot;</span>]
+                    #[inline]
+                    </span><span class="kw">pub fn </span>reverse_bits(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+                        <span class="macro-nonterminal">$t</span>(<span class="self">self</span>.<span class="number">0</span>.into_iter().rev().map(|x| x.reverse_bits()).collect::&lt;Vec&lt;u8&gt;&gt;().try_into().unwrap())
                     }
 
-                    <span class="doccomment">/// Returns the number of leading zeros in the binary representation of `self`.</span>
-                    <span class="doccomment">///</span>
-                    <span class="attribute">#[<span class="ident">inline</span>]</span>
-                    <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                          without modifying the original&quot;</span>]</span>
-                    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">leading_zeros</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-                        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">zeros</span>: <span class="ident">u32</span> <span class="op">=</span> <span class="ident">u32::zero</span>();
-                        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="self">self</span>.<span class="number">0</span>.<span class="ident">into_iter</span>().<span class="ident">rev</span>().<span class="ident">enumerate</span>() {
-                            <span class="kw">if</span> <span class="ident">i</span>.<span class="number">1</span> <span class="op">!</span><span class="op">=</span> <span class="number">0</span> {
-                                <span class="kw">return</span> <span class="ident">zeros</span> <span class="op">+</span> <span class="ident">i</span>.<span class="number">1</span>.<span class="ident">leading_zeros</span>();
+                    <span class="doccomment">/// Returns the number of leading zeros in the binary representation of `self`.
+                    ///
+                    </span><span class="attribute">#[inline]
+                    #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                          without modifying the original&quot;</span>]
+                    </span><span class="kw">pub fn </span>leading_zeros(<span class="self">self</span>) -&gt; u32 {
+                        <span class="kw">let </span><span class="kw-2">mut </span>zeros: u32 = u32::zero();
+                        <span class="kw">for </span>i <span class="kw">in </span><span class="self">self</span>.<span class="number">0</span>.into_iter().rev().enumerate() {
+                            <span class="kw">if </span>i.<span class="number">1 </span>!= <span class="number">0 </span>{
+                                <span class="kw">return </span>zeros + i.<span class="number">1</span>.leading_zeros();
                             }
-                            <span class="ident">zeros</span> <span class="op">+</span><span class="op">=</span> <span class="number">8</span>;
+                            zeros += <span class="number">8</span>;
                         }
-                        <span class="ident">zeros</span>
+                        zeros
                     }
                 }
-            )<span class="op">*</span>
+            )*
         }
     }
 }
 
-<span class="macro">checked_int_impl_large!</span> { <span class="ident">U256</span>, <span class="ident">U384</span>, <span class="ident">U512</span>, <span class="ident">I256</span>, <span class="ident">I384</span>, <span class="ident">I512</span> }
+<span class="macro">checked_int_impl_large! </span>{ U256, U384, U512, I256, I384, I512 }
 
-<span class="macro">macro_rules!</span> <span class="ident">checked_int_impl_small</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>:<span class="ident">ident</span>),<span class="kw-2">*</span>) =&gt; {$(
-        <span class="macro">paste!</span> {
-            <span class="kw">impl</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
+<span class="macro">macro_rules! </span>checked_int_impl_small {
+    ($(<span class="macro-nonterminal">$t</span>:ident),<span class="kw-2">*</span>) =&gt; {$(
+        <span class="macro">paste! </span>{
+            <span class="kw">impl </span><span class="macro-nonterminal">$t </span>{
 
-                <span class="doccomment">/// Returns the number of ones in the binary representation of `self`.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// # Examples</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Basic usage:</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n = &quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::by(0b01001100u8);&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// assert_eq!(n.count_ones(), 3);</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">alias</span> <span class="op">=</span> <span class="string">&quot;popcount&quot;</span>)]</span>
-                <span class="attribute">#[<span class="ident">doc</span>(<span class="ident">alias</span> <span class="op">=</span> <span class="string">&quot;popcnt&quot;</span>)]</span>
-                <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                          without modifying the original&quot;</span>]</span>
-                <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">count_ones</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-                    <span class="self">self</span>.<span class="number">0</span>.<span class="ident">count_ones</span>()
+                <span class="doccomment">/// Returns the number of ones in the binary representation of `self`.
+                ///
+                /// # Examples
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                </span><span class="doccomment">///
+                </span><span class="attribute">#[doc = <span class="string">&quot;let n = &quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::by(0b01001100u8);&quot;</span>]
+                </span><span class="doccomment">///
+                /// assert_eq!(n.count_ones(), 3);
+                /// ```
+                </span><span class="attribute">#[inline]
+                #[doc(alias = <span class="string">&quot;popcount&quot;</span>)]
+                #[doc(alias = <span class="string">&quot;popcnt&quot;</span>)]
+                #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                          without modifying the original&quot;</span>]
+                </span><span class="kw">pub const fn </span>count_ones(<span class="self">self</span>) -&gt; u32 {
+                    <span class="self">self</span>.<span class="number">0</span>.count_ones()
                 }
 
-                <span class="doccomment">/// Returns the number of zeros in the binary representation of `self`.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// # Examples</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                <span class="doccomment">/// Which explains why `I8` is used here.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Basic usage:</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(I8::by(0i8).count_zeros(), 8);&quot;</span>]</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                without modifying the original&quot;</span>]</span>
-                <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">count_zeros</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-                    <span class="self">self</span>.<span class="number">0</span>.<span class="ident">count_zeros</span>()
+                <span class="doccomment">/// Returns the number of zeros in the binary representation of `self`.
+                ///
+                /// # Examples
+                ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                </span><span class="doccomment">///
+                </span><span class="attribute">#[doc = <span class="string">&quot;assert_eq!(I8::by(0i8).count_zeros(), 8);&quot;</span>]
+                </span><span class="doccomment">/// ```
+                </span><span class="attribute">#[inline]
+                #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                without modifying the original&quot;</span>]
+                </span><span class="kw">pub const fn </span>count_zeros(<span class="self">self</span>) -&gt; u32 {
+                    <span class="self">self</span>.<span class="number">0</span>.count_zeros()
                 }
 
-                <span class="doccomment">/// Returns the number of trailing zeros in the binary representation of `self`.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// # Examples</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                <span class="doccomment">/// Which explains why `I8` is used here.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Basic usage:</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n = I8::by(0b0101000u8);&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// assert_eq!(n.trailing_zeros(), 3);</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                without modifying the original&quot;</span>]</span>
-                <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">trailing_zeros</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-                    <span class="self">self</span>.<span class="number">0</span>.<span class="ident">trailing_zeros</span>()
+                <span class="doccomment">/// Returns the number of trailing zeros in the binary representation of `self`.
+                ///
+                /// # Examples
+                ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                </span><span class="doccomment">///
+                </span><span class="attribute">#[doc = <span class="string">&quot;let n = I8::by(0b0101000u8);&quot;</span>]
+                </span><span class="doccomment">///
+                /// assert_eq!(n.trailing_zeros(), 3);
+                /// ```
+                </span><span class="attribute">#[inline]
+                #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                without modifying the original&quot;</span>]
+                </span><span class="kw">pub const fn </span>trailing_zeros(<span class="self">self</span>) -&gt; u32 {
+                    <span class="self">self</span>.<span class="number">0</span>.trailing_zeros()
                 }
 
-                <span class="doccomment">/// Reverses the byte order of the integer.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// # Examples</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                <span class="doccomment">/// Which explains why `I16` is used here.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Basic usage:</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n: I16  = I16::by(0b0000000_01010101i16);&quot;</span>]</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(n, I16::by(85));&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// let m = n.swap_bytes();</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(m, I16::by(0b01010101_00000000i16));&quot;</span>]</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(m, I16::by(21760i16));&quot;</span>]</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                without modifying the original&quot;</span>]</span>
-                <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">swap_bytes</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-                    <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">swap_bytes</span>())
+                <span class="doccomment">/// Reverses the byte order of the integer.
+                ///
+                /// # Examples
+                ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I16` is used here.
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                </span><span class="doccomment">///
+                </span><span class="attribute">#[doc = <span class="string">&quot;let n: I16  = I16::by(0b0000000_01010101i16);&quot;</span>]
+                #[doc = <span class="string">&quot;assert_eq!(n, I16::by(85));&quot;</span>]
+                </span><span class="doccomment">///
+                /// let m = n.swap_bytes();
+                ///
+                </span><span class="attribute">#[doc = <span class="string">&quot;assert_eq!(m, I16::by(0b01010101_00000000i16));&quot;</span>]
+                #[doc = <span class="string">&quot;assert_eq!(m, I16::by(21760i16));&quot;</span>]
+                </span><span class="doccomment">/// ```
+                </span><span class="attribute">#[inline]
+                #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                without modifying the original&quot;</span>]
+                </span><span class="kw">pub const fn </span>swap_bytes(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+                    <span class="macro-nonterminal">$t</span>(<span class="self">self</span>.<span class="number">0</span>.swap_bytes())
                 }
 
-                <span class="doccomment">/// Reverses the bit pattern of the integer.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// # Examples</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                <span class="doccomment">/// Which explains why `I16` is used here.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Basic usage:</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n: I16  = I16::by(0b0000000_01010101i16);&quot;</span>]</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(n, I16::by(85i16));&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// let m = n.reverse_bits();</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// assert_eq!(m.0 as u16, 0b10101010_00000000);</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;assert_eq!(m, I16::by(-22016i16));&quot;</span>]</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                without modifying the original&quot;</span>]</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">reverse_bits</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-                    <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">reverse_bits</span>())
+                <span class="doccomment">/// Reverses the bit pattern of the integer.
+                ///
+                /// # Examples
+                ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I16` is used here.
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                </span><span class="doccomment">///
+                </span><span class="attribute">#[doc = <span class="string">&quot;let n: I16  = I16::by(0b0000000_01010101i16);&quot;</span>]
+                #[doc = <span class="string">&quot;assert_eq!(n, I16::by(85i16));&quot;</span>]
+                </span><span class="doccomment">///
+                /// let m = n.reverse_bits();
+                ///
+                /// assert_eq!(m.0 as u16, 0b10101010_00000000);
+                </span><span class="attribute">#[doc = <span class="string">&quot;assert_eq!(m, I16::by(-22016i16));&quot;</span>]
+                </span><span class="doccomment">/// ```
+                </span><span class="attribute">#[must_use = <span class="string">&quot;this returns the result of the operation, \
+                without modifying the original&quot;</span>]
+                #[inline]
+                </span><span class="kw">pub const fn </span>reverse_bits(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+                    <span class="macro-nonterminal">$t</span>(<span class="self">self</span>.<span class="number">0</span>.reverse_bits())
                 }
 
-                <span class="doccomment">/// Converts an integer from big endian to the target&#39;s endianness.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// On big endian this is a no-op. On little endian the bytes are</span>
-                <span class="doccomment">/// swapped.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// # Examples</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                <span class="doccomment">/// Which explains why `I8` is used here.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Basic usage:</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n = &quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::by(0x1Ai8);&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// if cfg!(target_endian = &quot;big&quot;) {</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;    assert_eq!(&quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::from_be(n), n)&quot;</span>]</span>
-                <span class="doccomment">/// } else {</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;    assert_eq!(&quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::from_be(n), n.swap_bytes())&quot;</span>]</span>
-                <span class="doccomment">/// }</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="attribute">#[<span class="ident">must_use</span>]</span>
-                <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">from_be</span>(<span class="ident">x</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span> {
-                    <span class="kw">if</span> <span class="macro">cfg!</span>(<span class="ident">target_endian</span> <span class="op">=</span> <span class="string">&quot;big&quot;</span>) {
-                        <span class="ident">x</span>
-                    } <span class="kw">else</span> {
-                        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>([<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>:<span class="ident">lower</span><span class="op">&gt;</span>]<span class="ident">::from_be</span>(<span class="ident">x</span>.<span class="number">0</span>))
+                <span class="doccomment">/// Converts an integer from big endian to the target&#39;s endianness.
+                ///
+                /// On big endian this is a no-op. On little endian the bytes are
+                /// swapped.
+                ///
+                /// # Examples
+                ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                </span><span class="doccomment">///
+                </span><span class="attribute">#[doc = <span class="string">&quot;let n = &quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::by(0x1Ai8);&quot;</span>]
+                </span><span class="doccomment">///
+                /// if cfg!(target_endian = &quot;big&quot;) {
+                </span><span class="attribute">#[doc = <span class="string">&quot;    assert_eq!(&quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::from_be(n), n)&quot;</span>]
+                </span><span class="doccomment">/// } else {
+                </span><span class="attribute">#[doc = <span class="string">&quot;    assert_eq!(&quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::from_be(n), n.swap_bytes())&quot;</span>]
+                </span><span class="doccomment">/// }
+                /// ```
+                </span><span class="attribute">#[inline]
+                #[must_use]
+                </span><span class="kw">pub const fn </span>from_be(x: <span class="self">Self</span>) -&gt; <span class="self">Self </span>{
+                    <span class="kw">if </span><span class="macro">cfg!</span>(target_endian = <span class="string">&quot;big&quot;</span>) {
+                        x
+                    } <span class="kw">else </span>{
+                        <span class="macro-nonterminal">$t</span>([&lt;<span class="macro-nonterminal">$t</span>:lower&gt;]::from_be(x.<span class="number">0</span>))
                     }
                 }
 
-                <span class="doccomment">/// Converts an integer from little endian to the target&#39;s endianness.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// On little endian this is a no-op. On big endian the bytes are</span>
-                <span class="doccomment">/// swapped.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// # Examples</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                <span class="doccomment">/// Which explains why `I8` is used here.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Basic usage:</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n = &quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::by(0x1Ai8);&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// if cfg!(target_endian = &quot;little&quot;) {</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;    assert_eq!(&quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::from_le(n), n)&quot;</span>]</span>
-                <span class="doccomment">/// } else {</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;    assert_eq!(&quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::from_le(n), n.swap_bytes())&quot;</span>]</span>
-                <span class="doccomment">/// }</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="attribute">#[<span class="ident">must_use</span>]</span>
-                <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">from_le</span>(<span class="ident">x</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span> {
-                    <span class="kw">if</span> <span class="macro">cfg!</span>(<span class="ident">target_endian</span> <span class="op">=</span> <span class="string">&quot;big&quot;</span>) {
-                        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>([<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>:<span class="ident">lower</span><span class="op">&gt;</span>]<span class="ident">::from_le</span>(<span class="ident">x</span>.<span class="number">0</span>))
-                    } <span class="kw">else</span> {
-                        <span class="ident">x</span>
+                <span class="doccomment">/// Converts an integer from little endian to the target&#39;s endianness.
+                ///
+                /// On little endian this is a no-op. On big endian the bytes are
+                /// swapped.
+                ///
+                /// # Examples
+                ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                </span><span class="doccomment">///
+                </span><span class="attribute">#[doc = <span class="string">&quot;let n = &quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::by(0x1Ai8);&quot;</span>]
+                </span><span class="doccomment">///
+                /// if cfg!(target_endian = &quot;little&quot;) {
+                </span><span class="attribute">#[doc = <span class="string">&quot;    assert_eq!(&quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::from_le(n), n)&quot;</span>]
+                </span><span class="doccomment">/// } else {
+                </span><span class="attribute">#[doc = <span class="string">&quot;    assert_eq!(&quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::from_le(n), n.swap_bytes())&quot;</span>]
+                </span><span class="doccomment">/// }
+                /// ```
+                </span><span class="attribute">#[inline]
+                #[must_use]
+                </span><span class="kw">pub const fn </span>from_le(x: <span class="self">Self</span>) -&gt; <span class="self">Self </span>{
+                    <span class="kw">if </span><span class="macro">cfg!</span>(target_endian = <span class="string">&quot;big&quot;</span>) {
+                        <span class="macro-nonterminal">$t</span>([&lt;<span class="macro-nonterminal">$t</span>:lower&gt;]::from_le(x.<span class="number">0</span>))
+                    } <span class="kw">else </span>{
+                        x
                     }
                 }
 
-                <span class="doccomment">/// Converts `self` to big endian from the target&#39;s endianness.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// On big endian this is a no-op. On little endian the bytes are</span>
-                <span class="doccomment">/// swapped.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// # Examples</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                <span class="doccomment">/// Which explains why `I8` is used here.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Basic usage:</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n = &quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::by(0x1Ai8);&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// if cfg!(target_endian = &quot;big&quot;) {</span>
-                <span class="doccomment">///     assert_eq!(n.to_be(), n)</span>
-                <span class="doccomment">/// } else {</span>
-                <span class="doccomment">///     assert_eq!(n.to_be(), n.swap_bytes())</span>
-                <span class="doccomment">/// }</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                without modifying the original&quot;</span>]</span>
-                <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">to_be</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-                    <span class="kw">if</span> <span class="macro">cfg!</span>(<span class="ident">target_endian</span> <span class="op">=</span> <span class="string">&quot;big&quot;</span>) {
-                        <span class="self">self</span>
-                    } <span class="kw">else</span> {
-                        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_be</span>())
+                <span class="doccomment">/// Converts `self` to big endian from the target&#39;s endianness.
+                ///
+                /// On big endian this is a no-op. On little endian the bytes are
+                /// swapped.
+                ///
+                /// # Examples
+                ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                </span><span class="doccomment">///
+                </span><span class="attribute">#[doc = <span class="string">&quot;let n = &quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::by(0x1Ai8);&quot;</span>]
+                </span><span class="doccomment">///
+                /// if cfg!(target_endian = &quot;big&quot;) {
+                ///     assert_eq!(n.to_be(), n)
+                /// } else {
+                ///     assert_eq!(n.to_be(), n.swap_bytes())
+                /// }
+                /// ```
+                </span><span class="attribute">#[inline]
+                #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                without modifying the original&quot;</span>]
+                </span><span class="kw">pub const fn </span>to_be(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+                    <span class="kw">if </span><span class="macro">cfg!</span>(target_endian = <span class="string">&quot;big&quot;</span>) {
+                        <span class="self">self
+                    </span>} <span class="kw">else </span>{
+                        <span class="macro-nonterminal">$t</span>(<span class="self">self</span>.<span class="number">0</span>.to_be())
                     }
                 }
 
-                <span class="doccomment">/// Converts `self` to little endian from the target&#39;s endianness.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// On little endian this is a no-op. On big endian the bytes are</span>
-                <span class="doccomment">/// swapped.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// # Examples</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Please note that this example is shared between large integer types.</span>
-                <span class="doccomment">/// Which explains why `I8` is used here.</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// Basic usage:</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">doc</span> <span class="op">=</span> <span class="string">&quot;let n = &quot;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> <span class="string">&quot;::by(0x1Ai8);&quot;</span>]</span>
-                <span class="doccomment">///</span>
-                <span class="doccomment">/// if cfg!(target_endian = &quot;little&quot;) {</span>
-                <span class="doccomment">///     assert_eq!(n.to_le(), n)</span>
-                <span class="doccomment">/// } else {</span>
-                <span class="doccomment">///     assert_eq!(n.to_le(), n.swap_bytes())</span>
-                <span class="doccomment">/// }</span>
-                <span class="doccomment">/// ```</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                without modifying the original&quot;</span>]</span>
-                <span class="kw">pub</span> <span class="kw">const</span> <span class="kw">fn</span> <span class="ident">to_le</span>(<span class="self">self</span>) -&gt; <span class="self">Self</span> {
-                    <span class="kw">if</span> <span class="macro">cfg!</span>(<span class="ident">target_endian</span> <span class="op">=</span> <span class="string">&quot;big&quot;</span>) {
-                        <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>(<span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_le</span>())
-                    } <span class="kw">else</span> {
-                        <span class="self">self</span>
-                    }
+                <span class="doccomment">/// Converts `self` to little endian from the target&#39;s endianness.
+                ///
+                /// On little endian this is a no-op. On big endian the bytes are
+                /// swapped.
+                ///
+                /// # Examples
+                ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                </span><span class="attribute">#[doc = <span class="string">&quot;use scrypto::prelude::*;&quot;</span>]
+                </span><span class="doccomment">///
+                </span><span class="attribute">#[doc = <span class="string">&quot;let n = &quot; </span><span class="macro-nonterminal">$t </span><span class="string">&quot;::by(0x1Ai8);&quot;</span>]
+                </span><span class="doccomment">///
+                /// if cfg!(target_endian = &quot;little&quot;) {
+                ///     assert_eq!(n.to_le(), n)
+                /// } else {
+                ///     assert_eq!(n.to_le(), n.swap_bytes())
+                /// }
+                /// ```
+                </span><span class="attribute">#[inline]
+                #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                without modifying the original&quot;</span>]
+                </span><span class="kw">pub const fn </span>to_le(<span class="self">self</span>) -&gt; <span class="self">Self </span>{
+                    <span class="kw">if </span><span class="macro">cfg!</span>(target_endian = <span class="string">&quot;big&quot;</span>) {
+                        <span class="macro-nonterminal">$t</span>(<span class="self">self</span>.<span class="number">0</span>.to_le())
+                    } <span class="kw">else </span>{
+                        <span class="self">self
+                    </span>}
                 }
 
-                <span class="doccomment">/// Returns the number of leading zeros in the binary representation of `self`.</span>
-                <span class="doccomment">///</span>
-                <span class="attribute">#[<span class="ident">inline</span>]</span>
-                <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                          without modifying the original&quot;</span>]</span>
-                <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">leading_zeros</span>(<span class="self">self</span>) -&gt; <span class="ident">u32</span> {
-                    <span class="self">self</span>.<span class="number">0</span>.<span class="ident">leading_zeros</span>()
+                <span class="doccomment">/// Returns the number of leading zeros in the binary representation of `self`.
+                ///
+                </span><span class="attribute">#[inline]
+                #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                          without modifying the original&quot;</span>]
+                </span><span class="kw">pub fn </span>leading_zeros(<span class="self">self</span>) -&gt; u32 {
+                    <span class="self">self</span>.<span class="number">0</span>.leading_zeros()
                 }
             }
         }
-        )<span class="op">*</span>
+        )*
     }
 }
 
-<span class="macro">checked_int_impl_small!</span> { <span class="ident">I8</span>, <span class="ident">I16</span>, <span class="ident">I32</span>, <span class="ident">I64</span>, <span class="ident">I128</span>, <span class="ident">U8</span>, <span class="ident">U16</span>, <span class="ident">U32</span>, <span class="ident">U64</span>, <span class="ident">U128</span> }
+<span class="macro">checked_int_impl_small! </span>{ I8, I16, I32, I64, I128, U8, U16, U32, U64, U128 }
 
-<span class="macro">macro_rules!</span> <span class="ident">checked_impl</span> {
-        ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>:<span class="ident">ty</span>),<span class="kw-2">*</span>) =&gt; {
-            <span class="macro">paste!</span> {
+<span class="macro">macro_rules! </span>checked_impl {
+        ($(<span class="macro-nonterminal">$t</span>:ty),<span class="kw-2">*</span>) =&gt; {
+            <span class="macro">paste! </span>{
                 $(
-                    <span class="kw">impl</span> <span class="ident">BitXor</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>;
+                    <span class="kw">impl </span>BitXor <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="kw">type </span>Output = <span class="self">Self</span>;
 
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">bitxor</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                            <span class="ident">BigInt::from</span>(<span class="self">self</span>).<span class="ident">bitxor</span>(<span class="kw-2">&amp;</span><span class="ident">BigInt::from</span>(<span class="ident">other</span>)).<span class="ident">try_into</span>().<span class="ident">unwrap</span>()
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>bitxor(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$t </span>{
+                            BigInt::from(<span class="self">self</span>).bitxor(<span class="kw-2">&amp;</span>BigInt::from(other)).try_into().unwrap()
                         }
                     }
 
-                    <span class="kw">impl</span> <span class="ident">BitXorAssign</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">bitxor_assign</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) {
-                            <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="self">self</span> <span class="op">^</span> <span class="ident">other</span>).<span class="ident">try_into</span>().<span class="ident">unwrap</span>();
+                    <span class="kw">impl </span>BitXorAssign <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>bitxor_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: <span class="self">Self</span>) {
+                            <span class="kw-2">*</span><span class="self">self </span>= (<span class="kw-2">*</span><span class="self">self </span>^ other).try_into().unwrap();
                         }
                     }
 
-                    <span class="kw">impl</span> <span class="ident">BitOr</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>;
+                    <span class="kw">impl </span>BitOr <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="kw">type </span>Output = <span class="self">Self</span>;
 
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">bitor</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                            <span class="ident">BigInt::from</span>(<span class="self">self</span>).<span class="ident">bitor</span>(<span class="kw-2">&amp;</span><span class="ident">BigInt::from</span>(<span class="ident">other</span>)).<span class="ident">try_into</span>().<span class="ident">unwrap</span>()
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>bitor(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$t </span>{
+                            BigInt::from(<span class="self">self</span>).bitor(<span class="kw-2">&amp;</span>BigInt::from(other)).try_into().unwrap()
                         }
                     }
 
-                    <span class="kw">impl</span> <span class="ident">BitOrAssign</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">bitor_assign</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) {
-                            <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="self">self</span> <span class="op">|</span> <span class="ident">other</span>).<span class="ident">try_into</span>().<span class="ident">unwrap</span>();
+                    <span class="kw">impl </span>BitOrAssign <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>bitor_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: <span class="self">Self</span>) {
+                            <span class="kw-2">*</span><span class="self">self </span>= (<span class="kw-2">*</span><span class="self">self </span>| other).try_into().unwrap();
                         }
                     }
 
-                    <span class="kw">impl</span> <span class="ident">BitAnd</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>;
+                    <span class="kw">impl </span>BitAnd <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="kw">type </span>Output = <span class="self">Self</span>;
 
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">bitand</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                            <span class="ident">BigInt::from</span>(<span class="self">self</span>).<span class="ident">bitand</span>(<span class="kw-2">&amp;</span><span class="ident">BigInt::from</span>(<span class="ident">other</span>)).<span class="ident">try_into</span>().<span class="ident">unwrap</span>()
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>bitand(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$t </span>{
+                            BigInt::from(<span class="self">self</span>).bitand(<span class="kw-2">&amp;</span>BigInt::from(other)).try_into().unwrap()
                         }
                     }
 
-                    <span class="kw">impl</span> <span class="ident">BitAndAssign</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">bitand_assign</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) {
-                            <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> (<span class="kw-2">*</span><span class="self">self</span> <span class="op">&amp;</span> <span class="ident">other</span>).<span class="ident">try_into</span>().<span class="ident">unwrap</span>();
+                    <span class="kw">impl </span>BitAndAssign <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>bitand_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: <span class="self">Self</span>) {
+                            <span class="kw-2">*</span><span class="self">self </span>= (<span class="kw-2">*</span><span class="self">self </span>&amp; other).try_into().unwrap();
                         }
                     }
 
-                    <span class="kw">impl</span> <span class="ident">Shl</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>;
+                    <span class="kw">impl </span>Shl <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="kw">type </span>Output = <span class="self">Self</span>;
 
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">shl</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                            <span class="kw">if</span> <span class="ident">other</span> <span class="op">&gt;</span> <span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span><span class="op">&gt;</span><span class="ident">::BITS</span>.<span class="ident">try_into</span>().<span class="ident">unwrap</span>() {
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>shl(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$t </span>{
+                            <span class="kw">if </span>other &gt; &lt;<span class="macro-nonterminal">$t</span>&gt;::BITS.try_into().unwrap() {
                                 <span class="macro">panic!</span>(<span class="string">&quot;overflow&quot;</span>);
                             }
-                            <span class="kw">let</span> <span class="ident">to_shift</span> <span class="op">=</span> <span class="ident">BigInt::from</span>(<span class="self">self</span>);
-                            <span class="kw">let</span> <span class="ident">shift</span> <span class="op">=</span> <span class="ident">BigInt::from</span>(<span class="ident">other</span>).<span class="ident">to_i64</span>().<span class="ident">unwrap</span>();
-                            <span class="kw">if</span> <span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span><span class="op">&gt;</span><span class="ident">::MIN</span> <span class="op">==</span> <span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span><span class="op">&gt;</span><span class="ident">::zero</span>() {
-                                <span class="kw">let</span> <span class="ident">len</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">to_shift</span>
-                                    .<span class="ident">clone</span>()
-                                    .<span class="ident">shl</span>(<span class="ident">shift</span>)
-                                    .<span class="ident">to_bytes_le</span>()
-                                    .<span class="number">1</span>
-                                    .<span class="ident">len</span>()
-                                    .<span class="ident">min</span>((<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span><span class="op">&gt;</span><span class="ident">::BITS</span> <span class="op">/</span> <span class="number">8</span>) <span class="kw">as</span> <span class="ident">usize</span>);
-                                <span class="ident">BigInt::from_bytes_le</span>(
-                                    <span class="ident">Sign::Plus</span>,
-                                    <span class="ident">to_shift</span>.<span class="ident">shl</span>(<span class="ident">shift</span>)
-                                    .<span class="ident">to_bytes_le</span>().<span class="number">1</span>[..<span class="ident">len</span>]
-                                    .<span class="ident">into</span>()
+                            <span class="kw">let </span>to_shift = BigInt::from(<span class="self">self</span>);
+                            <span class="kw">let </span>shift = BigInt::from(other).to_i64().unwrap();
+                            <span class="kw">if </span>&lt;<span class="macro-nonterminal">$t</span>&gt;::MIN == &lt;<span class="macro-nonterminal">$t</span>&gt;::zero() {
+                                <span class="kw">let </span>len: usize = to_shift
+                                    .clone()
+                                    .shl(shift)
+                                    .to_bytes_le()
+                                    .<span class="number">1
+                                    </span>.len()
+                                    .min((&lt;<span class="macro-nonterminal">$t</span>&gt;::BITS / <span class="number">8</span>) <span class="kw">as </span>usize);
+                                BigInt::from_bytes_le(
+                                    Sign::Plus,
+                                    to_shift.shl(shift)
+                                    .to_bytes_le().<span class="number">1</span>[..len]
+                                    .into()
                                 )
-                                    .<span class="ident">try_into</span>()
-                                    .<span class="ident">unwrap</span>()
-                            } <span class="kw">else</span> {
-                                <span class="kw">let</span> <span class="ident">len</span>: <span class="ident">usize</span> <span class="op">=</span> <span class="ident">to_shift</span>
-                                    .<span class="ident">clone</span>()
-                                    .<span class="ident">shl</span>(<span class="ident">shift</span>)
-                                    .<span class="ident">to_signed_bytes_le</span>()
-                                    .<span class="ident">len</span>()
-                                    .<span class="ident">min</span>((<span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span><span class="op">&gt;</span><span class="ident">::BITS</span> <span class="op">/</span> <span class="number">8</span>) <span class="kw">as</span> <span class="ident">usize</span>);
-                                <span class="ident">BigInt::from_signed_bytes_le</span>(
-                                    <span class="ident">to_shift</span>
-                                    .<span class="ident">shl</span>(<span class="ident">shift</span>)
-                                    .<span class="ident">to_bytes_le</span>()
-                                    .<span class="number">1</span>[..<span class="ident">len</span>]
-                                    .<span class="ident">into</span>()
+                                    .try_into()
+                                    .unwrap()
+                            } <span class="kw">else </span>{
+                                <span class="kw">let </span>len: usize = to_shift
+                                    .clone()
+                                    .shl(shift)
+                                    .to_signed_bytes_le()
+                                    .len()
+                                    .min((&lt;<span class="macro-nonterminal">$t</span>&gt;::BITS / <span class="number">8</span>) <span class="kw">as </span>usize);
+                                BigInt::from_signed_bytes_le(
+                                    to_shift
+                                    .shl(shift)
+                                    .to_bytes_le()
+                                    .<span class="number">1</span>[..len]
+                                    .into()
                                 )
-                                    .<span class="ident">try_into</span>()
-                                    .<span class="ident">unwrap</span>()
+                                    .try_into()
+                                    .unwrap()
                             }
                         }
                     }
 
 
-                    <span class="kw">impl</span> <span class="ident">ShlAssign</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">shl_assign</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) {
-                            <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> <span class="kw-2">*</span><span class="self">self</span> <span class="op">&lt;</span><span class="op">&lt;</span> <span class="ident">other</span>;
+                    <span class="kw">impl </span>ShlAssign <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>shl_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: <span class="self">Self</span>) {
+                            <span class="kw-2">*</span><span class="self">self </span>= <span class="kw-2">*</span><span class="self">self </span>&lt;&lt; other;
                         }
                     }
 
-                    <span class="kw">impl</span> <span class="ident">Shr</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>;
+                    <span class="kw">impl </span>Shr <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="kw">type </span>Output = <span class="self">Self</span>;
 
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">shr</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                            <span class="kw">if</span> <span class="ident">other</span> <span class="op">&gt;</span> <span class="op">&lt;</span><span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span><span class="op">&gt;</span><span class="ident">::BITS</span>.<span class="ident">try_into</span>().<span class="ident">unwrap</span>() {
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>shr(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="macro-nonterminal">$t </span>{
+                            <span class="kw">if </span>other &gt; &lt;<span class="macro-nonterminal">$t</span>&gt;::BITS.try_into().unwrap() {
                                 <span class="macro">panic!</span>(<span class="string">&quot;overflow&quot;</span>);
                             }
-                            <span class="kw">let</span> <span class="ident">to_shift</span> <span class="op">=</span> <span class="ident">BigInt::from</span>(<span class="self">self</span>);
-                            <span class="kw">let</span> <span class="ident">shift</span> <span class="op">=</span> <span class="ident">BigInt::from</span>(<span class="ident">other</span>).<span class="ident">to_i64</span>().<span class="ident">unwrap</span>();
-                            <span class="ident">to_shift</span>.<span class="ident">shr</span>(<span class="ident">shift</span>)
-                                .<span class="ident">try_into</span>()
-                                .<span class="ident">unwrap</span>()
+                            <span class="kw">let </span>to_shift = BigInt::from(<span class="self">self</span>);
+                            <span class="kw">let </span>shift = BigInt::from(other).to_i64().unwrap();
+                            to_shift.shr(shift)
+                                .try_into()
+                                .unwrap()
                         }
                     }
 
-                    <span class="kw">impl</span> <span class="ident">ShrAssign</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">shr_assign</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) {
-                            <span class="kw-2">*</span><span class="self">self</span> <span class="op">=</span> <span class="kw-2">*</span><span class="self">self</span> <span class="op">&gt;</span><span class="op">&gt;</span> <span class="ident">other</span>;
+                    <span class="kw">impl </span>ShrAssign <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="attribute">#[inline]
+                        </span><span class="kw">fn </span>shr_assign(<span class="kw-2">&amp;mut </span><span class="self">self</span>, other: <span class="self">Self</span>) {
+                            <span class="kw-2">*</span><span class="self">self </span>= <span class="kw-2">*</span><span class="self">self </span>&gt;&gt; other;
                         }
                     }
-                    <span class="kw">impl</span> <span class="ident">PrimIntExt</span> <span class="kw">for</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> {
-                        <span class="kw">type</span> <span class="ident">Output</span> <span class="op">=</span> <span class="self">Self</span>;
-                        <span class="doccomment">/// Shifts the bits to the left by a specified amount, `n`,</span>
-                        <span class="doccomment">/// wrapping the truncated bits to the end of the resulting</span>
-                        <span class="doccomment">/// integer.</span>
-                        <span class="doccomment">///</span>
-                        <span class="doccomment">/// Please note this isn&#39;t the same operation as the `&lt;&lt;` shifting</span>
-                        <span class="doccomment">/// operator! This method can not overflow as opposed to &#39;&lt;&lt;&#39;.</span>
-                        <span class="doccomment">///</span>
-                        <span class="doccomment">/// Please note that this example is shared between integer types.</span>
-                        <span class="doccomment">/// Which explains why `I128` is used here.</span>
-                        <span class="doccomment">///</span>
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                              without modifying the original&quot;</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">rotate_left</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span> {
-                            <span class="kw">let</span> <span class="ident">rot</span>: <span class="ident">u32</span> <span class="op">=</span> (<span class="ident">BigInt::from</span>(<span class="ident">other</span>) <span class="op">%</span> <span class="ident"><span class="self">Self</span>::BITS</span>).<span class="ident">to_u32</span>().<span class="ident">unwrap</span>();
-                            <span class="kw">let</span> <span class="ident">big</span>: <span class="ident">BigInt</span> <span class="op">=</span> <span class="ident">BigInt::from</span>(<span class="self">self</span>);
-                            <span class="kw">let</span> <span class="ident">big_rot</span> <span class="op">=</span> <span class="ident">big</span>.<span class="ident">clone</span>().<span class="ident">shl</span>(<span class="ident">rot</span>);
-                            <span class="ident">big_rot</span>.<span class="ident">bitor</span>(<span class="ident">big</span>.<span class="ident">shr</span>(<span class="ident"><span class="self">Self</span>::BITS</span> <span class="op">-</span> <span class="ident">rot</span>)).<span class="ident">try_into</span>().<span class="ident">unwrap</span>()
+                    <span class="kw">impl </span>PrimIntExt <span class="kw">for </span><span class="macro-nonterminal">$t </span>{
+                        <span class="kw">type </span>Output = <span class="self">Self</span>;
+                        <span class="doccomment">/// Shifts the bits to the left by a specified amount, `n`,
+                        /// wrapping the truncated bits to the end of the resulting
+                        /// integer.
+                        ///
+                        /// Please note this isn&#39;t the same operation as the `&lt;&lt;` shifting
+                        /// operator! This method can not overflow as opposed to &#39;&lt;&lt;&#39;.
+                        ///
+                        /// Please note that this example is shared between integer types.
+                        /// Which explains why `I128` is used here.
+                        ///
+                        </span><span class="attribute">#[inline]
+                        #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                              without modifying the original&quot;</span>]
+                        </span><span class="kw">fn </span>rotate_left(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="self">Self </span>{
+                            <span class="kw">let </span>rot: u32 = (BigInt::from(other) % <span class="self">Self</span>::BITS).to_u32().unwrap();
+                            <span class="kw">let </span>big: BigInt = BigInt::from(<span class="self">self</span>);
+                            <span class="kw">let </span>big_rot = big.clone().shl(rot);
+                            big_rot.bitor(big.shr(<span class="self">Self</span>::BITS - rot)).try_into().unwrap()
                         }
 
-                        <span class="doccomment">/// Shifts the bits to the right by a specified amount, `n`,</span>
-                        <span class="doccomment">/// wrapping the truncated bits to the beginning of the resulting</span>
-                        <span class="doccomment">/// integer.</span>
-                        <span class="doccomment">///</span>
-                        <span class="doccomment">/// Please note this isn&#39;t the same operation as the `&gt;&gt;` shifting</span>
-                        <span class="doccomment">/// operator! This method can not overflow as opposed to &#39;&gt;&gt;&#39;.</span>
-                        <span class="doccomment">///</span>
-                        <span class="attribute">#[<span class="ident">inline</span>]</span>
-                        <span class="attribute">#[<span class="ident">must_use</span> <span class="op">=</span> <span class="string">&quot;this returns the result of the operation, \
-                              without modifying the original&quot;</span>]</span>
-                        <span class="kw">fn</span> <span class="ident">rotate_right</span>(<span class="self">self</span>, <span class="ident">other</span>: <span class="self">Self</span>) -&gt; <span class="self">Self</span> {
-                            <span class="kw">let</span> <span class="ident">rot</span>: <span class="ident">u32</span> <span class="op">=</span> (<span class="ident">BigInt::from</span>(<span class="ident">other</span>) <span class="op">%</span> <span class="ident"><span class="self">Self</span>::BITS</span>).<span class="ident">to_u32</span>().<span class="ident">unwrap</span>();
-                            <span class="kw">let</span> <span class="ident">big</span>: <span class="ident">BigInt</span> <span class="op">=</span> <span class="ident">BigInt::from</span>(<span class="self">self</span>);
-                            <span class="kw">let</span> <span class="ident">big_rot</span> <span class="op">=</span> <span class="ident">big</span>.<span class="ident">clone</span>().<span class="ident">shr</span>(<span class="ident">rot</span>);
-                            <span class="ident">big_rot</span>.<span class="ident">bitor</span>(<span class="ident">big</span>.<span class="ident">shl</span>(<span class="ident"><span class="self">Self</span>::BITS</span> <span class="op">-</span> <span class="ident">rot</span>)).<span class="ident">try_into</span>().<span class="ident">unwrap</span>()
+                        <span class="doccomment">/// Shifts the bits to the right by a specified amount, `n`,
+                        /// wrapping the truncated bits to the beginning of the resulting
+                        /// integer.
+                        ///
+                        /// Please note this isn&#39;t the same operation as the `&gt;&gt;` shifting
+                        /// operator! This method can not overflow as opposed to &#39;&gt;&gt;&#39;.
+                        ///
+                        </span><span class="attribute">#[inline]
+                        #[must_use = <span class="string">&quot;this returns the result of the operation, \
+                              without modifying the original&quot;</span>]
+                        </span><span class="kw">fn </span>rotate_right(<span class="self">self</span>, other: <span class="self">Self</span>) -&gt; <span class="self">Self </span>{
+                            <span class="kw">let </span>rot: u32 = (BigInt::from(other) % <span class="self">Self</span>::BITS).to_u32().unwrap();
+                            <span class="kw">let </span>big: BigInt = BigInt::from(<span class="self">self</span>);
+                            <span class="kw">let </span>big_rot = big.clone().shr(rot);
+                            big_rot.bitor(big.shl(<span class="self">Self</span>::BITS - rot)).try_into().unwrap()
                         }
                     }
 
-                    )<span class="op">*</span>
+                    )*
             }
         };
     }
 
-<span class="macro">macro_rules!</span> <span class="ident">checked_impl_all</span> {
-    ($(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span>:<span class="ident">ident</span>),<span class="kw-2">*</span>) =&gt; {
+<span class="macro">macro_rules! </span>checked_impl_all {
+    ($(<span class="macro-nonterminal">$t</span>:ident),<span class="kw-2">*</span>) =&gt; {
         $(
-            <span class="macro">checked_impl!</span> { <span class="macro-nonterminal">$</span><span class="macro-nonterminal">t</span> }
-        )<span class="op">*</span>
+            <span class="macro">checked_impl! </span>{ <span class="macro-nonterminal">$t </span>}
+        )*
     }
 }
 
-<span class="macro">checked_impl_all!</span> { <span class="ident">U8</span>, <span class="ident">U16</span>, <span class="ident">U32</span>, <span class="ident">U64</span>, <span class="ident">U128</span>, <span class="ident">U256</span>, <span class="ident">U384</span>, <span class="ident">U512</span>, <span class="ident">I8</span>, <span class="ident">I16</span>, <span class="ident">I32</span>, <span class="ident">I64</span>, <span class="ident">I128</span>, <span class="ident">I256</span>, <span class="ident">I384</span>, <span class="ident">I512</span> }
+<span class="macro">checked_impl_all! </span>{ U8, U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

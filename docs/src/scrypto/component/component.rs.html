@@ -1,9 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/yulongwu/Downloads/radixdlt-scrypto/scrypto/src/component/component.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>component.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script src="../../../crates.js"></script><script defer src="../../../main.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script>
-    <noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a><h2 class="location"></h2>
-    </nav>
-    <nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div>
-        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/component/component.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>component.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -195,198 +190,197 @@
 <span id="190">190</span>
 <span id="191">191</span>
 <span id="192">192</span>
-</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">sbor::rust::fmt</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::str::FromStr</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::string::String</span>;
-<span class="kw">use</span> <span class="ident">sbor::rust::vec::Vec</span>;
-<span class="kw">use</span> <span class="ident">sbor</span>::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::fmt;
+<span class="kw">use </span>sbor::rust::str::FromStr;
+<span class="kw">use </span>sbor::rust::string::String;
+<span class="kw">use </span>sbor::rust::vec::Vec;
+<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::abi</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::address</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::buffer::scrypto_encode</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::component</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::core</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine::types</span>::{<span class="ident">RENodeId</span>, <span class="ident">SubstateId</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::engine</span>::{<span class="ident">api</span>::<span class="kw-2">*</span>, <span class="ident">call_engine</span>};
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::misc</span>::<span class="kw-2">*</span>;
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::resource::AccessRules</span>;
+<span class="kw">use </span><span class="kw">crate</span>::abi::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::address::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::buffer::scrypto_encode;
+<span class="kw">use </span><span class="kw">crate</span>::component::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::core::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::engine::types::{RENodeId, SubstateId};
+<span class="kw">use </span><span class="kw">crate</span>::engine::{api::<span class="kw-2">*</span>, call_engine};
+<span class="kw">use </span><span class="kw">crate</span>::misc::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::resource::AccessRules;
 
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">TypeId</span>, <span class="ident">Encode</span>, <span class="ident">Decode</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ComponentAddAccessCheckInput</span> {
-    <span class="kw">pub</span> <span class="ident">access_rules</span>: <span class="ident">AccessRules</span>,
+<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ComponentAddAccessCheckInput {
+    <span class="kw">pub </span>access_rules: AccessRules,
 }
 
-<span class="doccomment">/// Represents the state of a component.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ComponentState</span><span class="op">&lt;</span><span class="ident">C</span>: <span class="ident">LocalComponent</span><span class="op">&gt;</span>: <span class="ident">Encode</span> <span class="op">+</span> <span class="ident">Decode</span> {
-    <span class="doccomment">/// Instantiates a component from this data structure.</span>
-    <span class="kw">fn</span> <span class="ident">instantiate</span>(<span class="self">self</span>) -&gt; <span class="ident">C</span>;
+<span class="doccomment">/// Represents the state of a component.
+</span><span class="kw">pub trait </span>ComponentState&lt;C: LocalComponent&gt;: Encode + Decode {
+    <span class="doccomment">/// Instantiates a component from this data structure.
+    </span><span class="kw">fn </span>instantiate(<span class="self">self</span>) -&gt; C;
 }
 
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">LocalComponent</span> {
-    <span class="kw">fn</span> <span class="ident">package_address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">PackageAddress</span>;
-    <span class="kw">fn</span> <span class="ident">blueprint_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span>;
-    <span class="kw">fn</span> <span class="ident">add_access_check</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">access_rules</span>: <span class="ident">AccessRules</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span>;
-    <span class="kw">fn</span> <span class="ident">globalize</span>(<span class="self">self</span>) -&gt; <span class="ident">ComponentAddress</span>;
+<span class="kw">pub trait </span>LocalComponent {
+    <span class="kw">fn </span>package_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PackageAddress;
+    <span class="kw">fn </span>blueprint_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String;
+    <span class="kw">fn </span>add_access_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rules: AccessRules) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>;
+    <span class="kw">fn </span>globalize(<span class="self">self</span>) -&gt; ComponentAddress;
 }
 
-<span class="doccomment">/// Represents an instantiated component.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>)]</span>
-<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Component</span>(<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">ComponentAddress</span>);
+<span class="doccomment">/// Represents an instantiated component.
+</span><span class="attribute">#[derive(PartialEq, Eq, Hash)]
+</span><span class="kw">pub struct </span>Component(<span class="kw">pub</span>(<span class="kw">crate</span>) ComponentAddress);
 
-<span class="kw">impl</span> <span class="ident">Component</span> {
-    <span class="doccomment">/// Invokes a method on this component.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">call</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Decode</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">method</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">args</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span>) -&gt; <span class="ident">T</span> {
-        <span class="ident">Runtime::call_method</span>(<span class="self">self</span>.<span class="number">0</span>, <span class="ident">method</span>, <span class="ident">args</span>)
+<span class="kw">impl </span>Component {
+    <span class="doccomment">/// Invokes a method on this component.
+    </span><span class="kw">pub fn </span>call&lt;T: Decode&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, method: <span class="kw-2">&amp;</span>str, args: Vec&lt;u8&gt;) -&gt; T {
+        Runtime::call_method(<span class="self">self</span>.<span class="number">0</span>, method, args)
     }
 
-    <span class="doccomment">/// Returns the package ID of this component.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">package_address</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">PackageAddress</span> {
-        <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::ComponentInfo</span>(<span class="self">self</span>.<span class="number">0</span>);
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::SubstateRead</span>(<span class="ident">substate_id</span>);
-        <span class="kw">let</span> <span class="ident">output</span>: (<span class="ident">PackageAddress</span>, <span class="ident">String</span>) <span class="op">=</span> <span class="ident">call_engine</span>(<span class="ident">input</span>);
-        <span class="ident">output</span>.<span class="number">0</span>
-    }
+    <span class="doccomment">/// Returns the package ID of this component.
+    </span><span class="kw">pub fn </span>package_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PackageAddress {
+        <span class="kw">let </span>substate_id = SubstateId::ComponentInfo(<span class="self">self</span>.<span class="number">0</span>);
+        <span class="kw">let </span>input = RadixEngineInput::SubstateRead(substate_id);
+        <span class="kw">let </span>output: (PackageAddress, String) = call_engine(input);
+        output.<span class="number">0
+    </span>}
 
-    <span class="doccomment">/// Returns the blueprint name of this component.</span>
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">blueprint_name</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">String</span> {
-        <span class="kw">let</span> <span class="ident">substate_id</span> <span class="op">=</span> <span class="ident">SubstateId::ComponentInfo</span>(<span class="self">self</span>.<span class="number">0</span>);
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::SubstateRead</span>(<span class="ident">substate_id</span>);
-        <span class="kw">let</span> <span class="ident">output</span>: (<span class="ident">PackageAddress</span>, <span class="ident">String</span>) <span class="op">=</span> <span class="ident">call_engine</span>(<span class="ident">input</span>);
-        <span class="ident">output</span>.<span class="number">1</span>
-    }
+    <span class="doccomment">/// Returns the blueprint name of this component.
+    </span><span class="kw">pub fn </span>blueprint_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span>substate_id = SubstateId::ComponentInfo(<span class="self">self</span>.<span class="number">0</span>);
+        <span class="kw">let </span>input = RadixEngineInput::SubstateRead(substate_id);
+        <span class="kw">let </span>output: (PackageAddress, String) = call_engine(input);
+        output.<span class="number">1
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">add_access_check</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>, <span class="ident">access_rules</span>: <span class="ident">AccessRules</span>) -&gt; <span class="kw-2">&amp;mut</span> <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::InvokeMethod</span>(
-            <span class="ident">Receiver::Ref</span>(<span class="ident">RENodeId::Component</span>(<span class="self">self</span>.<span class="number">0</span>)),
-            <span class="ident">FnIdentifier::Native</span>(<span class="ident">NativeFnIdentifier::Component</span>(
-                <span class="ident">ComponentFnIdentifier::AddAccessCheck</span>,
+    <span class="kw">pub fn </span>add_access_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rules: AccessRules) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
+            Receiver::Ref(RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>)),
+            FnIdentifier::Native(NativeFnIdentifier::Component(
+                ComponentFnIdentifier::AddAccessCheck,
             )),
-            <span class="ident">scrypto_encode</span>(<span class="kw-2">&amp;</span><span class="ident">ComponentAddAccessCheckInput</span> { <span class="ident">access_rules</span> }),
+            scrypto_encode(<span class="kw-2">&amp;</span>ComponentAddAccessCheckInput { access_rules }),
         );
-        <span class="kw">let</span> <span class="kw">_</span>: () <span class="op">=</span> <span class="ident">call_engine</span>(<span class="ident">input</span>);
+        <span class="kw">let _</span>: () = call_engine(input);
 
-        <span class="self">self</span>
-    }
+        <span class="self">self
+    </span>}
 
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">globalize</span>(<span class="self">self</span>) -&gt; <span class="ident">ComponentAddress</span> {
-        <span class="kw">let</span> <span class="ident">input</span> <span class="op">=</span> <span class="ident">RadixEngineInput::RENodeGlobalize</span>(<span class="ident">RENodeId::Component</span>(<span class="self">self</span>.<span class="number">0</span>));
-        <span class="kw">let</span> <span class="kw">_</span>: () <span class="op">=</span> <span class="ident">call_engine</span>(<span class="ident">input</span>);
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">clone</span>()
-    }
-}
-
-<span class="comment">//========</span>
-<span class="comment">// binary</span>
-<span class="comment">//========</span>
-
-<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Component</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">AddressError</span>;
-
-    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="ident">component_address</span> <span class="op">=</span> <span class="ident">ComponentAddress::try_from</span>(<span class="ident">slice</span>)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(<span class="ident">component_address</span>))
+    <span class="kw">pub fn </span>globalize(<span class="self">self</span>) -&gt; ComponentAddress {
+        <span class="kw">let </span>input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>));
+        <span class="kw">let _</span>: () = call_engine(input);
+        <span class="self">self</span>.<span class="number">0</span>.clone()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">ComponentAddress</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Component</span> {
-    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">component</span>: <span class="ident">ComponentAddress</span>) -&gt; <span class="self">Self</span> {
-        <span class="kw">let</span> <span class="ident">component_address</span> <span class="op">=</span> <span class="ident">ComponentAddress::try_from</span>(<span class="ident">component</span>.<span class="ident">to_vec</span>().<span class="ident">as_slice</span>()).<span class="ident">unwrap</span>();
-        <span class="self">Self</span>(<span class="ident">component_address</span>)
+<span class="comment">//========
+// binary
+//========
+
+</span><span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>Component {
+    <span class="kw">type </span>Error = AddressError;
+
+    <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">let </span>component_address = ComponentAddress::try_from(slice)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(component_address))
     }
 }
 
-<span class="kw">impl</span> <span class="ident">Component</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_vec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
-        <span class="self">self</span>.<span class="number">0</span>.<span class="ident">to_vec</span>()
+<span class="kw">impl </span>From&lt;ComponentAddress&gt; <span class="kw">for </span>Component {
+    <span class="kw">fn </span>from(component: ComponentAddress) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span>component_address = ComponentAddress::try_from(component.to_vec().as_slice()).unwrap();
+        <span class="self">Self</span>(component_address)
     }
 }
 
-<span class="macro">scrypto_type!</span>(<span class="ident">Component</span>, <span class="ident">ScryptoType::Component</span>, <span class="ident">Vec::new</span>());
-
-<span class="comment">//======</span>
-<span class="comment">// text</span>
-<span class="comment">//======</span>
-
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">Component</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">fmt::Error</span><span class="op">&gt;</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
+<span class="kw">impl </span>Component {
+    <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
+        <span class="self">self</span>.<span class="number">0</span>.to_vec()
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">Component</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">fmt::Error</span><span class="op">&gt;</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
+<span class="macro">scrypto_type!</span>(Component, ScryptoType::Component, Vec::new());
+
+<span class="comment">//======
+// text
+//======
+
+</span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>Component {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
     }
 }
 
-<span class="doccomment">/// An instance of a blueprint, which lives in the ledger state.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Clone</span>, <span class="ident">Copy</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>, <span class="ident">Hash</span>, <span class="ident">PartialOrd</span>, <span class="ident">Ord</span>)]</span>
-<span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">ComponentAddress</span> {
-    <span class="ident">Normal</span>([<span class="ident">u8</span>; <span class="number">26</span>]),
-    <span class="ident">Account</span>([<span class="ident">u8</span>; <span class="number">26</span>]),
-    <span class="ident">System</span>([<span class="ident">u8</span>; <span class="number">26</span>]),
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Component {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
+    }
 }
 
-<span class="kw">impl</span> <span class="ident">ComponentAddress</span> {}
+<span class="doccomment">/// An instance of a blueprint, which lives in the ledger state.
+</span><span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+</span><span class="kw">pub enum </span>ComponentAddress {
+    Normal([u8; <span class="number">26</span>]),
+    Account([u8; <span class="number">26</span>]),
+    System([u8; <span class="number">26</span>]),
+}
 
-<span class="comment">//========</span>
-<span class="comment">// binary</span>
-<span class="comment">//========</span>
+<span class="kw">impl </span>ComponentAddress {}
 
-<span class="kw">impl</span> <span class="ident">TryFrom</span><span class="op">&lt;</span><span class="kw-2">&amp;</span>[<span class="ident">u8</span>]<span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">ComponentAddress</span> {
-    <span class="kw">type</span> <span class="ident">Error</span> <span class="op">=</span> <span class="ident">AddressError</span>;
+<span class="comment">//========
+// binary
+//========
 
-    <span class="kw">fn</span> <span class="ident">try_from</span>(<span class="ident">slice</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Error</span><span class="op">&gt;</span> {
-        <span class="kw">match</span> <span class="ident">slice</span>.<span class="ident">len</span>() {
-            <span class="number">27</span> =&gt; <span class="kw">match</span> <span class="ident">EntityType::try_from</span>(<span class="ident">slice</span>[<span class="number">0</span>])
-                .<span class="ident">map_err</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">AddressError::InvalidEntityTypeId</span>(<span class="ident">slice</span>[<span class="number">0</span>]))<span class="question-mark">?</span>
-            {
-                <span class="ident">EntityType::NormalComponent</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::Normal</span>(<span class="ident">copy_u8_array</span>(<span class="kw-2">&amp;</span><span class="ident">slice</span>[<span class="number">1</span>..]))),
-                <span class="ident">EntityType::AccountComponent</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::Account</span>(<span class="ident">copy_u8_array</span>(<span class="kw-2">&amp;</span><span class="ident">slice</span>[<span class="number">1</span>..]))),
-                <span class="ident">EntityType::SystemComponent</span> =&gt; <span class="prelude-val">Ok</span>(<span class="ident"><span class="self">Self</span>::System</span>(<span class="ident">copy_u8_array</span>(<span class="kw-2">&amp;</span><span class="ident">slice</span>[<span class="number">1</span>..]))),
-                <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">AddressError::InvalidEntityTypeId</span>(<span class="ident">slice</span>[<span class="number">0</span>])),
+</span><span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>ComponentAddress {
+    <span class="kw">type </span>Error = AddressError;
+
+    <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">match </span>slice.len() {
+            <span class="number">27 </span>=&gt; <span class="kw">match </span>EntityType::try_from(slice[<span class="number">0</span>])
+                .map_err(|<span class="kw">_</span>| AddressError::InvalidEntityTypeId(slice[<span class="number">0</span>]))<span class="question-mark">?
+            </span>{
+                EntityType::NormalComponent =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Normal(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">1</span>..]))),
+                EntityType::AccountComponent =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Account(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">1</span>..]))),
+                EntityType::SystemComponent =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::System(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">1</span>..]))),
+                <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(AddressError::InvalidEntityTypeId(slice[<span class="number">0</span>])),
             },
-            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">AddressError::InvalidLength</span>(<span class="ident">slice</span>.<span class="ident">len</span>())),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(AddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-<span class="kw">impl</span> <span class="ident">ComponentAddress</span> {
-    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_vec</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">buf</span> <span class="op">=</span> <span class="ident">Vec::new</span>();
-        <span class="ident">buf</span>.<span class="ident">push</span>(<span class="ident">EntityType::component</span>(<span class="self">self</span>).<span class="ident">id</span>());
-        <span class="kw">match</span> <span class="self">self</span> {
-            <span class="ident"><span class="self">Self</span>::Normal</span>(<span class="ident">v</span>) <span class="op">|</span> <span class="ident"><span class="self">Self</span>::Account</span>(<span class="ident">v</span>) <span class="op">|</span> <span class="ident"><span class="self">Self</span>::System</span>(<span class="ident">v</span>) =&gt; <span class="ident">buf</span>.<span class="ident">extend</span>(<span class="ident">v</span>),
+<span class="kw">impl </span>ComponentAddress {
+    <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
+        buf.push(EntityType::component(<span class="self">self</span>).id());
+        <span class="kw">match </span><span class="self">self </span>{
+            <span class="self">Self</span>::Normal(v) | <span class="self">Self</span>::Account(v) | <span class="self">Self</span>::System(v) =&gt; buf.extend(v),
         }
-        <span class="ident">buf</span>
+        buf
     }
 }
 
-<span class="macro">scrypto_type!</span>(<span class="ident">ComponentAddress</span>, <span class="ident">ScryptoType::ComponentAddress</span>, <span class="ident">Vec::new</span>());
+<span class="macro">scrypto_type!</span>(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 
-<span class="comment">//======</span>
-<span class="comment">// text</span>
-<span class="comment">//======</span>
+<span class="comment">//======
+// text
+//======
 
-<span class="kw">impl</span> <span class="ident">FromStr</span> <span class="kw">for</span> <span class="ident">ComponentAddress</span> {
-    <span class="kw">type</span> <span class="prelude-val">Err</span> <span class="op">=</span> <span class="ident">AddressError</span>;
+</span><span class="kw">impl </span>FromStr <span class="kw">for </span>ComponentAddress {
+    <span class="kw">type </span><span class="prelude-val">Err </span>= AddressError;
 
-    <span class="kw">fn</span> <span class="ident">from_str</span>(<span class="ident">s</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident"><span class="self">Self</span>::Err</span><span class="op">&gt;</span> {
-        <span class="ident">BECH32_DECODER</span>.<span class="ident">validate_and_decode_component_address</span>(<span class="ident">s</span>)
+    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
+        BECH32_DECODER.validate_and_decode_component_address(s)
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Display</span> <span class="kw">for</span> <span class="ident">ComponentAddress</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">fmt::Error</span><span class="op">&gt;</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="ident">BECH32_ENCODER</span>.<span class="ident">encode_component_address</span>(<span class="self">self</span>))
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>ComponentAddress {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, BECH32_ENCODER.encode_component_address(<span class="self">self</span>))
     }
 }
 
-<span class="kw">impl</span> <span class="ident">fmt::Debug</span> <span class="kw">for</span> <span class="ident">ComponentAddress</span> {
-    <span class="kw">fn</span> <span class="ident">fmt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">f</span>: <span class="kw-2">&amp;mut</span> <span class="ident">fmt::Formatter</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">fmt::Error</span><span class="op">&gt;</span> {
-        <span class="macro">write!</span>(<span class="ident">f</span>, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>ComponentAddress {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
     }
 }
 </code></pre></div>
-</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.62.1 (e092d0b6b 2022-07-16)" ></div>
-</body></html>
+</section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>
