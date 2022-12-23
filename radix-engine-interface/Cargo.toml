@@ -20,7 +20,7 @@ serde = { version = "1.0.144", default-features = false, optional = true }
 serde_with = { version = "2.0.1", optional = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 # Use fork until fix for https://github.com/isaacholt100/bnum/issues/10 is not available
-bnum = { git = "https://github.com/lrubasze/bnum", branch = "do_not_override_features" , default-features = false, features = ["numtraits"] }
+bnum = { git = "https://github.com/radixdlt/bnum", branch = "do_not_override_features" , default-features = false, features = ["numtraits"] }
 
 [dev-dependencies]
 serde_json = { version = "1.0.81", default-features = false }
