@@ -1,6 +1,12 @@
 #!/bin/bash
 
-set -e
+set -Ee
+
+err_report() {
+    echo "Code format check FAILED on line $1"
+}
+
+trap 'err_report $LINENO' ERR
 
 cd "$(dirname "$0")"
 
