@@ -4,73 +4,83 @@ pub const QUICK : bool = true;
 
 #[macro_export]
 macro_rules! ops_fn {
-    ($t:ty, $root_fn:ident, $pow_fn:ident, $exp_t:ty) => {
+    ($t:ty, $pow_fn:ident, $exp_t:ty) => {
         paste::item! {
-            fn [< $t:lower _add >](a: &$t, b: &$t) {
-                let _ = a + b;
+            fn [< $t:lower _add >](a: &$t, b: &$t) -> $t {
+                a + b
             }
 
-            fn [< $t:lower _sub >](a: &$t, b: &$t) {
-                let _ = a - b;
+            fn [< $t:lower _sub >](a: &$t, b: &$t) -> $t {
+                a - b
             }
 
-            fn [< $t:lower _mul >](a: &$t, b: &$t) {
-                let _ = a * b;
+            fn [< $t:lower _mul >](a: &$t, b: &$t) -> $t {
+                a * b
             }
 
-            fn [< $t:lower _div >](a: &$t, b: &$t) {
-                let _ = a / b;
+            fn [< $t:lower _div >](a: &$t, b: &$t) -> $t {
+                a / b
             }
 
-            fn [< $t:lower _root >](a: &$t, n: &u32) {
-                let _ = a.$root_fn(*n);
+            fn [< $t:lower _pow >](a: &$t, exp: &$exp_t) -> $t {
+                a.$pow_fn(*exp)
             }
 
-            fn [< $t:lower _pow >](a: &$t, exp: &$exp_t) {
-                let _ = a.$pow_fn(*exp);
+            fn [< $t:lower _to_string >](a: &$t, _: &str) -> String {
+                a.to_string()
             }
 
-            fn [< $t:lower _to_string >](a: &$t, _: &str) {
-                let _ = a.to_string();
-            }
-
-            fn [< $t:lower _from_string >](s: &str, _: &str) {
-                let _ = <$t>::from_str(s).unwrap();
+            fn [< $t:lower _from_string >](s: &str, _: &str) -> $t {
+                <$t>::from_str(s).unwrap()
             }
         }
     };
-    ($t:ty, $root_fn:ident, $pow_fn:ident, $exp_t:ty, "clone") => {
+    ($t:ty, $pow_fn:ident, $exp_t:ty, "clone") => {
         paste::item! {
-            fn [< $t:lower _add >](a: &$t, b: &$t) {
-                let _ = a.clone() + b.clone();
+            fn [< $t:lower _add >](a: &$t, b: &$t) -> $t {
+                a.clone() + b.clone()
             }
 
-            fn [< $t:lower _sub >](a: &$t, b: &$t) {
-                let _ = a.clone() - b.clone();
+            fn [< $t:lower _sub >](a: &$t, b: &$t) -> $t {
+                a.clone() - b.clone()
             }
 
-            fn [< $t:lower _mul >](a: &$t, b: &$t) {
-                let _ = a.clone() * b.clone();
+            fn [< $t:lower _mul >](a: &$t, b: &$t) -> $t {
+                a.clone() * b.clone()
             }
 
-            fn [< $t:lower _div >](a: &$t, b: &$t) {
-                let _ = a.clone() / b.clone();
+            fn [< $t:lower _div >](a: &$t, b: &$t) -> $t {
+                a.clone() / b.clone()
             }
 
-            fn [< $t:lower _root >](a: &$t, n: &u32) {
+            fn [< $t:lower _pow >](a: &$t, exp: &$exp_t) -> $t {
+                a.clone().$pow_fn(*exp)
+            }
+
+            fn [< $t:lower _to_string >](a: &$t, _: &str) -> String {
+                a.to_string()
+            }
+
+            fn [< $t:lower _from_string >](s: &str, _: &str) -> $t {
+                <$t>::from_str(s).unwrap()
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! ops_root_fn {
+    ($t:ty, $root_fn:ident) => {
+        paste::item! {
+            fn [< $t:lower _root >](a: &$t, n: &u32)  {
+                let _ = a.$root_fn(*n);
+            }
+        }
+    };
+    ($t:ty, $root_fn:ident, "clone") => {
+        paste::item! {
+            fn [< $t:lower _root >](a: &$t, n: &u32)  {
                 let _ = a.clone().$root_fn(*n);
-            }
-
-            fn [< $t:lower _pow >](a: &$t, exp: &$exp_t) {
-                let _ = a.$pow_fn(*exp);
-            }
-
-            fn [< $t:lower _to_string >](a: &$t, _: &str) {
-                let _ = a.to_string();
-            }
-
-            fn [< $t:lower _from_string >](s: &str, _: &str) {
-                let _ = <$t>::from_str(s).unwrap();
             }
         }
     };
@@ -109,6 +119,25 @@ macro_rules! process_op {
 
 #[macro_export]
 macro_rules! bench_ops {
+    ($t:ty, $ops:literal, "no_ref") => {
+        paste::item! {
+            pub fn [< bench_ $t:lower _ $ops >] (c: &mut Criterion) {
+                let test_descr = concat!(stringify!($t), "_", $ops);
+                let mut group = c.benchmark_group(test_descr);
+                for op in [< $ops:upper _OPERANDS >].iter() {
+                    process_op!($t, op, bid, $ops);
+                    group.bench_with_input(BenchmarkId::from_parameter(bid), &op, | b, (o_first, o_second) | {
+                        b.iter(|| {
+                            [< $t:lower _ $ops>](*o_first, *o_second)
+                        })
+                    });
+                    if QUICK {
+                        break
+                    }
+                }
+            }
+        }
+    };
     ($t:ty, $ops:literal) => {
         paste::item! {
             pub fn [< bench_ $t:lower _ $ops >] (c: &mut Criterion) {
