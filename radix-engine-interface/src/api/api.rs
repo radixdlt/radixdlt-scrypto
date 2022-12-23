@@ -38,6 +38,7 @@ pub trait InvokableModel<E>:
     + Invokable<EpochManagerNextRoundInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>
     + Invokable<EpochManagerSetEpochInvocation, E>
+    + Invokable<EpochManagerRegisterValidatorInvocation, E>
     + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>
     + Invokable<ClockGetCurrentTimeInvocation, E>

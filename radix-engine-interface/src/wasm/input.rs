@@ -148,6 +148,7 @@ pub enum EpochManagerMethodInvocation {
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     NextRound(EpochManagerNextRoundInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
+    RegisterValidator(EpochManagerRegisterValidatorInvocation),
 }
 
 #[derive(Debug)]
@@ -474,6 +475,9 @@ impl NativeFnInvocation {
                             .invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                         EpochManagerMethodInvocation::SetEpoch(invocation) => api
+                            .invoke(invocation)
+                            .map(|a| IndexedScryptoValue::from_typed(&a)),
+                        EpochManagerMethodInvocation::RegisterValidator(invocation) => api
                             .invoke(invocation)
                             .map(|a| IndexedScryptoValue::from_typed(&a)),
                     }

@@ -58,8 +58,13 @@ impl Executor for EpochManagerCreateInvocation {
             rounds_per_epoch: self.rounds_per_epoch,
         };
 
-        let validator_set = ValidatorSetSubstate {
+        let current_validator_set = ValidatorSetSubstate {
             epoch: self.initial_epoch,
+            validator_set: self.validator_set.clone(),
+        };
+
+        let preparing_validator_set = ValidatorSetSubstate {
+            epoch: self.initial_epoch + 1,
             validator_set: self.validator_set,
         };
 
@@ -87,7 +92,8 @@ impl Executor for EpochManagerCreateInvocation {
             underlying_node_id,
             RENode::EpochManager(
                 epoch_manager,
-                validator_set,
+                current_validator_set,
+                preparing_validator_set,
                 AccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 },
@@ -196,8 +202,8 @@ impl Executor for EpochManagerNextRoundExecutable {
         Y: SystemApi,
     {
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
-        let handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        let mgr_handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = system_api.get_ref_mut(mgr_handle)?;
         let epoch_manager = substate_mut.epoch_manager();
 
         if self.round <= epoch_manager.round {
@@ -210,17 +216,25 @@ impl Executor for EpochManagerNextRoundExecutable {
         }
 
         if self.round >= epoch_manager.rounds_per_epoch {
-            let next_epoch = epoch_manager.epoch + 1;
-            epoch_manager.epoch = next_epoch;
+            let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
+            let handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
+            let mut substate_mut = system_api.get_ref_mut(handle)?;
+            let preparing_validator_set = substate_mut.validator_set();
+            let prepared_epoch = preparing_validator_set.epoch;
+            let next_validator_set = preparing_validator_set.validator_set.clone();
+            preparing_validator_set.epoch = prepared_epoch + 1;
+
+            let mut substate_mut = system_api.get_ref_mut(mgr_handle)?;
+            let epoch_manager = substate_mut.epoch_manager();
+            epoch_manager.epoch = prepared_epoch;
             epoch_manager.round = 0;
 
-            let offset = SubstateOffset::EpochManager(EpochManagerOffset::ValidatorSet);
+            let offset = SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet);
             let handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
-
-            // Keep same validator set for now
             let mut substate_mut = system_api.get_ref_mut(handle)?;
             let validator_set = substate_mut.validator_set();
-            validator_set.epoch = next_epoch;
+            validator_set.epoch = prepared_epoch;
+            validator_set.validator_set = next_validator_set;
         } else {
             epoch_manager.round = self.round;
         }
@@ -266,6 +280,48 @@ impl Executor for EpochManagerSetEpochExecutable {
         let handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = system_api.get_ref_mut(handle)?;
         substate_mut.epoch_manager().epoch = self.1;
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct EpochManagerRegisterValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
+
+impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerRegisterValidatorInvocation {
+    type Exec = EpochManagerRegisterValidatorExecutable;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+            resolved_receiver,
+        );
+        let executor =
+            EpochManagerRegisterValidatorExecutable(resolved_receiver.receiver, self.validator);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for EpochManagerRegisterValidatorExecutable {
+    type Output = ();
+
+    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
+        let handle = system_api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        substate_mut.validator_set().validator_set.insert(self.1);
         Ok(((), CallFrameUpdate::empty()))
     }
 }

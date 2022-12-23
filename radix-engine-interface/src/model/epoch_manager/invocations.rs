@@ -103,3 +103,27 @@ impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
         .into()
     }
 }
+
+#[derive(Debug)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct EpochManagerRegisterValidatorInvocation {
+    pub receiver: SystemAddress,
+    pub validator: EcdsaSecp256k1PublicKey,
+}
+
+impl Invocation for EpochManagerRegisterValidatorInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for EpochManagerRegisterValidatorInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<SerializedInvocation> for EpochManagerRegisterValidatorInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
+            EpochManagerMethodInvocation::RegisterValidator(self),
+        ))
+        .into()
+    }
+}
