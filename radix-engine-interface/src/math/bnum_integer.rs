@@ -2,8 +2,8 @@
 
 use bnum::{BInt, BUint};
 use num_bigint::BigInt;
-use num_traits::{FromPrimitive, One, Pow, ToPrimitive, Zero};
 use num_integer::Roots;
+use num_traits::{FromPrimitive, One, Pow, ToPrimitive, Zero};
 use paste::paste;
 use sbor::rust::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use sbor::rust::convert::{From, TryFrom};
@@ -16,10 +16,9 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 
-pub mod convert;
 pub mod bits;
+pub mod convert;
 pub mod test;
-
 
 macro_rules! types {
     ($($t:ident, $wrap:ty),*) => {
@@ -144,7 +143,6 @@ pub trait CheckedSub {
     where
         Self: Sized;
 }
-
 
 macro_rules! forward_ref_unop {
     (impl $imp:ident, $method:ident for $t:ty) => {
@@ -451,4 +449,3 @@ op_impl_signed! { BnumI256 }
 op_impl_signed! { BnumI384 }
 op_impl_signed! { BnumI512 }
 op_impl_signed! { BnumI768 }
-

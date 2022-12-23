@@ -3,7 +3,7 @@ use super::*;
 use paste::paste;
 
 #[cfg(test)]
-use num_bigint::{BigInt,Sign};
+use num_bigint::{BigInt, Sign};
 
 use radix_engine_interface::*;
 
@@ -269,8 +269,6 @@ macro_rules! test_bnums_signed {
 #[cfg(test)]
 test_bnums_signed! { BnumI256, BnumI384, BnumI512, BnumI768 }
 
-
-
 #[test]
 #[should_panic(expected = "Err")]
 fn test_string_to_bnum_panic_2() {
@@ -281,7 +279,6 @@ fn test_string_to_bnum_panic_2() {
         )
     );
 }
-
 
 #[test]
 fn test_bnum_to_bigint() {
@@ -367,7 +364,7 @@ fn test_bnum_to_bnum_panic_3() {
 #[test]
 #[should_panic(expected = "NegativeToUnsigned")]
 fn test_bnum_to_bnum_panic_4() {
-    let  i512 = - BnumI512::ONE;
+    let i512 = -BnumI512::ONE;
     let _ = BnumU256::try_from(i512).unwrap();
 }
 
@@ -391,5 +388,4 @@ fn test_bnum_to_bnum_panic_6() {
 fn test_bnum_to_bnum_panic_7() {
     let u512 = BnumU512::MAX;
     let _ = BnumI512::from(u512);
-
 }

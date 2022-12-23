@@ -2,12 +2,12 @@ use num_bigint::BigInt;
 use num_traits::{One, Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
+use sbor::rust::format;
 use sbor::rust::iter;
 use sbor::rust::ops::*;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::{String, ToString};
 use sbor::rust::vec::Vec;
-use sbor::rust::format;
 use sbor::*;
 
 use crate::abi::*;
@@ -147,8 +147,9 @@ impl Decimal {
                 if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else {
-                    let digit =
-                        (self.0 / (divisor / BnumI256::from(10i128)) % BnumI256::from(10i128)).abs();
+                    let digit = (self.0 / (divisor / BnumI256::from(10i128))
+                        % BnumI256::from(10i128))
+                    .abs();
                     if digit > 5.into() {
                         if self.is_negative() {
                             Self((self.0 / divisor - BnumI256::one()) * divisor)
@@ -164,8 +165,9 @@ impl Decimal {
                 if self.0 % divisor == BnumI256::zero() {
                     self.clone()
                 } else {
-                    let digit =
-                        (self.0 / (divisor / BnumI256::from(10i128)) % BnumI256::from(10i128)).abs();
+                    let digit = (self.0 / (divisor / BnumI256::from(10i128))
+                        % BnumI256::from(10i128))
+                    .abs();
                     if digit < 5.into() {
                         Self(self.0 / divisor * divisor)
                     } else {
@@ -184,7 +186,7 @@ impl Decimal {
     pub fn powi(&self, exp: i64) -> Self {
         let one_384 = BnumI384::from(Self::ONE.0);
         let base_384 = BnumI384::from(self.0);
-        let div = |x: i64, y:i64| x.checked_div(y).expect("Overflow");
+        let div = |x: i64, y: i64| x.checked_div(y).expect("Overflow");
         let sub = |x: i64, y: i64| x.checked_sub(y).expect("Overflow");
         let mul = |x: i64, y: i64| x.checked_mul(y).expect("Overflow");
 

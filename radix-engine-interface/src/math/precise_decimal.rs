@@ -2,20 +2,20 @@ use num_bigint::BigInt;
 use num_traits::{One, Pow, Zero};
 use sbor::rust::convert::{TryFrom, TryInto};
 use sbor::rust::fmt;
+use sbor::rust::format;
 use sbor::rust::iter;
 use sbor::rust::ops::*;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use sbor::rust::format;
 use sbor::*;
 
 use crate::abi::*;
 use crate::data::*;
 use crate::math::bnum_integer::*;
-use crate::math::rounding_mode::*;
 use crate::math::decimal::*;
+use crate::math::rounding_mode::*;
 use crate::scrypto_type;
 
 /// `PreciseDecimal` represents a 512 bit representation of a fixed-scale decimal number.
@@ -63,8 +63,16 @@ impl PreciseDecimal {
 
     pub const ZERO: Self = Self(BnumI512::ZERO);
 
-    pub const ONE: Self = Self(BnumI512::from_digits(
-            [0, 7942358959831785217, 16807427164405733357, 1593091, 0, 0, 0, 0]));
+    pub const ONE: Self = Self(BnumI512::from_digits([
+        0,
+        7942358959831785217,
+        16807427164405733357,
+        1593091,
+        0,
+        0,
+        0,
+        0,
+    ]));
 
     /// Returns `PreciseDecimal` of 0.
     pub fn zero() -> Self {
@@ -149,8 +157,9 @@ impl PreciseDecimal {
                 if self.0 % divisor == BnumI512::zero() {
                     self.clone()
                 } else {
-                    let digit =
-                        (self.0 / (divisor / BnumI512::from(10i128)) % BnumI512::from(10i128)).abs();
+                    let digit = (self.0 / (divisor / BnumI512::from(10i128))
+                        % BnumI512::from(10i128))
+                    .abs();
                     if digit > 5.into() {
                         if self.is_negative() {
                             Self((self.0 / divisor - BnumI512::one()) * divisor)
@@ -166,8 +175,9 @@ impl PreciseDecimal {
                 if self.0 % divisor == BnumI512::zero() {
                     self.clone()
                 } else {
-                    let digit =
-                        (self.0 / (divisor / BnumI512::from(10i128)) % BnumI512::from(10i128)).abs();
+                    let digit = (self.0 / (divisor / BnumI512::from(10i128))
+                        % BnumI512::from(10i128))
+                    .abs();
                     if digit < 5.into() {
                         Self(self.0 / divisor * divisor)
                     } else {
@@ -208,7 +218,7 @@ impl PreciseDecimal {
         } else {
             let sub_768 = base_768 * base_768 / one_768;
             let sub_512 = BnumI512::from(sub_768);
-            let  sub_pdec = PreciseDecimal(sub_512);
+            let sub_pdec = PreciseDecimal(sub_512);
             *self * sub_pdec.powi(div(sub(exp, 1), 2))
         }
     }
@@ -261,7 +271,6 @@ impl PreciseDecimal {
             let correct_nb = self_integer * BigInt::from(PreciseDecimal::one().0).pow(n - 1);
             let nth_root = BnumI512::try_from(correct_nb.nth_root(n)).unwrap();
             Some(PreciseDecimal(nth_root))
-
         }
     }
 }
@@ -342,7 +351,7 @@ where
 
 impl<T: TryInto<PreciseDecimal>> Mul<T> for PreciseDecimal
 where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
 {
     type Output = PreciseDecimal;
 
@@ -359,7 +368,7 @@ where
 
 impl<T: TryInto<PreciseDecimal>> Div<T> for PreciseDecimal
 where
-    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug
+    <T as TryInto<PreciseDecimal>>::Error: fmt::Debug,
 {
     type Output = PreciseDecimal;
 
@@ -542,10 +551,11 @@ impl fmt::Display for ParsePreciseDecimalError {
     }
 }
 
-
 impl From<Decimal> for PreciseDecimal {
     fn from(val: Decimal) -> Self {
-        Self(BnumI512::from(val.0) * BnumI512::from(10i8).pow((Self::SCALE - Decimal::SCALE) as u32))
+        Self(
+            BnumI512::from(val.0) * BnumI512::from(10i8).pow((Self::SCALE - Decimal::SCALE) as u32),
+        )
     }
 }
 
@@ -630,7 +640,9 @@ mod tests {
         );
         assert_eq!(
             PreciseDecimal::from_str("0.123456789123456789").unwrap(),
-            PreciseDecimal(BnumI512::from(123456789123456789i128).mul(BnumI512::from(10i8).pow(46))),
+            PreciseDecimal(
+                BnumI512::from(123456789123456789i128).mul(BnumI512::from(10i8).pow(46))
+            ),
         );
         assert_eq!(
             PreciseDecimal::from_str("1").unwrap(),
@@ -687,7 +699,7 @@ mod tests {
     fn test_mul_precise_decimal() {
         let a = PreciseDecimal::from(5u32);
         let b = PreciseDecimal::from(7u32);
-        println!("a={} b={} a*b={}", a, b, a*b);
+        println!("a={} b={} a*b={}", a, b, a * b);
         assert_eq!((a * b).to_string(), "35");
         let a = PreciseDecimal::from_str("1000000000").unwrap();
         let b = PreciseDecimal::from_str("1000000000").unwrap();
@@ -710,7 +722,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "Overflow")]
     fn test_mul_neg_overflow_precise_decimal() {
-        let p =  pdec!("-1.0000000000000000000000000000000000000000000000000000000000000001");
+        let p = pdec!("-1.0000000000000000000000000000000000000000000000000000000000000001");
         println!("p = {}", p);
         let _ = (-PreciseDecimal::MAX)
             * pdec!("-1.0000000000000000000000000000000000000000000000000000000000000001");

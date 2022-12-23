@@ -210,7 +210,8 @@ impl Resource {
 
     fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
         if amount.is_negative()
-            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into())) != BnumI256::from(0)
+            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
+                != BnumI256::from(0)
         {
             Err(ResourceOperationError::InvalidAmount(amount, divisibility))
         } else {
@@ -603,7 +604,8 @@ impl LockableResource {
 
     fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
         if amount.is_negative()
-            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into())) != BnumI256::from(0)
+            || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
+                != BnumI256::from(0)
         {
             Err(ResourceOperationError::InvalidAmount(amount, divisibility))
         } else {
