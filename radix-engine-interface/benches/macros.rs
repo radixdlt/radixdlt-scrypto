@@ -1,6 +1,5 @@
-
 // set it to false if you want full benchmarks.
-pub const QUICK : bool = true;
+pub const QUICK: bool = true;
 
 #[macro_export]
 macro_rules! ops_fn {
@@ -85,7 +84,6 @@ macro_rules! ops_root_fn {
         }
     };
 }
-
 
 #[macro_export]
 macro_rules! process_op {
