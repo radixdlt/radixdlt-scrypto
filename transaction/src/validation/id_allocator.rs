@@ -1,9 +1,11 @@
+use radix_engine_interface::api::types::{
+    AuthZoneStackId, BucketId, ComponentId, FeeReserveId, KeyValueStoreId, NonFungibleStoreId,
+    PackageId, ProofId, ResourceManagerId, VaultId,
+};
+use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::model::*;
+
 use sbor::rust::ops::Range;
-use scrypto::component::{ComponentAddress, PackageAddress};
-use scrypto::constants::*;
-use scrypto::crypto::*;
-use scrypto::engine::types::*;
-use scrypto::resource::ResourceAddress;
 
 use crate::errors::*;
 
@@ -42,6 +44,13 @@ impl IdAllocator {
         }
     }
 
+    fn next_id(&mut self, transaction_hash: Hash) -> Result<[u8; 36], IdAllocationError> {
+        let mut buf = [0u8; 36];
+        (&mut buf[0..32]).copy_from_slice(&transaction_hash.0);
+        (&mut buf[32..]).copy_from_slice(&self.next()?.to_le_bytes());
+        Ok(buf)
+    }
+
     /// Creates a new package ID.
     pub fn new_package_address(
         &mut self,
@@ -49,29 +58,45 @@ impl IdAllocator {
     ) -> Result<PackageAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
+    }
+
+    pub fn new_account_address(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+        Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new component address.
     pub fn new_component_address(
         &mut self,
         transaction_hash: Hash,
-        package_address: &PackageAddress,
-        blueprint_name: &str,
     ) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        match (*package_address, blueprint_name) {
-            (ACCOUNT_PACKAGE, "Account") => {
-                Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
-            }
-            (SYS_FAUCET_PACKAGE, "SysFaucet") => {
-                Ok(ComponentAddress::System(hash(data).lower_26_bytes()))
-            }
-            _ => Ok(ComponentAddress::Normal(hash(data).lower_26_bytes())),
-        }
+        Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
+    }
+
+    pub fn new_epoch_manager_address(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<SystemAddress, IdAllocationError> {
+        let mut data = transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+        Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
+    }
+
+    pub fn new_clock_address(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<SystemAddress, IdAllocationError> {
+        let mut data = transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+        Ok(SystemAddress::Clock(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new resource address.
@@ -82,6 +107,8 @@ impl IdAllocator {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
+        // println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
+
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }
 
@@ -90,6 +117,14 @@ impl IdAllocator {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
         Ok(u128::from_le_bytes(hash(data).lower_16_bytes()))
+    }
+
+    pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneStackId, IdAllocationError> {
+        Ok(self.next()?)
+    }
+
+    pub fn new_fee_reserve_id(&mut self) -> Result<FeeReserveId, IdAllocationError> {
+        Ok(self.next()?)
     }
 
     /// Creates a new bucket ID.
@@ -104,7 +139,14 @@ impl IdAllocator {
 
     /// Creates a new vault ID.
     pub fn new_vault_id(&mut self, transaction_hash: Hash) -> Result<VaultId, IdAllocationError> {
-        Ok((transaction_hash, self.next()?))
+        self.next_id(transaction_hash)
+    }
+
+    pub fn new_component_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ComponentId, IdAllocationError> {
+        self.next_id(transaction_hash)
     }
 
     /// Creates a new key value store ID.
@@ -112,6 +154,28 @@ impl IdAllocator {
         &mut self,
         transaction_hash: Hash,
     ) -> Result<KeyValueStoreId, IdAllocationError> {
-        Ok((transaction_hash, self.next()?))
+        self.next_id(transaction_hash)
+    }
+
+    /// Creates a new non-fungible store ID.
+    pub fn new_nf_store_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<NonFungibleStoreId, IdAllocationError> {
+        self.next_id(transaction_hash)
+    }
+
+    pub fn new_resource_manager_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ResourceManagerId, IdAllocationError> {
+        self.next_id(transaction_hash)
+    }
+
+    pub fn new_package_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<PackageId, IdAllocationError> {
+        self.next_id(transaction_hash)
     }
 }

@@ -10,24 +10,25 @@ pub struct Span {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenKind {
-    /* Literals */
+    // ==============
+    // Literals
+    // ==============
     BoolLiteral(bool),
-
     I8Literal(i8),
     I16Literal(i16),
     I32Literal(i32),
     I64Literal(i64),
     I128Literal(i128),
-
     U8Literal(u8),
     U16Literal(u16),
     U32Literal(u32),
     U64Literal(u64),
     U128Literal(u128),
-
     StringLiteral(String),
 
-    /* Types */
+    // ==============
+    // SBOR basic types
+    // ==============
     Unit,
     Bool,
     I8,
@@ -41,37 +42,58 @@ pub enum TokenKind {
     U64,
     U128,
     String,
-
-    Struct,
     Enum,
-    Option,
-    Result,
+    Array,
+    Tuple,
 
-    /* Variant */
+    // ==============
+    // SBOR aliases
+    // ==============
     Some,
     None,
     Ok,
     Err,
+    Bytes,
 
-    Array,
-    Tuple,
+    // ==============
+    // SBOR custom types
+    // ==============
 
-    List,
-    Set,
-    Map,
-
-    Decimal,
-    PreciseDecimal,
+    /* Global address */
     PackageAddress,
+    SystemAddress,
     ComponentAddress,
     ResourceAddress,
-    Hash,
+
+    /* RE Nodes */
+    Global,
     Bucket,
     Proof,
-    NonFungibleId,
-    NonFungibleAddress,
+    AuthZoneStack,
+    Worktop,
+    KeyValueStore,
+    NonFungibleStore,
+    Component,
+    EpochManager,
+    Vault,
+    ResourceManager,
+    Package,
+    Clock,
+
+    /* Other interpreted */
     Expression,
     Blob,
+    NonFungibleAddress,
+
+    /* Uninterpreted */
+    Hash,
+    EcdsaSecp256k1PublicKey,
+    EcdsaSecp256k1Signature,
+    EddsaEd25519PublicKey,
+    EddsaEd25519Signature,
+    Decimal,
+    PreciseDecimal,
+    NonFungibleId,
 
     /* Punctuations */
     OpenParenthesis,
@@ -101,7 +123,9 @@ pub enum TokenKind {
     DropAllProofs,
     CallFunction,
     CallMethod,
-    PublishPackage,
+    CallNativeFunction,
+    CallNativeMethod,
+    PublishPackageWithOwner,
     CreateResource,
     BurnBucket,
     MintFungible,
@@ -201,7 +225,7 @@ impl Lexer {
             '-' | '0'..='9' => self.tokenize_number(),
             '"' => self.tokenize_string(),
             'a'..='z' | 'A'..='Z' => self.tokenize_identifier(),
-            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' => self.tokenize_punctuation(),
+            '{' | '}' | '(' | ')' | '<' | '>' | ',' | ';' | '&' => self.tokenize_punctuation(),
             _ => Err(LexerError::UnexpectedChar(
                 self.text[self.current],
                 self.current,
@@ -375,33 +399,47 @@ impl Lexer {
             "U64" => Ok(TokenKind::U64),
             "U128" => Ok(TokenKind::U128),
             "String" => Ok(TokenKind::String),
-            "Struct" => Ok(TokenKind::Struct),
             "Enum" => Ok(TokenKind::Enum),
-            "Option" => Ok(TokenKind::Option),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
-            "Result" => Ok(TokenKind::Result),
-            "Vec" => Ok(TokenKind::List), // alias
-            "List" => Ok(TokenKind::List),
-            "Set" => Ok(TokenKind::Set),
-            "Map" => Ok(TokenKind::Map),
-            "Decimal" => Ok(TokenKind::Decimal),
-            "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
-            "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
-            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
-            "Hash" => Ok(TokenKind::Hash),
-            "Bucket" => Ok(TokenKind::Bucket),
-            "Proof" => Ok(TokenKind::Proof),
-            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
-            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
-            "Expression" => Ok(TokenKind::Expression),
-            "Blob" => Ok(TokenKind::Blob),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
+            "Bytes" => Ok(TokenKind::Bytes),
+
+            "PackageAddress" => Ok(TokenKind::PackageAddress),
+            "SystemAddress" => Ok(TokenKind::SystemAddress),
+            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
+            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
+
+            "Global" => Ok(TokenKind::Global),
+            "Bucket" => Ok(TokenKind::Bucket),
+            "Proof" => Ok(TokenKind::Proof),
+            "AuthZoneStack" => Ok(TokenKind::AuthZoneStack),
+            "Worktop" => Ok(TokenKind::Worktop),
+            "KeyValueStore" => Ok(TokenKind::KeyValueStore),
+            "NonFungibleStore" => Ok(TokenKind::NonFungibleStore),
+            "Component" => Ok(TokenKind::Component),
+            "EpochManager" => Ok(TokenKind::EpochManager),
+            "Vault" => Ok(TokenKind::Vault),
+            "ResourceManager" => Ok(TokenKind::ResourceManager),
+            "Package" => Ok(TokenKind::Package),
+            "Clock" => Ok(TokenKind::Clock),
+
+            "Expression" => Ok(TokenKind::Expression),
+            "Blob" => Ok(TokenKind::Blob),
+            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
+
+            "Hash" => Ok(TokenKind::Hash),
+            "EcdsaSecp256k1PublicKey" => Ok(TokenKind::EcdsaSecp256k1PublicKey),
+            "EcdsaSecp256k1Signature" => Ok(TokenKind::EcdsaSecp256k1Signature),
+            "EddsaEd25519PublicKey" => Ok(TokenKind::EddsaEd25519PublicKey),
+            "EddsaEd25519Signature" => Ok(TokenKind::EddsaEd25519Signature),
+            "Decimal" => Ok(TokenKind::Decimal),
+            "PreciseDecimal" => Ok(TokenKind::PreciseDecimal),
+            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
@@ -424,7 +462,9 @@ impl Lexer {
             "DROP_ALL_PROOFS" => Ok(TokenKind::DropAllProofs),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
-            "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
+            "CALL_NATIVE_FUNCTION" => Ok(TokenKind::CallNativeFunction),
+            "CALL_NATIVE_METHOD" => Ok(TokenKind::CallNativeMethod),
+            "PUBLISH_PACKAGE_WITH_OWNER" => Ok(TokenKind::PublishPackageWithOwner),
             "CREATE_RESOURCE" => Ok(TokenKind::CreateResource),
             "BURN_BUCKET" => Ok(TokenKind::BurnBucket),
             "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
@@ -580,15 +620,15 @@ mod tests {
     #[test]
     fn test_mixed() {
         lex_ok!(
-            r#"CALL_FUNCTION Map<String, Array>("test", Array<String>("abc"));"#,
+            r#"CALL_FUNCTION Array<Tuple>(Tuple("test", Array<String>("abc")));"#,
             vec![
                 TokenKind::CallFunction,
-                TokenKind::Map,
-                TokenKind::LessThan,
-                TokenKind::String,
-                TokenKind::Comma,
                 TokenKind::Array,
+                TokenKind::LessThan,
+                TokenKind::Tuple,
                 TokenKind::GreaterThan,
+                TokenKind::OpenParenthesis,
+                TokenKind::Tuple,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("test".into()),
                 TokenKind::Comma,
@@ -598,6 +638,7 @@ mod tests {
                 TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("abc".into()),
+                TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,
@@ -621,9 +662,9 @@ mod tests {
     #[test]
     fn test_precise_decimal_colletion() {
         lex_ok!(
-            "List<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
+            "Array<PreciseDecimal>(PreciseDecimal(\"12\"), PreciseDecimal(\"212\"), PreciseDecimal(\"1984\"))",
             vec![
-                TokenKind::List,
+                TokenKind::Array,
                 TokenKind::LessThan,
                 TokenKind::PreciseDecimal,
                 TokenKind::GreaterThan,

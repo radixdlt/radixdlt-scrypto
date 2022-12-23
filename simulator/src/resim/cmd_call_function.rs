@@ -1,6 +1,7 @@
 use clap::Parser;
 use radix_engine::types::*;
-use scrypto::prelude::Expression;
+use radix_engine_interface::core::*;
+use radix_engine_interface::data::*;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
@@ -9,7 +10,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct CallFunction {
     /// The package which the function belongs to
-    package_address: PackageAddress,
+    package_address: SimulatorPackageAddress,
 
     /// The name of the blueprint which the function belongs to
     blueprint_name: String,
@@ -50,21 +51,21 @@ impl CallFunction {
         for resource_specifier in proofs {
             manifest_builder = manifest_builder
                 .create_proof_from_account_by_resource_specifier(
-                    resource_specifier,
                     default_account,
+                    resource_specifier,
                 )
                 .map_err(Error::FailedToBuildArgs)?;
         }
 
         let manifest = manifest_builder
-            .lock_fee(100.into(), SYS_FAUCET_COMPONENT)
+            .lock_fee(FAUCET_COMPONENT, 100.into())
             .call_function_with_abi(
-                self.package_address,
+                self.package_address.0,
                 &self.blueprint_name,
                 &self.function_name,
                 self.arguments.clone(),
                 Some(default_account),
-                &export_abi(self.package_address, &self.blueprint_name)?,
+                &export_abi(self.package_address.0, &self.blueprint_name)?,
             )
             .map_err(Error::TransactionConstructionError)?
             .call_method(
@@ -80,6 +81,7 @@ impl CallFunction {
             &self.manifest,
             self.trace,
             true,
+            false,
             out,
         )
         .map(|_| ())

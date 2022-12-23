@@ -56,13 +56,19 @@ impl NewPackage {
 
             fs::write(
                 child_of(&path, "Cargo.toml"),
-                include_str!("../../../assets/template/Cargo.toml")
+                include_str!("../../../assets/template/Cargo.toml_template")
                     .replace("${package_name}", &self.package_name)
                     .replace("${sbor}", &sbor)
                     .replace("${scrypto}", &scrypto)
                     .replace("${transaction}", &transaction)
                     .replace("${radix-engine}", &radix_engine)
                     .replace("${scrypto-unit}", &scrypto_unit),
+            )
+            .map_err(Error::IOError)?;
+
+            fs::write(
+                child_of(&path, ".gitignore"),
+                include_str!("../../../assets/template/.gitignore"),
             )
             .map_err(Error::IOError)?;
 

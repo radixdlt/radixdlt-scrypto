@@ -1,5 +1,5 @@
+use radix_engine_interface::crypto::{sha256, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature};
 use sbor::rust::vec::Vec;
-use scrypto::crypto::*;
 use secp256k1::{Message, PublicKey, SecretKey};
 
 pub struct EcdsaSecp256k1PrivateKey(SecretKey);
@@ -47,11 +47,9 @@ impl EcdsaSecp256k1PrivateKey {
 mod tests {
     use super::*;
     use crate::validation::verify_ecdsa_secp256k1;
+    use radix_engine_interface::constants::ECDSA_SECP256K1_TOKEN;
+    use radix_engine_interface::model::{NonFungibleAddress, NonFungibleId, NonFungibleIdType};
     use sbor::rust::str::FromStr;
-    use scrypto::{
-        constants::ECDSA_TOKEN,
-        resource::{NonFungibleAddress, NonFungibleId},
-    };
 
     #[test]
     fn sign_and_verify() {
@@ -70,15 +68,22 @@ mod tests {
 
     #[test]
     fn test_non_fungible_address_codec() {
-        let expected = "000000000000000000000000000000000000000000000000000002300721000000031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
+        let expected_id_hex = "031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
+        let expected_address_hex = "00b91737ee8a4de59d49dad40de5560e5754466ac84cf5432ea95d5c200721031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f";
         let private_key = EcdsaSecp256k1PrivateKey::from_bytes(&[1u8; 32]).unwrap();
         let public_key = private_key.public_key();
-        let auth_address =
-            NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(public_key.to_vec()));
-        let s1 = auth_address.to_string();
-        let auth_address2 = NonFungibleAddress::from_str(&s1).unwrap();
-        let s2 = auth_address2.to_string();
-        assert_eq!(s1, expected);
-        assert_eq!(s2, expected);
+        let auth_address = NonFungibleAddress::new(
+            ECDSA_SECP256K1_TOKEN,
+            NonFungibleId::Bytes(public_key.to_vec()),
+        );
+        let s1 = auth_address.to_vec();
+        assert_eq!(hex::encode(s1), expected_address_hex);
+
+        let nfid = auth_address.non_fungible_id();
+        assert_eq!(nfid.id_type(), NonFungibleIdType::Bytes);
+        assert_eq!(nfid.to_simple_string(), expected_id_hex);
+        assert!(
+            matches!(nfid, NonFungibleId::Bytes(b) if *b == hex::decode(expected_id_hex).unwrap())
+        );
     }
 }

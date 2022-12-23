@@ -1,12 +1,7 @@
-use scrypto::address::{
-    AddressError, Bech32Decoder, Bech32Encoder, EntityType, ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
-    NORMAL_COMPONENT_ADDRESS_ENTITY_ID, PACKAGE_ADDRESS_ENTITY_ID, RESOURCE_ADDRESS_ENTITY_ID,
-    SYSTEM_COMPONENT_ADDRESS_ENTITY_ID,
-};
-use scrypto::core::NetworkDefinition;
-use scrypto::prelude::{PackageAddress, ResourceAddress};
-
 use bech32::{self, ToBase32, Variant};
+use scrypto::radix_engine_interface::address::*;
+use scrypto::radix_engine_interface::core::NetworkDefinition;
+use scrypto::radix_engine_interface::model::*;
 
 fn generate_u8_array(entity_byte: u8) -> [u8; 27] {
     [
@@ -45,13 +40,13 @@ fn generate_u8_array(entity_byte: u8) -> [u8; 27] {
 // ==============
 
 #[test]
-fn encode_package_address_correct_entity_type_succeeds() {
+fn encode_package_address_to_string_correct_entity_type_succeeds() {
     // Arrange
     let package_address = PackageAddress::Normal([0u8; 26]);
     let bech32_encoder = Bech32Encoder::for_simulator();
 
     // Act
-    let bech32 = bech32_encoder.encode_package_address(&package_address);
+    let bech32 = bech32_encoder.encode_package_address_to_string(&package_address);
 
     // Assert
     assert!(bech32.starts_with("package"));
@@ -71,7 +66,8 @@ fn decode_truncated_checksum_address_fails() {
     let bech32_encoder = Bech32Encoder::for_simulator();
     let bech32_decoder = Bech32Decoder::for_simulator();
 
-    let encoded_resource_address = bech32_encoder.encode_resource_address(&resource_address);
+    let encoded_resource_address =
+        bech32_encoder.encode_resource_address_to_string(&resource_address);
 
     // Act
     let decoded_resource_address = bech32_decoder.validate_and_decode_resource_address(
@@ -81,7 +77,7 @@ fn decode_truncated_checksum_address_fails() {
     // Assert
     assert!(matches!(
         decoded_resource_address,
-        Err(AddressError::DecodingError(_))
+        Err(AddressError::Bech32mDecodingError(_))
     ));
 }
 
@@ -92,7 +88,8 @@ fn decode_modified_checksum_address_fails() {
     let bech32_encoder = Bech32Encoder::for_simulator();
     let bech32_decoder = Bech32Decoder::for_simulator();
 
-    let mut encoded_resource_address = bech32_encoder.encode_resource_address(&resource_address);
+    let mut encoded_resource_address =
+        bech32_encoder.encode_resource_address_to_string(&resource_address);
 
     // Act
     encoded_resource_address.push_str("qq");
@@ -102,7 +99,7 @@ fn decode_modified_checksum_address_fails() {
     // Assert
     assert!(matches!(
         decoded_resource_address,
-        Err(AddressError::DecodingError(_))
+        Err(AddressError::Bech32mDecodingError(_))
     ));
 }
 
@@ -177,7 +174,7 @@ fn decode_matching_account_address_entity_id_succeeds() {
 }
 
 #[test]
-fn decode_matching_system_address_entity_id_succeeds() {
+fn decode_matching_epoch_manager_system_address_entity_id_succeeds() {
     // Arrange
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
     let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
@@ -186,14 +183,14 @@ fn decode_matching_system_address_entity_id_succeeds() {
     let encoded_system_address = bech32::encode(
         bech32_encoder
             .hrp_set
-            .get_entity_hrp(&EntityType::SystemComponent),
-        generate_u8_array(SYSTEM_COMPONENT_ADDRESS_ENTITY_ID).to_base32(),
+            .get_entity_hrp(&EntityType::EpochManager),
+        generate_u8_array(EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID).to_base32(),
         Variant::Bech32m,
     )
     .unwrap();
 
     let decoded_system_address =
-        bech32_decoder.validate_and_decode_component_address(&encoded_system_address);
+        bech32_decoder.validate_and_decode_system_address(&encoded_system_address);
 
     // Assert
     assert!(matches!(decoded_system_address, Ok(_)));

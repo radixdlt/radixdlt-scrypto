@@ -2,13 +2,15 @@ use std::fs;
 use std::path::PathBuf;
 
 use radix_engine::types::*;
+use radix_engine_interface::scrypto;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 use crate::resim::*;
 use std::env;
 
 /// Simulator configurations.
-#[derive(Debug, Clone, TypeId, Encode, Decode, Default)]
+#[derive(Debug, Clone, Default)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct Configs {
     pub default_account: Option<(ComponentAddress, String)>,
     pub nonce: u64,
@@ -46,7 +48,7 @@ pub fn get_configs() -> Result<Configs, Error> {
 }
 
 pub fn set_configs(configs: &Configs) -> Result<(), Error> {
-    fs::write(get_configs_path()?, scrypto_encode(configs)).map_err(Error::IOError)
+    fs::write(get_configs_path()?, scrypto_encode(configs).unwrap()).map_err(Error::IOError)
 }
 
 pub fn get_default_account() -> Result<ComponentAddress, Error> {

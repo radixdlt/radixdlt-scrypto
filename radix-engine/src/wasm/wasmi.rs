@@ -1,13 +1,20 @@
+use radix_engine_interface::crypto::Hash;
+use radix_engine_interface::data::IndexedScryptoValue;
+use sbor::rust::sync::Arc;
 use wasmi::*;
 
 use crate::model::InvokeError;
-use crate::types::{format, hash, Box, Hash, HashMap, ScryptoValue};
+use crate::types::*;
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
+use super::InstrumentedCode;
+
 pub struct WasmiModule {
     module: Module,
+    #[allow(dead_code)]
+    code_size_bytes: usize,
 }
 
 pub struct WasmiInstance {
@@ -22,12 +29,12 @@ pub struct WasmiExternals<'a, 'b, 'r> {
 
 pub struct WasmiEnvModule {}
 
-pub struct WasmiEngine {
-    modules: HashMap<Hash, WasmiModule>,
-}
-
 impl ModuleImportResolver for WasmiEnvModule {
-    fn resolve_func(&self, field_name: &str, signature: &Signature) -> Result<FuncRef, Error> {
+    fn resolve_func(
+        &self,
+        field_name: &str,
+        signature: &wasmi::Signature,
+    ) -> Result<FuncRef, Error> {
         match field_name {
             RADIX_ENGINE_FUNCTION_NAME => {
                 if signature.params() != [ValueType::I32]
@@ -98,13 +105,10 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn send_value(
-        &mut self,
-        value: &ScryptoValue,
-    ) -> Result<RuntimeValue, InvokeError<WasmError>> {
+    pub fn send_value(&mut self, value: &[u8]) -> Result<RuntimeValue, InvokeError<WasmError>> {
         let result = self.instance.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
-            &[RuntimeValue::I32((value.raw.len()) as i32)],
+            &[RuntimeValue::I32((value.len()) as i32)],
             self,
         );
 
@@ -114,7 +118,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
                     if self
                         .instance
                         .memory_ref
-                        .set((ptr + 4) as u32, &value.raw)
+                        .set((ptr + 4) as u32, value)
                         .is_ok()
                     {
                         return Ok(RuntimeValue::I32(ptr));
@@ -129,7 +133,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
         }
     }
 
-    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, WasmError> {
+    pub fn read_value(&self, ptr: usize) -> Result<IndexedScryptoValue, WasmError> {
         let len = self
             .instance
             .memory_ref
@@ -145,7 +149,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
             return Err(WasmError::MemoryAccessError);
         }
 
-        ScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
+        IndexedScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
     }
 }
 
@@ -180,15 +184,15 @@ impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, InvokeError<WasmError>> {
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
         let mut externals = WasmiExternals {
             instance: self,
             runtime,
         };
 
-        let pointer = externals.send_value(args)?;
+        let pointer = externals.send_value(&args.raw)?;
         let result = self
             .module_ref
             .clone()
@@ -209,22 +213,75 @@ impl WasmInstance for WasmiInstance {
     }
 }
 
-impl WasmiEngine {
-    pub fn new() -> Self {
-        Self {
-            modules: HashMap::new(),
-        }
+#[derive(Debug, Clone)]
+pub struct EngineOptions {
+    max_cache_size_bytes: usize,
+}
+
+pub struct WasmiEngine {
+    #[cfg(not(feature = "moka"))]
+    modules_cache: RefCell<lru::LruCache<Hash, Arc<WasmiModule>>>,
+    #[cfg(feature = "moka")]
+    modules_cache: moka::sync::Cache<Hash, Arc<WasmiModule>>,
+}
+
+impl Default for WasmiEngine {
+    fn default() -> Self {
+        Self::new(EngineOptions {
+            max_cache_size_bytes: 200 * 1024 * 1024,
+        })
     }
 }
 
-impl WasmEngine<WasmiInstance> for WasmiEngine {
-    fn instantiate(&mut self, code: &[u8]) -> WasmiInstance {
-        let code_hash = hash(code);
-        self.modules
-            .entry(code_hash)
-            .or_insert_with(|| WasmiModule {
-                module: Module::from_buffer(code).expect("Failed to parse WASM module"),
+impl WasmiEngine {
+    pub fn new(options: EngineOptions) -> Self {
+        #[cfg(not(feature = "moka"))]
+        let modules_cache = RefCell::new(lru::LruCache::new(
+            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+        ));
+        #[cfg(feature = "moka")]
+        let modules_cache = moka::sync::Cache::builder()
+            .weigher(|_key: &Hash, value: &Arc<WasmiModule>| -> u32 {
+                // Approximate the module entry size by the code size
+                value.code_size_bytes.try_into().unwrap_or(u32::MAX)
             })
-            .instantiate()
+            .max_capacity(options.max_cache_size_bytes as u64)
+            .build();
+        Self { modules_cache }
+    }
+}
+
+impl WasmEngine for WasmiEngine {
+    type WasmInstance = WasmiInstance;
+
+    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> WasmiInstance {
+        let code_hash = &instrumented_code.code_hash;
+
+        #[cfg(not(feature = "moka"))]
+        {
+            if let Some(cached_module) = self.modules_cache.borrow_mut().get(code_hash) {
+                return cached_module.instantiate();
+            }
+        }
+        #[cfg(feature = "moka")]
+        if let Some(cached_module) = self.modules_cache.get(code_hash) {
+            return cached_module.instantiate();
+        }
+
+        let code = instrumented_code.code.as_ref();
+
+        let new_module = Arc::new(WasmiModule {
+            module: Module::from_buffer(code).expect("Failed to parse WASM module"),
+            code_size_bytes: code.len(),
+        });
+
+        #[cfg(not(feature = "moka"))]
+        self.modules_cache
+            .borrow_mut()
+            .put(*code_hash, new_module.clone());
+        #[cfg(feature = "moka")]
+        self.modules_cache.insert(*code_hash, new_module.clone());
+
+        new_module.instantiate()
     }
 }

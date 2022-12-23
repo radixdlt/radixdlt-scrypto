@@ -1,36 +1,42 @@
+use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::types::{
+    KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset,
+};
+use radix_engine_interface::data::*;
+
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::*;
-use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::ScryptoRENode;
+use utils::copy_u8_array;
 
 use crate::abi::*;
-use crate::buffer::*;
-use crate::core::{DataRef, DataRefMut};
-use crate::crypto::*;
-use crate::engine::types::{RENodeId, SubstateId};
-use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
-use crate::misc::*;
+use crate::engine::scrypto_env::ScryptoEnv;
+use crate::runtime::{DataRef, DataRefMut};
 
 /// A scalable key-value map which loads entries on demand.
-pub struct KeyValueStore<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> {
+pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> {
     pub id: KeyValueStoreId,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
+// TODO: de-duplication
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
+
+impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
     /// Creates a new key value store.
     pub fn new() -> Self {
-        let input = RadixEngineInput::RENodeCreate(ScryptoRENode::KeyValueStore);
-        let output: RENodeId = call_engine(input);
+        let mut env = ScryptoEnv;
+        let id = env.sys_create_node(ScryptoRENode::KeyValueStore).unwrap();
 
         Self {
-            id: output.into(),
+            id: id.into(),
             key: PhantomData,
             value: PhantomData,
         }
@@ -38,24 +44,56 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K,
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<DataRef<V>> {
-        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
-        let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let value: Option<V> = call_engine(input);
-        value.map(|value| DataRef::new(value))
+        let mut env = ScryptoEnv;
+        let offset =
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
+        let lock_handle = env
+            .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset, false)
+            .unwrap();
+        let raw_bytes = env.sys_read(lock_handle).unwrap();
+        let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+
+        if value.0.is_none() {
+            env.sys_drop_lock(lock_handle).unwrap();
+        }
+
+        value
+            .0
+            .map(|raw| DataRef::new(lock_handle, scrypto_decode(&raw).unwrap()))
     }
 
     pub fn get_mut(&mut self, key: &K) -> Option<DataRefMut<V>> {
-        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(key));
-        let input = RadixEngineInput::SubstateRead(substate_id.clone());
-        let value: Option<V> = call_engine(input);
-        value.map(|value| DataRefMut::new(substate_id, value))
+        let mut env = ScryptoEnv;
+        let offset =
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
+        let lock_handle = env
+            .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
+            .unwrap();
+        let raw_bytes = env.sys_read(lock_handle).unwrap();
+        let value: KeyValueStoreEntrySubstate = scrypto_decode(&raw_bytes).unwrap();
+
+        if value.0.is_none() {
+            env.sys_drop_lock(lock_handle).unwrap();
+        }
+
+        value
+            .0
+            .map(|raw| DataRefMut::new(lock_handle, offset, scrypto_decode(&raw).unwrap()))
     }
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let substate_id = SubstateId::KeyValueStoreEntry(self.id, scrypto_encode(&key));
-        let input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(&value));
-        call_engine(input)
+        let mut env = ScryptoEnv;
+        let offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+            scrypto_encode(&key).unwrap(),
+        ));
+        let lock_handle = env
+            .sys_lock_substate(RENodeId::KeyValueStore(self.id), offset.clone(), true)
+            .unwrap();
+        let substate = KeyValueStoreEntrySubstate(Some(scrypto_encode(&value).unwrap()));
+        env.sys_write(lock_handle, scrypto_encode(&substate).unwrap())
+            .unwrap();
+        env.sys_drop_lock(lock_handle).unwrap();
     }
 }
 
@@ -84,7 +122,7 @@ impl fmt::Display for ParseKeyValueStoreError {
 // binary
 //========
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TryFrom<&[u8]>
+impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> TryFrom<&[u8]>
     for KeyValueStore<K, V>
 {
     type Error = ParseKeyValueStoreError;
@@ -92,10 +130,7 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TryFrom<&[u8]>
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             36 => Ok(Self {
-                id: (
-                    Hash(copy_u8_array(&slice[0..32])),
-                    u32::from_le_bytes(copy_u8_array(&slice[32..])),
-                ),
+                id: copy_u8_array(slice),
                 key: PhantomData,
                 value: PhantomData,
             }),
@@ -104,55 +139,63 @@ impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TryFrom<&[u8]>
     }
 }
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> KeyValueStore<K, V> {
+impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut v = self.id.0.to_vec();
-        v.extend(self.id.1.to_le_bytes());
-        v
+        self.id.to_vec()
     }
 }
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> TypeId for KeyValueStore<K, V> {
-    #[inline]
-    fn type_id() -> u8 {
-        ScryptoType::KeyValueStore.id()
-    }
-}
+// TODO: extend scrypto_type! macro to support generics
 
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Encode for KeyValueStore<K, V> {
-    #[inline]
-    fn encode_type_id(encoder: &mut Encoder) {
-        encoder.write_type_id(Self::type_id());
-    }
-
-    #[inline]
-    fn encode_value(&self, encoder: &mut Encoder) {
-        let bytes = self.to_vec();
-        encoder.write_dynamic_size(bytes.len());
-        encoder.write_slice(&bytes);
-    }
-}
-
-impl<K: Encode + Decode, V: 'static + Encode + Decode + TypeId> Decode for KeyValueStore<K, V> {
-    fn check_type_id(decoder: &mut Decoder) -> Result<(), DecodeError> {
-        decoder.check_type_id(Self::type_id())
-    }
-
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let len = decoder.read_dynamic_size()?;
-        let slice = decoder.read_bytes(len)?;
-        Self::try_from(slice)
-            .map_err(|_| DecodeError::CustomError("Failed to decode KeyValueStore".to_string()))
-    }
-}
-
-impl<K: Encode + Decode + Describe, V: 'static + Encode + Decode + TypeId + Describe> Describe
+impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> TypeId<ScryptoCustomTypeId>
     for KeyValueStore<K, V>
 {
+    #[inline]
+    fn type_id() -> ScryptoSborTypeId {
+        SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore)
+    }
+}
+
+impl<
+        K: ScryptoEncode + ScryptoDecode,
+        V: ScryptoEncode + ScryptoDecode,
+        E: Encoder<ScryptoCustomTypeId>,
+    > Encode<ScryptoCustomTypeId, E> for KeyValueStore<K, V>
+{
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_slice(&self.to_vec())
+    }
+}
+
+impl<
+        K: ScryptoEncode + ScryptoDecode,
+        V: ScryptoEncode + ScryptoDecode,
+        D: Decoder<ScryptoCustomTypeId>,
+    > Decode<ScryptoCustomTypeId, D> for KeyValueStore<K, V>
+{
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: ScryptoSborTypeId,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        let slice = decoder.read_slice(36)?;
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
+    }
+}
+
+impl<K: ScryptoEncode + ScryptoDecode + Describe, V: ScryptoEncode + ScryptoDecode + Describe>
+    Describe for KeyValueStore<K, V>
+{
     fn describe() -> Type {
-        Type::Custom {
-            type_id: ScryptoType::KeyValueStore.id(),
-            generics: vec![K::describe(), V::describe()],
+        Type::KeyValueStore {
+            key_type: Box::new(K::describe()),
+            value_type: Box::new(V::describe()),
         }
     }
 }
@@ -161,7 +204,9 @@ impl<K: Encode + Decode + Describe, V: 'static + Encode + Decode + TypeId + Desc
 // text
 //======
 
-impl<K: Encode + Decode, V: Encode + Decode + TypeId> FromStr for KeyValueStore<K, V> {
+impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> FromStr
+    for KeyValueStore<K, V>
+{
     type Err = ParseKeyValueStoreError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -171,13 +216,17 @@ impl<K: Encode + Decode, V: Encode + Decode + TypeId> FromStr for KeyValueStore<
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode + TypeId> fmt::Display for KeyValueStore<K, V> {
+impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> fmt::Display
+    for KeyValueStore<K, V>
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl<K: Encode + Decode, V: Encode + Decode + TypeId> fmt::Debug for KeyValueStore<K, V> {
+impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> fmt::Debug
+    for KeyValueStore<K, V>
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

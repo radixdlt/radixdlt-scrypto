@@ -1,11 +1,12 @@
 use std::io;
+use std::path::PathBuf;
 
 use radix_engine::engine::*;
-use radix_engine::model::ExtractAbiError;
+use radix_engine::model::{ExportError, ExtractAbiError};
+use radix_engine::types::{AddressError, ParseNonFungibleAddressError};
 use radix_engine::wasm::PrepareError;
+use radix_engine_interface::core::ParseNetworkError;
 use sbor::*;
-use scrypto::address::AddressError;
-use scrypto::prelude::ParseNetworkError;
 use transaction::errors::*;
 
 use crate::ledger::*;
@@ -21,6 +22,8 @@ pub enum Error {
     ConfigDecodingError(sbor::DecodeError),
 
     IOError(io::Error),
+
+    IOErrorAtPath(io::Error, PathBuf),
 
     DataError(DecodeError),
 
@@ -42,7 +45,7 @@ pub enum Error {
 
     TransactionRejected(RejectionError),
 
-    AbiExportError(RuntimeError),
+    AbiExportError(ExportError),
 
     LedgerDumpError(DisplayError),
 
@@ -56,7 +59,11 @@ pub enum Error {
 
     AddressError(AddressError),
 
+    NonFungibleAddressError(ParseNonFungibleAddressError),
+
     FailedToBuildArgs(BuildArgsError),
 
     ParseNetworkError(ParseNetworkError),
+
+    OwnerBadgeNotSpecified,
 }

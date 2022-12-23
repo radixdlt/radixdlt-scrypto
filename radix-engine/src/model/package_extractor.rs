@@ -1,9 +1,9 @@
-use crate::constants::EXTRACT_ABI_CREDIT;
 use crate::engine::NopWasmRuntime;
 use crate::fee::SystemLoanFeeReserve;
 use crate::model::InvokeError;
 use crate::types::*;
 use crate::wasm::*;
+use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug)]
 pub enum ExtractAbiError {
@@ -21,20 +21,19 @@ pub fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, Extract
         .into_iter()
         .filter(|s| s.ends_with("_abi"));
 
-    let mut wasm_engine = DefaultWasmEngine::new();
-    let mut wasm_instrumenter = WasmInstrumenter::new();
+    let wasm_engine = DefaultWasmEngine::default();
+    let wasm_instrumenter = WasmInstrumenter::default();
 
     let metering_params =
-        WasmMeteringParams::new(InstructionCostRules::tiered(1, 5, 10, 50000), 512);
+        WasmMeteringConfig::new(InstructionCostRules::tiered(1, 5, 10, 5000), 1024);
     let instrumented_code = wasm_instrumenter.instrument(code, &metering_params);
-    let mut fee_reserve = SystemLoanFeeReserve::default();
-    fee_reserve.credit(EXTRACT_ABI_CREDIT);
+    let fee_reserve = SystemLoanFeeReserve::no_fee();
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(fee_reserve));
     let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = HashMap::new();
     for method_name in function_exports {
         let rtn = instance
-            .invoke_export(&method_name, &ScryptoValue::unit(), &mut runtime)
+            .invoke_export(&method_name, &IndexedScryptoValue::unit(), &mut runtime)
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: BlueprintAbi =

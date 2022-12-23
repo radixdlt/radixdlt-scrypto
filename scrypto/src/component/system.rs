@@ -1,14 +1,12 @@
-use crate::abi::BlueprintAbi;
-use crate::buffer::*;
 use crate::component::*;
-use crate::core::Runtime;
-use crate::core::ScryptoRENode;
-use crate::engine::types::RENodeId;
-use crate::engine::{api::*, call_engine};
-use sbor::rust::borrow::ToOwned;
+use crate::engine::scrypto_env::ScryptoEnv;
+use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::types::ScryptoRENode;
+use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::model::*;
 use sbor::rust::collections::*;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
+use sbor::rust::string::ToString;
+use scrypto::runtime::Runtime;
 
 /// Represents the Radix Engine component subsystem.
 ///
@@ -20,7 +18,7 @@ use sbor::rust::vec::Vec;
 /// TODO: add mutex/lock for non-WebAssembly target
 pub struct ComponentSystem {
     packages: HashMap<PackageAddress, BorrowedPackage>,
-    components: HashMap<ComponentAddress, Component>,
+    components: HashMap<ComponentAddress, GlobalComponentRef>,
 }
 
 impl ComponentSystem {
@@ -40,19 +38,10 @@ impl ComponentSystem {
     }
 
     /// Returns a reference to a component.
-    pub fn get_component(&mut self, component_address: ComponentAddress) -> &Component {
+    pub fn get_component(&mut self, component_address: ComponentAddress) -> &GlobalComponentRef {
         self.components
             .entry(component_address)
-            .or_insert(Component(component_address))
-    }
-
-    /// Publishes a package.
-    pub fn publish_package(
-        &mut self,
-        _code: Vec<u8>,
-        _abi: HashMap<String, BlueprintAbi>,
-    ) -> PackageAddress {
-        todo!("Not supported yet due to lack of dynamic blob creation")
+            .or_insert(GlobalComponentRef(component_address))
     }
 
     /// Instantiates a component.
@@ -61,13 +50,14 @@ impl ComponentSystem {
         blueprint_name: &str,
         state: T,
     ) -> Component {
-        let input = RadixEngineInput::RENodeCreate(ScryptoRENode::Component(
-            Runtime::package_address(),
-            blueprint_name.to_owned(),
-            scrypto_encode(&state),
-        ));
-        let node_id: RENodeId = call_engine(input);
-
+        let mut env = ScryptoEnv;
+        let node_id = env
+            .sys_create_node(ScryptoRENode::Component(
+                Runtime::package_address(),
+                blueprint_name.to_string(),
+                scrypto_encode(&state).unwrap(),
+            ))
+            .unwrap();
         Component(node_id.into())
     }
 }
@@ -100,38 +90,4 @@ macro_rules! borrow_component {
     ($id:expr) => {
         component_system().get_component($id)
     };
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_component_macro() {
-        init_component_system(ComponentSystem::new());
-
-        let component = borrow_component!(ComponentAddress::Normal([0u8; 26]));
-        let component_same_id = borrow_component!(ComponentAddress::Normal([0u8; 26]));
-        let component_different_id = borrow_component!(ComponentAddress::Normal([1u8; 26]));
-
-        assert_eq!(ComponentAddress::Normal([0u8; 26]), component.0);
-        assert_eq!(ComponentAddress::Normal([0u8; 26]), component_same_id.0);
-        assert_eq!(
-            ComponentAddress::Normal([1u8; 26]),
-            component_different_id.0
-        );
-    }
-
-    #[test]
-    fn test_package_macro() {
-        init_component_system(ComponentSystem::new());
-
-        let package = borrow_package!(PackageAddress::Normal([0u8; 26]));
-        let package_same_id = borrow_package!(PackageAddress::Normal([0u8; 26]));
-        let package_different_id = borrow_package!(PackageAddress::Normal([1u8; 26]));
-
-        assert_eq!(PackageAddress::Normal([0u8; 26]), package.0);
-        assert_eq!(PackageAddress::Normal([0u8; 26]), package_same_id.0);
-        assert_eq!(PackageAddress::Normal([1u8; 26]), package_different_id.0);
-    }
 }

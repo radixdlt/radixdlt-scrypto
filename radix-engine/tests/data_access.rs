@@ -1,6 +1,8 @@
 use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::ledger::TypedInMemorySubstateStore;
 use radix_engine::types::*;
+use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -9,11 +11,11 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/data_access");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/data_access");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "DataAccess",
@@ -27,7 +29,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::SubstateReadNotReadable(..))
+            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility { .. })
         )
     })
 }
@@ -37,11 +39,11 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/data_access");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/data_access");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "DataAccess",
@@ -55,7 +57,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::SubstateWriteNotWriteable(..))
+            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility { .. })
         )
     })
 }
@@ -65,11 +67,11 @@ fn should_be_able_to_read_component_info() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/data_access");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/data_access");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "DataAccess",
@@ -88,11 +90,11 @@ fn should_not_be_able_to_write_component_info() {
     // Arrange
     let mut store = TypedInMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(true, &mut store);
-    let package_address = test_runner.compile_and_publish("./tests/data_access");
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/data_access");
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-        .lock_fee(10.into(), SYS_FAUCET_COMPONENT)
+        .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
             "DataAccess",
@@ -106,7 +108,7 @@ fn should_not_be_able_to_write_component_info() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::SubstateWriteNotWriteable(..))
+            RuntimeError::KernelError(KernelError::InvalidSubstateVisibility { .. })
         )
     });
 }

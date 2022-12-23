@@ -1,23 +1,19 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
-use crate::model::ResourceContainer;
-use crate::types::*;
 
-pub struct LoggerModule {
-    depth: usize,
-}
+pub struct LoggerModule {}
 
 impl LoggerModule {
     pub fn new() -> Self {
-        Self { depth: 0 }
+        Self {}
     }
 }
 
 #[macro_export]
 macro_rules! log {
-    ( $self: expr, $msg: expr $( , $arg:expr )* ) => {
+    ( $call_frame: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
-        println!("{}[{}] {}", "    ".repeat($self.depth), $self.depth, sbor::rust::format!($msg, $( $arg ),*));
+        println!("{}[{}] {}", "    ".repeat($call_frame.depth), $call_frame.depth, sbor::rust::format!($msg, $( $arg ),*));
     };
 }
 
@@ -25,90 +21,74 @@ macro_rules! log {
 impl<R: FeeReserve> Module<R> for LoggerModule {
     fn pre_sys_call(
         &mut self,
+        call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
         input: SysCallInput,
     ) -> Result<(), ModuleError> {
         match input {
-            SysCallInput::InvokeFunction {
-                fn_identifier,
-                input,
-            } => {
-                log!(
-                    self,
-                    "Invoking function: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    fn_identifier,
-                    input.bucket_ids,
-                    input.proof_ids
-                );
-
-                self.depth = self.depth + 1;
+            SysCallInput::Invoke { invocation, .. } => {
+                log!(call_frame, "Invoking: {:?}", invocation);
             }
-            SysCallInput::InvokeMethod {
-                fn_identifier,
-                input,
-                ..
-            } => {
-                log!(
-                    self,
-                    "Invoking method: fn = {:?}, buckets = {:?}, proofs = {:?}",
-                    fn_identifier,
-                    input.bucket_ids,
-                    input.proof_ids
-                );
-
-                self.depth = self.depth + 1;
+            SysCallInput::ReadOwnedNodes => {
+                log!(call_frame, "Reading owned nodes");
             }
             SysCallInput::BorrowNode { node_id } => {
-                log!(self, "Borrowing node: node_id = {:?}", node_id);
+                log!(call_frame, "Borrowing node: node_id = {:?}", node_id);
             }
             SysCallInput::DropNode { node_id } => {
-                log!(self, "Dropping node: node_id = {:?}", node_id);
+                log!(call_frame, "Dropping node: node_id = {:?}", node_id);
             }
             SysCallInput::CreateNode { node } => {
-                log!(self, "Creating node: node = {:?}", node);
+                log!(call_frame, "Creating node: node = {:?}", node);
             }
-            SysCallInput::GlobalizeNode { node_id } => {
-                log!(self, "Globalizing node: node_id = {:?}", node_id);
-            }
-            SysCallInput::BorrowSubstateMut { substate_id } => {
-                log!(self, "Borrowing substate: substate_id = {:?}", substate_id);
-            }
-            SysCallInput::ReturnSubstateMut { substate_ref } => {
+            SysCallInput::LockSubstate {
+                node_id,
+                offset,
+                flags,
+            } => {
                 log!(
-                    self,
-                    "Returning substate: substate_ref = {:?}",
-                    substate_ref
+                    call_frame,
+                    "Lock substate: node_id = {:?} offset = {:?} flags = {:?}",
+                    node_id,
+                    offset,
+                    flags
                 );
             }
-            SysCallInput::ReadSubstate { substate_id } => {
-                log!(self, "Reading substate: substate_id = {:?}", substate_id);
-            }
-            SysCallInput::WriteSubstate { substate_id, value } => {
+            SysCallInput::GetRef { lock_handle } => {
                 log!(
-                    self,
-                    "Writing substate: substate_id = {:?}, value = {:?}",
-                    substate_id,
-                    value
+                    call_frame,
+                    "Reading substate: lock_handle = {:?}",
+                    lock_handle
                 );
+            }
+            SysCallInput::GetRefMut { lock_handle } => {
+                log!(call_frame, "Get Mut: lock_handle = {:?}", lock_handle);
+            }
+            SysCallInput::DropLock { lock_handle } => {
+                log!(call_frame, "Drop Lock: lock_handle = {:?}", lock_handle);
             }
             SysCallInput::TakeSubstate { substate_id } => {
-                log!(self, "Taking substate: substate_id = {:?}", substate_id);
+                log!(
+                    call_frame,
+                    "Taking substate: substate_id = {:?}",
+                    substate_id
+                );
             }
             SysCallInput::ReadTransactionHash => {
-                log!(self, "Reading transaction hash");
+                log!(call_frame, "Reading transaction hash");
             }
             SysCallInput::ReadBlob { blob_hash } => {
-                log!(self, "Reading blob: {}", blob_hash);
+                log!(call_frame, "Reading blob: hash = {}", blob_hash);
             }
             SysCallInput::GenerateUuid => {
-                log!(self, "Generating UUID");
+                log!(call_frame, "Generating UUID");
             }
             SysCallInput::EmitLog { .. } => {
-                log!(self, "Emitting application log");
+                log!(call_frame, "Emitting application log");
             }
-            SysCallInput::CheckAccessRule { .. } => {
-                log!(self, "Checking access rule");
+            SysCallInput::EmitEvent { .. } => {
+                log!(call_frame, "Emitting an event");
             }
         }
 
@@ -117,64 +97,36 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
 
     fn post_sys_call(
         &mut self,
+        call_frame: &CallFrame,
+        _heap: &mut Heap,
         _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
         output: SysCallOutput,
     ) -> Result<(), ModuleError> {
         match output {
-            SysCallOutput::InvokeFunction { output, .. } => {
-                self.depth = self.depth - 1;
-                log!(self, "Exiting function: output = {:?}", output);
+            SysCallOutput::Invoke { rtn, .. } => {
+                log!(call_frame, "Exiting invoke: output = {:?}", rtn);
             }
-            SysCallOutput::InvokeMethod { output, .. } => {
-                self.depth = self.depth - 1;
-                log!(self, "Exiting method: output = {:?}", output);
-            }
+            SysCallOutput::ReadOwnedNodes { .. } => {}
             SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
-            SysCallOutput::GlobalizeNode { .. } => {}
-            SysCallOutput::BorrowSubstateMut { .. } => {}
-            SysCallOutput::ReturnSubstateMut { .. } => {}
-            SysCallOutput::ReadSubstate { .. } => {}
-            SysCallOutput::WriteSubstate { .. } => {}
-            SysCallOutput::TakeSubstate { .. } => {}
+            SysCallOutput::LockSubstate { lock_handle } => {
+                log!(
+                    call_frame,
+                    "Lock acquired: lock_handle = {:?} ",
+                    lock_handle
+                );
+            }
+            SysCallOutput::GetRef { .. } => {}
+            SysCallOutput::GetRefMut { .. } => {}
+            SysCallOutput::DropLock { .. } => {}
             SysCallOutput::ReadTransactionHash { .. } => {}
             SysCallOutput::ReadBlob { .. } => {}
             SysCallOutput::GenerateUuid { .. } => {}
             SysCallOutput::EmitLog { .. } => {}
-            SysCallOutput::CheckAccessRule { .. } => {}
+            SysCallOutput::EmitEvent { .. } => {}
         }
 
         Ok(())
-    }
-
-    fn on_wasm_instantiation(
-        &mut self,
-        _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
-        _code: &[u8],
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_wasm_costing(
-        &mut self,
-        _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
-        _units: u32,
-    ) -> Result<(), ModuleError> {
-        Ok(())
-    }
-
-    fn on_lock_fee(
-        &mut self,
-        _track: &mut Track<R>,
-        _heap: &mut Vec<CallFrame>,
-        _vault_id: VaultId,
-        fee: ResourceContainer,
-        _contingent: bool,
-    ) -> Result<ResourceContainer, ModuleError> {
-        Ok(fee)
     }
 }

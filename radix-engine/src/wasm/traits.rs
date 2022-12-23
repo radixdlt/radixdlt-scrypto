@@ -1,12 +1,13 @@
+use super::InstrumentedCode;
 use crate::model::InvokeError;
-use sbor::rust::boxed::Box;
-use scrypto::values::ScryptoValue;
-
 use crate::wasm::errors::*;
+use radix_engine_interface::data::IndexedScryptoValue;
+use sbor::rust::boxed::Box;
+use sbor::rust::vec::Vec;
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {
-    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError<WasmError>>;
+    fn main(&mut self, input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>>;
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>>;
 }
@@ -23,13 +24,15 @@ pub trait WasmInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: &ScryptoValue,
+        args: &IndexedScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, InvokeError<WasmError>>;
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>>;
 }
 
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
-pub trait WasmEngine<I: WasmInstance> {
+pub trait WasmEngine {
+    type WasmInstance: WasmInstance;
+
     /// Instantiate a Scrypto module.
-    fn instantiate(&mut self, code: &[u8]) -> I;
+    fn instantiate(&self, instrumented_code: &InstrumentedCode) -> Self::WasmInstance;
 }

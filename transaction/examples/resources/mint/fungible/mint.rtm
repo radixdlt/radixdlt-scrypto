@@ -1,0 +1,37 @@
+# This transaction manifest shows how a mintable fungible resource may be minted through the 
+# transaction manifest. Most mint operations will typically require you to produce a badge before 
+# being allowed to mint a resource. This example is no different. In this example, there is a minter
+# badge which we have in our account which allows us to mint this resource
+
+# ==================================================================================================
+# WARNING: If you will be submitting this transaction through the Babylon wallet then you MUST
+# remove the "lock_fee" instruction that you see below. Otherwise your transaction will fail. If all 
+# that you are using is resim then you can safely ignore this warning.
+# ==================================================================================================
+
+# Locking 10 XRD in fees from the account component - Currently, the account component does not have
+# a method for creating a proof and locking a fee at the same time. Therefore, locking a fee will be
+# its own method call and creating a proof will be its own method call.
+CALL_METHOD 
+    ComponentAddress("{account_component_address}") 
+    "lock_fee"
+    Decimal("10");
+
+# We have a badge in our account component which allows us to mint this resource. So, we create a 
+# proof from this badge which will allow us to mint the resource
+CALL_METHOD
+    ComponentAddress("{account_component_address}")
+    "create_proof_by_amount"
+    Decimal("1")
+    ResourceAddress("{minter_badge_resource_address}");
+
+# Minting some amount of tokens from the mintable fungible resource
+MINT_FUNGIBLE 
+    ResourceAddress("{mintable_resource_address}")
+    Decimal("{mint_amount}");
+
+# Depositing the entirety of the newly minted tokens into out account
+CALL_METHOD
+    ComponentAddress("{account_component_address}") 
+    "deposit_batch"
+    Expression("ENTIRE_WORKTOP");
