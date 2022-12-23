@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sbor::rust::collections::{HashMap, HashSet};
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 fn encode_new_hash_set(forward: bool) -> Vec<u8> {
@@ -10,7 +11,7 @@ fn encode_new_hash_set(forward: bool) -> Vec<u8> {
             set.insert(i);
         }
     } else {
-        for i in 100u32..0u32 {
+        for i in (0u32..100u32).rev() {
             set.insert(i);
         }
     }
@@ -32,7 +33,7 @@ fn encode_new_hash_map(forward: bool) -> Vec<u8> {
             set.insert(i, i);
         }
     } else {
-        for i in 100u32..0u32 {
+        for i in (0u32..100u32).rev() {
             set.insert(i, i);
         }
     }
