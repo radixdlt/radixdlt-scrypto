@@ -226,6 +226,7 @@ pub enum EpochManagerMethod {
     NextRound,
     SetEpoch,
     RegisterValidator,
+    UnregisterValidator,
 }
 
 #[derive(

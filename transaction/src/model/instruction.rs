@@ -215,6 +215,9 @@ pub enum BasicInstruction {
     RegisterValidator {
         validator: EcdsaSecp256k1PublicKey,
     },
+    UnregisterValidator {
+        validator: EcdsaSecp256k1PublicKey,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

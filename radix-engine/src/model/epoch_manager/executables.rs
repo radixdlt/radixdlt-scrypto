@@ -88,10 +88,17 @@ impl Executor for EpochManagerCreateInvocation {
             rule!(allow_all),
         );
 
-        // TODO: What is the correct access rule for this?
+        // Access Rule is checked manually in method
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
                 EpochManagerMethod::RegisterValidator,
+            ))),
+            rule!(allow_all),
+        );
+        // Access Rule is checked manually in method
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
+                EpochManagerMethod::UnregisterValidator,
             ))),
             rule!(allow_all),
         );
@@ -348,6 +355,66 @@ impl Executor for EpochManagerRegisterValidatorExecutable {
         let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
         let mut substate_mut = api.get_ref_mut(handle)?;
         substate_mut.validator_set().validator_set.insert(self.1);
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct EpochManagerUnregisterValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
+
+impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUnregisterValidatorInvocation {
+    type Exec = EpochManagerUnregisterValidatorExecutable;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+        where
+            Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeMethod::EpochManager(EpochManagerMethod::UnregisterValidator),
+            resolved_receiver,
+        );
+        let executor =
+            EpochManagerUnregisterValidatorExecutable(resolved_receiver.receiver, self.validator);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for EpochManagerUnregisterValidatorExecutable {
+    type Output = ();
+
+    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi + InvokableModel<RuntimeError>,
+    {
+        // TODO: Figure out how to move this access check into more appropriate place
+        {
+            let node_ids = api.get_visible_node_ids()?;
+            let auth_zone_id = node_ids
+                .into_iter()
+                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
+                .expect("AuthZone does not exist");
+            let non_fungible_address = NonFungibleAddress::from_public_key(&self.1);
+            let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
+                SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address),
+            )));
+
+            api.invoke(AuthZoneAssertAccessRuleInvocation {
+                receiver: auth_zone_id.into(),
+                access_rule,
+            })?;
+        }
+
+        let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
+        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        substate_mut.validator_set().validator_set.remove(&self.1);
         Ok(((), CallFrameUpdate::empty()))
     }
 }

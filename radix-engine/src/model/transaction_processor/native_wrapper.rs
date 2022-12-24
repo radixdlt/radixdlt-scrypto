@@ -458,6 +458,12 @@ where
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
+                EpochManagerMethod::UnregisterValidator => {
+                    let invocation: EpochManagerUnregisterValidatorInvocation = scrypto_decode(&args)
+                        .map_err(|e| RuntimeError::KernelError(KernelError::InvalidSborValue(e)))?;
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
             },
             NativeMethod::Clock(clock_method) => match clock_method {
                 ClockMethod::SetCurrentTime => {

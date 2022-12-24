@@ -373,6 +373,11 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn unregister_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::UnregisterValidator { validator });
+        self
+    }
+
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
     pub fn call_function(
         &mut self,

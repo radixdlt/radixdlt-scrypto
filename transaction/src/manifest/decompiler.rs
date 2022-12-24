@@ -539,6 +539,11 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, validator)?;
             f.write_str(";")?;
         }
+        BasicInstruction::UnregisterValidator { validator } => {
+            f.write_str("UNREGISTER_VALIDATOR")?;
+            format_typed_value(f, context, validator)?;
+            f.write_str(";")?;
+        }
     }
     Ok(())
 }

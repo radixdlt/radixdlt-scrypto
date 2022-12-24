@@ -532,6 +532,9 @@ pub fn generate_instruction(
         ast::Instruction::RegisterValidator { validator } => BasicInstruction::RegisterValidator {
             validator: generate_ecdsa_secp256k1_public_key(validator)?,
         },
+        ast::Instruction::UnregisterValidator { validator } => BasicInstruction::UnregisterValidator {
+            validator: generate_ecdsa_secp256k1_public_key(validator)?,
+        },
     })
 }
 

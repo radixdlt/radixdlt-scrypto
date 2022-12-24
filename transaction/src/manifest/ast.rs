@@ -189,6 +189,10 @@ pub enum Instruction {
     RegisterValidator {
         validator: Value,
     },
+
+    UnregisterValidator {
+        validator: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
