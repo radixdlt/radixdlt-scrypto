@@ -3,7 +3,9 @@ use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::wasm::{EpochManagerFunctionInvocation, NativeFnInvocation, NativeFunctionInvocation};
+use radix_engine_interface::wasm::{
+    EpochManagerFunctionInvocation, NativeFnInvocation, NativeFunctionInvocation,
+};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Instruction, SystemTransaction};
@@ -58,11 +60,11 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let instructions = vec![
-        Instruction::System(NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
-            EpochManagerCreateInvocation {}
-        ))))
-    ];
+    let instructions = vec![Instruction::System(NativeFnInvocation::Function(
+        NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
+            EpochManagerCreateInvocation {},
+        )),
+    ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -85,11 +87,11 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let instructions = vec![
-        Instruction::System(NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
-            EpochManagerCreateInvocation {}
-        ))))
-    ];
+    let instructions = vec![Instruction::System(NativeFnInvocation::Function(
+        NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
+            EpochManagerCreateInvocation {},
+        )),
+    ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {

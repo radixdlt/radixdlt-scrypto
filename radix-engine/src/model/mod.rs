@@ -12,6 +12,7 @@ mod logger;
 mod metadata;
 mod method_authorization;
 mod module;
+mod native_wrapper;
 mod package;
 mod package_extractor;
 mod resources;
@@ -21,7 +22,6 @@ mod substates;
 mod trace;
 mod transaction_processor;
 mod transaction_runtime;
-mod native_wrapper;
 
 pub use self::scrypto::*;
 pub use crate::engine::InvokeError;

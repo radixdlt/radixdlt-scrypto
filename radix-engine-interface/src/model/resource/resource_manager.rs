@@ -110,7 +110,6 @@ impl Clone for ResourceManagerBurnInvocation {
     }
 }
 
-
 impl Invocation for ResourceManagerBurnInvocation {
     type Output = ();
 }

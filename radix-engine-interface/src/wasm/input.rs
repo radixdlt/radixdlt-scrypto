@@ -1,6 +1,6 @@
-use std::collections::HashSet;
 use crate::api::types::*;
 use crate::scrypto;
+use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -264,204 +264,191 @@ impl NativeFnInvocation {
                 NativeMethodInvocation::Component(component_method) => match component_method {
                     ComponentMethodInvocation::SetRoyaltyConfig(invocation) => {
                         refs.insert(invocation.receiver);
-                    },
+                    }
                     ComponentMethodInvocation::ClaimRoyalty(invocation) => {
                         refs.insert(invocation.receiver);
-                    },
+                    }
                 },
                 NativeMethodInvocation::Package(package_method) => match package_method {
                     PackageMethodInvocation::SetRoyaltyConfig(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Package(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Package(
+                            invocation.receiver,
+                        )));
+                    }
                     PackageMethodInvocation::ClaimRoyalty(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Package(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Package(
+                            invocation.receiver,
+                        )));
+                    }
                 },
                 NativeMethodInvocation::Bucket(bucket_method) => match bucket_method {
-                    BucketMethodInvocation::Take(..) => {
-                    },
-                    BucketMethodInvocation::CreateProof(..) => {
-                    },
-                    BucketMethodInvocation::TakeNonFungibles(..) => {
-                    },
-                    BucketMethodInvocation::GetNonFungibleIds(..) => {
-                    },
-                    BucketMethodInvocation::GetAmount(..) => {
-                    },
-                    BucketMethodInvocation::Put(..) => {
-                    },
-                    BucketMethodInvocation::GetResourceAddress(..) => {
-                    },
+                    BucketMethodInvocation::Take(..) => {}
+                    BucketMethodInvocation::CreateProof(..) => {}
+                    BucketMethodInvocation::TakeNonFungibles(..) => {}
+                    BucketMethodInvocation::GetNonFungibleIds(..) => {}
+                    BucketMethodInvocation::GetAmount(..) => {}
+                    BucketMethodInvocation::Put(..) => {}
+                    BucketMethodInvocation::GetResourceAddress(..) => {}
                 },
                 NativeMethodInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
-                    AuthZoneStackMethodInvocation::Pop(..) => {
-                    },
-                    AuthZoneStackMethodInvocation::Push(..) => {
-                    },
-                    AuthZoneStackMethodInvocation::CreateProof(..) => {
-                    },
-                    AuthZoneStackMethodInvocation::CreateProofByAmount(..) => {
-                    },
-                    AuthZoneStackMethodInvocation::CreateProofByIds(..) => {
-                    },
-                    AuthZoneStackMethodInvocation::Clear(..) => {
-                    },
-                    AuthZoneStackMethodInvocation::Drain(..) => {
-                    },
-                    AuthZoneStackMethodInvocation::AssertAuthRule(..) => {
-                    },
+                    AuthZoneStackMethodInvocation::Pop(..) => {}
+                    AuthZoneStackMethodInvocation::Push(..) => {}
+                    AuthZoneStackMethodInvocation::CreateProof(..) => {}
+                    AuthZoneStackMethodInvocation::CreateProofByAmount(..) => {}
+                    AuthZoneStackMethodInvocation::CreateProofByIds(..) => {}
+                    AuthZoneStackMethodInvocation::Clear(..) => {}
+                    AuthZoneStackMethodInvocation::Drain(..) => {}
+                    AuthZoneStackMethodInvocation::AssertAuthRule(..) => {}
                 },
                 NativeMethodInvocation::Proof(proof_method) => match proof_method {
-                    ProofMethodInvocation::GetAmount(..) => {
-                    },
-                    ProofMethodInvocation::GetNonFungibleIds(..) => {
-                    },
-                    ProofMethodInvocation::GetResourceAddress(..) => {
-                    },
-                    ProofMethodInvocation::Clone(..) => {
-                    },
+                    ProofMethodInvocation::GetAmount(..) => {}
+                    ProofMethodInvocation::GetNonFungibleIds(..) => {}
+                    ProofMethodInvocation::GetResourceAddress(..) => {}
+                    ProofMethodInvocation::Clone(..) => {}
                 },
                 NativeMethodInvocation::Vault(vault_method) => match vault_method {
-                    VaultMethodInvocation::Take(..) => {
-                    },
-                    VaultMethodInvocation::Put(..) => {
-                    },
-                    VaultMethodInvocation::LockFee(..) => {
-                    },
-                    VaultMethodInvocation::TakeNonFungibles(..) => {
-                    },
-                    VaultMethodInvocation::GetAmount(..) => {
-                    },
-                    VaultMethodInvocation::GetResourceAddress(..) => {
-                    },
-                    VaultMethodInvocation::GetNonFungibleIds(..) => {
-                    },
-                    VaultMethodInvocation::CreateProof(..) => {
-                    },
-                    VaultMethodInvocation::CreateProofByAmount(..) => {
-                    },
-                    VaultMethodInvocation::CreateProofByIds(..) => {
-                    },
-                    VaultMethodInvocation::Recall(..) => {
-                    },
-                    VaultMethodInvocation::RecallNonFungibles(..) => {
-                    },
+                    VaultMethodInvocation::Take(..) => {}
+                    VaultMethodInvocation::Put(..) => {}
+                    VaultMethodInvocation::LockFee(..) => {}
+                    VaultMethodInvocation::TakeNonFungibles(..) => {}
+                    VaultMethodInvocation::GetAmount(..) => {}
+                    VaultMethodInvocation::GetResourceAddress(..) => {}
+                    VaultMethodInvocation::GetNonFungibleIds(..) => {}
+                    VaultMethodInvocation::CreateProof(..) => {}
+                    VaultMethodInvocation::CreateProofByAmount(..) => {}
+                    VaultMethodInvocation::CreateProofByIds(..) => {}
+                    VaultMethodInvocation::Recall(..) => {}
+                    VaultMethodInvocation::RecallNonFungibles(..) => {}
                 },
                 NativeMethodInvocation::AccessRulesChain(access_rules_method) => {
                     match access_rules_method {
                         AccessRulesChainMethodInvocation::AddAccessCheck(invocation) => {
                             refs.insert(invocation.receiver);
-                        },
+                        }
                         AccessRulesChainMethodInvocation::SetMethodAccessRule(invocation) => {
                             refs.insert(invocation.receiver);
-                        },
+                        }
                         AccessRulesChainMethodInvocation::SetMethodMutability(invocation) => {
                             refs.insert(invocation.receiver);
-                        },
+                        }
                         AccessRulesChainMethodInvocation::SetGroupAccessRule(invocation) => {
                             refs.insert(invocation.receiver);
-                        },
+                        }
                         AccessRulesChainMethodInvocation::SetGroupMutability(invocation) => {
                             refs.insert(invocation.receiver);
-                        },
+                        }
                         AccessRulesChainMethodInvocation::GetLength(invocation) => {
                             refs.insert(invocation.receiver);
-                        },
+                        }
                     }
                 }
                 NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
                     MetadataMethodInvocation::Set(invocation) => {
                         refs.insert(invocation.receiver);
-                    },
+                    }
                     MetadataMethodInvocation::Get(invocation) => {
                         refs.insert(invocation.receiver);
-                    },
+                    }
                 },
                 NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {
                     ResourceManagerMethodInvocation::Burn(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::UpdateVaultAuth(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::LockVaultAuth(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::CreateVault(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::CreateBucket(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::Mint(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::GetResourceType(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::GetTotalSupply(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::UpdateNonFungibleData(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::NonFungibleExists(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                     ResourceManagerMethodInvocation::GetNonFungible(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(invocation.receiver)));
-                    },
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                 },
                 NativeMethodInvocation::EpochManager(epoch_manager_method) => {
                     match epoch_manager_method {
                         EpochManagerMethodInvocation::GetCurrentEpoch(invocation) => {
-                            refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
-                        },
+                            refs.insert(RENodeId::Global(GlobalAddress::System(
+                                invocation.receiver,
+                            )));
+                        }
                         EpochManagerMethodInvocation::SetEpoch(invocation) => {
-                            refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
-                        },
+                            refs.insert(RENodeId::Global(GlobalAddress::System(
+                                invocation.receiver,
+                            )));
+                        }
                     }
                 }
                 NativeMethodInvocation::Clock(clock_method) => match clock_method {
                     ClockMethodInvocation::SetCurrentTime(invocation) => {
                         refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
-                    },
+                    }
                     ClockMethodInvocation::GetCurrentTime(invocation) => {
                         refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
-                    },
+                    }
                     ClockMethodInvocation::CompareCurrentTime(invocation) => {
                         refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
-                    },
+                    }
                 },
                 NativeMethodInvocation::Worktop(worktop_method) => match worktop_method {
-                    WorktopMethodInvocation::TakeNonFungibles(..) => {
-                    },
-                    WorktopMethodInvocation::Put(..) => {
-                    },
-                    WorktopMethodInvocation::Drain(..) => {
-                    },
-                    WorktopMethodInvocation::AssertContainsNonFungibles(..) => {
-                    },
-                    WorktopMethodInvocation::AssertContains(..) => {
-                    },
-                    WorktopMethodInvocation::AssertContainsAmount(..) => {
-                    },
-                    WorktopMethodInvocation::TakeAll(..) => {
-                    },
-                    WorktopMethodInvocation::TakeAmount(..) => {
-                    },
+                    WorktopMethodInvocation::TakeNonFungibles(..) => {}
+                    WorktopMethodInvocation::Put(..) => {}
+                    WorktopMethodInvocation::Drain(..) => {}
+                    WorktopMethodInvocation::AssertContainsNonFungibles(..) => {}
+                    WorktopMethodInvocation::AssertContains(..) => {}
+                    WorktopMethodInvocation::AssertContainsAmount(..) => {}
+                    WorktopMethodInvocation::TakeAll(..) => {}
+                    WorktopMethodInvocation::TakeAmount(..) => {}
                 },
                 NativeMethodInvocation::TransactionRuntime(method) => match method {
-                    TransactionRuntimeMethodInvocation::Get(..) => {
-                    },
-                    TransactionRuntimeMethodInvocation::GenerateUuid(..) => {
-                    },
+                    TransactionRuntimeMethodInvocation::Get(..) => {}
+                    TransactionRuntimeMethodInvocation::GenerateUuid(..) => {}
                 },
             },
         }
 
         refs
     }
-
-
 }
