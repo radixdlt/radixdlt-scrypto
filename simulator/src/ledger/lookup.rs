@@ -8,11 +8,16 @@ use radix_engine::types::{
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 
-use crate::resim::{get_data_dir, Error};
+use crate::resim::get_data_dir;
 
-pub fn lookup_id_type(resource_address: &ResourceAddress) -> Result<NonFungibleIdType, Error> {
+pub fn lookup_id_type(
+    resource_address: &ResourceAddress,
+) -> Result<NonFungibleIdType, LedgerLookupError> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
-    let substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?, &scrypto_interpreter);
+    let substate_store = RadixEngineDB::with_bootstrap(
+        get_data_dir().map_err(|_| LedgerLookupError::FailedToGetLocalSubstateStorePath)?,
+        &scrypto_interpreter,
+    );
 
     // Reading the global address substate to get the ResourceManagerId from there
     let global_address = GlobalAddress::Resource(*resource_address);
@@ -20,9 +25,7 @@ pub fn lookup_id_type(resource_address: &ResourceAddress) -> Result<NonFungibleI
     let offset = SubstateOffset::Global(GlobalOffset::Global);
     let substate_id = SubstateId(node_id, offset);
     let global_address_substate = substate_store.get_substate(&substate_id).map_or(
-        Err(Error::LedgerLookupError(
-            LedgerLookupError::GlobalAddressNotFound(global_address),
-        )),
+        Err(LedgerLookupError::GlobalAddressNotFound(global_address)),
         |value| Ok(value.substate.global().clone()),
     )?;
 
@@ -38,8 +41,9 @@ pub fn lookup_id_type(resource_address: &ResourceAddress) -> Result<NonFungibleI
     let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
     let substate_id = SubstateId(node_id, offset);
     let resource_manager_substate = substate_store.get_substate(&substate_id).map_or(
-        Err(Error::LedgerLookupError(
-            LedgerLookupError::ResourceManagerNotFound(global_address, resource_manager_id),
+        Err(LedgerLookupError::ResourceManagerNotFound(
+            global_address,
+            resource_manager_id,
         )),
         |value| Ok(value.substate.resource_manager().clone()),
     )?;
@@ -47,9 +51,7 @@ pub fn lookup_id_type(resource_address: &ResourceAddress) -> Result<NonFungibleI
     // Getting the non-fungible id type for this resource if it is a non-fungible resource
     match resource_manager_substate.resource_type {
         ResourceType::NonFungible { id_type } => Ok(id_type),
-        _ => Err(Error::LedgerLookupError(
-            LedgerLookupError::ResourceIsNotNonFungible,
-        )),
+        _ => Err(LedgerLookupError::ResourceIsNotNonFungible),
     }
 }
 
@@ -57,11 +59,12 @@ pub fn lookup_id_type(resource_address: &ResourceAddress) -> Result<NonFungibleI
 // Errors
 // =======
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum LedgerLookupError {
     GlobalAddressNotFound(GlobalAddress),
     ResourceManagerNotFound(GlobalAddress, ResourceManagerId),
     ResourceIsNotNonFungible,
+    FailedToGetLocalSubstateStorePath,
 }
 
 // ======

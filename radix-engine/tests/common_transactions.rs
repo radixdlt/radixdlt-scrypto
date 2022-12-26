@@ -3,6 +3,7 @@ use radix_engine::types::{
     NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
     FAUCET_COMPONENT, RADIX_TOKEN,
 };
+use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
 use scrypto_unit::TestRunner;

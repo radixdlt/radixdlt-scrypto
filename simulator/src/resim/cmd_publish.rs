@@ -20,7 +20,7 @@ pub struct Publish {
 
     /// The owner badge (hex value).
     #[clap(long)]
-    owner_badge: Option<String>,
+    owner_badge: Option<SimulatorNonFungibleAddress>,
 
     /// The address of an existing package to overwrite
     #[clap(long)]
@@ -41,9 +41,6 @@ pub struct Publish {
 
 impl Publish {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let network = NetworkDefinition::simulator();
-        let bech32_decoder = Bech32Decoder::new(&network);
-
         // Load wasm code
         let (code_path, abi_path) = if self.path.extension() != Some(OsStr::new("wasm")) {
             build_package(&self.path, false, false).map_err(Error::BuildError)?
@@ -53,7 +50,7 @@ impl Publish {
             (code_path, abi_path)
         };
 
-        let code = fs::read(&code_path).map_err(Error::IOError)?;
+        let code = fs::read(code_path).map_err(Error::IOError)?;
         let abi = scrypto_decode(
             &fs::read(&abi_path).map_err(|err| Error::IOErrorAtPath(err, abi_path))?,
         )
@@ -101,15 +98,12 @@ impl Publish {
             );
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
         } else {
-            let owner_badge = self
+            let owner_badge_nf_address = self
                 .owner_badge
                 .as_ref()
-                .ok_or(Error::OwnerBadgeNotSpecified)?;
-            let owner_badge_nf_address = NonFungibleAddress::try_from_canonical_combined_string(
-                &bech32_decoder,
-                owner_badge,
-            )
-            .map_err(Error::NonFungibleAddressError)?;
+                .ok_or(Error::OwnerBadgeNotSpecified)?
+                .0
+                .clone();
 
             let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())

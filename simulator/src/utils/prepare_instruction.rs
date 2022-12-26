@@ -6,9 +6,12 @@
 use radix_engine::types::*;
 use radix_engine_interface::abi::{BlueprintAbi, Type};
 use radix_engine_interface::data::ScryptoValue;
-use radix_engine_interface::math::PreciseDecimal;
+use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
+
+use crate::ledger::{lookup_id_type, LedgerLookupError};
+use crate::resim::SimulatorNonFungibleAddress;
 
 // =======
 // Macros
@@ -123,7 +126,7 @@ pub fn add_create_proof_instruction_from_account_with_resource_specifier<'a>(
     account: ComponentAddress,
     resource_specifier: String,
 ) -> Result<&'a mut ManifestBuilder, BuildArgsError> {
-    let resource_specifier = parse_resource_specifier(&resource_specifier, &bech32_decoder)
+    let resource_specifier = parse_resource_specifier(&resource_specifier, bech32_decoder)
         .map_err(|_| BuildArgsError::InvalidResourceSpecifier(resource_specifier))?;
     let builder = match resource_specifier {
         ResourceSpecifier::Amount(amount, resource_address) => {
@@ -216,15 +219,18 @@ fn parse_args<'a>(
                         Ok(scrypto_encode(&value).unwrap())
                     }
                     Type::NonFungibleAddress => {
-                        let value = NonFungibleAddress::try_from_canonical_combined_string(
-                            &bech32_decoder,
-                            arg,
-                        )
-                        .map_err(|_| BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned()))?;
+                        // Using the same parsing logic implemented for the
+                        // `SimulatorNonFungibleAddress` type since it is identical.
+                        let value = arg
+                            .parse::<SimulatorNonFungibleAddress>()
+                            .map(|simulator_non_fungible_address| simulator_non_fungible_address.0)
+                            .map_err(|_| {
+                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
+                            })?;
                         Ok(scrypto_encode(&value).unwrap())
                     }
                     Type::Bucket => {
-                        let resource_specifier = parse_resource_specifier(arg, &bech32_decoder)
+                        let resource_specifier = parse_resource_specifier(arg, bech32_decoder)
                             .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
@@ -265,7 +271,7 @@ fn parse_args<'a>(
                         Ok(scrypto_encode(&Bucket(bucket_id)).unwrap())
                     }
                     Type::Proof => {
-                        let resource_specifier = parse_resource_specifier(arg, &bech32_decoder)
+                        let resource_specifier = parse_resource_specifier(arg, bech32_decoder)
                             .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
@@ -326,50 +332,128 @@ where
     Ok(scrypto_encode(&value).unwrap())
 }
 
+/// Attempts to parse a string as a [`ResourceSpecifier`] object.
+///
+/// Given a string, this function attempts to parse that string as a fungible or non-fungible
+/// [`ResourceSpecifier`]. When a resource address is encountered in the string, the passed bech32m
+/// decoder is used to attempt to decode the address.
+///
+/// The format expected for the string representation of fungible and non-fungible resource
+/// specifiers differs. The following elaborates on the formats and the parsing modes.
+///
+/// ## Fungible Resource Specifiers
+///
+/// The string representation of fungible resource addresses is that it is a [`Decimal`] amount
+/// followed by a resource address for that given resource. Separating the amount and the resource
+/// address is a comma. The following is what that looks like as well as an example of that
+///
+/// ```txt
+/// <amount>,<resource_address>
+/// ```
+///
+/// As an example, say that `resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0` is a
+/// fungible resource which we wish to create a resource specifier of `12.91` of, then the string
+/// format to use for the fungible specifier would be:
+///
+/// ```txt
+/// 12.91,resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0
+/// ```
+///
+/// ## Non-Fungible Resource Specifiers
+///
+/// The string representation of non-fungible resource specifiers follows the same format which will
+/// be used for the wallet, explorer, and other parts of our system. A string non-fungible resource
+/// specifier beings with a Bech32m encoded resource address, then a colon, and then a list of comma
+/// separated non-fungible ids that we wish to specify.
+///
+/// The type of these non-fungible ids does not need to be provided in the non-fungible resource
+/// specifier string representation; this is because the type is automatically looked up for the
+/// given resource address and then used as context for the parsing of the given non-fungible id
+/// string.
+///
+/// The format of the string representation of non-fungible resource specifiers is:
+///
+/// ```txt
+/// <resource_address>:<non_fungible_id_1>,<non_fungible_id_2>,...,<non_fungible_id_n>
+/// ```
+///
+/// As an example, say that `resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0` is a
+/// non-fungible resource which has a non-fungible id type of [`NonFungibleIdType::U32`], say that
+/// we wish to specify non-fungible tokens of this resource with the ids: 12, 900, 181, the string
+/// representation of the non-fungible resource specifier would be:
+///
+/// ```txt
+/// resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0:12,900,181
+/// ```
+///
+/// As you can see from the example above, there was no need to specify the non-fungible id type in
+/// the resource specifier string, as mentioned above, this is because this information can be
+/// looked up from the simulator's substate store.
 fn parse_resource_specifier(
     input: &str,
     bech32_decoder: &Bech32Decoder,
 ) -> Result<ResourceSpecifier, ParseResourceSpecifierError> {
-    let tokens: Vec<&str> = input.trim().split(',').map(|s| s.trim()).collect();
+    // If the input contains a colon (:) then we assume it to be a non-fungible resource specifier
+    // string.
+    let is_fungible = !input.contains(':');
+    if is_fungible {
+        // Split up the input two two parts: the amount and resource address
+        let tokens = input
+            .trim()
+            .split(',')
+            .map(|s| s.trim())
+            .collect::<Vec<_>>();
 
-    // check length
-    if tokens.len() < 2 {
-        return Err(ParseResourceSpecifierError::IncompleteResourceSpecifier);
-    }
-
-    // parse resource address
-    let resource_address_token = tokens[tokens.len() - 1];
-    let resource_address = bech32_decoder
-        .validate_and_decode_resource_address(resource_address_token)
-        .map_err(|_| {
-            ParseResourceSpecifierError::InvalidResourceAddress(resource_address_token.to_owned())
-        })?;
-
-    // parse non-fungible ids or amount
-    if tokens[0].contains('#') {
-        let mut ids = BTreeSet::<NonFungibleId>::new();
-        for id in tokens[..tokens.len() - 1].iter() {
-            let mut id = *id;
-            if id.starts_with('#') {
-                // Support the ids optionally starting with a # (which was an old encoding)
-                // EG: #String#123,resource_address
-                id = &id[1..];
-            }
-            ids.insert(
-                NonFungibleId::try_from_combined_simple_string(id).map_err(|_| {
-                    ParseResourceSpecifierError::InvalidNonFungibleId(id.to_string())
-                })?,
-            );
-        }
-        Ok(ResourceSpecifier::Ids(ids, resource_address))
-    } else {
+        // There MUST only be two tokens in the tokens vector, one for the amount, and another for
+        // the resource address. If there is more or less, then this function returns an error.
         if tokens.len() != 2 {
             return Err(ParseResourceSpecifierError::MoreThanOneAmountSpecified);
         }
-        let amount: Decimal = tokens[0]
+
+        let amount_string = tokens[0];
+        let resource_address_string = tokens[1];
+
+        let amount = amount_string
             .parse()
-            .map_err(|_| ParseResourceSpecifierError::InvalidAmount(tokens[0].to_owned()))?;
+            .map_err(ParseResourceSpecifierError::InvalidAmount)?;
+        let resource_address = bech32_decoder
+            .validate_and_decode_resource_address(resource_address_string)
+            .map_err(ParseResourceSpecifierError::InvalidResourceAddress)?;
+
         Ok(ResourceSpecifier::Amount(amount, resource_address))
+    } else {
+        // Splitting up the input into two parts: the resource address and the non-fungible ids
+        let tokens = input
+            .trim()
+            .split(':')
+            .map(|s| s.trim())
+            .collect::<Vec<_>>();
+
+        // There MUST only be two tokens in the tokens vector, one for the resource address, and
+        // another for the non-fungible ids. If there is more or less, then this function returns
+        // an error.
+        if tokens.len() != 2 {
+            return Err(ParseResourceSpecifierError::MoreThanOneAmountSpecified);
+        }
+
+        // Paring the resource address fully first to use it for the non-fungible id type ledger
+        // lookup
+        let resource_address_string = tokens[0];
+        let resource_address = bech32_decoder
+            .validate_and_decode_resource_address(resource_address_string)
+            .map_err(ParseResourceSpecifierError::InvalidResourceAddress)?;
+        let non_fungible_id_type = lookup_id_type(&resource_address)
+            .map_err(ParseResourceSpecifierError::LedgerLookupError)?;
+
+        // Parsing the non-fungible ids with the available id type
+        let non_fungible_ids = tokens[1]
+            .split(',')
+            .map(|s| s.trim())
+            .map(|s| NonFungibleId::try_from_simple_string(non_fungible_id_type, s))
+            .collect::<Result<BTreeSet<_>, _>>()
+            .map_err(ParseResourceSpecifierError::InvalidNonFungibleId)?;
+
+        Ok(ResourceSpecifier::Ids(non_fungible_ids, resource_address))
     }
 }
 
@@ -378,10 +462,10 @@ fn parse_resource_specifier(
 // ========
 
 enum ParseResourceSpecifierError {
-    IncompleteResourceSpecifier,
-    InvalidResourceAddress(String),
-    InvalidAmount(String),
-    InvalidNonFungibleId(String),
+    InvalidAmount(ParseDecimalError),
+    InvalidResourceAddress(AddressError),
+    InvalidNonFungibleId(ParseNonFungibleIdError),
+    LedgerLookupError(LedgerLookupError),
     MoreThanOneAmountSpecified,
 }
 
@@ -401,6 +485,9 @@ pub enum BuildArgsError {
 
     /// Failed to interpret this string as a resource specifier
     InvalidResourceSpecifier(String),
+
+    /// Failed to perform a ledger lookup
+    LedgerLookupError(LedgerLookupError),
 }
 
 /// Represents an error when building a transaction.

@@ -6,6 +6,7 @@ use radix_engine::transaction::{
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
+use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use rand::Rng;
 use rand_chacha;

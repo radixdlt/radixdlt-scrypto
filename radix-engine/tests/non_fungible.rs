@@ -3,7 +3,6 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use utils::ContextualDisplay;
 
 #[test]
 fn create_non_fungible_mutable() {

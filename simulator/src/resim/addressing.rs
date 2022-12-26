@@ -4,9 +4,11 @@ use std::str::FromStr;
 
 use radix_engine::types::{
     require, AccessRule, AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress,
-    NonFungibleAddress, PackageAddress, ParseNonFungibleAddressError, ResourceAddress,
+    NonFungibleAddress, NonFungibleId, PackageAddress, ParseNonFungibleIdError, ResourceAddress,
 };
 use utils::ContextualDisplay;
+
+use crate::ledger::{lookup_id_type, LedgerLookupError};
 
 #[derive(Clone)]
 pub struct SimulatorPackageAddress(pub PackageAddress);
@@ -147,11 +149,44 @@ impl FromStr for SimulatorNonFungibleAddress {
     type Err = ParseNonFungibleAddressError;
 
     fn from_str(address: &str) -> Result<Self, Self::Err> {
-        NonFungibleAddress::try_from_canonical_combined_string(
-            &Bech32Decoder::for_simulator(),
-            address,
-        )
-        .map(Self)
+        // Non-fungible addresses provided as arguments to the simulator can use the
+        // same string format as that used in the explorer and wallet since we can
+        // do ledger lookups to determine the non-fungible id type that the resource
+        // uses.
+
+        // Splitting up the input into two parts: the resource address and the non-fungible ids
+        let tokens = address
+            .trim()
+            .split(':')
+            .map(|s| s.trim())
+            .collect::<Vec<_>>();
+
+        // There MUST only be two tokens in the tokens vector, one for the resource address, and
+        // another for the non-fungible ids. If there is more or less, then this function returns
+        // an error.
+        if tokens.len() != 2 {
+            return Err(ParseNonFungibleAddressError::InvalidLengthError(
+                tokens.len(),
+            ));
+        }
+
+        // Paring the resource address fully first to use it for the non-fungible id type ledger
+        // lookup
+        let resource_address_string = tokens[0];
+        let resource_address = Bech32Decoder::for_simulator()
+            .validate_and_decode_resource_address(resource_address_string)
+            .map_err(ParseNonFungibleAddressError::InvalidResourceAddress)?;
+        let non_fungible_id_type = lookup_id_type(&resource_address)
+            .map_err(ParseNonFungibleAddressError::LedgerLookupError)?;
+
+        // Parsing the non-fungible id given the non-fungible id type above
+        let non_fungible_id =
+            NonFungibleId::try_from_simple_string(non_fungible_id_type, tokens[1])
+                .map_err(ParseNonFungibleAddressError::InvalidNonFungibleId)?;
+        Ok(Self(NonFungibleAddress::new(
+            resource_address,
+            non_fungible_id,
+        )))
     }
 }
 
@@ -160,8 +195,7 @@ impl fmt::Display for SimulatorNonFungibleAddress {
         write!(
             f,
             "{}",
-            self.0
-                .to_canonical_combined_string(&Bech32Encoder::for_simulator())
+            self.0.to_canonical_string(&Bech32Encoder::for_simulator())
         )
     }
 }
@@ -262,3 +296,19 @@ impl fmt::Display for ParseSimulatorResourceOrNonFungibleAddressError {
 }
 
 impl std::error::Error for ParseSimulatorResourceOrNonFungibleAddressError {}
+
+#[derive(Debug)]
+pub enum ParseNonFungibleAddressError {
+    InvalidLengthError(usize),
+    InvalidResourceAddress(AddressError),
+    InvalidNonFungibleId(ParseNonFungibleIdError),
+    LedgerLookupError(LedgerLookupError),
+}
+
+impl fmt::Display for ParseNonFungibleAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for ParseNonFungibleAddressError {}
