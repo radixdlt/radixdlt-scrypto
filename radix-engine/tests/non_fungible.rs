@@ -239,86 +239,84 @@ fn test_singleton_non_fungible() {
 
 // This test was introduced in Oct 2022 to protect a regression whereby resources locked
 // by a proof in a vault was accidentally committed/persisted, and locked in future transactions
-// #[test]
-// fn test_mint_update_and_withdraw() {
-//     let mut test_runner = TestRunner::new(true);
-//     let (public_key, _, account) = test_runner.new_allocated_account();
-//     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-//     let network = NetworkDefinition::simulator();
-//     let bech32_encoder = Bech32Encoder::for_simulator();
+#[test]
+fn test_mint_update_and_withdraw() {
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
-//     // create non-fungible
-//     let manifest = ManifestBuilder::new()
-//         .lock_fee(FAUCET_COMPONENT, 10.into())
-//         .call_function(
-//             package_address,
-//             "NonFungibleTest",
-//             "create_non_fungible_mutable",
-//             args!(),
-//         )
-//         .call_method(
-//             account,
-//             "deposit_batch",
-//             args!(Expression::entire_worktop()),
-//         )
-//         .build();
-//     let receipt = test_runner.execute_manifest(
-//         manifest,
-//         vec![NonFungibleAddress::from_public_key(&public_key)],
-//     );
-//     receipt.expect_commit_success();
-//     let badge_resource_address = receipt
-//         .expect_commit()
-//         .entity_changes
-//         .new_resource_addresses[0];
-//     let nft_resource_address = receipt
-//         .expect_commit()
-//         .entity_changes
-//         .new_resource_addresses[1];
+    // create non-fungible
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package_address,
+            "NonFungibleTest",
+            "create_non_fungible_mutable",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+    let badge_resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[0];
+    let nft_resource_address = receipt
+        .expect_commit()
+        .entity_changes
+        .new_resource_addresses[1];
 
-//     // update data (the NFT is referenced within a Proof)
-//     let manifest = ManifestBuilder::new()
-//         .lock_fee(FAUCET_COMPONENT, 10.into())
-//         .call_function_with_abi(
-//             package_address,
-//             "NonFungibleTest",
-//             "update_nft",
-//             vec![
-//                 format!("1,{}", badge_resource_address.display(&bech32_encoder)),
-//                 format!("1,{}", nft_resource_address.display(&bech32_encoder)),
-//             ],
-//             Some(account),
-//             &test_runner.export_abi(package_address, "NonFungibleTest"),
-//         )
-//         .unwrap()
-//         .call_method(
-//             account,
-//             "deposit_batch",
-//             args!(Expression::entire_worktop()),
-//         )
-//         .build();
-//     let receipt = test_runner.execute_manifest(
-//         manifest,
-//         vec![NonFungibleAddress::from_public_key(&public_key)],
-//     );
-//     receipt.expect_commit_success();
+    // update data (the NFT is referenced within a Proof)
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account_by_amount(account, 1.into(), badge_resource_address)
+        .create_proof_from_account_by_amount(account, 1.into(), nft_resource_address)
+        .take_from_worktop(badge_resource_address, |builder, bucket_id| {
+            builder.pop_from_auth_zone(|builder, proof_id| {
+                builder.call_function(
+                    package_address,
+                    "NonFungibleTest",
+                    "update_nft",
+                    args!(Bucket(bucket_id), Proof(proof_id)),
+                )
+            })
+        })
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
 
-//     // transfer
-//     let manifest = ManifestBuilder::new()
-//         .lock_fee(FAUCET_COMPONENT, 10.into())
-//         .withdraw_from_account(account, nft_resource_address)
-//         .call_method(
-//             account,
-//             "deposit_batch",
-//             args!(Expression::entire_worktop()),
-//         )
-//         .build();
-//     let receipt = test_runner.execute_manifest(
-//         manifest,
-//         vec![NonFungibleAddress::from_public_key(&public_key)],
-//     );
-//     receipt.expect_commit_success();
-// }
+    // transfer
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account(account, nft_resource_address)
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+    receipt.expect_commit_success();
+}
 
 #[test]
 fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
