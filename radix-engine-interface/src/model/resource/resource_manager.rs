@@ -37,7 +37,7 @@ pub enum ResourceMethodAuthKey {
     Recall,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
@@ -69,6 +69,14 @@ pub struct ResourceManagerBucketBurnInvocation {
     pub bucket: Bucket,
 }
 
+impl Clone for ResourceManagerBucketBurnInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            bucket: Bucket(self.bucket.0),
+        }
+    }
+}
+
 impl Invocation for ResourceManagerBucketBurnInvocation {
     type Output = ();
 }
@@ -93,6 +101,16 @@ pub struct ResourceManagerBurnInvocation {
     pub bucket: Bucket,
 }
 
+impl Clone for ResourceManagerBurnInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            bucket: Bucket(self.bucket.0),
+        }
+    }
+}
+
+
 impl Invocation for ResourceManagerBurnInvocation {
     type Output = ();
 }
@@ -110,7 +128,7 @@ impl Into<SerializedInvocation> for ResourceManagerBurnInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateVaultAuthInvocation {
     pub receiver: ResourceAddress,
@@ -135,7 +153,7 @@ impl Into<SerializedInvocation> for ResourceManagerUpdateVaultAuthInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerSetVaultAuthMutabilityInvocation {
     pub receiver: ResourceAddress,
@@ -160,7 +178,7 @@ impl Into<SerializedInvocation> for ResourceManagerSetVaultAuthMutabilityInvocat
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateVaultInvocation {
     pub receiver: ResourceAddress,
@@ -183,7 +201,7 @@ impl Into<SerializedInvocation> for ResourceManagerCreateVaultInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateBucketInvocation {
     pub receiver: ResourceAddress,
@@ -206,7 +224,7 @@ impl Into<SerializedInvocation> for ResourceManagerCreateBucketInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerMintInvocation {
     pub receiver: ResourceAddress,
@@ -230,7 +248,7 @@ impl Into<SerializedInvocation> for ResourceManagerMintInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetResourceTypeInvocation {
     pub receiver: ResourceAddress,
@@ -253,7 +271,7 @@ impl Into<SerializedInvocation> for ResourceManagerGetResourceTypeInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetTotalSupplyInvocation {
     pub receiver: ResourceAddress,
@@ -276,7 +294,7 @@ impl Into<SerializedInvocation> for ResourceManagerGetTotalSupplyInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub receiver: ResourceAddress,
@@ -301,7 +319,7 @@ impl Into<SerializedInvocation> for ResourceManagerUpdateNonFungibleDataInvocati
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerNonFungibleExistsInvocation {
     pub receiver: ResourceAddress,
@@ -325,7 +343,7 @@ impl Into<SerializedInvocation> for ResourceManagerNonFungibleExistsInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetNonFungibleInvocation {
     pub receiver: ResourceAddress,

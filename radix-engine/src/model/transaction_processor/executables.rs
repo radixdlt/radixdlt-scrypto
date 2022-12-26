@@ -1,4 +1,3 @@
-use crate::model::resolve_native_method;
 use crate::model::*;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
@@ -175,13 +174,8 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::CreateNonFungibleResource { .. }
             | BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
         },
-        Instruction::System(SystemInstruction::CallNativeFunction { args, .. }) => {
-            for node_id in slice_to_global_references(args) {
-                update.add_ref(node_id);
-            }
-        }
-        Instruction::System(SystemInstruction::CallNativeMethod { args, .. }) => {
-            for node_id in slice_to_global_references(args) {
+        Instruction::System(invocation) => {
+            for node_id in invocation.refs() {
                 update.add_ref(node_id);
             }
         }
@@ -677,6 +671,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     InstructionOutput::Native(Box::new(rtn))
                 }
+                Instruction::System(invocation) => {
+                    let rtn = invoke_native_fn(invocation.clone(), api)?;
+                    InstructionOutput::Native(rtn)
+                }
+                /*
                 Instruction::System(SystemInstruction::CallNativeFunction {
                     function_ident,
                     args,
@@ -741,6 +740,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     InstructionOutput::Native(rtn)
                 }
+                 */
             };
             outputs.push(result);
 

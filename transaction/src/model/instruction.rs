@@ -1,10 +1,11 @@
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, VaultId,
+    BucketId, GlobalAddress, ProofId, VaultId,
 };
 use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
+use radix_engine_interface::wasm::NativeFnInvocation;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
@@ -213,6 +214,7 @@ pub enum BasicInstruction {
     },
 }
 
+/*
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum SystemInstruction {
@@ -232,12 +234,13 @@ pub enum SystemInstruction {
         args: Vec<u8>,
     },
 }
+ */
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum Instruction {
     Basic(BasicInstruction),
-    System(SystemInstruction),
+    System(NativeFnInvocation),
 }
 
 impl From<BasicInstruction> for Instruction {
@@ -246,8 +249,8 @@ impl From<BasicInstruction> for Instruction {
     }
 }
 
-impl From<SystemInstruction> for Instruction {
-    fn from(i: SystemInstruction) -> Self {
+impl From<NativeFnInvocation> for Instruction {
+    fn from(i: NativeFnInvocation) -> Self {
         Instruction::System(i)
     }
 }

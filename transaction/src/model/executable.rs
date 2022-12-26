@@ -33,13 +33,13 @@ pub enum FeePayment {
     NoFee,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum InstructionList<'a> {
     Basic(&'a [BasicInstruction]),
     Any(&'a [Instruction]),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Executable<'a> {
     instructions: InstructionList<'a>,
     blobs: HashMap<Hash, &'a [u8]>,

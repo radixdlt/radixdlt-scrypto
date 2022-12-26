@@ -27,11 +27,12 @@ use radix_engine_interface::model::{
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::{dec, rule};
+use radix_engine_interface::wasm::{EpochManagerMethodInvocation, NativeFnInvocation, NativeMethodInvocation};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, SystemInstruction, SystemTransaction, TransactionManifest};
+use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -845,14 +846,14 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![SystemInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                method_name: EpochManagerMethod::SetEpoch.as_ref().to_owned(),
-            },
-            args: args!(EPOCH_MANAGER, epoch),
-        }
-        .into()];
+
+        let instructions = vec![
+            Instruction::System(
+        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::SetEpoch(EpochManagerSetEpochInvocation {
+            receiver: EPOCH_MANAGER,
+            epoch,
+        }))))
+            ];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -868,14 +869,12 @@ impl TestRunner {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![SystemInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                method_name: EpochManagerMethod::GetCurrentEpoch.as_ref().to_owned(),
-            },
-            args: args!(EPOCH_MANAGER),
-        }
-        .into()];
+        let instructions = vec![
+            Instruction::System(
+        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
+            receiver: EPOCH_MANAGER,
+        }))))
+        ];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 

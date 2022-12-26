@@ -6,7 +6,7 @@ use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {}
 
@@ -27,7 +27,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
@@ -50,7 +50,7 @@ impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
