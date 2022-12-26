@@ -66,4 +66,6 @@ pub enum Error {
     ParseNetworkError(ParseNetworkError),
 
     OwnerBadgeNotSpecified,
+
+    LedgerLookupError(LedgerLookupError),
 }

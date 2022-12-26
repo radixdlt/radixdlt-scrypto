@@ -52,6 +52,22 @@ impl PersistedSubstate {
             panic!("Not a package royalty accumulator");
         }
     }
+
+    pub fn global(&self) -> &GlobalAddressSubstate {
+        if let PersistedSubstate::Global(state) = self {
+            state
+        } else {
+            panic!("Not a global address substate");
+        }
+    }
+
+    pub fn resource_manager(&self) -> &ResourceManagerSubstate {
+        if let PersistedSubstate::ResourceManager(state) = self {
+            state
+        } else {
+            panic!("Not a resource manager substate");
+        }
+    }
 }
 
 impl Into<VaultSubstate> for PersistedSubstate {
