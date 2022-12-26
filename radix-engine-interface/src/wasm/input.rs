@@ -150,6 +150,7 @@ pub enum EpochManagerMethodInvocation {
     SetEpoch(EpochManagerSetEpochInvocation),
     RegisterValidator(EpochManagerRegisterValidatorInvocation),
     UnregisterValidator(EpochManagerUnregisterValidatorInvocation),
+    CreateValidator(EpochManagerCreateValidatorInvocation),
 }
 
 #[derive(Debug, Clone)]
@@ -438,6 +439,11 @@ impl NativeFnInvocation {
                             )));
                         }
                         EpochManagerMethodInvocation::UnregisterValidator(invocation) => {
+                            refs.insert(RENodeId::Global(GlobalAddress::System(
+                                invocation.receiver,
+                            )));
+                        }
+                        EpochManagerMethodInvocation::CreateValidator(invocation) => {
                             refs.insert(RENodeId::Global(GlobalAddress::System(
                                 invocation.receiver,
                             )));

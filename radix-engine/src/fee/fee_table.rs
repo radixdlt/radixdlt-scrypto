@@ -152,6 +152,7 @@ impl FeeTable {
                 EpochManagerMethod::SetEpoch => self.fixed_low,
                 EpochManagerMethod::RegisterValidator => self.fixed_low,
                 EpochManagerMethod::UnregisterValidator => self.fixed_low,
+                EpochManagerMethod::CreateValidator => self.fixed_low,
             },
             NativeMethod::Clock(clock_method) => match clock_method {
                 ClockMethod::SetCurrentTime => self.fixed_low,

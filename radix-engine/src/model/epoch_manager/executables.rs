@@ -5,6 +5,7 @@ use crate::engine::{
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization, ValidatorSetSubstate,
+    ValidatorSubstate,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -51,8 +52,10 @@ impl Executor for EpochManagerCreateInvocation {
         Y: SystemApi + EngineApi<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
 
         let epoch_manager = EpochManagerSubstate {
+            address: global_node_id.into(),
             epoch: self.initial_epoch,
             round: 0,
             rounds_per_epoch: self.rounds_per_epoch,
@@ -115,7 +118,6 @@ impl Executor for EpochManagerCreateInvocation {
             ),
         )?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
         api.create_node(
             global_node_id,
             RENode::Global(GlobalAddressSubstate::EpochManager(
@@ -416,6 +418,69 @@ impl Executor for EpochManagerUnregisterValidatorExecutable {
         let mut substate_mut = api.get_ref_mut(handle)?;
         substate_mut.validator_set().validator_set.remove(&self.1);
         Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct EpochManagerCreateValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
+
+impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateValidatorInvocation {
+    type Exec = EpochManagerCreateValidatorExecutable;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeMethod::EpochManager(EpochManagerMethod::CreateValidator),
+            resolved_receiver,
+        );
+        let executor =
+            EpochManagerCreateValidatorExecutable(resolved_receiver.receiver, self.validator);
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for EpochManagerCreateValidatorExecutable {
+    type Output = SystemAddress;
+
+    fn execute<Y>(self, api: &mut Y) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + InvokableModel<RuntimeError>,
+    {
+        let handle = api.lock_substate(
+            self.0,
+            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.get_ref(handle)?;
+        let epoch_manager = substate_ref.epoch_manager();
+        let manager = epoch_manager.address;
+
+        let node_id = api.allocate_node_id(RENodeType::Validator)?;
+        let node = RENode::Validator(ValidatorSubstate {
+            manager,
+            key: self.1,
+        });
+        api.create_node(node_id, node)?;
+
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Validator(node_id.into())),
+        )?;
+
+        Ok((
+            global_node_id.into(),
+            CallFrameUpdate::copy_ref(global_node_id),
+        ))
     }
 }
 

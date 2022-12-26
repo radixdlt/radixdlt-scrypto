@@ -826,6 +826,10 @@ where
                 .id_allocator
                 .new_component_id(self.transaction_hash)
                 .map(|id| RENodeId::EpochManager(id)),
+            RENodeType::Validator => self
+                .id_allocator
+                .new_validator_id(self.transaction_hash)
+                .map(|id| RENodeId::Validator(id)),
             RENodeType::Clock => self
                 .id_allocator
                 .new_component_id(self.transaction_hash)
@@ -835,6 +839,10 @@ where
                 .new_package_address(self.transaction_hash)
                 .map(|address| RENodeId::Global(GlobalAddress::Package(address))),
             RENodeType::GlobalEpochManager => self
+                .id_allocator
+                .new_epoch_manager_address(self.transaction_hash)
+                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
+            RENodeType::GlobalValidator => self
                 .id_allocator
                 .new_epoch_manager_address(self.transaction_hash)
                 .map(|address| RENodeId::Global(GlobalAddress::System(address))),

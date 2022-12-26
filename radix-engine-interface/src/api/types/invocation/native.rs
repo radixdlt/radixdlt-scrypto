@@ -227,6 +227,7 @@ pub enum EpochManagerMethod {
     SetEpoch,
     RegisterValidator,
     UnregisterValidator,
+    CreateValidator,
 }
 
 #[derive(

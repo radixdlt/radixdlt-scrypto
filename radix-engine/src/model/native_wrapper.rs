@@ -310,6 +310,10 @@ where
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
+                    EpochManagerMethodInvocation::CreateValidator(invocation) => {
+                        let rtn = api.invoke(invocation)?;
+                        Ok(Box::new(rtn))
+                    }
                 }
             }
             NativeMethodInvocation::Clock(clock_method) => match clock_method {

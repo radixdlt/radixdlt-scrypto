@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::{
     AuthZoneStackId, BucketId, ComponentId, FeeReserveId, KeyValueStoreId, NonFungibleStoreId,
-    PackageId, ProofId, ResourceManagerId, TransactionRuntimeId, VaultId,
+    PackageId, ProofId, ResourceManagerId, TransactionRuntimeId, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
@@ -101,6 +101,16 @@ impl IdAllocator {
         Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
+    pub fn new_validator_address(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<SystemAddress, IdAllocationError> {
+        let mut data = transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+
+        Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
+    }
+
     pub fn new_clock_address(
         &mut self,
         transaction_hash: Hash,
@@ -157,6 +167,13 @@ impl IdAllocator {
         &mut self,
         transaction_hash: Hash,
     ) -> Result<ComponentId, IdAllocationError> {
+        self.next_id(transaction_hash)
+    }
+
+    pub fn new_validator_id(
+        &mut self,
+        transaction_hash: Hash,
+    ) -> Result<ValidatorId, IdAllocationError> {
         self.next_id(transaction_hash)
     }
 

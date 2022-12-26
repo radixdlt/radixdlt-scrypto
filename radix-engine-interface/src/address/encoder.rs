@@ -65,6 +65,7 @@ impl Bech32Encoder {
     ) -> Result<(), AddressError> {
         let data = match system_address {
             SystemAddress::EpochManager(data) => data,
+            SystemAddress::Validator(data) => data,
             SystemAddress::Clock(data) => data,
         };
 
