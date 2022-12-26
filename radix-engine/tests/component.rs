@@ -1,7 +1,6 @@
 use radix_engine::engine::{InterpreterError, RuntimeError, ScryptoFnResolvingError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::ScryptoFunctionIdent;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
@@ -14,7 +13,7 @@ fn test_component() {
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Create component
-    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest1 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "ComponentTest", "create_component", args!())
         .build();
@@ -28,7 +27,7 @@ fn test_component() {
         .new_component_addresses[0];
 
     // Call functions & methods
-    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package,
@@ -58,7 +57,7 @@ fn invalid_blueprint_name_should_cause_error() {
     let package_addr = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_addr,

@@ -2,7 +2,6 @@ use radix_engine::engine::KernelError;
 use radix_engine::engine::RejectionError;
 use radix_engine::engine::RuntimeError;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
@@ -18,7 +17,7 @@ fn test_manifest_with_non_existent_resource() {
     let non_existent_resource = ResourceAddress::Normal([0u8; 26]);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10u32.into())
         .take_from_worktop(non_existent_resource, |builder, bucket_id| {
             builder.call_method(account, "deposit", args!(Bucket(bucket_id)))
@@ -47,7 +46,7 @@ fn test_call_method_with_all_resources_doesnt_drop_auth_zone_proofs() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
         .create_proof_from_account(account, RADIX_TOKEN)
         .create_proof_from_auth_zone(RADIX_TOKEN, |builder, proof_id| {
@@ -92,7 +91,7 @@ fn test_transaction_can_end_with_proofs_remaining_in_auth_zone() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
         .create_proof_from_account_by_amount(account, dec!("1"), RADIX_TOKEN)
         .create_proof_from_account_by_amount(account, dec!("1"), RADIX_TOKEN)
@@ -116,7 +115,7 @@ fn test_non_existent_blob_hash() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
         .add_instruction(BasicInstruction::PublishPackage {
             code: Blob(Hash([0; 32])),
@@ -147,7 +146,7 @@ fn test_entire_auth_zone() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/proof");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
         .create_proof_from_account_by_amount(account, dec!("1"), RADIX_TOKEN)
         .call_function(
@@ -174,7 +173,7 @@ fn test_faucet_drain_attempt_should_fail() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
         .call_method(FAUCET_COMPONENT, "free", args!())
         .call_method(FAUCET_COMPONENT, "free", args!())

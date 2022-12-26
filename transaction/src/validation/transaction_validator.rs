@@ -520,11 +520,7 @@ mod tests {
                 cost_unit_limit: 1_000_000,
                 tip_percentage: 5,
             })
-            .manifest(
-                ManifestBuilder::new(&NetworkDefinition::simulator())
-                    .clear_auth_zone()
-                    .build(),
-            );
+            .manifest(ManifestBuilder::new().clear_auth_zone().build());
 
         for signer in signers {
             builder = builder.sign(&EcdsaSecp256k1PrivateKey::from_u64(signer).unwrap());

@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
@@ -14,7 +13,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw_by_amount(account, 10.into(), Decimal::one(), token_resource_address)
         .call_method(
             other_account,
@@ -41,7 +40,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw_by_ids(
             account,
             10u32.into(),

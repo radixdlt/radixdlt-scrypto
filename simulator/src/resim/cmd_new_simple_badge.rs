@@ -82,7 +82,7 @@ impl NewSimpleBadge {
         let mut initial_supply = BTreeMap::new();
         initial_supply.insert(NonFungibleId::U32(1), EmptyStruct {});
 
-        let manifest = ManifestBuilder::new(&network_definition)
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .add_instruction(BasicInstruction::CreateNonFungibleResource {
                 id_type: NonFungibleIdType::U32,

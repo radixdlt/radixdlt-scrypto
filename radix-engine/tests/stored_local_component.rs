@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -10,7 +9,7 @@ fn should_not_be_able_call_owned_components_directly() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -27,7 +26,7 @@ fn should_not_be_able_call_owned_components_directly() {
         .new_component_addresses[1];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(component_address, "get_secret", args!())
         .build();
@@ -44,7 +43,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -66,7 +65,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -86,7 +85,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -103,7 +102,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(component_address, "parent_get_secret", args!())
         .build();
@@ -120,7 +119,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -137,7 +136,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(component_address, "parent_set_secret", args!(8888u32))
         .call_method(component_address, "parent_get_secret", args!())
@@ -157,7 +156,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -179,7 +178,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -199,7 +198,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -216,7 +215,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(component_address, "parent_get_secret", args!())
         .build();
@@ -233,7 +232,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/local_component");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -250,7 +249,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(component_address, "parent_set_secret", args!(8888u32))
         .call_method(component_address, "parent_get_secret", args!())

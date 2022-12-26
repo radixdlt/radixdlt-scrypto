@@ -1,7 +1,6 @@
 extern crate core;
 
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
@@ -64,7 +63,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     };
 
     // Act
-    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    let mut builder = ManifestBuilder::new();
     builder.lock_fee(FAUCET_COMPONENT, 10u32.into());
     builder.create_proof_from_account_by_amount(account, Decimal::one(), auth_to_use);
 

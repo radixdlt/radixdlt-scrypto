@@ -111,7 +111,7 @@ impl Publish {
             )
             .map_err(Error::NonFungibleAddressError)?;
 
-            let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            let manifest = ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 100u32.into())
                 .publish_package_with_owner(code, abi, owner_badge_nf_address)
                 .build();

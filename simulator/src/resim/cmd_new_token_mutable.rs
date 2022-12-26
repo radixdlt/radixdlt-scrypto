@@ -67,7 +67,7 @@ impl NewTokenMutable {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .new_token_mutable(metadata, self.minter_badge.clone().into())
             .build();
