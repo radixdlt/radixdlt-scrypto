@@ -1,5 +1,4 @@
 mod executables;
-mod native_wrapper;
 
 pub use executables::*;
-pub use native_wrapper::*;
+pub use crate::model::native_wrapper::*;

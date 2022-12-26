@@ -17,7 +17,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::types::{EpochManagerMethod, NativeMethodIdent, RENodeId};
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
