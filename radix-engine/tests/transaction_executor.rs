@@ -32,10 +32,10 @@ fn low_cost_unit_limit_should_result_in_rejection() {
 
     // Assert
     assert_eq!(
-        result,
-        Err(TransactionValidationError::HeaderValidationError(
+        result.expect_err("Should be an error"),
+        TransactionValidationError::HeaderValidationError(
             HeaderValidationError::InvalidCostUnitLimit
-        ))
+        )
     );
 }
 

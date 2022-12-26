@@ -7,7 +7,7 @@ use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentGlobalizeInvocation {
     pub component_id: ComponentId,
@@ -30,7 +30,7 @@ impl Into<SerializedInvocation> for ComponentGlobalizeInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentGlobalizeWithOwnerInvocation {
     pub component_id: ComponentId,
@@ -54,7 +54,7 @@ impl Into<SerializedInvocation> for ComponentGlobalizeWithOwnerInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentSetRoyaltyConfigInvocation {
     /// TODO: change to component id, after `borrow_component` returns component id
@@ -79,7 +79,7 @@ impl Into<SerializedInvocation> for ComponentSetRoyaltyConfigInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentClaimRoyaltyInvocation {
     /// TODO: change to component id, after `borrow_component` returns component id

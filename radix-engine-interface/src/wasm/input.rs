@@ -1,7 +1,6 @@
 use crate::api::types::*;
 use crate::scrypto;
-use radix_engine_interface::api::api::InvokableModel;
-use radix_engine_interface::data::IndexedScryptoValue;
+use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
@@ -29,7 +28,7 @@ pub enum SerializedInvocation {
     Scrypto(ScryptoInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFnInvocation {
     Method(NativeMethodInvocation),
@@ -42,7 +41,7 @@ impl Into<SerializedInvocation> for NativeFnInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeMethodInvocation {
     AccessRulesChain(AccessRulesChainMethodInvocation),
@@ -61,7 +60,7 @@ pub enum NativeMethodInvocation {
     Logger(LoggerInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeFunctionInvocation {
     Component(ComponentFunctionInvocation),
@@ -71,20 +70,20 @@ pub enum NativeFunctionInvocation {
     Package(PackageFunctionInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum LoggerInvocation {
     Log(LoggerLogInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum TransactionRuntimeMethodInvocation {
     Get(TransactionRuntimeGetHashInvocation),
     GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum AccessRulesChainMethodInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
@@ -95,32 +94,33 @@ pub enum AccessRulesChainMethodInvocation {
     GetLength(AccessRulesGetLengthInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum MetadataMethodInvocation {
     Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentFunctionInvocation {
     Globalize(ComponentGlobalizeInvocation),
     GlobalizeWithOwner(ComponentGlobalizeWithOwnerInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum EpochManagerFunctionInvocation {
     Create(EpochManagerCreateInvocation),
 }
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ClockFunctionInvocation {
     Create(ClockCreateInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ClockMethodInvocation {
     GetCurrentTime(ClockGetCurrentTimeInvocation),
@@ -128,21 +128,21 @@ pub enum ClockMethodInvocation {
     SetCurrentTime(ClockSetCurrentTimeInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentMethodInvocation {
     SetRoyaltyConfig(ComponentSetRoyaltyConfigInvocation),
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum PackageMethodInvocation {
     SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum EpochManagerMethodInvocation {
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
@@ -152,7 +152,7 @@ pub enum EpochManagerMethodInvocation {
     UnregisterValidator(EpochManagerUnregisterValidatorInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum AuthZoneStackMethodInvocation {
     Pop(AuthZonePopInvocation),
@@ -165,14 +165,14 @@ pub enum AuthZoneStackMethodInvocation {
     AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerFunctionInvocation {
     Create(ResourceManagerCreateInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerMethodInvocation {
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
@@ -188,7 +188,7 @@ pub enum ResourceManagerMethodInvocation {
     NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum BucketMethodInvocation {
     Take(BucketTakeInvocation),
@@ -200,7 +200,7 @@ pub enum BucketMethodInvocation {
     CreateProof(BucketCreateProofInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum VaultMethodInvocation {
     Take(VaultTakeInvocation),
@@ -217,7 +217,7 @@ pub enum VaultMethodInvocation {
     RecallNonFungibles(VaultRecallNonFungiblesInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ProofMethodInvocation {
     Clone(ProofCloneInvocation),
@@ -226,7 +226,7 @@ pub enum ProofMethodInvocation {
     GetResourceAddress(ProofGetResourceAddressInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum WorktopMethodInvocation {
     TakeAll(WorktopTakeAllInvocation),
@@ -239,304 +239,242 @@ pub enum WorktopMethodInvocation {
     Drain(WorktopDrainInvocation),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum PackageFunctionInvocation {
     Publish(PackagePublishInvocation),
 }
 
 impl NativeFnInvocation {
-    pub fn invoke<Y, E>(self, api: &mut Y) -> Result<IndexedScryptoValue, E>
-    where
-        Y: InvokableModel<E>,
-    {
+    pub fn refs(&self) -> HashSet<RENodeId> {
+        let mut refs = HashSet::new();
         match self {
             NativeFnInvocation::Function(native_function) => match native_function {
                 NativeFunctionInvocation::EpochManager(invocation) => match invocation {
-                    EpochManagerFunctionInvocation::Create(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    EpochManagerFunctionInvocation::Create(..) => {}
                 },
                 NativeFunctionInvocation::Clock(invocation) => match invocation {
-                    ClockFunctionInvocation::Create(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ClockFunctionInvocation::Create(..) => {}
                 },
                 NativeFunctionInvocation::ResourceManager(invocation) => match invocation {
-                    ResourceManagerFunctionInvocation::Create(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerFunctionInvocation::BurnBucket(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ResourceManagerFunctionInvocation::Create(..) => {}
+                    ResourceManagerFunctionInvocation::BurnBucket(..) => {}
                 },
                 NativeFunctionInvocation::Package(invocation) => match invocation {
-                    PackageFunctionInvocation::Publish(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    PackageFunctionInvocation::Publish(..) => {}
                 },
                 NativeFunctionInvocation::Component(invocation) => match invocation {
-                    ComponentFunctionInvocation::Globalize(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ComponentFunctionInvocation::GlobalizeWithOwner(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ComponentFunctionInvocation::Globalize(..) => {}
+                    ComponentFunctionInvocation::GlobalizeWithOwner(..) => {}
                 },
             },
             NativeFnInvocation::Method(native_method) => match native_method {
                 NativeMethodInvocation::Component(component_method) => match component_method {
-                    ComponentMethodInvocation::SetRoyaltyConfig(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ComponentMethodInvocation::ClaimRoyalty(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ComponentMethodInvocation::SetRoyaltyConfig(invocation) => {
+                        refs.insert(invocation.receiver);
+                    }
+                    ComponentMethodInvocation::ClaimRoyalty(invocation) => {
+                        refs.insert(invocation.receiver);
+                    }
                 },
                 NativeMethodInvocation::Package(package_method) => match package_method {
-                    PackageMethodInvocation::SetRoyaltyConfig(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    PackageMethodInvocation::ClaimRoyalty(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    PackageMethodInvocation::SetRoyaltyConfig(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Package(
+                            invocation.receiver,
+                        )));
+                    }
+                    PackageMethodInvocation::ClaimRoyalty(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Package(
+                            invocation.receiver,
+                        )));
+                    }
                 },
                 NativeMethodInvocation::Bucket(bucket_method) => match bucket_method {
-                    BucketMethodInvocation::Take(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    BucketMethodInvocation::CreateProof(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    BucketMethodInvocation::TakeNonFungibles(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    BucketMethodInvocation::GetNonFungibleIds(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    BucketMethodInvocation::GetAmount(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    BucketMethodInvocation::Put(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    BucketMethodInvocation::GetResourceAddress(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    BucketMethodInvocation::Take(..) => {}
+                    BucketMethodInvocation::CreateProof(..) => {}
+                    BucketMethodInvocation::TakeNonFungibles(..) => {}
+                    BucketMethodInvocation::GetNonFungibleIds(..) => {}
+                    BucketMethodInvocation::GetAmount(..) => {}
+                    BucketMethodInvocation::Put(..) => {}
+                    BucketMethodInvocation::GetResourceAddress(..) => {}
                 },
                 NativeMethodInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
-                    AuthZoneStackMethodInvocation::Pop(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneStackMethodInvocation::Push(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneStackMethodInvocation::CreateProof(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneStackMethodInvocation::CreateProofByAmount(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneStackMethodInvocation::CreateProofByIds(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneStackMethodInvocation::Clear(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneStackMethodInvocation::Drain(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    AuthZoneStackMethodInvocation::AssertAuthRule(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    AuthZoneStackMethodInvocation::Pop(..) => {}
+                    AuthZoneStackMethodInvocation::Push(..) => {}
+                    AuthZoneStackMethodInvocation::CreateProof(..) => {}
+                    AuthZoneStackMethodInvocation::CreateProofByAmount(..) => {}
+                    AuthZoneStackMethodInvocation::CreateProofByIds(..) => {}
+                    AuthZoneStackMethodInvocation::Clear(..) => {}
+                    AuthZoneStackMethodInvocation::Drain(..) => {}
+                    AuthZoneStackMethodInvocation::AssertAuthRule(..) => {}
                 },
                 NativeMethodInvocation::Proof(proof_method) => match proof_method {
-                    ProofMethodInvocation::GetAmount(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ProofMethodInvocation::GetNonFungibleIds(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ProofMethodInvocation::GetResourceAddress(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ProofMethodInvocation::Clone(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ProofMethodInvocation::GetAmount(..) => {}
+                    ProofMethodInvocation::GetNonFungibleIds(..) => {}
+                    ProofMethodInvocation::GetResourceAddress(..) => {}
+                    ProofMethodInvocation::Clone(..) => {}
                 },
                 NativeMethodInvocation::Vault(vault_method) => match vault_method {
-                    VaultMethodInvocation::Take(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::Put(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::LockFee(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::TakeNonFungibles(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::GetAmount(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::GetResourceAddress(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::GetNonFungibleIds(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::CreateProof(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::CreateProofByAmount(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::CreateProofByIds(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::Recall(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    VaultMethodInvocation::RecallNonFungibles(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    VaultMethodInvocation::Take(..) => {}
+                    VaultMethodInvocation::Put(..) => {}
+                    VaultMethodInvocation::LockFee(..) => {}
+                    VaultMethodInvocation::TakeNonFungibles(..) => {}
+                    VaultMethodInvocation::GetAmount(..) => {}
+                    VaultMethodInvocation::GetResourceAddress(..) => {}
+                    VaultMethodInvocation::GetNonFungibleIds(..) => {}
+                    VaultMethodInvocation::CreateProof(..) => {}
+                    VaultMethodInvocation::CreateProofByAmount(..) => {}
+                    VaultMethodInvocation::CreateProofByIds(..) => {}
+                    VaultMethodInvocation::Recall(..) => {}
+                    VaultMethodInvocation::RecallNonFungibles(..) => {}
                 },
                 NativeMethodInvocation::AccessRulesChain(access_rules_method) => {
                     match access_rules_method {
-                        AccessRulesChainMethodInvocation::AddAccessCheck(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesChainMethodInvocation::SetMethodAccessRule(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesChainMethodInvocation::SetMethodMutability(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesChainMethodInvocation::SetGroupAccessRule(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesChainMethodInvocation::SetGroupMutability(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        AccessRulesChainMethodInvocation::GetLength(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
+                        AccessRulesChainMethodInvocation::AddAccessCheck(invocation) => {
+                            refs.insert(invocation.receiver);
+                        }
+                        AccessRulesChainMethodInvocation::SetMethodAccessRule(invocation) => {
+                            refs.insert(invocation.receiver);
+                        }
+                        AccessRulesChainMethodInvocation::SetMethodMutability(invocation) => {
+                            refs.insert(invocation.receiver);
+                        }
+                        AccessRulesChainMethodInvocation::SetGroupAccessRule(invocation) => {
+                            refs.insert(invocation.receiver);
+                        }
+                        AccessRulesChainMethodInvocation::SetGroupMutability(invocation) => {
+                            refs.insert(invocation.receiver);
+                        }
+                        AccessRulesChainMethodInvocation::GetLength(invocation) => {
+                            refs.insert(invocation.receiver);
+                        }
                     }
                 }
                 NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
-                    MetadataMethodInvocation::Set(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    MetadataMethodInvocation::Get(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    MetadataMethodInvocation::Set(invocation) => {
+                        refs.insert(invocation.receiver);
+                    }
+                    MetadataMethodInvocation::Get(invocation) => {
+                        refs.insert(invocation.receiver);
+                    }
                 },
                 NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {
-                    ResourceManagerMethodInvocation::Burn(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::UpdateVaultAuth(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::LockVaultAuth(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::CreateVault(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::CreateBucket(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::Mint(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::GetResourceType(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::GetTotalSupply(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::UpdateNonFungibleData(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::NonFungibleExists(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ResourceManagerMethodInvocation::GetNonFungible(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ResourceManagerMethodInvocation::Burn(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::UpdateVaultAuth(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::LockVaultAuth(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::CreateVault(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::CreateBucket(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::Mint(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::GetResourceType(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::GetTotalSupply(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::UpdateNonFungibleData(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::NonFungibleExists(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
+                    ResourceManagerMethodInvocation::GetNonFungible(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                            invocation.receiver,
+                        )));
+                    }
                 },
                 NativeMethodInvocation::EpochManager(epoch_manager_method) => {
                     match epoch_manager_method {
-                        EpochManagerMethodInvocation::GetCurrentEpoch(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        EpochManagerMethodInvocation::NextRound(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        EpochManagerMethodInvocation::SetEpoch(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        EpochManagerMethodInvocation::RegisterValidator(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
-                        EpochManagerMethodInvocation::UnregisterValidator(invocation) => api
-                            .invoke(invocation)
-                            .map(|a| IndexedScryptoValue::from_typed(&a)),
+                        EpochManagerMethodInvocation::GetCurrentEpoch(invocation) => {
+                            refs.insert(RENodeId::Global(GlobalAddress::System(
+                                invocation.receiver,
+                            )));
+                        }
+                        EpochManagerMethodInvocation::NextRound(invocation) => {
+                            refs.insert(RENodeId::Global(GlobalAddress::System(
+                                invocation.receiver,
+                            )));
+                        }
+                        EpochManagerMethodInvocation::SetEpoch(invocation) => {
+                            refs.insert(RENodeId::Global(GlobalAddress::System(
+                                invocation.receiver,
+                            )));
+                        }
+                        EpochManagerMethodInvocation::RegisterValidator(invocation) => {
+                            refs.insert(RENodeId::Global(GlobalAddress::System(
+                                invocation.receiver,
+                            )));
+                        }
+                        EpochManagerMethodInvocation::UnregisterValidator(invocation) => {
+                            refs.insert(RENodeId::Global(GlobalAddress::System(
+                                invocation.receiver,
+                            )));
+                        }
                     }
                 }
                 NativeMethodInvocation::Clock(clock_method) => match clock_method {
-                    ClockMethodInvocation::SetCurrentTime(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ClockMethodInvocation::GetCurrentTime(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    ClockMethodInvocation::CompareCurrentTime(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    ClockMethodInvocation::SetCurrentTime(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    }
+                    ClockMethodInvocation::GetCurrentTime(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    }
+                    ClockMethodInvocation::CompareCurrentTime(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    }
                 },
                 NativeMethodInvocation::Worktop(worktop_method) => match worktop_method {
-                    WorktopMethodInvocation::TakeNonFungibles(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    WorktopMethodInvocation::Put(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    WorktopMethodInvocation::Drain(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    WorktopMethodInvocation::AssertContainsNonFungibles(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    WorktopMethodInvocation::AssertContains(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    WorktopMethodInvocation::AssertContainsAmount(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    WorktopMethodInvocation::TakeAll(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    WorktopMethodInvocation::TakeAmount(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    WorktopMethodInvocation::TakeNonFungibles(..) => {}
+                    WorktopMethodInvocation::Put(..) => {}
+                    WorktopMethodInvocation::Drain(..) => {}
+                    WorktopMethodInvocation::AssertContainsNonFungibles(..) => {}
+                    WorktopMethodInvocation::AssertContains(..) => {}
+                    WorktopMethodInvocation::AssertContainsAmount(..) => {}
+                    WorktopMethodInvocation::TakeAll(..) => {}
+                    WorktopMethodInvocation::TakeAmount(..) => {}
                 },
                 NativeMethodInvocation::TransactionRuntime(method) => match method {
-                    TransactionRuntimeMethodInvocation::Get(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
-                    TransactionRuntimeMethodInvocation::GenerateUuid(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    TransactionRuntimeMethodInvocation::Get(..) => {}
+                    TransactionRuntimeMethodInvocation::GenerateUuid(..) => {}
                 },
                 NativeMethodInvocation::Logger(method) => match method {
-                    LoggerInvocation::Log(invocation) => api
-                        .invoke(invocation)
-                        .map(|a| IndexedScryptoValue::from_typed(&a)),
+                    LoggerInvocation::Log(..) => {}
                 },
             },
         }
+
+        refs
     }
 }

@@ -6,7 +6,7 @@ use radix_engine_interface::scrypto;
 use sbor::*;
 use std::collections::BTreeSet;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,

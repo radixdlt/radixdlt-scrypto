@@ -29,7 +29,7 @@ impl fmt::Display for Level {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct LoggerLogInvocation {
     pub level: Level,

@@ -13,7 +13,7 @@ use crate::math::*;
 use crate::scrypto_type;
 use crate::wasm::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInvocation {
     pub receiver: ProofId,
 }
@@ -35,7 +35,7 @@ impl Into<SerializedInvocation> for ProofGetAmountInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ProofGetNonFungibleIdsInvocation {
     pub receiver: ProofId,
 }
@@ -57,7 +57,7 @@ impl Into<SerializedInvocation> for ProofGetNonFungibleIdsInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ProofGetResourceAddressInvocation {
     pub receiver: ProofId,
 }
@@ -79,7 +79,7 @@ impl Into<SerializedInvocation> for ProofGetResourceAddressInvocation {
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ProofCloneInvocation {
     pub receiver: ProofId,
 }

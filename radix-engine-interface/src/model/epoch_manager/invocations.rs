@@ -8,7 +8,7 @@ use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
     pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
@@ -33,7 +33,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
@@ -56,7 +56,7 @@ impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
@@ -80,7 +80,7 @@ impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerNextRoundInvocation {
     pub receiver: SystemAddress,
@@ -104,7 +104,7 @@ impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerRegisterValidatorInvocation {
     pub receiver: SystemAddress,
@@ -128,7 +128,7 @@ impl Into<SerializedInvocation> for EpochManagerRegisterValidatorInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerUnregisterValidatorInvocation {
     pub receiver: SystemAddress,
@@ -148,6 +148,6 @@ impl Into<SerializedInvocation> for EpochManagerUnregisterValidatorInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
             EpochManagerMethodInvocation::UnregisterValidator(self),
         ))
-            .into()
+        .into()
     }
 }

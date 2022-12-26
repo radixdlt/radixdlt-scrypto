@@ -17,7 +17,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::types::{EpochManagerMethod, NativeMethodIdent, RENodeId};
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -26,12 +26,15 @@ use radix_engine_interface::model::{
     AccessRule, AccessRules, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
+use radix_engine_interface::wasm::{
+    EpochManagerMethodInvocation, NativeFnInvocation, NativeMethodInvocation,
+};
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, SystemInstruction, SystemTransaction, TransactionManifest};
+use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -859,14 +862,14 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![SystemInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                method_name: EpochManagerMethod::SetEpoch.as_ref().to_owned(),
-            },
-            args: args!(EPOCH_MANAGER, epoch),
-        }
-        .into()];
+        let instructions = vec![Instruction::System(NativeFnInvocation::Method(
+            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::SetEpoch(
+                EpochManagerSetEpochInvocation {
+                    receiver: EPOCH_MANAGER,
+                    epoch,
+                },
+            )),
+        ))];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -882,14 +885,13 @@ impl TestRunner {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![SystemInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                method_name: EpochManagerMethod::GetCurrentEpoch.as_ref().to_owned(),
-            },
-            args: args!(EPOCH_MANAGER),
-        }
-        .into()];
+        let instructions = vec![Instruction::System(NativeFnInvocation::Method(
+            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::GetCurrentEpoch(
+                EpochManagerGetCurrentEpochInvocation {
+                    receiver: EPOCH_MANAGER,
+                },
+            )),
+        ))];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 

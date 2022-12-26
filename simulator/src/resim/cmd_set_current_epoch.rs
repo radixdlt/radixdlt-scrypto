@@ -1,9 +1,9 @@
 use clap::Parser;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
-use transaction::model::SystemInstruction;
+use radix_engine_interface::wasm::{
+    EpochManagerMethodInvocation, NativeFnInvocation, NativeMethodInvocation,
+};
 
 use crate::resim::*;
 
@@ -20,14 +20,15 @@ pub struct SetCurrentEpoch {
 
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let instructions = vec![SystemInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                method_name: "set_epoch".to_string(),
-            },
-            args: args!(EPOCH_MANAGER, self.epoch),
-        }
-        .into()];
+        let instructions = vec![Instruction::System(NativeFnInvocation::Method(
+            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::SetEpoch(
+                EpochManagerSetEpochInvocation {
+                    receiver: EPOCH_MANAGER,
+                    epoch: self.epoch,
+                },
+            )),
+        ))];
+
         let blobs = vec![];
         let initial_proofs = vec![AuthAddresses::system_role()];
         handle_system_transaction(instructions, blobs, initial_proofs, self.trace, true, out)

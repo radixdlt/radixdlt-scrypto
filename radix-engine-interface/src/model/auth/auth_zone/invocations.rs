@@ -10,7 +10,7 @@ use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZonePopInvocation {
     pub receiver: AuthZoneStackId,
@@ -40,6 +40,15 @@ pub struct AuthZonePushInvocation {
     pub proof: Proof,
 }
 
+impl Clone for AuthZonePushInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            proof: Proof(self.proof.0),
+        }
+    }
+}
+
 impl Invocation for AuthZonePushInvocation {
     type Output = ();
 }
@@ -57,7 +66,7 @@ impl Into<SerializedInvocation> for AuthZonePushInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofInvocation {
     pub receiver: AuthZoneStackId,
@@ -81,7 +90,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByAmountInvocation {
     pub receiver: AuthZoneStackId,
@@ -106,7 +115,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofByAmountInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInvocation {
     pub receiver: AuthZoneStackId,
@@ -131,7 +140,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofByIdsInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneClearInvocation {
     pub receiver: AuthZoneStackId,
@@ -154,7 +163,7 @@ impl Into<SerializedInvocation> for AuthZoneClearInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneStackId,
@@ -177,7 +186,7 @@ impl Into<SerializedInvocation> for AuthZoneDrainInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneAssertAccessRuleInvocation {
     pub receiver: AuthZoneStackId,

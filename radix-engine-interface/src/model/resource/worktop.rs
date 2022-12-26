@@ -13,6 +13,14 @@ pub struct WorktopPutInvocation {
     pub bucket: Bucket,
 }
 
+impl Clone for WorktopPutInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            bucket: Bucket(self.bucket.0),
+        }
+    }
+}
+
 impl Invocation for WorktopPutInvocation {
     type Output = ();
 }
@@ -30,7 +38,7 @@ impl Into<SerializedInvocation> for WorktopPutInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopTakeAmountInvocation {
     pub amount: Decimal,
@@ -54,7 +62,7 @@ impl Into<SerializedInvocation> for WorktopTakeAmountInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopTakeNonFungiblesInvocation {
     pub ids: BTreeSet<NonFungibleId>,
@@ -78,7 +86,7 @@ impl Into<SerializedInvocation> for WorktopTakeNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopTakeAllInvocation {
     pub resource_address: ResourceAddress,
@@ -101,7 +109,7 @@ impl Into<SerializedInvocation> for WorktopTakeAllInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsInvocation {
     pub resource_address: ResourceAddress,
@@ -124,7 +132,7 @@ impl Into<SerializedInvocation> for WorktopAssertContainsInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsAmountInvocation {
     pub resource_address: ResourceAddress,
@@ -147,7 +155,7 @@ impl Into<SerializedInvocation> for WorktopAssertContainsAmountInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopAssertContainsNonFungiblesInvocation {
     pub resource_address: ResourceAddress,
@@ -171,7 +179,7 @@ impl Into<SerializedInvocation> for WorktopAssertContainsNonFungiblesInvocation 
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct WorktopDrainInvocation {}
 
