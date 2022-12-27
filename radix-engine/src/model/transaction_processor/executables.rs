@@ -3,8 +3,7 @@ use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunction, NativeFunctionIdent, NativeMethodIdent, ProofId,
-    RENodeId, TransactionProcessorFunction,
+    BucketId, GlobalAddress, NativeFunction, ProofId, RENodeId, TransactionProcessorFunction,
 };
 use radix_engine_interface::data::{IndexedScryptoValue, ValueReplacingError};
 use radix_engine_interface::model::*;
@@ -42,8 +41,6 @@ pub enum TransactionProcessorError {
     InvalidMethod,
     BucketNotFound(BucketId),
     ProofNotFound(ProofId),
-    NativeFunctionNotFound(NativeFunctionIdent),
-    NativeMethodNotFound(NativeMethodIdent),
     IdAllocationError(IdAllocationError),
 }
 
