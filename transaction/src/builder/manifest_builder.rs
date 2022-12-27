@@ -48,7 +48,8 @@ pub struct ManifestBuilder {
 impl ManifestBuilder {
     /// Starts a new transaction builder.
     pub fn new(network: &NetworkDefinition) -> Self {
-        // TODO: Remove mocked_hash
+        // TODO: Remove mocked_hash, possibly by separating id allocation
+        // TODO: between addresses and ids.
         let mocked_hash = hash([0u8; 1]);
         Self {
             decoder: Bech32Decoder::new(network),
