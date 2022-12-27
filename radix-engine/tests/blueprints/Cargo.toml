@@ -23,6 +23,7 @@ members = [
     "metadata_component",
     "non_fungible",
     "package",
+    "package_token",
     "proof",
     "recursion",
     "reentrancy",

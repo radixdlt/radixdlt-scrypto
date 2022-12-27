@@ -72,41 +72,46 @@ impl AuthVerification {
         resource_rule: &HardResourceOrNonFungible,
         auth_zone: &AuthZoneStackSubstate,
     ) -> bool {
-        Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone, rev_index| {
-            if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule {
-                if rev_index == 0 {
+        Self::check_auth_zones(
+            barrier_crossings_allowed,
+            auth_zone,
+            |auth_zone, rev_index| {
+                if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule
+                {
+                    if rev_index == 0 {
+                        if auth_zone
+                            .virtual_non_fungibles_non_extending
+                            .contains(&non_fungible_address)
+                        {
+                            return true;
+                        }
+                    }
+
                     if auth_zone
-                        .virtual_non_fungibles_non_extending
+                        .virtual_non_fungibles
                         .contains(&non_fungible_address)
+                    {
+                        return true;
+                    }
+                    if auth_zone
+                        .virtual_resources
+                        .contains(&non_fungible_address.resource_address())
                     {
                         return true;
                     }
                 }
 
                 if auth_zone
-                    .virtual_non_fungibles
-                    .contains(&non_fungible_address)
+                    .proofs
+                    .iter()
+                    .any(|p| Self::proof_matches(resource_rule, p))
                 {
                     return true;
                 }
-                if auth_zone
-                    .virtual_resources
-                    .contains(&non_fungible_address.resource_address())
-                {
-                    return true;
-                }
-            }
 
-            if auth_zone
-                .proofs
-                .iter()
-                .any(|p| Self::proof_matches(resource_rule, p))
-            {
-                return true;
-            }
-
-            false
-        })
+                false
+            },
+        )
     }
 
     pub fn verify_proof_rule(
@@ -250,8 +255,13 @@ impl AuthZoneStackSubstate {
         Ok(())
     }
 
-    pub fn new_frame(&mut self, virtual_non_fungibles_non_extending: BTreeSet<NonFungibleAddress>, barrier: bool) {
-        let auth_zone = AuthZone::new_with_virtual_non_fungibles(virtual_non_fungibles_non_extending, barrier);
+    pub fn new_frame(
+        &mut self,
+        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleAddress>,
+        barrier: bool,
+    ) {
+        let auth_zone =
+            AuthZone::new_with_virtual_non_fungibles(virtual_non_fungibles_non_extending, barrier);
         self.auth_zones.push(auth_zone);
     }
 
