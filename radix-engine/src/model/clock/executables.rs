@@ -10,8 +10,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ClockFunction, ClockMethod, ClockOffset, GlobalAddress, NativeFunction, NativeMethod, RENodeId,
-    SubstateOffset,
+    ClockFn, ClockOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
@@ -34,7 +33,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCreateInvocation {
     where
         Self: Sized,
     {
-        let actor = ResolvedActor::function(NativeFunction::Clock(ClockFunction::Create));
+        let actor = ResolvedActor::function(NativeFn::Clock(ClockFn::Create));
         let call_frame_update = CallFrameUpdate::empty();
 
         Ok((actor, call_frame_update, self))
@@ -52,21 +51,15 @@ impl Executor for ClockCreateInvocation {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
-                ClockMethod::SetCurrentTime,
-            ))),
+            AccessRuleKey::Native(NativeFn::Clock(ClockFn::SetCurrentTime)),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
-                ClockMethod::GetCurrentTime,
-            ))),
+            AccessRuleKey::Native(NativeFn::Clock(ClockFn::GetCurrentTime)),
             rule!(allow_all),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Clock(
-                ClockMethod::CompareCurrentTime,
-            ))),
+            AccessRuleKey::Native(NativeFn::Clock(ClockFn::CompareCurrentTime)),
             rule!(allow_all),
         );
 
@@ -117,10 +110,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = ResolvedActor::method(
-            NativeMethod::Clock(ClockMethod::SetCurrentTime),
-            resolved_receiver,
-        );
+        let actor =
+            ResolvedActor::method(NativeFn::Clock(ClockFn::SetCurrentTime), resolved_receiver);
         let executor =
             ClockSetCurrentTimeExecutable(resolved_receiver.receiver, self.current_time_ms);
 
@@ -168,10 +159,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
-        let actor = ResolvedActor::method(
-            NativeMethod::Clock(ClockMethod::GetCurrentTime),
-            resolved_receiver,
-        );
+        let actor =
+            ResolvedActor::method(NativeFn::Clock(ClockFn::GetCurrentTime), resolved_receiver);
         let executor = ClockGetCurrentTimeExecutable(resolved_receiver.receiver, self.precision);
 
         Ok((actor, call_frame_update, executor))
@@ -225,7 +214,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocatio
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::Clock(ClockMethod::CompareCurrentTime),
+            NativeFn::Clock(ClockFn::CompareCurrentTime),
             resolved_receiver,
         );
         let executor = ClockCompareCurrentTimeExecutable {
@@ -268,15 +257,11 @@ impl Executor for ClockCompareCurrentTimeExecutable {
 }
 
 impl Clock {
-    pub fn function_auth(func: &ClockFunction) -> Vec<MethodAuthorization> {
-        match func {
-            ClockFunction::Create => {
-                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        AuthAddresses::system_role(),
-                    )),
-                ))]
-            }
-        }
+    pub fn create_auth() -> Vec<MethodAuthorization> {
+        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                AuthAddresses::system_role(),
+            )),
+        ))]
     }
 }

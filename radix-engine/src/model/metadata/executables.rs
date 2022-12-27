@@ -5,7 +5,7 @@ use crate::engine::{
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
-use radix_engine_interface::api::types::{NativeMethod, RENodeId, SubstateOffset};
+use radix_engine_interface::api::types::{NativeFn, RENodeId, SubstateOffset};
 use radix_engine_interface::model::*;
 
 impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
@@ -30,10 +30,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
         }
 
         self.receiver = resolved_receiver.receiver;
-        let actor = ResolvedActor::method(
-            NativeMethod::Metadata(MetadataMethod::Set),
-            resolved_receiver,
-        );
+        let actor = ResolvedActor::method(NativeFn::Metadata(MetadataFn::Set), resolved_receiver);
 
         Ok((actor, call_frame_update, self))
     }
@@ -79,10 +76,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
         }
 
         self.receiver = resolved_receiver.receiver;
-        let actor = ResolvedActor::method(
-            NativeMethod::Metadata(MetadataMethod::Get),
-            resolved_receiver,
-        );
+        let actor = ResolvedActor::method(NativeFn::Metadata(MetadataFn::Get), resolved_receiver);
 
         Ok((actor, call_frame_update, self))
     }

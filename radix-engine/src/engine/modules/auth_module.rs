@@ -3,8 +3,8 @@ use crate::model::*;
 use crate::types::*;
 use radix_engine_interface::api::api::ActorApi;
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod,
-    PackageOffset, RENodeId, SubstateOffset, VaultOffset,
+    AuthZoneStackOffset, ComponentOffset, GlobalAddress, PackageOffset, RENodeId, SubstateOffset,
+    VaultOffset,
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
@@ -36,7 +36,7 @@ impl AuthModule {
 
         if !matches!(
             actor.identifier,
-            FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..)))
+            FnIdentifier::Native(NativeFn::AuthZoneStack(..))
         ) {
             let handle = system_api.lock_substate(
                 auth_zone_id,
@@ -77,41 +77,36 @@ impl AuthModule {
     {
         if matches!(
             actor.identifier,
-            FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..)))
+            FnIdentifier::Native(NativeFn::AuthZoneStack(..))
         ) {
             return Ok(());
         }
 
         let method_auths = match &actor {
             ResolvedActor {
-                identifier: FnIdentifier::Native(NativeFn::Function(native_function)),
-                ..
+                identifier: FnIdentifier::Native(native_function),
+                receiver: None,
             } => match native_function {
-                NativeFunction::EpochManager(epoch_manager_func) => {
-                    EpochManager::function_auth(epoch_manager_func)
-                }
-                NativeFunction::Clock(clock_func) => Clock::function_auth(clock_func),
+                NativeFn::EpochManager(EpochManagerFn::Create) => EpochManager::create_auth(),
+                NativeFn::Clock(ClockFn::Create) => Clock::create_auth(),
                 _ => vec![],
             },
             ResolvedActor {
-                identifier: FnIdentifier::Native(NativeFn::Method(method)),
+                identifier: FnIdentifier::Native(native_fn),
                 receiver: Some(resolved_receiver),
             } => {
-                match (method, resolved_receiver) {
+                match (native_fn, resolved_receiver) {
                     // SetAccessRule auth is done manually within the method
-                    (
-                        NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetMethodAccessRule),
-                        ..,
-                    ) => {
+                    (NativeFn::AccessRulesChain(AccessRulesChainFn::SetMethodAccessRule), ..) => {
                         vec![]
                     }
                     (method, ..)
-                        if matches!(method, NativeMethod::Metadata(..))
-                            || matches!(method, NativeMethod::EpochManager(..))
-                            || matches!(method, NativeMethod::ResourceManager(..))
-                            || matches!(method, NativeMethod::Package(..))
-                            || matches!(method, NativeMethod::Clock(..))
-                            || matches!(method, NativeMethod::Component(..)) =>
+                        if matches!(method, NativeFn::Metadata(..))
+                            || matches!(method, NativeFn::EpochManager(..))
+                            || matches!(method, NativeFn::ResourceManager(..))
+                            || matches!(method, NativeFn::Package(..))
+                            || matches!(method, NativeFn::Clock(..))
+                            || matches!(method, NativeFn::Component(..)) =>
                     {
                         let offset = SubstateOffset::AccessRulesChain(
                             AccessRulesChainOffset::AccessRulesChain,
@@ -123,12 +118,12 @@ impl AuthModule {
                         )?;
                         let substate_ref = system_api.get_ref(handle)?;
                         let substate = substate_ref.access_rules_chain();
-                        let auth = substate.native_fn_authorization(NativeFn::Method(*method));
+                        let auth = substate.native_fn_authorization(*method);
                         system_api.drop_lock(handle)?;
                         auth
                     }
                     (
-                        NativeMethod::Vault(ref vault_fn),
+                        NativeFn::Vault(ref vault_fn),
                         ResolvedReceiver {
                             receiver: RENodeId::Vault(vault_id),
                             ..
@@ -161,13 +156,13 @@ impl AuthModule {
 
                         // TODO: Revisit what the correct abstraction is for visibility in the auth module
                         let auth = match visibility {
-                            RENodeVisibilityOrigin::Normal => substate.native_fn_authorization(
-                                NativeFn::Method(NativeMethod::Vault(vault_fn.clone())),
-                            ),
+                            RENodeVisibilityOrigin::Normal => {
+                                substate.native_fn_authorization(NativeFn::Vault(vault_fn.clone()))
+                            }
                             RENodeVisibilityOrigin::DirectAccess => match vault_fn {
                                 // TODO: Do we want to allow recaller to be able to withdraw from
                                 // TODO: any visible vault?
-                                VaultMethod::Recall | VaultMethod::RecallNonFungibles => {
+                                VaultFn::Recall | VaultFn::RecallNonFungibles => {
                                     let access_rule =
                                         substate.access_rules_chain[0].get_group("recall");
                                     let authorization = convert(
@@ -288,7 +283,7 @@ impl AuthModule {
     {
         if matches!(
             api.fn_identifier()?,
-            FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..))),
+            FnIdentifier::Native(NativeFn::AuthZoneStack(..)),
         ) {
             return Ok(());
         }
