@@ -20,7 +20,7 @@ impl CostingModule {
     }
 }
 
-impl<R: FeeReserve> Module<R> for CostingModule {
+impl<R: FeeReserve> BaseModule<R> for CostingModule {
     fn pre_sys_call(
         &mut self,
         _call_frame: &CallFrame,

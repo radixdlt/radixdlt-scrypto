@@ -1,4 +1,5 @@
 use radix_engine_interface::api::types::{BucketId, ProofId};
+use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::collections::*;
 
@@ -23,8 +24,10 @@ pub struct IdValidator {
 
 impl IdValidator {
     pub fn new() -> Self {
+        let mocked_hash = hash([0u8; 1]);
+
         Self {
-            id_allocator: IdAllocator::new(IdSpace::Transaction),
+            id_allocator: IdAllocator::new(IdSpace::Transaction, mocked_hash),
             bucket_ids: HashMap::new(),
             proof_ids: HashMap::new(),
         }

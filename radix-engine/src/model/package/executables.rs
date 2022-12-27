@@ -8,6 +8,7 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
+use radix_engine_interface::api::api::BlobApi;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
 use radix_engine_interface::model::*;
@@ -56,10 +57,10 @@ impl Executor for PackagePublishInvocation {
 
     fn execute<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + BlobApi<RuntimeError>,
     {
-        let code = api.read_blob(&self.code.0)?.to_vec();
-        let blob = api.read_blob(&self.abi.0)?;
+        let code = api.get_blob(&self.code.0)?.to_vec();
+        let blob = api.get_blob(&self.abi.0)?;
         let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
