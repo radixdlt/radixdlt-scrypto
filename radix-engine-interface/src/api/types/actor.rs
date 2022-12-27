@@ -10,8 +10,7 @@ use crate::Describe;
 #[scrypto(TypeId, Encode, Decode)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
-    NativeFunction(NativeFunction),
-    NativeMethod(NativeMethod),
+    Native(NativeFn),
 }
 
 impl FnIdentifier {
@@ -19,9 +18,9 @@ impl FnIdentifier {
         matches!(
             self,
             FnIdentifier::Scrypto(..)
-                | FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(
+                | FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(
                     TransactionProcessorFunction::Run
-                ))
+                )))
         )
     }
 }
@@ -80,7 +79,7 @@ pub enum NativeMethod {
 
 impl Into<FnIdentifier> for NativeMethod {
     fn into(self) -> FnIdentifier {
-        FnIdentifier::NativeMethod(self)
+        FnIdentifier::Native(NativeFn::Method(self))
     }
 }
 
@@ -98,7 +97,7 @@ pub enum NativeFunction {
 
 impl Into<FnIdentifier> for NativeFunction {
     fn into(self) -> FnIdentifier {
-        FnIdentifier::NativeFunction(self)
+        FnIdentifier::Native(NativeFn::Function(self))
     }
 }
 
