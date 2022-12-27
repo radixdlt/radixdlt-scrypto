@@ -22,52 +22,6 @@ pub enum AuthError {
 pub struct AuthModule;
 
 impl AuthModule {
-    pub fn on_call_frame_enter<Y: SystemApi>(
-        call_frame_update: &mut CallFrameUpdate,
-        actor: &ResolvedActor,
-        system_api: &mut Y,
-    ) -> Result<(), RuntimeError> {
-        let refed = system_api.get_visible_node_ids()?;
-        let auth_zone_id = refed
-            .into_iter()
-            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
-            .unwrap();
-        call_frame_update.node_refs_to_copy.insert(auth_zone_id);
-
-        if !matches!(
-            actor.identifier,
-            FnIdentifier::Native(NativeFn::AuthZoneStack(..))
-        ) {
-            let handle = system_api.lock_substate(
-                auth_zone_id,
-                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
-                LockFlags::MUTABLE,
-            )?;
-            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
-
-            // New auth zone frame managed by the AuthModule
-            let is_barrier = Self::is_barrier(actor);
-            auth_zone_stack.new_frame(is_barrier);
-            system_api.drop_lock(handle)?;
-        }
-
-        Ok(())
-    }
-
-    fn is_barrier(actor: &ResolvedActor) -> bool {
-        matches!(
-            actor,
-            ResolvedActor {
-                identifier: FnIdentifier::Scrypto(..),
-                receiver: Some(ResolvedReceiver {
-                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
-                    ..
-                })
-            }
-        )
-    }
-
     pub fn on_before_frame_start<Y>(
         actor: &ResolvedActor,
         system_api: &mut Y,
@@ -275,6 +229,59 @@ impl AuthModule {
         system_api.drop_lock(handle)?;
 
         Ok(())
+    }
+
+    pub fn on_call_frame_enter<Y: SystemApi>(
+        call_frame_update: &mut CallFrameUpdate,
+        actor: &ResolvedActor,
+        system_api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let refed = system_api.get_visible_node_ids()?;
+        let auth_zone_id = refed
+            .into_iter()
+            .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
+            .unwrap();
+        call_frame_update.node_refs_to_copy.insert(auth_zone_id);
+
+        if !matches!(
+            actor.identifier,
+            FnIdentifier::Native(NativeFn::AuthZoneStack(..))
+        ) {
+            let handle = system_api.lock_substate(
+                auth_zone_id,
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+                LockFlags::MUTABLE,
+            )?;
+            let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+            let auth_zone_stack = substate_ref_mut.auth_zone_stack();
+
+            // New auth zone frame managed by the AuthModule
+            let is_barrier = Self::is_barrier(actor);
+
+            // Add Package Actor Auth
+            let id = scrypto_encode(&actor.identifier.package_identifier()).unwrap();
+            let address = NonFungibleAddress::new(PACKAGE_TOKEN, NonFungibleId::Bytes(id));
+            let mut virtual_non_fungibles = BTreeSet::new();
+            virtual_non_fungibles.insert(address);
+
+            auth_zone_stack.new_frame(virtual_non_fungibles, is_barrier);
+            system_api.drop_lock(handle)?;
+        }
+
+        Ok(())
+    }
+
+    fn is_barrier(actor: &ResolvedActor) -> bool {
+        matches!(
+            actor,
+            ResolvedActor {
+                identifier: FnIdentifier::Scrypto(..),
+                receiver: Some(ResolvedReceiver {
+                    derefed_from: Some((RENodeId::Global(GlobalAddress::Component(..)), _)),
+                    ..
+                })
+            }
+        )
     }
 
     pub fn on_call_frame_exit<Y>(api: &mut Y) -> Result<(), RuntimeError>
