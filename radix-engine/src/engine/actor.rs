@@ -56,7 +56,7 @@ pub enum ExecutionMode {
     Globalize,
     MoveUpstream,
     Deref,
-    ScryptoInterpreter,
+    Resolver,
     NodeMoveModule,
     AuthModule,
     EntityModule,

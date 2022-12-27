@@ -110,7 +110,7 @@ pub enum SysCallTraceOrigin {
     Opaque,
 }
 
-impl<R: FeeReserve> Module<R> for ExecutionTraceModule {
+impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
     fn pre_sys_call(
         &mut self,
         call_frame: &CallFrame,
