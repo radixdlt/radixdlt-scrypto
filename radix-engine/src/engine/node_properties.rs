@@ -145,7 +145,7 @@ impl VisibilityProperties {
                 }
                 _ => false,
             },
-            (ExecutionMode::ScryptoInterpreter, offset) => match offset {
+            (ExecutionMode::Resolver, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Info) => flags == LockFlags::read_only(),

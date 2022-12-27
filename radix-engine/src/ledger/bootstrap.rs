@@ -35,8 +35,9 @@ pub struct GenesisReceipt {
 }
 
 pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTransaction {
+    let mocked_hash = hash([0u8; 1]);
     let mut blobs = Vec::new();
-    let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
+    let mut id_allocator = IdAllocator::new(IdSpace::Transaction, mocked_hash);
     let create_faucet_package = {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
