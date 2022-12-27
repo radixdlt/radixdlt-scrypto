@@ -8,6 +8,27 @@ use crate::Describe;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
+pub enum PackageIdentifier {
+    Scrypto(PackageAddress),
+    Native(NativePackage),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum NativePackage {
+    Auth,
+    Component,
+    Package,
+    Metadata,
+    EpochManager,
+    Resource,
+    Clock,
+    TransactionRuntime,
+    TransactionProcessor,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
     Native(NativeFn),
@@ -26,6 +47,13 @@ impl FnIdentifier {
             FnIdentifier::Scrypto(..)
                 | FnIdentifier::Native(NativeFn::TransactionProcessor(TransactionProcessorFn::Run))
         )
+    }
+
+    pub fn package_identifier(&self) -> PackageIdentifier {
+        match self {
+            FnIdentifier::Scrypto(identifier) => PackageIdentifier::Scrypto(identifier.package_address),
+            FnIdentifier::Native(identifier) => PackageIdentifier::Native(identifier.package()),
+        }
     }
 }
 
@@ -70,8 +98,30 @@ pub enum NativeFn {
     Proof(ProofFn),
     Worktop(WorktopFn),
     Clock(ClockFn),
-    TransactionHash(TransactionHashFn),
+    TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
+}
+
+impl NativeFn {
+    pub fn package(&self) -> NativePackage {
+        match self {
+            NativeFn::AccessRulesChain(..)
+                | NativeFn::AuthZoneStack(..) => NativePackage::Auth,
+            NativeFn::Component(..) => NativePackage::Component,
+            NativeFn::Package(..) => NativePackage::Package,
+            NativeFn::Metadata(..) => NativePackage::Metadata,
+            NativeFn::EpochManager(..) => NativePackage::EpochManager,
+            NativeFn::ResourceManager(..)
+            | NativeFn::Bucket(..)
+            | NativeFn::Vault(..)
+            | NativeFn::Proof(..)
+            | NativeFn::Worktop(..)
+            => NativePackage::Resource,
+            NativeFn::Clock(..) => NativePackage::Clock,
+            NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
+            NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
+        }
+    }
 }
 
 #[derive(
@@ -405,7 +455,7 @@ pub enum ClockFn {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum TransactionHashFn {
+pub enum TransactionRuntimeFn {
     Get,
     GenerateUuid,
 }

@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::{
     AccessRulesChainFn, AuthZoneStackFn, BucketFn, ClockFn, ComponentFn, EpochManagerFn,
-    MetadataFn, NativeFn, PackageFn, ProofFn, ResourceManagerFn, TransactionHashFn,
+    MetadataFn, NativeFn, PackageFn, ProofFn, ResourceManagerFn, TransactionRuntimeFn,
     TransactionProcessorFn, VaultFn, WorktopFn,
 };
 
@@ -209,9 +209,9 @@ impl FeeTable {
                     VaultFn::RecallNonFungibles => self.fixed_low,
                 }
             }
-            NativeFn::TransactionHash(ident) => match ident {
-                TransactionHashFn::Get => self.fixed_low,
-                TransactionHashFn::GenerateUuid => self.fixed_low,
+            NativeFn::TransactionRuntime(ident) => match ident {
+                TransactionRuntimeFn::Get => self.fixed_low,
+                TransactionRuntimeFn::GenerateUuid => self.fixed_low,
             },
             NativeFn::TransactionProcessor(transaction_processor_fn) => {
                 match transaction_processor_fn {
