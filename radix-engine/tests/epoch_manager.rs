@@ -61,7 +61,7 @@ fn next_round_without_supervisor_auth_fails() {
 fn next_round_with_validator_auth_succeeds() {
     // Arrange
     let rounds_per_epoch = 5u64;
-    let genesis = create_genesis(HashSet::new(), 1u64, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), 1u64, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
 
     // Act
@@ -93,7 +93,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
 
     // Act
@@ -130,7 +130,7 @@ fn register_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (pub_key, _, _) = test_runner.new_allocated_account();
 
@@ -153,7 +153,7 @@ fn register_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (pub_key, _, _) = test_runner.new_allocated_account();
 
@@ -178,7 +178,7 @@ fn unregister_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (pub_key, _, _) = test_runner.new_allocated_account();
 
@@ -201,7 +201,7 @@ fn unregister_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (pub_key, _, _) = test_runner.new_allocated_account();
 
@@ -226,7 +226,7 @@ fn registered_validator_becomes_part_of_validator_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (pub_key, _, _) = test_runner.new_allocated_account();
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
@@ -273,7 +273,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let mut validator_set = HashSet::new();
+    let mut validator_set = BTreeSet::new();
     validator_set.insert(pub_key);
     let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
@@ -322,7 +322,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let instructions = vec![Instruction::System(NativeFnInvocation::Function(
         NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
             EpochManagerCreateInvocation {
-                validator_set: HashSet::new(),
+                validator_set: BTreeSet::new(),
                 initial_epoch: 1u64,
                 rounds_per_epoch: 1u64,
             },
@@ -353,7 +353,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     let instructions = vec![Instruction::System(NativeFnInvocation::Function(
         NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
             EpochManagerCreateInvocation {
-                validator_set: HashSet::new(),
+                validator_set: BTreeSet::new(),
                 initial_epoch: 1u64,
                 rounds_per_epoch: 1u64,
             },

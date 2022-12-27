@@ -70,6 +70,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
             RENodeId::EpochManager(id) => id,
+            RENodeId::Validator(id) => id,
             RENodeId::Clock(id) => id,
             _ => panic!("Not a stored id"),
         }

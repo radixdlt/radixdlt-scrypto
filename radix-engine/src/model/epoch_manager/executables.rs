@@ -106,6 +106,13 @@ impl Executor for EpochManagerCreateInvocation {
             rule!(allow_all),
         );
 
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
+                EpochManagerMethod::CreateValidator,
+            ))),
+            rule!(allow_all),
+        );
+
         api.create_node(
             underlying_node_id,
             RENode::EpochManager(

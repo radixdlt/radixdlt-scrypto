@@ -915,6 +915,10 @@ where
                 RENode::Global(GlobalAddressSubstate::Clock(..)),
             ) => {}
             (
+                RENodeId::Global(GlobalAddress::System(..)),
+                RENode::Global(GlobalAddressSubstate::Validator(..)),
+            ) => {}
+            (
                 RENodeId::Global(address),
                 RENode::Global(GlobalAddressSubstate::Component(component)),
             ) => {
@@ -970,6 +974,7 @@ where
             (RENodeId::NonFungibleStore(..), RENode::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENode::ResourceManager(..)) => {}
             (RENodeId::EpochManager(..), RENode::EpochManager(..)) => {}
+            (RENodeId::Validator(..), RENode::Validator(..)) => {}
             (RENodeId::Clock(..), RENode::Clock(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }

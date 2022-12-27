@@ -1,5 +1,5 @@
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use sbor::rust::collections::HashSet;
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
@@ -11,7 +11,7 @@ use crate::wasm::*;
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
-    pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    pub validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
 }

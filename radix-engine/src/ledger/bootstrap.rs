@@ -14,10 +14,10 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use radix_engine_interface::wasm::{
-    ClockFunctionInvocation, EpochManagerFunctionInvocation, NativeFnInvocation,
-    NativeFunctionInvocation,
+    ClockFunctionInvocation, EpochManagerFunctionInvocation, EpochManagerMethodInvocation,
+    NativeFnInvocation, NativeFunctionInvocation, NativeMethodInvocation,
 };
-use transaction::model::{BasicInstruction, SystemTransaction};
+use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
 
 const XRD_SYMBOL: &str = "XRD";
@@ -39,46 +39,45 @@ pub struct GenesisReceipt {
 }
 
 pub fn create_genesis(
-    validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
 ) -> SystemTransaction {
     let mut blobs = Vec::new();
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
-    let create_faucet_package = {
+    let mut instructions = Vec::new();
+
+    {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
-        let inst = BasicInstruction::PublishPackage {
+        instructions.push(Instruction::Basic(BasicInstruction::PublishPackage {
             code: Blob(hash(&faucet_code)),
             abi: Blob(hash(&faucet_abi)),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-        };
+        }));
 
         blobs.push(faucet_code);
         blobs.push(faucet_abi);
+    }
 
-        inst
-    };
-    let create_account_package = {
+    {
         let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        let inst = BasicInstruction::PublishPackage {
+        instructions.push(Instruction::Basic(BasicInstruction::PublishPackage {
             code: Blob(hash(&account_code)),
             abi: Blob(hash(&account_abi)),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-        };
+        }));
 
         blobs.push(account_code);
         blobs.push(account_abi);
+    }
 
-        inst
-    };
-
-    let create_ecdsa_secp256k1_token = {
+    {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
@@ -87,16 +86,18 @@ pub fn create_genesis(
         );
 
         // TODO: Create token at a specific address
-        BasicInstruction::CreateNonFungibleResource {
-            id_type: NonFungibleIdType::Bytes,
-            metadata,
-            access_rules,
-            initial_supply: None,
-        }
-    };
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                initial_supply: None,
+            },
+        ));
+    }
 
     // TODO: Perhaps combine with ecdsa token?
-    let create_system_token = {
+    {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
@@ -106,15 +107,17 @@ pub fn create_genesis(
         let initial_supply = None;
 
         // TODO: Create token at a specific address
-        BasicInstruction::CreateNonFungibleResource {
-            id_type: NonFungibleIdType::Bytes,
-            metadata,
-            access_rules,
-            initial_supply,
-        }
-    };
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    }
 
-    let create_xrd_token = {
+    {
         let mut metadata = BTreeMap::new();
         metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
         metadata.insert("name".to_owned(), XRD_NAME.to_owned());
@@ -128,42 +131,52 @@ pub fn create_genesis(
         );
 
         let initial_supply: Option<Decimal> = Some(XRD_MAX_SUPPLY.into());
-        BasicInstruction::CreateFungibleResource {
-            divisibility: 18,
-            metadata,
-            access_rules,
-            initial_supply,
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateFungibleResource {
+                divisibility: 18,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    }
+
+    instructions.push(
+        BasicInstruction::TakeFromWorktop {
+            resource_address: RADIX_TOKEN,
         }
-    };
+        .into(),
+    );
 
-    let take_xrd = BasicInstruction::TakeFromWorktop {
-        resource_address: RADIX_TOKEN,
-    };
-
-    let create_xrd_faucet = {
+    {
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
-        BasicInstruction::CallFunction {
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: FAUCET_PACKAGE,
             blueprint_name: FAUCET_BLUEPRINT.to_string(),
             function_name: "new".to_string(),
             args: args!(bucket),
-        }
+        }));
     };
 
-    let create_epoch_manager =
+    instructions.push(
         NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(
             EpochManagerFunctionInvocation::Create(EpochManagerCreateInvocation {
-                validator_set,
+                validator_set: validator_set.clone(),
                 initial_epoch,
                 rounds_per_epoch,
             }),
-        ));
+        ))
+        .into(),
+    );
 
-    let create_clock = NativeFnInvocation::Function(NativeFunctionInvocation::Clock(
-        ClockFunctionInvocation::Create(ClockCreateInvocation {}),
-    ));
+    instructions.push(
+        NativeFnInvocation::Function(NativeFunctionInvocation::Clock(
+            ClockFunctionInvocation::Create(ClockCreateInvocation {}),
+        ))
+        .into(),
+    );
 
-    let create_eddsa_ed25519_token = {
+    {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
         access_rules.insert(
@@ -173,27 +186,29 @@ pub fn create_genesis(
         let initial_supply = None;
 
         // TODO: Create token at a specific address
-        BasicInstruction::CreateNonFungibleResource {
-            id_type: NonFungibleIdType::Bytes,
-            metadata,
-            access_rules,
-            initial_supply,
-        }
-    };
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    }
+
+    for validator in validator_set {
+        instructions.push(Instruction::System(NativeFnInvocation::Method(
+            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::CreateValidator(
+                EpochManagerCreateValidatorInvocation {
+                    receiver: EPOCH_MANAGER,
+                    validator,
+                },
+            )),
+        )));
+    }
 
     SystemTransaction {
-        instructions: vec![
-            create_faucet_package.into(),
-            create_account_package.into(),
-            create_ecdsa_secp256k1_token.into(),
-            create_system_token.into(),
-            create_xrd_token.into(),
-            take_xrd.into(),
-            create_xrd_faucet.into(),
-            create_epoch_manager.into(),
-            create_clock.into(),
-            create_eddsa_ed25519_token.into(),
-        ],
+        instructions,
         blobs,
         nonce: 0,
     }
@@ -234,7 +249,7 @@ where
     bootstrap_with_validator_set(
         substate_store,
         scrypto_interpreter,
-        HashSet::new(),
+        BTreeSet::new(),
         1u64,
         1u64,
     )
@@ -243,7 +258,7 @@ where
 pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
 ) -> Option<TransactionReceipt>
@@ -288,7 +303,7 @@ mod tests {
     fn bootstrap_receipt_should_match_constants() {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
-        let mut initial_validator_set = HashSet::new();
+        let mut initial_validator_set = BTreeSet::new();
         initial_validator_set.insert(EcdsaSecp256k1PublicKey([0; 33]));
         let genesis_transaction = create_genesis(initial_validator_set.clone(), 1u64, 1u64);
 
