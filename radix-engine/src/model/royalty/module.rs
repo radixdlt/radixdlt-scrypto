@@ -34,7 +34,7 @@ impl Default for RoyaltyModule {
     }
 }
 
-impl<R: FeeReserve> Module<R> for RoyaltyModule {
+impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
     fn pre_execute_invocation(
         &mut self,
         actor: &ResolvedActor,

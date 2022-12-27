@@ -12,7 +12,7 @@ macro_rules! log {
 }
 
 #[allow(unused_variables)] // for no_std
-impl<R: FeeReserve> Module<R> for LoggerModule {
+impl<R: FeeReserve> BaseModule<R> for LoggerModule {
     fn pre_sys_call(
         &mut self,
         call_frame: &CallFrame,

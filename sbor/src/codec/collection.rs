@@ -47,7 +47,8 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X> + Ord + Hash> E
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         encoder.write_type_id(T::type_id())?;
         encoder.write_size(self.len())?;
-        for v in self {
+        let set: BTreeSet<&T> = self.iter().collect();
+        for v in set {
             encoder.encode_deeper_body(v)?;
         }
         Ok(())
