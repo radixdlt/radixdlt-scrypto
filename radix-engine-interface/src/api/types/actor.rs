@@ -51,7 +51,9 @@ impl FnIdentifier {
 
     pub fn package_identifier(&self) -> PackageIdentifier {
         match self {
-            FnIdentifier::Scrypto(identifier) => PackageIdentifier::Scrypto(identifier.package_address),
+            FnIdentifier::Scrypto(identifier) => {
+                PackageIdentifier::Scrypto(identifier.package_address)
+            }
             FnIdentifier::Native(identifier) => PackageIdentifier::Native(identifier.package()),
         }
     }
@@ -105,8 +107,7 @@ pub enum NativeFn {
 impl NativeFn {
     pub fn package(&self) -> NativePackage {
         match self {
-            NativeFn::AccessRulesChain(..)
-                | NativeFn::AuthZoneStack(..) => NativePackage::Auth,
+            NativeFn::AccessRulesChain(..) | NativeFn::AuthZoneStack(..) => NativePackage::Auth,
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
@@ -115,8 +116,7 @@ impl NativeFn {
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
             | NativeFn::Proof(..)
-            | NativeFn::Worktop(..)
-            => NativePackage::Resource,
+            | NativeFn::Worktop(..) => NativePackage::Resource,
             NativeFn::Clock(..) => NativePackage::Clock,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,

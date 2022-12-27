@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{
     AccessRulesChainFn, AuthZoneStackFn, BucketFn, ClockFn, ComponentFn, EpochManagerFn,
-    MetadataFn, NativeFn, PackageFn, ProofFn, ResourceManagerFn, TransactionRuntimeFn,
-    TransactionProcessorFn, VaultFn, WorktopFn,
+    MetadataFn, NativeFn, PackageFn, ProofFn, ResourceManagerFn, TransactionProcessorFn,
+    TransactionRuntimeFn, VaultFn, WorktopFn,
 };
 
 pub enum SystemApiCostingEntry {
