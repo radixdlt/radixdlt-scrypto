@@ -3,6 +3,7 @@ use sbor::rust::fmt::Debug;
 
 use crate::api::api::*;
 use crate::api::types::TransactionRuntimeId;
+use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 use sbor::*;

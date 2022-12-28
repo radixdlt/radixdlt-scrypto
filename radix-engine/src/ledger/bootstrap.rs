@@ -13,7 +13,6 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
-use radix_engine_interface::wasm::{ClockInvocation, EpochManagerInvocation, NativeInvocation};
 use transaction::model::{BasicInstruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
 

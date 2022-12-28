@@ -3,7 +3,6 @@ use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
-use radix_engine_interface::wasm::NativeInvocation;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;

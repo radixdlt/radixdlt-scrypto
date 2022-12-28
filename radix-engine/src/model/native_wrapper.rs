@@ -1,7 +1,6 @@
 use crate::model::NativeOutput;
 use crate::types::*;
 use radix_engine_interface::api::api::InvokableModel;
-use radix_engine_interface::wasm::*;
 
 pub fn invoke_native_fn<Y, E>(
     native_invocation: NativeInvocation,

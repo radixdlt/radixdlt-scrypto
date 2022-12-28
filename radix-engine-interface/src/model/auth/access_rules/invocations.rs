@@ -4,7 +4,6 @@ use sbor::*;
 
 use crate::api::{api::*, types::*};
 use crate::scrypto;
-use crate::wasm::*;
 
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]

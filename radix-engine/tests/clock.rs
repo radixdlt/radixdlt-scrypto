@@ -3,7 +3,6 @@ use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::wasm::{ClockInvocation, NativeInvocation};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Instruction, SystemTransaction};

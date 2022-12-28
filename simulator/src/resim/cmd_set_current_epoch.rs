@@ -1,7 +1,6 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::wasm::{EpochManagerInvocation, NativeInvocation};
 
 use crate::resim::*;
 

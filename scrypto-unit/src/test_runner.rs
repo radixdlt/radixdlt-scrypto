@@ -23,10 +23,10 @@ use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, AccessRules, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, EpochManagerInvocation, FromPublicKey, NativeInvocation,
+    NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::wasm::{EpochManagerInvocation, NativeInvocation};
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;

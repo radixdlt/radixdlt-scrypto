@@ -1,3 +1,4 @@
+use radix_engine_interface::model::*;
 use radix_engine_interface::wasm::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
@@ -12,7 +13,7 @@ blueprint! {
 
         pub fn set_epoch(epoch_manager: SystemAddress, epoch: u64) {
             let input = RadixEngineInput::Invoke(SerializedInvocation::Native(
-                NativeFnInvocation::EpochManager(EpochManagerMethodInvocation::SetEpoch(
+                NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
                     EpochManagerSetEpochInvocation {
                         receiver: epoch_manager,
                         epoch,

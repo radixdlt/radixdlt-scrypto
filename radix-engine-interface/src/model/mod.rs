@@ -7,6 +7,7 @@ mod metadata;
 mod package;
 mod resource;
 mod scrypto;
+mod serialize;
 mod system;
 mod transaction_hash;
 
@@ -19,5 +20,6 @@ pub use metadata::*;
 pub use package::*;
 pub use resource::*;
 pub use scrypto::*;
+pub use serialize::*;
 pub use system::*;
 pub use transaction_hash::*;
