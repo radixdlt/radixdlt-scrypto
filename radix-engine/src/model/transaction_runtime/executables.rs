@@ -22,7 +22,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGetHashInvocat
         Self: Sized,
     {
         let actor = ResolvedActor::method(
-            NativeMethod::TransactionHash(TransactionHashMethod::Get),
+            NativeFn::TransactionRuntime(TransactionRuntimeFn::Get),
             ResolvedReceiver::new(RENodeId::TransactionRuntime(self.receiver)),
         );
         let call_frame_update = CallFrameUpdate::empty();
@@ -62,7 +62,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGenerateUuidIn
         Self: Sized,
     {
         let actor = ResolvedActor::method(
-            NativeMethod::TransactionHash(TransactionHashMethod::GenerateUuid),
+            NativeFn::TransactionRuntime(TransactionRuntimeFn::GenerateUuid),
             ResolvedReceiver::new(RENodeId::TransactionRuntime(self.receiver)),
         );
 

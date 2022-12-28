@@ -36,6 +36,7 @@ pub struct GenesisReceipt {
     pub epoch_manager: SystemAddress,
     pub clock: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
+    pub package_token: ResourceAddress,
 }
 
 pub fn create_genesis(
@@ -177,13 +178,29 @@ pub fn create_genesis(
         .into(),
     );
 
+    // EDDSA ED25519 Token
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let initial_supply = None;
+
+        // TODO: Create token at a specific address
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    };
+
+    // Package Token
+    {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let initial_supply = None;
 
         // TODO: Create token at a specific address
@@ -225,6 +242,7 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     let epoch_manager: SystemAddress = receipt.output(7);
     let clock: SystemAddress = receipt.output(8);
     let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(9);
+    let (package_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(10);
 
     GenesisReceipt {
         faucet_package,
@@ -236,6 +254,7 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
         epoch_manager,
         clock,
         eddsa_ed25519_token,
+        package_token,
     }
 }
 
@@ -335,5 +354,6 @@ mod tests {
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
         assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
+        assert_eq!(genesis_receipt.package_token, PACKAGE_TOKEN);
     }
 }
