@@ -2,7 +2,7 @@ use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::wasm::{
-    EpochManagerMethodInvocation, NativeFnInvocation, NativeMethodInvocation,
+    EpochManagerInvocation, NativeFnInvocation, NativeMethodInvocation,
 };
 
 use crate::resim::*;
@@ -21,7 +21,7 @@ pub struct SetCurrentEpoch {
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let instructions = vec![Instruction::System(NativeFnInvocation::Method(
-            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::SetEpoch(
+            NativeMethodInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
                 EpochManagerSetEpochInvocation {
                     receiver: EPOCH_MANAGER,
                     epoch: self.epoch,

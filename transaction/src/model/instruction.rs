@@ -212,28 +212,6 @@ pub enum BasicInstruction {
     },
 }
 
-/*
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum SystemInstruction {
-    /// Calls a native function.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallNativeFunction {
-        function_ident: NativeFunctionIdent,
-        args: Vec<u8>,
-    },
-
-    /// Calls a native method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallNativeMethod {
-        method_ident: NativeMethodIdent,
-        args: Vec<u8>,
-    },
-}
- */
-
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum Instruction {

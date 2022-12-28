@@ -42,7 +42,7 @@ impl SerializableInvocation for VaultPutInvocation {
 
 impl Into<SerializedInvocation> for VaultPutInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(VaultMethodInvocation::Put(
+        NativeFnInvocation::Method(NativeMethodInvocation::Vault(VaultInvocation::Put(
             self,
         )))
         .into()
@@ -66,7 +66,7 @@ impl SerializableInvocation for VaultTakeInvocation {
 
 impl Into<SerializedInvocation> for VaultTakeInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Vault(VaultMethodInvocation::Take(
+        NativeFnInvocation::Method(NativeMethodInvocation::Vault(VaultInvocation::Take(
             self,
         )))
         .into()
@@ -91,7 +91,7 @@ impl SerializableInvocation for VaultTakeNonFungiblesInvocation {
 impl Into<SerializedInvocation> for VaultTakeNonFungiblesInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::TakeNonFungibles(self),
+            VaultInvocation::TakeNonFungibles(self),
         ))
         .into()
     }
@@ -114,7 +114,7 @@ impl SerializableInvocation for VaultGetAmountInvocation {
 impl Into<SerializedInvocation> for VaultGetAmountInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::GetAmount(self),
+            VaultInvocation::GetAmount(self),
         ))
         .into()
     }
@@ -138,7 +138,7 @@ impl SerializableInvocation for VaultRecallInvocation {
 impl Into<SerializedInvocation> for VaultRecallInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::Recall(self),
+            VaultInvocation::Recall(self),
         ))
         .into()
     }
@@ -162,7 +162,7 @@ impl SerializableInvocation for VaultRecallNonFungiblesInvocation {
 impl Into<SerializedInvocation> for VaultRecallNonFungiblesInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::RecallNonFungibles(self),
+            VaultInvocation::RecallNonFungibles(self),
         ))
         .into()
     }
@@ -185,7 +185,7 @@ impl SerializableInvocation for VaultGetResourceAddressInvocation {
 impl Into<SerializedInvocation> for VaultGetResourceAddressInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::GetResourceAddress(self),
+            VaultInvocation::GetResourceAddress(self),
         ))
         .into()
     }
@@ -208,7 +208,7 @@ impl SerializableInvocation for VaultGetNonFungibleIdsInvocation {
 impl Into<SerializedInvocation> for VaultGetNonFungibleIdsInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::GetNonFungibleIds(self),
+            VaultInvocation::GetNonFungibleIds(self),
         ))
         .into()
     }
@@ -231,7 +231,7 @@ impl SerializableInvocation for VaultCreateProofInvocation {
 impl Into<SerializedInvocation> for VaultCreateProofInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::CreateProof(self),
+            VaultInvocation::CreateProof(self),
         ))
         .into()
     }
@@ -255,7 +255,7 @@ impl SerializableInvocation for VaultCreateProofByAmountInvocation {
 impl Into<SerializedInvocation> for VaultCreateProofByAmountInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::CreateProofByAmount(self),
+            VaultInvocation::CreateProofByAmount(self),
         ))
         .into()
     }
@@ -279,7 +279,7 @@ impl SerializableInvocation for VaultCreateProofByIdsInvocation {
 impl Into<SerializedInvocation> for VaultCreateProofByIdsInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::CreateProofByIds(self),
+            VaultInvocation::CreateProofByIds(self),
         ))
         .into()
     }
@@ -304,7 +304,7 @@ impl SerializableInvocation for VaultLockFeeInvocation {
 impl Into<SerializedInvocation> for VaultLockFeeInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Vault(
-            VaultMethodInvocation::LockFee(self),
+            VaultInvocation::LockFee(self),
         ))
         .into()
     }

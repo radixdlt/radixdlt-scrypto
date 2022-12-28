@@ -28,8 +28,8 @@ impl SerializableInvocation for PackagePublishInvocation {
 
 impl Into<SerializedInvocation> for PackagePublishInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Package(
-            PackageFunctionInvocation::Publish(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::Package(
+            PackageInvocation::Publish(self),
         ))
         .into()
     }
@@ -53,7 +53,7 @@ impl SerializableInvocation for PackageSetRoyaltyConfigInvocation {
 impl Into<SerializedInvocation> for PackageSetRoyaltyConfigInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Package(
-            PackageMethodInvocation::SetRoyaltyConfig(self),
+            PackageInvocation::SetRoyaltyConfig(self),
         ))
         .into()
     }
@@ -83,7 +83,7 @@ impl SerializableInvocation for PackageClaimRoyaltyInvocation {
 impl Into<SerializedInvocation> for PackageClaimRoyaltyInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Package(
-            PackageMethodInvocation::ClaimRoyalty(self),
+            PackageInvocation::ClaimRoyalty(self),
         ))
         .into()
     }

@@ -27,7 +27,7 @@ use radix_engine_interface::model::{
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::wasm::{
-    EpochManagerMethodInvocation, NativeFnInvocation, NativeMethodInvocation,
+    EpochManagerInvocation, NativeFnInvocation, NativeMethodInvocation,
 };
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
@@ -849,7 +849,7 @@ impl TestRunner {
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
         let instructions = vec![Instruction::System(NativeFnInvocation::Method(
-            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::SetEpoch(
+            NativeMethodInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
                 EpochManagerSetEpochInvocation {
                     receiver: EPOCH_MANAGER,
                     epoch,
@@ -872,7 +872,7 @@ impl TestRunner {
 
     pub fn get_current_epoch(&mut self) -> u64 {
         let instructions = vec![Instruction::System(NativeFnInvocation::Method(
-            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::GetCurrentEpoch(
+            NativeMethodInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(
                 EpochManagerGetCurrentEpochInvocation {
                     receiver: EPOCH_MANAGER,
                 },

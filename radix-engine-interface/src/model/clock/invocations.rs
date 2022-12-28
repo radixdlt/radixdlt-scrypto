@@ -21,8 +21,8 @@ impl SerializableInvocation for ClockCreateInvocation {
 
 impl Into<SerializedInvocation> for ClockCreateInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Clock(
-            ClockFunctionInvocation::Create(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::Clock(
+            ClockInvocation::Create(self),
         ))
         .into()
     }
@@ -46,7 +46,7 @@ impl SerializableInvocation for ClockGetCurrentTimeInvocation {
 impl Into<SerializedInvocation> for ClockGetCurrentTimeInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::GetCurrentTime(self),
+            ClockInvocation::GetCurrentTime(self),
         ))
         .into()
     }
@@ -72,7 +72,7 @@ impl SerializableInvocation for ClockCompareCurrentTimeInvocation {
 impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::CompareCurrentTime(self),
+            ClockInvocation::CompareCurrentTime(self),
         ))
         .into()
     }
@@ -96,7 +96,7 @@ impl SerializableInvocation for ClockSetCurrentTimeInvocation {
 impl Into<SerializedInvocation> for ClockSetCurrentTimeInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::SetCurrentTime(self),
+            ClockInvocation::SetCurrentTime(self),
         ))
         .into()
     }

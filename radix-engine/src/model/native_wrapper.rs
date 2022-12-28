@@ -12,348 +12,339 @@ where
 {
     match native_invocation {
         NativeFnInvocation::Function(native_function) => match native_function {
-            NativeFunctionInvocation::EpochManager(invocation) => match invocation {
-                EpochManagerFunctionInvocation::Create(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-            },
-            NativeFunctionInvocation::Clock(invocation) => match invocation {
-                ClockFunctionInvocation::Create(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-            },
-            NativeFunctionInvocation::ResourceManager(invocation) => match invocation {
-                ResourceManagerFunctionInvocation::Create(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ResourceManagerFunctionInvocation::BurnBucket(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-            },
-            NativeFunctionInvocation::Package(invocation) => match invocation {
-                PackageFunctionInvocation::Publish(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-            },
-            NativeFunctionInvocation::Component(invocation) => match invocation {
-                ComponentFunctionInvocation::Globalize(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-                ComponentFunctionInvocation::GlobalizeWithOwner(invocation) => {
-                    let rtn = api.invoke(invocation)?;
-                    Ok(Box::new(rtn))
-                }
-            },
+            _ => todo!(),
         },
         NativeFnInvocation::Method(native_method) => match native_method {
             NativeMethodInvocation::Component(component_method) => match component_method {
-                ComponentMethodInvocation::SetRoyaltyConfig(invocation) => {
+                ComponentInvocation::Globalize(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ComponentMethodInvocation::ClaimRoyalty(invocation) => {
+                ComponentInvocation::GlobalizeWithOwner(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ComponentInvocation::SetRoyaltyConfig(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ComponentInvocation::ClaimRoyalty(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::Package(package_method) => match package_method {
-                PackageMethodInvocation::SetRoyaltyConfig(invocation) => {
+                PackageInvocation::Publish(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                PackageMethodInvocation::ClaimRoyalty(invocation) => {
+                PackageInvocation::SetRoyaltyConfig(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                PackageInvocation::ClaimRoyalty(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::Bucket(bucket_method) => match bucket_method {
-                BucketMethodInvocation::Take(invocation) => {
+                BucketInvocation::Take(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                BucketMethodInvocation::CreateProof(invocation) => {
+                BucketInvocation::CreateProof(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                BucketMethodInvocation::TakeNonFungibles(invocation) => {
+                BucketInvocation::TakeNonFungibles(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                BucketMethodInvocation::GetNonFungibleIds(invocation) => {
+                BucketInvocation::GetNonFungibleIds(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                BucketMethodInvocation::GetAmount(invocation) => {
+                BucketInvocation::GetAmount(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                BucketMethodInvocation::Put(invocation) => {
+                BucketInvocation::Put(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                BucketMethodInvocation::GetResourceAddress(invocation) => {
+                BucketInvocation::GetResourceAddress(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
-                AuthZoneStackMethodInvocation::Pop(invocation) => {
+                AuthZoneStackInvocation::Pop(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                AuthZoneStackMethodInvocation::Push(invocation) => {
+                AuthZoneStackInvocation::Push(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                AuthZoneStackMethodInvocation::CreateProof(invocation) => {
+                AuthZoneStackInvocation::CreateProof(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                AuthZoneStackMethodInvocation::CreateProofByAmount(invocation) => {
+                AuthZoneStackInvocation::CreateProofByAmount(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                AuthZoneStackMethodInvocation::CreateProofByIds(invocation) => {
+                AuthZoneStackInvocation::CreateProofByIds(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                AuthZoneStackMethodInvocation::Clear(invocation) => {
+                AuthZoneStackInvocation::Clear(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                AuthZoneStackMethodInvocation::Drain(invocation) => {
+                AuthZoneStackInvocation::Drain(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                AuthZoneStackMethodInvocation::AssertAuthRule(invocation) => {
+                AuthZoneStackInvocation::AssertAuthRule(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::Proof(proof_method) => match proof_method {
-                ProofMethodInvocation::GetAmount(invocation) => {
+                ProofInvocation::GetAmount(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ProofMethodInvocation::GetNonFungibleIds(invocation) => {
+                ProofInvocation::GetNonFungibleIds(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ProofMethodInvocation::GetResourceAddress(invocation) => {
+                ProofInvocation::GetResourceAddress(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ProofMethodInvocation::Clone(invocation) => {
+                ProofInvocation::Clone(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::Vault(vault_method) => match vault_method {
-                VaultMethodInvocation::Take(invocation) => {
+                VaultInvocation::Take(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::Put(invocation) => {
+                VaultInvocation::Put(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::LockFee(invocation) => {
+                VaultInvocation::LockFee(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::TakeNonFungibles(invocation) => {
+                VaultInvocation::TakeNonFungibles(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::GetAmount(invocation) => {
+                VaultInvocation::GetAmount(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::GetResourceAddress(invocation) => {
+                VaultInvocation::GetResourceAddress(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::GetNonFungibleIds(invocation) => {
+                VaultInvocation::GetNonFungibleIds(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::CreateProof(invocation) => {
+                VaultInvocation::CreateProof(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::CreateProofByAmount(invocation) => {
+                VaultInvocation::CreateProofByAmount(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::CreateProofByIds(invocation) => {
+                VaultInvocation::CreateProofByIds(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::Recall(invocation) => {
+                VaultInvocation::Recall(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                VaultMethodInvocation::RecallNonFungibles(invocation) => {
+                VaultInvocation::RecallNonFungibles(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::AccessRulesChain(access_rules_method) => {
                 match access_rules_method {
-                    AccessRulesChainMethodInvocation::AddAccessCheck(invocation) => {
+                    AccessRulesChainInvocation::AddAccessCheck(invocation) => {
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
-                    AccessRulesChainMethodInvocation::SetMethodAccessRule(invocation) => {
+                    AccessRulesChainInvocation::SetMethodAccessRule(invocation) => {
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
-                    AccessRulesChainMethodInvocation::SetMethodMutability(invocation) => {
+                    AccessRulesChainInvocation::SetMethodMutability(invocation) => {
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
-                    AccessRulesChainMethodInvocation::SetGroupAccessRule(invocation) => {
+                    AccessRulesChainInvocation::SetGroupAccessRule(invocation) => {
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
-                    AccessRulesChainMethodInvocation::SetGroupMutability(invocation) => {
+                    AccessRulesChainInvocation::SetGroupMutability(invocation) => {
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
-                    AccessRulesChainMethodInvocation::GetLength(invocation) => {
+                    AccessRulesChainInvocation::GetLength(invocation) => {
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
                 }
             }
             NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
-                MetadataMethodInvocation::Set(invocation) => {
+                MetadataInvocation::Set(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                MetadataMethodInvocation::Get(invocation) => {
+                MetadataInvocation::Get(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {
-                ResourceManagerMethodInvocation::Burn(invocation) => {
+                ResourceInvocation::Create(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::UpdateVaultAuth(invocation) => {
+                ResourceInvocation::BurnBucket(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::LockVaultAuth(invocation) => {
+                ResourceInvocation::Burn(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::CreateVault(invocation) => {
+                ResourceInvocation::UpdateVaultAuth(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::CreateBucket(invocation) => {
+                ResourceInvocation::LockVaultAuth(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::Mint(invocation) => {
+                ResourceInvocation::CreateVault(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::GetResourceType(invocation) => {
+                ResourceInvocation::CreateBucket(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::GetTotalSupply(invocation) => {
+                ResourceInvocation::Mint(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::UpdateNonFungibleData(invocation) => {
+                ResourceInvocation::GetResourceType(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::NonFungibleExists(invocation) => {
+                ResourceInvocation::GetTotalSupply(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ResourceManagerMethodInvocation::GetNonFungible(invocation) => {
+                ResourceInvocation::UpdateNonFungibleData(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::NonFungibleExists(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ResourceInvocation::GetNonFungible(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::EpochManager(epoch_manager_method) => {
                 match epoch_manager_method {
-                    EpochManagerMethodInvocation::GetCurrentEpoch(invocation) => {
+                    EpochManagerInvocation::Create(invocation) => {
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
-                    EpochManagerMethodInvocation::SetEpoch(invocation) => {
+                    EpochManagerInvocation::GetCurrentEpoch(invocation) => {
+                        let rtn = api.invoke(invocation)?;
+                        Ok(Box::new(rtn))
+                    }
+                    EpochManagerInvocation::SetEpoch(invocation) => {
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
                 }
             }
             NativeMethodInvocation::Clock(clock_method) => match clock_method {
-                ClockMethodInvocation::SetCurrentTime(invocation) => {
+                ClockInvocation::Create(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ClockMethodInvocation::GetCurrentTime(invocation) => {
+                ClockInvocation::SetCurrentTime(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                ClockMethodInvocation::CompareCurrentTime(invocation) => {
+                ClockInvocation::GetCurrentTime(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ClockInvocation::CompareCurrentTime(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::Worktop(worktop_method) => match worktop_method {
-                WorktopMethodInvocation::TakeNonFungibles(invocation) => {
+                WorktopInvocation::TakeNonFungibles(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                WorktopMethodInvocation::Put(invocation) => {
+                WorktopInvocation::Put(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                WorktopMethodInvocation::Drain(invocation) => {
+                WorktopInvocation::Drain(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                WorktopMethodInvocation::AssertContainsNonFungibles(invocation) => {
+                WorktopInvocation::AssertContainsNonFungibles(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                WorktopMethodInvocation::AssertContains(invocation) => {
+                WorktopInvocation::AssertContains(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                WorktopMethodInvocation::AssertContainsAmount(invocation) => {
+                WorktopInvocation::AssertContainsAmount(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                WorktopMethodInvocation::TakeAll(invocation) => {
+                WorktopInvocation::TakeAll(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                WorktopMethodInvocation::TakeAmount(invocation) => {
+                WorktopInvocation::TakeAmount(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
             },
             NativeMethodInvocation::TransactionRuntime(method) => match method {
-                TransactionRuntimeMethodInvocation::Get(invocation) => {
+                TransactionRuntimeInvocation::Get(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }
-                TransactionRuntimeMethodInvocation::GenerateUuid(invocation) => {
+                TransactionRuntimeInvocation::GenerateUuid(invocation) => {
                     let rtn = api.invoke(invocation)?;
                     Ok(Box::new(rtn))
                 }

@@ -32,7 +32,7 @@ impl SerializableInvocation for WorktopPutInvocation {
 impl Into<SerializedInvocation> for WorktopPutInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::Put(self),
+            WorktopInvocation::Put(self),
         ))
         .into()
     }
@@ -56,7 +56,7 @@ impl SerializableInvocation for WorktopTakeAmountInvocation {
 impl Into<SerializedInvocation> for WorktopTakeAmountInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::TakeAmount(self),
+            WorktopInvocation::TakeAmount(self),
         ))
         .into()
     }
@@ -80,7 +80,7 @@ impl SerializableInvocation for WorktopTakeNonFungiblesInvocation {
 impl Into<SerializedInvocation> for WorktopTakeNonFungiblesInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::TakeNonFungibles(self),
+            WorktopInvocation::TakeNonFungibles(self),
         ))
         .into()
     }
@@ -103,7 +103,7 @@ impl SerializableInvocation for WorktopTakeAllInvocation {
 impl Into<SerializedInvocation> for WorktopTakeAllInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::TakeAll(self),
+            WorktopInvocation::TakeAll(self),
         ))
         .into()
     }
@@ -126,7 +126,7 @@ impl SerializableInvocation for WorktopAssertContainsInvocation {
 impl Into<SerializedInvocation> for WorktopAssertContainsInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::AssertContains(self),
+            WorktopInvocation::AssertContains(self),
         ))
         .into()
     }
@@ -149,7 +149,7 @@ impl SerializableInvocation for WorktopAssertContainsAmountInvocation {
 impl Into<SerializedInvocation> for WorktopAssertContainsAmountInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::AssertContainsAmount(self),
+            WorktopInvocation::AssertContainsAmount(self),
         ))
         .into()
     }
@@ -173,7 +173,7 @@ impl SerializableInvocation for WorktopAssertContainsNonFungiblesInvocation {
 impl Into<SerializedInvocation> for WorktopAssertContainsNonFungiblesInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::AssertContainsNonFungibles(self),
+            WorktopInvocation::AssertContainsNonFungibles(self),
         ))
         .into()
     }
@@ -194,7 +194,7 @@ impl SerializableInvocation for WorktopDrainInvocation {
 impl Into<SerializedInvocation> for WorktopDrainInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Worktop(
-            WorktopMethodInvocation::Drain(self),
+            WorktopInvocation::Drain(self),
         ))
         .into()
     }

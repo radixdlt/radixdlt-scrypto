@@ -24,7 +24,7 @@ impl SerializableInvocation for AccessRulesAddAccessCheckInvocation {
 impl Into<SerializedInvocation> for AccessRulesAddAccessCheckInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::AddAccessCheck(self),
+            AccessRulesChainInvocation::AddAccessCheck(self),
         ))
         .into()
     }
@@ -50,7 +50,7 @@ impl SerializableInvocation for AccessRulesSetMethodAccessRuleInvocation {
 impl Into<SerializedInvocation> for AccessRulesSetMethodAccessRuleInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::SetMethodAccessRule(self),
+            AccessRulesChainInvocation::SetMethodAccessRule(self),
         ))
         .into()
     }
@@ -76,7 +76,7 @@ impl SerializableInvocation for AccessRulesSetGroupAccessRuleInvocation {
 impl Into<SerializedInvocation> for AccessRulesSetGroupAccessRuleInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::SetGroupAccessRule(self),
+            AccessRulesChainInvocation::SetGroupAccessRule(self),
         ))
         .into()
     }
@@ -102,7 +102,7 @@ impl SerializableInvocation for AccessRulesSetMethodMutabilityInvocation {
 impl Into<SerializedInvocation> for AccessRulesSetMethodMutabilityInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::SetMethodMutability(self),
+            AccessRulesChainInvocation::SetMethodMutability(self),
         ))
         .into()
     }
@@ -128,7 +128,7 @@ impl SerializableInvocation for AccessRulesSetGroupMutabilityInvocation {
 impl Into<SerializedInvocation> for AccessRulesSetGroupMutabilityInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::SetGroupMutability(self),
+            AccessRulesChainInvocation::SetGroupMutability(self),
         ))
         .into()
     }
@@ -151,7 +151,7 @@ impl SerializableInvocation for AccessRulesGetLengthInvocation {
 impl Into<SerializedInvocation> for AccessRulesGetLengthInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::GetLength(self),
+            AccessRulesChainInvocation::GetLength(self),
         ))
         .into()
     }

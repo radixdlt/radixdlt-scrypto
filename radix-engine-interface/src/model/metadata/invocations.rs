@@ -23,7 +23,7 @@ impl SerializableInvocation for MetadataSetInvocation {
 impl Into<SerializedInvocation> for MetadataSetInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Metadata(
-            MetadataMethodInvocation::Set(self),
+            MetadataInvocation::Set(self),
         ))
         .into()
     }
@@ -47,7 +47,7 @@ impl SerializableInvocation for MetadataGetInvocation {
 impl Into<SerializedInvocation> for MetadataGetInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::Metadata(
-            MetadataMethodInvocation::Get(self),
+            MetadataInvocation::Get(self),
         ))
         .into()
     }
