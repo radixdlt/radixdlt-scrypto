@@ -56,7 +56,7 @@ impl Instant {
     }
 }
 
-#[derive(Encode, Decode, TypeId, Copy, Clone, Debug)]
+#[derive(Encode, Decode, TypeId, Copy, Clone, Debug, Eq, PartialEq)]
 pub enum TimeComparisonOperator {
     Eq,
     Lt,

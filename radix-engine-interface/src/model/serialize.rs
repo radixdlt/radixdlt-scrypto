@@ -10,7 +10,7 @@ pub enum SerializedInvocation {
     Scrypto(ScryptoInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
@@ -36,14 +36,14 @@ impl Into<SerializedInvocation> for NativeInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum TransactionRuntimeInvocation {
     Get(TransactionRuntimeGetHashInvocation),
     GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum AccessRulesChainInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
@@ -54,14 +54,14 @@ pub enum AccessRulesChainInvocation {
     GetLength(AccessRulesGetLengthInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum MetadataInvocation {
     Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ClockInvocation {
     Create(ClockCreateInvocation),
@@ -70,7 +70,7 @@ pub enum ClockInvocation {
     SetCurrentTime(ClockSetCurrentTimeInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum LoggerInvocation {
     Log(LoggerLogInvocation),
@@ -85,7 +85,7 @@ pub enum ComponentInvocation {
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
@@ -93,7 +93,7 @@ pub enum PackageInvocation {
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum EpochManagerInvocation {
     Create(EpochManagerCreateInvocation),
@@ -111,7 +111,7 @@ pub enum ValidatorInvocation {
     Unregister(ValidatorUnregisterInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum AuthZoneStackInvocation {
     Pop(AuthZonePopInvocation),
@@ -124,7 +124,7 @@ pub enum AuthZoneStackInvocation {
     AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceInvocation {
     Create(ResourceManagerCreateInvocation),
@@ -142,7 +142,7 @@ pub enum ResourceInvocation {
     NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum BucketInvocation {
     Take(BucketTakeInvocation),
@@ -154,7 +154,7 @@ pub enum BucketInvocation {
     CreateProof(BucketCreateProofInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum VaultInvocation {
     Take(VaultTakeInvocation),
@@ -171,7 +171,7 @@ pub enum VaultInvocation {
     RecallNonFungibles(VaultRecallNonFungiblesInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ProofInvocation {
     Clone(ProofCloneInvocation),
@@ -180,7 +180,7 @@ pub enum ProofInvocation {
     GetResourceAddress(ProofGetResourceAddressInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum WorktopInvocation {
     TakeAll(WorktopTakeAllInvocation),
