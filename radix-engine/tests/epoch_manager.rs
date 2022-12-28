@@ -5,10 +5,6 @@ use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::wasm::{
-    EpochManagerFunctionInvocation, EpochManagerMethodInvocation, NativeFnInvocation,
-    NativeFunctionInvocation, NativeMethodInvocation,
-};
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Instruction, SystemTransaction};
@@ -66,13 +62,11 @@ fn next_round_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
 
     // Act
-    let instructions = vec![Instruction::System(NativeFnInvocation::Method(
-        NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::NextRound(
-            EpochManagerNextRoundInvocation {
-                receiver: EPOCH_MANAGER,
-                round: rounds_per_epoch - 1,
-            },
-        )),
+    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
+            receiver: EPOCH_MANAGER,
+            round: rounds_per_epoch - 1,
+        }),
     ))];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -98,13 +92,11 @@ fn next_epoch_with_validator_auth_succeeds() {
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
 
     // Act
-    let instructions = vec![Instruction::System(NativeFnInvocation::Method(
-        NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::NextRound(
-            EpochManagerNextRoundInvocation {
-                receiver: EPOCH_MANAGER,
-                round: rounds_per_epoch,
-            },
-        )),
+    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
+            receiver: EPOCH_MANAGER,
+            round: rounds_per_epoch,
+        }),
     ))];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -255,13 +247,11 @@ fn registered_validator_becomes_part_of_validator_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::System(NativeFnInvocation::Method(
-        NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::NextRound(
-            EpochManagerNextRoundInvocation {
-                receiver: EPOCH_MANAGER,
-                round: rounds_per_epoch,
-            },
-        )),
+    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
+            receiver: EPOCH_MANAGER,
+            round: rounds_per_epoch,
+        }),
     ))];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -307,13 +297,11 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     receipt.expect_commit_success();
 
     // Act
-    let instructions = vec![Instruction::System(NativeFnInvocation::Method(
-        NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::NextRound(
-            EpochManagerNextRoundInvocation {
-                receiver: EPOCH_MANAGER,
-                round: rounds_per_epoch,
-            },
-        )),
+    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
+            receiver: EPOCH_MANAGER,
+            round: rounds_per_epoch,
+        }),
     ))];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -341,14 +329,12 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let instructions = vec![Instruction::System(NativeFnInvocation::Function(
-        NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
-            EpochManagerCreateInvocation {
-                validator_set: BTreeSet::new(),
-                initial_epoch: 1u64,
-                rounds_per_epoch: 1u64,
-            },
-        )),
+    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            validator_set: BTreeSet::new(),
+            initial_epoch: 1u64,
+            rounds_per_epoch: 1u64,
+        }),
     ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
@@ -372,14 +358,12 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let instructions = vec![Instruction::System(NativeFnInvocation::Function(
-        NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
-            EpochManagerCreateInvocation {
-                validator_set: BTreeSet::new(),
-                initial_epoch: 1u64,
-                rounds_per_epoch: 1u64,
-            },
-        )),
+    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            validator_set: BTreeSet::new(),
+            initial_epoch: 1u64,
+            rounds_per_epoch: 1u64,
+        }),
     ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(

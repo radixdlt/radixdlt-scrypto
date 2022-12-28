@@ -13,10 +13,6 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
-use radix_engine_interface::wasm::{
-    ClockFunctionInvocation, EpochManagerFunctionInvocation, NativeFnInvocation,
-    NativeFunctionInvocation,
-};
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
 
@@ -160,8 +156,8 @@ pub fn create_genesis(
         }));
     };
 
-    instructions.push(Instruction::System(NativeFnInvocation::Function(
-        NativeFunctionInvocation::Clock(ClockFunctionInvocation::Create(ClockCreateInvocation {})),
+    instructions.push(Instruction::System(NativeInvocation::Clock(
+        ClockInvocation::Create(ClockCreateInvocation {}),
     )));
 
     // EDDSA ED25519 Token
@@ -200,14 +196,12 @@ pub fn create_genesis(
         ));
     }
 
-    instructions.push(Instruction::System(NativeFnInvocation::Function(
-        NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
-            EpochManagerCreateInvocation {
-                validator_set: validator_set.clone(),
-                initial_epoch,
-                rounds_per_epoch,
-            },
-        )),
+    instructions.push(Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            validator_set: validator_set.clone(),
+            initial_epoch,
+            rounds_per_epoch,
+        }),
     )));
 
     SystemTransaction {

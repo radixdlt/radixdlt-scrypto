@@ -24,12 +24,10 @@ use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, AccessRules, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, EpochManagerInvocation, FromPublicKey, NativeInvocation,
+    NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::wasm::{
-    EpochManagerMethodInvocation, NativeFnInvocation, NativeMethodInvocation,
-};
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
@@ -910,13 +908,11 @@ impl TestRunner {
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![Instruction::System(NativeFnInvocation::Method(
-            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::SetEpoch(
-                EpochManagerSetEpochInvocation {
-                    receiver: EPOCH_MANAGER,
-                    epoch,
-                },
-            )),
+        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+            EpochManagerInvocation::SetEpoch(EpochManagerSetEpochInvocation {
+                receiver: EPOCH_MANAGER,
+                epoch,
+            }),
         ))];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
@@ -933,12 +929,10 @@ impl TestRunner {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![Instruction::System(NativeFnInvocation::Method(
-            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::GetCurrentEpoch(
-                EpochManagerGetCurrentEpochInvocation {
-                    receiver: EPOCH_MANAGER,
-                },
-            )),
+        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+            EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
+                receiver: EPOCH_MANAGER,
+            }),
         ))];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();

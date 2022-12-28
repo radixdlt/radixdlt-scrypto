@@ -2,6 +2,7 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
 use crate::api::api::*;
+use crate::model::{LoggerInvocation, NativeInvocation, SerializedInvocation};
 use crate::scrypto;
 use crate::wasm::*;
 use sbor::rust::string::String;
@@ -46,7 +47,6 @@ impl SerializableInvocation for LoggerLogInvocation {
 
 impl Into<SerializedInvocation> for LoggerLogInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Logger(LoggerInvocation::Log(self)))
-            .into()
+        NativeInvocation::Logger(LoggerInvocation::Log(self)).into()
     }
 }

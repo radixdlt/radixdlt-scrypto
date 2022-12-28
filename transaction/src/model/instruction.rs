@@ -2,7 +2,6 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::scrypto;
-use radix_engine_interface::wasm::NativeFnInvocation;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
@@ -222,33 +221,11 @@ pub enum BasicInstruction {
     },
 }
 
-/*
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum SystemInstruction {
-    /// Calls a native function.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallNativeFunction {
-        function_ident: NativeFunctionIdent,
-        args: Vec<u8>,
-    },
-
-    /// Calls a native method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallNativeMethod {
-        method_ident: NativeMethodIdent,
-        args: Vec<u8>,
-    },
-}
- */
-
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum Instruction {
     Basic(BasicInstruction),
-    System(NativeFnInvocation),
+    System(NativeInvocation),
 }
 
 impl From<BasicInstruction> for Instruction {
@@ -257,8 +234,8 @@ impl From<BasicInstruction> for Instruction {
     }
 }
 
-impl From<NativeFnInvocation> for Instruction {
-    fn from(i: NativeFnInvocation) -> Self {
+impl From<NativeInvocation> for Instruction {
+    fn from(i: NativeInvocation) -> Self {
         Instruction::System(i)
     }
 }

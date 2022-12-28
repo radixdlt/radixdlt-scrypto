@@ -26,10 +26,7 @@ impl SerializableInvocation for EpochManagerCreateInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(
-            EpochManagerFunctionInvocation::Create(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::Create(self)).into()
     }
 }
 
@@ -49,10 +46,7 @@ impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::GetCurrentEpoch(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(self)).into()
     }
 }
 
@@ -73,10 +67,7 @@ impl SerializableInvocation for EpochManagerSetEpochInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::SetEpoch(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(self)).into()
     }
 }
 
@@ -97,10 +88,7 @@ impl SerializableInvocation for EpochManagerNextRoundInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::NextRound(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(self)).into()
     }
 }
 
@@ -121,10 +109,7 @@ impl SerializableInvocation for EpochManagerCreateValidatorInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerCreateValidatorInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::CreateValidator(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(self)).into()
     }
 }
 
@@ -148,10 +133,7 @@ impl SerializableInvocation for EpochManagerUpdateValidatorInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerUpdateValidatorInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::UpdateValidator(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(self)).into()
     }
 }
 
@@ -171,10 +153,7 @@ impl SerializableInvocation for ValidatorRegisterInvocation {
 
 impl Into<SerializedInvocation> for ValidatorRegisterInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Validator(
-            ValidatorMethodInvocation::Register(self),
-        ))
-        .into()
+        NativeInvocation::Validator(ValidatorInvocation::Register(self)).into()
     }
 }
 
@@ -194,9 +173,6 @@ impl SerializableInvocation for ValidatorUnregisterInvocation {
 
 impl Into<SerializedInvocation> for ValidatorUnregisterInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Validator(
-            ValidatorMethodInvocation::Unregister(self),
-        ))
-        .into()
+        NativeInvocation::Validator(ValidatorInvocation::Unregister(self)).into()
     }
 }
