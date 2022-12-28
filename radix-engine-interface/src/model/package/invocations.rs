@@ -8,7 +8,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackagePublishInvocation {
     pub code: Blob,
@@ -32,7 +32,7 @@ impl Into<SerializedInvocation> for PackagePublishInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
@@ -53,14 +53,14 @@ impl Into<SerializedInvocation> for PackageSetRoyaltyConfigInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageClaimRoyaltyInvocation {
     pub receiver: PackageAddress,

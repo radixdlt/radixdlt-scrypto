@@ -4,7 +4,7 @@ use crate::api::{api::*, types::*};
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct MetadataSetInvocation {
     pub receiver: RENodeId,
@@ -26,7 +26,7 @@ impl Into<SerializedInvocation> for MetadataSetInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct MetadataGetInvocation {
     pub receiver: RENodeId,

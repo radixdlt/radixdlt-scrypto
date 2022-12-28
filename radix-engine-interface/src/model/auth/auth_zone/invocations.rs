@@ -10,7 +10,7 @@ use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZonePopInvocation {
     pub receiver: AuthZoneStackId,
@@ -30,7 +30,7 @@ impl Into<SerializedInvocation> for AuthZonePopInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZonePushInvocation {
     pub receiver: AuthZoneStackId,
@@ -60,7 +60,7 @@ impl Into<SerializedInvocation> for AuthZonePushInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofInvocation {
     pub receiver: AuthZoneStackId,
@@ -81,7 +81,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByAmountInvocation {
     pub receiver: AuthZoneStackId,
@@ -103,7 +103,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofByAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInvocation {
     pub receiver: AuthZoneStackId,
@@ -125,7 +125,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofByIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneClearInvocation {
     pub receiver: AuthZoneStackId,
@@ -145,7 +145,7 @@ impl Into<SerializedInvocation> for AuthZoneClearInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneStackId,
@@ -165,7 +165,7 @@ impl Into<SerializedInvocation> for AuthZoneDrainInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneAssertAccessRuleInvocation {
     pub receiver: AuthZoneStackId,
