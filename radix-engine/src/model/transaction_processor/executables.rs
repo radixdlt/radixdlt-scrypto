@@ -790,10 +790,12 @@ struct TransactionProcessor {
 
 impl TransactionProcessor {
     fn new() -> Self {
+        // TODO: Remove mocked_hash
+        let mocked_hash = hash([0u8; 1]);
         Self {
             proof_id_mapping: HashMap::new(),
             bucket_id_mapping: HashMap::new(),
-            id_allocator: IdAllocator::new(IdSpace::Transaction),
+            id_allocator: IdAllocator::new(IdSpace::Transaction, mocked_hash),
         }
     }
 
