@@ -29,21 +29,18 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 };
                 let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
 
-                let package = api.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::ScryptoInterpreter,
-                    |system_api| {
-                        let handle = system_api.lock_substate(
-                            global_node_id,
-                            SubstateOffset::Package(PackageOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
-                        system_api.drop_lock(handle)?;
+                let package = {
+                    let handle = api.lock_substate(
+                        global_node_id,
+                        SubstateOffset::Package(PackageOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let package = substate_ref.package_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
 
-                        Ok(package)
-                    },
-                )?;
+                    package
+                };
 
                 // Pass the package ref
                 // TODO: remove? currently needed for `Runtime::package_address()` API.
@@ -126,39 +123,32 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
                 let component_node_id = resolved_receiver.receiver;
-                let component_info = api.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::ScryptoInterpreter,
-                    |system_api| {
-                        let handle = system_api.lock_substate(
-                            component_node_id,
-                            SubstateOffset::Component(ComponentOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-                        system_api.drop_lock(handle)?;
+                let component_info = {
+                    let handle = api.lock_substate(
+                        component_node_id,
+                        SubstateOffset::Component(ComponentOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
 
-                        Ok(component_info)
-                    },
-                )?;
-                let package = api.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::ScryptoInterpreter,
-                    |system_api| {
-                        let package_global = RENodeId::Global(GlobalAddress::Package(
-                            component_info.package_address,
-                        ));
-                        let handle = system_api.lock_substate(
-                            package_global,
-                            SubstateOffset::Package(PackageOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
-                        system_api.drop_lock(handle)?;
+                    component_info
+                };
+                let package = {
+                    let package_global =
+                        RENodeId::Global(GlobalAddress::Package(component_info.package_address));
+                    let handle = api.lock_substate(
+                        package_global,
+                        SubstateOffset::Package(PackageOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let package = substate_ref.package_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
 
-                        Ok(package)
-                    },
-                )?;
+                    package
+                };
 
                 // Pass the component ref
                 // TODO: remove? currently needed for `Runtime::package_address()` API.
@@ -274,21 +264,18 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 };
                 let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
 
-                let package = api.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::ScryptoInterpreter,
-                    |system_api| {
-                        let handle = system_api.lock_substate(
-                            global_node_id,
-                            SubstateOffset::Package(PackageOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
-                        system_api.drop_lock(handle)?;
+                let package = {
+                    let handle = api.lock_substate(
+                        global_node_id,
+                        SubstateOffset::Package(PackageOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let package = substate_ref.package_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
 
-                        Ok(package)
-                    },
-                )?;
+                    package
+                };
 
                 // Pass the package ref
                 // TODO: remove? currently needed for `Runtime::package_address()` API.
@@ -371,39 +358,32 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
                 let component_node_id = resolved_receiver.receiver;
-                let component_info = api.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::ScryptoInterpreter,
-                    |system_api| {
-                        let handle = system_api.lock_substate(
-                            component_node_id,
-                            SubstateOffset::Component(ComponentOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
-                        system_api.drop_lock(handle)?;
+                let component_info = {
+                    let handle = api.lock_substate(
+                        component_node_id,
+                        SubstateOffset::Component(ComponentOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
 
-                        Ok(component_info)
-                    },
-                )?;
-                let package = api.execute_in_mode::<_, _, RuntimeError>(
-                    ExecutionMode::ScryptoInterpreter,
-                    |system_api| {
-                        let package_global = RENodeId::Global(GlobalAddress::Package(
-                            component_info.package_address,
-                        ));
-                        let handle = system_api.lock_substate(
-                            package_global,
-                            SubstateOffset::Package(PackageOffset::Info),
-                            LockFlags::read_only(),
-                        )?;
-                        let substate_ref = system_api.get_ref(handle)?;
-                        let package = substate_ref.package_info().clone(); // TODO: Remove clone()
-                        system_api.drop_lock(handle)?;
+                    component_info
+                };
+                let package = {
+                    let package_global =
+                        RENodeId::Global(GlobalAddress::Package(component_info.package_address));
+                    let handle = api.lock_substate(
+                        package_global,
+                        SubstateOffset::Package(PackageOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let package = substate_ref.package_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
 
-                        Ok(package)
-                    },
-                )?;
+                    package
+                };
 
                 // Pass the component ref
                 // TODO: remove? currently needed for `Runtime::package_address()` API.

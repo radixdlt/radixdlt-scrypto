@@ -1,4 +1,4 @@
-use crate::engine::{Kernel, KernelError, LockFlags, Module, RENode, RuntimeError, SystemApi};
+use crate::engine::{BaseModule, Kernel, KernelError, LockFlags, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
 use crate::model::{
     AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
@@ -24,7 +24,7 @@ impl<'g, 's, W, R, M> EngineApi<RuntimeError> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
-    M: Module<R>,
+    M: BaseModule<R>,
 {
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {

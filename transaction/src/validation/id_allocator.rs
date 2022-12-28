@@ -20,17 +20,19 @@ pub enum IdSpace {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
     available: Range<u32>,
+    transaction_hash: Hash,
 }
 
 impl IdAllocator {
     /// Creates an ID allocator.
-    pub fn new(kind: IdSpace) -> Self {
+    pub fn new(kind: IdSpace, transaction_hash: Hash) -> Self {
         Self {
             available: match kind {
                 IdSpace::System => 0..512,
                 IdSpace::Transaction => 512..1024,
                 IdSpace::Application => 1024..u32::MAX,
             },
+            transaction_hash,
         }
     }
 
@@ -44,19 +46,16 @@ impl IdAllocator {
         }
     }
 
-    fn next_id(&mut self, transaction_hash: Hash) -> Result<[u8; 36], IdAllocationError> {
+    fn next_id(&mut self) -> Result<[u8; 36], IdAllocationError> {
         let mut buf = [0u8; 36];
-        (&mut buf[0..32]).copy_from_slice(&transaction_hash.0);
+        (&mut buf[0..32]).copy_from_slice(&self.transaction_hash.0);
         (&mut buf[32..]).copy_from_slice(&self.next()?.to_le_bytes());
         Ok(buf)
     }
 
     /// Creates a new package ID.
-    pub fn new_package_address(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<PackageAddress, IdAllocationError> {
-        let mut data = transaction_hash.to_vec();
+    pub fn new_package_address(&mut self) -> Result<PackageAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
         // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
@@ -64,11 +63,8 @@ impl IdAllocator {
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
     }
 
-    pub fn new_account_address(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<ComponentAddress, IdAllocationError> {
-        let mut data = transaction_hash.to_vec();
+    pub fn new_account_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
         // println!("Genesis account {:?}", hash(&data).lower_26_bytes());
@@ -77,11 +73,8 @@ impl IdAllocator {
     }
 
     /// Creates a new component address.
-    pub fn new_component_address(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<ComponentAddress, IdAllocationError> {
-        let mut data = transaction_hash.to_vec();
+    pub fn new_component_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
         // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
@@ -89,11 +82,8 @@ impl IdAllocator {
         Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
     }
 
-    pub fn new_epoch_manager_address(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<SystemAddress, IdAllocationError> {
-        let mut data = transaction_hash.to_vec();
+    pub fn new_epoch_manager_address(&mut self) -> Result<SystemAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
         // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
@@ -101,21 +91,15 @@ impl IdAllocator {
         Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
-    pub fn new_validator_address(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<SystemAddress, IdAllocationError> {
-        let mut data = transaction_hash.to_vec();
+    pub fn new_validator_address(&mut self) -> Result<SystemAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
+        Ok(SystemAddress::Validator(hash(data).lower_26_bytes()))
     }
 
-    pub fn new_clock_address(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<SystemAddress, IdAllocationError> {
-        let mut data = transaction_hash.to_vec();
+    pub fn new_clock_address(&mut self) -> Result<SystemAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
         // println!("Genesis clock {:?}", hash(&data).lower_26_bytes());
@@ -124,11 +108,8 @@ impl IdAllocator {
     }
 
     /// Creates a new resource address.
-    pub fn new_resource_address(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<ResourceAddress, IdAllocationError> {
-        let mut data = transaction_hash.to_vec();
+    pub fn new_resource_address(&mut self) -> Result<ResourceAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
         // println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
@@ -155,55 +136,37 @@ impl IdAllocator {
     }
 
     /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self, transaction_hash: Hash) -> Result<VaultId, IdAllocationError> {
-        self.next_id(transaction_hash)
+    pub fn new_vault_id(&mut self) -> Result<VaultId, IdAllocationError> {
+        self.next_id()
     }
 
     pub fn new_transaction_hash_id(&mut self) -> Result<TransactionRuntimeId, IdAllocationError> {
         self.next()
     }
 
-    pub fn new_component_id(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<ComponentId, IdAllocationError> {
-        self.next_id(transaction_hash)
+    pub fn new_component_id(&mut self) -> Result<ComponentId, IdAllocationError> {
+        self.next_id()
     }
 
-    pub fn new_validator_id(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<ValidatorId, IdAllocationError> {
-        self.next_id(transaction_hash)
+    pub fn new_validator_id(&mut self) -> Result<ValidatorId, IdAllocationError> {
+        self.next_id()
     }
 
     /// Creates a new key value store ID.
-    pub fn new_kv_store_id(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<KeyValueStoreId, IdAllocationError> {
-        self.next_id(transaction_hash)
+    pub fn new_kv_store_id(&mut self) -> Result<KeyValueStoreId, IdAllocationError> {
+        self.next_id()
     }
 
     /// Creates a new non-fungible store ID.
-    pub fn new_nf_store_id(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<NonFungibleStoreId, IdAllocationError> {
-        self.next_id(transaction_hash)
+    pub fn new_nf_store_id(&mut self) -> Result<NonFungibleStoreId, IdAllocationError> {
+        self.next_id()
     }
 
-    pub fn new_resource_manager_id(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<ResourceManagerId, IdAllocationError> {
-        self.next_id(transaction_hash)
+    pub fn new_resource_manager_id(&mut self) -> Result<ResourceManagerId, IdAllocationError> {
+        self.next_id()
     }
 
-    pub fn new_package_id(
-        &mut self,
-        transaction_hash: Hash,
-    ) -> Result<PackageId, IdAllocationError> {
-        self.next_id(transaction_hash)
+    pub fn new_package_id(&mut self) -> Result<PackageId, IdAllocationError> {
+        self.next_id()
     }
 }
