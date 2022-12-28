@@ -76,7 +76,7 @@ pub enum LoggerInvocation {
     Log(LoggerLogInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ComponentInvocation {
     Globalize(ComponentGlobalizeInvocation),
@@ -104,7 +104,7 @@ pub enum EpochManagerInvocation {
     UpdateValidator(EpochManagerUpdateValidatorInvocation),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ValidatorInvocation {
     Register(ValidatorRegisterInvocation),

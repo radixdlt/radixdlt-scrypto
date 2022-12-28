@@ -71,7 +71,7 @@ impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerNextRoundInvocation {
     pub receiver: SystemAddress,
@@ -92,7 +92,7 @@ impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateValidatorInvocation {
     pub receiver: SystemAddress,
@@ -113,7 +113,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateValidatorInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerUpdateValidatorInvocation {
     pub receiver: SystemAddress,
@@ -137,7 +137,7 @@ impl Into<SerializedInvocation> for EpochManagerUpdateValidatorInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ValidatorRegisterInvocation {
     pub receiver: SystemAddress,
@@ -157,7 +157,7 @@ impl Into<SerializedInvocation> for ValidatorRegisterInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ValidatorUnregisterInvocation {
     pub receiver: SystemAddress,
