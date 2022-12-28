@@ -91,6 +91,9 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                     update.add_ref(node_id);
                 }
             }
+            BasicInstruction::CreateValidator { .. } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+            }
             BasicInstruction::RegisterValidator { validator_address }
             | BasicInstruction::UnregisterValidator { validator_address } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::System(*validator_address)));
@@ -374,6 +377,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         proof.sys_drop(api).map(|_| IndexedScryptoValue::unit())?;
                     }
                     let rtn = ComponentAuthZone::sys_clear(api)?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::CreateValidator { key }) => {
+                    let rtn = api.invoke(EpochManagerCreateValidatorInvocation {
+                        receiver: EPOCH_MANAGER,
+                        key: *key,
+                    })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::Basic(BasicInstruction::RegisterValidator { validator_address }) => {

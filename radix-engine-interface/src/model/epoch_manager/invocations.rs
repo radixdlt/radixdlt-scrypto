@@ -108,7 +108,7 @@ impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateValidatorInvocation {
     pub receiver: SystemAddress,
-    pub validator: EcdsaSecp256k1PublicKey,
+    pub key: EcdsaSecp256k1PublicKey,
 }
 
 impl Invocation for EpochManagerCreateValidatorInvocation {

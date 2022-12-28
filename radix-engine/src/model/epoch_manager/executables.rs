@@ -318,7 +318,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateValidatorInvoc
             resolved_receiver,
         );
         let executor =
-            EpochManagerCreateValidatorExecutable(resolved_receiver.receiver, self.validator);
+            EpochManagerCreateValidatorExecutable(resolved_receiver.receiver, self.key);
 
         Ok((actor, call_frame_update, executor))
     }

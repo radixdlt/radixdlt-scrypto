@@ -209,12 +209,18 @@ pub enum BasicInstruction {
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
+    CreateValidator {
+        key: EcdsaSecp256k1PublicKey,
+    },
+
     RegisterValidator {
         validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
     },
+
     UnregisterValidator {
         validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
     },
+
 }
 
 /*
