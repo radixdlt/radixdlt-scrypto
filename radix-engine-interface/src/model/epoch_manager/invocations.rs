@@ -106,54 +106,6 @@ impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
 
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct EpochManagerRegisterValidatorInvocation {
-    pub receiver: SystemAddress,
-    pub validator: EcdsaSecp256k1PublicKey,
-}
-
-impl Invocation for EpochManagerRegisterValidatorInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for EpochManagerRegisterValidatorInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<SerializedInvocation> for EpochManagerRegisterValidatorInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::RegisterValidator(self),
-        ))
-        .into()
-    }
-}
-
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
-pub struct EpochManagerUnregisterValidatorInvocation {
-    pub receiver: SystemAddress,
-    pub validator: EcdsaSecp256k1PublicKey,
-}
-
-impl Invocation for EpochManagerUnregisterValidatorInvocation {
-    type Output = ();
-}
-
-impl SerializableInvocation for EpochManagerUnregisterValidatorInvocation {
-    type ScryptoOutput = ();
-}
-
-impl Into<SerializedInvocation> for EpochManagerUnregisterValidatorInvocation {
-    fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::UnregisterValidator(self),
-        ))
-        .into()
-    }
-}
-
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateValidatorInvocation {
     pub receiver: SystemAddress,
     pub validator: EcdsaSecp256k1PublicKey,
@@ -171,6 +123,79 @@ impl Into<SerializedInvocation> for EpochManagerCreateValidatorInvocation {
     fn into(self) -> SerializedInvocation {
         NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
             EpochManagerMethodInvocation::CreateValidator(self),
+        ))
+        .into()
+    }
+}
+
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct EpochManagerUpdateValidatorInvocation {
+    pub receiver: SystemAddress,
+    pub validator_address: SystemAddress,
+    pub key: EcdsaSecp256k1PublicKey,
+    pub register: bool,
+}
+
+impl Invocation for EpochManagerUpdateValidatorInvocation {
+    type Output = ();
+}
+
+// TODO: Should we have this or not?
+impl SerializableInvocation for EpochManagerUpdateValidatorInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<SerializedInvocation> for EpochManagerUpdateValidatorInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
+            EpochManagerMethodInvocation::UpdateValidator(self),
+        ))
+        .into()
+    }
+}
+
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ValidatorRegisterInvocation {
+    pub receiver: SystemAddress,
+}
+
+impl Invocation for ValidatorRegisterInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for ValidatorRegisterInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<SerializedInvocation> for ValidatorRegisterInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Validator(
+            ValidatorMethodInvocation::Register(self),
+        ))
+        .into()
+    }
+}
+
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ValidatorUnregisterInvocation {
+    pub receiver: SystemAddress,
+}
+
+impl Invocation for ValidatorUnregisterInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for ValidatorUnregisterInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<SerializedInvocation> for ValidatorUnregisterInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeFnInvocation::Method(NativeMethodInvocation::Validator(
+            ValidatorMethodInvocation::Unregister(self),
         ))
         .into()
     }

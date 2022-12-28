@@ -736,6 +736,16 @@ impl Into<MetadataSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<ValidatorSetSubstate> for RuntimeSubstate {
+    fn into(self) -> ValidatorSetSubstate {
+        if let RuntimeSubstate::ValidatorSet(substate) = self {
+            substate
+        } else {
+            panic!("Not a validator set");
+        }
+    }
+}
+
 pub enum SubstateRef<'a> {
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
@@ -802,6 +812,13 @@ impl<'a> SubstateRef<'a> {
         match self {
             SubstateRef::EpochManager(epoch_manager_substate) => *epoch_manager_substate,
             _ => panic!("Not an epoch manager substate"),
+        }
+    }
+
+    pub fn validator(&self) -> &ValidatorSubstate {
+        match self {
+            SubstateRef::Validator(substate) => *substate,
+            _ => panic!("Not a validator substate"),
         }
     }
 
@@ -991,6 +1008,11 @@ impl<'a> SubstateRef<'a> {
                     owned_nodes.insert(RENodeId::NonFungibleStore(nf_store_id));
                 }
                 (HashSet::new(), owned_nodes)
+            }
+            SubstateRef::Validator(substate) => {
+                let mut references = HashSet::new();
+                references.insert(GlobalAddress::System(substate.manager));
+                (references, HashSet::new())
             }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();

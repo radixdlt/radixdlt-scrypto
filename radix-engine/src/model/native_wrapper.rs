@@ -302,20 +302,26 @@ where
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
-                    EpochManagerMethodInvocation::RegisterValidator(invocation) => {
-                        let rtn = api.invoke(invocation)?;
-                        Ok(Box::new(rtn))
-                    }
-                    EpochManagerMethodInvocation::UnregisterValidator(invocation) => {
-                        let rtn = api.invoke(invocation)?;
-                        Ok(Box::new(rtn))
-                    }
                     EpochManagerMethodInvocation::CreateValidator(invocation) => {
+                        let rtn = api.invoke(invocation)?;
+                        Ok(Box::new(rtn))
+                    }
+                    EpochManagerMethodInvocation::UpdateValidator(invocation) => {
                         let rtn = api.invoke(invocation)?;
                         Ok(Box::new(rtn))
                     }
                 }
             }
+            NativeMethodInvocation::Validator(validator_method) => match validator_method {
+                ValidatorMethodInvocation::Register(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+                ValidatorMethodInvocation::Unregister(invocation) => {
+                    let rtn = api.invoke(invocation)?;
+                    Ok(Box::new(rtn))
+                }
+            },
             NativeMethodInvocation::Clock(clock_method) => match clock_method {
                 ClockMethodInvocation::SetCurrentTime(invocation) => {
                     let rtn = api.invoke(invocation)?;

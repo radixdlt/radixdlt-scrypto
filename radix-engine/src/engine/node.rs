@@ -44,7 +44,7 @@ pub enum RENode {
         ValidatorSetSubstate,
         AccessRulesChainSubstate,
     ),
-    Validator(ValidatorSubstate),
+    Validator(ValidatorSubstate, AccessRulesChainSubstate),
     Clock(
         CurrentTimeRoundedToMinutesSubstate,
         AccessRulesChainSubstate,
@@ -189,10 +189,14 @@ impl RENode {
                     vault_access_rules.into(),
                 );
             }
-            RENode::Validator(validator) => {
+            RENode::Validator(validator, access_rules) => {
                 substates.insert(
                     SubstateOffset::Validator(ValidatorOffset::Validator),
                     validator.into(),
+                );
+                substates.insert(
+                    SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
+                    access_rules.into(),
                 );
             }
             RENode::NonFungibleStore(non_fungible_store) => {

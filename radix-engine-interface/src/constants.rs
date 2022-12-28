@@ -196,123 +196,23 @@ pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     105
 );
 
-pub const EPOCH_MANAGER: SystemAddress = construct_address!(
-    EntityType::EpochManager,
-    95,
-    195,
-    49,
-    184,
-    56,
-    143,
-    50,
-    48,
-    74,
-    60,
-    118,
-    82,
-    157,
-    9,
-    41,
-    137,
-    56,
-    213,
-    248,
-    197,
-    23,
-    208,
-    120,
-    209,
-    129,
-    137
-);
-
 pub const CLOCK: SystemAddress = construct_address!(
     EntityType::Clock,
-    100,
-    122,
-    90,
-    153,
-    192,
-    230,
-    68,
-    232,
-    52,
-    111,
-    194,
-    67,
-    139,
-    246,
-    24,
-    111,
-    166,
-    139,
-    122,
-    227,
-    235,
-    71,
-    163,
-    178,
-    99,
-    94
+95, 195, 49, 184, 56, 143, 50, 48, 74, 60, 118, 82, 157, 9, 41, 137, 56, 213, 248, 197, 23, 208, 120, 209, 129, 137
 );
 
 /// The ED25519 virtual resource address.
 pub const EDDSA_ED25519_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
-    40,
-    217,
-    220,
-    96,
-    193,
-    149,
-    175,
-    197,
-    239,
-    196,
-    234,
-    126,
-    191,
-    117,
-    203,
-    147,
-    13,
-    122,
-    137,
-    31,
-    224,
-    36,
-    145,
-    105,
-    45,
-    22
+    210, 4, 203, 199, 253, 87, 86, 55, 225, 160, 209, 125, 34, 246, 206, 141, 224, 160, 236, 54, 219, 221, 233, 10, 33, 79
 );
 
 pub const PACKAGE_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
-    68,
-    160,
-    7,
-    98,
-    178,
-    140,
-    86,
-    219,
-    59,
-    214,
-    120,
-    133,
-    86,
-    56,
-    212,
-    115,
-    198,
-    8,
-    151,
-    39,
-    203,
-    125,
-    28,
-    210,
-    215,
-    13
+    168, 222, 159, 163, 116, 25, 115, 128, 191, 83, 43, 211, 134, 178, 13, 170, 221, 74, 166, 159, 237, 25, 224, 234, 93, 16
+);
+
+pub const EPOCH_MANAGER: SystemAddress = construct_address!(
+    EntityType::EpochManager,
+    10, 252, 122, 98, 202, 201, 171, 182, 129, 235, 221, 160, 28, 137, 17, 63, 185, 222, 48, 85, 176, 59, 255, 172, 127, 30
 );

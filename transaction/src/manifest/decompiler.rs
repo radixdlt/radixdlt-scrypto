@@ -537,12 +537,12 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
-        BasicInstruction::RegisterValidator { validator } => {
+        BasicInstruction::RegisterValidator { validator_address: validator } => {
             f.write_str("REGISTER_VALIDATOR")?;
             format_typed_value(f, context, validator)?;
             f.write_str(";")?;
         }
-        BasicInstruction::UnregisterValidator { validator } => {
+        BasicInstruction::UnregisterValidator { validator_address: validator } => {
             f.write_str("UNREGISTER_VALIDATOR")?;
             format_typed_value(f, context, validator)?;
             f.write_str(";")?;

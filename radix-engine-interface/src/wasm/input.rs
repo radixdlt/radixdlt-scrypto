@@ -49,6 +49,7 @@ pub enum NativeMethodInvocation {
     Package(PackageMethodInvocation),
     Component(ComponentMethodInvocation),
     EpochManager(EpochManagerMethodInvocation),
+    Validator(ValidatorMethodInvocation),
     Clock(ClockMethodInvocation),
     AuthZoneStack(AuthZoneStackMethodInvocation),
     ResourceManager(ResourceManagerMethodInvocation),
@@ -148,9 +149,15 @@ pub enum EpochManagerMethodInvocation {
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     NextRound(EpochManagerNextRoundInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
-    RegisterValidator(EpochManagerRegisterValidatorInvocation),
-    UnregisterValidator(EpochManagerUnregisterValidatorInvocation),
     CreateValidator(EpochManagerCreateValidatorInvocation),
+    UpdateValidator(EpochManagerUpdateValidatorInvocation),
+}
+
+#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum ValidatorMethodInvocation {
+    Register(ValidatorRegisterInvocation),
+    Unregister(ValidatorUnregisterInvocation),
 }
 
 #[derive(Debug, Clone)]
@@ -433,23 +440,26 @@ impl NativeFnInvocation {
                                 invocation.receiver,
                             )));
                         }
-                        EpochManagerMethodInvocation::RegisterValidator(invocation) => {
-                            refs.insert(RENodeId::Global(GlobalAddress::System(
-                                invocation.receiver,
-                            )));
-                        }
-                        EpochManagerMethodInvocation::UnregisterValidator(invocation) => {
-                            refs.insert(RENodeId::Global(GlobalAddress::System(
-                                invocation.receiver,
-                            )));
-                        }
                         EpochManagerMethodInvocation::CreateValidator(invocation) => {
+                            refs.insert(RENodeId::Global(GlobalAddress::System(
+                                invocation.receiver,
+                            )));
+                        }
+                        EpochManagerMethodInvocation::UpdateValidator(invocation) => {
                             refs.insert(RENodeId::Global(GlobalAddress::System(
                                 invocation.receiver,
                             )));
                         }
                     }
                 }
+                NativeMethodInvocation::Validator(method) => match method {
+                    ValidatorMethodInvocation::Register(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    }
+                    ValidatorMethodInvocation::Unregister(invocation) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    }
+                },
                 NativeMethodInvocation::Clock(clock_method) => match clock_method {
                     ClockMethodInvocation::SetCurrentTime(invocation) => {
                         refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));

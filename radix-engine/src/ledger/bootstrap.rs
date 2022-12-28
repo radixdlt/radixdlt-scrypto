@@ -14,8 +14,8 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use radix_engine_interface::wasm::{
-    ClockFunctionInvocation, EpochManagerFunctionInvocation, EpochManagerMethodInvocation,
-    NativeFnInvocation, NativeFunctionInvocation, NativeMethodInvocation,
+    ClockFunctionInvocation, EpochManagerFunctionInvocation,
+    NativeFnInvocation, NativeFunctionInvocation,
 };
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
@@ -33,10 +33,10 @@ pub struct GenesisReceipt {
     pub system_token: ResourceAddress,
     pub xrd_token: ResourceAddress,
     pub faucet_component: ComponentAddress,
-    pub epoch_manager: SystemAddress,
     pub clock: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
     pub package_token: ResourceAddress,
+    pub epoch_manager: SystemAddress,
 }
 
 pub fn create_genesis(
@@ -160,23 +160,10 @@ pub fn create_genesis(
         }));
     };
 
-    instructions.push(
-        NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(
-            EpochManagerFunctionInvocation::Create(EpochManagerCreateInvocation {
-                validator_set: validator_set.clone(),
-                initial_epoch,
-                rounds_per_epoch,
-            }),
-        ))
-        .into(),
-    );
 
-    instructions.push(
-        NativeFnInvocation::Function(NativeFunctionInvocation::Clock(
-            ClockFunctionInvocation::Create(ClockCreateInvocation {}),
-        ))
-        .into(),
-    );
+    instructions.push(Instruction::System(NativeFnInvocation::Function(
+        NativeFunctionInvocation::Clock(ClockFunctionInvocation::Create(ClockCreateInvocation {})),
+    )));
 
     // EDDSA ED25519 Token
     {
@@ -214,16 +201,16 @@ pub fn create_genesis(
         ));
     }
 
-    for validator in validator_set {
-        instructions.push(Instruction::System(NativeFnInvocation::Method(
-            NativeMethodInvocation::EpochManager(EpochManagerMethodInvocation::CreateValidator(
-                EpochManagerCreateValidatorInvocation {
-                    receiver: EPOCH_MANAGER,
-                    validator,
-                },
-            )),
-        )));
-    }
+    instructions.push(Instruction::System(NativeFnInvocation::Function(
+        NativeFunctionInvocation::EpochManager(EpochManagerFunctionInvocation::Create(
+            EpochManagerCreateInvocation {
+                validator_set: validator_set.clone(),
+                initial_epoch,
+                rounds_per_epoch,
+            },
+        )),
+    )));
+
 
     SystemTransaction {
         instructions,
@@ -239,10 +226,10 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     let (system_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(3);
     let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(4);
     let faucet_component: ComponentAddress = receipt.output(6);
-    let epoch_manager: SystemAddress = receipt.output(7);
-    let clock: SystemAddress = receipt.output(8);
-    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(9);
-    let (package_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(10);
+    let clock: SystemAddress = receipt.output(7);
+    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(8);
+    let (package_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(9);
+    let epoch_manager: SystemAddress = receipt.output(10);
 
     GenesisReceipt {
         faucet_package,
@@ -251,10 +238,10 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
         system_token,
         xrd_token,
         faucet_component,
-        epoch_manager,
         clock,
         eddsa_ed25519_token,
         package_token,
+        epoch_manager,
     }
 }
 
@@ -335,14 +322,6 @@ mod tests {
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
-        let validator_set = transaction_receipt
-            .result
-            .expect_commit()
-            .next_epoch
-            .as_ref()
-            .expect("Should contain validator set");
-        assert_eq!(validator_set, &(initial_validator_set, 1u64));
-
         let genesis_receipt = genesis_result(&transaction_receipt);
 
         assert_eq!(genesis_receipt.faucet_package, FAUCET_PACKAGE);
@@ -351,9 +330,9 @@ mod tests {
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
-        assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
         assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
         assert_eq!(genesis_receipt.package_token, PACKAGE_TOKEN);
+        assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
     }
 }

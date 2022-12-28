@@ -210,10 +210,10 @@ pub enum BasicInstruction {
     },
 
     RegisterValidator {
-        validator: EcdsaSecp256k1PublicKey,
+        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
     },
     UnregisterValidator {
-        validator: EcdsaSecp256k1PublicKey,
+        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
     },
 }
 

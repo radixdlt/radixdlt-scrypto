@@ -94,6 +94,7 @@ pub enum NativeFn {
     Package(PackageFn),
     Metadata(MetadataFn),
     EpochManager(EpochManagerFn),
+    Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
     ResourceManager(ResourceManagerFn),
     Bucket(BucketFn),
@@ -113,7 +114,7 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::EpochManager(..) => NativePackage::EpochManager,
+            NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -244,9 +245,30 @@ pub enum EpochManagerFn {
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
-    RegisterValidator,
-    UnregisterValidator,
     CreateValidator,
+    UpdateValidator,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum ValidatorFn {
+    Register,
+    Unregister,
 }
 
 #[derive(
