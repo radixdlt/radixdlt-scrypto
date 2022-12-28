@@ -12,11 +12,11 @@ blueprint! {
 
         pub fn set_epoch(epoch_manager: SystemAddress, epoch: u64) {
             let input = RadixEngineInput::Invoke(SerializedInvocation::Native(
-                NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-                    EpochManagerMethodInvocation::SetEpoch(EpochManagerSetEpochInvocation {
+                NativeFnInvocation::EpochManager(EpochManagerMethodInvocation::SetEpoch(
+                    EpochManagerSetEpochInvocation {
                         receiver: epoch_manager,
                         epoch,
-                    }),
+                    },
                 )),
             ));
             call_engine(input)

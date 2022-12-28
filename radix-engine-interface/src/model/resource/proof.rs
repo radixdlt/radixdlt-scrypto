@@ -28,10 +28,7 @@ impl SerializableInvocation for ProofGetAmountInvocation {
 
 impl Into<SerializedInvocation> for ProofGetAmountInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
-            ProofInvocation::GetAmount(self),
-        ))
-        .into()
+        NativeInvocation::Proof(ProofInvocation::GetAmount(self)).into()
     }
 }
 
@@ -50,10 +47,7 @@ impl SerializableInvocation for ProofGetNonFungibleIdsInvocation {
 
 impl Into<SerializedInvocation> for ProofGetNonFungibleIdsInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
-            ProofInvocation::GetNonFungibleIds(self),
-        ))
-        .into()
+        NativeInvocation::Proof(ProofInvocation::GetNonFungibleIds(self)).into()
     }
 }
 
@@ -72,10 +66,7 @@ impl SerializableInvocation for ProofGetResourceAddressInvocation {
 
 impl Into<SerializedInvocation> for ProofGetResourceAddressInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
-            ProofInvocation::GetResourceAddress(self),
-        ))
-        .into()
+        NativeInvocation::Proof(ProofInvocation::GetResourceAddress(self)).into()
     }
 }
 
@@ -94,10 +85,7 @@ impl SerializableInvocation for ProofCloneInvocation {
 
 impl Into<SerializedInvocation> for ProofCloneInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(ProofInvocation::Clone(
-            self,
-        )))
-        .into()
+        NativeInvocation::Proof(ProofInvocation::Clone(self)).into()
     }
 }
 

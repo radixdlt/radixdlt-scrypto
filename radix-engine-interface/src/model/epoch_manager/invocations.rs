@@ -20,10 +20,7 @@ impl SerializableInvocation for EpochManagerCreateInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerInvocation::Create(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::Create(self)).into()
     }
 }
 
@@ -43,10 +40,7 @@ impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerInvocation::GetCurrentEpoch(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(self)).into()
     }
 }
 
@@ -67,9 +61,6 @@ impl SerializableInvocation for EpochManagerSetEpochInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerInvocation::SetEpoch(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(self)).into()
     }
 }

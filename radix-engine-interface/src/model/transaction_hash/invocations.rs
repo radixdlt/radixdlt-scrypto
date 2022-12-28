@@ -23,10 +23,7 @@ impl SerializableInvocation for TransactionRuntimeGetHashInvocation {
 
 impl Into<SerializedInvocation> for TransactionRuntimeGetHashInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::TransactionRuntime(
-            TransactionRuntimeInvocation::Get(self),
-        ))
-        .into()
+        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::Get(self)).into()
     }
 }
 
@@ -46,9 +43,7 @@ impl SerializableInvocation for TransactionRuntimeGenerateUuidInvocation {
 
 impl Into<SerializedInvocation> for TransactionRuntimeGenerateUuidInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::TransactionRuntime(
-            TransactionRuntimeInvocation::GenerateUuid(self),
-        ))
-        .into()
+        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::GenerateUuid(self))
+            .into()
     }
 }

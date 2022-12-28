@@ -3,7 +3,7 @@ use radix_engine_interface::crypto::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
-use radix_engine_interface::wasm::NativeFnInvocation;
+use radix_engine_interface::wasm::NativeInvocation;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
@@ -216,7 +216,7 @@ pub enum BasicInstruction {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum Instruction {
     Basic(BasicInstruction),
-    System(NativeFnInvocation),
+    System(NativeInvocation),
 }
 
 impl From<BasicInstruction> for Instruction {
@@ -225,8 +225,8 @@ impl From<BasicInstruction> for Instruction {
     }
 }
 
-impl From<NativeFnInvocation> for Instruction {
-    fn from(i: NativeFnInvocation) -> Self {
+impl From<NativeInvocation> for Instruction {
+    fn from(i: NativeInvocation) -> Self {
         Instruction::System(i)
     }
 }

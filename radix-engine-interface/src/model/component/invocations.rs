@@ -23,10 +23,7 @@ impl SerializableInvocation for ComponentGlobalizeInvocation {
 
 impl Into<SerializedInvocation> for ComponentGlobalizeInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Component(
-            ComponentInvocation::Globalize(self),
-        ))
-        .into()
+        NativeInvocation::Component(ComponentInvocation::Globalize(self)).into()
     }
 }
 
@@ -47,10 +44,7 @@ impl SerializableInvocation for ComponentGlobalizeWithOwnerInvocation {
 
 impl Into<SerializedInvocation> for ComponentGlobalizeWithOwnerInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Component(
-            ComponentInvocation::GlobalizeWithOwner(self),
-        ))
-        .into()
+        NativeInvocation::Component(ComponentInvocation::GlobalizeWithOwner(self)).into()
     }
 }
 
@@ -72,10 +66,7 @@ impl SerializableInvocation for ComponentSetRoyaltyConfigInvocation {
 
 impl Into<SerializedInvocation> for ComponentSetRoyaltyConfigInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Component(
-            ComponentInvocation::SetRoyaltyConfig(self),
-        ))
-        .into()
+        NativeInvocation::Component(ComponentInvocation::SetRoyaltyConfig(self)).into()
     }
 }
 
@@ -96,9 +87,6 @@ impl SerializableInvocation for ComponentClaimRoyaltyInvocation {
 
 impl Into<SerializedInvocation> for ComponentClaimRoyaltyInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Component(
-            ComponentInvocation::ClaimRoyalty(self),
-        ))
-        .into()
+        NativeInvocation::Component(ComponentInvocation::ClaimRoyalty(self)).into()
     }
 }

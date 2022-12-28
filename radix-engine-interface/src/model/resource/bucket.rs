@@ -31,10 +31,7 @@ impl SerializableInvocation for BucketTakeInvocation {
 
 impl Into<SerializedInvocation> for BucketTakeInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketInvocation::Take(self),
-        ))
-        .into()
+        NativeInvocation::Bucket(BucketInvocation::Take(self)).into()
     }
 }
 
@@ -64,10 +61,7 @@ impl SerializableInvocation for BucketPutInvocation {
 
 impl Into<SerializedInvocation> for BucketPutInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(BucketInvocation::Put(
-            self,
-        )))
-        .into()
+        NativeInvocation::Bucket(BucketInvocation::Put(self)).into()
     }
 }
 
@@ -88,10 +82,7 @@ impl SerializableInvocation for BucketTakeNonFungiblesInvocation {
 
 impl Into<SerializedInvocation> for BucketTakeNonFungiblesInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketInvocation::TakeNonFungibles(self),
-        ))
-        .into()
+        NativeInvocation::Bucket(BucketInvocation::TakeNonFungibles(self)).into()
     }
 }
 
@@ -111,10 +102,7 @@ impl SerializableInvocation for BucketGetNonFungibleIdsInvocation {
 
 impl Into<SerializedInvocation> for BucketGetNonFungibleIdsInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketInvocation::GetNonFungibleIds(self),
-        ))
-        .into()
+        NativeInvocation::Bucket(BucketInvocation::GetNonFungibleIds(self)).into()
     }
 }
 
@@ -134,10 +122,7 @@ impl SerializableInvocation for BucketGetAmountInvocation {
 
 impl Into<SerializedInvocation> for BucketGetAmountInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketInvocation::GetAmount(self),
-        ))
-        .into()
+        NativeInvocation::Bucket(BucketInvocation::GetAmount(self)).into()
     }
 }
 
@@ -157,10 +142,7 @@ impl SerializableInvocation for BucketGetResourceAddressInvocation {
 
 impl Into<SerializedInvocation> for BucketGetResourceAddressInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketInvocation::GetResourceAddress(self),
-        ))
-        .into()
+        NativeInvocation::Bucket(BucketInvocation::GetResourceAddress(self)).into()
     }
 }
 
@@ -180,10 +162,7 @@ impl SerializableInvocation for BucketCreateProofInvocation {
 
 impl Into<SerializedInvocation> for BucketCreateProofInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Bucket(
-            BucketInvocation::CreateProof(self),
-        ))
-        .into()
+        NativeInvocation::Bucket(BucketInvocation::CreateProof(self)).into()
     }
 }
 

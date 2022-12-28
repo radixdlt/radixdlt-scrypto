@@ -26,26 +26,13 @@ pub enum RadixEngineInput {
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum SerializedInvocation {
-    Native(NativeFnInvocation),
+    Native(NativeInvocation),
     Scrypto(ScryptoInvocation),
 }
 
 #[derive(Debug, Clone)]
 #[scrypto(TypeId, Encode, Decode)]
-pub enum NativeFnInvocation {
-    Method(NativeMethodInvocation),
-    Function(NativeFunctionInvocation),
-}
-
-impl Into<SerializedInvocation> for NativeFnInvocation {
-    fn into(self) -> SerializedInvocation {
-        SerializedInvocation::Native(self)
-    }
-}
-
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum NativeMethodInvocation {
+pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
     Metadata(MetadataInvocation),
     Package(PackageInvocation),
@@ -61,9 +48,10 @@ pub enum NativeMethodInvocation {
     TransactionRuntime(TransactionRuntimeInvocation),
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum NativeFunctionInvocation {
+impl Into<SerializedInvocation> for NativeInvocation {
+    fn into(self) -> SerializedInvocation {
+        SerializedInvocation::Native(self)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -207,206 +195,193 @@ pub enum WorktopInvocation {
     Drain(WorktopDrainInvocation),
 }
 
-impl NativeFnInvocation {
+impl NativeInvocation {
     pub fn refs(&self) -> HashSet<RENodeId> {
         let mut refs = HashSet::new();
         match self {
-            NativeFnInvocation::Function(native_function) => match native_function {
-                _ => todo!()
+            NativeInvocation::Component(invocation) => match invocation {
+                ComponentInvocation::Globalize(..) => {}
+                ComponentInvocation::GlobalizeWithOwner(..) => {}
+                ComponentInvocation::SetRoyaltyConfig(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
+                ComponentInvocation::ClaimRoyalty(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
             },
-            NativeFnInvocation::Method(native_method) => match native_method {
-                NativeMethodInvocation::Component(invocation) => match invocation {
-                    ComponentInvocation::Globalize(..) => {}
-                    ComponentInvocation::GlobalizeWithOwner(..) => {}
-                    ComponentInvocation::SetRoyaltyConfig(invocation) => {
-                        refs.insert(invocation.receiver);
-                    }
-                    ComponentInvocation::ClaimRoyalty(invocation) => {
-                        refs.insert(invocation.receiver);
-                    }
-                },
-                NativeMethodInvocation::Package(package_method) => match package_method {
-                    PackageInvocation::Publish(..) => {}
-                    PackageInvocation::SetRoyaltyConfig(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Package(
-                            invocation.receiver,
-                        )));
-                    }
-                    PackageInvocation::ClaimRoyalty(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Package(
-                            invocation.receiver,
-                        )));
-                    }
-                },
-                NativeMethodInvocation::Bucket(bucket_method) => match bucket_method {
-                    BucketInvocation::Take(..) => {}
-                    BucketInvocation::CreateProof(..) => {}
-                    BucketInvocation::TakeNonFungibles(..) => {}
-                    BucketInvocation::GetNonFungibleIds(..) => {}
-                    BucketInvocation::GetAmount(..) => {}
-                    BucketInvocation::Put(..) => {}
-                    BucketInvocation::GetResourceAddress(..) => {}
-                },
-                NativeMethodInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
-                    AuthZoneStackInvocation::Pop(..) => {}
-                    AuthZoneStackInvocation::Push(..) => {}
-                    AuthZoneStackInvocation::CreateProof(..) => {}
-                    AuthZoneStackInvocation::CreateProofByAmount(..) => {}
-                    AuthZoneStackInvocation::CreateProofByIds(..) => {}
-                    AuthZoneStackInvocation::Clear(..) => {}
-                    AuthZoneStackInvocation::Drain(..) => {}
-                    AuthZoneStackInvocation::AssertAuthRule(..) => {}
-                },
-                NativeMethodInvocation::Proof(proof_method) => match proof_method {
-                    ProofInvocation::GetAmount(..) => {}
-                    ProofInvocation::GetNonFungibleIds(..) => {}
-                    ProofInvocation::GetResourceAddress(..) => {}
-                    ProofInvocation::Clone(..) => {}
-                },
-                NativeMethodInvocation::Vault(vault_method) => match vault_method {
-                    VaultInvocation::Take(..) => {}
-                    VaultInvocation::Put(..) => {}
-                    VaultInvocation::LockFee(..) => {}
-                    VaultInvocation::TakeNonFungibles(..) => {}
-                    VaultInvocation::GetAmount(..) => {}
-                    VaultInvocation::GetResourceAddress(..) => {}
-                    VaultInvocation::GetNonFungibleIds(..) => {}
-                    VaultInvocation::CreateProof(..) => {}
-                    VaultInvocation::CreateProofByAmount(..) => {}
-                    VaultInvocation::CreateProofByIds(..) => {}
-                    VaultInvocation::Recall(..) => {}
-                    VaultInvocation::RecallNonFungibles(..) => {}
-                },
-                NativeMethodInvocation::AccessRulesChain(access_rules_method) => {
-                    match access_rules_method {
-                        AccessRulesChainInvocation::AddAccessCheck(invocation) => {
-                            refs.insert(invocation.receiver);
-                        }
-                        AccessRulesChainInvocation::SetMethodAccessRule(invocation) => {
-                            refs.insert(invocation.receiver);
-                        }
-                        AccessRulesChainInvocation::SetMethodMutability(invocation) => {
-                            refs.insert(invocation.receiver);
-                        }
-                        AccessRulesChainInvocation::SetGroupAccessRule(invocation) => {
-                            refs.insert(invocation.receiver);
-                        }
-                        AccessRulesChainInvocation::SetGroupMutability(invocation) => {
-                            refs.insert(invocation.receiver);
-                        }
-                        AccessRulesChainInvocation::GetLength(invocation) => {
-                            refs.insert(invocation.receiver);
-                        }
-                    }
+            NativeInvocation::Package(package_method) => match package_method {
+                PackageInvocation::Publish(..) => {}
+                PackageInvocation::SetRoyaltyConfig(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Package(
+                        invocation.receiver,
+                    )));
                 }
-                NativeMethodInvocation::Metadata(metadata_method) => match metadata_method {
-                    MetadataInvocation::Set(invocation) => {
-                        refs.insert(invocation.receiver);
-                    }
-                    MetadataInvocation::Get(invocation) => {
-                        refs.insert(invocation.receiver);
-                    }
-                },
-                NativeMethodInvocation::ResourceManager(resman_method) => match resman_method {
-                    ResourceInvocation::Create(..) => {}
-                    ResourceInvocation::BurnBucket(..) => {}
-                    ResourceInvocation::Burn(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::UpdateVaultAuth(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::LockVaultAuth(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::CreateVault(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::CreateBucket(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::Mint(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::GetResourceType(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::GetTotalSupply(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::UpdateNonFungibleData(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::NonFungibleExists(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                    ResourceInvocation::GetNonFungible(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::Resource(
-                            invocation.receiver,
-                        )));
-                    }
-                },
-                NativeMethodInvocation::EpochManager(epoch_manager_method) => {
-                    match epoch_manager_method {
-                        EpochManagerInvocation::Create(..) => {}
-                        EpochManagerInvocation::GetCurrentEpoch(invocation) => {
-                            refs.insert(RENodeId::Global(GlobalAddress::System(
-                                invocation.receiver,
-                            )));
-                        }
-                        EpochManagerInvocation::SetEpoch(invocation) => {
-                            refs.insert(RENodeId::Global(GlobalAddress::System(
-                                invocation.receiver,
-                            )));
-                        }
-                    }
+                PackageInvocation::ClaimRoyalty(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Package(
+                        invocation.receiver,
+                    )));
                 }
-                NativeMethodInvocation::Clock(clock_method) => match clock_method {
-                    ClockInvocation::Create(..) => {}
-                    ClockInvocation::SetCurrentTime(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
-                    }
-                    ClockInvocation::GetCurrentTime(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
-                    }
-                    ClockInvocation::CompareCurrentTime(invocation) => {
-                        refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
-                    }
-                },
-                NativeMethodInvocation::Worktop(worktop_method) => match worktop_method {
-                    WorktopInvocation::TakeNonFungibles(..) => {}
-                    WorktopInvocation::Put(..) => {}
-                    WorktopInvocation::Drain(..) => {}
-                    WorktopInvocation::AssertContainsNonFungibles(..) => {}
-                    WorktopInvocation::AssertContains(..) => {}
-                    WorktopInvocation::AssertContainsAmount(..) => {}
-                    WorktopInvocation::TakeAll(..) => {}
-                    WorktopInvocation::TakeAmount(..) => {}
-                },
-                NativeMethodInvocation::TransactionRuntime(method) => match method {
-                    TransactionRuntimeInvocation::Get(..) => {}
-                    TransactionRuntimeInvocation::GenerateUuid(..) => {}
-                },
+            },
+            NativeInvocation::Bucket(bucket_method) => match bucket_method {
+                BucketInvocation::Take(..) => {}
+                BucketInvocation::CreateProof(..) => {}
+                BucketInvocation::TakeNonFungibles(..) => {}
+                BucketInvocation::GetNonFungibleIds(..) => {}
+                BucketInvocation::GetAmount(..) => {}
+                BucketInvocation::Put(..) => {}
+                BucketInvocation::GetResourceAddress(..) => {}
+            },
+            NativeInvocation::AuthZoneStack(auth_zone_method) => match auth_zone_method {
+                AuthZoneStackInvocation::Pop(..) => {}
+                AuthZoneStackInvocation::Push(..) => {}
+                AuthZoneStackInvocation::CreateProof(..) => {}
+                AuthZoneStackInvocation::CreateProofByAmount(..) => {}
+                AuthZoneStackInvocation::CreateProofByIds(..) => {}
+                AuthZoneStackInvocation::Clear(..) => {}
+                AuthZoneStackInvocation::Drain(..) => {}
+                AuthZoneStackInvocation::AssertAuthRule(..) => {}
+            },
+            NativeInvocation::Proof(proof_method) => match proof_method {
+                ProofInvocation::GetAmount(..) => {}
+                ProofInvocation::GetNonFungibleIds(..) => {}
+                ProofInvocation::GetResourceAddress(..) => {}
+                ProofInvocation::Clone(..) => {}
+            },
+            NativeInvocation::Vault(vault_method) => match vault_method {
+                VaultInvocation::Take(..) => {}
+                VaultInvocation::Put(..) => {}
+                VaultInvocation::LockFee(..) => {}
+                VaultInvocation::TakeNonFungibles(..) => {}
+                VaultInvocation::GetAmount(..) => {}
+                VaultInvocation::GetResourceAddress(..) => {}
+                VaultInvocation::GetNonFungibleIds(..) => {}
+                VaultInvocation::CreateProof(..) => {}
+                VaultInvocation::CreateProofByAmount(..) => {}
+                VaultInvocation::CreateProofByIds(..) => {}
+                VaultInvocation::Recall(..) => {}
+                VaultInvocation::RecallNonFungibles(..) => {}
+            },
+            NativeInvocation::AccessRulesChain(access_rules_method) => match access_rules_method {
+                AccessRulesChainInvocation::AddAccessCheck(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
+                AccessRulesChainInvocation::SetMethodAccessRule(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
+                AccessRulesChainInvocation::SetMethodMutability(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
+                AccessRulesChainInvocation::SetGroupAccessRule(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
+                AccessRulesChainInvocation::SetGroupMutability(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
+                AccessRulesChainInvocation::GetLength(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
+            },
+            NativeInvocation::Metadata(metadata_method) => match metadata_method {
+                MetadataInvocation::Set(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
+                MetadataInvocation::Get(invocation) => {
+                    refs.insert(invocation.receiver);
+                }
+            },
+            NativeInvocation::ResourceManager(resman_method) => match resman_method {
+                ResourceInvocation::Create(..) => {}
+                ResourceInvocation::BurnBucket(..) => {}
+                ResourceInvocation::Burn(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::UpdateVaultAuth(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::LockVaultAuth(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::CreateVault(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::CreateBucket(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::Mint(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::GetResourceType(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::GetTotalSupply(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::UpdateNonFungibleData(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::NonFungibleExists(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::GetNonFungible(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+            },
+            NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
+                EpochManagerInvocation::Create(..) => {}
+                EpochManagerInvocation::GetCurrentEpoch(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+                EpochManagerInvocation::SetEpoch(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+            },
+            NativeInvocation::Clock(clock_method) => match clock_method {
+                ClockInvocation::Create(..) => {}
+                ClockInvocation::SetCurrentTime(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+                ClockInvocation::GetCurrentTime(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+                ClockInvocation::CompareCurrentTime(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+            },
+            NativeInvocation::Worktop(worktop_method) => match worktop_method {
+                WorktopInvocation::TakeNonFungibles(..) => {}
+                WorktopInvocation::Put(..) => {}
+                WorktopInvocation::Drain(..) => {}
+                WorktopInvocation::AssertContainsNonFungibles(..) => {}
+                WorktopInvocation::AssertContains(..) => {}
+                WorktopInvocation::AssertContainsAmount(..) => {}
+                WorktopInvocation::TakeAll(..) => {}
+                WorktopInvocation::TakeAmount(..) => {}
+            },
+            NativeInvocation::TransactionRuntime(method) => match method {
+                TransactionRuntimeInvocation::Get(..) => {}
+                TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
         }
 
