@@ -7,7 +7,7 @@ use crate::scrypto;
 use crate::time::{Instant, TimeComparisonOperator};
 use crate::wasm::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockCreateInvocation {}
 
@@ -25,7 +25,7 @@ impl Into<SerializedInvocation> for ClockCreateInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockGetCurrentTimeInvocation {
     pub receiver: SystemAddress,
@@ -46,7 +46,7 @@ impl Into<SerializedInvocation> for ClockGetCurrentTimeInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockCompareCurrentTimeInvocation {
     pub receiver: SystemAddress,
@@ -69,7 +69,7 @@ impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockSetCurrentTimeInvocation {
     pub receiver: SystemAddress,

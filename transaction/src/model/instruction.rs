@@ -211,7 +211,7 @@ pub enum BasicInstruction {
     },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum Instruction {
     Basic(BasicInstruction),

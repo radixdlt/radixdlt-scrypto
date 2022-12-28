@@ -14,7 +14,7 @@ use crate::scrypto;
 use crate::scrypto_type;
 use crate::wasm::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct BucketTakeInvocation {
     pub receiver: BucketId,
@@ -35,7 +35,7 @@ impl Into<SerializedInvocation> for BucketTakeInvocation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct BucketPutInvocation {
     pub receiver: BucketId,
@@ -65,7 +65,7 @@ impl Into<SerializedInvocation> for BucketPutInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct BucketTakeNonFungiblesInvocation {
     pub receiver: BucketId,
@@ -86,7 +86,7 @@ impl Into<SerializedInvocation> for BucketTakeNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct BucketGetNonFungibleIdsInvocation {
     pub receiver: BucketId,
@@ -106,7 +106,7 @@ impl Into<SerializedInvocation> for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct BucketGetAmountInvocation {
     pub receiver: BucketId,
@@ -126,7 +126,7 @@ impl Into<SerializedInvocation> for BucketGetAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct BucketGetResourceAddressInvocation {
     pub receiver: BucketId,
@@ -146,7 +146,7 @@ impl Into<SerializedInvocation> for BucketGetResourceAddressInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct BucketCreateProofInvocation {
     pub receiver: BucketId,

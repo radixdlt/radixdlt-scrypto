@@ -8,7 +8,7 @@ use crate::scrypto;
 use crate::wasm::*;
 use sbor::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionRuntimeGetHashInvocation {
     pub receiver: TransactionRuntimeId,
@@ -28,7 +28,7 @@ impl Into<SerializedInvocation> for TransactionRuntimeGetHashInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionRuntimeGenerateUuidInvocation {
     pub receiver: TransactionRuntimeId,

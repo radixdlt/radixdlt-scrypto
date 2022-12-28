@@ -16,7 +16,7 @@ use crate::scrypto;
 use crate::scrypto_type;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultPutInvocation {
     pub receiver: VaultId,
@@ -46,7 +46,7 @@ impl Into<SerializedInvocation> for VaultPutInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultTakeInvocation {
     pub receiver: VaultId,
@@ -67,7 +67,7 @@ impl Into<SerializedInvocation> for VaultTakeInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultTakeNonFungiblesInvocation {
     pub receiver: VaultId,
@@ -88,7 +88,7 @@ impl Into<SerializedInvocation> for VaultTakeNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultGetAmountInvocation {
     pub receiver: VaultId,
@@ -108,7 +108,7 @@ impl Into<SerializedInvocation> for VaultGetAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultRecallInvocation {
     pub receiver: VaultId,
@@ -129,7 +129,7 @@ impl Into<SerializedInvocation> for VaultRecallInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultRecallNonFungiblesInvocation {
     pub receiver: VaultId,
@@ -150,7 +150,7 @@ impl Into<SerializedInvocation> for VaultRecallNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultGetResourceAddressInvocation {
     pub receiver: VaultId,
@@ -170,7 +170,7 @@ impl Into<SerializedInvocation> for VaultGetResourceAddressInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultGetNonFungibleIdsInvocation {
     pub receiver: VaultId,
@@ -190,7 +190,7 @@ impl Into<SerializedInvocation> for VaultGetNonFungibleIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofInvocation {
     pub receiver: VaultId,
@@ -210,7 +210,7 @@ impl Into<SerializedInvocation> for VaultCreateProofInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofByAmountInvocation {
     pub receiver: VaultId,
@@ -231,7 +231,7 @@ impl Into<SerializedInvocation> for VaultCreateProofByAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultCreateProofByIdsInvocation {
     pub receiver: VaultId,
@@ -252,7 +252,7 @@ impl Into<SerializedInvocation> for VaultCreateProofByIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct VaultLockFeeInvocation {
     pub receiver: VaultId,
