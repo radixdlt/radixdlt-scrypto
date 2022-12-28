@@ -6,7 +6,10 @@ use std::process::Command;
 use radix_engine::engine::RuntimeError;
 use radix_engine::engine::{KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::ledger::*;
-use radix_engine::model::{export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate, ValidatorSetSubstate};
+use radix_engine::model::{
+    export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
+    ValidatorSetSubstate,
+};
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
     execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
@@ -394,9 +397,24 @@ impl TestRunner {
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> SystemAddress {
         let node_id = self.deref_system_address(EPOCH_MANAGER);
-        let substate_id = SubstateId(node_id, SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet));
-        let substate: ValidatorSetSubstate = self.substate_store().get_substate(&substate_id).unwrap().substate.to_runtime().into();
-        substate.validator_set.iter().find(|e| e.key.eq(key)).cloned().unwrap().address
+        let substate_id = SubstateId(
+            node_id,
+            SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+        );
+        let substate: ValidatorSetSubstate = self
+            .substate_store()
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .to_runtime()
+            .into();
+        substate
+            .validator_set
+            .iter()
+            .find(|e| e.key.eq(key))
+            .cloned()
+            .unwrap()
+            .address
     }
 
     pub fn new_allocated_account(
@@ -425,6 +443,18 @@ impl TestRunner {
         } else {
             self.new_allocated_account()
         }
+    }
+
+    pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, SystemAddress) {
+        let (pub_key, _) = self.new_key_pair();
+        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+            .lock_fee(FAUCET_COMPONENT, 10.into())
+            .create_validator(pub_key)
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_commit_success();
+        let address = receipt.expect_commit().entity_changes.new_system_addresses[0];
+        (pub_key, address)
     }
 
     pub fn publish_package(

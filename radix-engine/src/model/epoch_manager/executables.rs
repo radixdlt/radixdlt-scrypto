@@ -317,8 +317,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateValidatorInvoc
             NativeFn::EpochManager(EpochManagerFn::CreateValidator),
             resolved_receiver,
         );
-        let executor =
-            EpochManagerCreateValidatorExecutable(resolved_receiver.receiver, self.key);
+        let executor = EpochManagerCreateValidatorExecutable(resolved_receiver.receiver, self.key);
 
         Ok((actor, call_frame_update, executor))
     }
@@ -336,7 +335,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
             SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
             LockFlags::read_only(),
         )?;
-        let mut substate_ref = api.get_ref_mut(handle)?;
+        let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
         let validator_address = EpochManager::create_validator(manager, self.1, api)?;

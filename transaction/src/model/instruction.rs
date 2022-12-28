@@ -220,7 +220,6 @@ pub enum BasicInstruction {
     UnregisterValidator {
         validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
     },
-
 }
 
 /*

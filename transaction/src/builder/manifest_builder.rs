@@ -4,7 +4,7 @@ use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId, VaultId};
 use radix_engine_interface::constants::*;
 use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::crypto::{hash, Blob, Hash, EcdsaSecp256k1PublicKey};
+use radix_engine_interface::crypto::{hash, Blob, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;

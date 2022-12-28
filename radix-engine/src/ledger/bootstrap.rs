@@ -14,8 +14,8 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use radix_engine_interface::wasm::{
-    ClockFunctionInvocation, EpochManagerFunctionInvocation,
-    NativeFnInvocation, NativeFunctionInvocation,
+    ClockFunctionInvocation, EpochManagerFunctionInvocation, NativeFnInvocation,
+    NativeFunctionInvocation,
 };
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
@@ -160,7 +160,6 @@ pub fn create_genesis(
         }));
     };
 
-
     instructions.push(Instruction::System(NativeFnInvocation::Function(
         NativeFunctionInvocation::Clock(ClockFunctionInvocation::Create(ClockCreateInvocation {})),
     )));
@@ -210,7 +209,6 @@ pub fn create_genesis(
             },
         )),
     )));
-
 
     SystemTransaction {
         instructions,
