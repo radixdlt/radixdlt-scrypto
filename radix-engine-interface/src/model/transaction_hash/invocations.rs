@@ -3,6 +3,7 @@ use sbor::rust::fmt::Debug;
 
 use crate::api::api::*;
 use crate::api::types::TransactionRuntimeId;
+use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 use sbor::*;
@@ -23,10 +24,7 @@ impl SerializableInvocation for TransactionRuntimeGetHashInvocation {
 
 impl Into<SerializedInvocation> for TransactionRuntimeGetHashInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::TransactionRuntime(
-            TransactionRuntimeMethodInvocation::Get(self),
-        ))
-        .into()
+        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::Get(self)).into()
     }
 }
 
@@ -46,9 +44,7 @@ impl SerializableInvocation for TransactionRuntimeGenerateUuidInvocation {
 
 impl Into<SerializedInvocation> for TransactionRuntimeGenerateUuidInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::TransactionRuntime(
-            TransactionRuntimeMethodInvocation::GenerateUuid(self),
-        ))
-        .into()
+        NativeInvocation::TransactionRuntime(TransactionRuntimeInvocation::GenerateUuid(self))
+            .into()
     }
 }

@@ -13,10 +13,6 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
-use radix_engine_interface::wasm::{
-    ClockFunctionInvocation, EpochManagerFunctionInvocation, NativeFnInvocation,
-    NativeFunctionInvocation,
-};
 use transaction::model::{BasicInstruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
 
@@ -148,14 +144,11 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
-    let create_epoch_manager =
-        NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(
-            EpochManagerFunctionInvocation::Create(EpochManagerCreateInvocation {}),
-        ));
-
-    let create_clock = NativeFnInvocation::Function(NativeFunctionInvocation::Clock(
-        ClockFunctionInvocation::Create(ClockCreateInvocation {}),
+    let create_epoch_manager = NativeInvocation::EpochManager(EpochManagerInvocation::Create(
+        EpochManagerCreateInvocation {},
     ));
+
+    let create_clock = NativeInvocation::Clock(ClockInvocation::Create(ClockCreateInvocation {}));
 
     let create_eddsa_ed25519_token = {
         let metadata: BTreeMap<String, String> = BTreeMap::new();

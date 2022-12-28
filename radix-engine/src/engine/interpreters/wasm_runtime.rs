@@ -5,6 +5,7 @@ use crate::types::{scrypto_decode, scrypto_encode, ScryptoInvocation};
 use crate::wasm::*;
 use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable, InvokableModel, LoggerApi};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
+use radix_engine_interface::model::SerializedInvocation;
 use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
 
