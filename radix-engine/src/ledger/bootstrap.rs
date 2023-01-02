@@ -13,7 +13,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
-use transaction::model::{BasicInstruction, SystemInstruction, SystemTransaction};
+use transaction::model::{BasicInstruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
 
 const XRD_SYMBOL: &str = "XRD";
@@ -143,25 +143,11 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
-    let create_epoch_manager = {
-        SystemInstruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-                function_name: EpochManagerFunction::Create.to_string(),
-            },
-            args: args!(),
-        }
-    };
+    let create_epoch_manager = NativeInvocation::EpochManager(EpochManagerInvocation::Create(
+        EpochManagerCreateInvocation {},
+    ));
 
-    let create_clock = {
-        SystemInstruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: CLOCK_BLUEPRINT.to_string(),
-                function_name: ClockFunction::Create.to_string(),
-            },
-            args: args!(),
-        }
-    };
+    let create_clock = NativeInvocation::Clock(ClockInvocation::Create(ClockCreateInvocation {}));
 
     let create_eddsa_ed25519_token = {
         let metadata: BTreeMap<String, String> = BTreeMap::new();

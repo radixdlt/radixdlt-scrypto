@@ -148,10 +148,10 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
                         SysCallTraceOrigin::ScryptoFunction(scrypto_fn.clone())
                     }
                 }
-                FnIdentifier::NativeMethod(native_method) => {
+                FnIdentifier::Native(NativeFn::Method(native_method)) => {
                     SysCallTraceOrigin::NativeMethod(native_method.clone())
                 }
-                FnIdentifier::NativeFunction(native_function) => {
+                FnIdentifier::Native(NativeFn::Function(native_function)) => {
                     SysCallTraceOrigin::NativeFunction(native_function.clone())
                 }
             };
@@ -167,7 +167,8 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
 
         match &actor {
             ResolvedActor {
-                identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(VaultMethod::Put)),
+                identifier:
+                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(vault_id),
@@ -175,7 +176,8 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
                     }),
             } => Self::handle_vault_put(update, heap, track, &call_frame.actor, vault_id),
             ResolvedActor {
-                identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(VaultMethod::LockFee)),
+                identifier:
+                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))),
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(vault_id),
@@ -198,7 +200,8 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
     ) -> Result<(), ModuleError> {
         match &call_frame.actor {
             ResolvedActor {
-                identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(VaultMethod::Take)),
+                identifier:
+                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(vault_id),

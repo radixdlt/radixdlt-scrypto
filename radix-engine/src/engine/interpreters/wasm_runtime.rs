@@ -1,10 +1,11 @@
 use crate::engine::*;
 use crate::fee::*;
-use crate::model::InvokeError;
+use crate::model::{invoke_native_fn, InvokeError};
 use crate::types::{scrypto_decode, scrypto_encode, ScryptoInvocation};
 use crate::wasm::*;
 use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable, InvokableModel, LoggerApi};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
+use radix_engine_interface::model::SerializedInvocation;
 use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
 
@@ -57,7 +58,8 @@ where
                     encode(self.api.invoke(invocation)?)? // TODO: Figure out to remove encode
                 }
                 SerializedInvocation::Native(invocation) => {
-                    invocation.invoke(self.api).map(|v| v.raw)?
+                    let rtn = invoke_native_fn(invocation, self.api)?;
+                    scrypto_encode(rtn.as_ref()).unwrap()
                 }
             },
             RadixEngineInput::CreateNode(node) => encode(self.api.sys_create_node(node)?)?,

@@ -281,9 +281,9 @@ impl CallFrame {
     pub fn new_root() -> Self {
         Self {
             depth: 0,
-            actor: ResolvedActor::function(FnIdentifier::NativeFunction(
+            actor: ResolvedActor::function(FnIdentifier::Native(NativeFn::Function(
                 NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
-            )),
+            ))),
             node_refs: HashMap::new(),
             owned_root_nodes: HashMap::new(),
             next_lock_handle: 0u32,
