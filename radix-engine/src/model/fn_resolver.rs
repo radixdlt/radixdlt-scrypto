@@ -78,7 +78,7 @@ pub fn resolve_native_method(receiver: RENodeId, method_name: &str) -> Option<Na
             .ok()
             .map(NativeMethod::Vault),
 
-        RENodeId::TransactionHash(_) => TransactionHashMethod::from_str(method_name)
+        RENodeId::TransactionRuntime(_) => TransactionHashMethod::from_str(method_name)
             .ok()
             .map(NativeMethod::TransactionHash),
 
