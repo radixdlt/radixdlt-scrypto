@@ -1,3 +1,4 @@
+use radix_engine_interface::model::{LoggerInvocation, NativeInvocation, SerializedInvocation};
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
@@ -29,7 +30,7 @@ impl fmt::Display for Level {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct LoggerLogInvocation {
     pub level: Level,
@@ -46,7 +47,6 @@ impl SerializableInvocation for LoggerLogInvocation {
 
 impl Into<SerializedInvocation> for LoggerLogInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Logger(LoggerInvocation::Log(self)))
-            .into()
+        NativeInvocation::Logger(LoggerInvocation::Log(self)).into()
     }
 }
