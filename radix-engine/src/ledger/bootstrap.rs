@@ -75,6 +75,7 @@ pub fn create_genesis(
         blobs.push(account_abi);
     }
 
+    // ECDSA SECP256k1
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
@@ -94,7 +95,26 @@ pub fn create_genesis(
         ));
     }
 
+    // EDDSA ED25519 Token
+    {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let initial_supply = None;
+
+        // TODO: Create token at a specific address
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    };
+
     // TODO: Perhaps combine with ecdsa token?
+    // System Token
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
@@ -115,6 +135,7 @@ pub fn create_genesis(
         ));
     }
 
+    // XRD Token
     {
         let mut metadata = BTreeMap::new();
         metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
@@ -139,45 +160,6 @@ pub fn create_genesis(
         ));
     }
 
-    instructions.push(
-        BasicInstruction::TakeFromWorktop {
-            resource_address: RADIX_TOKEN,
-        }
-        .into(),
-    );
-
-    {
-        let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
-        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
-            package_address: FAUCET_PACKAGE,
-            blueprint_name: FAUCET_BLUEPRINT.to_string(),
-            function_name: "new".to_string(),
-            args: args!(bucket),
-        }));
-    };
-
-    instructions.push(Instruction::System(NativeInvocation::Clock(
-        ClockInvocation::Create(ClockCreateInvocation {}),
-    )));
-
-    // EDDSA ED25519 Token
-    {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let initial_supply = None;
-
-        // TODO: Create token at a specific address
-        instructions.push(Instruction::Basic(
-            BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
-                metadata,
-                access_rules,
-                initial_supply,
-            },
-        ));
-    };
-
     // Package Token
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
@@ -196,6 +178,10 @@ pub fn create_genesis(
         ));
     }
 
+    instructions.push(Instruction::System(NativeInvocation::Clock(
+        ClockInvocation::Create(ClockCreateInvocation {}),
+    )));
+
     instructions.push(Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
             validator_set: validator_set.clone(),
@@ -203,6 +189,23 @@ pub fn create_genesis(
             rounds_per_epoch,
         }),
     )));
+
+    instructions.push(
+        BasicInstruction::TakeFromWorktop {
+            resource_address: RADIX_TOKEN,
+        }
+            .into(),
+    );
+
+    {
+        let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
+        instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
+            package_address: FAUCET_PACKAGE,
+            blueprint_name: FAUCET_BLUEPRINT.to_string(),
+            function_name: "new".to_string(),
+            args: args!(bucket),
+        }));
+    };
 
     SystemTransaction {
         instructions,
@@ -212,16 +215,22 @@ pub fn create_genesis(
 }
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
+    // Packages
     let faucet_package: PackageAddress = receipt.output(0);
     let account_package: PackageAddress = receipt.output(1);
+
+    // Resources
     let (ecdsa_secp256k1_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(2);
-    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(3);
-    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(4);
-    let faucet_component: ComponentAddress = receipt.output(6);
+    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(3);
+    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(4);
+    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(5);
+    let (package_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(6);
+
+    // Components
     let clock: SystemAddress = receipt.output(7);
-    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(8);
-    let (package_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(9);
-    let epoch_manager: SystemAddress = receipt.output(10);
+    let faucet_component = receipt.new_component_addresses()[0];
+    let epoch_manager = receipt.new_system_addresses().iter()
+        .find(|addr| matches!(addr, SystemAddress::EpochManager(..))).cloned().unwrap();
 
     GenesisReceipt {
         faucet_package,
@@ -318,13 +327,15 @@ mod tests {
 
         assert_eq!(genesis_receipt.faucet_package, FAUCET_PACKAGE);
         assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
+
         assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
+        assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
-        assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
-        assert_eq!(genesis_receipt.clock, CLOCK);
-        assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
         assert_eq!(genesis_receipt.package_token, PACKAGE_TOKEN);
+
+        assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
+        assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
     }
 }
