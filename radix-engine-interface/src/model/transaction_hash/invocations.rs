@@ -2,29 +2,29 @@ use radix_engine_interface::crypto::Hash;
 use sbor::rust::fmt::Debug;
 
 use crate::api::api::*;
-use crate::api::types::TransactionHashId;
+use crate::api::types::TransactionRuntimeId;
 use crate::scrypto;
 use crate::wasm::*;
 use sbor::*;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct TransactionHashGetInvocation {
-    pub receiver: TransactionHashId,
+pub struct TransactionRuntimeGetHashInvocation {
+    pub receiver: TransactionRuntimeId,
 }
 
-impl Invocation for TransactionHashGetInvocation {
+impl Invocation for TransactionRuntimeGetHashInvocation {
     type Output = Hash;
 }
 
-impl SerializableInvocation for TransactionHashGetInvocation {
+impl SerializableInvocation for TransactionRuntimeGetHashInvocation {
     type ScryptoOutput = Hash;
 }
 
-impl Into<SerializedInvocation> for TransactionHashGetInvocation {
+impl Into<SerializedInvocation> for TransactionRuntimeGetHashInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::TransactionHash(
-            TransactionHashMethodInvocation::Get(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::TransactionRuntime(
+            TransactionRuntimeMethodInvocation::Get(self),
         ))
         .into()
     }
@@ -32,22 +32,22 @@ impl Into<SerializedInvocation> for TransactionHashGetInvocation {
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct TransactionHashGenerateUuidInvocation {
-    pub receiver: TransactionHashId,
+pub struct TransactionRuntimeGenerateUuidInvocation {
+    pub receiver: TransactionRuntimeId,
 }
 
-impl Invocation for TransactionHashGenerateUuidInvocation {
+impl Invocation for TransactionRuntimeGenerateUuidInvocation {
     type Output = u128;
 }
 
-impl SerializableInvocation for TransactionHashGenerateUuidInvocation {
+impl SerializableInvocation for TransactionRuntimeGenerateUuidInvocation {
     type ScryptoOutput = u128;
 }
 
-impl Into<SerializedInvocation> for TransactionHashGenerateUuidInvocation {
+impl Into<SerializedInvocation> for TransactionRuntimeGenerateUuidInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::TransactionHash(
-            TransactionHashMethodInvocation::GenerateUuid(self),
+        NativeFnInvocation::Method(NativeMethodInvocation::TransactionRuntime(
+            TransactionRuntimeMethodInvocation::GenerateUuid(self),
         ))
         .into()
     }

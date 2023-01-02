@@ -70,7 +70,6 @@ pub struct Track<'s, R: FeeReserve> {
     pub fee_reserve: R,
     pub fee_table: FeeTable,
     pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
-    pub events: Vec<TrackedEvent>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -108,17 +107,12 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_reserve,
             fee_table,
             vault_ops: Vec::new(),
-            events: Vec::new(),
         }
     }
 
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.application_logs.push((level, message));
-    }
-
-    pub fn add_event(&mut self, event: TrackedEvent) {
-        self.events.push(event);
     }
 
     /// Returns a copy of the substate associated with the given address, if exists
@@ -499,6 +493,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
     pub fn finalize(
         self,
         invoke_result: Result<Vec<InstructionOutput>, RuntimeError>,
+        events: Vec<TrackedEvent>,
     ) -> TrackReceipt {
         // Close fee reserve
         let mut fee_summary = self.fee_reserve.finalize();
@@ -522,7 +517,7 @@ impl<'s, R: FeeReserve> Track<'s, R> {
             fee_summary,
             application_logs: self.application_logs,
             result,
-            events: self.events,
+            events,
         }
     }
 }

@@ -31,7 +31,7 @@ impl VisibilityProperties {
                 FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
                 _ => false,
             },
-            RENodeId::TransactionHash(..) => match &actor.identifier {
+            RENodeId::TransactionRuntime(..) => match &actor.identifier {
                 FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
                 _ => false,
             },
@@ -139,7 +139,7 @@ impl VisibilityProperties {
                 }
                 _ => false,
             },
-            (ExecutionMode::ScryptoInterpreter, offset) => match offset {
+            (ExecutionMode::Resolver, offset) => match offset {
                 SubstateOffset::Global(GlobalOffset::Global) => flags == LockFlags::read_only(),
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 SubstateOffset::Package(PackageOffset::Info) => flags == LockFlags::read_only(),

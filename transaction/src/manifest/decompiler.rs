@@ -1,5 +1,6 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
 use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
+use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::NonFungibleId;
 use radix_engine_interface::node::NetworkDefinition;
@@ -49,18 +50,20 @@ pub struct DecompilationContext<'a> {
 
 impl<'a> DecompilationContext<'a> {
     pub fn new(bech32_encoder: &'a Bech32Encoder) -> Self {
+        let mocked_hash = hash([0u8; 1]);
         Self {
             bech32_encoder: Some(bech32_encoder),
-            id_allocator: IdAllocator::new(IdSpace::Transaction),
+            id_allocator: IdAllocator::new(IdSpace::Transaction, mocked_hash),
             bucket_names: HashMap::<BucketId, String>::new(),
             proof_names: HashMap::<ProofId, String>::new(),
         }
     }
 
     pub fn new_with_optional_network(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
+        let mocked_hash = hash([0u8; 1]);
         Self {
             bech32_encoder,
-            id_allocator: IdAllocator::new(IdSpace::Transaction),
+            id_allocator: IdAllocator::new(IdSpace::Transaction, mocked_hash),
             bucket_names: HashMap::<BucketId, String>::new(),
             proof_names: HashMap::<ProofId, String>::new(),
         }

@@ -10,13 +10,14 @@ impl TransactionHashModule {
         api: &mut Y,
     ) -> Result<(), RuntimeError> {
         let refed = api.get_visible_node_ids()?;
-        let transaction_hash_id = refed
+        let maybe_hash_id = refed
             .into_iter()
-            .find(|e| matches!(e, RENodeId::TransactionHash(..)))
-            .unwrap();
-        call_frame_update
-            .node_refs_to_copy
-            .insert(transaction_hash_id);
+            .find(|e| matches!(e, RENodeId::TransactionRuntime(..)));
+        if let Some(transaction_hash_id) = maybe_hash_id {
+            call_frame_update
+                .node_refs_to_copy
+                .insert(transaction_hash_id);
+        }
 
         Ok(())
     }

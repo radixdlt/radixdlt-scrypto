@@ -1,11 +1,8 @@
-use crate::engine::call_frame::RENodeLocation;
 use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
-use radix_engine_interface::api::types::{
-    Level, LockHandle, RENodeId, SubstateId, SubstateOffset, VaultId,
-};
+use radix_engine_interface::api::types::{Level, LockHandle, RENodeId, SubstateOffset, VaultId};
 use sbor::rust::fmt::Debug;
 
 #[derive(Clone)]
@@ -17,9 +14,6 @@ pub enum SysCallInput<'a> {
         depth: usize,
     },
     ReadOwnedNodes,
-    BorrowNode {
-        node_id: &'a RENodeId,
-    },
     DropNode {
         node_id: &'a RENodeId,
     },
@@ -40,9 +34,6 @@ pub enum SysCallInput<'a> {
     DropLock {
         lock_handle: &'a LockHandle,
     },
-    TakeSubstate {
-        substate_id: &'a SubstateId,
-    },
     ReadBlob {
         blob_hash: &'a Hash,
     },
@@ -50,16 +41,12 @@ pub enum SysCallInput<'a> {
         level: &'a Level,
         message: &'a String,
     },
-    EmitEvent {
-        event: &'a Event<'a>,
-    },
 }
 
 #[derive(Debug, Clone)]
 pub enum SysCallOutput<'a> {
     Invoke { rtn: &'a dyn Debug },
     ReadOwnedNodes,
-    BorrowNode { node_pointer: &'a RENodeLocation },
     DropNode { node: &'a HeapRENode },
     CreateNode { node_id: &'a RENodeId },
     LockSubstate { lock_handle: LockHandle },
@@ -69,10 +56,9 @@ pub enum SysCallOutput<'a> {
     ReadBlob { blob: &'a [u8] },
     GenerateUuid { uuid: u128 },
     EmitLog,
-    EmitEvent,
 }
 
-pub trait Module<R: FeeReserve> {
+pub trait BaseModule<R: FeeReserve> {
     fn pre_sys_call(
         &mut self,
         _call_frame: &CallFrame,
@@ -145,13 +131,5 @@ pub trait Module<R: FeeReserve> {
         _ontingent: bool,
     ) -> Result<Resource, ModuleError> {
         Ok(fee)
-    }
-
-    fn on_finished_processing(
-        &mut self,
-        _heap: &mut Heap,
-        _track: &mut Track<R>,
-    ) -> Result<(), ModuleError> {
-        Ok(())
     }
 }

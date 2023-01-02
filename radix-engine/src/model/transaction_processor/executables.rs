@@ -1,5 +1,5 @@
 use crate::model::resolve_native_method;
-use crate::model::{parse_and_invoke_native_fn, resolve_native_function};
+use crate::model::*;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
@@ -22,6 +22,7 @@ use crate::wasm::WasmEngine;
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInvocation<'a> {
+    pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
     pub instructions: Cow<'a, [Instruction]>,
 }
@@ -243,19 +244,24 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         for request in self.runtime_validations.as_ref() {
             TransactionProcessor::perform_validation(request, api)?;
         }
-        let mut processor = TransactionProcessor::new();
-        let mut outputs = Vec::new();
+
         let node_id = api.allocate_node_id(RENodeType::Worktop)?;
         let _worktop_id = api.create_node(node_id, RENode::Worktop(WorktopSubstate::new()))?;
 
-        api.emit_event(Event::Runtime(RuntimeEvent::PreExecuteManifest))?;
+        let runtime_substate = TransactionRuntimeSubstate {
+            hash: self.transaction_hash,
+            next_id: 0u32,
+            instruction_index: 0u32,
+        };
+        let runtime_node_id = api.allocate_node_id(RENodeType::TransactionRuntime)?;
+        api.create_node(
+            runtime_node_id,
+            RENode::TransactionRuntime(runtime_substate),
+        )?;
 
-        for (idx, inst) in self.instructions.into_iter().enumerate() {
-            api.emit_event(Event::Runtime(RuntimeEvent::PreExecuteInstruction {
-                instruction_index: idx,
-                instruction: &inst,
-            }))?;
-
+        let mut processor = TransactionProcessor::new();
+        let mut outputs = Vec::new();
+        for inst in self.instructions.into_iter() {
             let result = match inst {
                 Instruction::Basic(BasicInstruction::TakeFromWorktop { resource_address }) => {
                     let bucket = Worktop::sys_take_all(*resource_address, api)?;
@@ -738,13 +744,22 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             };
             outputs.push(result);
 
-            api.emit_event(Event::Runtime(RuntimeEvent::PostExecuteInstruction {
-                instruction_index: idx,
-                instruction: &inst,
-            }))?;
+            {
+                let handle = api.lock_substate(
+                    runtime_node_id,
+                    SubstateOffset::TransactionRuntime(
+                        TransactionRuntimeOffset::TransactionRuntime,
+                    ),
+                    LockFlags::MUTABLE,
+                )?;
+                let mut substate_mut = api.get_ref_mut(handle)?;
+                let runtime = substate_mut.transaction_runtime();
+                runtime.instruction_index = runtime.instruction_index + 1;
+                api.drop_lock(handle)?;
+            }
         }
 
-        api.emit_event(Event::Runtime(RuntimeEvent::PostExecuteManifest))?;
+        api.drop_node(runtime_node_id)?;
 
         Ok((outputs, CallFrameUpdate::empty()))
     }
@@ -758,10 +773,12 @@ struct TransactionProcessor {
 
 impl TransactionProcessor {
     fn new() -> Self {
+        // TODO: Remove mocked_hash
+        let mocked_hash = hash([0u8; 1]);
         Self {
             proof_id_mapping: HashMap::new(),
             bucket_id_mapping: HashMap::new(),
-            id_allocator: IdAllocator::new(IdSpace::Transaction),
+            id_allocator: IdAllocator::new(IdSpace::Transaction, mocked_hash),
         }
     }
 

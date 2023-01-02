@@ -49,9 +49,12 @@ pub struct ManifestBuilder {
 impl ManifestBuilder {
     /// Starts a new transaction builder.
     pub fn new(network: &NetworkDefinition) -> Self {
+        // TODO: Remove mocked_hash, possibly by separating id allocation
+        // TODO: between addresses and ids.
+        let mocked_hash = hash([0u8; 1]);
         Self {
             decoder: Bech32Decoder::new(network),
-            id_allocator: IdAllocator::new(IdSpace::Transaction),
+            id_allocator: IdAllocator::new(IdSpace::Transaction, mocked_hash),
             instructions: Vec::new(),
             blobs: BTreeMap::default(),
         }
