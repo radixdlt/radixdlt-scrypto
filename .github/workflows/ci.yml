@@ -147,7 +147,7 @@ jobs:
         toolchain: stable
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
+        sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
@@ -178,7 +178,7 @@ jobs:
         toolchain: stable
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
+        sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
@@ -204,7 +204,7 @@ jobs:
         toolchain: stable
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
+        sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
@@ -224,7 +224,7 @@ jobs:
         toolchain: stable
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
+        sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
@@ -244,7 +244,7 @@ jobs:
         toolchain: stable
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
+        sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
@@ -282,7 +282,7 @@ jobs:
         workspaces: simulator
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake m4 -y
+        sudo apt-get install clang cmake -y
       if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
