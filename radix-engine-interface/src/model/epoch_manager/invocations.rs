@@ -133,6 +133,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateValidatorInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum UpdateValidator {
     Register(EcdsaSecp256k1PublicKey, Decimal),
+    UpdateStake(Decimal),
     Unregister,
 }
 
@@ -196,5 +197,35 @@ impl SerializableInvocation for ValidatorUnregisterInvocation {
 impl Into<SerializedInvocation> for ValidatorUnregisterInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::Validator(ValidatorInvocation::Unregister(self)).into()
+    }
+}
+
+#[derive(Debug, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ValidatorStakeInvocation {
+    pub receiver: SystemAddress,
+    pub stake: Bucket,
+}
+
+impl Clone for ValidatorStakeInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            stake: Bucket(self.stake.0),
+        }
+    }
+}
+
+impl Invocation for ValidatorStakeInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for ValidatorStakeInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<SerializedInvocation> for ValidatorStakeInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::Stake(self)).into()
     }
 }

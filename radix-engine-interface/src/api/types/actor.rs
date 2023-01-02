@@ -269,6 +269,7 @@ pub enum EpochManagerFn {
 pub enum ValidatorFn {
     Register,
     Unregister,
+    Stake,
 }
 
 #[derive(

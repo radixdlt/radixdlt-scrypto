@@ -1,9 +1,8 @@
 use crate::api::types::*;
 use crate::scrypto;
 use radix_engine_interface::data::ValueReplacingError;
-use sbor::rust::collections::HashSet;
+use sbor::rust::collections::{HashSet, HashMap};
 use sbor::rust::fmt::Debug;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -132,6 +131,7 @@ pub enum EpochManagerInvocation {
 pub enum ValidatorInvocation {
     Register(ValidatorRegisterInvocation),
     Unregister(ValidatorUnregisterInvocation),
+    Stake(ValidatorStakeInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -392,6 +392,9 @@ impl NativeInvocation {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
                 }
                 ValidatorInvocation::Unregister(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+                ValidatorInvocation::Stake(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
                 }
             },

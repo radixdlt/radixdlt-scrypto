@@ -21,6 +21,7 @@ use radix_engine_interface::rule;
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
+    ValidatorIsNotRegistered,
 }
 
 pub struct EpochManager;
@@ -70,8 +71,13 @@ impl Executor for EpochManagerCreateInvocation {
 
         for (key, bucket) in self.validator_set {
             let stake = Decimal::one();
-            let address =
-                EpochManager::create_validator(global_node_id.into(), key, Some(bucket), api)?;
+            let address = EpochManager::create_validator(
+                global_node_id.into(),
+                key,
+                Some(bucket),
+                true,
+                api,
+            )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
         }
@@ -349,7 +355,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
-        let validator_address = EpochManager::create_validator(manager, self.1, None, api)?;
+        let validator_address = EpochManager::create_validator(manager, self.1, None, false, api)?;
         Ok((
             validator_address,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::System(validator_address))),
@@ -404,6 +410,17 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
                     .validator_set
                     .insert(self.1, Validator { key, stake });
             }
+            UpdateValidator::UpdateStake(stake) => {
+                if let Some(validator) = validator_set.validator_set.get_mut(&self.1) {
+                    validator.stake = stake;
+                } else {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::EpochManagerError(
+                            EpochManagerError::ValidatorIsNotRegistered,
+                        ),
+                    ));
+                }
+            }
             UpdateValidator::Unregister => {
                 validator_set.validator_set.remove(&self.1);
             }
@@ -418,6 +435,7 @@ impl EpochManager {
         manager: SystemAddress,
         key: EcdsaSecp256k1PublicKey,
         bucket: Option<Bucket>,
+        is_registered: bool,
         api: &mut Y,
     ) -> Result<SystemAddress, RuntimeError>
     where
@@ -447,6 +465,7 @@ impl EpochManager {
                 key,
                 address,
                 stake_vault_id: stake_vault.0,
+                is_registered,
             },
             AccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
@@ -571,6 +590,64 @@ impl Executor for ValidatorUnregisterExecutable {
         };
 
         api.invoke(invocation)?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct ValidatorStakeExecutable(RENodeId, Bucket);
+
+impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorStakeInvocation {
+    type Exec = ValidatorStakeExecutable;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor =
+            ResolvedActor::method(NativeFn::Validator(ValidatorFn::Stake), resolved_receiver);
+        let executor = ValidatorStakeExecutable(resolved_receiver.receiver, self.stake);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for ValidatorStakeExecutable {
+    type Output = ();
+
+    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        let (is_registered, receiver, validator_address, stake_amount) = {
+            let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
+            let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
+            let substate = api.get_ref(handle)?;
+            let validator = substate.validator();
+            let validator_address = validator.address;
+            let manager = validator.manager;
+            let is_registered = validator.is_registered;
+            let mut stake_vault = Vault(validator.stake_vault_id);
+            stake_vault.sys_put(self.1, api)?;
+            let amount = stake_vault.sys_amount(api)?;
+            (is_registered, manager, validator_address, amount)
+        };
+
+        if is_registered {
+            let invocation = EpochManagerUpdateValidatorInvocation {
+                receiver,
+                validator_address,
+                update: UpdateValidator::UpdateStake(stake_amount),
+            };
+
+            api.invoke(invocation)?;
+        }
 
         Ok(((), CallFrameUpdate::empty()))
     }
