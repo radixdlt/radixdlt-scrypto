@@ -69,7 +69,7 @@ impl ManifestBuilder {
             BasicInstruction::TakeFromWorktop { .. }
             | BasicInstruction::TakeFromWorktopByAmount { .. }
             | BasicInstruction::TakeFromWorktopByIds { .. } => {
-                new_bucket_id = Some(self.id_allocator.new_bucket().unwrap());
+                new_bucket_id = Some(self.id_allocator.new_bucket_id().unwrap());
             }
             BasicInstruction::PopFromAuthZone { .. }
             | BasicInstruction::CreateProofFromAuthZone { .. }
@@ -77,7 +77,7 @@ impl ManifestBuilder {
             | BasicInstruction::CreateProofFromAuthZoneByIds { .. }
             | BasicInstruction::CreateProofFromBucket { .. }
             | BasicInstruction::CloneProof { .. } => {
-                new_proof_id = Some(self.id_allocator.new_proof().unwrap());
+                new_proof_id = Some(self.id_allocator.new_proof_id().unwrap());
             }
             _ => {}
         }

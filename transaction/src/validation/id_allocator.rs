@@ -24,11 +24,11 @@ impl ManifestIdAllocator {
         }
     }
 
-    pub fn new_bucket(&mut self) -> Result<ManifestBucket, IdAllocationError> {
+    pub fn new_bucket_id(&mut self) -> Result<ManifestBucket, IdAllocationError> {
         Ok(ManifestBucket(self.next()?))
     }
 
-    pub fn new_proof(&mut self) -> Result<ManifestProof, IdAllocationError> {
+    pub fn new_proof_id(&mut self) -> Result<ManifestProof, IdAllocationError> {
         Ok(ManifestProof(self.next()?))
     }
 }

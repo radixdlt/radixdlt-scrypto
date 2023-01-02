@@ -34,7 +34,7 @@ impl ManifestIdValidator {
     pub fn new_bucket(&mut self) -> Result<ManifestBucket, IdValidationError> {
         let bucket_id = self
             .id_allocator
-            .new_bucket()
+            .new_bucket_id()
             .map_err(IdValidationError::IdAllocationError)?;
         self.bucket_ids.insert(bucket_id.clone(), 0);
         Ok(bucket_id)
@@ -67,7 +67,7 @@ impl ManifestIdValidator {
 
         let proof_id = self
             .id_allocator
-            .new_proof()
+            .new_proof_id()
             .map_err(IdValidationError::IdAllocationError)?;
         self.proof_ids.insert(proof_id.clone(), kind);
         Ok(proof_id)
@@ -87,7 +87,7 @@ impl ManifestIdValidator {
             }
             let proof_id = self
                 .id_allocator
-                .new_proof()
+                .new_proof_id()
                 .map_err(IdValidationError::IdAllocationError)?;
             self.proof_ids.insert(proof_id.clone(), kind);
             Ok(proof_id)

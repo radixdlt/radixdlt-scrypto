@@ -102,7 +102,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::TakeFromWorktop { resource_address } => {
             let bucket_id = context
                 .id_allocator
-                .new_bucket()
+                .new_bucket_id()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             write!(
@@ -119,7 +119,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             let bucket_id = context
                 .id_allocator
-                .new_bucket()
+                .new_bucket_id()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             context.bucket_names.insert(bucket_id, name.clone());
@@ -137,7 +137,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             let bucket_id = context
                 .id_allocator
-                .new_bucket()
+                .new_bucket_id()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             context.bucket_names.insert(bucket_id, name.clone());
@@ -199,7 +199,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::PopFromAuthZone => {
             let proof_id = context
                 .id_allocator
-                .new_proof()
+                .new_proof_id()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -222,7 +222,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::CreateProofFromAuthZone { resource_address } => {
             let proof_id = context
                 .id_allocator
-                .new_proof()
+                .new_proof_id()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -239,7 +239,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             let proof_id = context
                 .id_allocator
-                .new_proof()
+                .new_proof_id()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -257,7 +257,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             let proof_id = context
                 .id_allocator
-                .new_proof()
+                .new_proof_id()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -274,7 +274,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::CreateProofFromBucket { bucket_id } => {
             let proof_id = context
                 .id_allocator
-                .new_proof()
+                .new_proof_id()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -292,7 +292,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::CloneProof { proof_id } => {
             let proof_id2 = context
                 .id_allocator
-                .new_proof()
+                .new_proof_id()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id2, name.clone());

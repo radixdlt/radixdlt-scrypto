@@ -41,8 +41,8 @@ pub enum TransactionProcessorError {
     InvalidRequestData(DecodeError),
     InvalidGetEpochResponseData(DecodeError),
     InvalidMethod,
-    BucketNotFound(BucketId),
-    ProofNotFound(ProofId),
+    BucketNotFound(ManifestBucket),
+    ProofNotFound(ManifestProof),
     NativeFunctionNotFound(NativeFunctionIdent),
     NativeMethodNotFound(NativeMethodIdent),
     IdAllocationError(IdAllocationError),
@@ -766,86 +766,84 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 }
 
 struct TransactionProcessor {
-    proof_id_mapping: HashMap<ProofId, ProofId>,
-    bucket_id_mapping: HashMap<BucketId, BucketId>,
-    id_allocator: IdAllocator,
+    proof_id_mapping: HashMap<ManifestProof, ProofId>,
+    bucket_id_mapping: HashMap<ManifestBucket, BucketId>,
+    id_allocator: ManifestIdAllocator,
 }
 
 impl TransactionProcessor {
     fn new() -> Self {
-        // TODO: Remove mocked_hash
-        let mocked_hash = hash([0u8; 1]);
         Self {
             proof_id_mapping: HashMap::new(),
             bucket_id_mapping: HashMap::new(),
-            id_allocator: IdAllocator::new(IdSpace::Transaction, mocked_hash),
+            id_allocator: ManifestIdAllocator::new(),
         }
     }
 
-    fn get_bucket(&mut self, bucket_id: &BucketId) -> Result<Bucket, RuntimeError> {
+    fn get_bucket(&mut self, bucket_id: &ManifestBucket) -> Result<Bucket, RuntimeError> {
         let real_id = self.bucket_id_mapping.get(bucket_id).cloned().ok_or(
             RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
-                TransactionProcessorError::BucketNotFound(*bucket_id),
+                TransactionProcessorError::BucketNotFound(bucket_id.clone()),
             )),
         )?;
         Ok(Bucket(real_id))
     }
 
-    fn take_bucket(&mut self, bucket_id: &BucketId) -> Result<Bucket, RuntimeError> {
+    fn take_bucket(&mut self, bucket_id: &ManifestBucket) -> Result<Bucket, RuntimeError> {
         let real_id =
             self.bucket_id_mapping
                 .remove(bucket_id)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::TransactionProcessorError(
-                        TransactionProcessorError::BucketNotFound(*bucket_id),
+                        TransactionProcessorError::BucketNotFound(bucket_id.clone()),
                     ),
                 ))?;
         Ok(Bucket(real_id))
     }
 
-    fn get_proof(&mut self, proof_id: &ProofId) -> Result<Proof, RuntimeError> {
+    fn get_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
         let real_id =
             self.proof_id_mapping
                 .get(proof_id)
                 .cloned()
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::TransactionProcessorError(
-                        TransactionProcessorError::ProofNotFound(*proof_id),
+                        TransactionProcessorError::ProofNotFound(proof_id.clone()),
                     ),
                 ))?;
         Ok(Proof(real_id))
     }
 
-    fn take_proof(&mut self, proof_id: &ProofId) -> Result<Proof, RuntimeError> {
+    fn take_proof(&mut self, proof_id: &ManifestProof) -> Result<Proof, RuntimeError> {
         let real_id =
             self.proof_id_mapping
                 .remove(proof_id)
                 .ok_or(RuntimeError::ApplicationError(
                     ApplicationError::TransactionProcessorError(
-                        TransactionProcessorError::ProofNotFound(*proof_id),
+                        TransactionProcessorError::ProofNotFound(proof_id.clone()),
                     ),
                 ))?;
         Ok(Proof(real_id))
     }
 
-    fn next_static_bucket(&mut self, bucket: Bucket) -> Result<Bucket, RuntimeError> {
+    fn next_static_bucket(&mut self, bucket: Bucket) -> Result<ManifestBucket, RuntimeError> {
         let new_id = self.id_allocator.new_bucket_id().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.bucket_id_mapping.insert(new_id, bucket.0);
-        Ok(Bucket(new_id))
+        self.bucket_id_mapping.insert(new_id.clone(), bucket.0);
+        Ok(new_id)
     }
 
-    fn next_static_proof(&mut self, proof: Proof) -> Result<Proof, RuntimeError> {
+    fn next_static_proof(&mut self, proof: Proof) -> Result<ManifestProof, RuntimeError> {
         let new_id = self.id_allocator.new_proof_id().map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
                 TransactionProcessorError::IdAllocationError(e),
             ))
         })?;
-        self.proof_id_mapping.insert(new_id, proof.0);
-        Ok(Proof(new_id))
+        self.proof_id_mapping.insert(new_id.clone(), proof.0);
+        Ok(new_id)
     }
 
     fn move_proofs_to_authzone_and_buckets_to_worktop<Y>(
@@ -858,14 +856,18 @@ impl TransactionProcessor {
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>,
     {
-        // Auto move into auth_zone
-        for (proof_id, _) in &value.proof_ids {
-            let proof = Proof(*proof_id);
-            ComponentAuthZone::sys_push(proof, api)?;
-        }
-        // Auto move into worktop
-        for (bucket_id, _) in &value.bucket_ids {
-            Worktop::sys_put(Bucket(*bucket_id), api)?;
+        // Auto move into worktop & auth_zone
+        for ownership in &value.ownerships {
+            match ownership {
+                Own::Bucket(bucket_id) => {
+                    Worktop::sys_put(Bucket(*bucket_id), api)?;
+                }
+                Own::Proof(proof_id) => {
+                    let proof = Proof(*proof_id);
+                    ComponentAuthZone::sys_push(proof, api)?;
+                }
+                _ => {}
+            }
         }
 
         Ok(())
@@ -897,8 +899,8 @@ impl TransactionProcessor {
     {
         let mut value = args.dom;
         for (expression, path) in args.expressions {
-            match expression.0.as_str() {
-                "ENTIRE_WORKTOP" => {
+            match expression {
+                ManifestExpression::EntireWorktop => {
                     let buckets = Worktop::sys_drain(env)?;
 
                     let val = path
@@ -909,7 +911,7 @@ impl TransactionProcessor {
                     )
                     .expect("Failed to decode Vec<Bucket>")
                 }
-                "ENTIRE_AUTH_ZONE" => {
+                ManifestExpression::EntireAuthZone => {
                     let proofs = ComponentAuthZone::sys_drain(env)?;
 
                     let val = path
@@ -920,7 +922,6 @@ impl TransactionProcessor {
                     )
                     .expect("Failed to decode Vec<Proof>")
                 }
-                _ => {} // no-op
             }
         }
 

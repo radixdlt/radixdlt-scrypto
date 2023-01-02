@@ -3,22 +3,15 @@ use radix_engine_interface::api::types::{
     PackageId, ProofId, ResourceManagerId, TransactionRuntimeId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
-use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::model::*;
-
 use sbor::rust::ops::Range;
 
-use crate::errors::*;
+use super::IdAllocationError;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdSpace {
     System,
     Application,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum IdAllocationError {
-    OutOfID,
 }
 
 /// An ID allocator defines how identities are generated.
