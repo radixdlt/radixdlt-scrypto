@@ -17,7 +17,7 @@ pub enum ScryptoCustomValue {
     SystemAddress(SystemAddress),
 
     // RE interpreted types
-    Ownership(Ownership),
+    Own(Own),
     Component(ComponentId),
     KeyValueStore(KeyValueStoreId),
     NonFungibleAddress(NonFungibleAddress),
@@ -54,8 +54,8 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             ScryptoCustomValue::SystemAddress(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress))
             }
-            ScryptoCustomValue::Ownership(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Ownership))
+            ScryptoCustomValue::Own(_) => {
+                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Own))
             }
             ScryptoCustomValue::Component(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Component))
@@ -112,7 +112,7 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             ScryptoCustomValue::ComponentAddress(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::ResourceAddress(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::SystemAddress(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::Ownership(v) => encoder.write_slice(&v.to_vec()),
+            ScryptoCustomValue::Own(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::Component(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::KeyValueStore(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::Bucket(v) => encoder.write_slice(&v.to_le_bytes()),
@@ -181,10 +181,10 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Scrypto
                     .map_err(|_| DecodeError::InvalidCustomValue)
                     .map(Self::SystemAddress)
             }
-            ScryptoCustomTypeId::Ownership => {
+            ScryptoCustomTypeId::Own => {
                 let n = 36;
                 let slice = decoder.read_slice(n)?;
-                Ok(Self::Ownership(
+                Ok(Self::Own(
                     slice
                         .try_into()
                         .map_err(|_| DecodeError::InvalidCustomValue)?,

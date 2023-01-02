@@ -192,7 +192,7 @@ pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoSborTypeId) -> 
             ScryptoCustomTypeId::ComponentAddress => f.write_str("ComponentAddress"),
             ScryptoCustomTypeId::ResourceAddress => f.write_str("ResourceAddress"),
             ScryptoCustomTypeId::SystemAddress => f.write_str("SystemAddress"),
-            ScryptoCustomTypeId::Ownership => f.write_str("Ownership"),
+            ScryptoCustomTypeId::Own => f.write_str("Own"),
             ScryptoCustomTypeId::Component => f.write_str("Component"),
             ScryptoCustomTypeId::KeyValueStore => f.write_str("KeyValueStore"),
             ScryptoCustomTypeId::Bucket => f.write_str("Bucket"),
@@ -286,8 +286,8 @@ pub fn format_custom_value<F: fmt::Write>(
             f.write_str("\")")?;
         }
         // RE node types
-        ScryptoCustomValue::Ownership(value) => {
-            write!(f, "Ownership(\"{}\")", hex::encode(value.to_vec()))?;
+        ScryptoCustomValue::Own(value) => {
+            write!(f, "Own(\"{}\")", hex::encode(value.to_vec()))?;
         }
         ScryptoCustomValue::Component(value) => {
             write!(f, "Component(\"{}\")", hex::encode(value))?;

@@ -5,7 +5,7 @@ pub const TYPE_COMPONENT_ADDRESS: u8 = 0x81;
 pub const TYPE_RESOURCE_ADDRESS: u8 = 0x82;
 pub const TYPE_SYSTEM_ADDRESS: u8 = 0x83;
 
-pub const TYPE_OWNERSHIP: u8 = 0x94;
+pub const TYPE_OWN: u8 = 0x94;
 pub const TYPE_NON_FUNGIBLE_ADDRESS: u8 = 0xa2;
 pub const TYPE_COMPONENT: u8 = 0x90;
 pub const TYPE_KEY_VALUE_STORE: u8 = 0x91;
@@ -38,7 +38,7 @@ pub enum ScryptoCustomTypeId {
     SystemAddress,
 
     // RE interpreted types
-    Ownership,
+    Own,
     Component,
     KeyValueStore,
     NonFungibleAddress, // for resource address contained
@@ -73,7 +73,7 @@ impl CustomTypeId for ScryptoCustomTypeId {
             Self::ComponentAddress => TYPE_COMPONENT_ADDRESS,
             Self::ResourceAddress => TYPE_RESOURCE_ADDRESS,
             Self::SystemAddress => TYPE_SYSTEM_ADDRESS,
-            Self::Ownership => TYPE_OWNERSHIP,
+            Self::Own => TYPE_OWN,
             Self::Component => TYPE_COMPONENT,
             Self::KeyValueStore => TYPE_KEY_VALUE_STORE,
             Self::Bucket => TYPE_BUCKET,
@@ -98,7 +98,7 @@ impl CustomTypeId for ScryptoCustomTypeId {
             TYPE_COMPONENT_ADDRESS => Some(ScryptoCustomTypeId::ComponentAddress),
             TYPE_RESOURCE_ADDRESS => Some(ScryptoCustomTypeId::ResourceAddress),
             TYPE_SYSTEM_ADDRESS => Some(ScryptoCustomTypeId::SystemAddress),
-            TYPE_OWNERSHIP => Some(ScryptoCustomTypeId::Ownership),
+            TYPE_OWN => Some(ScryptoCustomTypeId::Own),
             TYPE_COMPONENT => Some(ScryptoCustomTypeId::Component),
             TYPE_KEY_VALUE_STORE => Some(ScryptoCustomTypeId::KeyValueStore),
             TYPE_BUCKET => Some(ScryptoCustomTypeId::Bucket),

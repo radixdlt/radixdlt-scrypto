@@ -1,6 +1,6 @@
 use radix_engine_interface::api::api::Invokable;
-use radix_engine_interface::data::types::Ownership;
-use radix_engine_interface::data::types::ParseOwnershipError;
+use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::types::ParseOwnError;
 use radix_engine_interface::data::ScryptoCustomTypeId;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -15,13 +15,13 @@ use scrypto_abi::Type;
 use crate::resource::*;
 use crate::scrypto;
 
-pub struct Vault(pub Ownership); // scrypto stub
+pub struct Vault(pub Own); // scrypto stub
 
 impl TryFrom<&[u8]> for Vault {
-    type Error = ParseOwnershipError;
+    type Error = ParseOwnError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        Ownership::try_from(slice).map(|o| Self(o))
+        Own::try_from(slice).map(|o| Self(o))
     }
 }
 
@@ -31,7 +31,7 @@ impl Vault {
     }
 }
 
-scrypto_type!(Vault, ScryptoCustomTypeId::Ownership, Type::Vault, 36);
+scrypto_type!(Vault, ScryptoCustomTypeId::Own, Type::Vault, 36);
 
 pub trait ScryptoVault {
     fn with_bucket(bucket: Bucket) -> Self;
