@@ -113,7 +113,7 @@ pub struct TestRunner {
 
 impl TestRunner {
     pub fn new(trace: bool) -> Self {
-        Self::new_with_genesis(trace, create_genesis(BTreeSet::new(), 1u64, 1u64))
+        Self::new_with_genesis(trace, create_genesis(BTreeMap::new(), 1u64, 1u64))
     }
 
     pub fn new_with_genesis(trace: bool, genesis: SystemTransaction) -> Self {
@@ -407,7 +407,12 @@ impl TestRunner {
             .to_runtime()
             .into();
         substate
-            .validator_set.iter().find(|(_, v)| v.key.eq(key)).unwrap().0.clone()
+            .validator_set
+            .iter()
+            .find(|(_, v)| v.key.eq(key))
+            .unwrap()
+            .0
+            .clone()
     }
 
     pub fn new_allocated_account(

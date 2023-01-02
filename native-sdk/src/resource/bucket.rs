@@ -32,12 +32,12 @@ pub trait SysBucket {
 impl SysBucket for Bucket {
     fn sys_new<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
         receiver: ResourceAddress,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<Bucket, E>
     where
         Y: Invokable<ResourceManagerCreateBucketInvocation, E>,
     {
-        sys_calls.invoke(ResourceManagerCreateBucketInvocation { receiver })
+        api.invoke(ResourceManagerCreateBucketInvocation { receiver })
     }
 
     fn sys_burn<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(self, env: &mut Y) -> Result<(), E>

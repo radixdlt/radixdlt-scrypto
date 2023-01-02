@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use radix_engine_interface::data::ValueReplacingError;
 use crate::api::types::*;
 use crate::scrypto;
+use radix_engine_interface::data::ValueReplacingError;
 use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -33,10 +33,22 @@ pub enum NativeInvocation {
 }
 
 impl NativeInvocation {
-    pub fn replace_ids(&mut self,
-                       proof_replacements: &mut HashMap<ProofId, ProofId>,
-                       bucket_replacements: &mut HashMap<BucketId, BucketId>,
+    pub fn replace_ids(
+        &mut self,
+        _proof_replacements: &mut HashMap<ProofId, ProofId>,
+        bucket_replacements: &mut HashMap<BucketId, BucketId>,
     ) -> Result<(), ValueReplacingError> {
+        match self {
+            NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
+                for (_, bucket) in &mut invocation.validator_set {
+                    let next_id = bucket_replacements
+                        .remove(&bucket.0)
+                        .ok_or(ValueReplacingError::BucketIdNotFound(bucket.0))?;
+                    bucket.0 = next_id;
+                }
+            }
+            _ => {} // TODO: Expand this
+        }
         Ok(())
     }
 }

@@ -38,8 +38,7 @@ pub trait ScryptoVault {
 impl ScryptoVault for Vault {
     /// Creates an empty vault and fills it with an initial bucket of resource.
     fn with_bucket(bucket: Bucket) -> Self {
-        let vault = Vault::new(bucket.resource_address());
-        let mut vault = Vault(vault.0);
+        let mut vault = Vault::new(bucket.resource_address());
         vault.put(bucket);
         vault
     }

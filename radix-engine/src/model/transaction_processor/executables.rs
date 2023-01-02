@@ -695,12 +695,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::System(invocation) => {
                     let mut invocation = invocation.clone();
-                    processor.replace_ids_native(&mut invocation)
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(e),
-                            )
-                        })?;
+                    processor.replace_ids_native(&mut invocation).map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            e,
+                        ))
+                    })?;
                     let rtn = invoke_native_fn(invocation, api)?;
                     InstructionOutput::Native(rtn)
                 } /*
@@ -903,7 +902,8 @@ impl TransactionProcessor {
         &mut self,
         invocation: &mut NativeInvocation,
     ) -> Result<(), TransactionProcessorError> {
-        invocation.replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
+        invocation
+            .replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
             .map_err(|e| match e {
                 ValueReplacingError::BucketIdNotFound(bucket_id) => {
                     TransactionProcessorError::BucketNotFound(bucket_id)

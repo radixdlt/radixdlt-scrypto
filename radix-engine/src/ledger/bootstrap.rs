@@ -36,7 +36,7 @@ pub struct GenesisReceipt {
 }
 
 pub fn create_genesis(
-    validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
+    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
 ) -> SystemTransaction {
@@ -182,22 +182,39 @@ pub fn create_genesis(
         ClockInvocation::Create(ClockCreateInvocation {}),
     )));
 
-    instructions.push(Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
-            validator_set: validator_set.clone(),
-            initial_epoch,
-            rounds_per_epoch,
-        }),
-    )));
-
-    instructions.push(
-        BasicInstruction::TakeFromWorktop {
-            resource_address: RADIX_TOKEN,
-        }
-            .into(),
-    );
-
+    // Epoch Manager
     {
+        let mut validators = BTreeMap::new();
+        for (key, amount) in validator_set {
+            let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
+            instructions.push(
+                BasicInstruction::TakeFromWorktopByAmount {
+                    resource_address: RADIX_TOKEN,
+                    amount,
+                }
+                .into(),
+            );
+            validators.insert(key, bucket);
+        }
+
+        instructions.push(Instruction::System(NativeInvocation::EpochManager(
+            EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+                validator_set: validators,
+                initial_epoch,
+                rounds_per_epoch,
+            }),
+        )));
+    }
+
+    // Faucet
+    {
+        instructions.push(
+            BasicInstruction::TakeFromWorktop {
+                resource_address: RADIX_TOKEN,
+            }
+            .into(),
+        );
+
         let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: FAUCET_PACKAGE,
@@ -229,8 +246,12 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     // Components
     let clock: SystemAddress = receipt.output(7);
     let faucet_component = receipt.new_component_addresses()[0];
-    let epoch_manager = receipt.new_system_addresses().iter()
-        .find(|addr| matches!(addr, SystemAddress::EpochManager(..))).cloned().unwrap();
+    let epoch_manager = receipt
+        .new_system_addresses()
+        .iter()
+        .find(|addr| matches!(addr, SystemAddress::EpochManager(..)))
+        .cloned()
+        .unwrap();
 
     GenesisReceipt {
         faucet_package,
@@ -257,7 +278,7 @@ where
     bootstrap_with_validator_set(
         substate_store,
         scrypto_interpreter,
-        BTreeSet::new(),
+        BTreeMap::new(),
         1u64,
         1u64,
     )
@@ -266,7 +287,7 @@ where
 pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
+    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
 ) -> Option<TransactionReceipt>
@@ -311,8 +332,8 @@ mod tests {
     fn bootstrap_receipt_should_match_constants() {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
-        let mut initial_validator_set = BTreeSet::new();
-        initial_validator_set.insert(EcdsaSecp256k1PublicKey([0; 33]));
+        let mut initial_validator_set = BTreeMap::new();
+        initial_validator_set.insert(EcdsaSecp256k1PublicKey([0; 33]), Decimal::one());
         let genesis_transaction = create_genesis(initial_validator_set.clone(), 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(

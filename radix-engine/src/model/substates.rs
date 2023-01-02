@@ -1011,8 +1011,10 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
+                let mut owned_nodes = HashSet::new();
                 references.insert(GlobalAddress::System(substate.manager));
-                (references, HashSet::new())
+                owned_nodes.insert(RENodeId::Vault(substate.stake_vault_id));
+                (references, owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();

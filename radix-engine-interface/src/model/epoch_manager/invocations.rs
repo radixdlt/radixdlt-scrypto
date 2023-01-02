@@ -1,6 +1,6 @@
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::math::Decimal;
-use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt::Debug;
 use sbor::*;
 
@@ -9,12 +9,27 @@ use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
-    pub validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
+    pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Bucket>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
+}
+
+impl Clone for EpochManagerCreateInvocation {
+    fn clone(&self) -> Self {
+        let mut validator_set = BTreeMap::new();
+        for (key, bucket) in &self.validator_set {
+            validator_set.insert(key.clone(), Bucket(bucket.0));
+        }
+
+        Self {
+            validator_set,
+            initial_epoch: self.initial_epoch,
+            rounds_per_epoch: self.rounds_per_epoch,
+        }
+    }
 }
 
 impl Invocation for EpochManagerCreateInvocation {

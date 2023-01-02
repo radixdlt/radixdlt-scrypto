@@ -9,6 +9,7 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use native_sdk::resource::NativeVault;
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
@@ -36,7 +37,13 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
     {
         let actor = ResolvedActor::function(NativeFn::EpochManager(EpochManagerFn::Create));
 
-        let call_frame_update = CallFrameUpdate::empty();
+        let mut call_frame_update =
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        for bucket in self.validator_set.values() {
+            call_frame_update
+                .nodes_to_move
+                .push(RENodeId::Bucket(bucket.0));
+        }
 
         Ok((actor, call_frame_update, self))
     }
@@ -47,7 +54,7 @@ impl Executor for EpochManagerCreateInvocation {
 
     fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + EngineApi<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
@@ -61,10 +68,11 @@ impl Executor for EpochManagerCreateInvocation {
 
         let mut validator_set = BTreeMap::new();
 
-        for key in self.validator_set {
+        for (key, bucket) in self.validator_set {
             let stake = Decimal::one();
-            let address = EpochManager::create_validator(global_node_id.into(), key, stake, api)?;
-            let validator = Validator { key, stake, };
+            let address =
+                EpochManager::create_validator(global_node_id.into(), key, Some(bucket), api)?;
+            let validator = Validator { key, stake };
             validator_set.insert(address, validator);
         }
 
@@ -314,6 +322,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateValidatorInvoc
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
 
         let actor = ResolvedActor::method(
             NativeFn::EpochManager(EpochManagerFn::CreateValidator),
@@ -330,7 +339,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
 
     fn execute<Y>(self, api: &mut Y) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let handle = api.lock_substate(
             self.0,
@@ -340,8 +349,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
-        let stake = Decimal::one();
-        let validator_address = EpochManager::create_validator(manager, self.1, stake, api)?;
+        let validator_address = EpochManager::create_validator(manager, self.1, None, api)?;
         Ok((
             validator_address,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::System(validator_address))),
@@ -349,11 +357,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
     }
 }
 
-pub struct EpochManagerUpdateValidatorExecutable(
-    RENodeId,
-    SystemAddress,
-    UpdateValidator,
-);
+pub struct EpochManagerUpdateValidatorExecutable(RENodeId, SystemAddress, UpdateValidator);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUpdateValidatorInvocation {
     type Exec = EpochManagerUpdateValidatorExecutable;
@@ -396,10 +400,10 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
         let validator_set = substate_ref.validator_set();
         match self.2 {
             UpdateValidator::Register(key, stake) => {
-                validator_set.validator_set.insert(self.1, Validator {
-                    key, stake
-                });
-            },
+                validator_set
+                    .validator_set
+                    .insert(self.1, Validator { key, stake });
+            }
             UpdateValidator::Unregister => {
                 validator_set.validator_set.remove(&self.1);
             }
@@ -413,11 +417,11 @@ impl EpochManager {
     pub fn create_validator<Y>(
         manager: SystemAddress,
         key: EcdsaSecp256k1PublicKey,
-        stake: Decimal,
+        bucket: Option<Bucket>,
         api: &mut Y,
     ) -> Result<SystemAddress, RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let node_id = api.allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
@@ -432,12 +436,17 @@ impl EpochManager {
             rule!(require(NonFungibleAddress::from_public_key(&key))),
         );
 
+        let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
+        if let Some(bucket) = bucket {
+            stake_vault.sys_put(bucket, api)?;
+        }
+
         let node = RENode::Validator(
             ValidatorSubstate {
                 manager,
                 key,
                 address,
-                stake,
+                stake_vault_id: stake_vault.0,
             },
             AccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
@@ -491,16 +500,27 @@ impl Executor for ValidatorRegisterExecutable {
 
     fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
-        let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
-        let substate = api.get_ref(handle)?;
-        let validator = substate.validator();
+        let (receiver, validator_address, key, stake_vault_id) = {
+            let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
+            let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
+            let substate = api.get_ref(handle)?;
+            let validator = substate.validator();
+            (
+                validator.manager,
+                validator.address,
+                validator.key,
+                validator.stake_vault_id,
+            )
+        };
+        let stake_vault = Vault(stake_vault_id);
+        let stake_amount = stake_vault.sys_amount(api)?;
+
         let invocation = EpochManagerUpdateValidatorInvocation {
-            receiver: validator.manager,
-            validator_address: validator.address,
-            update: UpdateValidator::Register(validator.key, validator.stake),
+            receiver,
+            validator_address,
+            update: UpdateValidator::Register(key, stake_amount),
         };
 
         api.invoke(invocation)?;
@@ -547,7 +567,7 @@ impl Executor for ValidatorUnregisterExecutable {
         let invocation = EpochManagerUpdateValidatorInvocation {
             receiver: validator.manager,
             validator_address: validator.address,
-            update:UpdateValidator::Unregister,
+            update: UpdateValidator::Unregister,
         };
 
         api.invoke(invocation)?;

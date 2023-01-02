@@ -29,5 +29,5 @@ pub struct ValidatorSubstate {
     pub manager: SystemAddress,
     pub address: SystemAddress,
     pub key: EcdsaSecp256k1PublicKey,
-    pub stake: Decimal,
+    pub stake_vault_id: VaultId,
 }
