@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+use radix_engine_interface::data::ValueReplacingError;
 use crate::api::types::*;
 use crate::scrypto;
 use sbor::rust::collections::HashSet;
@@ -28,6 +30,15 @@ pub enum NativeInvocation {
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
+}
+
+impl NativeInvocation {
+    pub fn replace_ids(&mut self,
+                       proof_replacements: &mut HashMap<ProofId, ProofId>,
+                       bucket_replacements: &mut HashMap<BucketId, BucketId>,
+    ) -> Result<(), ValueReplacingError> {
+        Ok(())
+    }
 }
 
 impl Into<SerializedInvocation> for NativeInvocation {
