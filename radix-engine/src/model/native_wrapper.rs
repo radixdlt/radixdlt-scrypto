@@ -301,7 +301,7 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-        }
+        },
         NativeInvocation::Worktop(worktop_method) => match worktop_method {
             WorktopInvocation::TakeNonFungibles(invocation) => {
                 let rtn = api.invoke(invocation)?;

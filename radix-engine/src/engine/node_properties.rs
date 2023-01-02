@@ -25,15 +25,21 @@ impl VisibilityProperties {
             ExecutionMode::Application => match node_id {
                 // TODO: Cleanup and reduce to least privilege
                 RENodeId::Worktop => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(..)))=> true,
+                    FnIdentifier::Native(NativeFn::Function(
+                        NativeFunction::TransactionProcessor(..),
+                    )) => true,
                     _ => false,
                 },
                 RENodeId::AuthZoneStack(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(..))) => true,
+                    FnIdentifier::Native(NativeFn::Function(
+                        NativeFunction::TransactionProcessor(..),
+                    )) => true,
                     _ => false,
                 },
                 RENodeId::TransactionRuntime(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(..))) => true,
+                    FnIdentifier::Native(NativeFn::Function(
+                        NativeFunction::TransactionProcessor(..),
+                    )) => true,
                     _ => false,
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {
@@ -46,9 +52,9 @@ impl VisibilityProperties {
                 RENodeId::Proof(..) => match &actor.identifier {
                     FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..))) => true,
                     FnIdentifier::Native(NativeFn::Method(NativeMethod::Proof(..))) => true,
-                    FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(
-                        TransactionProcessorFunction::Run,
-                    ))) => true,
+                    FnIdentifier::Native(NativeFn::Function(
+                        NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+                    )) => true,
                     FnIdentifier::Scrypto(..) => true,
                     _ => false,
                 },
