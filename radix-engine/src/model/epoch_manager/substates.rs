@@ -12,14 +12,14 @@ pub struct EpochManagerSubstate {
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct Validator {
-    pub address: SystemAddress,
     pub key: EcdsaSecp256k1PublicKey,
+    pub stake: Decimal,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ValidatorSetSubstate {
-    pub validator_set: BTreeSet<Validator>,
+    pub validator_set: BTreeMap<SystemAddress, Validator>,
     pub epoch: u64,
 }
 
@@ -29,4 +29,5 @@ pub struct ValidatorSubstate {
     pub manager: SystemAddress,
     pub address: SystemAddress,
     pub key: EcdsaSecp256k1PublicKey,
+    pub stake: Decimal,
 }

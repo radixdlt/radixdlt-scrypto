@@ -1,6 +1,5 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
-use radix_engine::model::Validator;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -267,10 +266,7 @@ fn registered_validator_becomes_part_of_validator_on_epoch_change() {
     let result = receipt.expect_commit();
     let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
-    assert!(next_epoch.0.contains(&Validator {
-        address: validator_address,
-        key: pub_key
-    }));
+    assert_eq!(next_epoch.0.get(&validator_address).unwrap().key, pub_key );
 }
 
 #[test]
@@ -317,10 +313,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let result = receipt.expect_commit();
     let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
-    assert!(!next_epoch.0.contains(&Validator {
-        address: validator_address,
-        key: pub_key
-    }));
+    assert_eq!(next_epoch.0.get(&validator_address).unwrap().key, pub_key);
 }
 
 #[test]

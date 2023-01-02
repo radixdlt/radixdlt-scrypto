@@ -59,11 +59,13 @@ impl Executor for EpochManagerCreateInvocation {
             rounds_per_epoch: self.rounds_per_epoch,
         };
 
-        let mut validator_set = BTreeSet::new();
+        let mut validator_set = BTreeMap::new();
 
         for key in self.validator_set {
-            let address = EpochManager::create_validator(global_node_id.into(), key, api)?;
-            validator_set.insert(Validator { address, key });
+            let stake = Decimal::one();
+            let address = EpochManager::create_validator(global_node_id.into(), key, stake, api)?;
+            let validator = Validator { key, stake, };
+            validator_set.insert(address, validator);
         }
 
         let current_validator_set = ValidatorSetSubstate {
@@ -338,7 +340,8 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
-        let validator_address = EpochManager::create_validator(manager, self.1, api)?;
+        let stake = Decimal::one();
+        let validator_address = EpochManager::create_validator(manager, self.1, stake, api)?;
         Ok((
             validator_address,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::System(validator_address))),
@@ -349,8 +352,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
 pub struct EpochManagerUpdateValidatorExecutable(
     RENodeId,
     SystemAddress,
-    EcdsaSecp256k1PublicKey,
-    bool,
+    UpdateValidator,
 );
 
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUpdateValidatorInvocation {
@@ -374,8 +376,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUpdateValidatorInvoc
         let executor = EpochManagerUpdateValidatorExecutable(
             resolved_receiver.receiver,
             self.validator_address,
-            self.key,
-            self.register,
+            self.update,
         );
 
         Ok((actor, call_frame_update, executor))
@@ -393,14 +394,15 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
         let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
         let mut substate_ref = api.get_ref_mut(handle)?;
         let validator_set = substate_ref.validator_set();
-        let validator = Validator {
-            address: self.1,
-            key: self.2,
-        };
-        if self.3 {
-            validator_set.validator_set.insert(validator);
-        } else {
-            validator_set.validator_set.remove(&validator);
+        match self.2 {
+            UpdateValidator::Register(key, stake) => {
+                validator_set.validator_set.insert(self.1, Validator {
+                    key, stake
+                });
+            },
+            UpdateValidator::Unregister => {
+                validator_set.validator_set.remove(&self.1);
+            }
         }
 
         Ok(((), CallFrameUpdate::empty()))
@@ -411,6 +413,7 @@ impl EpochManager {
     pub fn create_validator<Y>(
         manager: SystemAddress,
         key: EcdsaSecp256k1PublicKey,
+        stake: Decimal,
         api: &mut Y,
     ) -> Result<SystemAddress, RuntimeError>
     where
@@ -434,6 +437,7 @@ impl EpochManager {
                 manager,
                 key,
                 address,
+                stake,
             },
             AccessRulesChainSubstate {
                 access_rules_chain: vec![access_rules],
@@ -496,8 +500,7 @@ impl Executor for ValidatorRegisterExecutable {
         let invocation = EpochManagerUpdateValidatorInvocation {
             receiver: validator.manager,
             validator_address: validator.address,
-            key: validator.key,
-            register: true,
+            update: UpdateValidator::Register(validator.key, validator.stake),
         };
 
         api.invoke(invocation)?;
@@ -544,8 +547,7 @@ impl Executor for ValidatorUnregisterExecutable {
         let invocation = EpochManagerUpdateValidatorInvocation {
             receiver: validator.manager,
             validator_address: validator.address,
-            key: validator.key,
-            register: false,
+            update:UpdateValidator::Unregister,
         };
 
         api.invoke(invocation)?;

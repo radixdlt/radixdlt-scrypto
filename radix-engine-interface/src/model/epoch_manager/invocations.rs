@@ -1,4 +1,5 @@
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::math::Decimal;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 use sbor::*;
@@ -115,11 +116,17 @@ impl Into<SerializedInvocation> for EpochManagerCreateValidatorInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
+pub enum UpdateValidator {
+    Register(EcdsaSecp256k1PublicKey, Decimal),
+    Unregister,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerUpdateValidatorInvocation {
     pub receiver: SystemAddress,
     pub validator_address: SystemAddress,
-    pub key: EcdsaSecp256k1PublicKey,
-    pub register: bool,
+    pub update: UpdateValidator,
 }
 
 impl Invocation for EpochManagerUpdateValidatorInvocation {

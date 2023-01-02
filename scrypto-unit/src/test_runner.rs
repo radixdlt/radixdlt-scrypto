@@ -407,12 +407,7 @@ impl TestRunner {
             .to_runtime()
             .into();
         substate
-            .validator_set
-            .iter()
-            .find(|e| e.key.eq(key))
-            .cloned()
-            .unwrap()
-            .address
+            .validator_set.iter().find(|(_, v)| v.key.eq(key)).unwrap().0.clone()
     }
 
     pub fn new_allocated_account(
