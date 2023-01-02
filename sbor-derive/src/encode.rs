@@ -36,7 +36,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                            encoder.write_type_id(::sbor::SborTypeId::Tuple)
                         }
 
                         #[inline]
@@ -61,7 +61,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                            encoder.write_type_id(::sbor::SborTypeId::Tuple)
                         }
 
                         #[inline]
@@ -79,7 +79,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                            encoder.write_type_id(::sbor::SborTypeId::Tuple)
                         }
 
                         #[inline]
@@ -144,7 +144,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_type_id(::sbor::type_id::SborTypeId::Enum)
+                            encoder.write_type_id(::sbor::SborTypeId::Enum)
                         }
 
                         #[inline]
@@ -158,7 +158,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Encode <#custom_type_id_generic, #encoder_generic> for #ident #ty_generics #where_clause {
                         #[inline]
                         fn encode_type_id(&self, encoder: &mut #encoder_generic) -> Result<(), ::sbor::EncodeError> {
-                            encoder.write_type_id(::sbor::type_id::SborTypeId::Enum)
+                            encoder.write_type_id(::sbor::SborTypeId::Enum)
                         }
 
                         #[inline]
@@ -205,14 +205,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <CTI: ::sbor::type_id::CustomTypeId, ENC: ::sbor::encoder::Encoder<CTI> > ::sbor::Encode<CTI, ENC> for Test {
+                impl <E: ::sbor::Encoder<X>, X: ::sbor::CustomTypeId > ::sbor::Encode<X, E> for Test {
                     #[inline]
-                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                    fn encode_type_id(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::SborTypeId::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
                         use ::sbor::{self, Encode};
                         encoder.write_size(1)?;
                         encoder.encode(&self.a)?;
@@ -231,14 +231,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <CTI: ::sbor::type_id::CustomTypeId, ENC: ::sbor::encoder::Encoder<CTI> > ::sbor::Encode<CTI, ENC> for Test {
+                impl <E: ::sbor::Encoder<X>, X: ::sbor::CustomTypeId > ::sbor::Encode<X, E> for Test {
                     #[inline]
-                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_type_id(::sbor::type_id::SborTypeId::Enum)
+                    fn encode_type_id(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::SborTypeId::Enum)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
                         use ::sbor::{self, Encode};
                         match self {
                             Self::A => {
@@ -271,16 +271,43 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <CTI: ::sbor::type_id::CustomTypeId, ENC: ::sbor::encoder::Encoder<CTI> > ::sbor::Encode<CTI, ENC> for Test {
+                impl <E: ::sbor::Encoder<X>, X: ::sbor::CustomTypeId > ::sbor::Encode<X, E> for Test {
                     #[inline]
-                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                    fn encode_type_id(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::SborTypeId::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
                         use ::sbor::{self, Encode};
                         encoder.write_size(0)?;
+                        Ok(())
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_encode_generic() {
+        let input = TokenStream::from_str("struct Test<T, E: Clashing> { a: T, b: E, }").unwrap();
+        let output = handle_encode(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl <T: ::sbor::Encode<X, E0>, E: Clashing + ::sbor::Encode<X, E0>, E0: ::sbor::Encoder<X>, X: ::sbor::CustomTypeId > ::sbor::Encode<X, E0> for Test<T, E > {
+                    #[inline]
+                    fn encode_type_id(&self, encoder: &mut E0) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::SborTypeId::Tuple)
+                    }
+
+                    #[inline]
+                    fn encode_body(&self, encoder: &mut E0) -> Result<(), ::sbor::EncodeError> {
+                        use ::sbor::{self, Encode};
+                        encoder.write_size(2)?;
+                        encoder.encode(&self.a)?;
+                        encoder.encode(&self.b)?;
                         Ok(())
                     }
                 }
@@ -299,14 +326,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <ENC: ::sbor::encoder::Encoder<NoCustomTypeId> > ::sbor::Encode<NoCustomTypeId, ENC> for Test {
+                impl <E: ::sbor::Encoder<NoCustomTypeId> > ::sbor::Encode<NoCustomTypeId, E> for Test {
                     #[inline]
-                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                    fn encode_type_id(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::SborTypeId::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
                         use ::sbor::{self, Encode};
                         encoder.write_size(0)?;
                         Ok(())
@@ -327,14 +354,14 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <ENC: ::sbor::encoder::Encoder<::sbor::basic::NoCustomTypeId> > ::sbor::Encode<::sbor::basic::NoCustomTypeId, ENC> for Test {
+                impl <E: ::sbor::Encoder<::sbor::basic::NoCustomTypeId> > ::sbor::Encode<::sbor::basic::NoCustomTypeId, E> for Test {
                     #[inline]
-                    fn encode_type_id(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
-                        encoder.write_type_id(::sbor::type_id::SborTypeId::Tuple)
+                    fn encode_type_id(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_type_id(::sbor::SborTypeId::Tuple)
                     }
 
                     #[inline]
-                    fn encode_body(&self, encoder: &mut ENC) -> Result<(), ::sbor::EncodeError> {
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
                         use ::sbor::{self, Encode};
                         encoder.write_size(0)?;
                         Ok(())
