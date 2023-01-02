@@ -47,8 +47,8 @@ jobs:
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
     - run: |
-      sudo apt-get update -qq
-      sudo apt-get install clang -y
+        sudo apt-get update -qq
+        sudo apt-get install clang -y
       if: matrix.os == 'linux'
     - name: Install Scrypto toolchain
       run: cargo install --path ./simulator
@@ -61,7 +61,7 @@ jobs:
       matrix:
         os: [linux, windows-latest]
     steps:
-      - uses: actions/checkout@v3
+    - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
