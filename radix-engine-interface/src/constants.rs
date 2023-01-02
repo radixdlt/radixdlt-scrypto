@@ -118,7 +118,7 @@ pub const RADIX_TOKEN: ResourceAddress = construct_address!(
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
-    127, 23, 62, 208, 240, 181, 115, 180, 202, 199, 8, 39, 85, 85, 74, 9, 16, 140, 51, 143, 231, 119, 27, 37, 124, 33
+    51, 112, 129, 183, 184, 244, 163, 95, 218, 117, 244, 128, 134, 100, 153, 207, 215, 243, 188, 209, 242, 31, 200, 35, 100, 163
 );
 
 pub const CLOCK: SystemAddress = construct_address!(
@@ -139,5 +139,5 @@ pub const PACKAGE_TOKEN: ResourceAddress = construct_address!(
 
 pub const EPOCH_MANAGER: SystemAddress = construct_address!(
     EntityType::EpochManager,
-    40, 217, 220, 96, 193, 149, 175, 197, 239, 196, 234, 126, 191, 117, 203, 147, 13, 122, 137, 31, 224, 36, 145, 105, 45, 22
+    51, 112, 129, 183, 184, 244, 163, 95, 218, 117, 244, 128, 134, 100, 153, 207, 215, 243, 188, 209, 242, 31, 200, 35, 100, 163
 );

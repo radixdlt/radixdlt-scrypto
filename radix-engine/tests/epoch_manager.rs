@@ -313,7 +313,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let result = receipt.expect_commit();
     let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
-    assert_eq!(next_epoch.0.get(&validator_address).unwrap().key, pub_key);
+    assert!(!next_epoch.0.contains_key(&validator_address));
 }
 
 #[test]

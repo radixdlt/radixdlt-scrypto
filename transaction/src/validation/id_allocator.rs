@@ -20,6 +20,8 @@ pub enum IdSpace {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
     available: Range<u32>,
+    epoch_mgr_address_available: Range<u32>,
+    component_address_available: Range<u32>,
     transaction_hash: Hash,
 }
 
@@ -32,6 +34,8 @@ impl IdAllocator {
                 IdSpace::Transaction => 512..1024,
                 IdSpace::Application => 1024..u32::MAX,
             },
+            epoch_mgr_address_available: 0..512,
+            component_address_available: 0..512,
             transaction_hash,
         }
     }
@@ -74,8 +78,16 @@ impl IdAllocator {
 
     /// Creates a new component address.
     pub fn new_component_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
+        let id = if self.component_address_available.len() > 0 {
+            let id = self.component_address_available.start;
+            self.component_address_available.start += 1;
+            id
+        } else {
+            return Err(IdAllocationError::OutOfID);
+        };
+
         let mut data = self.transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
+        data.extend(id.to_le_bytes());
 
         // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
 
@@ -83,8 +95,16 @@ impl IdAllocator {
     }
 
     pub fn new_epoch_manager_address(&mut self) -> Result<SystemAddress, IdAllocationError> {
+        let id = if self.epoch_mgr_address_available.len() > 0 {
+            let id = self.epoch_mgr_address_available.start;
+            self.epoch_mgr_address_available.start += 1;
+            id
+        } else {
+            return Err(IdAllocationError::OutOfID);
+        };
+
         let mut data = self.transaction_hash.to_vec();
-        data.extend(self.next()?.to_le_bytes());
+        data.extend(id.to_le_bytes());
 
         // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
 
