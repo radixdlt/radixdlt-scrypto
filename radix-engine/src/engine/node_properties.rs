@@ -22,41 +22,39 @@ impl VisibilityProperties {
                 RENodeId::Logger => return true,
                 _ => return false,
             },
-            ExecutionMode::Application => {}
+            ExecutionMode::Application => match node_id {
+                // TODO: Cleanup and reduce to least privilege
+                RENodeId::Worktop => match &actor.identifier {
+                    FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
+                    _ => false,
+                },
+                RENodeId::AuthZoneStack(..) => match &actor.identifier {
+                    FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
+                    _ => false,
+                },
+                RENodeId::TransactionRuntime(..) => match &actor.identifier {
+                    FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
+                    _ => false,
+                },
+                RENodeId::Bucket(..) => match &actor.identifier {
+                    FnIdentifier::NativeMethod(NativeMethod::Bucket(..))
+                    | FnIdentifier::NativeMethod(NativeMethod::Worktop(..))
+                    | FnIdentifier::NativeMethod(NativeMethod::ResourceManager(..))
+                    | FnIdentifier::NativeMethod(NativeMethod::Vault(..)) => true,
+                    _ => false,
+                },
+                RENodeId::Proof(..) => match &actor.identifier {
+                    FnIdentifier::NativeMethod(NativeMethod::AuthZoneStack(..)) => true,
+                    FnIdentifier::NativeMethod(NativeMethod::Proof(..)) => true,
+                    FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(
+                        TransactionProcessorFunction::Run,
+                    )) => true,
+                    FnIdentifier::Scrypto(..) => true,
+                    _ => false,
+                },
+                _ => false,
+            },
             _ => return false,
-        }
-
-        // TODO: Cleanup and reduce to least privilege
-        match node_id {
-            RENodeId::Worktop => match &actor.identifier {
-                FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
-                _ => false,
-            },
-            RENodeId::AuthZoneStack(..) => match &actor.identifier {
-                FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
-                _ => false,
-            },
-            RENodeId::TransactionRuntime(..) => match &actor.identifier {
-                FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(..)) => true,
-                _ => false,
-            },
-            RENodeId::Bucket(..) => match &actor.identifier {
-                FnIdentifier::NativeMethod(NativeMethod::Bucket(..))
-                | FnIdentifier::NativeMethod(NativeMethod::Worktop(..))
-                | FnIdentifier::NativeMethod(NativeMethod::ResourceManager(..))
-                | FnIdentifier::NativeMethod(NativeMethod::Vault(..)) => true,
-                _ => false,
-            },
-            RENodeId::Proof(..) => match &actor.identifier {
-                FnIdentifier::NativeMethod(NativeMethod::AuthZoneStack(..)) => true,
-                FnIdentifier::NativeMethod(NativeMethod::Proof(..)) => true,
-                FnIdentifier::NativeFunction(NativeFunction::TransactionProcessor(
-                    TransactionProcessorFunction::Run,
-                )) => true,
-                FnIdentifier::Scrypto(..) => true,
-                _ => false,
-            },
-            _ => false,
         }
     }
 
