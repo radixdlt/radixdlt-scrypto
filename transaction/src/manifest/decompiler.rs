@@ -1,6 +1,6 @@
 use radix_engine_interface::address::{AddressError, Bech32Encoder};
-use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId};
-use radix_engine_interface::crypto::hash;
+use radix_engine_interface::api::types::GlobalAddress;
+use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::NonFungibleId;
 use radix_engine_interface::node::NetworkDefinition;
@@ -43,29 +43,27 @@ impl From<fmt::Error> for DecompileError {
 
 pub struct DecompilationContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
-    pub id_allocator: IdAllocator,
-    pub bucket_names: HashMap<BucketId, String>,
-    pub proof_names: HashMap<ProofId, String>,
+    pub id_allocator: ManifestIdAllocator,
+    pub bucket_names: HashMap<ManifestBucket, String>,
+    pub proof_names: HashMap<ManifestProof, String>,
 }
 
 impl<'a> DecompilationContext<'a> {
     pub fn new(bech32_encoder: &'a Bech32Encoder) -> Self {
-        let mocked_hash = hash([0u8; 1]);
         Self {
             bech32_encoder: Some(bech32_encoder),
-            id_allocator: IdAllocator::new(IdSpace::Transaction, mocked_hash),
-            bucket_names: HashMap::<BucketId, String>::new(),
-            proof_names: HashMap::<ProofId, String>::new(),
+            id_allocator: ManifestIdAllocator::new(),
+            bucket_names: HashMap::<ManifestBucket, String>::new(),
+            proof_names: HashMap::<ManifestProof, String>::new(),
         }
     }
 
     pub fn new_with_optional_network(bech32_encoder: Option<&'a Bech32Encoder>) -> Self {
-        let mocked_hash = hash([0u8; 1]);
         Self {
             bech32_encoder,
-            id_allocator: IdAllocator::new(IdSpace::Transaction, mocked_hash),
-            bucket_names: HashMap::<BucketId, String>::new(),
-            proof_names: HashMap::<ProofId, String>::new(),
+            id_allocator: ManifestIdAllocator::new(),
+            bucket_names: HashMap::<ManifestBucket, String>::new(),
+            proof_names: HashMap::<ManifestProof, String>::new(),
         }
     }
 
@@ -104,7 +102,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::TakeFromWorktop { resource_address } => {
             let bucket_id = context
                 .id_allocator
-                .new_bucket_id()
+                .new_bucket()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             write!(
@@ -121,7 +119,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             let bucket_id = context
                 .id_allocator
-                .new_bucket_id()
+                .new_bucket()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             context.bucket_names.insert(bucket_id, name.clone());
@@ -139,7 +137,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             let bucket_id = context
                 .id_allocator
-                .new_bucket_id()
+                .new_bucket()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             context.bucket_names.insert(bucket_id, name.clone());
@@ -162,7 +160,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .bucket_names
                     .get(&bucket_id)
                     .map(|name| format!("\"{}\"", name))
-                    .unwrap_or(format!("{}u32", bucket_id))
+                    .unwrap_or(format!("{}u32", bucket_id.0))
             )?;
         }
         BasicInstruction::AssertWorktopContains { resource_address } => {
@@ -201,7 +199,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::PopFromAuthZone => {
             let proof_id = context
                 .id_allocator
-                .new_proof_id()
+                .new_proof()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -215,7 +213,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .proof_names
                     .get(&proof_id)
                     .map(|name| format!("\"{}\"", name))
-                    .unwrap_or(format!("{}u32", proof_id))
+                    .unwrap_or(format!("{}u32", proof_id.0))
             )?;
         }
         BasicInstruction::ClearAuthZone => {
@@ -224,7 +222,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::CreateProofFromAuthZone { resource_address } => {
             let proof_id = context
                 .id_allocator
-                .new_proof_id()
+                .new_proof()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -241,7 +239,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             let proof_id = context
                 .id_allocator
-                .new_proof_id()
+                .new_proof()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -259,7 +257,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             let proof_id = context
                 .id_allocator
-                .new_proof_id()
+                .new_proof()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -276,7 +274,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::CreateProofFromBucket { bucket_id } => {
             let proof_id = context
                 .id_allocator
-                .new_proof_id()
+                .new_proof()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
@@ -287,14 +285,14 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .bucket_names
                     .get(&bucket_id)
                     .map(|name| format!("\"{}\"", name))
-                    .unwrap_or(format!("{}u32", bucket_id)),
+                    .unwrap_or(format!("{}u32", bucket_id.0)),
                 name
             )?;
         }
         BasicInstruction::CloneProof { proof_id } => {
             let proof_id2 = context
                 .id_allocator
-                .new_proof_id()
+                .new_proof()
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id2, name.clone());
@@ -305,7 +303,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .proof_names
                     .get(&proof_id)
                     .map(|name| format!("\"{}\"", name))
-                    .unwrap_or(format!("{}u32", proof_id)),
+                    .unwrap_or(format!("{}u32", proof_id.0)),
                 name
             )?;
         }
@@ -317,7 +315,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .proof_names
                     .get(&proof_id)
                     .map(|name| format!("\"{}\"", name))
-                    .unwrap_or(format!("{}u32", proof_id)),
+                    .unwrap_or(format!("{}u32", proof_id.0)),
             )?;
         }
         BasicInstruction::DropAllProofs => {
@@ -386,7 +384,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .bucket_names
                     .get(&bucket_id)
                     .map(|name| format!("\"{}\"", name))
-                    .unwrap_or(format!("{}u32", bucket_id)),
+                    .unwrap_or(format!("{}u32", bucket_id.0)),
             )?;
         }
         BasicInstruction::RecallResource { vault_id, amount } => {

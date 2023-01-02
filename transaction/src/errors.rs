@@ -1,5 +1,5 @@
 use radix_engine_interface::abi::Type;
-use radix_engine_interface::api::types::{BucketId, KeyValueStoreId, ProofId, VaultId};
+use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
 use radix_engine_interface::data::ScryptoValueDecodeError;
 use radix_engine_interface::model::*;
 use sbor::rust::string::String;
@@ -39,17 +39,16 @@ pub enum IdAllocationError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdValidationError {
     IdAllocationError(IdAllocationError),
-    BucketNotFound(BucketId),
-    ProofNotFound(ProofId),
-    BucketLocked(BucketId),
+    BucketNotFound(ManifestBucket),
+    ProofNotFound(ManifestProof),
+    BucketLocked(ManifestBucket),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallDataValidationError {
     InvalidScryptoValue(ScryptoValueDecodeError),
     IdValidationError(IdValidationError),
-    VaultNotAllowed(VaultId),
-    KeyValueStoreNotAllowed(KeyValueStoreId),
+    OwnNotAllowed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

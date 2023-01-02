@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, VaultId,
+    GlobalAddress, NativeFunctionIdent, NativeMethodIdent, VaultId,
 };
-use radix_engine_interface::data::types::Blob;
+use radix_engine_interface::data::types::{Blob, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
@@ -32,7 +32,7 @@ pub enum BasicInstruction {
 
     /// Returns a bucket of resource to worktop.
     ReturnToWorktop {
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     },
 
     /// Asserts worktop contains resource.
@@ -57,7 +57,7 @@ pub enum BasicInstruction {
 
     /// Adds a proof to the auth zone.
     PushToAuthZone {
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     },
 
     /// Drops all proofs in the auth zone
@@ -83,17 +83,17 @@ pub enum BasicInstruction {
 
     /// Creates a proof from a bucket.
     CreateProofFromBucket {
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     },
 
     /// Clones a proof.
     CloneProof {
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     },
 
     /// Drops a proof.
     DropProof {
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     },
 
     /// Drops all of the proofs in the transaction.
@@ -135,7 +135,7 @@ pub enum BasicInstruction {
     },
 
     BurnResource {
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     },
 
     RecallResource {
