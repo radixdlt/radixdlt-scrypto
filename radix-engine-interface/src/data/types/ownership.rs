@@ -12,16 +12,18 @@ use sbor::rust::vec::Vec;
 use utils::copy_u8_array;
 
 // TODO: it's still up to debate whether this should be an enum OR dedicated types for each variant.
-#[scrypto(Clone, PartialEq, Eq)]
+#[scrypto(Clone, PartialEq, Eq, Hash)]
 pub enum Ownership {
     Vault(VaultId),
-    // TODO: add more
+    Bucket(BucketId),
+    Proof(ProofId),
 }
 
 impl Ownership {
     pub fn vault_id(&self) -> VaultId {
         match self {
             Ownership::Vault(v) => v.clone(),
+            _ => panic!("Not a vault ownership"),
         }
     }
 }
@@ -65,6 +67,7 @@ impl Ownership {
     pub fn to_vec(&self) -> Vec<u8> {
         match self {
             Self::Vault(v) => v.to_vec(),
+            _ => todo!(),
         }
     }
 }

@@ -6,7 +6,6 @@ use crate::crypto::*;
 use crate::data::types::*;
 use crate::data::*;
 use crate::math::{Decimal, PreciseDecimal};
-use utils::copy_u8_array;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
@@ -24,9 +23,9 @@ pub enum ScryptoCustomValue {
     Blob(Blob),
 
     // TX interpreted types
-    Bucket(BucketId),
-    Proof(ProofId),
-    Expression(Expression),
+    Bucket(ManifestBucket),
+    Proof(ManifestProof),
+    Expression(ManifestExpression),
 
     // Uninterpreted
     Hash(Hash),
@@ -115,8 +114,8 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             ScryptoCustomValue::Ownership(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::Component(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::KeyValueStore(v) => encoder.write_slice(v.as_slice()),
-            ScryptoCustomValue::Bucket(v) => encoder.write_slice(&v.to_le_bytes()),
-            ScryptoCustomValue::Proof(v) => encoder.write_slice(&v.to_le_bytes()),
+            ScryptoCustomValue::Bucket(v) => encoder.write_slice(&v.to_vec()),
+            ScryptoCustomValue::Proof(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::Expression(v) => {
                 let buf = v.to_vec();
                 encoder.write_size(buf.len())?;
@@ -211,19 +210,29 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Scrypto
             ScryptoCustomTypeId::Bucket => {
                 let n = 4;
                 let slice = decoder.read_slice(n)?;
-                Ok(Self::Bucket(u32::from_le_bytes(copy_u8_array(slice))))
+                Ok(Self::Bucket(
+                    slice
+                        .try_into()
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
             }
             ScryptoCustomTypeId::Proof => {
                 let n = 4;
                 let slice = decoder.read_slice(n)?;
-                Ok(Self::Proof(u32::from_le_bytes(copy_u8_array(slice))))
+                Ok(Self::Proof(
+                    slice
+                        .try_into()
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
             }
             ScryptoCustomTypeId::Expression => {
-                let n = decoder.read_size()?;
+                let n = 1;
                 let slice = decoder.read_slice(n)?;
-                Expression::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::Expression)
+                Ok(Self::Expression(
+                    slice
+                        .try_into()
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
             }
             ScryptoCustomTypeId::Blob => {
                 let n = 32;

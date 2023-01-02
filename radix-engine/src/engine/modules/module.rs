@@ -10,7 +10,7 @@ pub enum SysCallInput<'a> {
     Invoke {
         invocation: &'a dyn Debug,
         input_size: u32,
-        value_count: u32,
+        ownership_count: u32,
         depth: usize,
     },
     ReadOwnedNodes,
