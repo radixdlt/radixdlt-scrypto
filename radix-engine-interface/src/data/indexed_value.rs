@@ -340,7 +340,7 @@ mod tests {
         assert_eq!(
             IndexedScryptoValue::from_slice(&buckets),
             Err(ScryptoValueDecodeError::ValueIndexingError(
-                ValueIndexingError::DuplicateOwnership
+                ValueIndexingError::DuplicateManifestBucket
             ))
         );
     }

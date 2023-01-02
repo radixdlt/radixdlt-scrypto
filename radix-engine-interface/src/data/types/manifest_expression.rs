@@ -58,6 +58,7 @@ impl TryFrom<&[u8]> for ManifestExpression {
         match slice[0] {
             0 => Ok(Self::EntireWorktop),
             1 => Ok(Self::EntireAuthZone),
+            _ => Err(Self::Error::UnknownExpression),
         }
     }
 }
@@ -74,7 +75,8 @@ impl ManifestExpression {
 scrypto_type!(
     ManifestExpression,
     ScryptoCustomTypeId::Expression,
-    Type::Expression
+    Type::Expression,
+    1
 );
 
 #[cfg(test)]
