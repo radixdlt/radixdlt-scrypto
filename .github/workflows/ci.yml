@@ -44,7 +44,9 @@ jobs:
         toolchain: stable
     - uses: Swatinem/rust-cache@master
       with:
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+        cache-directories:
+          ~/.cargo/registry/src/**/librocksdb-sys-*
+          $HOME\.cargo\registry\src\**\librocksdb-sys-*
         workspaces: simulator
     - run: |
         sudo apt-get update -qq
@@ -296,7 +298,9 @@ jobs:
         toolchain: stable
     - uses: Swatinem/rust-cache@master
       with:
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+        cache-directories:
+          ~/.cargo/registry/src/**/librocksdb-sys-*
+          $HOME\.cargo\registry\src\**\librocksdb-sys-*
         workspaces: simulator
     - run: |
         sudo apt-get update -qq
