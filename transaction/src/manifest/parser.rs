@@ -371,7 +371,7 @@ impl Parser {
             }
 
             // RE interpreted types
-            TokenKind::Ownership => Ok(Value::Ownership(self.parse_values_one()?.into())),
+            TokenKind::Ownership => Ok(Value::Own(self.parse_values_one()?.into())),
             TokenKind::Component => Ok(Value::Component(self.parse_values_one()?.into())),
             TokenKind::KeyValueStore => Ok(Value::KeyValueStore(self.parse_values_one()?.into())),
             TokenKind::NonFungibleAddress => {
@@ -499,7 +499,7 @@ impl Parser {
             TokenKind::SystemAddress => Ok(Type::SystemAddress),
 
             // RE interpreted types
-            TokenKind::Ownership => Ok(Type::Ownership),
+            TokenKind::Ownership => Ok(Type::Own),
             TokenKind::Component => Ok(Type::Component),
             TokenKind::KeyValueStore => Ok(Type::KeyValueStore),
             TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),

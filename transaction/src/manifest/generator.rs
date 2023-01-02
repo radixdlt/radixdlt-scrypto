@@ -874,15 +874,15 @@ fn generate_proof(
     }
 }
 
-fn generate_ownership(value: &ast::Value) -> Result<Ownership, GeneratorError> {
+fn generate_ownership(value: &ast::Value) -> Result<Own, GeneratorError> {
     match value {
-        ast::Value::Ownership(inner) => match &**inner {
+        ast::Value::Own(inner) => match &**inner {
             ast::Value::String(s) => {
-                Ownership::from_str(s).map_err(|_| GeneratorError::InvalidVault(s.into()))
+                Own::from_str(s).map_err(|_| GeneratorError::InvalidVault(s.into()))
             }
             v => invalid_type!(v, ast::Type::String),
         },
-        v => invalid_type!(v, ast::Type::Ownership),
+        v => invalid_type!(v, ast::Type::Own),
     }
 }
 
@@ -1232,8 +1232,8 @@ pub fn generate_value(
             })
         }
 
-        ast::Value::Ownership(_) => generate_ownership(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Ownership(v),
+        ast::Value::Own(_) => generate_ownership(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Own(v),
         }),
         ast::Value::Component(_) => generate_component_id(value).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Component(v),
@@ -1346,7 +1346,7 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::SystemAddress => SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress),
 
         // RE interpreted types
-        ast::Type::Ownership => SborTypeId::Custom(ScryptoCustomTypeId::Ownership),
+        ast::Type::Own => SborTypeId::Custom(ScryptoCustomTypeId::Own),
         ast::Type::Component => SborTypeId::Custom(ScryptoCustomTypeId::Component),
         ast::Type::KeyValueStore => SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore),
         ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),

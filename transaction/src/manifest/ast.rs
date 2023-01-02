@@ -222,7 +222,7 @@ pub enum Type {
     SystemAddress,
 
     // RE interpreted types
-    Ownership,
+    Own,
     Component,
     KeyValueStore,
     NonFungibleAddress,
@@ -288,7 +288,7 @@ pub enum Value {
     SystemAddress(Box<Value>),
 
     // RE interpreted types
-    Ownership(Box<Value>),
+    Own(Box<Value>),
     Component(Box<Value>),
     KeyValueStore(Box<Value>),
     NonFungibleAddress(Box<Value>, Box<Value>),
@@ -357,7 +357,7 @@ impl Value {
             Value::KeyValueStore(_) => Type::KeyValueStore,
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
-            Value::Ownership(_) => Type::Ownership,
+            Value::Own(_) => Type::Own,
 
             // Other interpreted types
             Value::Expression(_) => Type::Expression,

@@ -35,7 +35,7 @@ pub struct IndexedScryptoValue {
     pub system_addresses: HashSet<SystemAddress>,
 
     // RE interpreted
-    pub ownerships: HashSet<Ownership>,
+    pub ownerships: HashSet<Own>,
     pub kv_store_ids: HashSet<KeyValueStoreId>,
     pub component_ids: HashSet<ComponentId>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
@@ -95,13 +95,13 @@ impl IndexedScryptoValue {
         let mut node_ids = HashSet::new();
         for ownership in &self.ownerships {
             match ownership {
-                Ownership::Vault(vault_id) => {
+                Own::Vault(vault_id) => {
                     node_ids.insert(RENodeId::Vault(*vault_id));
                 }
-                Ownership::Bucket(bucket_id) => {
+                Own::Bucket(bucket_id) => {
                     node_ids.insert(RENodeId::Bucket(*bucket_id));
                 }
-                Ownership::Proof(proof_id) => {
+                Own::Proof(proof_id) => {
                     node_ids.insert(RENodeId::Proof(*proof_id));
                 }
             }
@@ -148,8 +148,8 @@ impl IndexedScryptoValue {
                 .ok_or(ValueReplacingError::ProofIdNotFound(proof_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
-                *value = ScryptoCustomValue::Ownership(Ownership::Proof(next_id));
-                self.ownerships.insert(Ownership::Proof(next_id));
+                *value = ScryptoCustomValue::Own(Own::Proof(next_id));
+                self.ownerships.insert(Own::Proof(next_id));
             } else {
                 panic!("Should be a custom value");
             }
@@ -161,8 +161,8 @@ impl IndexedScryptoValue {
                 .ok_or(ValueReplacingError::BucketIdNotFound(bucket_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
-                *value = ScryptoCustomValue::Ownership(Ownership::Bucket(next_id));
-                self.ownerships.insert(Ownership::Bucket(next_id));
+                *value = ScryptoCustomValue::Own(Own::Bucket(next_id));
+                self.ownerships.insert(Own::Bucket(next_id));
             } else {
                 panic!("Should be a custom value");
             }
@@ -205,7 +205,7 @@ pub struct ScryptoCustomValueVisitor {
     pub package_addresses: HashSet<PackageAddress>,
     pub system_addresses: HashSet<SystemAddress>,
     // RE interpreted
-    pub ownerships: HashSet<Ownership>,
+    pub ownerships: HashSet<Own>,
     pub kv_stores: HashSet<KeyValueStoreId>,
     pub components: HashSet<ComponentId>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
@@ -268,7 +268,7 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
             }
 
             // RE interpreted
-            ScryptoCustomValue::Ownership(value) => {
+            ScryptoCustomValue::Own(value) => {
                 if !self.ownerships.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }

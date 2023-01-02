@@ -2,7 +2,7 @@ use crate::data::*;
 use sbor::*;
 use scrypto_abi::{Fields, Type};
 
-use super::types::Ownership;
+use super::types::Own;
 
 pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
     match ty {
@@ -34,7 +34,7 @@ pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
         Type::ComponentAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress)),
         Type::ResourceAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress)),
         Type::SystemAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress)),
-        Type::Vault => Some(SborTypeId::Custom(ScryptoCustomTypeId::Ownership)),
+        Type::Vault => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
         Type::Component => Some(SborTypeId::Custom(ScryptoCustomTypeId::Component)),
         Type::KeyValueStore { .. } => Some(SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore)),
         Type::Bucket => Some(SborTypeId::Custom(ScryptoCustomTypeId::Bucket)),
@@ -286,7 +286,7 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         }
         Type::Vault => {
             if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Ownership(Ownership::Vault(_)))
+                matches!(value, ScryptoCustomValue::Own(Own::Vault(_)))
             } else {
                 false
             }

@@ -194,7 +194,7 @@ pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoSborTypeId) -> 
             ScryptoCustomTypeId::ComponentAddress => f.write_str("ComponentAddress"),
             ScryptoCustomTypeId::ResourceAddress => f.write_str("ResourceAddress"),
             ScryptoCustomTypeId::SystemAddress => f.write_str("SystemAddress"),
-            ScryptoCustomTypeId::Ownership => f.write_str("Ownership"),
+            ScryptoCustomTypeId::Own => f.write_str("Own"),
             ScryptoCustomTypeId::Component => f.write_str("Component"),
             ScryptoCustomTypeId::KeyValueStore => f.write_str("KeyValueStore"),
             ScryptoCustomTypeId::Bucket => f.write_str("Bucket"),
@@ -288,17 +288,14 @@ pub fn format_custom_value<F: fmt::Write>(
             f.write_str("\")")?;
         }
         // RE interpreted
-        ScryptoCustomValue::Ownership(value) => {
-            write!(f, "Ownership(\"{}\")", hex::encode(value.to_vec()))?;
+        ScryptoCustomValue::Own(value) => {
+            write!(f, "Own(\"{}\")", hex::encode(value.to_vec()))?;
         }
         ScryptoCustomValue::Component(value) => {
             write!(f, "Component(\"{}\")", hex::encode(value))?;
         }
         ScryptoCustomValue::KeyValueStore(value) => {
             write!(f, "KeyValueStore(\"{}\")", hex::encode(value))?;
-        }
-        ScryptoCustomValue::Blob(value) => {
-            write!(f, "Blob(\"{}\")", value)?;
         }
         ScryptoCustomValue::NonFungibleAddress(value) => {
             f.write_str("NonFungibleAddress(\"")?;
@@ -309,6 +306,9 @@ pub fn format_custom_value<F: fmt::Write>(
             f.write_str("\", ")?;
             format_non_fungible_id_contents(f, value.non_fungible_id())?;
             write!(f, ")")?;
+        }
+        ScryptoCustomValue::Blob(value) => {
+            write!(f, "Blob(\"{}\")", value)?;
         }
         // TX interpreted
         ScryptoCustomValue::Bucket(value) => {

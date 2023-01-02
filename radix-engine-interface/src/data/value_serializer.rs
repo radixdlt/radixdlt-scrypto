@@ -386,11 +386,11 @@ pub fn serialize_custom_value<S: Serializer>(
             )
         }
         // RE node types
-        ScryptoCustomValue::Ownership(value) => serialize_value(
+        ScryptoCustomValue::Own(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::Ownership,
+            ScryptoCustomTypeId::Own,
             &hex::encode(value.to_vec()),
         ),
         ScryptoCustomValue::Component(value) => serialize_value(
@@ -729,7 +729,7 @@ mod tests {
                 EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
                 EddsaEd25519Signature,
             },
-            data::types::{Blob, Expression, Ownership},
+            data::types::{Blob, Expression, Own},
             math::{Decimal, PreciseDecimal},
         };
 
@@ -793,7 +793,7 @@ mod tests {
                             value: ScryptoCustomValue::SystemAddress(EPOCH_MANAGER),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Ownership(Ownership::Vault([0; 36])),
+                            value: ScryptoCustomValue::Own(Own::Vault([0; 36])),
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Component([0; 36]),
@@ -901,7 +901,7 @@ mod tests {
                 faucet_address,
                 radix_token_address,
                 epoch_manager_address,
-                { "type": "Ownership", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "Own", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "Bucket", "value": "Hello" },
@@ -960,7 +960,7 @@ mod tests {
                         { "type": "ComponentAddress", "value": faucet_address },
                         { "type": "ResourceAddress", "value": radix_token_address },
                         { "type": "SystemAddress", "value": epoch_manager_address },
-                        { "type": "Ownership", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "Own", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Bucket", "value": "Hello" },
