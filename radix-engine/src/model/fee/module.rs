@@ -175,21 +175,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::EmitLog { message, .. } => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::EmitLog {
-                                size: message.len() as u32,
-                            }),
-                        1,
-                        "emit_log",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
         }
 
         Ok(())

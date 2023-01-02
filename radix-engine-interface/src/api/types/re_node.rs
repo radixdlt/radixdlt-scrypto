@@ -33,6 +33,7 @@ pub enum RENodeType {
     EpochManager,
     Clock,
     TransactionRuntime,
+    Logger,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
@@ -43,6 +44,7 @@ pub enum RENodeId {
     AuthZoneStack(AuthZoneStackId),
     FeeReserve(FeeReserveId),
     Worktop,
+    Logger,
     Global(GlobalAddress),
     KeyValueStore(KeyValueStoreId),
     NonFungibleStore(NonFungibleStoreId),
@@ -215,6 +217,7 @@ pub enum VaultOffset {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum EpochManagerOffset {
     EpochManager,
+    ValidatorSet,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -235,6 +238,11 @@ pub enum ProofOffset {
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum WorktopOffset {
     Worktop,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum LoggerOffset {
+    Logger,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -267,6 +275,7 @@ pub enum SubstateOffset {
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
+    Logger(LoggerOffset),
     Clock(ClockOffset),
     TransactionRuntime(TransactionRuntimeOffset),
 }

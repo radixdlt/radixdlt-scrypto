@@ -1,4 +1,6 @@
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use sbor::rust::fmt::Debug;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::api::api::*;
@@ -8,7 +10,9 @@ use crate::wasm::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct EpochManagerCreateInvocation {}
+pub struct EpochManagerCreateInvocation {
+    pub validator_set: Vec<EcdsaSecp256k1PublicKey>,
+}
 
 impl Invocation for EpochManagerCreateInvocation {
     type Output = SystemAddress;

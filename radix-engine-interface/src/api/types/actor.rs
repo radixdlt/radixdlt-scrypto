@@ -74,6 +74,7 @@ pub enum NativeMethod {
     Proof(ProofMethod),
     Worktop(WorktopMethod),
     Clock(ClockMethod),
+    Logger(LoggerMethod),
     TransactionHash(TransactionHashMethod),
 }
 
@@ -492,6 +493,27 @@ pub enum ClockMethod {
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum LoggerMethod {
+    Log,
 }
 
 #[derive(

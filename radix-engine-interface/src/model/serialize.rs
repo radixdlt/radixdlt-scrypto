@@ -19,6 +19,7 @@ pub enum NativeInvocation {
     Component(ComponentInvocation),
     EpochManager(EpochManagerInvocation),
     Clock(ClockInvocation),
+    Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
     ResourceManager(ResourceInvocation),
     Bucket(BucketInvocation),
@@ -66,6 +67,12 @@ pub enum ClockInvocation {
     GetCurrentTime(ClockGetCurrentTimeInvocation),
     CompareCurrentTime(ClockCompareCurrentTimeInvocation),
     SetCurrentTime(ClockSetCurrentTimeInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum LoggerInvocation {
+    Log(LoggerLogInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -347,6 +354,11 @@ impl NativeInvocation {
                 }
                 ClockInvocation::CompareCurrentTime(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+            },
+            NativeInvocation::Logger(logger_invocation) => match logger_invocation {
+                LoggerInvocation::Log(..) => {
+                    refs.insert(RENodeId::Logger);
                 }
             },
             NativeInvocation::Worktop(worktop_method) => match worktop_method {

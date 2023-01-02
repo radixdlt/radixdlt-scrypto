@@ -17,47 +17,50 @@ impl VisibilityProperties {
         actor: &ResolvedActor,
         node_id: RENodeId,
     ) -> bool {
-        if !mode.eq(&ExecutionMode::Application) {
-            return false;
-        }
-
-        // TODO: Cleanup and reduce to least privilege
-        match node_id {
-            RENodeId::Worktop => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(
-                    ..,
-                ))) => true,
+        match mode {
+            ExecutionMode::LoggerModule => match node_id {
+                RENodeId::Logger => return true,
+                _ => return false,
+            },
+            ExecutionMode::Application => match node_id {
+                // TODO: Cleanup and reduce to least privilege
+                RENodeId::Worktop => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Function(
+                        NativeFunction::TransactionProcessor(..),
+                    )) => true,
+                    _ => false,
+                },
+                RENodeId::AuthZoneStack(..) => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Function(
+                        NativeFunction::TransactionProcessor(..),
+                    )) => true,
+                    _ => false,
+                },
+                RENodeId::TransactionRuntime(..) => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Function(
+                        NativeFunction::TransactionProcessor(..),
+                    )) => true,
+                    _ => false,
+                },
+                RENodeId::Bucket(..) => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Bucket(..)))
+                    | FnIdentifier::Native(NativeFn::Method(NativeMethod::Worktop(..)))
+                    | FnIdentifier::Native(NativeFn::Method(NativeMethod::ResourceManager(..)))
+                    | FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(..))) => true,
+                    _ => false,
+                },
+                RENodeId::Proof(..) => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..))) => true,
+                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Proof(..))) => true,
+                    FnIdentifier::Native(NativeFn::Function(
+                        NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+                    )) => true,
+                    FnIdentifier::Scrypto(..) => true,
+                    _ => false,
+                },
                 _ => false,
             },
-            RENodeId::AuthZoneStack(..) => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(
-                    ..,
-                ))) => true,
-                _ => false,
-            },
-            RENodeId::TransactionRuntime(..) => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(
-                    ..,
-                ))) => true,
-                _ => false,
-            },
-            RENodeId::Bucket(..) => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::Method(NativeMethod::Bucket(..)))
-                | FnIdentifier::Native(NativeFn::Method(NativeMethod::Worktop(..)))
-                | FnIdentifier::Native(NativeFn::Method(NativeMethod::ResourceManager(..)))
-                | FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(..))) => true,
-                _ => false,
-            },
-            RENodeId::Proof(..) => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..))) => true,
-                FnIdentifier::Native(NativeFn::Method(NativeMethod::Proof(..))) => true,
-                FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(
-                    TransactionProcessorFunction::Run,
-                ))) => true,
-                FnIdentifier::Scrypto(..) => true,
-                _ => false,
-            },
-            _ => false,
+            _ => return false,
         }
     }
 
@@ -106,6 +109,7 @@ impl VisibilityProperties {
                 SubstateOffset::Component(ComponentOffset::Info) => flags == LockFlags::read_only(),
                 _ => false,
             },
+            (ExecutionMode::LoggerModule, ..) => false,
             (ExecutionMode::NodeMoveModule, offset) => match offset {
                 SubstateOffset::Bucket(BucketOffset::Bucket) => flags == LockFlags::read_only(),
                 SubstateOffset::Proof(ProofOffset::Proof) => true,

@@ -1,10 +1,10 @@
 use radix_engine_interface::api::api::{
-    ActorApi, BlobApi, EngineApi, Invocation, Invokable, InvokableModel, LoggerApi,
+    ActorApi, BlobApi, EngineApi, Invocation, Invokable, InvokableModel,
 };
 use radix_engine_interface::api::types::{
-    AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, Level, LockHandle,
-    ProofOffset, RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset,
-    VaultId, WorktopOffset,
+    AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
+    RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset, VaultId,
+    WorktopOffset,
 };
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
@@ -92,13 +92,17 @@ where
                     auth_zone_params.virtualizable_proofs_resource_addresses,
                     auth_zone_params.initial_proofs.into_iter().collect(),
                 );
-
                 let node_id = api.allocate_node_id(RENodeType::AuthZoneStack)?;
                 api.create_node(node_id, RENode::AuthZoneStack(auth_zone))?;
-
                 Ok(())
             })
             .expect("AuthModule failed to initialize");
+
+        kernel
+            .execute_in_mode::<_, _, RuntimeError>(ExecutionMode::LoggerModule, |api| {
+                LoggerModule::initialize(api)
+            })
+            .expect("Logger failed to initialize");
 
         kernel.current_frame.add_stored_ref(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
@@ -221,6 +225,7 @@ where
                     system_api.drop_lock(handle)?;
                     Ok(())
                 }
+                RENodeId::Logger => Ok(()),
                 RENodeId::Worktop => {
                     let handle = system_api.lock_substate(
                         node_id,
@@ -310,6 +315,9 @@ where
                     &actor,
                     system_api,
                 )
+            })?;
+            self.execute_in_mode(ExecutionMode::LoggerModule, |system_api| {
+                LoggerModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
             })?;
             self.execute_in_mode(ExecutionMode::AuthModule, |system_api| {
                 AuthModule::on_call_frame_enter(&mut call_frame_update, &actor, system_api)
@@ -591,7 +599,6 @@ pub trait Executor {
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
-            + LoggerApi<RuntimeError>
             + ActorApi<RuntimeError>
             + BlobApi<RuntimeError>;
 }
@@ -785,6 +792,7 @@ where
                 .new_transaction_hash_id()
                 .map(|id| RENodeId::TransactionRuntime(id)),
             RENodeType::Worktop => Ok(RENodeId::Worktop),
+            RENodeType::Logger => Ok(RENodeId::Logger),
             RENodeType::Vault => self
                 .id_allocator
                 .new_vault_id()
@@ -945,6 +953,7 @@ where
             (RENodeId::Vault(..), RENode::Vault(..)) => {}
             (RENodeId::Component(..), RENode::Component(..)) => {}
             (RENodeId::Worktop, RENode::Worktop(..)) => {}
+            (RENodeId::Logger, RENode::Logger(..)) => {}
             (RENodeId::Package(..), RENode::Package(..)) => {}
             (RENodeId::KeyValueStore(..), RENode::KeyValueStore(..)) => {}
             (RENodeId::NonFungibleStore(..), RENode::NonFungibleStore(..)) => {}
@@ -956,7 +965,11 @@ where
 
         // TODO: For Scrypto components, check state against blueprint schema
 
-        let push_to_store = matches!(re_node, RENode::Global(..));
+        let push_to_store = match re_node {
+            RENode::Global(..) | RENode::Logger(..) => true,
+            _ => false,
+        };
+
         self.current_frame.create_node(
             node_id,
             re_node,
@@ -1244,40 +1257,6 @@ where
             .map_err(RuntimeError::ModuleError)?;
 
         Ok(blob)
-    }
-}
-
-impl<'g, 's, W, R, M> LoggerApi<RuntimeError> for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
-{
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.module
-            .pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::EmitLog {
-                    level: &level,
-                    message: &message,
-                },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        self.track.add_log(level, message);
-
-        self.module
-            .post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::EmitLog,
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(())
     }
 }
 

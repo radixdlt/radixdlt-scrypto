@@ -58,7 +58,9 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
 
     // Act
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::Create(EpochManagerCreateInvocation {}),
+        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            validator_set: Vec::new(),
+        }),
     ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
@@ -83,7 +85,9 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
 
     // Act
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::Create(EpochManagerCreateInvocation {}),
+        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            validator_set: Vec::new(),
+        }),
     ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
