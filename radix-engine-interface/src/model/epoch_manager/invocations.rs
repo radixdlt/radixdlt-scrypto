@@ -133,7 +133,6 @@ impl Into<SerializedInvocation> for EpochManagerCreateValidatorInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum UpdateValidator {
     Register(EcdsaSecp256k1PublicKey, Decimal),
-    UpdateStake(Decimal),
     Unregister,
 }
 

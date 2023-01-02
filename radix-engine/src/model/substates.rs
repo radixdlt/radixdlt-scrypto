@@ -1189,6 +1189,13 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
+    pub fn validator(&mut self) -> &mut ValidatorSubstate {
+        match self {
+            SubstateRefMut::Validator(value) => *value,
+            _ => panic!("Not validator"),
+        }
+    }
+
     pub fn validator_set(&mut self) -> &mut ValidatorSetSubstate {
         match self {
             SubstateRefMut::ValidatorSet(value) => *value,

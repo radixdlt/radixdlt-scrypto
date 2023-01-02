@@ -1,7 +1,7 @@
 use crate::api::types::*;
 use crate::scrypto;
 use radix_engine_interface::data::ValueReplacingError;
-use sbor::rust::collections::{HashSet, HashMap};
+use sbor::rust::collections::{HashMap, HashSet};
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug)]

@@ -228,7 +228,7 @@ fn unregister_validator_without_auth_fails() {
 }
 
 #[test]
-fn registered_validator_becomes_part_of_validator_on_epoch_change() {
+fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
@@ -266,7 +266,7 @@ fn registered_validator_becomes_part_of_validator_on_epoch_change() {
     let result = receipt.expect_commit();
     let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
-    assert_eq!(next_epoch.0.get(&validator_address).unwrap().key, pub_key);
+    assert!(!next_epoch.0.contains_key(&validator_address));
 }
 
 #[test]
