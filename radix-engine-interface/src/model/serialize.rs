@@ -132,6 +132,7 @@ pub enum ValidatorInvocation {
     Register(ValidatorRegisterInvocation),
     Unregister(ValidatorUnregisterInvocation),
     Stake(ValidatorStakeInvocation),
+    Unstake(ValidatorUnstakeInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -395,6 +396,9 @@ impl NativeInvocation {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
                 }
                 ValidatorInvocation::Stake(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+                ValidatorInvocation::Unstake(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
                 }
             },

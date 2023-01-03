@@ -661,3 +661,64 @@ impl Executor for ValidatorStakeExecutable {
         Ok(((), CallFrameUpdate::empty()))
     }
 }
+
+pub struct ValidatorUnstakeExecutable(RENodeId, Decimal);
+
+impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnstakeInvocation {
+    type Exec = ValidatorUnstakeExecutable;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+        where
+            Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor =
+            ResolvedActor::method(NativeFn::Validator(ValidatorFn::Stake), resolved_receiver);
+        let executor = ValidatorUnstakeExecutable(resolved_receiver.receiver, self.amount);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for ValidatorUnstakeExecutable {
+    type Output = Bucket;
+
+    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        let (is_registered, receiver, validator_address, unstake_bucket, stake_amount) = {
+            let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
+            let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
+            let substate = api.get_ref(handle)?;
+            let validator = substate.validator();
+            let validator_address = validator.address;
+            let manager = validator.manager;
+            let is_registered = validator.is_registered;
+
+            let mut stake_vault = Vault(validator.stake_vault_id);
+            let bucket = stake_vault.sys_take(self.1, api)?;
+            let amount = stake_vault.sys_amount(api)?;
+
+            (is_registered, manager, validator_address, bucket, amount)
+        };
+
+        if is_registered && stake_amount.is_zero() {
+            let invocation = EpochManagerUpdateValidatorInvocation {
+                receiver,
+                validator_address,
+                update: UpdateValidator::Unregister,
+            };
+
+            api.invoke(invocation)?;
+        }
+
+        let update = CallFrameUpdate::move_node(RENodeId::Bucket(unstake_bucket.0));
+        Ok((unstake_bucket, update))
+    }
+}
