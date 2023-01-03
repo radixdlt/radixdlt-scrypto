@@ -411,7 +411,9 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::Logger(method) => match method {
-                LoggerInvocation::Log(..) => {}
+                LoggerInvocation::Log(..) => {
+                    refs.insert(RENodeId::Logger);
+                }
             },
             NativeInvocation::Worktop(worktop_method) => match worktop_method {
                 WorktopInvocation::TakeNonFungibles(..) => {}

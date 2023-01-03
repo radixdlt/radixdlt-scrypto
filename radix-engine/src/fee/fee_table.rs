@@ -170,9 +170,6 @@ impl FeeTable {
                 WorktopFn::AssertContainsNonFungibles => self.fixed_low,
                 WorktopFn::Drain => self.fixed_low,
             },
-            NativeFn::Logger(logger_method) => match logger_method {
-                LoggerFn::Log => self.fixed_low,
-            },
             NativeFn::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainFn::AddAccessCheck => self.fixed_low,
                 AccessRulesChainFn::SetMethodAccessRule => self.fixed_low,
@@ -180,6 +177,9 @@ impl FeeTable {
                 AccessRulesChainFn::SetGroupAccessRule => self.fixed_low,
                 AccessRulesChainFn::SetGroupMutability => self.fixed_low,
                 AccessRulesChainFn::GetLength => self.fixed_low,
+            },
+            NativeFn::Logger(logger_method) => match logger_method {
+                LoggerFn::Log => self.fixed_low,
             },
             NativeFn::Metadata(metadata_method) => match metadata_method {
                 MetadataFn::Set => self.fixed_low,

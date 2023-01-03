@@ -716,72 +716,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     })?;
                     let rtn = invoke_native_fn(invocation, api)?;
                     InstructionOutput::Native(rtn)
-                } /*
-                  Instruction::System(SystemInstruction::CallNativeFunction {
-                      function_ident,
-                      args,
-                  }) => {
-                      let args = processor
-                          .replace_ids(
-                              IndexedScryptoValue::from_slice(args)
-                                  .expect("Invalid CALL_NATIVE_FUNCTION arguments"),
-                          )
-                          .map_err(|e| {
-                              RuntimeError::ApplicationError(
-                                  ApplicationError::TransactionProcessorError(e),
-                              )
-                          })
-                          .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
-
-                      let native_function = resolve_native_function(
-                          &function_ident.blueprint_name,
-                          &function_ident.function_name,
-                      )
-                      .ok_or(RuntimeError::ApplicationError(
-                          ApplicationError::TransactionProcessorError(
-                              TransactionProcessorError::NativeFunctionNotFound(
-                                  function_ident.clone(),
-                              ),
-                          ),
-                      ))?;
-
-                      let rtn = parse_and_invoke_native_fn(
-                          NativeFn::Function(native_function),
-                          args.raw,
-                          api,
-                      )?;
-
-                      InstructionOutput::Native(rtn)
-                  }
-                  Instruction::System(SystemInstruction::CallNativeMethod { method_ident, args }) => {
-                      let args = processor
-                          .replace_ids(
-                              IndexedScryptoValue::from_slice(args)
-                                  .expect("Invalid CALL_NATIVE_METHOD arguments"),
-                          )
-                          .map_err(|e| {
-                              RuntimeError::ApplicationError(
-                                  ApplicationError::TransactionProcessorError(e),
-                              )
-                          })
-                          .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
-
-                      let native_method =
-                          resolve_native_method(method_ident.receiver, &method_ident.method_name)
-                              .ok_or(RuntimeError::ApplicationError(
-                                  ApplicationError::TransactionProcessorError(
-                                      TransactionProcessorError::NativeMethodNotFound(
-                                          method_ident.clone(),
-                                      ),
-                                  ),
-                              ))?;
-
-                      let rtn =
-                          parse_and_invoke_native_fn(NativeFn::Method(native_method), args.raw, api)?;
-
-                      InstructionOutput::Native(rtn)
-                  }
-                   */
+                }
             };
             outputs.push(result);
 

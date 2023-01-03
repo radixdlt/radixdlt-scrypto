@@ -189,7 +189,7 @@ fn test_basic_transfer() {
         + 28500 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 297013 /* run_wasm */
+        + 296913 /* run_wasm */
         + 10000 /* tx_base_fee */
         + 318 /* tx_payload_cost */
         + 3750 /* tx_signature_verification */

@@ -1,8 +1,8 @@
+use radix_engine_interface::model::{LoggerInvocation, NativeInvocation, SerializedInvocation};
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
 use crate::api::api::*;
-use crate::model::{LoggerInvocation, NativeInvocation, SerializedInvocation};
 use crate::scrypto;
 use crate::wasm::*;
 use sbor::rust::string::String;

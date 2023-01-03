@@ -22,41 +22,39 @@ impl VisibilityProperties {
                 RENodeId::Logger => return true,
                 _ => return false,
             },
-            ExecutionMode::Application => {}
+            ExecutionMode::Application => match node_id {
+                // TODO: Cleanup and reduce to least privilege
+                RENodeId::Worktop => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
+                    _ => false,
+                },
+                RENodeId::AuthZoneStack(..) => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
+                    _ => false,
+                },
+                RENodeId::TransactionRuntime(..) => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
+                    _ => false,
+                },
+                RENodeId::Bucket(..) => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::Bucket(..))
+                    | FnIdentifier::Native(NativeFn::Worktop(..))
+                    | FnIdentifier::Native(NativeFn::ResourceManager(..))
+                    | FnIdentifier::Native(NativeFn::Vault(..)) => true,
+                    _ => false,
+                },
+                RENodeId::Proof(..) => match &actor.identifier {
+                    FnIdentifier::Native(NativeFn::AuthZoneStack(..)) => true,
+                    FnIdentifier::Native(NativeFn::Proof(..)) => true,
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(
+                        TransactionProcessorFn::Run,
+                    )) => true,
+                    FnIdentifier::Scrypto(..) => true,
+                    _ => false,
+                },
+                _ => false,
+            },
             _ => return false,
-        }
-
-        // TODO: Cleanup and reduce to least privilege
-        match node_id {
-            RENodeId::Worktop => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
-                _ => false,
-            },
-            RENodeId::AuthZoneStack(..) => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
-                _ => false,
-            },
-            RENodeId::TransactionRuntime(..) => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
-                _ => false,
-            },
-            RENodeId::Bucket(..) => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::Bucket(..))
-                | FnIdentifier::Native(NativeFn::Worktop(..))
-                | FnIdentifier::Native(NativeFn::ResourceManager(..))
-                | FnIdentifier::Native(NativeFn::Vault(..)) => true,
-                _ => false,
-            },
-            RENodeId::Proof(..) => match &actor.identifier {
-                FnIdentifier::Native(NativeFn::AuthZoneStack(..)) => true,
-                FnIdentifier::Native(NativeFn::Proof(..)) => true,
-                FnIdentifier::Native(NativeFn::TransactionProcessor(
-                    TransactionProcessorFn::Run,
-                )) => true,
-                FnIdentifier::Scrypto(..) => true,
-                _ => false,
-            },
-            _ => false,
         }
     }
 
