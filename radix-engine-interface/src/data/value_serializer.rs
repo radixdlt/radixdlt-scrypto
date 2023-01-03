@@ -970,7 +970,7 @@ mod tests {
                         { "type": "ComponentAddress", "value": faucet_address },
                         { "type": "ResourceAddress", "value": radix_token_address },
                         { "type": "SystemAddress", "value": epoch_manager_address },
-                        { "type": "Own", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
                         { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Bucket", "value": "Hello" },
