@@ -540,6 +540,16 @@ pub fn generate_instruction(
                 validator_address: generate_system_address(validator, bech32_decoder)?,
             }
         }
+        ast::Instruction::StakeValidator { validator, stake } => {
+            let bucket_id = generate_bucket(stake, resolver)?;
+            id_validator
+                .drop_bucket(bucket_id)
+                .map_err(GeneratorError::IdValidationError)?;
+            BasicInstruction::StakeValidator {
+                validator_address: generate_system_address(validator, bech32_decoder)?,
+                stake: bucket_id,
+            }
+        }
     })
 }
 

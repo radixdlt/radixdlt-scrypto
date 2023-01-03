@@ -219,6 +219,11 @@ pub enum BasicInstruction {
     UnregisterValidator {
         validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
     },
+
+    StakeValidator {
+        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
+        stake: BucketId,
+    },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

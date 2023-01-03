@@ -386,6 +386,18 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn stake_validator(
+        &mut self,
+        validator_address: SystemAddress,
+        bucket_id: BucketId,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::StakeValidator {
+            validator_address,
+            stake: bucket_id,
+        });
+        self
+    }
+
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
     pub fn call_function(
         &mut self,

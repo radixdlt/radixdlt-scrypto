@@ -247,6 +247,10 @@ impl Parser {
             TokenKind::UnregisterValidator => Instruction::UnregisterValidator {
                 validator: self.parse_value()?,
             },
+            TokenKind::StakeValidator => Instruction::StakeValidator {
+                validator: self.parse_value()?,
+                stake: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }

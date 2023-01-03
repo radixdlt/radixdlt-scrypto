@@ -283,6 +283,11 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(*bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
+                BasicInstruction::StakeValidator { stake, .. } => {
+                    id_validator
+                        .drop_bucket(*stake)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
                 BasicInstruction::RecallResource { .. } => {}
                 BasicInstruction::SetMetadata { .. } => {}
                 BasicInstruction::SetPackageRoyaltyConfig { .. } => {}

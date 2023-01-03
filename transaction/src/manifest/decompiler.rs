@@ -552,6 +552,21 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, validator_address)?;
             f.write_str(";")?;
         }
+        BasicInstruction::StakeValidator {
+            validator_address,
+            stake: bucket_id,
+        } => {
+            write!(
+                f,
+                "STAKE_VALIDATOR SystemAddress(\"{}\") Bucket(\"{}\");",
+                validator_address.display(context.bech32_encoder),
+                context
+                    .bucket_names
+                    .get(&bucket_id)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", bucket_id)),
+            )?;
+        }
     }
     Ok(())
 }

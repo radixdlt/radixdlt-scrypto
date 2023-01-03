@@ -95,7 +95,10 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
             }
             BasicInstruction::RegisterValidator { validator_address }
-            | BasicInstruction::UnregisterValidator { validator_address } => {
+            | BasicInstruction::UnregisterValidator { validator_address }
+            | BasicInstruction::StakeValidator {
+                validator_address, ..
+            } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::System(*validator_address)));
             }
             BasicInstruction::SetMetadata { entity_address, .. }
@@ -395,6 +398,16 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 Instruction::Basic(BasicInstruction::UnregisterValidator { validator_address }) => {
                     let rtn = api.invoke(ValidatorUnregisterInvocation {
                         receiver: *validator_address,
+                    })?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::StakeValidator {
+                    validator_address,
+                    stake,
+                }) => {
+                    let rtn = api.invoke(ValidatorStakeInvocation {
+                        receiver: *validator_address,
+                        stake: Bucket(*stake),
                     })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
