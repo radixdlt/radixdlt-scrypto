@@ -420,19 +420,21 @@ mod tests {
             let config: ValidationConfig = ValidationConfig::simulator();
             let validator = NotarizedTransactionValidator::new(config);
             assert_eq!(
-                Err($result),
-                validator.validate(
-                    &create_transaction(
-                        $version,
-                        $start_epoch,
-                        $end_epoch,
-                        $nonce,
-                        $signers,
-                        $notary
-                    ),
-                    0,
-                    &mut intent_hash_manager,
-                )
+                $result,
+                validator
+                    .validate(
+                        &create_transaction(
+                            $version,
+                            $start_epoch,
+                            $end_epoch,
+                            $nonce,
+                            $signers,
+                            $notary
+                        ),
+                        0,
+                        &mut intent_hash_manager,
+                    )
+                    .expect_err("Should be an error")
             );
         }};
     }

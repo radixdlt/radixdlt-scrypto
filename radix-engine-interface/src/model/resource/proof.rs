@@ -13,7 +13,7 @@ use crate::math::*;
 use crate::scrypto_type;
 use crate::wasm::*;
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct ProofGetAmountInvocation {
     pub receiver: ProofId,
 }
@@ -28,14 +28,11 @@ impl SerializableInvocation for ProofGetAmountInvocation {
 
 impl Into<SerializedInvocation> for ProofGetAmountInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
-            ProofMethodInvocation::GetAmount(self),
-        ))
-        .into()
+        NativeInvocation::Proof(ProofInvocation::GetAmount(self)).into()
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct ProofGetNonFungibleIdsInvocation {
     pub receiver: ProofId,
 }
@@ -50,14 +47,11 @@ impl SerializableInvocation for ProofGetNonFungibleIdsInvocation {
 
 impl Into<SerializedInvocation> for ProofGetNonFungibleIdsInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
-            ProofMethodInvocation::GetNonFungibleIds(self),
-        ))
-        .into()
+        NativeInvocation::Proof(ProofInvocation::GetNonFungibleIds(self)).into()
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct ProofGetResourceAddressInvocation {
     pub receiver: ProofId,
 }
@@ -72,14 +66,11 @@ impl SerializableInvocation for ProofGetResourceAddressInvocation {
 
 impl Into<SerializedInvocation> for ProofGetResourceAddressInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(
-            ProofMethodInvocation::GetResourceAddress(self),
-        ))
-        .into()
+        NativeInvocation::Proof(ProofInvocation::GetResourceAddress(self)).into()
     }
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub struct ProofCloneInvocation {
     pub receiver: ProofId,
 }
@@ -94,10 +85,7 @@ impl SerializableInvocation for ProofCloneInvocation {
 
 impl Into<SerializedInvocation> for ProofCloneInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Proof(ProofMethodInvocation::Clone(
-            self,
-        )))
-        .into()
+        NativeInvocation::Proof(ProofInvocation::Clone(self)).into()
     }
 }
 

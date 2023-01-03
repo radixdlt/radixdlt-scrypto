@@ -368,8 +368,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUnregisterValidatorI
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
@@ -390,8 +390,8 @@ impl Executor for EpochManagerUnregisterValidatorExecutable {
     type Output = ();
 
     fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi + InvokableModel<RuntimeError>,
+    where
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         // TODO: Figure out how to move this access check into more appropriate place
         {
