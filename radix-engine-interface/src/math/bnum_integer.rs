@@ -406,7 +406,7 @@ macro_rules! op_impl_signed {
                     #[must_use = "this returns the result of the operation, \
                       without modifying the original"]
                     pub fn abs(self) -> Self {
-                        Self(self.0.abs().try_into().unwrap())
+                        Self(self.0.abs())
                     }
 
                     /// Returns a number representing sign of `self`.
@@ -419,7 +419,7 @@ macro_rules! op_impl_signed {
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     pub fn signum(self) -> Self {
-                        Self(self.0.signum().try_into().unwrap())
+                        Self(self.0.signum())
                     }
 
                     /// Returns `true` if `self` is positive and `false` if the number is zero or
@@ -428,7 +428,7 @@ macro_rules! op_impl_signed {
                     #[must_use]
                     #[inline]
                     pub fn is_positive(self) -> bool {
-                        self.0.is_positive().try_into().unwrap()
+                        self.0.is_positive()
                     }
 
                     /// Returns `true` if `self` is negative and `false` if the number is zero or
@@ -437,7 +437,7 @@ macro_rules! op_impl_signed {
                     #[must_use]
                     #[inline]
                     pub fn is_negative(self) -> bool {
-                        self.0.is_negative().try_into().unwrap()
+                        self.0.is_negative()
                     }
                 }
             )*
