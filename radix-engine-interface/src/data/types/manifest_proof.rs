@@ -1,4 +1,5 @@
 use sbor::rust::convert::TryFrom;
+#[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;

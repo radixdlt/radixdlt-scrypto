@@ -2,6 +2,7 @@ use crate::abi::*;
 use crate::api::types::*;
 use crate::data::ScryptoCustomTypeId;
 use crate::scrypto;
+#[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use utils::copy_u8_array;

@@ -1,4 +1,5 @@
 use sbor::rust::convert::TryFrom;
+#[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -55,10 +56,16 @@ impl TryFrom<&[u8]> for ManifestExpression {
 
 impl ManifestExpression {
     pub fn to_vec(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
         match self {
-            ManifestExpression::EntireWorktop => vec![0],
-            ManifestExpression::EntireAuthZone => vec![1],
-        }
+            ManifestExpression::EntireWorktop => {
+                bytes.push(0);
+            }
+            ManifestExpression::EntireAuthZone => {
+                bytes.push(1);
+            }
+        };
+        bytes
     }
 }
 

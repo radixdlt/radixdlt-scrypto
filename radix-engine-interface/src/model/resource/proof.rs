@@ -6,7 +6,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::api::{api::*, types::*};
-use crate::data::types::{Own, ParseOwnError};
+use crate::data::types::Own;
 use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
 use crate::wasm::*;
@@ -142,26 +142,6 @@ impl fmt::Display for ProofValidationError {
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub ProofId); // scrypto stub
-
-//========
-// error
-//========
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseProofError {
-    InvalidOwn(ParseOwnError),
-    WrongTypeOfOwn(Own),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseProofError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseProofError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
 
 //========
 // binary

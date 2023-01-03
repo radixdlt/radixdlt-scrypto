@@ -173,8 +173,8 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     output: &mut O,
 ) -> Result<(Vec<KeyValueStoreId>, Vec<VaultId>), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-    let mut referenced_maps = Vec::new();
-    let mut referenced_vaults = Vec::new();
+    let mut owned_kv_stores = Vec::new();
+    let mut owned_vaults = Vec::new();
     let map = substate_store.get_kv_store_entries(kv_store_id);
     writeln!(
         output,
@@ -197,18 +197,18 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 key.display(value_display_context),
                 value.display(value_display_context)
             );
-            referenced_maps.extend(value.kv_store_ids);
+            owned_kv_stores.extend(value.kv_store_ids);
             for ownership in value.ownerships {
                 match ownership {
                     Own::Vault(vault_id) => {
-                        referenced_vaults.push(vault_id);
+                        owned_vaults.push(vault_id);
                     }
                     _ => {}
                 }
             }
         }
     }
-    Ok((referenced_maps, referenced_vaults))
+    Ok((owned_kv_stores, owned_vaults))
 }
 
 fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(

@@ -1,13 +1,11 @@
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::data::types::Own;
-use radix_engine_interface::data::types::ParseOwnError;
 use radix_engine_interface::data::ScryptoCustomTypeId;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::TypeId;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
@@ -19,26 +17,6 @@ use crate::scrypto;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId); // scrypto stub
-
-//========
-// error
-//========
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseVaultError {
-    InvalidOwn(ParseOwnError),
-    WrongTypeOfOwn(Own),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseVaultError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseVaultError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
 
 //========
 // binary
