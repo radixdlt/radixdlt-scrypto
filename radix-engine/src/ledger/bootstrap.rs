@@ -273,9 +273,11 @@ mod tests {
             &substate_store,
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::debug(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
+        #[cfg(not(feature = "alloc"))]
+        println!("{:?}", transaction_receipt);
 
         let validator_set = transaction_receipt
             .result

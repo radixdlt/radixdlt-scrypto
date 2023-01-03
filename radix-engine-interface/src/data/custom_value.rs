@@ -107,38 +107,26 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             // TODO: vector free
-            ScryptoCustomValue::PackageAddress(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::ComponentAddress(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::ResourceAddress(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::SystemAddress(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::Own(v) => encoder.write_slice(&v.to_vec()),
+            ScryptoCustomValue::PackageAddress(v) => v.encode_body(encoder),
+            ScryptoCustomValue::ComponentAddress(v) => v.encode_body(encoder),
+            ScryptoCustomValue::ResourceAddress(v) => v.encode_body(encoder),
+            ScryptoCustomValue::SystemAddress(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Own(v) => v.encode_body(encoder),
             ScryptoCustomValue::Component(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::KeyValueStore(v) => encoder.write_slice(v.as_slice()),
-            ScryptoCustomValue::Bucket(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::Proof(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::Expression(v) => {
-                let buf = v.to_vec();
-                encoder.write_size(buf.len())?;
-                encoder.write_slice(&buf)
-            }
-            ScryptoCustomValue::Blob(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::NonFungibleAddress(v) => {
-                let buf = v.to_vec();
-                encoder.write_size(buf.len())?;
-                encoder.write_slice(&buf)
-            }
-            ScryptoCustomValue::Hash(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::EcdsaSecp256k1PublicKey(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::EcdsaSecp256k1Signature(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::EddsaEd25519PublicKey(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::EddsaEd25519Signature(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::Decimal(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::PreciseDecimal(v) => encoder.write_slice(&v.to_vec()),
-            ScryptoCustomValue::NonFungibleId(v) => {
-                let buf = v.to_vec();
-                encoder.write_size(buf.len())?;
-                encoder.write_slice(&buf)
-            }
+            ScryptoCustomValue::Bucket(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Proof(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Expression(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Blob(v) => v.encode_body(encoder),
+            ScryptoCustomValue::NonFungibleAddress(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Hash(v) => v.encode_body(encoder),
+            ScryptoCustomValue::EcdsaSecp256k1PublicKey(v) => v.encode_body(encoder),
+            ScryptoCustomValue::EcdsaSecp256k1Signature(v) => v.encode_body(encoder),
+            ScryptoCustomValue::EddsaEd25519PublicKey(v) => v.encode_body(encoder),
+            ScryptoCustomValue::EddsaEd25519Signature(v) => v.encode_body(encoder),
+            ScryptoCustomValue::Decimal(v) => v.encode_body(encoder),
+            ScryptoCustomValue::PreciseDecimal(v) => v.encode_body(encoder),
+            ScryptoCustomValue::NonFungibleId(v) => v.encode_body(encoder),
         }
     }
 }
@@ -148,162 +136,321 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Scrypto
         decoder: &mut D,
         type_id: SborTypeId<ScryptoCustomTypeId>,
     ) -> Result<Self, DecodeError> {
-        let SborTypeId::Custom(type_id) = type_id else {
-            return Err(DecodeError::UnexpectedCustomTypeId { actual: type_id.as_u8() });
-        };
         match type_id {
-            ScryptoCustomTypeId::PackageAddress => {
-                let n = 27;
-                let slice = decoder.read_slice(n)?;
-                PackageAddress::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::PackageAddress)
-            }
-            ScryptoCustomTypeId::ComponentAddress => {
-                let n = 27;
-                let slice = decoder.read_slice(n)?;
-                ComponentAddress::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::ComponentAddress)
-            }
-            ScryptoCustomTypeId::ResourceAddress => {
-                let n = 27;
-                let slice = decoder.read_slice(n)?;
-                ResourceAddress::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::ResourceAddress)
-            }
-            ScryptoCustomTypeId::SystemAddress => {
-                let n = 27;
-                let slice = decoder.read_slice(n)?;
-                SystemAddress::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::SystemAddress)
-            }
-            ScryptoCustomTypeId::Own => {
-                let n = 36;
-                let slice = decoder.read_slice(n)?;
-                Ok(Self::Own(
-                    slice
-                        .try_into()
-                        .map_err(|_| DecodeError::InvalidCustomValue)?,
-                ))
-            }
-            ScryptoCustomTypeId::Component => {
-                let n = 36;
-                let slice = decoder.read_slice(n)?;
-                Ok(Self::Component(
-                    slice
-                        .try_into()
-                        .map_err(|_| DecodeError::InvalidCustomValue)?,
-                ))
-            }
-            ScryptoCustomTypeId::KeyValueStore => {
-                let n = 36;
-                let slice = decoder.read_slice(n)?;
-                Ok(Self::KeyValueStore(
-                    slice
-                        .try_into()
-                        .map_err(|_| DecodeError::InvalidCustomValue)?,
-                ))
-            }
-            ScryptoCustomTypeId::Bucket => {
-                let n = 4;
-                let slice = decoder.read_slice(n)?;
-                Ok(Self::Bucket(
-                    slice
-                        .try_into()
-                        .map_err(|_| DecodeError::InvalidCustomValue)?,
-                ))
-            }
-            ScryptoCustomTypeId::Proof => {
-                let n = 4;
-                let slice = decoder.read_slice(n)?;
-                Ok(Self::Proof(
-                    slice
-                        .try_into()
-                        .map_err(|_| DecodeError::InvalidCustomValue)?,
-                ))
-            }
-            ScryptoCustomTypeId::Expression => {
-                let n = 1;
-                let slice = decoder.read_slice(n)?;
-                Ok(Self::Expression(
-                    slice
-                        .try_into()
-                        .map_err(|_| DecodeError::InvalidCustomValue)?,
-                ))
-            }
-            ScryptoCustomTypeId::Blob => {
-                let n = 32;
-                let slice = decoder.read_slice(n)?;
-                Blob::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::Blob)
-            }
-            ScryptoCustomTypeId::NonFungibleAddress => {
-                let n = decoder.read_size()?;
-                let slice = decoder.read_slice(n)?;
-                NonFungibleAddress::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::NonFungibleAddress)
-            }
-            ScryptoCustomTypeId::Hash => {
-                let n = 32;
-                let slice = decoder.read_slice(n)?;
-                Hash::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::Hash)
-            }
-            ScryptoCustomTypeId::EcdsaSecp256k1PublicKey => {
-                let n = EcdsaSecp256k1PublicKey::LENGTH;
-                let slice = decoder.read_slice(n)?;
-                EcdsaSecp256k1PublicKey::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::EcdsaSecp256k1PublicKey)
-            }
-            ScryptoCustomTypeId::EcdsaSecp256k1Signature => {
-                let n = EcdsaSecp256k1Signature::LENGTH;
-                let slice = decoder.read_slice(n)?;
-                EcdsaSecp256k1Signature::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::EcdsaSecp256k1Signature)
-            }
-            ScryptoCustomTypeId::EddsaEd25519PublicKey => {
-                let n = EddsaEd25519PublicKey::LENGTH;
-                let slice = decoder.read_slice(n)?;
-                EddsaEd25519PublicKey::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::EddsaEd25519PublicKey)
-            }
-            ScryptoCustomTypeId::EddsaEd25519Signature => {
-                let n = EddsaEd25519Signature::LENGTH;
-                let slice = decoder.read_slice(n)?;
-                EddsaEd25519Signature::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::EddsaEd25519Signature)
-            }
-            ScryptoCustomTypeId::Decimal => {
-                let n = Decimal::BITS / 8;
-                let slice = decoder.read_slice(n)?;
-                Decimal::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::Decimal)
-            }
-            ScryptoCustomTypeId::PreciseDecimal => {
-                let n = PreciseDecimal::BITS / 8;
-                let slice = decoder.read_slice(n)?;
-                PreciseDecimal::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::PreciseDecimal)
-            }
-            ScryptoCustomTypeId::NonFungibleId => {
-                let n = decoder.read_size()?;
-                let slice = decoder.read_slice(n)?;
-                NonFungibleId::try_from(slice)
-                    .map_err(|_| DecodeError::InvalidCustomValue)
-                    .map(Self::NonFungibleId)
-            }
+            SborTypeId::Custom(cti) => match cti {
+                ScryptoCustomTypeId::PackageAddress => {
+                    PackageAddress::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::PackageAddress)
+                }
+                ScryptoCustomTypeId::ComponentAddress => {
+                    ComponentAddress::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::ComponentAddress)
+                }
+                ScryptoCustomTypeId::ResourceAddress => {
+                    ResourceAddress::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::ResourceAddress)
+                }
+                ScryptoCustomTypeId::SystemAddress => {
+                    SystemAddress::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::SystemAddress)
+                }
+                ScryptoCustomTypeId::Own => {
+                    Own::decode_body_with_type_id(decoder, type_id).map(Self::Own)
+                }
+                ScryptoCustomTypeId::Component => {
+                    let n = 36;
+                    let slice = decoder.read_slice(n)?;
+                    Ok(Self::Component(
+                        slice
+                            .try_into()
+                            .map_err(|_| DecodeError::InvalidCustomValue)?,
+                    ))
+                }
+                ScryptoCustomTypeId::KeyValueStore => {
+                    let n = 36;
+                    let slice = decoder.read_slice(n)?;
+                    Ok(Self::KeyValueStore(
+                        slice
+                            .try_into()
+                            .map_err(|_| DecodeError::InvalidCustomValue)?,
+                    ))
+                }
+                ScryptoCustomTypeId::NonFungibleAddress => {
+                    NonFungibleAddress::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::NonFungibleAddress)
+                }
+                ScryptoCustomTypeId::Blob => {
+                    Blob::decode_body_with_type_id(decoder, type_id).map(Self::Blob)
+                }
+                ScryptoCustomTypeId::Bucket => {
+                    ManifestBucket::decode_body_with_type_id(decoder, type_id).map(Self::Bucket)
+                }
+                ScryptoCustomTypeId::Proof => {
+                    ManifestProof::decode_body_with_type_id(decoder, type_id).map(Self::Proof)
+                }
+                ScryptoCustomTypeId::Expression => {
+                    ManifestExpression::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::Expression)
+                }
+                ScryptoCustomTypeId::Hash => {
+                    Hash::decode_body_with_type_id(decoder, type_id).map(Self::Hash)
+                }
+                ScryptoCustomTypeId::EcdsaSecp256k1PublicKey => {
+                    EcdsaSecp256k1PublicKey::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::EcdsaSecp256k1PublicKey)
+                }
+                ScryptoCustomTypeId::EcdsaSecp256k1Signature => {
+                    EcdsaSecp256k1Signature::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::EcdsaSecp256k1Signature)
+                }
+                ScryptoCustomTypeId::EddsaEd25519PublicKey => {
+                    EddsaEd25519PublicKey::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::EddsaEd25519PublicKey)
+                }
+                ScryptoCustomTypeId::EddsaEd25519Signature => {
+                    EddsaEd25519Signature::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::EddsaEd25519Signature)
+                }
+                ScryptoCustomTypeId::Decimal => {
+                    Decimal::decode_body_with_type_id(decoder, type_id).map(Self::Decimal)
+                }
+                ScryptoCustomTypeId::PreciseDecimal => {
+                    PreciseDecimal::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::PreciseDecimal)
+                }
+                ScryptoCustomTypeId::NonFungibleId => {
+                    NonFungibleId::decode_body_with_type_id(decoder, type_id)
+                        .map(Self::NonFungibleId)
+                }
+            },
+            _ => Err(DecodeError::UnexpectedCustomTypeId {
+                actual: type_id.as_u8(),
+            }),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_custom_types_group1() {
+        let values = (
+            PackageAddress::Normal([1u8; 26]),
+            ComponentAddress::Normal([2u8; 26]),
+            ResourceAddress::Normal([3u8; 26]),
+            SystemAddress::EpochManager([4u8; 26]),
+        );
+        let bytes = scrypto_encode(&values).unwrap();
+        assert_eq!(
+            bytes,
+            vec![
+                92, 33, 4, 128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 129, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 130, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 131, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4
+            ]
+        );
+        assert_eq!(
+            scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
+            ScryptoValue::Tuple {
+                fields: vec![
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::PackageAddress(PackageAddress::Normal(
+                            [1u8; 26]
+                        )),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::ComponentAddress(ComponentAddress::Normal(
+                            [2u8; 26]
+                        )),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::ResourceAddress(ResourceAddress::Normal(
+                            [3u8; 26]
+                        )),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::SystemAddress(SystemAddress::EpochManager(
+                            [4u8; 26]
+                        )),
+                    },
+                ]
+            }
+        );
+    }
+
+    #[test]
+    fn test_custom_types_group2() {
+        let values = (
+            Own::Bucket(1),
+            Own::Proof(2),
+            Own::Vault([3u8; 36]),
+            ScryptoValue::Custom {
+                value: ScryptoCustomValue::Component([4u8; 36]),
+            },
+            ScryptoValue::Custom {
+                value: ScryptoCustomValue::KeyValueStore([5u8; 36]),
+            },
+            NonFungibleAddress {
+                resource_address: ResourceAddress::Normal([6u8; 26]),
+                non_fungible_id: NonFungibleId::U32(7),
+            },
+            Blob(Hash([8u8; 32])),
+        );
+        let bytes = scrypto_encode(&values).unwrap();
+        assert_eq!(
+            bytes,
+            vec![
+                92, 33, 7, 148, 0, 1, 0, 0, 0, 148, 1, 2, 0, 0, 0, 148, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                144, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 145, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 162, 0, 6, 6, 6, 6, 6,
+                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 7, 0, 0, 0, 161,
+                8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                8, 8, 8, 8
+            ]
+        );
+        assert_eq!(
+            scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
+            ScryptoValue::Tuple {
+                fields: vec![
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Own(Own::Bucket(1)),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Own(Own::Proof(2)),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Own(Own::Vault([3u8; 36])),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Component([4u8; 36]),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::KeyValueStore([5u8; 36]),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::NonFungibleAddress(NonFungibleAddress {
+                            resource_address: ResourceAddress::Normal([6u8; 26]),
+                            non_fungible_id: NonFungibleId::U32(7),
+                        }),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Blob(Blob(Hash([8u8; 32]))),
+                    },
+                ]
+            }
+        );
+    }
+
+    #[test]
+    fn test_custom_types_group3() {
+        let values = (
+            ManifestBucket(1u32),
+            ManifestProof(2u32),
+            ManifestExpression::EntireWorktop,
+        );
+        let bytes = scrypto_encode(&values).unwrap();
+        assert_eq!(
+            bytes,
+            vec![92, 33, 3, 146, 1, 0, 0, 0, 147, 2, 0, 0, 0, 160, 0]
+        );
+        assert_eq!(
+            scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
+            ScryptoValue::Tuple {
+                fields: vec![
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Bucket(ManifestBucket(1u32)),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Proof(ManifestProof(2u32)),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Expression(ManifestExpression::EntireWorktop),
+                    },
+                ]
+            }
+        );
+    }
+
+    #[test]
+    fn test_custom_types_group4() {
+        let values = (
+            Hash([0u8; 32]),
+            EcdsaSecp256k1PublicKey([1u8; 33]),
+            EcdsaSecp256k1Signature([2u8; 65]),
+            EddsaEd25519PublicKey([3u8; 32]),
+            EddsaEd25519Signature([4u8; 64]),
+            Decimal::ONE,
+            PreciseDecimal::ONE,
+            NonFungibleId::U32(1),
+            NonFungibleId::Bytes(vec![2, 3]),
+        );
+        let bytes = scrypto_encode(&values).unwrap();
+        assert_eq!(
+            bytes,
+            vec![
+                92, 33, 9, 176, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 177, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 178, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+                179, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 180, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 181, 0, 0, 100, 167, 179, 182, 224,
+                13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 182, 0,
+                0, 0, 0, 0, 0, 0, 0, 1, 31, 106, 191, 100, 237, 56, 110, 237, 151, 167, 218, 244,
+                249, 63, 233, 3, 79, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 183, 0, 1, 0, 0, 0, 183, 3,
+                2, 2, 3
+            ]
+        );
+        assert_eq!(
+            scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
+            ScryptoValue::Tuple {
+                fields: vec![
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Hash(Hash([0u8; 32])),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(
+                            EcdsaSecp256k1PublicKey([1u8; 33],)
+                        ),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::EcdsaSecp256k1Signature(
+                            EcdsaSecp256k1Signature([2u8; 65],)
+                        ),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::EddsaEd25519PublicKey(EddsaEd25519PublicKey(
+                            [3u8; 32]
+                        )),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::EddsaEd25519Signature(EddsaEd25519Signature(
+                            [4u8; 64]
+                        )),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Decimal(Decimal::ONE),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ONE),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::NonFungibleId(NonFungibleId::U32(1)),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Bytes(vec![2, 3])),
+                    },
+                ]
+            }
+        );
     }
 }

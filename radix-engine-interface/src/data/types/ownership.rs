@@ -2,10 +2,8 @@ use crate::abi::*;
 use crate::api::types::*;
 use crate::data::ScryptoCustomTypeId;
 use crate::scrypto;
-use crate::scrypto_type;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
 use utils::copy_u8_array;
 
 // TODO: it's still up to debate whether this should be an enum OR dedicated types for each variant.
@@ -61,59 +59,60 @@ impl fmt::Display for ParseOwnError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for Own {
-    type Error = ParseOwnError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice
-            .get(0)
-            .ok_or(ParseOwnError::InvalidLength(slice.len()))?
-        {
-            0 => {
-                if slice.len() == 5 {
-                    Ok(Self::Bucket(u32::from_le_bytes(copy_u8_array(&slice[1..]))))
-                } else {
-                    Err(ParseOwnError::InvalidLength(slice.len()))
-                }
-            }
-            1 => {
-                if slice.len() == 5 {
-                    Ok(Self::Proof(u32::from_le_bytes(copy_u8_array(&slice[1..]))))
-                } else {
-                    Err(ParseOwnError::InvalidLength(slice.len()))
-                }
-            }
-            2 => {
-                if slice.len() == 37 {
-                    Ok(Self::Vault(copy_u8_array(&slice[1..])))
-                } else {
-                    Err(ParseOwnError::InvalidLength(slice.len()))
-                }
-            }
-            id => Err(ParseOwnError::UnknownVariant(*id)),
-        }
+impl TypeId<ScryptoCustomTypeId> for Own {
+    #[inline]
+    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+        SborTypeId::Custom(ScryptoCustomTypeId::Own)
     }
 }
 
-impl Own {
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
+impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Own {
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
-            Own::Bucket(id) => {
-                buf.push(0);
-                buf.extend(id.to_le_bytes());
+            Own::Bucket(v) => {
+                encoder.write_byte(0)?;
+                encoder.write_slice(&v.to_le_bytes())?;
             }
-            Own::Proof(id) => {
-                buf.push(1);
-                buf.extend(id.to_le_bytes());
+            Own::Proof(v) => {
+                encoder.write_byte(1)?;
+                encoder.write_slice(&v.to_le_bytes())?;
             }
-            Own::Vault(id) => {
-                buf.push(2);
-                buf.extend(id);
+            Own::Vault(v) => {
+                encoder.write_byte(2)?;
+                encoder.write_slice(v)?;
             }
         }
-        buf
+        Ok(())
     }
 }
 
-scrypto_type!(Own, ScryptoCustomTypeId::Own, Type::Own);
+impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Own {
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        match decoder.read_byte()? {
+            0 => Ok(Self::Bucket(u32::from_le_bytes(copy_u8_array(
+                decoder.read_slice(4)?,
+            )))),
+            1 => Ok(Self::Proof(u32::from_le_bytes(copy_u8_array(
+                decoder.read_slice(4)?,
+            )))),
+            2 => Ok(Self::Vault(copy_u8_array(decoder.read_slice(36)?))),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
+}
+
+impl scrypto_abi::Describe for Own {
+    fn describe() -> scrypto_abi::Type {
+        Type::Own
+    }
+}

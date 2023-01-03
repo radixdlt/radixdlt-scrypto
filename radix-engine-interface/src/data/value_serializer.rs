@@ -393,7 +393,7 @@ pub fn serialize_custom_value<S: Serializer>(
             serializer,
             context,
             ScryptoCustomTypeId::Own,
-            &hex::encode(value.to_vec()),
+            &format!("{:?}", value), // TODO: fix syntax
         ),
         ScryptoCustomValue::Component(value) => serialize_value(
             ValueEncoding::WithType,

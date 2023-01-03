@@ -5,11 +5,11 @@ use radix_engine_interface::data::types::ParseOwnError;
 use radix_engine_interface::data::ScryptoCustomTypeId;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto_type;
 use radix_engine_interface::TypeId;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
+use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 use scrypto_abi::Type;
@@ -44,24 +44,43 @@ impl fmt::Display for ParseVaultError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for Vault {
-    type Error = ParseVaultError;
+impl TypeId<ScryptoCustomTypeId> for Vault {
+    #[inline]
+    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    }
+}
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match Own::try_from(slice).map_err(ParseVaultError::InvalidOwn)? {
-            Own::Vault(id) => Ok(Self(id)),
-            o => Err(ParseVaultError::WrongTypeOfOwn(o)),
+impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Vault {
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Own::Vault(self.0).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Vault {
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
+    ) -> Result<Self, DecodeError> {
+        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        match o {
+            Own::Vault(vault_id) => Ok(Self(vault_id)),
+            _ => Err(DecodeError::InvalidCustomValue),
         }
     }
 }
 
-impl Vault {
-    pub fn to_vec(&self) -> Vec<u8> {
-        Own::Vault(self.0).to_vec()
+impl scrypto_abi::Describe for Vault {
+    fn describe() -> scrypto_abi::Type {
+        Type::Vault
     }
 }
-
-scrypto_type!(Vault, ScryptoCustomTypeId::Own, Type::Vault);
 
 pub trait ScryptoVault {
     fn with_bucket(bucket: Bucket) -> Self;

@@ -289,7 +289,7 @@ pub fn format_custom_value<F: fmt::Write>(
         }
         // RE interpreted
         ScryptoCustomValue::Own(value) => {
-            write!(f, "Own(\"{}\")", hex::encode(value.to_vec()))?;
+            write!(f, "Own(\"{:?}\")", value)?; // TODO: fix syntax
         }
         ScryptoCustomValue::Component(value) => {
             write!(f, "Component(\"{}\")", hex::encode(value))?;

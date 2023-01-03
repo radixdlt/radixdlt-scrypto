@@ -39,8 +39,8 @@ pub enum ScryptoCustomTypeId {
 
     // RE interpreted types
     Own,
-    Component,
-    KeyValueStore,
+    Component,          // TODO: merge into Own
+    KeyValueStore,      // TODO: merge into Own
     NonFungibleAddress, // for resource address contained
     Blob,
 
