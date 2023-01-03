@@ -215,23 +215,23 @@ pub enum Type {
     // Custom Types
     // ==============
 
-    // Globals
+    // RE global address types
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
     SystemAddress,
 
-    // RE Nodes
+    // RE interpreted types
+    Own,
     Component,
     KeyValueStore,
+    NonFungibleAddress,
+    Blob,
+
+    // TX interpreted types
     Bucket,
     Proof,
-    Vault,
-
-    // Other interpreted types
     Expression,
-    Blob,
-    NonFungibleAddress,
 
     // Uninterpreted,
     Hash,
@@ -273,10 +273,8 @@ pub enum Value {
     // ==============
     Some(Box<Value>),
     None,
-
     Ok(Box<Value>),
     Err(Box<Value>),
-
     Bytes(Box<Value>),
 
     // ==============
@@ -289,17 +287,17 @@ pub enum Value {
     ResourceAddress(Box<Value>),
     SystemAddress(Box<Value>),
 
-    // RE Nodes
+    // RE interpreted types
+    Own(Box<Value>),
     Component(Box<Value>),
     KeyValueStore(Box<Value>),
-    Bucket(Box<Value>),
-    Proof(Box<Value>),
-    Vault(Box<Value>),
+    NonFungibleAddress(Box<Value>, Box<Value>),
+    Blob(Box<Value>),
 
     // Other interpreted types
+    Bucket(Box<Value>),
+    Proof(Box<Value>),
     Expression(Box<Value>),
-    Blob(Box<Value>),
-    NonFungibleAddress(Box<Value>, Box<Value>),
 
     // Uninterpreted,
     Hash(Box<Value>),
@@ -359,7 +357,7 @@ impl Value {
             Value::KeyValueStore(_) => Type::KeyValueStore,
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
-            Value::Vault(_) => Type::Vault,
+            Value::Own(_) => Type::Own,
 
             // Other interpreted types
             Value::Expression(_) => Type::Expression,

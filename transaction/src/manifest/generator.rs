@@ -3,9 +3,10 @@ use radix_engine_interface::api::types::{
     BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId,
 };
 use radix_engine_interface::crypto::{
-    Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
-    EddsaEd25519Signature, Hash,
+    EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
+    Hash,
 };
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
     ScryptoDecode, ScryptoSborTypeId, ScryptoValue, ScryptoValueDecodeError,
@@ -13,8 +14,6 @@ use radix_engine_interface::data::{
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
-
-use radix_engine_interface::core::Expression;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
@@ -875,15 +874,15 @@ fn generate_proof(
     }
 }
 
-fn generate_vault(value: &ast::Value) -> Result<Vault, GeneratorError> {
+fn generate_ownership(value: &ast::Value) -> Result<Own, GeneratorError> {
     match value {
-        ast::Value::Vault(inner) => match &**inner {
+        ast::Value::Own(inner) => match &**inner {
             ast::Value::String(s) => {
-                Vault::from_str(s).map_err(|_| GeneratorError::InvalidVault(s.into()))
+                Own::from_str(s).map_err(|_| GeneratorError::InvalidVault(s.into()))
             }
             v => invalid_type!(v, ast::Type::String),
         },
-        v => invalid_type!(v, ast::Type::Vault),
+        v => invalid_type!(v, ast::Type::Own),
     }
 }
 
@@ -1233,6 +1232,9 @@ pub fn generate_value(
             })
         }
 
+        ast::Value::Own(_) => generate_ownership(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Own(v),
+        }),
         ast::Value::Component(_) => generate_component_id(value).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Component(v),
         }),
@@ -1247,10 +1249,6 @@ pub fn generate_value(
         ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Proof(v),
         }),
-        ast::Value::Vault(_) => generate_vault(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Vault(v.0),
-        }),
-
         ast::Value::Expression(_) => generate_expression(value).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Expression(v),
         }),
@@ -1341,27 +1339,27 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::Array => SborTypeId::Array,
         ast::Type::Tuple => SborTypeId::Tuple,
 
-        // Globals
+        // RE global address types
         ast::Type::PackageAddress => SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress),
         ast::Type::ComponentAddress => SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress),
         ast::Type::ResourceAddress => SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress),
         ast::Type::SystemAddress => SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress),
 
-        // RE Nodes
+        // RE interpreted types
+        ast::Type::Own => SborTypeId::Custom(ScryptoCustomTypeId::Own),
         ast::Type::Component => SborTypeId::Custom(ScryptoCustomTypeId::Component),
         ast::Type::KeyValueStore => SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore),
-        ast::Type::Bucket => SborTypeId::Custom(ScryptoCustomTypeId::Bucket),
-        ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
-        ast::Type::Vault => SborTypeId::Custom(ScryptoCustomTypeId::Vault),
-
-        // Other interpreted types
-        ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),
         ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),
         ast::Type::NonFungibleAddress => {
             SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress)
         }
 
-        // Uninterpreted=> SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
+        // Tx interpreted types
+        ast::Type::Bucket => SborTypeId::Custom(ScryptoCustomTypeId::Bucket),
+        ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
+        ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),
+
+        // Uninterpreted
         ast::Type::Hash => SborTypeId::Custom(ScryptoCustomTypeId::Hash),
         ast::Type::EcdsaSecp256k1PublicKey => {
             SborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey)
@@ -1389,7 +1387,7 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::args;
-    use radix_engine_interface::core::NetworkDefinition;
+    use radix_engine_interface::node::NetworkDefinition;
     use radix_engine_interface::pdec;
 
     #[macro_export]

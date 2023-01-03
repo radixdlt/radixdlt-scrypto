@@ -1,9 +1,9 @@
 use radix_engine_constants::*;
 use radix_engine_interface::constants::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{Hash, PublicKey};
 use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
+use radix_engine_interface::node::NetworkDefinition;
 use sbor::rust::collections::{BTreeSet, HashSet};
 
 use crate::errors::{SignatureValidationError, *};
@@ -405,7 +405,7 @@ impl NotarizedTransactionValidator {
 
 #[cfg(test)]
 mod tests {
-    use radix_engine_interface::core::NetworkDefinition;
+    use radix_engine_interface::node::NetworkDefinition;
 
     use super::*;
     use crate::{
