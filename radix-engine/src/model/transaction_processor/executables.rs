@@ -98,6 +98,9 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             | BasicInstruction::UnregisterValidator { validator_address }
             | BasicInstruction::StakeValidator {
                 validator_address, ..
+            }
+            | BasicInstruction::UnstakeValidator {
+                validator_address, ..
             } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::System(*validator_address)));
             }
@@ -410,6 +413,17 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: *validator_address,
                         stake,
                     })?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::UnstakeValidator {
+                    validator_address,
+                    amount,
+                }) => {
+                    let rtn = api.invoke(ValidatorUnstakeInvocation {
+                        receiver: *validator_address,
+                        amount: *amount,
+                    })?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::Basic(BasicInstruction::CallFunction {

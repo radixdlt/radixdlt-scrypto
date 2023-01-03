@@ -398,6 +398,18 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn unstake_validator(
+        &mut self,
+        validator_address: SystemAddress,
+        amount: Decimal,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::UnstakeValidator {
+            validator_address,
+            amount,
+        });
+        self
+    }
+
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
     pub fn call_function(
         &mut self,

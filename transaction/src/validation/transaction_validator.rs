@@ -288,6 +288,7 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(*stake)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
+                BasicInstruction::UnstakeValidator { .. } => {}
                 BasicInstruction::RecallResource { .. } => {}
                 BasicInstruction::SetMetadata { .. } => {}
                 BasicInstruction::SetPackageRoyaltyConfig { .. } => {}

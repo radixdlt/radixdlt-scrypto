@@ -671,8 +671,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnstakeInvocation {
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
@@ -689,8 +689,8 @@ impl Executor for ValidatorUnstakeExecutable {
     type Output = Bucket;
 
     fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let (is_registered, receiver, validator_address, unstake_bucket, stake_amount) = {
             let offset = SubstateOffset::Validator(ValidatorOffset::Validator);

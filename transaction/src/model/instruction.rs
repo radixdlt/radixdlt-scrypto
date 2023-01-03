@@ -224,6 +224,11 @@ pub enum BasicInstruction {
         validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
         stake: BucketId,
     },
+
+    UnstakeValidator {
+        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
+        amount: Decimal,
+    },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

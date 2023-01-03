@@ -20,9 +20,13 @@ pub trait NativeVault: Sized {
     where
         Y: EngineApi<E> + InvokableModel<E>;
 
-    fn sys_take<Y, E: Debug + ScryptoDecode>(&mut self, amount: Decimal, api: &mut Y) -> Result<Bucket, E>
-        where
-            Y: EngineApi<E> + InvokableModel<E>;
+    fn sys_take<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: EngineApi<E> + InvokableModel<E>;
 
     fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
     where
@@ -52,9 +56,13 @@ impl NativeVault for Vault {
         })
     }
 
-    fn sys_take<Y, E: Debug + ScryptoDecode>(&mut self, amount: Decimal, api: &mut Y) -> Result<Bucket, E>
-        where
-            Y: EngineApi<E> + InvokableModel<E>,
+    fn sys_take<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+    where
+        Y: EngineApi<E> + InvokableModel<E>,
     {
         api.invoke(VaultTakeInvocation {
             receiver: self.0,

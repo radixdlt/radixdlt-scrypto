@@ -202,6 +202,11 @@ pub enum Instruction {
         validator: Value,
         stake: Value,
     },
+
+    UnstakeValidator {
+        validator: Value,
+        amount: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

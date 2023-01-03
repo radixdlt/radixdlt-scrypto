@@ -550,6 +550,13 @@ pub fn generate_instruction(
                 stake: bucket_id,
             }
         }
+
+        ast::Instruction::UnstakeValidator { validator, amount } => {
+            BasicInstruction::UnstakeValidator {
+                validator_address: generate_system_address(validator, bech32_decoder)?,
+                amount: generate_decimal(amount)?,
+            }
+        }
     })
 }
 

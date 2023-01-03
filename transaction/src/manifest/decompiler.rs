@@ -567,6 +567,17 @@ pub fn decompile_instruction<F: fmt::Write>(
                     .unwrap_or(format!("{}u32", bucket_id)),
             )?;
         }
+        BasicInstruction::UnstakeValidator {
+            validator_address,
+            amount,
+        } => {
+            write!(
+                f,
+                "UNSTAKE_VALIDATOR SystemAddress(\"{}\") Decimal(\"{}\");",
+                validator_address.display(context.bech32_encoder),
+                amount,
+            )?;
+        }
     }
     Ok(())
 }

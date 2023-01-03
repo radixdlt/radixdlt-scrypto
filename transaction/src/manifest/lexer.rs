@@ -143,6 +143,7 @@ pub enum TokenKind {
     RegisterValidator,
     UnregisterValidator,
     StakeValidator,
+    UnstakeValidator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -498,6 +499,7 @@ impl Lexer {
             "REGISTER_VALIDATOR" => Ok(TokenKind::RegisterValidator),
             "UNREGISTER_VALIDATOR" => Ok(TokenKind::UnregisterValidator),
             "STAKE_VALIDATOR" => Ok(TokenKind::StakeValidator),
+            "UNSTAKE_VALIDATOR" => Ok(TokenKind::UnstakeValidator),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

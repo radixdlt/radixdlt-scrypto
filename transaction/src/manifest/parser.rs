@@ -251,6 +251,10 @@ impl Parser {
                 validator: self.parse_value()?,
                 stake: self.parse_value()?,
             },
+            TokenKind::UnstakeValidator => Instruction::UnstakeValidator {
+                validator: self.parse_value()?,
+                amount: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }
