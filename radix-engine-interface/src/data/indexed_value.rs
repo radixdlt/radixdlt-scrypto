@@ -174,10 +174,55 @@ impl IndexedScryptoValue {
             }
         }
 
+        replace_array_element_type_id(&mut self.dom);
+
         self.raw = scrypto_encode(&self.dom)
             .expect("Previously encodable raw value is no longer encodable after replacement");
 
         Ok(())
+    }
+}
+
+pub fn replace_array_element_type_id(value: &mut ScryptoValue) {
+    match value {
+        // primitive types
+        SborValue::Unit
+        | SborValue::Bool { .. }
+        | SborValue::I8 { .. }
+        | SborValue::I16 { .. }
+        | SborValue::I32 { .. }
+        | SborValue::I64 { .. }
+        | SborValue::I128 { .. }
+        | SborValue::U8 { .. }
+        | SborValue::U16 { .. }
+        | SborValue::U32 { .. }
+        | SborValue::U64 { .. }
+        | SborValue::U128 { .. }
+        | SborValue::String { .. } => {}
+        SborValue::Tuple { fields } | SborValue::Enum { fields, .. } => {
+            for e in fields {
+                replace_array_element_type_id(e);
+            }
+        }
+        SborValue::Array {
+            elements,
+            element_type_id,
+        } => {
+            match element_type_id {
+                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Bucket) => {
+                    *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+                }
+                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Proof) => {
+                    *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+                }
+                _ => {}
+            }
+
+            for e in elements {
+                replace_array_element_type_id(e);
+            }
+        }
+        SborValue::Custom { .. } => {}
     }
 }
 
@@ -338,7 +383,7 @@ mod tests {
 
     #[test]
     fn should_reject_duplicate_ids() {
-        let buckets = scrypto_encode(&vec![Bucket(0), Bucket(0)]).unwrap();
+        let buckets = scrypto_encode(&vec![ManifestBucket(0), ManifestBucket(0)]).unwrap();
         assert_eq!(
             IndexedScryptoValue::from_slice(&buckets),
             Err(ScryptoValueDecodeError::ValueIndexingError(

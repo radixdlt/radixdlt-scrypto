@@ -91,7 +91,7 @@ mod tests {
                 BasicInstruction::CallMethod {
                     component_address: component2,
                     method_name: "buy_gumball".to_string(),
-                    args: args!(Bucket(512))
+                    args: args!(ManifestBucket(512))
                 },
                 BasicInstruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),

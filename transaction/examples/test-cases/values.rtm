@@ -33,7 +33,7 @@ CALL_METHOD
     SystemAddress("system_sim1qne8qu4seyvzfgd94p3z8rjcdl3v0nfhv84judpum2lq7x4635")
 
     # RE nodes types
-    Ownership("000000000000000000000000000000000000000000000000000000000000000005000000")
+    # TODO: Ownership("000000000000000000000000000000000000000000000000000000000000000005000000")
     Component("000000000000000000000000000000000000000000000000000000000000000005000000")
     KeyValueStore("000000000000000000000000000000000000000000000000000000000000000005000000")
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value")
@@ -46,7 +46,7 @@ CALL_METHOD
     # TX interpreted types
     Bucket("temp1")
     Proof("temp2")
-    Expression("ALL_WORKTOP_RESOURCES")
+    Expression("ENTIRE_WORKTOP")
 
     # Uninterpreted
     Hash("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")
