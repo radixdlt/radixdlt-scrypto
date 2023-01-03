@@ -8,7 +8,7 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::NativeVault;
+use native_sdk::resource::{NativeVault, ResourceManager};
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
@@ -476,13 +476,46 @@ impl EpochManager {
         if let Some(bucket) = bucket {
             stake_vault.sys_put(bucket, api)?;
         }
+        let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
+
+        let mut unstake_token_auth = BTreeMap::new();
+        let non_fungible_id = NonFungibleId::Bytes(
+            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
+        );
+        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
+        unstake_token_auth.insert(
+            Mint,
+            (
+                rule!(require(non_fungible_address.clone())),
+                rule!(deny_all),
+            ),
+        );
+        unstake_token_auth.insert(
+            Burn,
+            (rule!(require(non_fungible_address)), rule!(deny_all)),
+        );
+        unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
+
+        let (unstake_resource_manager, _) = ResourceManager::sys_new(
+            ResourceType::NonFungible {
+                id_type: NonFungibleIdType::UUID,
+            },
+            BTreeMap::new(),
+            unstake_token_auth,
+            None,
+            api,
+        )?;
+        let unstake_nft_address = unstake_resource_manager.0;
 
         let node = RENode::Validator(
             ValidatorSubstate {
                 manager,
                 key,
                 address,
+                unstake_nft_address,
                 stake_vault_id: stake_vault.0,
+                unstake_vault_id: unstake_vault.0,
                 is_registered,
             },
             AccessRulesChainSubstate {

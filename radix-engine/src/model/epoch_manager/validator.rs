@@ -4,7 +4,7 @@ use crate::engine::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::NativeVault;
+use native_sdk::resource::{NativeVault, ResourceManager};
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{GlobalAddress, NativeFn, RENodeId, SubstateOffset};
 use radix_engine_interface::model::*;
@@ -14,8 +14,10 @@ use radix_engine_interface::model::*;
 pub struct ValidatorSubstate {
     pub manager: SystemAddress,
     pub address: SystemAddress,
+    pub unstake_nft_address: ResourceAddress,
     pub key: EcdsaSecp256k1PublicKey,
     pub stake_vault_id: VaultId,
+    pub unstake_vault_id: VaultId,
     pub is_registered: bool,
 }
 
@@ -241,7 +243,12 @@ impl Executor for ValidatorUnstakeExecutable {
             let is_registered = validator.is_registered;
 
             let mut stake_vault = Vault(validator.stake_vault_id);
+            let mut unstake_vault = Vault(validator.unstake_vault_id);
+            let mut nft_resman = ResourceManager(validator.unstake_nft_address);
+
             let bucket = stake_vault.sys_take(self.1, api)?;
+            unstake_vault.sys_put(bucket, api)?;
+            let unstake_bucket = nft_resman.mint_non_fungible_uuid(api)?;
             let amount = stake_vault.sys_amount(api)?;
 
             (
@@ -249,7 +256,7 @@ impl Executor for ValidatorUnstakeExecutable {
                 manager,
                 validator_address,
                 key,
-                bucket,
+                unstake_bucket,
                 amount,
             )
         };
