@@ -1,6 +1,6 @@
 use clap::Parser;
-use radix_engine_interface::core::{NetworkDefinition, ParseNetworkError};
 use radix_engine_interface::data::scrypto_encode;
+use radix_engine_interface::node::{NetworkDefinition, ParseNetworkError};
 use std::path::PathBuf;
 use std::str::FromStr;
 use transaction::manifest::compile;

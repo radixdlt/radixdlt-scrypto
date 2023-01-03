@@ -59,31 +59,23 @@ pub enum TokenKind {
     // SBOR custom types
     // ==============
 
-    /* Global address */
+    /* RE global address types */
     PackageAddress,
     SystemAddress,
     ComponentAddress,
     ResourceAddress,
 
-    /* RE Nodes */
-    Global,
+    /* RE interpreted types */
+    Ownership,
+    KeyValueStore,
+    Component,
+    NonFungibleAddress,
+    Blob,
+
+    /* TX interpreted types */
     Bucket,
     Proof,
-    AuthZoneStack,
-    Worktop,
-    KeyValueStore,
-    NonFungibleStore,
-    Component,
-    EpochManager,
-    Vault,
-    ResourceManager,
-    Package,
-    Clock,
-
-    /* Other interpreted */
     Expression,
-    Blob,
-    NonFungibleAddress,
 
     /* Uninterpreted */
     Hash,
@@ -424,23 +416,15 @@ impl Lexer {
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
-            "Global" => Ok(TokenKind::Global),
+            "Ownership" => Ok(TokenKind::Ownership),
+            "KeyValueStore" => Ok(TokenKind::KeyValueStore),
+            "Component" => Ok(TokenKind::Component),
+            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
+            "Blob" => Ok(TokenKind::Blob),
+
             "Bucket" => Ok(TokenKind::Bucket),
             "Proof" => Ok(TokenKind::Proof),
-            "AuthZoneStack" => Ok(TokenKind::AuthZoneStack),
-            "Worktop" => Ok(TokenKind::Worktop),
-            "KeyValueStore" => Ok(TokenKind::KeyValueStore),
-            "NonFungibleStore" => Ok(TokenKind::NonFungibleStore),
-            "Component" => Ok(TokenKind::Component),
-            "EpochManager" => Ok(TokenKind::EpochManager),
-            "Vault" => Ok(TokenKind::Vault),
-            "ResourceManager" => Ok(TokenKind::ResourceManager),
-            "Package" => Ok(TokenKind::Package),
-            "Clock" => Ok(TokenKind::Clock),
-
             "Expression" => Ok(TokenKind::Expression),
-            "Blob" => Ok(TokenKind::Blob),
-            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
 
             "Hash" => Ok(TokenKind::Hash),
             "EcdsaSecp256k1PublicKey" => Ok(TokenKind::EcdsaSecp256k1PublicKey),

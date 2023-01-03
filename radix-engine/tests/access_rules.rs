@@ -2,8 +2,8 @@ use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeErro
 use radix_engine::model::AccessRulesChainError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::{data::*, rule};
 use scrypto::component::ComponentAccessRules;
 use scrypto_unit::*;
