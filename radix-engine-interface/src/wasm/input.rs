@@ -1,7 +1,6 @@
 use crate::api::types::*;
 use crate::scrypto;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug)]
@@ -19,5 +18,4 @@ pub enum RadixEngineInput {
     Write(LockHandle, Vec<u8>),
 
     GetActor(),
-    EmitLog(Level, String),
 }

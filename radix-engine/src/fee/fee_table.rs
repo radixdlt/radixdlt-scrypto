@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{
-    AccessRulesChainFn, AuthZoneStackFn, BucketFn, ClockFn, ComponentFn, EpochManagerFn,
+    AccessRulesChainFn, AuthZoneStackFn, BucketFn, ClockFn, ComponentFn, EpochManagerFn, LoggerFn,
     MetadataFn, NativeFn, PackageFn, ProofFn, ResourceManagerFn, TransactionProcessorFn,
     TransactionRuntimeFn, VaultFn, WorktopFn,
 };
@@ -52,10 +52,6 @@ pub enum SystemApiCostingEntry {
      */
     /// Reads blob in transaction
     ReadBlob {
-        size: u32,
-    },
-    /// Emits a log.
-    EmitLog {
         size: u32,
     },
 }
@@ -178,6 +174,9 @@ impl FeeTable {
                 AccessRulesChainFn::SetGroupMutability => self.fixed_low,
                 AccessRulesChainFn::GetLength => self.fixed_low,
             },
+            NativeFn::Logger(logger_method) => match logger_method {
+                LoggerFn::Log => self.fixed_low,
+            },
             NativeFn::Metadata(metadata_method) => match metadata_method {
                 MetadataFn::Set => self.fixed_low,
                 MetadataFn::Get => self.fixed_low,
@@ -246,7 +245,6 @@ impl FeeTable {
             SystemApiCostingEntry::DropLock => self.fixed_low,
 
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
-            SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
         }
     }
 }

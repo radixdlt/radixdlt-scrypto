@@ -1,5 +1,8 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
+use crate::model::LoggerSubstate;
+use radix_engine_interface::api::types::{RENodeId, RENodeType};
+use sbor::rust::vec::Vec;
 
 pub struct LoggerModule;
 
@@ -9,6 +12,29 @@ macro_rules! log {
         #[cfg(not(feature = "alloc"))]
         println!("{}[{}] {}", "    ".repeat($call_frame.depth), $call_frame.depth, sbor::rust::format!($msg, $( $arg ),*));
     };
+}
+
+impl LoggerModule {
+    pub fn initialize<Y: SystemApi>(api: &mut Y) -> Result<(), RuntimeError> {
+        let logger = LoggerSubstate { logs: Vec::new() };
+        let node_id = api.allocate_node_id(RENodeType::Logger)?;
+        api.create_node(node_id, RENode::Logger(logger))?;
+        Ok(())
+    }
+
+    pub fn on_call_frame_enter<Y: SystemApi>(
+        call_frame_update: &mut CallFrameUpdate,
+        _actor: &ResolvedActor,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let refed = api.get_visible_node_ids()?;
+        let maybe_id = refed.into_iter().find(|e| matches!(e, RENodeId::Logger));
+        if let Some(logger_id) = maybe_id {
+            call_frame_update.node_refs_to_copy.insert(logger_id);
+        }
+
+        Ok(())
+    }
 }
 
 #[allow(unused_variables)] // for no_std
@@ -62,9 +88,6 @@ impl<R: FeeReserve> BaseModule<R> for LoggerModule {
             SysCallInput::ReadBlob { blob_hash } => {
                 log!(call_frame, "Reading blob: hash = {}", blob_hash);
             }
-            SysCallInput::EmitLog { .. } => {
-                log!(call_frame, "Emitting application log");
-            }
         }
 
         Ok(())
@@ -95,8 +118,6 @@ impl<R: FeeReserve> BaseModule<R> for LoggerModule {
             SysCallOutput::GetRefMut { .. } => {}
             SysCallOutput::DropLock { .. } => {}
             SysCallOutput::ReadBlob { .. } => {}
-            SysCallOutput::GenerateUuid { .. } => {}
-            SysCallOutput::EmitLog { .. } => {}
         }
 
         Ok(())

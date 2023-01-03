@@ -23,6 +23,7 @@ pub enum NativePackage {
     EpochManager,
     Resource,
     Clock,
+    Logger,
     TransactionRuntime,
     TransactionProcessor,
 }
@@ -100,6 +101,7 @@ pub enum NativeFn {
     Proof(ProofFn),
     Worktop(WorktopFn),
     Clock(ClockFn),
+    Logger(LoggerFn),
     TransactionRuntime(TransactionRuntimeFn),
     TransactionProcessor(TransactionProcessorFn),
 }
@@ -118,6 +120,7 @@ impl NativeFn {
             | NativeFn::Proof(..)
             | NativeFn::Worktop(..) => NativePackage::Resource,
             NativeFn::Clock(..) => NativePackage::Clock,
+            NativeFn::Logger(..) => NativePackage::Logger,
             NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
             NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
         }
@@ -436,6 +439,27 @@ pub enum ClockFn {
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum LoggerFn {
+    Log,
 }
 
 #[derive(

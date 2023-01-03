@@ -1,6 +1,5 @@
 use crate::model::*;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 use super::types::*;
@@ -34,10 +33,6 @@ pub trait BlobApi<E: Debug> {
 
 pub trait ActorApi<E: Debug> {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
-}
-
-pub trait LoggerApi<E: Debug> {
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
 }
 
 pub trait InvokableModel<E>:
@@ -121,5 +116,6 @@ pub trait InvokableModel<E>:
     + Invokable<WorktopDrainInvocation, E>
     + Invokable<TransactionRuntimeGetHashInvocation, E>
     + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
+    + Invokable<LoggerLogInvocation, E>
 {
 }
