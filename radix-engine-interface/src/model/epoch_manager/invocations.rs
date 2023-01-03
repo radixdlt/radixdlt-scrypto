@@ -8,7 +8,7 @@ use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
     pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
@@ -26,14 +26,11 @@ impl SerializableInvocation for EpochManagerCreateInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::EpochManager(
-            EpochManagerFunctionInvocation::Create(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::Create(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
@@ -49,14 +46,11 @@ impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::GetCurrentEpoch(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
@@ -73,14 +67,11 @@ impl SerializableInvocation for EpochManagerSetEpochInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::SetEpoch(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerNextRoundInvocation {
     pub receiver: SystemAddress,
@@ -97,9 +88,6 @@ impl SerializableInvocation for EpochManagerNextRoundInvocation {
 
 impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::EpochManager(
-            EpochManagerMethodInvocation::NextRound(self),
-        ))
-        .into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(self)).into()
     }
 }

@@ -23,22 +23,22 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
     } = parse2(input)?;
     let custom_type_id = custom_type_id(&attrs);
     let (impl_generics, ty_generics, where_clause, sbor_cti) =
-        build_generics(&generics, custom_type_id)?;
+        build_custom_type_id_generic(&generics, custom_type_id)?;
 
     let output = match data {
         Data::Struct(_) => quote! {
             impl #impl_generics ::sbor::TypeId <#sbor_cti> for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> ::sbor::type_id::SborTypeId <#sbor_cti> {
-                    ::sbor::type_id::SborTypeId::Tuple
+                fn type_id() -> ::sbor::SborTypeId <#sbor_cti> {
+                    ::sbor::SborTypeId::Tuple
                 }
             }
         },
         Data::Enum(_) => quote! {
             impl #impl_generics ::sbor::TypeId <#sbor_cti> for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> ::sbor::type_id::SborTypeId <#sbor_cti> {
-                    ::sbor::type_id::SborTypeId::Enum
+                fn type_id() -> ::sbor::SborTypeId <#sbor_cti> {
+                    ::sbor::SborTypeId::Enum
                 }
             }
         },
@@ -73,10 +73,10 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::TypeId<CTI> for Test {
+                impl <X: ::sbor::CustomTypeId> ::sbor::TypeId<X> for Test {
                     #[inline]
-                    fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
-                        ::sbor::type_id::SborTypeId::Tuple
+                    fn type_id() -> ::sbor::SborTypeId<X> {
+                        ::sbor::SborTypeId::Tuple
                     }
                 }
             },
@@ -91,10 +91,10 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <A, CTI: ::sbor::type_id::CustomTypeId> ::sbor::TypeId<CTI> for Test<A> {
+                impl <A, X: ::sbor::CustomTypeId> ::sbor::TypeId<X> for Test<A> {
                     #[inline]
-                    fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
-                        ::sbor::type_id::SborTypeId::Tuple
+                    fn type_id() -> ::sbor::SborTypeId<X> {
+                        ::sbor::SborTypeId::Tuple
                     }
                 }
             },
@@ -109,10 +109,10 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <CTI: ::sbor::type_id::CustomTypeId> ::sbor::TypeId<CTI> for Test {
+                impl <X: ::sbor::CustomTypeId> ::sbor::TypeId<X> for Test {
                     #[inline]
-                    fn type_id() -> ::sbor::type_id::SborTypeId<CTI> {
-                        ::sbor::type_id::SborTypeId::Enum
+                    fn type_id() -> ::sbor::SborTypeId<X> {
+                        ::sbor::SborTypeId::Enum
                     }
                 }
             },
