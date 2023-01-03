@@ -485,10 +485,10 @@ impl FromStr for Decimal {
 
 impl fmt::Display for Decimal {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let multiplier = BnumI256::from(10i8).pow(Self::SCALE);
+        const MULTIPLIER: BnumI256 = Decimal::ONE.0;
+        let quotient = self.0 / MULTIPLIER;
+        let remainder = self.0 % MULTIPLIER;
 
-        let quotient = self.0 / multiplier;
-        let remainder = self.0 % multiplier;
         if !remainder.is_zero() {
             // print remainder with leading zeroes
             let mut sign = "".to_string();

@@ -498,10 +498,10 @@ impl FromStr for PreciseDecimal {
 
 impl fmt::Display for PreciseDecimal {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let multiplier = BnumI512::from(10i8).pow(Self::SCALE);
+        const MULTIPLIER: BnumI512 = PreciseDecimal::ONE.0;
+        let quotient = self.0 / MULTIPLIER;
+        let remainder = self.0 % MULTIPLIER;
 
-        let quotient = self.0 / multiplier;
-        let remainder = self.0 % multiplier;
         if !remainder.is_zero() {
             // print remainder with leading zeroes
             let mut sign = "".to_string();
