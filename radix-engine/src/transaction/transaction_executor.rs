@@ -141,7 +141,6 @@ where
                 return TransactionReceipt {
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
-                        application_logs: vec![],
                         events: vec![],
                     },
                     result: TransactionResult::Reject(RejectResult {
@@ -175,6 +174,7 @@ where
                         Cow::Owned(instructions.iter().map(|e| e.clone().into()).collect())
                     }
                     InstructionList::Any(instructions) => Cow::Borrowed(instructions),
+                    InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
                 },
             });
 
@@ -185,7 +185,6 @@ where
         let receipt = TransactionReceipt {
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
-                application_logs: track_receipt.application_logs,
                 events: track_receipt.events,
             },
             result: track_receipt.result,
@@ -203,12 +202,17 @@ where
                 println!("{:<30}: {:>8}", k, v);
             }
 
-            println!("{:-^80}", "Application Logs");
-            for (level, message) in &receipt.execution.application_logs {
-                println!("[{}] {}", level, message);
-            }
-            if receipt.execution.application_logs.is_empty() {
-                println!("None");
+            match &receipt.result {
+                TransactionResult::Commit(commit) => {
+                    println!("{:-^80}", "Application Logs");
+                    for (level, message) in &commit.application_logs {
+                        println!("[{}] {}", level, message);
+                    }
+                    if commit.application_logs.is_empty() {
+                        println!("None");
+                    }
+                }
+                _ => {}
             }
         }
         receipt

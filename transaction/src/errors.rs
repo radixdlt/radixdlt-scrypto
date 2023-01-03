@@ -32,13 +32,13 @@ impl From<EncodeError> for SignatureValidationError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum IdAllocationError {
+pub enum ManifestIdAllocationError {
     OutOfID,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdValidationError {
-    IdAllocationError(IdAllocationError),
+    IdAllocationError(ManifestIdAllocationError),
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
     BucketLocked(ManifestBucket),

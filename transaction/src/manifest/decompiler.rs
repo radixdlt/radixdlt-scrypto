@@ -19,7 +19,7 @@ pub enum DecompileError {
     InvalidArguments,
     InvalidScryptoValue(ScryptoValueDecodeError),
     InvalidSborValue(EncodeError),
-    IdAllocationError(IdAllocationError),
+    IdAllocationError(ManifestIdAllocationError),
     FormattingError(fmt::Error),
 }
 

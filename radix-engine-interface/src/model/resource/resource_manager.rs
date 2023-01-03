@@ -38,7 +38,7 @@ pub enum ResourceMethodAuthKey {
     Recall,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
@@ -57,17 +57,22 @@ impl SerializableInvocation for ResourceManagerCreateInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerCreateInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
-            ResourceManagerFunctionInvocation::Create(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::Create(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerBucketBurnInvocation {
     pub bucket: Bucket,
+}
+
+impl Clone for ResourceManagerBucketBurnInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            bucket: Bucket(self.bucket.0),
+        }
+    }
 }
 
 impl Invocation for ResourceManagerBucketBurnInvocation {
@@ -80,18 +85,24 @@ impl SerializableInvocation for ResourceManagerBucketBurnInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerBucketBurnInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::ResourceManager(
-            ResourceManagerFunctionInvocation::BurnBucket(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::BurnBucket(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerBurnInvocation {
     pub receiver: ResourceAddress,
     pub bucket: Bucket,
+}
+
+impl Clone for ResourceManagerBurnInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            bucket: Bucket(self.bucket.0),
+        }
+    }
 }
 
 impl Invocation for ResourceManagerBurnInvocation {
@@ -104,14 +115,11 @@ impl SerializableInvocation for ResourceManagerBurnInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerBurnInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::Burn(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::Burn(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateVaultAuthInvocation {
     pub receiver: ResourceAddress,
@@ -129,14 +137,11 @@ impl SerializableInvocation for ResourceManagerUpdateVaultAuthInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerUpdateVaultAuthInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::UpdateVaultAuth(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::UpdateVaultAuth(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerSetVaultAuthMutabilityInvocation {
     pub receiver: ResourceAddress,
@@ -154,14 +159,11 @@ impl SerializableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation 
 
 impl Into<SerializedInvocation> for ResourceManagerSetVaultAuthMutabilityInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::LockVaultAuth(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::LockVaultAuth(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateVaultInvocation {
     pub receiver: ResourceAddress,
@@ -177,14 +179,11 @@ impl SerializableInvocation for ResourceManagerCreateVaultInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerCreateVaultInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::CreateVault(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateVault(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateBucketInvocation {
     pub receiver: ResourceAddress,
@@ -200,14 +199,11 @@ impl SerializableInvocation for ResourceManagerCreateBucketInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerCreateBucketInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::CreateBucket(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateBucket(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerMintInvocation {
     pub receiver: ResourceAddress,
@@ -224,14 +220,11 @@ impl SerializableInvocation for ResourceManagerMintInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerMintInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::Mint(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::Mint(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetResourceTypeInvocation {
     pub receiver: ResourceAddress,
@@ -247,14 +240,11 @@ impl SerializableInvocation for ResourceManagerGetResourceTypeInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerGetResourceTypeInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::GetResourceType(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::GetResourceType(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetTotalSupplyInvocation {
     pub receiver: ResourceAddress,
@@ -270,14 +260,11 @@ impl SerializableInvocation for ResourceManagerGetTotalSupplyInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerGetTotalSupplyInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::GetTotalSupply(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::GetTotalSupply(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub receiver: ResourceAddress,
@@ -295,14 +282,11 @@ impl SerializableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerUpdateNonFungibleDataInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::UpdateNonFungibleData(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::UpdateNonFungibleData(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerNonFungibleExistsInvocation {
     pub receiver: ResourceAddress,
@@ -319,14 +303,11 @@ impl SerializableInvocation for ResourceManagerNonFungibleExistsInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerNonFungibleExistsInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::NonFungibleExists(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::NonFungibleExists(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerGetNonFungibleInvocation {
     pub receiver: ResourceAddress,
@@ -343,10 +324,7 @@ impl SerializableInvocation for ResourceManagerGetNonFungibleInvocation {
 
 impl Into<SerializedInvocation> for ResourceManagerGetNonFungibleInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::ResourceManager(
-            ResourceManagerMethodInvocation::GetNonFungible(self),
-        ))
-        .into()
+        NativeInvocation::ResourceManager(ResourceInvocation::GetNonFungible(self)).into()
     }
 }
 

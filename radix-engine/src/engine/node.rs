@@ -38,12 +38,17 @@ pub enum RENode {
         AccessRulesChainSubstate,
         AccessRulesChainSubstate,
     ),
-    EpochManager(EpochManagerSubstate, AccessRulesChainSubstate),
+    EpochManager(
+        EpochManagerSubstate,
+        ValidatorSetSubstate,
+        AccessRulesChainSubstate,
+    ),
     Clock(
         CurrentTimeRoundedToMinutesSubstate,
         AccessRulesChainSubstate,
     ),
     TransactionRuntime(TransactionRuntimeSubstate),
+    Logger(LoggerSubstate),
 }
 
 impl RENode {
@@ -124,6 +129,12 @@ impl RENode {
                     RuntimeSubstate::Worktop(worktop),
                 );
             }
+            RENode::Logger(logger) => {
+                substates.insert(
+                    SubstateOffset::Logger(LoggerOffset::Logger),
+                    RuntimeSubstate::Logger(logger),
+                );
+            }
             RENode::Package(
                 package_info,
                 package_royalty_config,
@@ -184,10 +195,14 @@ impl RENode {
                     );
                 }
             }
-            RENode::EpochManager(epoch_manager, access_rules) => {
+            RENode::EpochManager(epoch_manager, validator_set_substate, access_rules) => {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                     epoch_manager.into(),
+                );
+                substates.insert(
+                    SubstateOffset::EpochManager(EpochManagerOffset::ValidatorSet),
+                    validator_set_substate.into(),
                 );
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),

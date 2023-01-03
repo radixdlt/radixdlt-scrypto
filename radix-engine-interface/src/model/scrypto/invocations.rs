@@ -1,8 +1,9 @@
 use crate::api::api::Invocation;
 use crate::api::types::{ScryptoFunctionIdent, ScryptoMethodIdent};
 use crate::data::IndexedScryptoValue;
+use crate::model::SerializedInvocation;
 use crate::scrypto;
-use crate::wasm::{SerializableInvocation, SerializedInvocation};
+use crate::wasm::SerializableInvocation;
 use sbor::rust::vec::Vec;
 use sbor::*;
 

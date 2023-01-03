@@ -14,21 +14,21 @@ impl ManifestIdAllocator {
         }
     }
 
-    fn next(&mut self) -> Result<u32, IdAllocationError> {
+    fn next(&mut self) -> Result<u32, ManifestIdAllocationError> {
         if self.available.len() > 0 {
             let id = self.available.start;
             self.available.start += 1;
             Ok(id)
         } else {
-            Err(IdAllocationError::OutOfID)
+            Err(ManifestIdAllocationError::OutOfID)
         }
     }
 
-    pub fn new_bucket_id(&mut self) -> Result<ManifestBucket, IdAllocationError> {
+    pub fn new_bucket_id(&mut self) -> Result<ManifestBucket, ManifestIdAllocationError> {
         Ok(ManifestBucket(self.next()?))
     }
 
-    pub fn new_proof_id(&mut self) -> Result<ManifestProof, IdAllocationError> {
+    pub fn new_proof_id(&mut self) -> Result<ManifestProof, ManifestIdAllocationError> {
         Ok(ManifestProof(self.next()?))
     }
 }

@@ -4,7 +4,7 @@ use crate::engine::{
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
-    HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
+    HardProofRule, HardResourceOrNonFungible, MethodAuthorization, ValidatorSetSubstate,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -22,10 +22,7 @@ pub enum EpochManagerError {
     InvalidRequestData(DecodeError),
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct EpochManager {
-    pub info: EpochManagerSubstate,
-}
+pub struct EpochManager;
 
 impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
     type Exec = Self;
@@ -57,6 +54,10 @@ impl Executor for EpochManagerCreateInvocation {
 
         let epoch_manager = EpochManagerSubstate { epoch: 0 };
 
+        let validator_set = ValidatorSetSubstate {
+            validator_set: self.validator_set,
+        };
+
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
@@ -75,6 +76,7 @@ impl Executor for EpochManagerCreateInvocation {
             underlying_node_id,
             RENode::EpochManager(
                 epoch_manager,
+                validator_set,
                 AccessRulesChainSubstate {
                     access_rules_chain: vec![access_rules],
                 },
