@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{
     AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
-    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
-    NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
+    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, LoggerMethod,
+    MetadataMethod, NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
     ResourceManagerFunction, ResourceManagerMethod, TransactionHashMethod,
     TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
@@ -54,10 +54,6 @@ pub enum SystemApiCostingEntry {
      */
     /// Reads blob in transaction
     ReadBlob {
-        size: u32,
-    },
-    /// Emits a log.
-    EmitLog {
         size: u32,
     },
 }
@@ -197,6 +193,9 @@ impl FeeTable {
                 WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
                 WorktopMethod::Drain => self.fixed_low,
             },
+            NativeMethod::Logger(logger_method) => match logger_method {
+                LoggerMethod::Log => self.fixed_low,
+            },
             NativeMethod::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainMethod::AddAccessCheck => self.fixed_low,
                 AccessRulesChainMethod::SetMethodAccessRule => self.fixed_low,
@@ -265,7 +264,6 @@ impl FeeTable {
             SystemApiCostingEntry::DropLock => self.fixed_low,
 
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
-            SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
         }
     }
 }

@@ -3,14 +3,17 @@ use std::io::Write;
 use std::process::Command;
 use std::process::Stdio;
 
+use proc_macro2::Span;
 use syn::parse_quote;
 use syn::parse_str;
 use syn::punctuated::Punctuated;
 use syn::token::Comma;
 use syn::Attribute;
+use syn::Error;
 use syn::Expr;
 use syn::ExprLit;
 use syn::Field;
+use syn::GenericParam;
 use syn::Generics;
 use syn::Lit;
 use syn::Path;
@@ -101,14 +104,44 @@ pub fn build_decode_generics(
     original_generics: &Generics,
     custom_type_id: Option<String>,
 ) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path, Path)> {
-    let (mut impl_generics, ty_generics, where_clause, custom_type_id_generic) =
-        build_generics(original_generics, custom_type_id)?;
+    let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
-    let decoder_generic: Path = parse_quote! { DEC };
+    // Extract owned generic to allow mutation
+    let mut impl_generics: Generics = parse_quote! { #impl_generics };
+
+    let (custom_type_id_generic, need_to_add_cti_generic): (Path, bool) =
+        if let Some(path) = custom_type_id {
+            (parse_str(path.as_str())?, false)
+        } else {
+            let custom_type_label = find_free_generic_name(original_generics, "X")?;
+            (parse_str(&custom_type_label)?, true)
+        };
+
+    let decoder_label = find_free_generic_name(original_generics, "D")?;
+    let decoder_generic: Path = parse_str(&decoder_label)?;
+
+    // Add a bound that all pre-existing type parameters have to implement Decode<X, D>
+    // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
+    // It's not perfect - but it's typically good enough!
+
+    for param in impl_generics.params.iter_mut() {
+        let GenericParam::Type(type_param) = param else {
+            continue;
+        };
+        type_param
+            .bounds
+            .push(parse_quote!(::sbor::Decode<#custom_type_id_generic, #decoder_generic>));
+    }
 
     impl_generics
         .params
-        .push(parse_quote!(#decoder_generic: ::sbor::decoder::Decoder<#custom_type_id_generic>));
+        .push(parse_quote!(#decoder_generic: ::sbor::Decoder<#custom_type_id_generic>));
+
+    if need_to_add_cti_generic {
+        impl_generics
+            .params
+            .push(parse_quote!(#custom_type_id_generic: ::sbor::CustomTypeId));
+    }
 
     Ok((
         impl_generics,
@@ -123,14 +156,44 @@ pub fn build_encode_generics(
     original_generics: &Generics,
     custom_type_id: Option<String>,
 ) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path, Path)> {
-    let (mut impl_generics, ty_generics, where_clause, custom_type_id_generic) =
-        build_generics(original_generics, custom_type_id)?;
+    let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
-    let encoder_generic: Path = parse_quote! { ENC };
+    // Extract owned generic to allow mutation
+    let mut impl_generics: Generics = parse_quote! { #impl_generics };
+
+    let (custom_type_id_generic, need_to_add_cti_generic): (Path, bool) =
+        if let Some(path) = custom_type_id {
+            (parse_str(path.as_str())?, false)
+        } else {
+            let custom_type_label = find_free_generic_name(original_generics, "X")?;
+            (parse_str(&custom_type_label)?, true)
+        };
+
+    let encoder_label = find_free_generic_name(original_generics, "E")?;
+    let encoder_generic: Path = parse_str(&encoder_label)?;
+
+    // Add a bound that all pre-existing type parameters have to implement Encode<X, E>
+    // This is essentially what derived traits such as Clone do: https://github.com/rust-lang/rust/issues/26925
+    // It's not perfect - but it's typically good enough!
+
+    for param in impl_generics.params.iter_mut() {
+        let GenericParam::Type(type_param) = param else {
+            continue;
+        };
+        type_param
+            .bounds
+            .push(parse_quote!(::sbor::Encode<#custom_type_id_generic, #encoder_generic>));
+    }
 
     impl_generics
         .params
-        .push(parse_quote!(#encoder_generic: ::sbor::encoder::Encoder<#custom_type_id_generic>));
+        .push(parse_quote!(#encoder_generic: ::sbor::Encoder<#custom_type_id_generic>));
+
+    if need_to_add_cti_generic {
+        impl_generics
+            .params
+            .push(parse_quote!(#custom_type_id_generic: ::sbor::CustomTypeId));
+    }
 
     Ok((
         impl_generics,
@@ -141,7 +204,7 @@ pub fn build_encode_generics(
     ))
 }
 
-pub fn build_generics(
+pub fn build_custom_type_id_generic(
     original_generics: &Generics,
     custom_type_id: Option<String>,
 ) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path)> {
@@ -153,15 +216,47 @@ pub fn build_generics(
     let sbor_cti = if let Some(path) = custom_type_id {
         parse_str(path.as_str())?
     } else {
-        // Note that this above logic requires no use of CTI generic param by the input type.
-        // TODO: better to report error OR take an alternative name if already exists
+        let custom_type_label = find_free_generic_name(original_generics, "X")?;
+        let custom_type_id_generic = parse_str(&custom_type_label)?;
         impl_generics
             .params
-            .push(parse_quote!(CTI: ::sbor::type_id::CustomTypeId));
-        parse_quote! { CTI }
+            .push(parse_quote!(#custom_type_id_generic: ::sbor::CustomTypeId));
+        custom_type_id_generic
     };
 
     Ok((impl_generics, ty_generics, where_clause, sbor_cti))
+}
+
+fn find_free_generic_name(generics: &Generics, name_prefix: &str) -> syn::Result<String> {
+    if !generic_already_exists(generics, name_prefix) {
+        return Ok(name_prefix.to_owned());
+    }
+    for i in 0..100 {
+        let name_attempt = format!("{}{}", name_prefix, i);
+        if !generic_already_exists(generics, &name_attempt) {
+            return Ok(name_attempt);
+        }
+    }
+
+    return Err(Error::new(
+        Span::call_site(),
+        format!("Cannot find free generic name with prefix {}!", name_prefix),
+    ));
+}
+
+fn generic_already_exists(generics: &Generics, name: &str) -> bool {
+    generics
+        .params
+        .iter()
+        .any(|p| &get_generic_param_name(p) == name)
+}
+
+fn get_generic_param_name(generic_param: &GenericParam) -> String {
+    match generic_param {
+        GenericParam::Type(type_param) => type_param.ident.to_string(),
+        GenericParam::Lifetime(lifetime_param) => lifetime_param.lifetime.to_string(),
+        GenericParam::Const(const_param) => const_param.ident.to_string(),
+    }
 }
 
 #[cfg(test)]
@@ -171,13 +266,16 @@ mod tests {
     #[test]
     fn test_extract_attributes() {
         let attr = parse_quote! {
-            #[sbor(skip, type_id = "NoCustomTypeId")]
+            #[sbor(skip, custom_type_id = "NoCustomTypeId")]
         };
         assert_eq!(
             extract_attributes(&[attr]),
             HashMap::from([
                 ("skip".to_owned(), None),
-                ("type_id".to_owned(), Some("NoCustomTypeId".to_owned()))
+                (
+                    "custom_type_id".to_owned(),
+                    Some("NoCustomTypeId".to_owned())
+                )
             ])
         );
     }

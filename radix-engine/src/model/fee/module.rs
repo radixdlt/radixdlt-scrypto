@@ -175,21 +175,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::EmitLog { message, .. } => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::EmitLog {
-                                size: message.len() as u32,
-                            }),
-                        1,
-                        "emit_log",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
         }
 
         Ok(())
@@ -260,7 +245,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         match &actor.identifier {
-            FnIdentifier::NativeFunction(native_function) => track
+            FnIdentifier::Native(NativeFn::Function(native_function)) => track
                 .fee_reserve
                 .consume_execution(
                     track.fee_table.run_native_function_cost(&native_function),
@@ -269,7 +254,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                     false,
                 )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
-            FnIdentifier::NativeMethod(native_method) => track
+            FnIdentifier::Native(NativeFn::Method(native_method)) => track
                 .fee_reserve
                 .consume_execution(
                     track.fee_table.run_native_method_cost(&native_method),

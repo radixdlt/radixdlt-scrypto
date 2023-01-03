@@ -7,7 +7,7 @@ use crate::scrypto;
 use crate::time::{Instant, TimeComparisonOperator};
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockCreateInvocation {}
 
@@ -21,14 +21,11 @@ impl SerializableInvocation for ClockCreateInvocation {
 
 impl Into<SerializedInvocation> for ClockCreateInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Clock(
-            ClockFunctionInvocation::Create(self),
-        ))
-        .into()
+        NativeInvocation::Clock(ClockInvocation::Create(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockGetCurrentTimeInvocation {
     pub receiver: SystemAddress,
@@ -45,14 +42,11 @@ impl SerializableInvocation for ClockGetCurrentTimeInvocation {
 
 impl Into<SerializedInvocation> for ClockGetCurrentTimeInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::GetCurrentTime(self),
-        ))
-        .into()
+        NativeInvocation::Clock(ClockInvocation::GetCurrentTime(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockCompareCurrentTimeInvocation {
     pub receiver: SystemAddress,
@@ -71,14 +65,11 @@ impl SerializableInvocation for ClockCompareCurrentTimeInvocation {
 
 impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::CompareCurrentTime(self),
-        ))
-        .into()
+        NativeInvocation::Clock(ClockInvocation::CompareCurrentTime(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ClockSetCurrentTimeInvocation {
     pub receiver: SystemAddress,
@@ -95,9 +86,6 @@ impl SerializableInvocation for ClockSetCurrentTimeInvocation {
 
 impl Into<SerializedInvocation> for ClockSetCurrentTimeInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Clock(
-            ClockMethodInvocation::SetCurrentTime(self),
-        ))
-        .into()
+        NativeInvocation::Clock(ClockInvocation::SetCurrentTime(self)).into()
     }
 }

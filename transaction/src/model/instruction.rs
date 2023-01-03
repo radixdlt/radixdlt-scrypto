@@ -1,6 +1,4 @@
-use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunctionIdent, NativeMethodIdent, ProofId, VaultId,
-};
+use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId, VaultId};
 use radix_engine_interface::data::types::Blob;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -213,31 +211,11 @@ pub enum BasicInstruction {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum SystemInstruction {
-    /// Calls a native function.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallNativeFunction {
-        function_ident: NativeFunctionIdent,
-        args: Vec<u8>,
-    },
-
-    /// Calls a native method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallNativeMethod {
-        method_ident: NativeMethodIdent,
-        args: Vec<u8>,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum Instruction {
     Basic(BasicInstruction),
-    System(SystemInstruction),
+    System(NativeInvocation),
 }
 
 impl From<BasicInstruction> for Instruction {
@@ -246,8 +224,8 @@ impl From<BasicInstruction> for Instruction {
     }
 }
 
-impl From<SystemInstruction> for Instruction {
-    fn from(i: SystemInstruction) -> Self {
+impl From<NativeInvocation> for Instruction {
+    fn from(i: NativeInvocation) -> Self {
         Instruction::System(i)
     }
 }

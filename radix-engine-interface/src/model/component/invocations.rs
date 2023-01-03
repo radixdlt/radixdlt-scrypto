@@ -7,7 +7,7 @@ use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentGlobalizeInvocation {
     pub component_id: ComponentId,
@@ -23,14 +23,11 @@ impl SerializableInvocation for ComponentGlobalizeInvocation {
 
 impl Into<SerializedInvocation> for ComponentGlobalizeInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Component(
-            ComponentFunctionInvocation::Globalize(self),
-        ))
-        .into()
+        NativeInvocation::Component(ComponentInvocation::Globalize(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentGlobalizeWithOwnerInvocation {
     pub component_id: ComponentId,
@@ -47,14 +44,11 @@ impl SerializableInvocation for ComponentGlobalizeWithOwnerInvocation {
 
 impl Into<SerializedInvocation> for ComponentGlobalizeWithOwnerInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Component(
-            ComponentFunctionInvocation::GlobalizeWithOwner(self),
-        ))
-        .into()
+        NativeInvocation::Component(ComponentInvocation::GlobalizeWithOwner(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentSetRoyaltyConfigInvocation {
     /// TODO: change to component id, after `borrow_component` returns component id
@@ -72,14 +66,11 @@ impl SerializableInvocation for ComponentSetRoyaltyConfigInvocation {
 
 impl Into<SerializedInvocation> for ComponentSetRoyaltyConfigInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Component(
-            ComponentMethodInvocation::SetRoyaltyConfig(self),
-        ))
-        .into()
+        NativeInvocation::Component(ComponentInvocation::SetRoyaltyConfig(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ComponentClaimRoyaltyInvocation {
     /// TODO: change to component id, after `borrow_component` returns component id
@@ -96,9 +87,6 @@ impl SerializableInvocation for ComponentClaimRoyaltyInvocation {
 
 impl Into<SerializedInvocation> for ComponentClaimRoyaltyInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Component(
-            ComponentMethodInvocation::ClaimRoyalty(self),
-        ))
-        .into()
+        NativeInvocation::Component(ComponentInvocation::ClaimRoyalty(self)).into()
     }
 }
