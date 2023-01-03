@@ -5,6 +5,10 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+cargo build --timings --bin resim
+timings=$(basename $(ls -t target/cargo-timings/cargo-timing-* | head -n1))
+mv target/cargo-timings/$timings target/cargo-timings/timings_resim_$timings
+
 resim="cargo run --bin resim $@ --"
 
 # Create test accounts and public keys

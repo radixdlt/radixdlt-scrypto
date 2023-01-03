@@ -5,6 +5,10 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+cargo build --timings --bin scrypto
+timings=$(basename $(ls -t target/cargo-timings/cargo-timing-* | head -n1))
+mv target/cargo-timings/$timings target/cargo-timings/timings_scrypto_$timings
+
 scrypto="cargo run --bin scrypto $@ --"
 test_pkg="./target/temp/hello-world"
 

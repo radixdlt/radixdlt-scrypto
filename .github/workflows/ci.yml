@@ -49,13 +49,6 @@ jobs:
         path:
           ~/.cargo/registry/src/**/librocksdb-sys-*
         working-directory: simulator
-          #      if: matrix.os == 'linux'
-        #    - uses: bmwill/rust-cache@v1
-        #      with:
-        #        path:
-        #          C:\Users\runneradmin\.cargo\registry\src\**\librocksdb-sys-*
-        #        working-directory: simulator
-        #      if: matrix.os == 'windows-latest'
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake -y
@@ -77,3 +70,7 @@ jobs:
     - name: Run tests
       run: bash ./tests/scrypto.sh
       working-directory: simulator
+    - uses: actions/upload-artifact@v3
+      with:
+        name: artifact-${{ matrix.os }}
+        path: simulator/target/cargo-timings/timings_*.html
