@@ -44,10 +44,10 @@ pub enum ScryptoCustomTypeId {
     NonFungibleAddress, // for resource address contained
     Blob,
 
-    // TX interpreted types
-    Bucket,     // super::types::ManifestBucket, also interpreted by engine at the moment
-    Proof,      // super::types::ManifestProof, also interpreted by engine at the moment
-    Expression, // super::types::Expression
+    // TX interpreted types (TODO: rename)
+    Bucket,     // super::types::ManifestBucket
+    Proof,      // super::types::ManifestProof
+    Expression, // super::types::ManifestExpression
 
     // Uninterpreted
     Hash,

@@ -23,6 +23,18 @@ impl Own {
             _ => panic!("Not a vault ownership"),
         }
     }
+    pub fn bucket_id(&self) -> BucketId {
+        match self {
+            Own::Bucket(v) => v.clone(),
+            _ => panic!("Not a bucket ownership"),
+        }
+    }
+    pub fn proof_id(&self) -> ProofId {
+        match self {
+            Own::Proof(v) => v.clone(),
+            _ => panic!("Not a proof ownership"),
+        }
+    }
 }
 
 //========
@@ -104,4 +116,4 @@ impl Own {
     }
 }
 
-scrypto_type!(Own, ScryptoCustomTypeId::Own, Type::Vault); // FIXME can be bucket, proof, or vault
+scrypto_type!(Own, ScryptoCustomTypeId::Own, Type::Own);

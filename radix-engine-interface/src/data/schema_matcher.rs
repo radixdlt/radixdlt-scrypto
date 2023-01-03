@@ -30,20 +30,27 @@ pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
         Type::TreeMap { .. } => Some(SborTypeId::Array),
         Type::HashSet { .. } => Some(SborTypeId::Array),
         Type::HashMap { .. } => Some(SborTypeId::Array),
+
         Type::PackageAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress)),
         Type::ComponentAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress)),
         Type::ResourceAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress)),
         Type::SystemAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress)),
+
+        Type::Own => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
+        Type::Bucket => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
+        Type::Proof => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
         Type::Vault => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
         Type::Component => Some(SborTypeId::Custom(ScryptoCustomTypeId::Component)),
         Type::KeyValueStore { .. } => Some(SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore)),
-        Type::Bucket => Some(SborTypeId::Custom(ScryptoCustomTypeId::Bucket)),
-        Type::Proof => Some(SborTypeId::Custom(ScryptoCustomTypeId::Proof)),
-        Type::Expression => Some(SborTypeId::Custom(ScryptoCustomTypeId::Expression)),
-        Type::Blob => Some(SborTypeId::Custom(ScryptoCustomTypeId::Blob)),
         Type::NonFungibleAddress => {
             Some(SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress))
         }
+        Type::Blob => Some(SborTypeId::Custom(ScryptoCustomTypeId::Blob)),
+
+        Type::ManifestBucket => Some(SborTypeId::Custom(ScryptoCustomTypeId::Bucket)),
+        Type::ManifestProof => Some(SborTypeId::Custom(ScryptoCustomTypeId::Proof)),
+        Type::ManifestExpression => Some(SborTypeId::Custom(ScryptoCustomTypeId::Expression)),
+
         Type::Hash => Some(SborTypeId::Custom(ScryptoCustomTypeId::Hash)),
         Type::EcdsaSecp256k1PublicKey => Some(SborTypeId::Custom(
             ScryptoCustomTypeId::EcdsaSecp256k1PublicKey,
@@ -60,6 +67,7 @@ pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
         Type::Decimal => Some(SborTypeId::Custom(ScryptoCustomTypeId::Decimal)),
         Type::PreciseDecimal => Some(SborTypeId::Custom(ScryptoCustomTypeId::PreciseDecimal)),
         Type::NonFungibleId => Some(SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId)),
+
         Type::Any => None,
     }
 }
@@ -284,6 +292,28 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
+
+        Type::Own => {
+            if let SborValue::Custom { value } = value {
+                matches!(value, ScryptoCustomValue::Own(_))
+            } else {
+                false
+            }
+        }
+        Type::Bucket => {
+            if let SborValue::Custom { value } = value {
+                matches!(value, ScryptoCustomValue::Own(Own::Bucket(_)))
+            } else {
+                false
+            }
+        }
+        Type::Proof => {
+            if let SborValue::Custom { value } = value {
+                matches!(value, ScryptoCustomValue::Own(Own::Proof(_)))
+            } else {
+                false
+            }
+        }
         Type::Vault => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Own(Own::Vault(_)))
@@ -308,23 +338,9 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
-        Type::Bucket => {
+        Type::NonFungibleAddress => {
             if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Bucket(_))
-            } else {
-                false
-            }
-        }
-        Type::Proof => {
-            if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Proof(_))
-            } else {
-                false
-            }
-        }
-        Type::Expression => {
-            if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Expression(_))
+                matches!(value, ScryptoCustomValue::NonFungibleAddress(_))
             } else {
                 false
             }
@@ -336,13 +352,29 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
-        Type::NonFungibleAddress => {
+
+        Type::ManifestBucket => {
             if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::NonFungibleAddress(_))
+                matches!(value, ScryptoCustomValue::Bucket(_))
             } else {
                 false
             }
         }
+        Type::ManifestProof => {
+            if let SborValue::Custom { value } = value {
+                matches!(value, ScryptoCustomValue::Proof(_))
+            } else {
+                false
+            }
+        }
+        Type::ManifestExpression => {
+            if let SborValue::Custom { value } = value {
+                matches!(value, ScryptoCustomValue::Expression(_))
+            } else {
+                false
+            }
+        }
+
         Type::Hash => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Hash(_))

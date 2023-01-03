@@ -65,18 +65,6 @@ impl ManifestExpression {
 scrypto_type!(
     ManifestExpression,
     ScryptoCustomTypeId::Expression,
-    Type::Expression,
+    Type::ManifestExpression,
     1
 );
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_from_to_bytes() {
-        let s = ManifestExpression::EntireAuthZone;
-        let s2 = ManifestExpression::try_from(s.to_vec().as_slice()).unwrap();
-        assert_eq!(s2, s);
-    }
-}

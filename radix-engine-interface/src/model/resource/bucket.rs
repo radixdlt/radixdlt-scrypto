@@ -4,10 +4,10 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::api::{api::*, types::*};
+use crate::data::types::{Own, ParseOwnError};
 use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
 use crate::scrypto;
@@ -166,18 +166,17 @@ impl Into<SerializedInvocation> for BucketCreateProofInvocation {
     }
 }
 
-/// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Bucket(pub BucketId);
+pub struct Bucket(pub BucketId); // scrypto stub
 
 //========
 // error
 //========
 
-/// Represents an error when decoding bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseBucketError {
-    InvalidLength(usize),
+    InvalidOwn(ParseOwnError),
+    WrongTypeOfOwn(Own),
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -198,17 +197,17 @@ impl TryFrom<&[u8]> for Bucket {
     type Error = ParseBucketError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
-            _ => Err(ParseBucketError::InvalidLength(slice.len())),
+        match Own::try_from(slice).map_err(ParseBucketError::InvalidOwn)? {
+            Own::Bucket(id) => Ok(Self(id)),
+            o => Err(ParseBucketError::WrongTypeOfOwn(o)),
         }
     }
 }
 
 impl Bucket {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_le_bytes().to_vec()
+        Own::Bucket(self.0).to_vec()
     }
 }
 
-scrypto_type!(Bucket, ScryptoCustomTypeId::Bucket, Type::Bucket, 4);
+scrypto_type!(Bucket, ScryptoCustomTypeId::Own, Type::Bucket);

@@ -4,10 +4,10 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::api::{api::*, types::*};
+use crate::data::types::{Own, ParseOwnError};
 use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
 use crate::scrypto_type;
@@ -89,10 +89,6 @@ impl Into<SerializedInvocation> for ProofCloneInvocation {
     }
 }
 
-/// Represents a proof of owning some resource.
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Proof(pub ProofId);
-
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
 /// Specifies the validation mode that should be used for validating a `Proof`.
 pub enum ProofValidationMode {
@@ -126,26 +122,6 @@ impl From<NonFungibleAddress> for ProofValidationMode {
     }
 }
 
-//========
-// error
-//========
-
-/// Represents an error when decoding proof.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseProofError {
-    InvalidLength(usize),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseProofError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseProofError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 /// Represents an error when validating proof.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofValidationError {
@@ -166,6 +142,29 @@ impl fmt::Display for ProofValidationError {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Proof(pub ProofId); // scrypto stub
+
+//========
+// error
+//========
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseProofError {
+    InvalidOwn(ParseOwnError),
+    WrongTypeOfOwn(Own),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseProofError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseProofError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 //========
 // binary
 //========
@@ -174,20 +173,17 @@ impl TryFrom<&[u8]> for Proof {
     type Error = ParseProofError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
-            _ => Err(ParseProofError::InvalidLength(slice.len())),
+        match Own::try_from(slice).map_err(ParseProofError::InvalidOwn)? {
+            Own::Proof(id) => Ok(Self(id)),
+            o => Err(ParseProofError::WrongTypeOfOwn(o)),
         }
     }
 }
 
 impl Proof {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_le_bytes().to_vec()
+        Own::Proof(self.0).to_vec()
     }
 }
 
-// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s doesn't need to
-// implement the sbor::Encode and sbor::Decode traits as they are not meant to be used as arguments and returns to and
-// from methods. They are meant ot be used inside methods.
-scrypto_type!(Proof, ScryptoCustomTypeId::Proof, Type::Proof, 4);
+scrypto_type!(Proof, ScryptoCustomTypeId::Own, Type::Proof);
