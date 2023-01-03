@@ -76,6 +76,7 @@ impl NodeMoveModule {
             | RENodeId::Vault(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
+            | RENodeId::Logger
             | RENodeId::EpochManager(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
@@ -117,6 +118,7 @@ impl NodeMoveModule {
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
+            | RENodeId::Logger
             | RENodeId::EpochManager(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(

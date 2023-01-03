@@ -9,11 +9,12 @@ use radix_engine_interface::api::types::{
     GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
-use transaction::model::{BasicInstruction, SystemInstruction, SystemTransaction};
+use transaction::model::{BasicInstruction, SystemTransaction};
 use transaction::validation::{IdAllocator, IdSpace};
 
 const XRD_SYMBOL: &str = "XRD";
@@ -34,7 +35,7 @@ pub struct GenesisReceipt {
     pub eddsa_ed25519_token: ResourceAddress,
 }
 
-pub fn create_genesis() -> SystemTransaction {
+pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTransaction {
     let mocked_hash = hash([0u8; 1]);
     let mut blobs = Vec::new();
     let mut id_allocator = IdAllocator::new(IdSpace::Transaction, mocked_hash);
@@ -143,25 +144,11 @@ pub fn create_genesis() -> SystemTransaction {
         }
     };
 
-    let create_epoch_manager = {
-        SystemInstruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: EPOCH_MANAGER_BLUEPRINT.to_string(),
-                function_name: EpochManagerFunction::Create.to_string(),
-            },
-            args: args!(),
-        }
-    };
+    let create_epoch_manager = NativeInvocation::EpochManager(EpochManagerInvocation::Create(
+        EpochManagerCreateInvocation { validator_set },
+    ));
 
-    let create_clock = {
-        SystemInstruction::CallNativeFunction {
-            function_ident: NativeFunctionIdent {
-                blueprint_name: CLOCK_BLUEPRINT.to_string(),
-                function_name: ClockFunction::Create.to_string(),
-            },
-            args: args!(),
-        }
-    };
+    let create_clock = NativeInvocation::Clock(ClockInvocation::Create(ClockCreateInvocation {}));
 
     let create_eddsa_ed25519_token = {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
@@ -231,6 +218,18 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
+    bootstrap_with_validator_set(substate_store, scrypto_interpreter, Vec::new())
+}
+
+pub fn bootstrap_with_validator_set<S, W>(
+    substate_store: &mut S,
+    scrypto_interpreter: &ScryptoInterpreter<W>,
+    validator_set: Vec<EcdsaSecp256k1PublicKey>,
+) -> Option<TransactionReceipt>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine,
+{
     if substate_store
         .get_substate(&SubstateId(
             RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)),
@@ -238,7 +237,7 @@ where
         ))
         .is_none()
     {
-        let genesis_transaction = create_genesis();
+        let genesis_transaction = create_genesis(validator_set);
 
         let transaction_receipt = execute_transaction(
             substate_store,
@@ -268,7 +267,8 @@ mod tests {
     fn bootstrap_receipt_should_match_constants() {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
-        let genesis_transaction = create_genesis();
+        let initial_validator_set = vec![EcdsaSecp256k1PublicKey([0; 33])];
+        let genesis_transaction = create_genesis(initial_validator_set.clone());
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -277,6 +277,14 @@ mod tests {
             &ExecutionConfig::default(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
+
+        let validator_set = transaction_receipt
+            .result
+            .expect_commit()
+            .next_validator_set
+            .as_ref()
+            .expect("Should contain validator set");
+        assert_eq!(validator_set, &initial_validator_set);
 
         let genesis_receipt = genesis_result(&transaction_receipt);
 

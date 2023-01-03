@@ -1,6 +1,6 @@
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::scrypto;
 use sbor::*;
 

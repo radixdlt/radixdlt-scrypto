@@ -4,9 +4,8 @@ use sbor::*;
 
 use crate::api::{api::*, types::*};
 use crate::scrypto;
-use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AccessRulesAddAccessCheckInvocation {
     pub receiver: RENodeId,
@@ -23,14 +22,11 @@ impl SerializableInvocation for AccessRulesAddAccessCheckInvocation {
 
 impl Into<SerializedInvocation> for AccessRulesAddAccessCheckInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::AddAccessCheck(self),
-        ))
-        .into()
+        NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::AddAccessCheck(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AccessRulesSetMethodAccessRuleInvocation {
     pub receiver: RENodeId,
@@ -49,14 +45,12 @@ impl SerializableInvocation for AccessRulesSetMethodAccessRuleInvocation {
 
 impl Into<SerializedInvocation> for AccessRulesSetMethodAccessRuleInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::SetMethodAccessRule(self),
-        ))
-        .into()
+        NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::SetMethodAccessRule(self))
+            .into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AccessRulesSetGroupAccessRuleInvocation {
     pub receiver: RENodeId,
@@ -75,14 +69,12 @@ impl SerializableInvocation for AccessRulesSetGroupAccessRuleInvocation {
 
 impl Into<SerializedInvocation> for AccessRulesSetGroupAccessRuleInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::SetGroupAccessRule(self),
-        ))
-        .into()
+        NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::SetGroupAccessRule(self))
+            .into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AccessRulesSetMethodMutabilityInvocation {
     pub receiver: RENodeId,
@@ -101,14 +93,12 @@ impl SerializableInvocation for AccessRulesSetMethodMutabilityInvocation {
 
 impl Into<SerializedInvocation> for AccessRulesSetMethodMutabilityInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::SetMethodMutability(self),
-        ))
-        .into()
+        NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::SetMethodMutability(self))
+            .into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AccessRulesSetGroupMutabilityInvocation {
     pub receiver: RENodeId,
@@ -127,14 +117,12 @@ impl SerializableInvocation for AccessRulesSetGroupMutabilityInvocation {
 
 impl Into<SerializedInvocation> for AccessRulesSetGroupMutabilityInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::SetGroupMutability(self),
-        ))
-        .into()
+        NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::SetGroupMutability(self))
+            .into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AccessRulesGetLengthInvocation {
     pub receiver: RENodeId,
@@ -150,9 +138,6 @@ impl SerializableInvocation for AccessRulesGetLengthInvocation {
 
 impl Into<SerializedInvocation> for AccessRulesGetLengthInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AccessRulesChain(
-            AccessRulesChainMethodInvocation::GetLength(self),
-        ))
-        .into()
+        NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::GetLength(self)).into()
     }
 }

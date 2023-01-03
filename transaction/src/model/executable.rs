@@ -33,13 +33,14 @@ pub enum FeePayment {
     NoFee,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum InstructionList<'a> {
     Basic(&'a [BasicInstruction]),
     Any(&'a [Instruction]),
+    AnyOwned(Vec<Instruction>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Executable<'a> {
     instructions: InstructionList<'a>,
     blobs: HashMap<Hash, &'a [u8]>,
@@ -94,6 +95,14 @@ impl<'a> Executable<'a> {
         Self {
             instructions,
             blobs,
+            context,
+        }
+    }
+
+    pub fn new_no_blobs(instructions: InstructionList<'a>, context: ExecutionContext) -> Self {
+        Self {
+            instructions,
+            blobs: HashMap::new(),
             context,
         }
     }

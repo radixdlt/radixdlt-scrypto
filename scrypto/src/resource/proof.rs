@@ -49,7 +49,7 @@ pub trait ScryptoProof: Sized {
 impl ScryptoProof for Proof {
     /// Uses resources in this proof as authorization for an operation.
     fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        ComponentAuthZone::push(self.clone());
+        ComponentAuthZone::push(ScryptoProof::clone(self));
         let output = f();
         ComponentAuthZone::pop().drop();
         output
@@ -234,7 +234,7 @@ pub struct ValidatedProof(pub(crate) Proof);
 #[cfg(target_arch = "wasm32")]
 impl Clone for ValidatedProof {
     fn clone(&self) -> Self {
-        ValidatedProof(self.0.clone())
+        ValidatedProof(ScryptoProof::clone(&self.0))
     }
 }
 

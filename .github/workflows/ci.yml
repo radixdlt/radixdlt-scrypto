@@ -30,7 +30,6 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
-
   simulator:
     name: Run CLI tests
     runs-on: ${{ matrix.os }}
@@ -51,7 +50,7 @@ jobs:
         working-directory: simulator
     - run: |
         sudo apt-get update -qq
-        sudo apt-get install clang cmake -y
+        sudo apt-get install clang cmake m4 -y
       if: matrix.os == 'linux'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown

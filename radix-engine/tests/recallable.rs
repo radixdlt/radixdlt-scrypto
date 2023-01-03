@@ -5,8 +5,8 @@ use radix_engine::engine::{
 use radix_engine::model::MethodAuthorizationError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::{NativeMethod, RENodeId};
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
+use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
@@ -69,9 +69,9 @@ fn cannot_take_on_non_recallable_vault() {
             e,
             RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
                 actor: ResolvedActor {
-                    identifier: FnIdentifier::NativeMethod(NativeMethod::Vault(
+                    identifier: FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(
                         VaultMethod::Recall
-                    )),
+                    ))),
                     receiver: Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(..),
                         ..
