@@ -1,8 +1,8 @@
 use radix_engine::engine::{ExecutionMode, KernelError, ResolvedActor, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
+use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

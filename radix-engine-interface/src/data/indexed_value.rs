@@ -6,8 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::api::types::*;
-use crate::core::Expression;
-use crate::crypto::Blob;
+use crate::data::types::*;
 use crate::data::*;
 use utils::ContextualDisplay;
 
@@ -269,6 +268,13 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
             }
 
             // RE nodes & references
+            ScryptoCustomValue::Own(value) => match value {
+                Own::Vault(v) => {
+                    if !self.vaults.insert(v.clone()) {
+                        return Err(ValueIndexingError::DuplicateOwnership);
+                    }
+                }
+            },
             ScryptoCustomValue::Component(value) => {
                 if !self.components.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
@@ -297,12 +303,6 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
             }
-            ScryptoCustomValue::Vault(value) => {
-                if !self.vaults.insert(value.clone()) {
-                    return Err(ValueIndexingError::DuplicateOwnership);
-                }
-            }
-
             // Other interpreted
             ScryptoCustomValue::Expression(value) => {
                 self.expressions.push((value.clone(), path.clone().into()));

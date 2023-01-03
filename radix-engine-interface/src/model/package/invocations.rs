@@ -1,6 +1,6 @@
 use crate::api::api::Invocation;
 use crate::api::types::RENodeId;
-use crate::crypto::Blob;
+use crate::data::types::Blob;
 use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
