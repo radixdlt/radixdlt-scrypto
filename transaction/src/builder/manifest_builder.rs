@@ -242,22 +242,25 @@ impl ManifestBuilder {
     }
 
     /// Creates proof from a bucket.
-    pub fn create_proof_from_bucket<F>(&mut self, bucket_id: ManifestBucket, then: F) -> &mut Self
+    pub fn create_proof_from_bucket<F>(&mut self, bucket_id: &ManifestBucket, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(BasicInstruction::CreateProofFromBucket { bucket_id });
+            self.add_instruction(BasicInstruction::CreateProofFromBucket {
+                bucket_id: bucket_id.clone(),
+            });
         then(builder, proof_id.unwrap())
     }
 
     /// Clones a proof.
-    pub fn clone_proof<F>(&mut self, proof_id: ManifestProof, then: F) -> &mut Self
+    pub fn clone_proof<F>(&mut self, proof_id: &ManifestProof, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, ManifestProof) -> &mut Self,
     {
-        let (builder, _, proof_id) =
-            self.add_instruction(BasicInstruction::CloneProof { proof_id });
+        let (builder, _, proof_id) = self.add_instruction(BasicInstruction::CloneProof {
+            proof_id: proof_id.clone(),
+        });
         then(builder, proof_id.unwrap())
     }
 

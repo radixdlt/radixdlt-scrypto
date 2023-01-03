@@ -7,7 +7,7 @@ use crate::data::*;
 use crate::scrypto_type;
 use scrypto_abi::Type;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestBucket(pub u32);
 
 //========

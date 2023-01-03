@@ -778,6 +778,18 @@ fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
     }
 }
 
+fn generate_ownership(value: &ast::Value) -> Result<Own, GeneratorError> {
+    match value {
+        ast::Value::Own(inner) => match &**inner {
+            ast::Value::String(_) => {
+                todo!()
+            }
+            v => invalid_type!(v, ast::Type::String),
+        },
+        v => invalid_type!(v, ast::Type::Own),
+    }
+}
+
 fn generate_component_id(value: &ast::Value) -> Result<ComponentId, GeneratorError> {
     match value {
         ast::Value::Component(inner) => match &**inner {
@@ -869,18 +881,6 @@ fn generate_proof(
             v => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::Proof),
-    }
-}
-
-fn generate_ownership(value: &ast::Value) -> Result<Own, GeneratorError> {
-    match value {
-        ast::Value::Own(inner) => match &**inner {
-            ast::Value::String(s) => {
-                Own::from_str(s).map_err(|_| GeneratorError::InvalidVault(s.into()))
-            }
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::Own),
     }
 }
 
@@ -1243,6 +1243,15 @@ pub fn generate_value(
                 value: ScryptoCustomValue::KeyValueStore(v),
             })
         }
+        ast::Value::NonFungibleAddress(_, _) => {
+            generate_non_fungible_address(value, bech32_decoder).map(|v| SborValue::Custom {
+                value: ScryptoCustomValue::NonFungibleAddress(v),
+            })
+        }
+        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Blob(v),
+        }),
+
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Bucket(v),
         }),
@@ -1252,14 +1261,6 @@ pub fn generate_value(
         ast::Value::Expression(_) => generate_expression(value).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Expression(v),
         }),
-        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Blob(v),
-        }),
-        ast::Value::NonFungibleAddress(_, _) => {
-            generate_non_fungible_address(value, bech32_decoder).map(|v| SborValue::Custom {
-                value: ScryptoCustomValue::NonFungibleAddress(v),
-            })
-        }
 
         ast::Value::Hash(_) => generate_hash(value).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Hash(v),

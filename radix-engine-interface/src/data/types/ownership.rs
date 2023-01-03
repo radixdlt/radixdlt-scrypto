@@ -3,20 +3,17 @@ use crate::api::types::*;
 use crate::data::ScryptoCustomTypeId;
 use crate::scrypto;
 use crate::scrypto_type;
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use utils::copy_u8_array;
 
 // TODO: it's still up to debate whether this should be an enum OR dedicated types for each variant.
-#[scrypto(Clone, PartialEq, Eq, Hash)]
+#[scrypto(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Own {
-    Vault(VaultId),
     Bucket(BucketId),
     Proof(ProofId),
+    Vault(VaultId),
 }
 
 impl Own {
@@ -34,8 +31,8 @@ impl Own {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseOwnError {
-    InvalidHex(String),
     InvalidLength(usize),
+    UnknownVariant(u8),
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -56,45 +53,55 @@ impl TryFrom<&[u8]> for Own {
     type Error = ParseOwnError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            36 => Ok(Self::Vault(copy_u8_array(slice))),
-            _ => Err(ParseOwnError::InvalidLength(slice.len())),
+        match slice
+            .get(0)
+            .ok_or(ParseOwnError::InvalidLength(slice.len()))?
+        {
+            0 => {
+                if slice.len() == 5 {
+                    Ok(Self::Bucket(u32::from_le_bytes(copy_u8_array(&slice[1..]))))
+                } else {
+                    Err(ParseOwnError::InvalidLength(slice.len()))
+                }
+            }
+            1 => {
+                if slice.len() == 5 {
+                    Ok(Self::Proof(u32::from_le_bytes(copy_u8_array(&slice[1..]))))
+                } else {
+                    Err(ParseOwnError::InvalidLength(slice.len()))
+                }
+            }
+            2 => {
+                if slice.len() == 37 {
+                    Ok(Self::Vault(copy_u8_array(&slice[1..])))
+                } else {
+                    Err(ParseOwnError::InvalidLength(slice.len()))
+                }
+            }
+            id => Err(ParseOwnError::UnknownVariant(*id)),
         }
     }
 }
 
 impl Own {
     pub fn to_vec(&self) -> Vec<u8> {
+        let mut buf = Vec::new();
         match self {
-            Self::Vault(v) => v.to_vec(),
-            _ => todo!(),
+            Own::Bucket(id) => {
+                buf.push(0);
+                buf.extend(id.to_le_bytes());
+            }
+            Own::Proof(id) => {
+                buf.push(1);
+                buf.extend(id.to_le_bytes());
+            }
+            Own::Vault(id) => {
+                buf.push(2);
+                buf.extend(id);
+            }
         }
+        buf
     }
 }
 
-scrypto_type!(Own, ScryptoCustomTypeId::Own, Type::Vault, 36);
-
-//======
-// text
-//======
-
-impl FromStr for Own {
-    type Err = ParseOwnError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|_| ParseOwnError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-impl fmt::Display for Own {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(self.to_vec()))
-    }
-}
-
-impl fmt::Debug for Own {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
-    }
-}
+scrypto_type!(Own, ScryptoCustomTypeId::Own, Type::Vault); // FIXME can be bucket, proof, or vault
