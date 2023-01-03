@@ -225,6 +225,13 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnstakeInvocation {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct UnstakeData {
+    epoch_unlocked: u64,
+    amount: Decimal,
+}
+
 impl Executor for ValidatorUnstakeExecutable {
     type Output = Bucket;
 
@@ -246,9 +253,18 @@ impl Executor for ValidatorUnstakeExecutable {
             let mut unstake_vault = Vault(validator.unstake_vault_id);
             let mut nft_resman = ResourceManager(validator.unstake_nft_address);
 
+            let manager_handle = api.lock_substate(
+                RENodeId::Global(GlobalAddress::System(manager)), SubstateOffset::EpochManager(EpochManagerOffset::EpochManager), LockFlags::read_only())?;
+            let manager_substate = api.get_ref(manager_handle)?;
+            let current_epoch = manager_substate.epoch_manager().epoch;
+            api.drop_lock(manager_handle)?;
+
+            let epoch_unlocked = current_epoch + 2;
+            let data = UnstakeData { epoch_unlocked, amount: self.1 };
+
             let bucket = stake_vault.sys_take(self.1, api)?;
             unstake_vault.sys_put(bucket, api)?;
-            let unstake_bucket = nft_resman.mint_non_fungible_uuid(api)?;
+            let unstake_bucket = nft_resman.mint_non_fungible_uuid(data, api)?;
             let amount = stake_vault.sys_amount(api)?;
 
             (

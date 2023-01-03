@@ -1,6 +1,6 @@
 use crate::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
-use radix_engine_interface::data::{scrypto_encode, ScryptoDecode};
+use radix_engine_interface::data::{scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::model::*;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -30,8 +30,9 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible_uuid<Y, E: Debug + ScryptoDecode>(
+    pub fn mint_non_fungible_uuid<Y, E: Debug + ScryptoDecode, T: ScryptoEncode>(
         &mut self,
+        data: T,
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
@@ -42,7 +43,7 @@ impl ResourceManager {
         let mut entries = BTreeMap::new();
         entries.insert(
             NonFungibleId::UUID(uuid),
-            (scrypto_encode(&()).unwrap(), scrypto_encode(&()).unwrap()),
+            (scrypto_encode(&data).unwrap(), scrypto_encode(&()).unwrap()),
         );
 
         api.invoke(ResourceManagerMintInvocation {
