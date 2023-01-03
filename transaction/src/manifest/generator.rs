@@ -58,7 +58,7 @@ pub enum GeneratorError {
     InvalidBytesHex(String),
     SborEncodeError(EncodeError),
     NameResolverError(NameResolverError),
-    IdValidationError(IdValidationError),
+    IdValidationError(ManifestIdValidationError),
     ArgumentEncodingError(EncodeError),
     ArgumentDecodingError(DecodeError),
     ArgumentIndexingError(ScryptoValueDecodeError),

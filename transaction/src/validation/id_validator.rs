@@ -31,35 +31,41 @@ impl ManifestIdValidator {
         }
     }
 
-    pub fn new_bucket(&mut self) -> Result<ManifestBucket, IdValidationError> {
+    pub fn new_bucket(&mut self) -> Result<ManifestBucket, ManifestIdValidationError> {
         let bucket_id = self
             .id_allocator
             .new_bucket_id()
-            .map_err(IdValidationError::IdAllocationError)?;
+            .map_err(ManifestIdValidationError::IdAllocationError)?;
         self.bucket_ids.insert(bucket_id.clone(), 0);
         Ok(bucket_id)
     }
 
-    pub fn drop_bucket(&mut self, bucket_id: &ManifestBucket) -> Result<(), IdValidationError> {
+    pub fn drop_bucket(
+        &mut self,
+        bucket_id: &ManifestBucket,
+    ) -> Result<(), ManifestIdValidationError> {
         if let Some(cnt) = self.bucket_ids.get(bucket_id) {
             if *cnt == 0 {
                 self.bucket_ids.remove(&bucket_id);
                 Ok(())
             } else {
-                Err(IdValidationError::BucketLocked(bucket_id.clone()))
+                Err(ManifestIdValidationError::BucketLocked(bucket_id.clone()))
             }
         } else {
-            Err(IdValidationError::BucketNotFound(bucket_id.clone()))
+            Err(ManifestIdValidationError::BucketNotFound(bucket_id.clone()))
         }
     }
 
-    pub fn new_proof(&mut self, kind: ProofKind) -> Result<ManifestProof, IdValidationError> {
+    pub fn new_proof(
+        &mut self,
+        kind: ProofKind,
+    ) -> Result<ManifestProof, ManifestIdValidationError> {
         match &kind {
             ProofKind::BucketProof(bucket_id) => {
                 if let Some(cnt) = self.bucket_ids.get_mut(bucket_id) {
                     *cnt += 1;
                 } else {
-                    return Err(IdValidationError::BucketNotFound(bucket_id.clone()));
+                    return Err(ManifestIdValidationError::BucketNotFound(bucket_id.clone()));
                 }
             }
             ProofKind::AuthZoneProof | ProofKind::VirtualProof => {}
@@ -68,7 +74,7 @@ impl ManifestIdValidator {
         let proof_id = self
             .id_allocator
             .new_proof_id()
-            .map_err(IdValidationError::IdAllocationError)?;
+            .map_err(ManifestIdValidationError::IdAllocationError)?;
         self.proof_ids.insert(proof_id.clone(), kind);
         Ok(proof_id)
     }
@@ -76,7 +82,7 @@ impl ManifestIdValidator {
     pub fn clone_proof(
         &mut self,
         proof_id: &ManifestProof,
-    ) -> Result<ManifestProof, IdValidationError> {
+    ) -> Result<ManifestProof, ManifestIdValidationError> {
         if let Some(kind) = self.proof_ids.get(proof_id).cloned() {
             if let ProofKind::BucketProof(bucket_id) = &kind {
                 if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
@@ -88,15 +94,18 @@ impl ManifestIdValidator {
             let proof_id = self
                 .id_allocator
                 .new_proof_id()
-                .map_err(IdValidationError::IdAllocationError)?;
+                .map_err(ManifestIdValidationError::IdAllocationError)?;
             self.proof_ids.insert(proof_id.clone(), kind);
             Ok(proof_id)
         } else {
-            Err(IdValidationError::ProofNotFound(proof_id.clone()))
+            Err(ManifestIdValidationError::ProofNotFound(proof_id.clone()))
         }
     }
 
-    pub fn drop_proof(&mut self, proof_id: &ManifestProof) -> Result<(), IdValidationError> {
+    pub fn drop_proof(
+        &mut self,
+        proof_id: &ManifestProof,
+    ) -> Result<(), ManifestIdValidationError> {
         if let Some(kind) = self.proof_ids.remove(proof_id) {
             if let ProofKind::BucketProof(bucket_id) = kind {
                 if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
@@ -107,16 +116,19 @@ impl ManifestIdValidator {
             }
             Ok(())
         } else {
-            Err(IdValidationError::ProofNotFound(proof_id.clone()))
+            Err(ManifestIdValidationError::ProofNotFound(proof_id.clone()))
         }
     }
 
-    pub fn drop_all_proofs(&mut self) -> Result<(), IdValidationError> {
+    pub fn drop_all_proofs(&mut self) -> Result<(), ManifestIdValidationError> {
         self.proof_ids.clear();
         Ok(())
     }
 
-    pub fn move_resources(&mut self, args: &IndexedScryptoValue) -> Result<(), IdValidationError> {
+    pub fn move_resources(
+        &mut self,
+        args: &IndexedScryptoValue,
+    ) -> Result<(), ManifestIdValidationError> {
         for (bucket_id, _) in &args.buckets {
             self.drop_bucket(bucket_id)?;
         }

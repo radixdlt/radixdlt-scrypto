@@ -37,7 +37,7 @@ pub enum ManifestIdAllocationError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IdValidationError {
+pub enum ManifestIdValidationError {
     IdAllocationError(ManifestIdAllocationError),
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
@@ -47,7 +47,7 @@ pub enum IdValidationError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallDataValidationError {
     InvalidScryptoValue(ScryptoValueDecodeError),
-    IdValidationError(IdValidationError),
+    IdValidationError(ManifestIdValidationError),
     OwnNotAllowed,
 }
 
@@ -59,7 +59,7 @@ pub enum TransactionValidationError {
     IntentHashRejected,
     HeaderValidationError(HeaderValidationError),
     SignatureValidationError(SignatureValidationError),
-    IdValidationError(IdValidationError),
+    IdValidationError(ManifestIdValidationError),
     CallDataValidationError(CallDataValidationError),
 }
 

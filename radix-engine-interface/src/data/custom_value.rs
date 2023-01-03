@@ -22,7 +22,7 @@ pub enum ScryptoCustomValue {
     NonFungibleAddress(NonFungibleAddress),
     Blob(Blob),
 
-    // TX interpreted types
+    // TX interpreted types (TODO: rename?)
     Bucket(ManifestBucket),
     Proof(ManifestProof),
     Expression(ManifestExpression),
