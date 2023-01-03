@@ -395,20 +395,6 @@ pub fn serialize_custom_value<S: Serializer>(
             ScryptoCustomTypeId::Own,
             &format!("{:?}", value), // TODO: fix syntax
         ),
-        ScryptoCustomValue::Component(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomTypeId::Component,
-            &hex::encode(value),
-        ),
-        ScryptoCustomValue::KeyValueStore(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomTypeId::KeyValueStore,
-            &hex::encode(value),
-        ),
         ScryptoCustomValue::NonFungibleAddress(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
@@ -804,12 +790,6 @@ mod tests {
                             value: ScryptoCustomValue::Own(Own::Vault([0; 36])),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Component([0; 36]),
-                        },
-                        SborValue::Custom {
-                            value: ScryptoCustomValue::KeyValueStore([0; 36]),
-                        },
-                        SborValue::Custom {
                             value: ScryptoCustomValue::Bucket(ManifestBucket(1)), // Will be mapped by context to "Hello"
                         },
                         SborValue::Custom {
@@ -912,8 +892,6 @@ mod tests {
                 radix_token_address,
                 epoch_manager_address,
                 { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
-                { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "Bucket", "value": "Hello" },
                 { "type": "Bucket", "value": 10 },
                 { "type": "Proof", "value": 2 },
@@ -971,8 +949,6 @@ mod tests {
                         { "type": "ResourceAddress", "value": radix_token_address },
                         { "type": "SystemAddress", "value": epoch_manager_address },
                         { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
-                        { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Bucket", "value": "Hello" },
                         { "type": "Bucket", "value": 10 },
                         { "type": "Proof", "value": 2 },

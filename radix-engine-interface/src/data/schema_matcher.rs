@@ -36,12 +36,12 @@ pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
         Type::ResourceAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress)),
         Type::SystemAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress)),
 
-        Type::Own => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
-        Type::Bucket => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
-        Type::Proof => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
-        Type::Vault => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
-        Type::Component => Some(SborTypeId::Custom(ScryptoCustomTypeId::Component)),
-        Type::KeyValueStore { .. } => Some(SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore)),
+        Type::Own
+        | Type::Bucket
+        | Type::Proof
+        | Type::Vault
+        | Type::Component
+        | Type::KeyValueStore { .. } => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
         Type::NonFungibleAddress => {
             Some(SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress))
         }
@@ -323,17 +323,14 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         }
         Type::Component => {
             if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Component(_))
+                matches!(value, ScryptoCustomValue::Own(Own::Component(_)))
             } else {
                 false
             }
         }
-        Type::KeyValueStore {
-            key_type: _,
-            value_type: _,
-        } => {
+        Type::KeyValueStore { .. } => {
             if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::KeyValueStore(_))
+                matches!(value, ScryptoCustomValue::Own(Own::KeyValueStore(_)))
             } else {
                 false
             }
