@@ -54,6 +54,7 @@ pub enum TokenKind {
     Ok,
     Err,
     Bytes,
+    NonFungibleAddress,
 
     // ==============
     // SBOR custom types
@@ -67,7 +68,6 @@ pub enum TokenKind {
 
     /* RE interpreted types */
     Own,
-    NonFungibleAddress,
     Blob,
 
     /* TX interpreted types */
@@ -408,6 +408,7 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
             "Bytes" => Ok(TokenKind::Bytes),
+            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "SystemAddress" => Ok(TokenKind::SystemAddress),
@@ -415,7 +416,6 @@ impl Lexer {
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
             "Own" => Ok(TokenKind::Own),
-            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
             "Blob" => Ok(TokenKind::Blob),
 
             "Bucket" => Ok(TokenKind::Bucket),
