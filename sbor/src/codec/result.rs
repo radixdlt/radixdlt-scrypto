@@ -58,24 +58,16 @@ impl<C: CustomTypeSchema, T: Schema<C>, E: Schema<C>> Schema<C> for Result<T, E>
         GlobalTypeRef::complex("Result", &[T::SCHEMA_TYPE_REF, E::SCHEMA_TYPE_REF]);
 
     fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
-        Some(LocalTypeData {
-            schema: TypeSchema::Enum {
-                variants: crate::rust::collections::btree_map::btreemap![
-                    "Ok".to_owned() => GlobalTypeRef::complex("Ok", &[T::SCHEMA_TYPE_REF]),
-                    "Err".to_owned() => GlobalTypeRef::complex("Err", &[E::SCHEMA_TYPE_REF]),
-                ],
-            },
-            naming: TypeNaming::named_no_child_names("Set"),
-        })
+        Some(LocalTypeData::named_enum(
+            "Result",
+            crate::rust::collections::btree_map::btreemap![
+                "Ok".to_owned() => LocalTypeData::named_tuple("Ok", vec![T::SCHEMA_TYPE_REF]),
+                "Err".to_owned() => LocalTypeData::named_tuple("Err", vec![E::SCHEMA_TYPE_REF]),
+            ],
+        ))
     }
 
     fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {
-        aggregator.add_child_type(GlobalTypeRef::complex("Ok", &[T::SCHEMA_TYPE_REF]), || {
-            Some(LocalTypeData::named_tuple("Ok", vec![T::SCHEMA_TYPE_REF]))
-        });
-        aggregator.add_child_type(GlobalTypeRef::complex("Err", &[E::SCHEMA_TYPE_REF]), || {
-            Some(LocalTypeData::named_tuple("Err", vec![E::SCHEMA_TYPE_REF]))
-        });
         aggregator.add_child_type_and_descendents::<T>();
         aggregator.add_child_type_and_descendents::<E>();
     }

@@ -58,48 +58,55 @@ pub struct LocalTypeData<C: CustomTypeSchema, L: TypeLink + TypeId<C::CustomType
 }
 
 impl<C: CustomTypeSchema, L: TypeLink + TypeId<C::CustomTypeId>> LocalTypeData<C, L> {
-    pub const fn new(naming: TypeNaming, schema: TypeSchema<C::CustomTypeId, C, L>) -> Self {
+    pub fn new(naming: TypeNaming, schema: TypeSchema<C::CustomTypeId, C, L>) -> Self {
         Self { schema, naming }
     }
 
-    pub const fn named_no_child_names(
+    pub fn named_no_child_names(
         name: &'static str,
         schema: TypeSchema<C::CustomTypeId, C, L>,
     ) -> Self {
         Self::new(TypeNaming::named_no_child_names(name), schema)
     }
 
-    pub const fn named_unit(name: &'static str) -> Self {
+    pub fn named_unit(name: &'static str) -> Self {
         Self::new(TypeNaming::named_no_child_names(name), TypeSchema::Unit)
     }
 
-    pub const fn named_tuple(name: &'static str, element_types: Vec<L>) -> Self {
+    pub fn named_tuple(name: &'static str, field_types: Vec<L>) -> Self {
         Self::new(
             TypeNaming::named_no_child_names(name),
-            TypeSchema::Tuple { element_types },
+            TypeSchema::Tuple { field_types },
         )
     }
 
-    pub const fn named_fields_tuple(
-        name: &'static str,
-        element_types: Vec<L>,
-        field_names: Vec<String>,
-    ) -> Self {
+    pub fn named_fields_tuple(name: &'static str, fields: Vec<(&'static str, L)>) -> Self {
+        let (field_names, field_types): (Vec<_>, _) = fields.into_iter().unzip();
         Self::new(
-            TypeNaming::named_with_fields(name, field_names),
-            TypeSchema::Tuple { element_types },
+            TypeNaming::named_with_fields(name, &field_names),
+            TypeSchema::Tuple { field_types },
         )
     }
 
-    pub const fn named_enum(
-        name: &'static str,
-        variant_names: BTreeMap<String, String>,
-        variant_types: BTreeMap<String, L>,
-    ) -> Self {
+    pub fn named_enum(name: &'static str, variants: BTreeMap<String, LocalTypeData<C, L>>) -> Self {
+        let (variant_naming, variant_tuple_schemas) = variants
+            .into_iter()
+            .map(|(k, variant_type_data)| {
+                let variant_fields_schema = match variant_type_data.schema {
+                    TypeSchema::Unit => vec![],
+                    TypeSchema::Tuple { field_types } => field_types,
+                    _ => panic!("Only Unit and Tuple are allowed in Enum variant LocalTypeData"),
+                };
+                (
+                    (k.clone(), variant_type_data.naming),
+                    (k, variant_fields_schema),
+                )
+            })
+            .unzip();
         Self::new(
-            TypeNaming::named_with_variants(name, variant_names),
+            TypeNaming::named_with_variants(name, variant_naming),
             TypeSchema::Enum {
-                variants: variant_types,
+                variants: variant_tuple_schemas,
             },
         )
     }
@@ -114,27 +121,31 @@ pub struct TypeNaming {
 }
 
 impl TypeNaming {
-    pub const fn named_no_child_names(name: &'static str) -> Self {
+    pub fn named_no_child_names(name: &'static str) -> Self {
         Self {
             type_name: Cow::Borrowed(name),
             child_names: ChildNames::None,
         }
     }
 
-    pub const fn named_with_fields(name: &'static str, field_names: Vec<String>) -> Self {
+    pub fn named_with_fields(name: &'static str, field_names: &[&'static str]) -> Self {
+        let field_names = field_names
+            .iter()
+            .map(|field_name| Cow::Borrowed(*field_name))
+            .collect();
         Self {
             type_name: Cow::Borrowed(name),
             child_names: ChildNames::FieldNames(field_names),
         }
     }
 
-    pub const fn named_with_variants(
+    pub fn named_with_variants(
         name: &'static str,
-        variant_names: BTreeMap<String, String>,
+        variant_naming: BTreeMap<String, TypeNaming>,
     ) -> Self {
         Self {
             type_name: Cow::Borrowed(name),
-            child_names: ChildNames::VariantNames(variant_names),
+            child_names: ChildNames::VariantNames(variant_naming),
         }
     }
 }
@@ -143,8 +154,8 @@ impl TypeNaming {
 pub enum ChildNames {
     #[default]
     None,
-    FieldNames(Vec<String>),
-    VariantNames(BTreeMap<String, String>),
+    FieldNames(Vec<Cow<'static, str>>),
+    VariantNames(BTreeMap<String, TypeNaming>),
 }
 
 /// An array of custom types, and associated extra information.

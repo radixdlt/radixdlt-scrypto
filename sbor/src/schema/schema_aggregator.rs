@@ -56,8 +56,8 @@ fn linearize<C: LinearizableCustomTypeSchema>(
             element_type: resolve_local_type_ref(schemas, &element_type),
             length_validation,
         },
-        TypeSchema::Tuple { element_types } => TypeSchema::Tuple {
-            element_types: element_types
+        TypeSchema::Tuple { field_types } => TypeSchema::Tuple {
+            field_types: field_types
                 .into_iter()
                 .map(|t| resolve_local_type_ref(schemas, &t))
                 .collect(),
@@ -65,7 +65,13 @@ fn linearize<C: LinearizableCustomTypeSchema>(
         TypeSchema::Enum { variants } => TypeSchema::Enum {
             variants: variants
                 .into_iter()
-                .map(|(k, v)| (k, resolve_local_type_ref(schemas, &v)))
+                .map(|(variant_index, field_types)| {
+                    let new_field_types = field_types
+                        .into_iter()
+                        .map(|t| resolve_local_type_ref(schemas, &t))
+                        .collect();
+                    (variant_index, new_field_types)
+                })
                 .collect(),
         },
         TypeSchema::Custom(custom_type_schema) => {

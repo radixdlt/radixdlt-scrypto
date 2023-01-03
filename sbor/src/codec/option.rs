@@ -53,25 +53,16 @@ impl<C: CustomTypeSchema, T: Schema<C>> Schema<C> for Option<T> {
     const SCHEMA_TYPE_REF: GlobalTypeRef = GlobalTypeRef::complex("Option", &[T::SCHEMA_TYPE_REF]);
 
     fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
-        Some(LocalTypeData {
-            schema: TypeSchema::Enum {
-                variants: crate::rust::collections::btree_map::btreemap![
-                    "Some".to_owned() => GlobalTypeRef::complex("Some", &[T::SCHEMA_TYPE_REF]),
-                    "None".to_owned() => GlobalTypeRef::complex("None", &[]),
-                ],
-            },
-            naming: TypeNaming::named_no_child_names("Set"),
-        })
+        Some(LocalTypeData::named_enum(
+            "Option",
+            crate::rust::collections::btree_map::btreemap![
+                "Some".to_owned() => LocalTypeData::named_tuple("Some", vec![T::SCHEMA_TYPE_REF]),
+                "None".to_owned() => LocalTypeData::named_unit("None"),
+            ],
+        ))
     }
 
     fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {
-        aggregator.add_child_type(
-            GlobalTypeRef::complex("Some", &[T::SCHEMA_TYPE_REF]),
-            || Some(LocalTypeData::named_tuple("Some", vec![T::SCHEMA_TYPE_REF])),
-        );
-        aggregator.add_child_type(GlobalTypeRef::complex("None", &[]), || {
-            Some(LocalTypeData::named_unit("None"))
-        });
         aggregator.add_child_type_and_descendents::<T>();
     }
 }

@@ -69,7 +69,7 @@ mod schema {
                 fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
                     Some(LocalTypeData {
                         schema: TypeSchema::Tuple {
-                            element_types: vec![
+                            field_types: vec![
                                 $($name::SCHEMA_TYPE_REF,)+
                             ],
                         },

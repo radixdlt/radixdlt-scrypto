@@ -56,11 +56,11 @@ pub enum TypeSchema<X: CustomTypeId, C: CustomTypeSchema<CustomTypeId = X>, L: T
     },
 
     Tuple {
-        element_types: Vec<L>,
+        field_types: Vec<L>,
     },
 
     Enum {
-        variants: BTreeMap<String, L>,
+        variants: BTreeMap<String, Vec<L>>,
     },
 
     // Custom Types

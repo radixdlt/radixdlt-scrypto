@@ -38,6 +38,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                 let unskipped_fields: Vec<&Field> =
                     named.iter().filter(|f| !is_encoding_skipped(f)).collect();
                 let field_types: Vec<_> = unskipped_fields.iter().map(|f| &f.ty).collect();
+                let unique_field_types: Vec<_> = get_unique_types(&field_types);
                 let field_names: Vec<_> = unskipped_fields
                     .iter()
                     .map(|f| {
@@ -51,7 +52,17 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Schema <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
                         const SCHEMA_TYPE_REF: ::sbor::GlobalTypeRef = ::sbor::GlobalTypeRef::complex_with_code(
                             stringify!(#ident),
-                            &[#(#generic_type_idents::SCHEMA_TYPE_REF,)*],
+                            // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
+                            // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
+                            // different types depending on the generic types providing. Adding in the generic types' SCHEMA_TYPE_REFs solves that issue.
+                            //
+                            // It's still technically possible to get a collision (by abusing type namespacing to have two types with identical code
+                            // reference other types) but it's good enough - you're only shooting yourself in the food at that point.
+                            //
+                            // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
+                            // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
+                            // which the compiler will throw out for other reasons.
+                            &[#(<#generic_type_idents>::SCHEMA_TYPE_REF,)*],
                             &#code_hash
                         );
 
@@ -59,16 +70,13 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                             Some(::sbor::LocalTypeData::named_fields_tuple(
                                 stringify!(#ident),
                                 vec![
-                                    #(<#field_types>::SCHEMA_TYPE_REF,)*
-                                ],
-                                vec![
-                                    #(#field_names.to_owned(),)*
+                                    #((#field_names, <#field_types>::SCHEMA_TYPE_REF),)*
                                 ],
                             ))
                         }
 
                         fn add_all_dependencies(aggregator: &mut ::sbor::SchemaAggregator<C>) {
-                            #(aggregator.add_child_type_and_descendents::<#generic_type_idents>();)*
+                            #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                         }
                     }
                 }
@@ -77,11 +85,22 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                 let unskipped_fields: Vec<&Field> =
                     unnamed.iter().filter(|f| !is_encoding_skipped(f)).collect();
                 let field_types: Vec<_> = unskipped_fields.iter().map(|f| &f.ty).collect();
+                let unique_field_types: Vec<_> = get_unique_types(&field_types);
 
                 quote! {
                     impl #impl_generics ::sbor::Schema <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
                         const SCHEMA_TYPE_REF: ::sbor::GlobalTypeRef = ::sbor::GlobalTypeRef::complex_with_code(
                             stringify!(#ident),
+                            // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
+                            // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
+                            // different types depending on the generic types providing. Adding in the generic types' SCHEMA_TYPE_REFs solves that issue.
+                            //
+                            // It's still technically possible to get a collision (by abusing type namespacing to have two types with identical code
+                            // reference other types) but it's good enough - you're only shooting yourself in the food at that point.
+                            //
+                            // Note that it might seem possible to still hit issues with infinite recursion, if you pass a type as its own generic type parameter.
+                            // EG (via a type alias B = A<B>), but these types won't come up in practice because they require an infinite generic depth
+                            // which the compiler will throw out for other reasons.
                             &[#(#generic_type_idents::SCHEMA_TYPE_REF,)*],
                             &#code_hash
                         );
@@ -96,7 +115,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                         }
 
                         fn add_all_dependencies(aggregator: &mut ::sbor::SchemaAggregator<C>) {
-                            #(aggregator.add_child_type_and_descendents::<#generic_type_idents>();)*
+                            #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                         }
                     }
                 }
@@ -106,7 +125,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                     impl #impl_generics ::sbor::Schema <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
                         const SCHEMA_TYPE_REF: ::sbor::GlobalTypeRef = ::sbor::GlobalTypeRef::complex_with_code(
                             stringify!(#ident),
-                            &[],
+                            &[#(#generic_type_idents::SCHEMA_TYPE_REF,)*],
                             &#code_hash
                         );
 
@@ -120,16 +139,6 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
         Data::Enum(DataEnum { variants, .. }) => {
             let variant_names: Vec<_> = variants.iter().map(|v| v.ident.to_string()).collect();
 
-            let variant_type_refs: Vec<_> =
-                {
-                    variants.iter().map(|v| {
-                    let variant_name = v.ident.to_string();
-                    quote! {
-                        ::sbor::GlobalTypeRef::complex(#variant_name, &[Self::SCHEMA_TYPE_REF])
-                    }
-                })
-                .collect()
-                };
             let variant_type_data: Vec<_> = {
                 variants
                     .iter()
@@ -154,10 +163,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                                     ::sbor::LocalTypeData::named_fields_tuple(
                                         #variant_name,
                                         vec![
-                                            #(<#field_types>::SCHEMA_TYPE_REF,)*
-                                        ],
-                                        vec![
-                                            #(#field_names.to_owned(),)*
+                                            #((#field_names, <#field_types>::SCHEMA_TYPE_REF),)*
                                         ],
                                     )
                                 }
@@ -198,22 +204,12 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                         Some(::sbor::LocalTypeData::named_enum(
                             stringify!(#ident),
                             ::sbor::rust::collections::btree_map::btreemap![
-                                #(#variant_names.to_owned() => #variant_names.to_owned(),)*
-                            ],
-                            ::sbor::rust::collections::btree_map::btreemap![
-                                #(#variant_names.to_owned() => #variant_type_refs,)*
+                                #(#variant_names.to_owned() => #variant_type_data,)*
                             ],
                         ))
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::SchemaAggregator<C>) {
-                        // Add types for the enum variants
-                        #(
-                            aggregator.add_child_type(
-                                #variant_type_refs,
-                                || Some(#variant_type_data)
-                            );
-                        )*
                         // Add the generic type descendents
                         #(aggregator.add_child_type_and_descendents::<#generic_type_idents>();)*
                     }
@@ -244,8 +240,8 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_struct() {
-        let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
+    fn test_named_field_struct_schema() {
+        let input = TokenStream::from_str("struct Test {a: u32, b: Vec<u8>, c: u32}").unwrap();
         let output = handle_schema(input).unwrap();
 
         assert_code_eq(
@@ -255,22 +251,82 @@ mod tests {
                     const SCHEMA_TYPE_REF: ::sbor::GlobalTypeRef = ::sbor::GlobalTypeRef::complex_with_code(
                         stringify!(Test),
                         &[],
-                        &[199u8, 68u8, 83u8, 62u8, 239u8, 118u8, 79u8, 50u8, 26u8, 160u8, 164u8, 229u8, 19u8, 137u8, 68u8, 170u8, 4u8, 70u8, 35u8, 86u8]
+                        &[63u8, 255u8, 173u8, 220u8, 251u8, 214u8, 95u8, 139u8, 106u8, 20u8, 23u8, 4u8, 15u8, 10u8, 124u8, 49u8, 219u8, 44u8, 235u8, 215u8]
                     );
 
                     fn get_local_type_data() -> Option<::sbor::LocalTypeData <C, ::sbor::GlobalTypeRef>> {
-                        Some(::sbor::LocalTypeData::named_tuple_named_fields(
+                        Some(::sbor::LocalTypeData::named_fields_tuple(
                             stringify!(Test),
                             vec![
-                                <u32>::SCHEMA_TYPE_REF,
-                            ],
-                            &[
-                                "a",
+                                ("a", <u32>::SCHEMA_TYPE_REF),
+                                ("b", <Vec<u8> >::SCHEMA_TYPE_REF),
+                                ("c", <u32>::SCHEMA_TYPE_REF),
                             ],
                         ))
                     }
 
-                    fn add_all_dependencies(aggregator: &mut ::sbor::SchemaAggregator<C>) { }
+                    fn add_all_dependencies(aggregator: &mut ::sbor::SchemaAggregator<C>) {
+                        aggregator.add_child_type_and_descendents::<u32>();
+                        aggregator.add_child_type_and_descendents::<Vec<u8> >();
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_unnamed_field_struct_schema() {
+        let input = TokenStream::from_str("struct Test(u32, Vec<u8>, u32);").unwrap();
+        let output = handle_schema(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl <C: ::sbor::CustomTypeSchema> ::sbor::Schema<C> for Test {
+                    const SCHEMA_TYPE_REF: ::sbor::GlobalTypeRef = ::sbor::GlobalTypeRef::complex_with_code(
+                        stringify!(Test),
+                        &[],
+                        &[85u8, 53u8, 15u8, 85u8, 176u8, 230u8, 4u8, 110u8, 15u8, 96u8, 35u8, 64u8, 192u8, 210u8, 254u8, 146u8, 192u8, 7u8, 246u8, 5u8]
+                    );
+
+                    fn get_local_type_data() -> Option<::sbor::LocalTypeData <C, ::sbor::GlobalTypeRef>> {
+                        Some(::sbor::LocalTypeData::named_tuple(
+                            stringify!(Test),
+                            vec![
+                                <u32>::SCHEMA_TYPE_REF,
+                                <Vec<u8> >::SCHEMA_TYPE_REF,
+                                <u32>::SCHEMA_TYPE_REF,
+                            ],
+                        ))
+                    }
+
+                    fn add_all_dependencies(aggregator: &mut ::sbor::SchemaAggregator<C>) {
+                        aggregator.add_child_type_and_descendents::<u32>();
+                        aggregator.add_child_type_and_descendents::<Vec<u8> >();
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_unit_struct_schema() {
+        let input = TokenStream::from_str("struct Test;").unwrap();
+        let output = handle_schema(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl <C: ::sbor::CustomTypeSchema> ::sbor::Schema<C> for Test {
+                    const SCHEMA_TYPE_REF: ::sbor::GlobalTypeRef = ::sbor::GlobalTypeRef::complex_with_code(
+                        stringify!(Test),
+                        &[],
+                        &[167u8, 108u8, 181u8, 130u8, 168u8, 229u8, 85u8, 237u8, 66u8, 69u8, 34u8, 138u8, 113u8, 220u8, 225u8, 107u8, 0u8, 247u8, 189u8, 58u8]
+                    );
+
+                    fn get_local_type_data() -> Option<::sbor::LocalTypeData <C, ::sbor::GlobalTypeRef>> {
+                        Some(::sbor::LocalTypeData::named_unit(stringify!(Test)))
+                    }
                 }
             },
         );
@@ -296,44 +352,24 @@ mod tests {
                         Some(::sbor::LocalTypeData::named_enum(
                             stringify!(Test),
                             ::sbor::rust::collections::btree_map::btreemap![
-                                "A".to_owned() => "A".to_owned(),
-                                "B".to_owned() => "B".to_owned(),
-                                "C".to_owned() => "C".to_owned(),
-                            ],
-                            ::sbor::rust::collections::btree_map::btreemap![
-                                "A".to_owned() => ::sbor::GlobalTypeRef::complex("A", &[Self::SCHEMA_TYPE_REF]),
-                                "B".to_owned() => ::sbor::GlobalTypeRef::complex("B", &[Self::SCHEMA_TYPE_REF]),
-                                "C".to_owned() => ::sbor::GlobalTypeRef::complex("C", &[Self::SCHEMA_TYPE_REF]),
+                                "A".to_owned() => ::sbor::LocalTypeData::named_unit("A"),
+                                "B".to_owned() => ::sbor::LocalTypeData::named_tuple(
+                                    "B",
+                                    vec![
+                                        <T>::SCHEMA_TYPE_REF,
+                                    ],
+                                ),
+                                "C".to_owned() => ::sbor::LocalTypeData::named_fields_tuple(
+                                    "C",
+                                    vec![
+                                        ("x", <[u8; 5]>::SCHEMA_TYPE_REF),
+                                    ],
+                                ),
                             ],
                         ))
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::SchemaAggregator<C>) {
-                        aggregator.add_child_type(
-                            ::sbor::GlobalTypeRef::complex("A", &[Self::SCHEMA_TYPE_REF]),
-                            || Some(::sbor::LocalTypeData::named_unit("A"))
-                        );
-                        aggregator.add_child_type(
-                            ::sbor::GlobalTypeRef::complex("B", &[Self::SCHEMA_TYPE_REF]),
-                            || Some(::sbor::LocalTypeData::named_tuple(
-                                "B",
-                                vec![
-                                    <T>::SCHEMA_TYPE_REF,
-                                ],
-                            ))
-                        );
-                        aggregator.add_child_type(
-                            ::sbor::GlobalTypeRef::complex("C", &[Self::SCHEMA_TYPE_REF]),
-                            || Some(::sbor::LocalTypeData::named_fields_tuple(
-                                "C",
-                                vec![
-                                    <[u8; 5]>::SCHEMA_TYPE_REF,
-                                ],
-                                vec![
-                                    "x".to_owned(),
-                                ],
-                            ))
-                        );
                         aggregator.add_child_type_and_descendents::<T>();
                     }
                 }
