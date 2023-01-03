@@ -7,20 +7,10 @@ use crate::data::*;
 use crate::scrypto_type;
 use scrypto_abi::Type;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ManifestExpression {
     EntireWorktop,
     EntireAuthZone,
-}
-
-impl ManifestExpression {
-    pub fn entire_worktop() -> Self {
-        Self::EntireWorktop
-    }
-
-    pub fn entire_auth_zone() -> Self {
-        Self::EntireAuthZone
-    }
 }
 
 //========

@@ -820,7 +820,7 @@ mod tests {
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Expression(
-                                ManifestExpression::entire_worktop(),
+                                ManifestExpression::EntireWorktop,
                             ),
                         },
                         SborValue::Custom {

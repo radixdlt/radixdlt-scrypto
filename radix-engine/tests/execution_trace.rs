@@ -99,7 +99,7 @@ fn test_trace_fee_payments() {
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .clear_auth_zone()
         .build();
@@ -163,7 +163,7 @@ fn test_instruction_traces() {
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

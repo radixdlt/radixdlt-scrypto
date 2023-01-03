@@ -74,7 +74,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             ),
         Action::Burn => builder
             .create_proof_from_account(account, withdraw_auth)
@@ -83,25 +83,25 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             ),
         Action::Withdraw => builder
             .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             ),
         Action::Deposit => builder
             .create_proof_from_account(account, withdraw_auth)
             .withdraw_from_account_by_amount(account, Decimal::from("1.0"), token_address)
             .take_from_worktop(token_address, |builder, bucket_id| {
-                builder.call_method(account, "deposit", args!(Bucket(bucket_id)))
+                builder.call_method(account, "deposit", args!(bucket_id))
             })
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             ),
         Action::Recall => {
             let vaults = test_runner.get_component_vaults(account, token_address);
@@ -110,7 +110,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             builder.recall(vault_id, Decimal::ONE).call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
         }
         Action::UpdateMetadata => builder.set_metadata(

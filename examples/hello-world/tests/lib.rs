@@ -36,7 +36,7 @@ fn test_hello() {
         .call_method(
             account_component,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(

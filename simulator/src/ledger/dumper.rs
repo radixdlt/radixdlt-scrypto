@@ -140,7 +140,15 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             );
 
             // Find all vaults owned by the component, assuming a tree structure.
-            let mut vaults_found: HashSet<VaultId> = state_data.vault_ids.iter().cloned().collect();
+            let mut vaults_found: HashSet<VaultId> = state_data
+                .ownerships
+                .iter()
+                .cloned()
+                .filter_map(|o| match o {
+                    Own::Vault(vault_id) => Some(vault_id),
+                    _ => None,
+                })
+                .collect();
             let mut queue: VecDeque<KeyValueStoreId> =
                 state_data.kv_store_ids.iter().cloned().collect();
             while !queue.is_empty() {
@@ -190,7 +198,14 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 value.display(value_display_context)
             );
             referenced_maps.extend(value.kv_store_ids);
-            referenced_vaults.extend(value.vault_ids);
+            for ownership in value.ownerships {
+                match ownership {
+                    Own::Vault(vault_id) => {
+                        referenced_vaults.push(vault_id);
+                    }
+                    _ => {}
+                }
+            }
         }
     }
     Ok((referenced_maps, referenced_vaults))

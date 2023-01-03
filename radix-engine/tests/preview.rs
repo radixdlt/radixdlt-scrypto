@@ -74,7 +74,7 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

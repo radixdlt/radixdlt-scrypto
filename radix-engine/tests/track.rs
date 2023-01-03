@@ -21,7 +21,7 @@ fn self_transfer_txn(account: ComponentAddress, amount: Decimal) -> TransactionM
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build()
 }

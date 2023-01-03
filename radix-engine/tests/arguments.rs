@@ -19,7 +19,7 @@ fn vector_of_buckets_argument_should_succeed() {
                     package_address,
                     "Arguments",
                     "vector_argument",
-                    args!(vec![Bucket(bucket_id1), Bucket(bucket_id2),]),
+                    args!(vec![bucket_id1, bucket_id2,]),
                 )
             })
         })
@@ -45,7 +45,7 @@ fn tuple_of_buckets_argument_should_succeed() {
                     package_address,
                     "Arguments",
                     "tuple_argument",
-                    args!((Bucket(bucket_id1), Bucket(bucket_id2),)),
+                    args!((bucket_id1, bucket_id2,)),
                 )
             })
         })
@@ -68,8 +68,8 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = BTreeMap::new();
-                map.insert("first".to_string(), Bucket(bucket_id1));
-                map.insert("second".to_string(), Bucket(bucket_id2));
+                map.insert("first".to_string(), bucket_id1);
+                map.insert("second".to_string(), bucket_id2);
 
                 builder.call_function(package_address, "Arguments", "treemap_argument", args!(map))
             })
@@ -93,8 +93,8 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
                 let mut map = HashMap::new();
-                map.insert("first".to_string(), Bucket(bucket_id1));
-                map.insert("second".to_string(), Bucket(bucket_id2));
+                map.insert("first".to_string(), bucket_id1);
+                map.insert("second".to_string(), bucket_id2);
 
                 builder.call_function(package_address, "Arguments", "hashmap_argument", args!(map))
             })
@@ -120,7 +120,7 @@ fn some_optional_bucket_argument_should_succeed() {
                 package_address,
                 "Arguments",
                 "option_argument",
-                args!(Some(Bucket(bucket_id))),
+                args!(Some(bucket_id)),
             )
         })
         .build();

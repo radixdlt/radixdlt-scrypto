@@ -33,7 +33,7 @@ fn test_hello() {
         .call_method(
             account_component,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest_ignoring_fee(manifest, vec![NonFungibleAddress::from_public_key(&public_key)]);

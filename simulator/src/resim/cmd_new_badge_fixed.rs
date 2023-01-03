@@ -75,7 +75,7 @@ impl NewBadgeFixed {
             .call_method(
                 default_account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         handle_manifest(

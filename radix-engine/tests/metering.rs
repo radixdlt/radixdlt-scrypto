@@ -166,7 +166,7 @@ fn test_basic_transfer() {
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -253,7 +253,7 @@ fn should_be_able_run_large_manifest() {
     builder.call_method(
         account,
         "deposit_batch",
-        args!(Expression::entire_worktop()),
+        args!(ManifestExpression::EntireWorktop),
     );
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(

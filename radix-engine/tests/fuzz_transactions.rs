@@ -71,7 +71,7 @@ impl TransactionFuzzer {
                             ACCOUNT_PACKAGE,
                             ACCOUNT_BLUEPRINT,
                             "new_with_resource",
-                            args!(AccessRule::AllowAll, Bucket(bucket_id)),
+                            args!(AccessRule::AllowAll, bucket_id),
                         )
                     });
                 }
@@ -89,7 +89,7 @@ impl TransactionFuzzer {
                             ACCOUNT_PACKAGE,
                             ACCOUNT_BLUEPRINT,
                             "new_with_resource",
-                            args!(AccessRule::AllowAll, Bucket(bucket_id)),
+                            args!(AccessRule::AllowAll, bucket_id),
                         )
                     });
                 }

@@ -25,7 +25,7 @@ where
             .lock_fee(account, 10u32.into())
             .withdraw_from_account_by_amount(account, 10u32.into(), RADIX_TOKEN)
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_function(package_address, "Fee", "new", args!(Bucket(bucket_id)));
+                builder.call_function(package_address, "Fee", "new", args!(bucket_id));
                 builder
             })
             .build(),
@@ -201,7 +201,7 @@ fn test_fee_accounting_success() {
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -256,7 +256,7 @@ fn test_fee_accounting_failure() {
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .assert_worktop_contains_by_amount(1.into(), RADIX_TOKEN)
         .build();
