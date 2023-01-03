@@ -1,5 +1,6 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
+use radix_engine::model::Validator;
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -267,6 +268,59 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert!(!next_epoch.0.contains_key(&validator_address));
+}
+
+#[test]
+fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let genesis = create_genesis(BTreeMap::new(), initial_epoch, rounds_per_epoch);
+    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let (pub_key, _, account_address) = test_runner.new_account(false);
+    let validator_address = test_runner.new_validator_with_pub_key(pub_key);
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account_by_amount(account_address, Decimal::one(), RADIX_TOKEN)
+        .register_validator(validator_address)
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            builder.stake_validator(validator_address, bucket_id)
+        })
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&pub_key)],
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
+            receiver: EPOCH_MANAGER,
+            round: rounds_per_epoch,
+        }),
+    ))];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+        }
+        .get_executable(vec![AuthAddresses::validator_role()]),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    let result = receipt.expect_commit();
+    let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
+    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(
+        next_epoch.0.get(&validator_address).unwrap(),
+        &Validator {
+            key: pub_key,
+            stake: Decimal::one(),
+        }
+    );
 }
 
 #[test]

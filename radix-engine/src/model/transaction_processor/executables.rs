@@ -405,9 +405,10 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     validator_address,
                     stake,
                 }) => {
+                    let stake = processor.take_bucket(stake)?;
                     let rtn = api.invoke(ValidatorStakeInvocation {
                         receiver: *validator_address,
-                        stake: Bucket(*stake),
+                        stake,
                     })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }

@@ -441,6 +441,10 @@ impl EpochManager {
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
             rule!(require(NonFungibleAddress::from_public_key(&key))),
         );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
+            rule!(require(NonFungibleAddress::from_public_key(&key))),
+        );
 
         let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         if let Some(bucket) = bucket {
@@ -511,13 +515,15 @@ impl Executor for ValidatorRegisterExecutable {
     {
         let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
         let (receiver, validator_address, key, stake_vault_id) = {
-            let handle = api.lock_substate(self.0, offset.clone(), LockFlags::read_only())?;
-            let substate = api.get_ref(handle)?;
+            let handle = api.lock_substate(self.0, offset.clone(), LockFlags::MUTABLE)?;
+            let mut substate = api.get_ref_mut(handle)?;
             let validator = substate.validator();
 
             if validator.is_registered {
                 return Ok(((), CallFrameUpdate::empty()));
             }
+
+            validator.is_registered = true;
 
             (
                 validator.manager,
@@ -530,13 +536,6 @@ impl Executor for ValidatorRegisterExecutable {
         let stake_amount = stake_vault.sys_amount(api)?;
 
         if stake_amount.is_positive() {
-            {
-                let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
-                let mut substate = api.get_ref_mut(handle)?;
-                let validator = substate.validator();
-                validator.is_registered = true;
-            }
-
             let invocation = EpochManagerUpdateValidatorInvocation {
                 receiver,
                 validator_address,
@@ -616,6 +615,9 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorStakeInvocation {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        call_frame_update
+            .nodes_to_move
+            .push(RENodeId::Bucket(self.stake.0));
 
         let actor =
             ResolvedActor::method(NativeFn::Validator(ValidatorFn::Stake), resolved_receiver);

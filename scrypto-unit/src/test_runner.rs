@@ -445,14 +445,21 @@ impl TestRunner {
 
     pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, SystemAddress) {
         let (pub_key, _) = self.new_key_pair();
+        let address = self.new_validator_with_pub_key(pub_key);
+        (pub_key, address)
+    }
+
+    pub fn new_validator_with_pub_key(
+        &mut self,
+        pub_key: EcdsaSecp256k1PublicKey,
+    ) -> SystemAddress {
         let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
             .lock_fee(FAUCET_COMPONENT, 10.into())
             .create_validator(pub_key)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        let address = receipt.expect_commit().entity_changes.new_system_addresses[0];
-        (pub_key, address)
+        receipt.expect_commit().entity_changes.new_system_addresses[0]
     }
 
     pub fn publish_package(
