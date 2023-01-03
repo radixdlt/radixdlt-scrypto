@@ -44,17 +44,17 @@ jobs:
         toolchain: stable
     - run: |
         echo HOME=$HOME
-    - uses: Swatinem/rust-cache@master
+    - uses: bmwill/rust-cache@v1
       with:
-        cache-directories:
+        path:
           ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
+        working-directory: simulator
       if: matrix.os == 'linux'
-    - uses: Swatinem/rust-cache@master
+    - uses: bmwill/rust-cache@v1
       with:
-        cache-directories:
+        path:
           C:\Users\runneradmin\.cargo\registry\src\**\librocksdb-sys-*
-        workspaces: simulator
+        working-directory: simulator
       if: matrix.os == 'windows-latest'
     - run: |
         sudo apt-get update -qq
