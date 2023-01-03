@@ -720,7 +720,7 @@ impl ManifestBuilder {
         ids.insert(non_fungible_address.non_fungible_id().clone());
         self.take_from_worktop_by_ids(
             &ids,
-            non_fungible_address.resource_address(),
+            non_fungible_address.resource_address().clone(),
             |builder, bucket_id| {
                 builder
                     .add_instruction(BasicInstruction::BurnResource { bucket_id })
@@ -1019,16 +1019,6 @@ impl ManifestBuilder {
                                 .map_err(|_| {
                                     BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                                 })?;
-                            Ok(scrypto_encode(&value).unwrap())
-                        }
-                        Type::NonFungibleAddress => {
-                            let value = NonFungibleAddress::try_from_canonical_combined_string(
-                                &self.decoder,
-                                arg,
-                            )
-                            .map_err(|_| {
-                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                            })?;
                             Ok(scrypto_encode(&value).unwrap())
                         }
                         Type::Bucket => {

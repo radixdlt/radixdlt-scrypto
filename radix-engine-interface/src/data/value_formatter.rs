@@ -99,6 +99,41 @@ pub fn format_scrypto_value<F: fmt::Write>(
         SborValue::U128 { value } => write!(f, "{}u128", value)?,
         SborValue::String { value } => write!(f, "\"{}\"", value)?,
         SborValue::Tuple { fields } => {
+            if fields.len() == 2 {
+                if let (
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::ResourceAddress(address),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::NonFungibleId(id),
+                    },
+                ) = (&fields[0], &fields[1])
+                {
+                    f.write_str("NonFungibleAddress(\"")?;
+                    write!(f, "{}", address.display(context.bech32_encoder))?;
+                    f.write_str("\", ")?;
+                    match id {
+                        NonFungibleId::U32(v) => {
+                            write!(f, "{}u32", v)?;
+                        }
+                        NonFungibleId::U64(v) => {
+                            write!(f, "{}u64", v)?;
+                        }
+                        NonFungibleId::UUID(v) => {
+                            write!(f, "{}u128", v)?;
+                        }
+                        NonFungibleId::Bytes(v) => {
+                            write!(f, "Bytes(\"{}\")", hex::encode(v))?;
+                        }
+                        NonFungibleId::String(v) => {
+                            write!(f, "\"{}\"", v)?;
+                        }
+                    }
+                    f.write_str(")")?;
+                    return Ok(());
+                }
+            }
+
             f.write_str("Tuple(")?;
             format_elements(f, fields, context)?;
             f.write_str(")")?;
@@ -199,7 +234,6 @@ pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoSborTypeId) -> 
             ScryptoCustomTypeId::Proof => f.write_str("Proof"),
             ScryptoCustomTypeId::Expression => f.write_str("Expression"),
             ScryptoCustomTypeId::Blob => f.write_str("Blob"),
-            ScryptoCustomTypeId::NonFungibleAddress => f.write_str("NonFungibleAddress"),
             ScryptoCustomTypeId::Hash => f.write_str("Hash"),
             ScryptoCustomTypeId::EcdsaSecp256k1PublicKey => f.write_str("EcdsaSecp256k1PublicKey"),
             ScryptoCustomTypeId::EcdsaSecp256k1Signature => f.write_str("EcdsaSecp256k1Signature"),
@@ -288,16 +322,6 @@ pub fn format_custom_value<F: fmt::Write>(
         // RE interpreted
         ScryptoCustomValue::Own(value) => {
             write!(f, "Own(\"{:?}\")", value)?; // TODO: fix syntax
-        }
-        ScryptoCustomValue::NonFungibleAddress(value) => {
-            f.write_str("NonFungibleAddress(\"")?;
-            value
-                .resource_address()
-                .format(f, context.bech32_encoder)
-                .expect("Failed to format address");
-            f.write_str("\", ")?;
-            format_non_fungible_id_contents(f, value.non_fungible_id())?;
-            write!(f, ")")?;
         }
         ScryptoCustomValue::Blob(value) => {
             write!(f, "Blob(\"{}\")", value)?;

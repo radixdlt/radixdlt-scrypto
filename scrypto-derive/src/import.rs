@@ -237,24 +237,8 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { #ident }
         }
-        // composite types
-        SchemaType::Option { some_type } => {
-            let (new_type, new_structs) = get_native_type(some_type)?;
-            structs.extend(new_structs);
 
-            parse_quote! { Option<#new_type> }
-        }
-        SchemaType::Tuple { element_types } => {
-            let mut types: Vec<Type> = vec![];
-
-            for element_type in element_types {
-                let (new_type, new_structs) = get_native_type(element_type)?;
-                types.push(new_type);
-                structs.extend(new_structs);
-            }
-
-            parse_quote! { ( #(#types),* ) }
-        }
+        // array
         SchemaType::Array {
             element_type,
             length,
@@ -265,18 +249,6 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             let n = *length as usize;
             parse_quote! { [#new_type; #n] }
         }
-        SchemaType::Result {
-            okay_type,
-            err_type,
-        } => {
-            let (okay_type, new_structs) = get_native_type(okay_type)?;
-            structs.extend(new_structs);
-            let (err_type, new_structs) = get_native_type(err_type)?;
-            structs.extend(new_structs);
-
-            parse_quote! { Result<#okay_type, #err_type> }
-        }
-        // collection
         SchemaType::Vec { element_type } => {
             let (new_type, new_structs) = get_native_type(element_type)?;
             structs.extend(new_structs);
@@ -318,6 +290,41 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             parse_quote! { HashMap<#key_type, #value_type> }
         }
 
+        // tuple
+        SchemaType::Tuple { element_types } => {
+            let mut types: Vec<Type> = vec![];
+
+            for element_type in element_types {
+                let (new_type, new_structs) = get_native_type(element_type)?;
+                types.push(new_type);
+                structs.extend(new_structs);
+            }
+
+            parse_quote! { ( #(#types),* ) }
+        }
+        SchemaType::NonFungibleAddress => {
+            parse_quote! { ::scrypto::model::NonFungibleAddress}
+        }
+
+        // other enums
+        SchemaType::Option { some_type } => {
+            let (new_type, new_structs) = get_native_type(some_type)?;
+            structs.extend(new_structs);
+
+            parse_quote! { Option<#new_type> }
+        }
+        SchemaType::Result {
+            okay_type,
+            err_type,
+        } => {
+            let (okay_type, new_structs) = get_native_type(okay_type)?;
+            structs.extend(new_structs);
+            let (err_type, new_structs) = get_native_type(err_type)?;
+            structs.extend(new_structs);
+
+            parse_quote! { Result<#okay_type, #err_type> }
+        }
+
         SchemaType::PackageAddress => {
             parse_quote! { ::scrypto::model::PackageAddress }
         }
@@ -346,9 +353,6 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             let (v, s) = get_native_type(value_type)?;
             structs.extend(s);
             parse_quote! { ::scrypto::component::KeyValueStore<#k, #v> }
-        }
-        SchemaType::NonFungibleAddress => {
-            parse_quote! { ::scrypto::model::NonFungibleAddress}
         }
         SchemaType::Blob => parse_quote! { ::scrypto::engine_lib::data::types::Blob},
 

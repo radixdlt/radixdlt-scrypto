@@ -133,7 +133,7 @@ impl IndexedScryptoValue {
         // Extract resource address from non-fungible address
         for non_fungible_address in &self.non_fungible_addresses {
             node_ids.insert(GlobalAddress::Resource(
-                non_fungible_address.resource_address(),
+                non_fungible_address.resource_address().clone(),
             ));
         }
         node_ids
@@ -311,9 +311,6 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
                 if !self.ownerships.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
-            }
-            ScryptoCustomValue::NonFungibleAddress(value) => {
-                self.non_fungible_addresses.insert(value.clone());
             }
             ScryptoCustomValue::Blob(value) => {
                 self.blobs.push((value.clone(), path.clone().into()));

@@ -24,7 +24,8 @@ impl AuthVerification {
                 let proof_resource_address = proof.resource_address();
                 proof_resource_address == *resource_address
             }
-            HardResourceOrNonFungible::SoftResourceNotFound => false,
+            HardResourceOrNonFungible::InvalidSchemaPath
+            | HardResourceOrNonFungible::DisallowType => false,
         }
     }
 

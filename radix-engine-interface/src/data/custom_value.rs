@@ -17,7 +17,6 @@ pub enum ScryptoCustomValue {
 
     // RE interpreted types
     Own(Own),
-    NonFungibleAddress(NonFungibleAddress),
     Blob(Blob),
 
     // TX interpreted types (TODO: rename?)
@@ -66,9 +65,6 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             ScryptoCustomValue::Blob(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Blob))
             }
-            ScryptoCustomValue::NonFungibleAddress(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress))
-            }
             ScryptoCustomValue::Hash(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Hash))
             }
@@ -108,7 +104,6 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             ScryptoCustomValue::Proof(v) => v.encode_body(encoder),
             ScryptoCustomValue::Expression(v) => v.encode_body(encoder),
             ScryptoCustomValue::Blob(v) => v.encode_body(encoder),
-            ScryptoCustomValue::NonFungibleAddress(v) => v.encode_body(encoder),
             ScryptoCustomValue::Hash(v) => v.encode_body(encoder),
             ScryptoCustomValue::EcdsaSecp256k1PublicKey(v) => v.encode_body(encoder),
             ScryptoCustomValue::EcdsaSecp256k1Signature(v) => v.encode_body(encoder),
@@ -146,10 +141,6 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Scrypto
                 }
                 ScryptoCustomTypeId::Own => {
                     Own::decode_body_with_type_id(decoder, type_id).map(Self::Own)
-                }
-                ScryptoCustomTypeId::NonFungibleAddress => {
-                    NonFungibleAddress::decode_body_with_type_id(decoder, type_id)
-                        .map(Self::NonFungibleAddress)
                 }
                 ScryptoCustomTypeId::Blob => {
                     Blob::decode_body_with_type_id(decoder, type_id).map(Self::Blob)
@@ -262,10 +253,6 @@ mod tests {
             Own::Vault([3u8; 36]),
             Own::Component([4u8; 36]),
             Own::KeyValueStore([5u8; 36]),
-            NonFungibleAddress {
-                resource_address: ResourceAddress::Normal([6u8; 26]),
-                non_fungible_id: NonFungibleId::U32(7),
-            },
             Blob(Hash([8u8; 32])),
         );
         let bytes = scrypto_encode(&values).unwrap();
@@ -300,12 +287,6 @@ mod tests {
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::Own(Own::KeyValueStore([5u8; 36])),
-                    },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleAddress(NonFungibleAddress {
-                            resource_address: ResourceAddress::Normal([6u8; 26]),
-                            non_fungible_id: NonFungibleId::U32(7),
-                        }),
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::Blob(Blob(Hash([8u8; 32]))),

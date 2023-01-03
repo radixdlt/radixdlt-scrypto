@@ -6,7 +6,6 @@ pub const TYPE_RESOURCE_ADDRESS: u8 = 0x82;
 pub const TYPE_SYSTEM_ADDRESS: u8 = 0x83;
 
 pub const TYPE_OWN: u8 = 0x94;
-pub const TYPE_NON_FUNGIBLE_ADDRESS: u8 = 0xa2;
 pub const TYPE_BLOB: u8 = 0xa1;
 
 pub const TYPE_BUCKET: u8 = 0x92;
@@ -37,7 +36,6 @@ pub enum ScryptoCustomTypeId {
 
     // RE interpreted types
     Own,
-    NonFungibleAddress, // for resource address contained
     Blob,
 
     // TX interpreted types (TODO: rename?)
@@ -74,7 +72,6 @@ impl CustomTypeId for ScryptoCustomTypeId {
             Self::Proof => TYPE_PROOF,
             Self::Expression => TYPE_EXPRESSION,
             Self::Blob => TYPE_BLOB,
-            Self::NonFungibleAddress => TYPE_NON_FUNGIBLE_ADDRESS,
             Self::Hash => TYPE_HASH,
             Self::EcdsaSecp256k1PublicKey => TYPE_ECDSA_SECP256K1_PUBIC_KEY,
             Self::EcdsaSecp256k1Signature => TYPE_ECDSA_SECP256K1_SIGNATURE,
@@ -97,7 +94,6 @@ impl CustomTypeId for ScryptoCustomTypeId {
             TYPE_PROOF => Some(ScryptoCustomTypeId::Proof),
             TYPE_EXPRESSION => Some(ScryptoCustomTypeId::Expression),
             TYPE_BLOB => Some(ScryptoCustomTypeId::Blob),
-            TYPE_NON_FUNGIBLE_ADDRESS => Some(ScryptoCustomTypeId::NonFungibleAddress),
             TYPE_HASH => Some(ScryptoCustomTypeId::Hash),
             TYPE_ECDSA_SECP256K1_PUBIC_KEY => Some(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey),
             TYPE_ECDSA_SECP256K1_SIGNATURE => Some(ScryptoCustomTypeId::EcdsaSecp256k1Signature),

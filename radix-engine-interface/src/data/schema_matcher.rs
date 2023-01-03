@@ -19,17 +19,21 @@ pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
         Type::U64 => Some(SborTypeId::U64),
         Type::U128 => Some(SborTypeId::U128),
         Type::String => Some(SborTypeId::String),
+
         Type::Array { .. } => Some(SborTypeId::Array),
+        Type::Vec { .. } => Some(SborTypeId::Array),
+        Type::HashSet { .. } => Some(SborTypeId::Array),
+        Type::TreeSet { .. } => Some(SborTypeId::Array),
+        Type::HashMap { .. } => Some(SborTypeId::Array),
+        Type::TreeMap { .. } => Some(SborTypeId::Array),
+
         Type::Tuple { .. } => Some(SborTypeId::Tuple),
         Type::Struct { .. } => Some(SborTypeId::Tuple),
+        Type::NonFungibleAddress { .. } => Some(SborTypeId::Tuple),
+
         Type::Enum { .. } => Some(SborTypeId::Enum),
         Type::Option { .. } => Some(SborTypeId::Enum),
         Type::Result { .. } => Some(SborTypeId::Enum),
-        Type::Vec { .. } => Some(SborTypeId::Array),
-        Type::TreeSet { .. } => Some(SborTypeId::Array),
-        Type::TreeMap { .. } => Some(SborTypeId::Array),
-        Type::HashSet { .. } => Some(SborTypeId::Array),
-        Type::HashMap { .. } => Some(SborTypeId::Array),
 
         Type::PackageAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress)),
         Type::ComponentAddress => Some(SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress)),
@@ -42,9 +46,6 @@ pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
         | Type::Vault
         | Type::Component
         | Type::KeyValueStore { .. } => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
-        Type::NonFungibleAddress => {
-            Some(SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress))
-        }
         Type::Blob => Some(SborTypeId::Custom(ScryptoCustomTypeId::Blob)),
 
         Type::ManifestBucket => Some(SborTypeId::Custom(ScryptoCustomTypeId::Bucket)),
@@ -87,6 +88,8 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         Type::U64 => matches!(value, SborValue::U64 { .. }),
         Type::U128 => matches!(value, SborValue::U128 { .. }),
         Type::String => matches!(value, SborValue::String { .. }),
+
+        // array
         Type::Array {
             element_type,
             length,
@@ -105,56 +108,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                     && elements
                         .iter()
                         .all(|v| match_schema_with_value(element_type, v))
-            } else {
-                false
-            }
-        }
-        Type::Tuple { element_types } => {
-            if let SborValue::Tuple { fields } = value {
-                element_types.len() == fields.len()
-                    && element_types
-                        .iter()
-                        .enumerate()
-                        .all(|(i, e)| match_schema_with_value(e, fields.get(i).unwrap()))
-            } else {
-                false
-            }
-        }
-        Type::Option { some_type } => {
-            if let SborValue::Enum {
-                discriminator,
-                fields,
-            } = value
-            {
-                match discriminator.as_str() {
-                    OPTION_VARIANT_SOME => {
-                        fields.len() == 1 && match_schema_with_value(some_type, &fields[0])
-                    }
-                    OPTION_VARIANT_NONE => fields.len() == 0,
-                    _ => false,
-                }
-            } else {
-                false
-            }
-        }
-        Type::Result {
-            okay_type,
-            err_type,
-        } => {
-            if let SborValue::Enum {
-                discriminator,
-                fields,
-            } = value
-            {
-                match discriminator.as_str() {
-                    RESULT_VARIANT_OK => {
-                        fields.len() == 1 && match_schema_with_value(okay_type, &fields[0])
-                    }
-                    RESULT_VARIANT_ERR => {
-                        fields.len() == 1 && match_schema_with_value(err_type, &fields[0])
-                    }
-                    _ => false,
-                }
             } else {
                 false
             }
@@ -206,6 +159,19 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
+
+        // tuple
+        Type::Tuple { element_types } => {
+            if let SborValue::Tuple { fields } = value {
+                element_types.len() == fields.len()
+                    && element_types
+                        .iter()
+                        .enumerate()
+                        .all(|(i, e)| match_schema_with_value(e, fields.get(i).unwrap()))
+            } else {
+                false
+            }
+        }
         Type::Struct {
             name: _,
             fields: type_fields,
@@ -231,6 +197,17 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
+        Type::NonFungibleAddress => {
+            if let SborValue::Tuple { fields } = value {
+                fields.len() == 2
+                    && match_schema_with_value(&Type::ResourceAddress, fields.get(0).unwrap())
+                    && match_schema_with_value(&Type::NonFungibleId, fields.get(1).unwrap())
+            } else {
+                false
+            }
+        }
+
+        // enum
         Type::Enum {
             name: _,
             variants: type_variants,
@@ -264,6 +241,47 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
+        Type::Option { some_type } => {
+            if let SborValue::Enum {
+                discriminator,
+                fields,
+            } = value
+            {
+                match discriminator.as_str() {
+                    OPTION_VARIANT_SOME => {
+                        fields.len() == 1 && match_schema_with_value(some_type, &fields[0])
+                    }
+                    OPTION_VARIANT_NONE => fields.len() == 0,
+                    _ => false,
+                }
+            } else {
+                false
+            }
+        }
+        Type::Result {
+            okay_type,
+            err_type,
+        } => {
+            if let SborValue::Enum {
+                discriminator,
+                fields,
+            } = value
+            {
+                match discriminator.as_str() {
+                    RESULT_VARIANT_OK => {
+                        fields.len() == 1 && match_schema_with_value(okay_type, &fields[0])
+                    }
+                    RESULT_VARIANT_ERR => {
+                        fields.len() == 1 && match_schema_with_value(err_type, &fields[0])
+                    }
+                    _ => false,
+                }
+            } else {
+                false
+            }
+        }
+
+        // custom
         Type::PackageAddress => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::PackageAddress(_))
@@ -331,13 +349,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         Type::KeyValueStore { .. } => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Own(Own::KeyValueStore(_)))
-            } else {
-                false
-            }
-        }
-        Type::NonFungibleAddress => {
-            if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::NonFungibleAddress(_))
             } else {
                 false
             }

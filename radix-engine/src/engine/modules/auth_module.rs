@@ -6,7 +6,6 @@ use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod,
     PackageOffset, RENodeId, SubstateOffset, VaultOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
@@ -170,11 +169,7 @@ impl AuthModule {
                                 VaultMethod::Recall | VaultMethod::RecallNonFungibles => {
                                     let access_rule =
                                         substate.access_rules_chain[0].get_group("recall");
-                                    let authorization = convert(
-                                        &Type::Any,
-                                        &IndexedScryptoValue::unit(),
-                                        access_rule,
-                                    );
+                                    let authorization = convert_contextless(access_rule);
                                     vec![authorization]
                                 }
                                 _ => {

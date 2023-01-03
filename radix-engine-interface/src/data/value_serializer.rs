@@ -395,13 +395,6 @@ pub fn serialize_custom_value<S: Serializer>(
             ScryptoCustomTypeId::Own,
             &format!("{:?}", value), // TODO: fix syntax
         ),
-        ScryptoCustomValue::NonFungibleAddress(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomTypeId::NonFungibleAddress,
-            &value.serializable(*context),
-        ),
         ScryptoCustomValue::Blob(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
@@ -807,12 +800,6 @@ mod tests {
                             value: ScryptoCustomValue::Blob(Blob(Hash([0; 32]))),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::NonFungibleAddress(NonFungibleAddress::new(
-                                RADIX_TOKEN,
-                                NonFungibleId::Bytes(vec![0u8, 2u8]),
-                            )),
-                        },
-                        SborValue::Custom {
                             value: ScryptoCustomValue::Hash(Hash([0; 32])),
                         },
                         SborValue::Custom {
@@ -897,7 +884,6 @@ mod tests {
                 { "type": "Proof", "value": 2 },
                 "ENTIRE_WORKTOP",
                 { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "NonFungibleAddress", "value": [radix_token_address, { "hex": "0002" }] },
                 { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
@@ -954,7 +940,6 @@ mod tests {
                         { "type": "Proof", "value": 2 },
                         { "type": "Expression", "value": "ENTIRE_WORKTOP" },
                         { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "NonFungibleAddress", "value": [radix_token_address, { "type": "Array", "element_type": "U8", "value": { "hex": "0002" } }] },
                         { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },

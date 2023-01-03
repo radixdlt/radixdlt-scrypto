@@ -3,7 +3,7 @@ use crate::engine::{
     ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
-    convert, InvokeError, MethodAuthorization, MethodAuthorizationError, ProofError,
+    convert_contextless, InvokeError, MethodAuthorization, MethodAuthorizationError, ProofError,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -11,7 +11,6 @@ use radix_engine_interface::api::types::{
     AuthZoneStackMethod, AuthZoneStackOffset, GlobalAddress, NativeMethod, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };
-use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::*;
 use sbor::rust::vec::Vec;
 
@@ -479,7 +478,7 @@ impl Executor for AuthZoneAssertAccessRuleInvocation {
         let handle = api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = api.get_ref(handle)?;
         let auth_zone_stack = substate_ref.auth_zone_stack();
-        let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), &self.access_rule);
+        let authorization = convert_contextless(&self.access_rule);
 
         // Authorization check
         auth_zone_stack
