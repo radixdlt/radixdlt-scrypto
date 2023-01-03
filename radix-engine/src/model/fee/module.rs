@@ -32,7 +32,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
             SysCallInput::Invoke {
                 depth,
                 input_size,
-                ownership_count,
+                owned_node_count,
                 ..
             } => {
                 if depth == self.max_depth {
@@ -49,7 +49,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                                 .fee_table
                                 .system_api_cost(SystemApiCostingEntry::Invoke {
                                     input_size,
-                                    ownership_count,
+                                    owned_node_count,
                                 }),
                             1,
                             "invoke",

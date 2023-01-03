@@ -380,7 +380,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     args,
                 }) => {
                     let args = processor
-                        .replace_ids(
+                        .replace_manifest_buckets_and_proofs(
                             IndexedScryptoValue::from_slice(args)
                                 .expect("Invalid CALL_FUNCTION arguments"),
                         )
@@ -412,7 +412,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     args,
                 }) => {
                     let args = processor
-                        .replace_ids(
+                        .replace_manifest_buckets_and_proofs(
                             IndexedScryptoValue::from_slice(args)
                                 .expect("Invalid CALL_METHOD arguments"),
                         )
@@ -804,12 +804,15 @@ impl TransactionProcessor {
         Ok(())
     }
 
-    fn replace_ids(
+    fn replace_manifest_buckets_and_proofs(
         &mut self,
         mut value: IndexedScryptoValue,
     ) -> Result<IndexedScryptoValue, TransactionProcessorError> {
         value
-            .replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
+            .replace_manifest_buckets_and_proofs(
+                &mut self.proof_id_mapping,
+                &mut self.bucket_id_mapping,
+            )
             .map_err(|e| match e {
                 ValueReplacingError::BucketIdNotFound(bucket_id) => {
                     TransactionProcessorError::BucketNotFound(bucket_id)

@@ -91,7 +91,7 @@ impl IndexedScryptoValue {
         })
     }
 
-    pub fn node_ids(&self) -> HashSet<RENodeId> {
+    pub fn owned_node_ids(&self) -> HashSet<RENodeId> {
         let mut node_ids = HashSet::new();
         for ownership in &self.ownerships {
             match ownership {
@@ -115,6 +115,10 @@ impl IndexedScryptoValue {
         node_ids
     }
 
+    pub fn owned_node_count(&self) -> usize {
+        self.ownerships.len() + self.component_ids.len() + self.kv_store_ids.len()
+    }
+
     pub fn global_references(&self) -> HashSet<GlobalAddress> {
         let mut node_ids = HashSet::new();
         for component_address in &self.component_addresses {
@@ -123,21 +127,23 @@ impl IndexedScryptoValue {
         for resource_address in &self.resource_addresses {
             node_ids.insert(GlobalAddress::Resource(*resource_address));
         }
-        for non_fungible_address in &self.non_fungible_addresses {
-            node_ids.insert(GlobalAddress::Resource(
-                non_fungible_address.resource_address(),
-            ));
-        }
         for package_address in &self.package_addresses {
             node_ids.insert(GlobalAddress::Package(*package_address));
         }
         for system_address in &self.system_addresses {
             node_ids.insert(GlobalAddress::System(*system_address));
         }
+
+        // Extract resource address from non-fungible address
+        for non_fungible_address in &self.non_fungible_addresses {
+            node_ids.insert(GlobalAddress::Resource(
+                non_fungible_address.resource_address(),
+            ));
+        }
         node_ids
     }
 
-    pub fn replace_ids(
+    pub fn replace_manifest_buckets_and_proofs(
         &mut self,
         proof_replacements: &mut HashMap<ManifestProof, ProofId>,
         bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
@@ -172,10 +178,6 @@ impl IndexedScryptoValue {
             .expect("Previously encodable raw value is no longer encodable after replacement");
 
         Ok(())
-    }
-
-    pub fn ownership_count(&self) -> usize {
-        self.ownerships.len() + self.component_ids.len() + self.kv_store_ids.len()
     }
 }
 

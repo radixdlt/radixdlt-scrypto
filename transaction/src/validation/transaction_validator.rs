@@ -391,7 +391,7 @@ impl NotarizedTransactionValidator {
         id_validator
             .move_resources(&value)
             .map_err(CallDataValidationError::IdValidationError)?;
-        if value.ownership_count() != 0 {
+        if value.owned_node_count() != 0 {
             return Err(CallDataValidationError::OwnNotAllowed);
         }
         Ok(())
