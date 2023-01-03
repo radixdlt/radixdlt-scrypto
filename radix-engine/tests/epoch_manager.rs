@@ -371,6 +371,65 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
 }
 
 #[test]
+fn unstaked_validator_gets_less_stake_on_epoch_change() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let mut validator_set = BTreeMap::new();
+    validator_set.insert(pub_key, Decimal::from(10));
+    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
+    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let (_, _, account_address) = test_runner.new_account(true);
+    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .unstake_validator(validator_address, Decimal::one())
+        .call_method(
+            account_address,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&pub_key)],
+    );
+    receipt.expect_commit_success();
+
+    // Act
+    let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+        EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
+            receiver: EPOCH_MANAGER,
+            round: rounds_per_epoch,
+        }),
+    ))];
+    let receipt = test_runner.execute_transaction(
+        SystemTransaction {
+            instructions,
+            blobs: vec![],
+            nonce: 0,
+        }
+        .get_executable(vec![AuthAddresses::validator_role()]),
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+    let result = receipt.expect_commit();
+    let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
+    assert_eq!(next_epoch.1, initial_epoch + 1);
+    assert_eq!(
+        next_epoch.0.get(&validator_address).unwrap(),
+        &Validator {
+            key: pub_key,
+            stake: Decimal::from(9),
+        }
+    );
+}
+
+#[test]
 fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     // Arrange
     let mut test_runner = TestRunner::new(true);

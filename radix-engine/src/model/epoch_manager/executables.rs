@@ -445,6 +445,10 @@ impl EpochManager {
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
             rule!(require(NonFungibleAddress::from_public_key(&key))),
         );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unstake)),
+            rule!(require(NonFungibleAddress::from_public_key(&key))),
+        );
 
         let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         if let Some(bucket) = bucket {
@@ -679,7 +683,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnstakeInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor =
-            ResolvedActor::method(NativeFn::Validator(ValidatorFn::Stake), resolved_receiver);
+            ResolvedActor::method(NativeFn::Validator(ValidatorFn::Unstake), resolved_receiver);
         let executor = ValidatorUnstakeExecutable(resolved_receiver.receiver, self.amount);
         Ok((actor, call_frame_update, executor))
     }
@@ -692,29 +696,42 @@ impl Executor for ValidatorUnstakeExecutable {
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let (is_registered, receiver, validator_address, unstake_bucket, stake_amount) = {
+        let (is_registered, receiver, validator_address, key, unstake_bucket, stake_amount) = {
             let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
             let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
             let substate = api.get_ref(handle)?;
             let validator = substate.validator();
             let validator_address = validator.address;
             let manager = validator.manager;
+            let key = validator.key;
             let is_registered = validator.is_registered;
 
             let mut stake_vault = Vault(validator.stake_vault_id);
             let bucket = stake_vault.sys_take(self.1, api)?;
             let amount = stake_vault.sys_amount(api)?;
 
-            (is_registered, manager, validator_address, bucket, amount)
+            (
+                is_registered,
+                manager,
+                validator_address,
+                key,
+                bucket,
+                amount,
+            )
         };
 
-        if is_registered && stake_amount.is_zero() {
+        if is_registered {
+            let update = if stake_amount.is_zero() {
+                UpdateValidator::Unregister
+            } else {
+                UpdateValidator::Register(key, stake_amount)
+            };
+
             let invocation = EpochManagerUpdateValidatorInvocation {
                 receiver,
                 validator_address,
-                update: UpdateValidator::Unregister,
+                update,
             };
-
             api.invoke(invocation)?;
         }
 

@@ -270,6 +270,7 @@ pub enum ValidatorFn {
     Register,
     Unregister,
     Stake,
+    Unstake,
 }
 
 #[derive(
