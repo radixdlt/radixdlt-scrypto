@@ -97,7 +97,7 @@ pub fn resolve_local_type_ref(
 fn resolve_index(schemas: &IndexSet<ComplexTypeHash>, type_hash: &ComplexTypeHash) -> usize {
     schemas.get_index_of(type_hash).unwrap_or_else(|| {
         panic!(
-            "Something went wrong in the schema aggregation process - type hash wasn't added: {:?}",
+            "Fatal error in the schema aggregation process - this is likely due to a Schema impl missing a dependent type in add_all_dependencies. The following type hash wasn't added in add_all_dependencies: {:?}",
             type_hash
         )
     })

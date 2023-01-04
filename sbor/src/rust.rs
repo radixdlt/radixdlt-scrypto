@@ -109,8 +109,7 @@ pub mod collections {
             );
         }
 
-        #[allow(unused_imports)]
-        pub(crate) use btreemap; // Allows btreemap to be used inside this crate
+        pub use btreemap;
     }
 
     pub mod btree_set {
@@ -135,8 +134,7 @@ pub mod collections {
             );
         }
 
-        #[allow(unused_imports)]
-        pub(crate) use btreeset; // Allows btreeset to be used inside this crate
+        pub use btreeset;
     }
 
     pub mod hash_map {
@@ -159,8 +157,7 @@ pub mod collections {
             );
         }
 
-        #[allow(unused_imports)]
-        pub(crate) use hashmap; // Allows btreeset to be used inside this crate
+        pub use hashmap;
     }
 
     pub mod hash_set {
@@ -183,8 +180,7 @@ pub mod collections {
             );
         }
 
-        #[allow(unused_imports)]
-        pub(crate) use hashset; // Allows hashset to be used inside this crate
+        pub use hashset;
     }
 
     #[cfg(feature = "indexmap")]

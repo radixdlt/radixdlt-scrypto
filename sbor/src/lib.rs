@@ -47,6 +47,9 @@ pub use value::*;
 extern crate sbor_derive;
 pub use sbor_derive::{Decode, Encode, TypeId};
 
+#[cfg(feature = "schema")]
+pub use sbor_derive::Schema;
+
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502
 extern crate self as sbor;

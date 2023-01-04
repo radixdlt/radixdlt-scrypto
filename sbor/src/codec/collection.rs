@@ -260,7 +260,7 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    use_same_generic_schema!(T, Vec<T>, [T]);
+    use_same_generic_vec_schema!(T, Vec<T>, [T]);
 
     impl<C: CustomTypeSchema, T: Schema<C> + TypeId<C::CustomTypeId>> Schema<C> for BTreeSet<T> {
         const SCHEMA_TYPE_REF: GlobalTypeRef = GlobalTypeRef::complex("Set", &[T::SCHEMA_TYPE_REF]);
@@ -281,9 +281,9 @@ mod schema {
         }
     }
 
-    use_same_generic_schema!(T, HashSet<T>, BTreeSet<T>);
+    use_same_generic_vec_schema!(T, HashSet<T>, BTreeSet<T>);
     #[cfg(feature = "indexmap")]
-    use_same_generic_schema!(T, IndexSet<T>, BTreeSet<T>);
+    use_same_generic_vec_schema!(T, IndexSet<T>, BTreeSet<T>);
 
     impl<C: CustomTypeSchema, K: Schema<C>, V: Schema<C>> Schema<C> for BTreeMap<K, V> {
         const SCHEMA_TYPE_REF: GlobalTypeRef =
@@ -301,8 +301,7 @@ mod schema {
         }
 
         fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {
-            aggregator.add_child_type_and_descendents::<K>();
-            aggregator.add_child_type_and_descendents::<V>();
+            aggregator.add_child_type_and_descendents::<(K, V)>();
         }
     }
 

@@ -20,11 +20,28 @@ macro_rules! well_known_basic_schema {
 }
 pub(crate) use well_known_basic_schema;
 
-macro_rules! use_same_generic_schema {
+macro_rules! use_same_generic_vec_schema {
     ($generic:ident, $type:ty, $other_type:ty) => {
         impl<C: CustomTypeSchema, $generic: Schema<C> + TypeId<C::CustomTypeId>> Schema<C>
             for $type
         {
+            const SCHEMA_TYPE_REF: GlobalTypeRef = <$other_type>::SCHEMA_TYPE_REF;
+
+            fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
+                <$other_type>::get_local_type_data()
+            }
+
+            fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {
+                <$other_type>::add_all_dependencies(aggregator)
+            }
+        }
+    };
+}
+pub(crate) use use_same_generic_vec_schema;
+
+macro_rules! use_same_generic_schema {
+    ($generic:ident, $type:ty, $other_type:ty) => {
+        impl<C: CustomTypeSchema, $generic: Schema<C>> Schema<C> for $type {
             const SCHEMA_TYPE_REF: GlobalTypeRef = <$other_type>::SCHEMA_TYPE_REF;
 
             fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
