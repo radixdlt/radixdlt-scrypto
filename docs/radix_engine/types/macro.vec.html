@@ -3,11 +3,11 @@
     (<span class="macro-nonterminal">$elem</span>:expr; <span class="macro-nonterminal">$n</span>:expr) =&gt; { ... };
     ($(<span class="macro-nonterminal">$x</span>:expr),+ $(,)<span class="question-mark">?</span>) =&gt; { ... };
 }</code></pre></div>
-</div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Creates a <a href="struct.Vec.html"><code>Vec</code></a> containing the arguments.</p>
+</div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Creates a <a href="rust/vec/struct.Vec.html"><code>Vec</code></a> containing the arguments.</p>
 <p><code>vec!</code> allows <code>Vec</code>s to be defined with the same syntax as array expressions.
 There are two forms of this macro:</p>
 <ul>
-<li>Create a <a href="struct.Vec.html"><code>Vec</code></a> containing a given list of elements:</li>
+<li>Create a <a href="rust/vec/struct.Vec.html"><code>Vec</code></a> containing a given list of elements:</li>
 </ul>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
@@ -15,7 +15,7 @@ There are two forms of this macro:</p>
 <span class="macro">assert_eq!</span>(v[<span class="number">1</span>], <span class="number">2</span>);
 <span class="macro">assert_eq!</span>(v[<span class="number">2</span>], <span class="number">3</span>);</code></pre></div>
 <ul>
-<li>Create a <a href="struct.Vec.html"><code>Vec</code></a> from a given element and size:</li>
+<li>Create a <a href="rust/vec/struct.Vec.html"><code>Vec</code></a> from a given element and size:</li>
 </ul>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>v = <span class="macro">vec!</span>[<span class="number">1</span>; <span class="number">3</span>];

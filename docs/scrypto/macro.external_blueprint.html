@@ -1,17 +1,21 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Generates a bridge/stub to make package calls to a blueprint."><meta name="keywords" content="rust, rustlang, rust-lang, external_blueprint"><title>external_blueprint in scrypto - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../normalize.css"><link rel="stylesheet" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../ayu.css" disabled><link rel="stylesheet" href="../dark.css" disabled><link rel="stylesheet" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script defer src="sidebar-items.js"></script><script defer src="../main.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div></a><div class="sidebar-elems"><h2 class="location"><a href="index.html">In scrypto</a></h2></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../scrypto/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn"><span class="in-band">Macro <a href="index.html">scrypto</a>::<wbr><a class="macro" href="#">external_blueprint</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/scrypto/macros.rs.html#339-375">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><div class="docblock item-decl"><div class="example-wrap"><pre class="rust macro"><code><span class="macro">macro_rules! </span>external_blueprint {
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Generates a bridge/stub to make package calls to a blueprint."><meta name="keywords" content="rust, rustlang, rust-lang, external_blueprint"><title>external_blueprint in scrypto - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../normalize.css"><link rel="stylesheet" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../ayu.css" disabled><link rel="stylesheet" href="../dark.css" disabled><link rel="stylesheet" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script defer src="sidebar-items.js"></script><script defer src="../main.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc macro"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div></a><div class="sidebar-elems"><h2 class="location"><a href="index.html">In scrypto</a></h2></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../scrypto/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn"><span class="in-band">Macro <a href="index.html">scrypto</a>::<wbr><a class="macro" href="#">external_blueprint</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/scrypto/macros.rs.html#199-236">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><div class="docblock item-decl"><div class="example-wrap"><pre class="rust macro"><code><span class="macro">macro_rules! </span>external_blueprint {
     (
-        <span class="macro-nonterminal">$blueprint_context</span>:tt,
         <span class="macro-nonterminal">$blueprint_ident</span>:ident {
             $(<span class="macro-nonterminal">$blueprint_contents</span>:tt)*
         }
     ) =&gt; { ... };
 }</code></pre></div>
 </div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Generates a bridge/stub to make package calls to a blueprint.</p>
-<p>You can also use this to make calls to the component itself.
-If you just wish to make calls to an instantiated component, see the <a href="macro.external_component.html" title="external_component">external_component</a>! macro.</p>
+<p>If you just wish to instead make calls to an instantiated component, see the <code>external_component</code> macro.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
-<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>scrypto::prelude::<span class="kw-2">*</span>;
-<span class="kw">use </span>sbor::{TypeId, Encode, Decode, Describe};
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>radix_engine_interface::address::Bech32Decoder;
+<span class="kw">use </span>scrypto::prelude::<span class="kw-2">*</span>;
+
+<span class="macro">external_blueprint! </span>{
+    CustomAccountBlueprint {
+        <span class="kw">fn </span>instantiate_global(account_name: <span class="kw-2">&amp;</span>str) -&gt; ComponentAddress;
+    }
+}
 
 <span class="attribute">#[derive(TypeId, Encode, Decode, Describe)]
 </span><span class="kw">enum </span>DepositResult {
@@ -19,35 +23,25 @@ If you just wish to make calls to an instantiated component, see the <a href="ma
     Failure
 }
 
-<span class="macro">external_blueprint! </span>{
-    {
-        package: <span class="string">&quot;package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n&quot;</span>,
-        blueprint: <span class="string">&quot;CustomAccount&quot;
-    </span>},
-    CustomAccount {
-        <span class="kw">fn </span>instantiate_global(account_name: <span class="kw-2">&amp;</span>str) -&gt; ComponentAddress;
+<span class="macro">external_component! </span>{
+    AccountInterface {
         <span class="kw">fn </span>deposit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, b: Bucket) -&gt; DepositResult;
         <span class="kw">fn </span>deposit_no_return(<span class="kw-2">&amp;mut </span><span class="self">self</span>, b: Bucket);
         <span class="kw">fn </span>read_balance(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal;
     }
 }
 
-<span class="kw">fn </span>create_custom_accounts() {
-    <span class="kw">let </span>new_account_address = CustomAccount::instantiate_global(<span class="string">&quot;account_name&quot;</span>);
-    <span class="kw">let </span><span class="kw-2">mut </span>account = CustomAccount::from(new_account_address);
-
-    <span class="kw">let </span>empty_bucket = Bucket::new(ResourceAddress::from_str(<span class="string">&quot;resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag&quot;</span>).unwrap());
-    account.deposit(empty_bucket);
+<span class="kw">fn </span>instantiate_custom_account() -&gt; ComponentAddress {
+    <span class="kw">let </span>package_address = Bech32Decoder::for_simulator()
+        .validate_and_decode_package_address(<span class="string">&quot;package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n&quot;</span>)
+        .unwrap();
+    <span class="kw">let </span>blueprint = CustomAccountBlueprint::at(package_address, <span class="string">&quot;CustomAccount&quot;</span>);
+    blueprint.instantiate_global(<span class="string">&quot;account_name&quot;</span>)
 }
-
-<span class="kw">fn </span>bridge_to_existing_account(component_address: ComponentAddress) {
-    <span class="kw">let </span>existing_account = CustomAccount::from(component_address);
-    <span class="kw">let </span>balance = existing_account.read_balance();
-    <span class="comment">// ...
-</span>}</code></pre></div>
+</code></pre></div>
 <h2 id="related"><a href="#related">Related</a></h2>
 <ul>
 <li>Replaces the import! macro for importing an abi, using a more concise, readable syntax.</li>
-<li>Similar to the <a href="macro.external_component.html" title="external_component">external_component</a>! macro, which is used for making cross-component calls to an already-instantiated component.</li>
+<li>Similar to the <code>external_component</code> macro, which is used for making cross-component calls to an already-instantiated component.</li>
 </ul>
 </div></details></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="scrypto" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

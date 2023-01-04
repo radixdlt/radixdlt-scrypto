@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/modules/auth_module.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>auth_module.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../radix_engine/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/engine/modules/auth_module.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>auth_module.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../radix_engine/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -136,142 +136,498 @@
 <span id="136">136</span>
 <span id="137">137</span>
 <span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
 <span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span>radix_engine_interface::api::types::{
+    AuthZoneStackOffset, ComponentOffset, GlobalAddress, NativeFunction, NativeMethod,
+    PackageOffset, RENodeId, SubstateOffset, VaultOffset,
+};
+<span class="kw">use </span>radix_engine_interface::data::IndexedScryptoValue;
+
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>AuthError {
+    VisibilityError(RENodeId),
+    Unauthorized {
+        actor: REActor,
+        authorization: MethodAuthorization,
+        error: MethodAuthorizationError,
+    },
+}
 
 <span class="kw">pub struct </span>AuthModule;
 
 <span class="kw">impl </span>AuthModule {
-    <span class="kw">fn </span>auth(
-        function: <span class="kw-2">&amp;</span>FnIdentifier,
-        method_auths: Vec&lt;MethodAuthorization&gt;,
-        call_frames: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;, <span class="comment">// TODO remove this once heap is implemented
-    </span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>auth_zones = <span class="macro">vec!</span>[
-            <span class="kw-2">&amp;</span>call_frames
-                .last()
-                .expect(<span class="string">&quot;Current call frame does not exist&quot;</span>)
-                .auth_zone,
-        ];
-        <span class="comment">// FIXME: This is wrong as it allows extern component calls to use caller&#39;s auth zone
-        // Also, need to add a test for this
-        </span><span class="kw">if let </span><span class="prelude-val">Some</span>(frame) = call_frames.iter().rev().nth(<span class="number">1</span>) {
-            auth_zones.push(<span class="kw-2">&amp;</span>frame.auth_zone);
-        }
+    <span class="kw">pub fn </span>supervisor_id() -&gt; NonFungibleId {
+        NonFungibleId::U32(<span class="number">0</span>)
+    }
 
-        <span class="comment">// Authorization check
-        </span><span class="kw">if </span>!method_auths.is_empty() {
-            <span class="kw">for </span>method_auth <span class="kw">in </span>method_auths {
-                method_auth.check(<span class="kw-2">&amp;</span>auth_zones).map_err(|error| {
-                    RuntimeError::ModuleError(ModuleError::AuthorizationError {
-                        function: function.clone(),
-                        authorization: method_auth,
-                        error,
-                    })
-                })<span class="question-mark">?</span>;
-            }
+    <span class="kw">pub fn </span>system_id() -&gt; NonFungibleId {
+        NonFungibleId::U32(<span class="number">1</span>)
+    }
+
+    <span class="kw">pub fn </span>on_call_frame_enter&lt;Y: SystemApi&gt;(
+        call_frame_update: <span class="kw-2">&amp;mut </span>CallFrameUpdate,
+        actor: <span class="kw-2">&amp;</span>REActor,
+        system_api: <span class="kw-2">&amp;mut </span>Y,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
+        <span class="kw">let </span>refed = system_api.get_visible_node_ids()<span class="question-mark">?</span>;
+        <span class="kw">let </span>auth_zone_id = refed
+            .into_iter()
+            .find(|e| <span class="macro">matches!</span>(e, RENodeId::AuthZoneStack(..)))
+            .unwrap();
+        call_frame_update.node_refs_to_copy.insert(auth_zone_id);
+
+        <span class="kw">if </span>!<span class="macro">matches!</span>(
+            actor,
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
+        ) {
+            <span class="kw">let </span>handle = system_api.lock_substate(
+                auth_zone_id,
+                SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+                LockFlags::MUTABLE,
+            )<span class="question-mark">?</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>substate_ref_mut = system_api.get_ref_mut(handle)<span class="question-mark">?</span>;
+            <span class="kw">let </span>auth_zone_stack = substate_ref_mut.auth_zone_stack();
+
+            <span class="comment">// New auth zone frame managed by the AuthModule
+            </span><span class="kw">let </span>is_barrier = <span class="self">Self</span>::is_barrier(actor);
+            auth_zone_stack.new_frame(is_barrier);
+            system_api.drop_lock(handle)<span class="question-mark">?</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub fn </span>receiver_auth&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
-        function: <span class="kw-2">&amp;</span>FnIdentifier,
-        receiver: Receiver,
-        input: <span class="kw-2">&amp;</span>ScryptoValue,
-        node_pointer: RENodePointer,
-        call_frames: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;,
-        track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-        <span class="kw">let </span>auth = <span class="kw">match </span>(receiver, function) {
-            (
-                Receiver::Consumed(RENodeId::Bucket(..)),
-                FnIdentifier::Native(NativeFnIdentifier::Bucket(bucket_fn)),
-            ) =&gt; {
-                <span class="kw">let </span>resource_address = {
-                    <span class="kw">let </span>node_ref = node_pointer.to_ref(call_frames, track);
-                    node_ref.bucket().resource_address()
-                };
-                <span class="kw">let </span>resource_manager = track
-                    .read_substate(SubstateId::ResourceManager(resource_address))
-                    .resource_manager();
-                <span class="kw">let </span>method_auth = resource_manager.get_bucket_auth(<span class="kw-2">*</span>bucket_fn);
-                <span class="macro">vec!</span>[method_auth.clone()]
-            }
-            (
-                Receiver::Ref(RENodeId::ResourceManager(resource_address)),
-                FnIdentifier::Native(NativeFnIdentifier::ResourceManager(fn_ident)),
-            ) =&gt; {
-                <span class="kw">let </span>substate_id = SubstateId::ResourceManager(resource_address);
-                <span class="kw">let </span>resource_manager = track.read_substate(substate_id.clone()).resource_manager();
-                <span class="kw">let </span>method_auth = resource_manager.get_auth(<span class="kw-2">*</span>fn_ident, <span class="kw-2">&amp;</span>input).clone();
-                <span class="macro">vec!</span>[method_auth]
-            }
-            (
-                Receiver::Ref(RENodeId::System),
-                FnIdentifier::Native(NativeFnIdentifier::System(SystemFnIdentifier::SetEpoch)),
-            ) =&gt; {
-                <span class="macro">vec!</span>[MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN)),
-                ))]
-            }
-            (Receiver::Ref(RENodeId::Component(..)), FnIdentifier::Native(..)) =&gt; {
-                <span class="kw">match </span>node_pointer {
-                    RENodePointer::Store(..) =&gt; <span class="macro">vec!</span>[MethodAuthorization::DenyAll],
-                    RENodePointer::Heap { .. } =&gt; <span class="macro">vec!</span>[],
+    <span class="kw">fn </span>is_barrier(actor: <span class="kw-2">&amp;</span>REActor) -&gt; bool {
+        <span class="macro">matches!</span>(
+            actor,
+            REActor::Method(
+                <span class="kw">_</span>,
+                ResolvedReceiver {
+                    derefed_from: <span class="prelude-val">Some</span>((RENodeId::Global(GlobalAddress::Component(..)), <span class="kw">_</span>)),
+                    ..
                 }
-            }
-            (
-                Receiver::Ref(RENodeId::Component(..)),
-                FnIdentifier::Scrypto {
-                    package_address,
-                    blueprint_name,
-                    ident,
-                },
-            ) =&gt; {
-                <span class="comment">// Assume that package_address/blueprint is the original impl of Component for now
-                // TODO: Remove this assumption
+            )
+        )
+    }
 
-                </span><span class="kw">let </span>package_substate_id = SubstateId::Package(<span class="kw-2">*</span>package_address);
-                <span class="kw">let </span>package = track.read_substate(package_substate_id.clone()).package();
-                <span class="kw">let </span>abi = package
-                    .blueprint_abi(blueprint_name)
-                    .expect(<span class="string">&quot;Blueprint not found for existing component&quot;</span>);
-                <span class="kw">let </span>fn_abi = abi.get_fn_abi(ident).ok_or(RuntimeError::KernelError(
-                    KernelError::MethodNotFound(function.clone()),
-                ))<span class="question-mark">?</span>; <span class="comment">// TODO: Move this check into kernel
-                </span><span class="kw">if </span>!fn_abi.input.matches(<span class="kw-2">&amp;</span>input.dom) {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::InvalidFnInput {
-                        fn_identifier: function.clone(),
-                    }));
-                }
+    <span class="kw">pub fn </span>on_before_frame_start&lt;Y&gt;(actor: <span class="kw-2">&amp;</span>REActor, system_api: <span class="kw-2">&amp;mut </span>Y) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;
+    <span class="kw">where
+        </span>Y: SystemApi,
+    {
+        <span class="kw">if </span><span class="macro">matches!</span>(
+            actor,
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
+        ) {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
 
-                {
-                    <span class="kw">let </span>value_ref = node_pointer.to_ref(call_frames, track);
-                    <span class="kw">let </span>component = value_ref.component_info();
-                    <span class="kw">let </span>component_state = value_ref.component_state();
-                    component.method_authorization(component_state, <span class="kw-2">&amp;</span>abi.structure, ident)
+        <span class="kw">let </span>method_auths = <span class="kw">match </span>actor.clone() {
+            REActor::Function(function_ident) =&gt; <span class="kw">match </span>function_ident {
+                ResolvedFunction::Native(NativeFunction::EpochManager(epoch_manager_func)) =&gt; {
+                    EpochManager::function_auth(<span class="kw-2">&amp;</span>epoch_manager_func)
+                }
+                ResolvedFunction::Native(NativeFunction::Clock(clock_func)) =&gt; {
+                    Clock::function_auth(<span class="kw-2">&amp;</span>clock_func)
+                }
+                <span class="kw">_ </span>=&gt; <span class="macro">vec!</span>[],
+            },
+            REActor::Method(method, resolved_receiver) =&gt; {
+                <span class="kw">match </span>(method, resolved_receiver) {
+                    <span class="comment">// SetAccessRule auth is done manually within the method
+                    </span>(
+                        ResolvedMethod::Native(NativeMethod::AccessRulesChain(
+                            AccessRulesChainMethod::SetMethodAccessRule,
+                        )),
+                        ..,
+                    ) =&gt; {
+                        <span class="macro">vec!</span>[]
+                    }
+                    (ResolvedMethod::Native(method), ..)
+                        <span class="kw">if </span><span class="macro">matches!</span>(method, NativeMethod::Metadata(..))
+                            || <span class="macro">matches!</span>(method, NativeMethod::EpochManager(..))
+                            || <span class="macro">matches!</span>(method, NativeMethod::ResourceManager(..))
+                            || <span class="macro">matches!</span>(method, NativeMethod::Package(..))
+                            || <span class="macro">matches!</span>(method, NativeMethod::Clock(..))
+                            || <span class="macro">matches!</span>(method, NativeMethod::Component(..)) =&gt;
+                    {
+                        <span class="kw">let </span>offset = SubstateOffset::AccessRulesChain(
+                            AccessRulesChainOffset::AccessRulesChain,
+                        );
+                        <span class="kw">let </span>handle = system_api.lock_substate(
+                            resolved_receiver.receiver,
+                            offset,
+                            LockFlags::read_only(),
+                        )<span class="question-mark">?</span>;
+                        <span class="kw">let </span>substate_ref = system_api.get_ref(handle)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>substate = substate_ref.access_rules_chain();
+                        <span class="kw">let </span>auth = substate.native_fn_authorization(NativeFn::Method(method));
+                        system_api.drop_lock(handle)<span class="question-mark">?</span>;
+                        auth
+                    }
+                    (
+                        ResolvedMethod::Scrypto {
+                            package_address,
+                            blueprint_name,
+                            ident,
+                            ..
+                        },
+                        ResolvedReceiver {
+                            receiver: RENodeId::Component(component_id),
+                            ..
+                        },
+                    ) =&gt; {
+                        <span class="kw">let </span>node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+                        <span class="kw">let </span>offset = SubstateOffset::Package(PackageOffset::Info);
+                        <span class="kw">let </span>handle =
+                            system_api.lock_substate(node_id, offset, LockFlags::read_only())<span class="question-mark">?</span>;
+
+                        <span class="comment">// Assume that package_address/blueprint is the original impl of Component for now
+                        // TODO: Remove this assumption
+                        </span><span class="kw">let </span>substate_ref = system_api.get_ref(handle)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>package = substate_ref.package_info();
+                        <span class="kw">let </span>schema = package
+                            .blueprint_abi(<span class="kw-2">&amp;</span>blueprint_name)
+                            .expect(<span class="string">&quot;Blueprint not found for existing component&quot;</span>)
+                            .structure
+                            .clone();
+                        system_api.drop_lock(handle)<span class="question-mark">?</span>;
+
+                        <span class="kw">let </span>component_node_id = RENodeId::Component(component_id);
+                        <span class="kw">let </span>state = {
+                            <span class="kw">let </span>offset = SubstateOffset::Component(ComponentOffset::State);
+                            <span class="kw">let </span>handle = system_api.lock_substate(
+                                component_node_id,
+                                offset,
+                                LockFlags::read_only(),
+                            )<span class="question-mark">?</span>;
+                            <span class="kw">let </span>substate_ref = system_api.get_ref(handle)<span class="question-mark">?</span>;
+                            <span class="kw">let </span>state = substate_ref.component_state().clone(); <span class="comment">// TODO: Remove clone
+                            </span>system_api.drop_lock(handle)<span class="question-mark">?</span>;
+                            state
+                        };
+                        {
+                            <span class="kw">let </span>offset = SubstateOffset::AccessRulesChain(
+                                AccessRulesChainOffset::AccessRulesChain,
+                            );
+                            <span class="kw">let </span>handle = system_api.lock_substate(
+                                component_node_id,
+                                offset,
+                                LockFlags::read_only(),
+                            )<span class="question-mark">?</span>;
+                            <span class="kw">let </span>substate_ref = system_api.get_ref(handle)<span class="question-mark">?</span>;
+                            <span class="kw">let </span>access_rules = substate_ref.access_rules_chain();
+                            <span class="kw">let </span>auth = access_rules.method_authorization(<span class="kw-2">&amp;</span>state, <span class="kw-2">&amp;</span>schema, ident);
+                            system_api.drop_lock(handle)<span class="question-mark">?</span>;
+                            auth
+                        }
+                    }
+                    (
+                        ResolvedMethod::Native(NativeMethod::Vault(<span class="kw-2">ref </span>vault_fn)),
+                        ResolvedReceiver {
+                            receiver: RENodeId::Vault(vault_id),
+                            ..
+                        },
+                    ) =&gt; {
+                        <span class="kw">let </span>vault_node_id = RENodeId::Vault(vault_id);
+                        <span class="kw">let </span>visibility = system_api.get_visible_node_data(vault_node_id)<span class="question-mark">?</span>;
+
+                        <span class="kw">let </span>resource_address = {
+                            <span class="kw">let </span>offset = SubstateOffset::Vault(VaultOffset::Vault);
+                            <span class="kw">let </span>handle = system_api.lock_substate(
+                                vault_node_id,
+                                offset,
+                                LockFlags::read_only(),
+                            )<span class="question-mark">?</span>;
+                            <span class="kw">let </span>substate_ref = system_api.get_ref(handle)<span class="question-mark">?</span>;
+                            <span class="kw">let </span>resource_address = substate_ref.vault().resource_address();
+                            system_api.drop_lock(handle)<span class="question-mark">?</span>;
+                            resource_address
+                        };
+                        <span class="kw">let </span>node_id = RENodeId::Global(GlobalAddress::Resource(resource_address));
+                        <span class="kw">let </span>offset = SubstateOffset::VaultAccessRulesChain(
+                            AccessRulesChainOffset::AccessRulesChain,
+                        );
+                        <span class="kw">let </span>handle =
+                            system_api.lock_substate(node_id, offset, LockFlags::read_only())<span class="question-mark">?</span>;
+
+                        <span class="kw">let </span>substate_ref = system_api.get_ref(handle)<span class="question-mark">?</span>;
+                        <span class="kw">let </span>substate = substate_ref.access_rules_chain();
+
+                        <span class="comment">// TODO: Revisit what the correct abstraction is for visibility in the auth module
+                        </span><span class="kw">let </span>auth = <span class="kw">match </span>visibility {
+                            RENodeVisibilityOrigin::Normal =&gt; substate.native_fn_authorization(
+                                NativeFn::Method(NativeMethod::Vault(vault_fn.clone())),
+                            ),
+                            RENodeVisibilityOrigin::DirectAccess =&gt; <span class="kw">match </span>vault_fn {
+                                <span class="comment">// TODO: Do we want to allow recaller to be able to withdraw from
+                                // TODO: any visible vault?
+                                </span>VaultMethod::Recall | VaultMethod::RecallNonFungibles =&gt; {
+                                    <span class="kw">let </span>access_rule =
+                                        substate.access_rules_chain[<span class="number">0</span>].get_group(<span class="string">&quot;recall&quot;</span>);
+                                    <span class="kw">let </span>authorization = convert(
+                                        <span class="kw-2">&amp;</span>Type::Any,
+                                        <span class="kw-2">&amp;</span>IndexedScryptoValue::unit(),
+                                        access_rule,
+                                    );
+                                    <span class="macro">vec!</span>[authorization]
+                                }
+                                <span class="kw">_ </span>=&gt; {
+                                    <span class="kw">return </span><span class="prelude-val">Err</span>(RuntimeError::ModuleError(ModuleError::AuthError(
+                                        AuthError::VisibilityError(vault_node_id),
+                                    )));
+                                }
+                            },
+                        };
+
+                        system_api.drop_lock(handle)<span class="question-mark">?</span>;
+                        auth
+                    }
+                    <span class="kw">_ </span>=&gt; <span class="macro">vec!</span>[],
                 }
             }
-            (
-                Receiver::Ref(RENodeId::Vault(..)),
-                FnIdentifier::Native(NativeFnIdentifier::Vault(vault_fn)),
-            ) =&gt; {
-                <span class="kw">let </span>resource_address = {
-                    <span class="kw">let </span>node_ref = node_pointer.to_ref(call_frames, track);
-                    node_ref.vault().resource_address()
-                };
-                <span class="kw">let </span>resource_manager = track
-                    .read_substate(SubstateId::ResourceManager(resource_address))
-                    .resource_manager();
-                <span class="macro">vec!</span>[resource_manager.get_vault_auth(<span class="kw-2">*</span>vault_fn).clone()]
-            }
-            <span class="kw">_ </span>=&gt; <span class="macro">vec!</span>[],
         };
 
-        <span class="self">Self</span>::auth(function, auth, call_frames)
+        <span class="kw">let </span>refed = system_api.get_visible_node_ids()<span class="question-mark">?</span>;
+        <span class="kw">let </span>auth_zone_id = refed
+            .into_iter()
+            .find(|e| <span class="macro">matches!</span>(e, RENodeId::AuthZoneStack(..)))
+            .unwrap();
+
+        <span class="kw">let </span>handle = system_api.lock_substate(
+            auth_zone_id,
+            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            LockFlags::read_only(),
+        )<span class="question-mark">?</span>;
+        <span class="kw">let </span>substate_ref = system_api.get_ref(handle)<span class="question-mark">?</span>;
+        <span class="kw">let </span>auth_zone_stack = substate_ref.auth_zone_stack();
+        <span class="kw">let </span>is_barrier = <span class="self">Self</span>::is_barrier(actor);
+
+        <span class="comment">// Authorization check
+        </span>auth_zone_stack
+            .check_auth(is_barrier, method_auths)
+            .map_err(|(authorization, error)| {
+                RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized {
+                    actor: actor.clone(),
+                    authorization,
+                    error,
+                }))
+            })<span class="question-mark">?</span>;
+
+        system_api.drop_lock(handle)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">pub fn </span>on_call_frame_exit&lt;Y&gt;(system_api: <span class="kw-2">&amp;mut </span>Y) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;
+    <span class="kw">where
+        </span>Y: SystemApi,
+    {
+        <span class="kw">if </span><span class="macro">matches!</span>(
+            system_api.get_actor(),
+            REActor::Method(ResolvedMethod::Native(NativeMethod::AuthZoneStack(..)), ..)
+        ) {
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
+
+        <span class="kw">let </span>refed = system_api.get_visible_node_ids()<span class="question-mark">?</span>;
+        <span class="kw">let </span>auth_zone_id = refed
+            .into_iter()
+            .find(|e| <span class="macro">matches!</span>(e, RENodeId::AuthZoneStack(..)))
+            .unwrap();
+        <span class="kw">let </span>handle = system_api.lock_substate(
+            auth_zone_id,
+            SubstateOffset::AuthZoneStack(AuthZoneStackOffset::AuthZoneStack),
+            LockFlags::MUTABLE,
+        )<span class="question-mark">?</span>;
+        {
+            <span class="kw">let </span><span class="kw-2">mut </span>substate_ref_mut = system_api.get_ref_mut(handle)<span class="question-mark">?</span>;
+            <span class="kw">let </span>auth_zone_stack = substate_ref_mut.auth_zone_stack();
+            auth_zone_stack.pop_frame();
+        }
+        system_api.drop_lock(handle)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(())
     }
 }
 </code></pre></div>

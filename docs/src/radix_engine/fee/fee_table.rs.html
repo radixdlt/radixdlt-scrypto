@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/fee/fee_table.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>fee_table.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/fee/fee_table.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>fee_table.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -255,48 +255,146 @@
 <span id="255">255</span>
 <span id="256">256</span>
 <span id="257">257</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+</pre><pre class="rust"><code><span class="kw">use </span>radix_engine_interface::api::types::{
+    AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
+    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
+    NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
+    ResourceManagerFunction, ResourceManagerMethod, TransactionProcessorFunction, VaultMethod,
+    WorktopMethod,
+};
 
-<span class="kw">pub enum </span>SystemApiCostingEntry&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">pub enum </span>SystemApiCostingEntry {
     <span class="comment">/*
      * Invocation
      */
-    </span><span class="doccomment">/// Invokes a function, native or wasm.
-    </span>InvokeFunction {
-        fn_identifier: FnIdentifier,
-        input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ScryptoValue,
-    },
-    <span class="doccomment">/// Invokes a method, native or wasm.
-    </span>InvokeMethod {
-        receiver: Receiver,
-        input: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>ScryptoValue,
+    </span>Invoke {
+        input_size: u32,
+        value_count: u32,
     },
 
     <span class="comment">/*
      * RENode
      */
-    </span><span class="doccomment">/// Creates a RENode.
-    </span>CreateNode { size: u32 },
+    </span>ReadOwnedNodes,
+    <span class="doccomment">/// Creates a RENode.
+    </span>CreateNode {
+        size: u32,
+    },
     <span class="doccomment">/// Drops a RENode
-    </span>DropNode { size: u32 },
+    </span>DropNode {
+        size: u32,
+    },
     <span class="doccomment">/// Globalizes a RENode.
-    </span>GlobalizeNode { size: u32 },
+    </span>GlobalizeNode {
+        size: u32,
+    },
     <span class="doccomment">/// Borrows a RENode.
-    </span>BorrowNode { loaded: bool, size: u32 },
+    </span>BorrowNode {
+        loaded: bool,
+        size: u32,
+    },
 
     <span class="comment">/*
      * Substate
      */
     </span><span class="doccomment">/// Borrows a substate
-    </span>BorrowSubstate { loaded: bool, size: u32 },
+    </span>BorrowSubstate {
+        loaded: bool,
+        size: u32,
+    },
     <span class="doccomment">/// Returns a substate.
-    </span>ReturnSubstate { size: u32 },
+    </span>ReturnSubstate {
+        size: u32,
+    },
+    <span class="doccomment">/// Takes a substate
+    </span>TakeSubstate {
+        size: u32,
+    },
+    LockSubstate {
+        size: u32,
+    },
     <span class="doccomment">/// Reads the data of a Substate
-    </span>TakeSubstate { size: u32 },
-    <span class="doccomment">/// Reads the data of a Substate
-    </span>ReadSubstate { size: u32 },
+    </span>ReadSubstate {
+        size: u32,
+    },
     <span class="doccomment">/// Updates the data of a Substate
-    </span>WriteSubstate { size: u32 },
+    </span>WriteSubstate {
+        size: u32,
+    },
+
+    DropLock,
 
     <span class="comment">/*
      * Misc
@@ -306,13 +404,21 @@
     <span class="doccomment">/// Reads the transaction hash.
     </span>ReadTransactionHash,
     <span class="doccomment">/// Reads blob in transaction
-    </span>ReadBlob { size: u32 },
+    </span>ReadBlob {
+        size: u32,
+    },
     <span class="doccomment">/// Generates a UUID.
     </span>GenerateUuid,
     <span class="doccomment">/// Emits a log.
-    </span>EmitLog { size: u32 },
-    <span class="doccomment">/// Checks if an access rule can be satisfied by the given proofs.
-    </span>CheckAccessRule { size: u32 },
+    </span>EmitLog {
+        size: u32,
+    },
+
+    EmitEvent {
+        native: bool,
+        tracked: bool,
+        size: u32,
+    },
 }
 
 <span class="kw">pub struct </span>FeeTable {
@@ -335,7 +441,7 @@
             tx_manifest_verification_per_byte: <span class="number">1</span>,
             tx_signature_verification_per_sig: <span class="number">3750</span>,
             tx_blob_price_per_byte: <span class="number">1</span>,
-            wasm_instantiation_per_byte: <span class="number">1</span>, <span class="comment">// TODO: this is currently costing too much!!!
+            wasm_instantiation_per_byte: <span class="number">0</span>, <span class="comment">// TODO: Re-enable WASM instantiation cost if it&#39;s unavoidable
             </span>fixed_low: <span class="number">100</span>,
             fixed_medium: <span class="number">500</span>,
             fixed_high: <span class="number">1000</span>,
@@ -366,120 +472,146 @@
         <span class="self">self</span>.wasm_instantiation_per_byte
     }
 
-    <span class="kw">pub fn </span>run_method_cost(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        receiver: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>Receiver&gt;,
-        fn_identifier: <span class="kw-2">&amp;</span>FnIdentifier,
-        input: <span class="kw-2">&amp;</span>ScryptoValue,
-    ) -&gt; u32 {
-        <span class="kw">match </span>fn_identifier {
-            FnIdentifier::Native(native_identifier) =&gt; {
-                <span class="kw">match </span>native_identifier {
-                    NativeFnIdentifier::TransactionProcessor(transaction_processor_fn) =&gt; {
-                        <span class="kw">match </span>transaction_processor_fn {
-                            TransactionProcessorFnIdentifier::Run =&gt; <span class="self">self</span>.fixed_high,
-                        }
-                    }
-                    NativeFnIdentifier::Package(package_fn) =&gt; <span class="kw">match </span>package_fn {
-                        PackageFnIdentifier::Publish =&gt; <span class="self">self</span>.fixed_low + input.raw.len() <span class="kw">as </span>u32 * <span class="number">2</span>,
-                    },
-                    NativeFnIdentifier::AuthZone(auth_zone_ident) =&gt; {
-                        <span class="kw">match </span>auth_zone_ident {
-                            AuthZoneFnIdentifier::Pop =&gt; <span class="self">self</span>.fixed_low,
-                            AuthZoneFnIdentifier::Push =&gt; <span class="self">self</span>.fixed_low,
-                            AuthZoneFnIdentifier::CreateProof =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: charge differently based on auth zone size and fungibility
-                            </span>AuthZoneFnIdentifier::CreateProofByAmount =&gt; <span class="self">self</span>.fixed_high,
-                            AuthZoneFnIdentifier::CreateProofByIds =&gt; <span class="self">self</span>.fixed_high,
-                            AuthZoneFnIdentifier::Clear =&gt; <span class="self">self</span>.fixed_high,
-                        }
-                    }
-                    NativeFnIdentifier::System(system_ident) =&gt; <span class="kw">match </span>system_ident {
-                        SystemFnIdentifier::GetCurrentEpoch =&gt; <span class="self">self</span>.fixed_low,
-                        SystemFnIdentifier::GetTransactionHash =&gt; <span class="self">self</span>.fixed_low,
-                        SystemFnIdentifier::SetEpoch =&gt; <span class="self">self</span>.fixed_low,
-                    },
-                    NativeFnIdentifier::Bucket(bucket_ident) =&gt; <span class="kw">match </span>bucket_ident {
-                        BucketFnIdentifier::Take =&gt; <span class="self">self</span>.fixed_medium,
-                        BucketFnIdentifier::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
-                        BucketFnIdentifier::GetNonFungibleIds =&gt; <span class="self">self</span>.fixed_medium,
-                        BucketFnIdentifier::Put =&gt; <span class="self">self</span>.fixed_medium,
-                        BucketFnIdentifier::GetAmount =&gt; <span class="self">self</span>.fixed_low,
-                        BucketFnIdentifier::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
-                        BucketFnIdentifier::CreateProof =&gt; <span class="self">self</span>.fixed_low,
-                        BucketFnIdentifier::Burn =&gt; <span class="self">self</span>.fixed_medium,
-                    },
-                    NativeFnIdentifier::Proof(proof_ident) =&gt; <span class="kw">match </span>proof_ident {
-                        ProofFnIdentifier::GetAmount =&gt; <span class="self">self</span>.fixed_low,
-                        ProofFnIdentifier::GetNonFungibleIds =&gt; <span class="self">self</span>.fixed_low,
-                        ProofFnIdentifier::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
-                        ProofFnIdentifier::Clone =&gt; <span class="self">self</span>.fixed_low,
-                        ProofFnIdentifier::Drop =&gt; <span class="self">self</span>.fixed_medium,
-                    },
-                    NativeFnIdentifier::ResourceManager(resource_manager_ident) =&gt; {
-                        <span class="kw">match </span>resource_manager_ident {
-                            ResourceManagerFnIdentifier::Create =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
-                            </span>ResourceManagerFnIdentifier::UpdateAuth =&gt; <span class="self">self</span>.fixed_medium,
-                            ResourceManagerFnIdentifier::LockAuth =&gt; <span class="self">self</span>.fixed_medium,
-                            ResourceManagerFnIdentifier::CreateVault =&gt; <span class="self">self</span>.fixed_medium,
-                            ResourceManagerFnIdentifier::CreateBucket =&gt; <span class="self">self</span>.fixed_medium,
-                            ResourceManagerFnIdentifier::Mint =&gt; <span class="self">self</span>.fixed_high,
-                            ResourceManagerFnIdentifier::GetMetadata =&gt; <span class="self">self</span>.fixed_low,
-                            ResourceManagerFnIdentifier::GetResourceType =&gt; <span class="self">self</span>.fixed_low,
-                            ResourceManagerFnIdentifier::GetTotalSupply =&gt; <span class="self">self</span>.fixed_low,
-                            ResourceManagerFnIdentifier::UpdateMetadata =&gt; <span class="self">self</span>.fixed_medium,
-                            ResourceManagerFnIdentifier::UpdateNonFungibleData =&gt; <span class="self">self</span>.fixed_medium,
-                            ResourceManagerFnIdentifier::NonFungibleExists =&gt; <span class="self">self</span>.fixed_low,
-                            ResourceManagerFnIdentifier::GetNonFungible =&gt; <span class="self">self</span>.fixed_medium,
-                        }
-                    }
-                    NativeFnIdentifier::Worktop(worktop_ident) =&gt; <span class="kw">match </span>worktop_ident {
-                        WorktopFnIdentifier::Put =&gt; <span class="self">self</span>.fixed_medium,
-                        WorktopFnIdentifier::TakeAmount =&gt; <span class="self">self</span>.fixed_medium,
-                        WorktopFnIdentifier::TakeAll =&gt; <span class="self">self</span>.fixed_medium,
-                        WorktopFnIdentifier::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
-                        WorktopFnIdentifier::AssertContains =&gt; <span class="self">self</span>.fixed_low,
-                        WorktopFnIdentifier::AssertContainsAmount =&gt; <span class="self">self</span>.fixed_low,
-                        WorktopFnIdentifier::AssertContainsNonFungibles =&gt; <span class="self">self</span>.fixed_low,
-                        WorktopFnIdentifier::Drain =&gt; <span class="self">self</span>.fixed_low,
-                    },
-                    NativeFnIdentifier::Component(component_ident) =&gt; <span class="kw">match </span>component_ident {
-                        ComponentFnIdentifier::AddAccessCheck =&gt; <span class="self">self</span>.fixed_medium,
-                    },
-                    NativeFnIdentifier::Vault(vault_ident) =&gt; {
-                        <span class="kw">match </span>vault_ident {
-                            VaultFnIdentifier::Put =&gt; <span class="self">self</span>.fixed_medium,
-                            VaultFnIdentifier::Take =&gt; <span class="self">self</span>.fixed_medium, <span class="comment">// TODO: revisit this if vault is not loaded in full
-                            </span>VaultFnIdentifier::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
-                            VaultFnIdentifier::GetAmount =&gt; <span class="self">self</span>.fixed_low,
-                            VaultFnIdentifier::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
-                            VaultFnIdentifier::GetNonFungibleIds =&gt; <span class="self">self</span>.fixed_medium,
-                            VaultFnIdentifier::CreateProof =&gt; <span class="self">self</span>.fixed_high,
-                            VaultFnIdentifier::CreateProofByAmount =&gt; <span class="self">self</span>.fixed_high,
-                            VaultFnIdentifier::CreateProofByIds =&gt; <span class="self">self</span>.fixed_high,
-                            VaultFnIdentifier::LockFee =&gt; <span class="self">self</span>.fixed_medium,
-                            VaultFnIdentifier::LockContingentFee =&gt; <span class="self">self</span>.fixed_medium,
-                        }
-                    }
+    <span class="kw">pub fn </span>run_native_function_cost(<span class="kw-2">&amp;</span><span class="self">self</span>, native_function: <span class="kw-2">&amp;</span>NativeFunction) -&gt; u32 {
+        <span class="kw">match </span>native_function {
+            NativeFunction::Component(component_func) =&gt; <span class="kw">match </span>component_func {
+                ComponentFunction::Globalize =&gt; <span class="self">self</span>.fixed_high,
+                ComponentFunction::GlobalizeWithOwner =&gt; <span class="self">self</span>.fixed_high,
+            },
+            NativeFunction::TransactionProcessor(transaction_processor_fn) =&gt; {
+                <span class="kw">match </span>transaction_processor_fn {
+                    TransactionProcessorFunction::Run =&gt; <span class="self">self</span>.fixed_high,
                 }
             }
-            FnIdentifier::Scrypto { .. } =&gt; {
-                <span class="kw">match </span>receiver {
-                    <span class="prelude-val">Some</span>(..) =&gt; <span class="self">self</span>.fixed_high,
-                    <span class="prelude-val">None </span>=&gt; <span class="number">0</span>, <span class="comment">// Costing is through instrumentation // TODO: Josh question, why only through instrumentation?
-                </span>}
+            NativeFunction::Package(package_fn) =&gt; <span class="kw">match </span>package_fn {
+                PackageFunction::Publish =&gt; <span class="self">self</span>.fixed_low,
+                PackageFunction::PublishWithOwner =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeFunction::EpochManager(epoch_manager_fn) =&gt; <span class="kw">match </span>epoch_manager_fn {
+                EpochManagerFunction::Create =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeFunction::Clock(clock_fn) =&gt; <span class="kw">match </span>clock_fn {
+                ClockFunction::Create =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeFunction::ResourceManager(resource_manager_ident) =&gt; {
+                <span class="kw">match </span>resource_manager_ident {
+                    ResourceManagerFunction::Create =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
+                    </span>ResourceManagerFunction::CreateWithOwner =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: more investigation about fungibility
+                    </span>ResourceManagerFunction::BurnBucket =&gt; <span class="self">self</span>.fixed_low,
+                }
+            }
+        }
+    }
+
+    <span class="kw">pub fn </span>run_native_method_cost(<span class="kw-2">&amp;</span><span class="self">self</span>, native_method: <span class="kw-2">&amp;</span>NativeMethod) -&gt; u32 {
+        <span class="kw">match </span>native_method {
+            NativeMethod::AuthZoneStack(auth_zone_ident) =&gt; {
+                <span class="kw">match </span>auth_zone_ident {
+                    AuthZoneStackMethod::Pop =&gt; <span class="self">self</span>.fixed_low,
+                    AuthZoneStackMethod::Push =&gt; <span class="self">self</span>.fixed_low,
+                    AuthZoneStackMethod::CreateProof =&gt; <span class="self">self</span>.fixed_high, <span class="comment">// TODO: charge differently based on auth zone size and fungibility
+                    </span>AuthZoneStackMethod::CreateProofByAmount =&gt; <span class="self">self</span>.fixed_high,
+                    AuthZoneStackMethod::CreateProofByIds =&gt; <span class="self">self</span>.fixed_high,
+                    AuthZoneStackMethod::Clear =&gt; <span class="self">self</span>.fixed_high,
+                    AuthZoneStackMethod::Drain =&gt; <span class="self">self</span>.fixed_high,
+                    AuthZoneStackMethod::AssertAccessRule =&gt; <span class="self">self</span>.fixed_high,
+                }
+            }
+            NativeMethod::EpochManager(epoch_manager_method) =&gt; <span class="kw">match </span>epoch_manager_method {
+                EpochManagerMethod::GetCurrentEpoch =&gt; <span class="self">self</span>.fixed_low,
+                EpochManagerMethod::SetEpoch =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeMethod::Clock(clock_method) =&gt; <span class="kw">match </span>clock_method {
+                ClockMethod::SetCurrentTime =&gt; <span class="self">self</span>.fixed_low,
+                ClockMethod::GetCurrentTime =&gt; <span class="self">self</span>.fixed_high,
+                ClockMethod::CompareCurrentTime =&gt; <span class="self">self</span>.fixed_high,
+            },
+            NativeMethod::Bucket(bucket_ident) =&gt; <span class="kw">match </span>bucket_ident {
+                BucketMethod::Take =&gt; <span class="self">self</span>.fixed_medium,
+                BucketMethod::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
+                BucketMethod::GetNonFungibleIds =&gt; <span class="self">self</span>.fixed_medium,
+                BucketMethod::Put =&gt; <span class="self">self</span>.fixed_medium,
+                BucketMethod::GetAmount =&gt; <span class="self">self</span>.fixed_low,
+                BucketMethod::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
+                BucketMethod::CreateProof =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeMethod::Proof(proof_ident) =&gt; <span class="kw">match </span>proof_ident {
+                ProofMethod::GetAmount =&gt; <span class="self">self</span>.fixed_low,
+                ProofMethod::GetNonFungibleIds =&gt; <span class="self">self</span>.fixed_low,
+                ProofMethod::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
+                ProofMethod::Clone =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeMethod::ResourceManager(resource_manager_ident) =&gt; <span class="kw">match </span>resource_manager_ident {
+                ResourceManagerMethod::UpdateVaultAuth =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerMethod::LockAuth =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerMethod::CreateVault =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerMethod::CreateBucket =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerMethod::Mint =&gt; <span class="self">self</span>.fixed_high,
+                ResourceManagerMethod::GetResourceType =&gt; <span class="self">self</span>.fixed_low,
+                ResourceManagerMethod::GetTotalSupply =&gt; <span class="self">self</span>.fixed_low,
+                ResourceManagerMethod::UpdateNonFungibleData =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerMethod::NonFungibleExists =&gt; <span class="self">self</span>.fixed_low,
+                ResourceManagerMethod::GetNonFungible =&gt; <span class="self">self</span>.fixed_medium,
+                ResourceManagerMethod::Burn =&gt; <span class="self">self</span>.fixed_medium,
+            },
+            NativeMethod::Worktop(worktop_ident) =&gt; <span class="kw">match </span>worktop_ident {
+                WorktopMethod::Put =&gt; <span class="self">self</span>.fixed_medium,
+                WorktopMethod::TakeAmount =&gt; <span class="self">self</span>.fixed_medium,
+                WorktopMethod::TakeAll =&gt; <span class="self">self</span>.fixed_medium,
+                WorktopMethod::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
+                WorktopMethod::AssertContains =&gt; <span class="self">self</span>.fixed_low,
+                WorktopMethod::AssertContainsAmount =&gt; <span class="self">self</span>.fixed_low,
+                WorktopMethod::AssertContainsNonFungibles =&gt; <span class="self">self</span>.fixed_low,
+                WorktopMethod::Drain =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeMethod::AccessRulesChain(component_ident) =&gt; <span class="kw">match </span>component_ident {
+                AccessRulesChainMethod::AddAccessCheck =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainMethod::SetMethodAccessRule =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainMethod::SetMethodMutability =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainMethod::SetGroupAccessRule =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainMethod::SetGroupMutability =&gt; <span class="self">self</span>.fixed_low,
+                AccessRulesChainMethod::GetLength =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeMethod::Metadata(metadata_method) =&gt; <span class="kw">match </span>metadata_method {
+                MetadataMethod::Set =&gt; <span class="self">self</span>.fixed_low,
+                MetadataMethod::Get =&gt; <span class="self">self</span>.fixed_low,
+            },
+            NativeMethod::Component(method_ident) =&gt; <span class="kw">match </span>method_ident {
+                ComponentMethod::SetRoyaltyConfig =&gt; <span class="self">self</span>.fixed_medium,
+                ComponentMethod::ClaimRoyalty =&gt; <span class="self">self</span>.fixed_medium,
+            },
+            NativeMethod::Package(method_ident) =&gt; <span class="kw">match </span>method_ident {
+                PackageMethod::SetRoyaltyConfig =&gt; <span class="self">self</span>.fixed_medium,
+                PackageMethod::ClaimRoyalty =&gt; <span class="self">self</span>.fixed_medium,
+            },
+            NativeMethod::Vault(vault_ident) =&gt; {
+                <span class="kw">match </span>vault_ident {
+                    VaultMethod::Put =&gt; <span class="self">self</span>.fixed_medium,
+                    VaultMethod::Take =&gt; <span class="self">self</span>.fixed_medium, <span class="comment">// TODO: revisit this if vault is not loaded in full
+                    </span>VaultMethod::TakeNonFungibles =&gt; <span class="self">self</span>.fixed_medium,
+                    VaultMethod::GetAmount =&gt; <span class="self">self</span>.fixed_low,
+                    VaultMethod::GetResourceAddress =&gt; <span class="self">self</span>.fixed_low,
+                    VaultMethod::GetNonFungibleIds =&gt; <span class="self">self</span>.fixed_medium,
+                    VaultMethod::CreateProof =&gt; <span class="self">self</span>.fixed_high,
+                    VaultMethod::CreateProofByAmount =&gt; <span class="self">self</span>.fixed_high,
+                    VaultMethod::CreateProofByIds =&gt; <span class="self">self</span>.fixed_high,
+                    VaultMethod::LockFee =&gt; <span class="self">self</span>.fixed_medium,
+                    VaultMethod::Recall =&gt; <span class="self">self</span>.fixed_low,
+                    VaultMethod::RecallNonFungibles =&gt; <span class="self">self</span>.fixed_low,
+                }
             }
         }
     }
 
     <span class="kw">pub fn </span>system_api_cost(<span class="kw-2">&amp;</span><span class="self">self</span>, entry: SystemApiCostingEntry) -&gt; u32 {
         <span class="kw">match </span>entry {
-            SystemApiCostingEntry::InvokeFunction { input, .. } =&gt; {
-                <span class="self">self</span>.fixed_low + (<span class="number">5 </span>* input.raw.len() + <span class="number">10 </span>* input.value_count()) <span class="kw">as </span>u32
-            }
-            SystemApiCostingEntry::InvokeMethod { input, .. } =&gt; {
-                <span class="self">self</span>.fixed_low + (<span class="number">5 </span>* input.raw.len() + <span class="number">10 </span>* input.value_count()) <span class="kw">as </span>u32
-            }
+            SystemApiCostingEntry::Invoke {
+                input_size,
+                value_count,
+                ..
+            } =&gt; <span class="self">self</span>.fixed_low + (<span class="number">5 </span>* input_size + <span class="number">10 </span>* value_count) <span class="kw">as </span>u32,
 
+            SystemApiCostingEntry::ReadOwnedNodes =&gt; <span class="self">self</span>.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } =&gt; <span class="self">self</span>.fixed_medium,
             SystemApiCostingEntry::DropNode { .. } =&gt; <span class="self">self</span>.fixed_medium,
             SystemApiCostingEntry::GlobalizeNode { size } =&gt; <span class="self">self</span>.fixed_high + <span class="number">200 </span>* size,
@@ -499,16 +631,28 @@
                 }
             }
             SystemApiCostingEntry::ReturnSubstate { size } =&gt; <span class="self">self</span>.fixed_low + <span class="number">100 </span>* size,
+
+            SystemApiCostingEntry::LockSubstate { .. } =&gt; <span class="self">self</span>.fixed_low,
             SystemApiCostingEntry::TakeSubstate { .. } =&gt; <span class="self">self</span>.fixed_medium,
             SystemApiCostingEntry::ReadSubstate { .. } =&gt; <span class="self">self</span>.fixed_medium,
             SystemApiCostingEntry::WriteSubstate { .. } =&gt; <span class="self">self</span>.fixed_medium,
+            SystemApiCostingEntry::DropLock =&gt; <span class="self">self</span>.fixed_low,
 
             SystemApiCostingEntry::ReadEpoch =&gt; <span class="self">self</span>.fixed_low,
             SystemApiCostingEntry::ReadTransactionHash =&gt; <span class="self">self</span>.fixed_low,
             SystemApiCostingEntry::ReadBlob { size } =&gt; <span class="self">self</span>.fixed_low + size,
             SystemApiCostingEntry::GenerateUuid =&gt; <span class="self">self</span>.fixed_low,
             SystemApiCostingEntry::EmitLog { size } =&gt; <span class="self">self</span>.fixed_low + <span class="number">10 </span>* size,
-            SystemApiCostingEntry::CheckAccessRule { .. } =&gt; <span class="self">self</span>.fixed_medium,
+            SystemApiCostingEntry::EmitEvent {
+                native,
+                tracked,
+                size,
+            } =&gt; <span class="kw">match </span>(native, tracked) {
+                (<span class="bool-val">true</span>, <span class="bool-val">true</span>) =&gt; <span class="self">self</span>.fixed_high,
+                (<span class="bool-val">true</span>, <span class="bool-val">false</span>) =&gt; <span class="self">self</span>.fixed_low,
+                (<span class="bool-val">false</span>, <span class="bool-val">true</span>) =&gt; <span class="self">self</span>.fixed_low + <span class="number">10 </span>* size,
+                (<span class="bool-val">false</span>, <span class="bool-val">false</span>) =&gt; <span class="macro">todo!</span>(<span class="string">&quot;No such events yet&quot;</span>),
+            },
         }
     }
 }

@@ -12,7 +12,7 @@ mutate it.</p>
 presence of aliasing. Both <a href="struct.Cell.html" title="Cell&lt;T&gt;"><code>Cell&lt;T&gt;</code></a> and <a href="struct.RefCell.html" title="RefCell&lt;T&gt;"><code>RefCell&lt;T&gt;</code></a> allow doing this in a single-threaded
 way. However, neither <code>Cell&lt;T&gt;</code> nor <code>RefCell&lt;T&gt;</code> are thread safe (they do not implement
 <a href="../marker/trait.Sync.html" title="Sync"><code>Sync</code></a>). If you need to do aliasing and mutation between multiple threads it is possible to
-use <a href="../../std/sync/struct.Mutex.html"><code>Mutex&lt;T&gt;</code></a>, <a href="../../std/sync/struct.RwLock.html"><code>RwLock&lt;T&gt;</code></a> or <a href="https://doc.rust-lang.org/1.65.0/core/sync/atomic/index.html"><code>atomic</code></a> types.</p>
+use <a href="../../std/sync/struct.Mutex.html"><code>Mutex&lt;T&gt;</code></a>, <a href="../../std/sync/struct.RwLock.html"><code>RwLock&lt;T&gt;</code></a> or <a href="../sync/atomic/index.html"><code>atomic</code></a> types.</p>
 <p>Values of the <code>Cell&lt;T&gt;</code> and <code>RefCell&lt;T&gt;</code> types may be mutated through shared references (i.e.
 the common <code>&amp;T</code> type), whereas most Rust types can only be mutated through unique (<code>&amp;mut T</code>)
 references. We say that <code>Cell&lt;T&gt;</code> and <code>RefCell&lt;T&gt;</code> provide ‘interior mutability’, in contrast

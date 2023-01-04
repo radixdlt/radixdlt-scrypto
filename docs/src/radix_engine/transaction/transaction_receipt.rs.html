@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/transaction/transaction_receipt.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>transaction_receipt.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/transaction/transaction_receipt.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>transaction_receipt.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -329,34 +329,122 @@
 <span id="329">329</span>
 <span id="330">330</span>
 <span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
 </pre><pre class="rust"><code><span class="kw">use </span>colored::<span class="kw-2">*</span>;
-<span class="kw">use </span>scrypto::core::NetworkDefinition;
+<span class="kw">use </span>radix_engine_interface::address::{AddressDisplayContext, NO_NETWORK};
+<span class="kw">use </span>radix_engine_interface::api::types::{GlobalAddress, Level};
+<span class="kw">use </span>radix_engine_interface::data::{IndexedScryptoValue, ScryptoDecode};
+<span class="kw">use </span>radix_engine_interface::model::<span class="kw-2">*</span>;
+<span class="kw">use </span>transaction::manifest::decompiler::{decompile_instruction, DecompilationContext};
 <span class="kw">use </span>transaction::model::<span class="kw-2">*</span>;
+<span class="kw">use </span>utils::ContextualDisplay;
 
-<span class="kw">use </span><span class="kw">crate</span>::engine::{RejectionError, ResourceChange, RuntimeError};
+<span class="kw">use </span><span class="kw">crate</span>::engine::{RejectionError, ResourceChange, RuntimeError, TrackedEvent};
 <span class="kw">use </span><span class="kw">crate</span>::fee::FeeSummary;
 <span class="kw">use </span><span class="kw">crate</span>::state_manager::StateDiff;
 <span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+<span class="attribute">#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub struct </span>TransactionContents {
     <span class="kw">pub </span>instructions: Vec&lt;Instruction&gt;,
 }
 
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+<span class="attribute">#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub struct </span>TransactionExecution {
     <span class="kw">pub </span>fee_summary: FeeSummary,
     <span class="kw">pub </span>application_logs: Vec&lt;(Level, String)&gt;,
+    <span class="kw">pub </span>events: Vec&lt;TrackedEvent&gt;,
 }
 
 <span class="doccomment">/// Captures whether a transaction should be committed, and its other results
-</span><span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="attribute">#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub enum </span>TransactionResult {
     Commit(CommitResult),
     Reject(RejectResult),
 }
 
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+<span class="kw">impl </span>TransactionResult {
+    <span class="kw">pub fn </span>expect_commit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>CommitResult {
+        <span class="kw">match </span><span class="self">self </span>{
+            TransactionResult::Commit(c) =&gt; c,
+            TransactionResult::Reject(<span class="kw">_</span>) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Transaction was rejected&quot;</span>),
+        }
+    }
+}
+
+<span class="attribute">#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub struct </span>CommitResult {
     <span class="kw">pub </span>outcome: TransactionOutcome,
     <span class="kw">pub </span>state_updates: StateDiff,
@@ -365,26 +453,80 @@
 }
 
 <span class="doccomment">/// Captures whether a transaction&#39;s commit outcome is Success or Failure
-</span><span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="attribute">#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub enum </span>TransactionOutcome {
     Success(Vec&lt;Vec&lt;u8&gt;&gt;),
     Failure(RuntimeError),
 }
 
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+<span class="kw">impl </span>TransactionOutcome {
+    <span class="kw">pub fn </span>expect_success(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            TransactionOutcome::Success(results) =&gt; results,
+            TransactionOutcome::Failure(error) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Outcome was a failure: {}&quot;</span>, error),
+        }
+    }
+
+    <span class="kw">pub fn </span>success_or_else&lt;E, F: FnOnce(<span class="kw-2">&amp;</span>RuntimeError) -&gt; E&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        f: F,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>Vec&lt;Vec&lt;u8&gt;&gt;, E&gt; {
+        <span class="kw">match </span><span class="self">self </span>{
+            TransactionOutcome::Success(results) =&gt; <span class="prelude-val">Ok</span>(results),
+            TransactionOutcome::Failure(error) =&gt; <span class="prelude-val">Err</span>(f(error)),
+        }
+    }
+}
+
+<span class="attribute">#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub struct </span>EntityChanges {
     <span class="kw">pub </span>new_package_addresses: Vec&lt;PackageAddress&gt;,
     <span class="kw">pub </span>new_component_addresses: Vec&lt;ComponentAddress&gt;,
     <span class="kw">pub </span>new_resource_addresses: Vec&lt;ResourceAddress&gt;,
+    <span class="kw">pub </span>new_system_addresses: Vec&lt;SystemAddress&gt;,
 }
 
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+<span class="kw">impl </span>EntityChanges {
+    <span class="kw">pub fn </span>new(new_global_addresses: Vec&lt;GlobalAddress&gt;) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>entity_changes = <span class="self">Self </span>{
+            new_package_addresses: Vec::new(),
+            new_component_addresses: Vec::new(),
+            new_resource_addresses: Vec::new(),
+            new_system_addresses: Vec::new(),
+        };
+
+        <span class="kw">for </span>new_global_address <span class="kw">in </span>new_global_addresses {
+            <span class="kw">match </span>new_global_address {
+                GlobalAddress::Package(package_address) =&gt; {
+                    entity_changes.new_package_addresses.push(package_address)
+                }
+                GlobalAddress::Component(component_address) =&gt; entity_changes
+                    .new_component_addresses
+                    .push(component_address),
+                GlobalAddress::Resource(resource_address) =&gt; {
+                    entity_changes.new_resource_addresses.push(resource_address)
+                }
+                GlobalAddress::System(system_address) =&gt; {
+                    entity_changes.new_system_addresses.push(system_address)
+                }
+            }
+        }
+
+        entity_changes
+    }
+}
+
+<span class="attribute">#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub struct </span>RejectResult {
     <span class="kw">pub </span>error: RejectionError,
 }
 
 <span class="doccomment">/// Represents a transaction receipt.
-</span><span class="attribute">#[derive(TypeId, Encode, Decode)]
+</span><span class="attribute">#[derive(Clone)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub struct </span>TransactionReceipt {
     <span class="kw">pub </span>contents: TransactionContents,
     <span class="kw">pub </span>execution: TransactionExecution, <span class="comment">// THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
@@ -411,6 +553,23 @@
         <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.result {
             TransactionResult::Commit(..) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected rejection but was commit&quot;</span>),
             TransactionResult::Reject(<span class="kw-2">ref </span>r) =&gt; <span class="kw-2">&amp;</span>r.error,
+        }
+    }
+
+    <span class="kw">pub fn </span>expect_specific_rejection&lt;F&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, f: F)
+    <span class="kw">where
+        </span>F: FnOnce(<span class="kw-2">&amp;</span>RejectionError) -&gt; bool,
+    {
+        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.result {
+            TransactionResult::Commit(..) =&gt; <span class="macro">panic!</span>(<span class="string">&quot;Expected rejection but was committed&quot;</span>),
+            TransactionResult::Reject(result) =&gt; {
+                <span class="kw">if </span>!f(<span class="kw-2">&amp;</span>result.error) {
+                    <span class="macro">panic!</span>(
+                        <span class="string">&quot;Expected specific rejection but was different error:\n{:?}&quot;</span>,
+                        <span class="self">self
+                    </span>);
+                }
+            }
         }
     }
 
@@ -458,7 +617,7 @@
         }
     }
 
-    <span class="kw">pub fn </span>output&lt;T: Decode&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, nth: usize) -&gt; T {
+    <span class="kw">pub fn </span>output&lt;T: ScryptoDecode&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, nth: usize) -&gt; T {
         scrypto_decode::&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>.expect_commit_success()[nth][..])
             .expect(<span class="string">&quot;Wrong instruction output type!&quot;</span>)
     }
@@ -477,6 +636,11 @@
         <span class="kw">let </span>commit = <span class="self">self</span>.expect_commit();
         <span class="kw-2">&amp;</span>commit.entity_changes.new_resource_addresses
     }
+
+    <span class="kw">pub fn </span>new_system_addresses(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Vec&lt;SystemAddress&gt; {
+        <span class="kw">let </span>commit = <span class="self">self</span>.expect_commit();
+        <span class="kw-2">&amp;</span>commit.entity_changes.new_system_addresses
+    }
 }
 
 <span class="macro">macro_rules! </span>prefix {
@@ -491,9 +655,23 @@
 
 <span class="kw">impl </span>fmt::Debug <span class="kw">for </span>TransactionReceipt {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.display(NO_NETWORK))
+    }
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; ContextualDisplay&lt;AddressDisplayContext&lt;<span class="lifetime">&#39;a</span>&gt;&gt; <span class="kw">for </span>TransactionReceipt {
+    <span class="kw">type </span>Error = fmt::Error;
+
+    <span class="kw">fn </span>contextual_format&lt;F: fmt::Write&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        f: <span class="kw-2">&amp;mut </span>F,
+        context: <span class="kw-2">&amp;</span>AddressDisplayContext&lt;<span class="lifetime">&#39;a</span>&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
         <span class="kw">let </span>contents = <span class="kw-2">&amp;</span><span class="self">self</span>.contents;
         <span class="kw">let </span>execution = <span class="kw-2">&amp;</span><span class="self">self</span>.execution;
         <span class="kw">let </span>result = <span class="kw-2">&amp;</span><span class="self">self</span>.result;
+
+        <span class="kw">let </span>bech32_encoder = context.encoder;
 
         <span class="macro">write!</span>(
             f,
@@ -510,19 +688,21 @@
 
         <span class="macro">write!</span>(
             f,
-            <span class="string">&quot;\n{} {} XRD burned, {} XRD tipped to validators&quot;</span>,
+            <span class="string">&quot;\n{} {} XRD used for execution, {} XRD used for royalty, {} XRD in bad debt&quot;</span>,
             <span class="string">&quot;Transaction Fee:&quot;</span>.bold().green(),
-            execution.fee_summary.burned,
-            execution.fee_summary.tipped,
+            execution.fee_summary.total_execution_cost_xrd,
+            execution.fee_summary.total_royalty_cost_xrd,
+            execution.fee_summary.bad_debt_xrd,
         )<span class="question-mark">?</span>;
 
         <span class="macro">write!</span>(
             f,
-            <span class="string">&quot;\n{} {} limit, {} consumed, {} XRD per cost unit&quot;</span>,
+            <span class="string">&quot;\n{} {} limit, {} consumed, {} XRD per cost unit, {}% tip&quot;</span>,
             <span class="string">&quot;Cost Units:&quot;</span>.bold().green(),
             execution.fee_summary.cost_unit_limit,
             execution.fee_summary.cost_unit_consumed,
             execution.fee_summary.cost_unit_price,
+            execution.fee_summary.tip_percentage
         )<span class="question-mark">?</span>;
 
         <span class="macro">write!</span>(
@@ -548,60 +728,16 @@
             )<span class="question-mark">?</span>;
         }
 
-        <span class="comment">// TODO - Need to fix the hardcoding of local simulator HRPs for transaction receipts, and for address formatting
-        </span><span class="kw">let </span>bech32_encoder = Bech32Encoder::new(<span class="kw-2">&amp;</span>NetworkDefinition::simulator());
+        <span class="kw">let </span><span class="kw-2">mut </span>decompilation_context =
+            DecompilationContext::new_with_optional_network(bech32_encoder);
 
         <span class="macro">write!</span>(f, <span class="string">&quot;\n{}&quot;</span>, <span class="string">&quot;Instructions:&quot;</span>.bold().green())<span class="question-mark">?</span>;
         <span class="kw">for </span>(i, inst) <span class="kw">in </span>contents.instructions.iter().enumerate() {
-            <span class="macro">write!</span>(
-                f,
-                <span class="string">&quot;\n{} {}&quot;</span>,
-                <span class="macro">prefix!</span>(i, contents.instructions),
-                <span class="kw">match </span>inst {
-                    Instruction::CallFunction {
-                        fn_identifier: FnIdentifier::Scrypto {
-                            package_address,
-                            blueprint_name,
-                            ident,
-                        },
-                        args,
-                    } =&gt; <span class="macro">format!</span>(
-                        <span class="string">&quot;CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, args: {:?} }}&quot;</span>,
-                        bech32_encoder.encode_package_address(<span class="kw-2">&amp;</span>package_address),
-                        blueprint_name,
-                        ident,
-                        ScryptoValue::from_slice(<span class="kw-2">&amp;</span>args).expect(<span class="string">&quot;Failed parse call data&quot;</span>)
-                    ),
-                    Instruction::CallMethod {
-                        method_identifier,
-                        args,
-                    } =&gt; {
-                        <span class="kw">match </span>method_identifier {
-                            MethodIdentifier::Scrypto {
-                                component_address,
-                                ident
-                            } =&gt; {
-                                <span class="macro">format!</span>(
-                                    <span class="string">&quot;CallMethod {{ component_address: {}, method_name: {:?}, args: {:?} }}&quot;</span>,
-                                    bech32_encoder.encode_component_address(<span class="kw-2">&amp;</span>component_address),
-                                    ident,
-                                    ScryptoValue::from_slice(<span class="kw-2">&amp;</span>args).expect(<span class="string">&quot;Failed to parse call data&quot;</span>)
-                                )
-                            },
-                            MethodIdentifier::Native { receiver, native_fn_identifier } =&gt; {
-                                <span class="macro">format!</span>(
-                                    <span class="string">&quot;CallNativeMethod {{ receiver: {:?}, ident: {:?}, args: {:?} }}&quot;</span>,
-                                    receiver,
-                                    native_fn_identifier,
-                                    ScryptoValue::from_slice(<span class="kw-2">&amp;</span>args).expect(<span class="string">&quot;Failed to parse call data&quot;</span>)
-                                )
-                            }
-                        }
-                    },
-                    Instruction::PublishPackage { .. } =&gt; <span class="string">&quot;PublishPackage {..}&quot;</span>.to_owned(),
-                    i @ <span class="kw">_ </span>=&gt; <span class="macro">format!</span>(<span class="string">&quot;{:?}&quot;</span>, i),
-                }
-            )<span class="question-mark">?</span>;
+            <span class="macro">write!</span>(f, <span class="string">&quot;\n{} &quot;</span>, <span class="macro">prefix!</span>(i, contents.instructions))<span class="question-mark">?</span>;
+            <span class="kw">let </span>res = decompile_instruction(f, inst, <span class="kw-2">&amp;mut </span>decompilation_context);
+            <span class="kw">if let </span><span class="prelude-val">Err</span>(err) = res {
+                <span class="macro">write!</span>(f, <span class="string">&quot;[INVALID_INSTRUCTION({:?})]&quot;</span>, err)<span class="question-mark">?
+            </span>}
         }
 
         <span class="kw">if let </span>TransactionResult::Commit(c) = <span class="kw-2">&amp;</span>result {
@@ -610,9 +746,11 @@
                 <span class="kw">for </span>(i, output) <span class="kw">in </span>outputs.iter().enumerate() {
                     <span class="macro">write!</span>(
                         f,
-                        <span class="string">&quot;\n{} {:?}&quot;</span>,
+                        <span class="string">&quot;\n{} {}&quot;</span>,
                         <span class="macro">prefix!</span>(i, outputs),
-                        ScryptoValue::from_slice(output).expect(<span class="string">&quot;Failed to parse return data&quot;</span>)
+                        IndexedScryptoValue::from_slice(output)
+                            .expect(<span class="string">&quot;Failed to parse return data&quot;</span>)
+                            .display(decompilation_context.for_value_display())
                     )<span class="question-mark">?</span>;
                 }
             }
@@ -633,7 +771,7 @@
                     f,
                     <span class="string">&quot;\n{} Package: {}&quot;</span>,
                     <span class="macro">prefix!</span>(i, c.entity_changes.new_package_addresses),
-                    bech32_encoder.encode_package_address(package_address)
+                    package_address.display(bech32_encoder)
                 )<span class="question-mark">?</span>;
             }
             <span class="kw">for </span>(i, component_address) <span class="kw">in
@@ -643,7 +781,7 @@
                     f,
                     <span class="string">&quot;\n{} Component: {}&quot;</span>,
                     <span class="macro">prefix!</span>(i, c.entity_changes.new_component_addresses),
-                    bech32_encoder.encode_component_address(component_address)
+                    component_address.display(bech32_encoder)
                 )<span class="question-mark">?</span>;
             }
             <span class="kw">for </span>(i, resource_address) <span class="kw">in </span>c.entity_changes.new_resource_addresses.iter().enumerate()
@@ -652,7 +790,7 @@
                     f,
                     <span class="string">&quot;\n{} Resource: {}&quot;</span>,
                     <span class="macro">prefix!</span>(i, c.entity_changes.new_resource_addresses),
-                    bech32_encoder.encode_resource_address(resource_address)
+                    resource_address.display(bech32_encoder)
                 )<span class="question-mark">?</span>;
             }
         }

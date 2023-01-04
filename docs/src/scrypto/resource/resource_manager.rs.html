@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/resource/resource_manager.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `scrypto/src/resource/resource_manager.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>resource_manager.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -293,472 +293,259 @@
 <span id="293">293</span>
 <span id="294">294</span>
 <span id="295">295</span>
-<span id="296">296</span>
-<span id="297">297</span>
-<span id="298">298</span>
-<span id="299">299</span>
-<span id="300">300</span>
-<span id="301">301</span>
-<span id="302">302</span>
-<span id="303">303</span>
-<span id="304">304</span>
-<span id="305">305</span>
-<span id="306">306</span>
-<span id="307">307</span>
-<span id="308">308</span>
-<span id="309">309</span>
-<span id="310">310</span>
-<span id="311">311</span>
-<span id="312">312</span>
-<span id="313">313</span>
-<span id="314">314</span>
-<span id="315">315</span>
-<span id="316">316</span>
-<span id="317">317</span>
-<span id="318">318</span>
-<span id="319">319</span>
-<span id="320">320</span>
-<span id="321">321</span>
-<span id="322">322</span>
-<span id="323">323</span>
-<span id="324">324</span>
-<span id="325">325</span>
-<span id="326">326</span>
-<span id="327">327</span>
-<span id="328">328</span>
-<span id="329">329</span>
-<span id="330">330</span>
-<span id="331">331</span>
-<span id="332">332</span>
-<span id="333">333</span>
-<span id="334">334</span>
-<span id="335">335</span>
-<span id="336">336</span>
-<span id="337">337</span>
-<span id="338">338</span>
-<span id="339">339</span>
-<span id="340">340</span>
-<span id="341">341</span>
-<span id="342">342</span>
-<span id="343">343</span>
-<span id="344">344</span>
-<span id="345">345</span>
-<span id="346">346</span>
-<span id="347">347</span>
-<span id="348">348</span>
-<span id="349">349</span>
-<span id="350">350</span>
-<span id="351">351</span>
-<span id="352">352</span>
-<span id="353">353</span>
-<span id="354">354</span>
-<span id="355">355</span>
-<span id="356">356</span>
-<span id="357">357</span>
-<span id="358">358</span>
-<span id="359">359</span>
-<span id="360">360</span>
-<span id="361">361</span>
-<span id="362">362</span>
-<span id="363">363</span>
-<span id="364">364</span>
-<span id="365">365</span>
-<span id="366">366</span>
-<span id="367">367</span>
-<span id="368">368</span>
-<span id="369">369</span>
-<span id="370">370</span>
-<span id="371">371</span>
-<span id="372">372</span>
-<span id="373">373</span>
-<span id="374">374</span>
-<span id="375">375</span>
-<span id="376">376</span>
-<span id="377">377</span>
-<span id="378">378</span>
-<span id="379">379</span>
-<span id="380">380</span>
-<span id="381">381</span>
-<span id="382">382</span>
-<span id="383">383</span>
-<span id="384">384</span>
-<span id="385">385</span>
-<span id="386">386</span>
-<span id="387">387</span>
-<span id="388">388</span>
-<span id="389">389</span>
-<span id="390">390</span>
-<span id="391">391</span>
-<span id="392">392</span>
-<span id="393">393</span>
-<span id="394">394</span>
-<span id="395">395</span>
-<span id="396">396</span>
-<span id="397">397</span>
-<span id="398">398</span>
-<span id="399">399</span>
-<span id="400">400</span>
-<span id="401">401</span>
-<span id="402">402</span>
-<span id="403">403</span>
-<span id="404">404</span>
-<span id="405">405</span>
-<span id="406">406</span>
-<span id="407">407</span>
-<span id="408">408</span>
-<span id="409">409</span>
-<span id="410">410</span>
-<span id="411">411</span>
-<span id="412">412</span>
-<span id="413">413</span>
-<span id="414">414</span>
-<span id="415">415</span>
-<span id="416">416</span>
-<span id="417">417</span>
-<span id="418">418</span>
-<span id="419">419</span>
-<span id="420">420</span>
-<span id="421">421</span>
-<span id="422">422</span>
-<span id="423">423</span>
-<span id="424">424</span>
-<span id="425">425</span>
-<span id="426">426</span>
-<span id="427">427</span>
-<span id="428">428</span>
-<span id="429">429</span>
-<span id="430">430</span>
-<span id="431">431</span>
-</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::collections::HashMap;
-<span class="kw">use </span>sbor::rust::fmt;
-<span class="kw">use </span>sbor::rust::str::FromStr;
+</pre><pre class="rust"><code><span class="kw">use </span>radix_engine_interface::api::api::Invokable;
+<span class="kw">use </span>radix_engine_interface::api::types::{
+    GlobalAddress, MetadataMethod, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod,
+};
+<span class="kw">use </span>radix_engine_interface::math::Decimal;
+<span class="kw">use </span>radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
+<span class="kw">use </span>radix_engine_interface::model::<span class="kw-2">*</span>;
+
+<span class="kw">use </span>sbor::rust::collections::HashMap;
 <span class="kw">use </span>sbor::rust::string::String;
 <span class="kw">use </span>sbor::rust::vec::Vec;
-<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
+<span class="kw">use </span>scrypto::engine::scrypto_env::ScryptoEnv;
+<span class="kw">use </span>scrypto::scrypto_env_native_fn;
 
-<span class="kw">use </span><span class="kw">crate</span>::abi::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::address::{AddressError, EntityType, BECH32_DECODER, BECH32_ENCODER};
-<span class="kw">use </span><span class="kw">crate</span>::buffer::scrypto_encode;
-<span class="kw">use </span><span class="kw">crate</span>::core::NativeFnIdentifier;
-<span class="kw">use </span><span class="kw">crate</span>::core::{FnIdentifier, Receiver, ResourceManagerFnIdentifier};
-<span class="kw">use </span><span class="kw">crate</span>::engine::types::RENodeId;
-<span class="kw">use </span><span class="kw">crate</span>::engine::{api::<span class="kw-2">*</span>, call_engine};
-<span class="kw">use </span><span class="kw">crate</span>::math::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::misc::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::native_functions;
-<span class="kw">use </span><span class="kw">crate</span>::resource::<span class="kw-2">*</span>;
-
-<span class="attribute">#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
-)]
-</span><span class="kw">pub enum </span>ResourceMethodAuthKey {
-    Mint,
-    Burn,
-    Withdraw,
-    Deposit,
-    UpdateMetadata,
-    UpdateNonFungibleData,
-}
-
-<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
-</span><span class="kw">pub enum </span>Mutability {
-    LOCKED,
-    MUTABLE(AccessRule),
-}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerCreateInput {
-    <span class="kw">pub </span>resource_type: ResourceType,
-    <span class="kw">pub </span>metadata: HashMap&lt;String, String&gt;,
-    <span class="kw">pub </span>access_rules: HashMap&lt;ResourceMethodAuthKey, (AccessRule, Mutability)&gt;,
-    <span class="kw">pub </span>mint_params: <span class="prelude-ty">Option</span>&lt;MintParams&gt;,
-}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerUpdateAuthInput {
-    <span class="kw">pub </span>method: ResourceMethodAuthKey,
-    <span class="kw">pub </span>access_rule: AccessRule,
-}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerLockAuthInput {
-    <span class="kw">pub </span>method: ResourceMethodAuthKey,
-}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerCreateVaultInput {}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerCreateBucketInput {}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerMintInput {
-    <span class="kw">pub </span>mint_params: MintParams,
-}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerGetMetadataInput {}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerGetResourceTypeInput {}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerGetTotalSupplyInput {}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerUpdateMetadataInput {
-    <span class="kw">pub </span>metadata: HashMap&lt;String, String&gt;,
-}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerUpdateNonFungibleDataInput {
-    <span class="kw">pub </span>id: NonFungibleId,
-    <span class="kw">pub </span>data: Vec&lt;u8&gt;,
-}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerNonFungibleExistsInput {
-    <span class="kw">pub </span>id: NonFungibleId,
-}
-
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ResourceManagerGetNonFungibleInput {
-    <span class="kw">pub </span>id: NonFungibleId,
-}
-
-<span class="doccomment">/// Represents a resource address.
-</span><span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-</span><span class="kw">pub enum </span>ResourceAddress {
-    Normal([u8; <span class="number">26</span>]),
-}
-
-<span class="kw">impl </span>ResourceAddress {}
+<span class="kw">use </span><span class="kw">crate</span>::scrypto;
 
 <span class="doccomment">/// Represents a resource manager.
 </span><span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub struct </span>ResourceManager(<span class="kw">pub</span>(<span class="kw">crate</span>) ResourceAddress);
 
 <span class="kw">impl </span>ResourceManager {
-    <span class="kw">pub fn </span>set_mintable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::Mint,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>set_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: String, value: String) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(MetadataSetInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            key,
+            value,
+        })
+        .unwrap()
+    }
+
+    <span class="kw">pub fn </span>get_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: String) -&gt; <span class="prelude-ty">Option</span>&lt;String&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(MetadataGetInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            key,
+        })
+        .unwrap()
+    }
+
+    <span class="kw">pub fn </span>set_mintable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            index: <span class="number">0</span>,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Mint,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
     <span class="kw">pub fn </span>set_burnable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::Burn,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            index: <span class="number">0</span>,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Burn,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
     <span class="kw">pub fn </span>set_withdrawable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::Withdraw,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(ResourceManagerUpdateVaultAuthInvocation {
+            receiver: <span class="self">self</span>.<span class="number">0</span>,
+            method: Withdraw,
+            access_rule,
+        })
+        .unwrap()
     }
 
-    <span class="kw">pub fn </span>set_depositable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::Deposit,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>set_depositable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(ResourceManagerUpdateVaultAuthInvocation {
+            receiver: <span class="self">self</span>.<span class="number">0</span>,
+            method: Deposit,
+            access_rule,
+        })
+        .unwrap()
     }
 
-    <span class="kw">pub fn </span>set_updateable_metadata(<span class="kw-2">&amp;</span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::UpdateMetadata,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>set_recallable(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rule: AccessRule) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(ResourceManagerUpdateVaultAuthInvocation {
+            receiver: <span class="self">self</span>.<span class="number">0</span>,
+            method: Recall,
+            access_rule,
+        })
+        .unwrap()
     }
 
-    <span class="kw">pub fn </span>set_updateable_non_fungible_data(<span class="kw-2">&amp;</span><span class="self">self</span>, access_rule: AccessRule) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateAuthInput {
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
-                access_rule,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>set_updateable_metadata(<span class="kw-2">&amp;</span><span class="self">self</span>, access_rule: AccessRule) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            index: <span class="number">0</span>,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
-    <span class="kw">pub fn </span>lock_mintable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::Mint,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>set_updateable_non_fungible_data(<span class="kw-2">&amp;</span><span class="self">self</span>, access_rule: AccessRule) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            index: <span class="number">0</span>,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateNonFungibleData,
+            ))),
+            rule: access_rule,
+        })
+        .unwrap();
     }
 
-    <span class="kw">pub fn </span>lock_burnable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::Burn,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>lock_mintable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            index: <span class="number">0</span>,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Mint,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
-    <span class="kw">pub fn </span>lock_withdrawable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::Withdraw,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>lock_burnable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            index: <span class="number">0</span>,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::Burn,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
-    <span class="kw">pub fn </span>lock_depositable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::Deposit,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>lock_updateable_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            index: <span class="number">0</span>,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
+                MetadataMethod::Set,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
-    <span class="kw">pub fn </span>lock_updateable_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::UpdateMetadata,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>lock_updateable_non_fungible_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Resource(<span class="self">self</span>.<span class="number">0</span>)),
+            index: <span class="number">0</span>,
+            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
+                ResourceManagerMethod::UpdateNonFungibleData,
+            ))),
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
-    <span class="kw">pub fn </span>lock_updateable_non_fungible_data(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::LockAuth,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerLockAuthInput {
-                method: ResourceMethodAuthKey::UpdateNonFungibleData,
-            }),
-        );
-        call_engine(input)
+    <span class="kw">pub fn </span>lock_withdrawable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
+            receiver: <span class="self">self</span>.<span class="number">0</span>,
+            method: Withdraw,
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
+    }
+
+    <span class="kw">pub fn </span>lock_depositable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
+            receiver: <span class="self">self</span>.<span class="number">0</span>,
+            method: Deposit,
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
+    }
+
+    <span class="kw">pub fn </span>lock_recallable(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(ResourceManagerSetVaultAuthMutabilityInvocation {
+            receiver: <span class="self">self</span>.<span class="number">0</span>,
+            method: Recall,
+            mutability: AccessRule::DenyAll,
+        })
+        .unwrap()
     }
 
     <span class="kw">fn </span>mint_internal(<span class="kw-2">&amp;mut </span><span class="self">self</span>, mint_params: MintParams) -&gt; Bucket {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::Mint,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerMintInput { mint_params }),
-        );
-        call_engine(input)
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(ResourceManagerMintInvocation {
+            mint_params,
+            receiver: <span class="self">self</span>.<span class="number">0</span>,
+        })
+        .unwrap()
     }
 
-    <span class="kw">fn </span>update_non_fungible_data_internal(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: NonFungibleId, data: Vec&lt;u8&gt;) -&gt; () {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::UpdateNonFungibleData,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerUpdateNonFungibleDataInput { id, data }),
-        );
-        call_engine(input)
+    <span class="kw">fn </span>update_non_fungible_data_internal(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: NonFungibleId, data: Vec&lt;u8&gt;) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(ResourceManagerUpdateNonFungibleDataInvocation {
+            id,
+            data,
+            receiver: <span class="self">self</span>.<span class="number">0</span>,
+        })
+        .unwrap()
     }
 
     <span class="kw">fn </span>get_non_fungible_data_internal(<span class="kw-2">&amp;</span><span class="self">self</span>, id: NonFungibleId) -&gt; [Vec&lt;u8&gt;; <span class="number">2</span>] {
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::ResourceManager(
-                ResourceManagerFnIdentifier::GetNonFungible,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ResourceManagerGetNonFungibleInput { id }),
-        );
-        call_engine(input)
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(ResourceManagerGetNonFungibleInvocation {
+            id,
+            receiver: <span class="self">self</span>.<span class="number">0</span>,
+        })
+        .unwrap()
     }
 
-    <span class="macro">native_functions! </span>{
-        Receiver::Ref(RENodeId::ResourceManager(<span class="self">self</span>.<span class="number">0</span>)), NativeFnIdentifier::ResourceManager =&gt; {
-            <span class="kw">pub fn </span>metadata(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; HashMap&lt;String, String&gt; {
-                ResourceManagerFnIdentifier::GetMetadata,
-                ResourceManagerGetMetadataInput {}
+    <span class="macro">scrypto_env_native_fn! </span>{
+        <span class="kw">pub fn </span>resource_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceType {
+            ResourceManagerGetResourceTypeInvocation {
+                receiver: <span class="self">self</span>.<span class="number">0</span>,
             }
-            <span class="kw">pub fn </span>resource_type(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; ResourceType {
-                ResourceManagerFnIdentifier::GetResourceType,
-                ResourceManagerGetResourceTypeInput {}
+        }
+        <span class="kw">pub fn </span>total_supply(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
+            ResourceManagerGetTotalSupplyInvocation {
+                receiver: <span class="self">self</span>.<span class="number">0</span>,
             }
-            <span class="kw">pub fn </span>total_supply(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Decimal {
-                ResourceManagerFnIdentifier::GetTotalSupply,
-                ResourceManagerGetTotalSupplyInput {}
+        }
+        <span class="kw">pub fn </span>non_fungible_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>NonFungibleId) -&gt; bool {
+            ResourceManagerNonFungibleExistsInvocation {
+                receiver: <span class="self">self</span>.<span class="number">0</span>,
+                id: id.clone()
             }
-            <span class="kw">pub fn </span>update_metadata(<span class="kw-2">&amp;mut </span><span class="self">self</span>, metadata: HashMap&lt;String, String&gt;) -&gt; () {
-                ResourceManagerFnIdentifier::UpdateMetadata,
-                ResourceManagerUpdateMetadataInput {
-                    metadata
-                }
-            }
-            <span class="kw">pub fn </span>non_fungible_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>NonFungibleId) -&gt; bool {
-                ResourceManagerFnIdentifier::NonFungibleExists,
-                ResourceManagerNonFungibleExistsInput {
-                    id: id.clone()
-                }
+        }
+        <span class="kw">pub fn </span>burn(<span class="kw-2">&amp;mut </span><span class="self">self</span>, bucket: Bucket) -&gt; () {
+            ResourceManagerBurnInvocation {
+                receiver: <span class="self">self</span>.<span class="number">0</span>,
+                bucket: Bucket(bucket.<span class="number">0</span>),
             }
         }
     }
@@ -773,13 +560,11 @@
     <span class="doccomment">/// Mints non-fungible resources
     </span><span class="kw">pub fn </span>mint_non_fungible&lt;T: NonFungibleData&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>NonFungibleId, data: T) -&gt; Bucket {
         <span class="kw">let </span><span class="kw-2">mut </span>entries = HashMap::new();
-        entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
+        entries.insert(
+            id.clone(),
+            (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
+        );
         <span class="self">self</span>.mint_internal(MintParams::NonFungible { entries })
-    }
-
-    <span class="doccomment">/// Burns a bucket of resources.
-    </span><span class="kw">pub fn </span>burn(<span class="kw-2">&amp;</span><span class="self">self</span>, bucket: Bucket) {
-        bucket.burn()
     }
 
     <span class="doccomment">/// Returns the data of a non-fungible unit, both the immutable and mutable parts.
@@ -800,64 +585,7 @@
         id: <span class="kw-2">&amp;</span>NonFungibleId,
         new_data: T,
     ) {
-        <span class="self">self</span>.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
-    }
-}
-
-<span class="comment">//========
-// binary
-//========
-
-</span><span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>ResourceAddress {
-    <span class="kw">type </span>Error = AddressError;
-
-    <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="kw">match </span>slice.len() {
-            <span class="number">27 </span>=&gt; <span class="kw">match </span>EntityType::try_from(slice[<span class="number">0</span>])
-                .map_err(|<span class="kw">_</span>| AddressError::InvalidEntityTypeId(slice[<span class="number">0</span>]))<span class="question-mark">?
-            </span>{
-                EntityType::Resource =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Normal(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">1</span>..]))),
-                <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(AddressError::InvalidEntityTypeId(slice[<span class="number">0</span>])),
-            },
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(AddressError::InvalidLength(slice.len())),
-        }
-    }
-}
-
-<span class="kw">impl </span>ResourceAddress {
-    <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
-        buf.push(EntityType::resource(<span class="self">self</span>).id());
-        <span class="kw">match </span><span class="self">self </span>{
-            <span class="self">Self</span>::Normal(v) =&gt; buf.extend(v),
-        }
-        buf
-    }
-}
-
-<span class="macro">scrypto_type!</span>(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
-
-<span class="comment">//======
-// text
-//======
-
-</span><span class="kw">impl </span>FromStr <span class="kw">for </span>ResourceAddress {
-    <span class="kw">type </span><span class="prelude-val">Err </span>= AddressError;
-
-    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
-        BECH32_DECODER.validate_and_decode_resource_address(s)
-    }
-}
-
-<span class="kw">impl </span>fmt::Display <span class="kw">for </span>ResourceAddress {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, BECH32_ENCODER.encode_resource_address(<span class="self">self</span>))
-    }
-}
-
-<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>ResourceAddress {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
+        <span class="self">self</span>.update_non_fungible_data_internal(id.clone(), new_data.mutable_data().unwrap())
     }
 }
 </code></pre></div>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/errors.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>errors.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/engine/errors.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>errors.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -154,20 +154,111 @@
 <span id="154">154</span>
 <span id="155">155</span>
 <span id="156">156</span>
-</pre><pre class="rust"><code><span class="kw">use </span>transaction::errors::<span class="kw-2">*</span>;
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::node_move_module::NodeMoveError;
+<span class="kw">use </span><span class="kw">crate</span>::engine::{ExecutionMode, LockFlags, REActor};
+<span class="kw">use </span>radix_engine_interface::api::types::{
+    GlobalAddress, LockHandle, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
+    SubstateOffset,
+};
+<span class="kw">use </span>radix_engine_interface::data::ScryptoValueDecodeError;
+<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
+<span class="kw">use </span>transaction::errors::<span class="kw-2">*</span>;
 
-<span class="kw">use </span><span class="kw">crate</span>::engine::REActor;
-<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserveError;
 <span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::wasm::WasmError;
-<span class="kw">use </span>sbor::<span class="kw-2">*</span>;
+
+<span class="kw">use </span><span class="kw">super</span>::CostingError;
+<span class="kw">use </span><span class="kw">super</span>::ExecutionTraceError;
+<span class="kw">use </span><span class="kw">super</span>::TrackError;
+<span class="kw">use super</span>::{AuthError, RoyaltyError};
 
 <span class="doccomment">/// Represents an error which causes a tranasction to be rejected.
-</span><span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub enum </span>RejectionError {
     SuccessButFeeLoanNotRepaid,
     ErrorBeforeFeeLoanRepaid(RuntimeError),
+    TransactionEpochNotYetValid {
+        valid_from: u64,
+        current_epoch: u64,
+    },
+    TransactionEpochNoLongerValid {
+        valid_until: u64,
+        current_epoch: u64,
+    },
 }
 
 <span class="kw">impl </span>fmt::Display <span class="kw">for </span>RejectionError {
@@ -177,87 +268,151 @@
 }
 
 <span class="doccomment">/// Represents an error when executing a transaction.
-</span><span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub enum </span>RuntimeError {
     <span class="doccomment">/// An error occurred within the kernel.
     </span>KernelError(KernelError),
+
+    <span class="doccomment">/// An error occurred within call frame.
+    </span>CallFrameError(CallFrameError),
+
+    <span class="doccomment">/// An error occurred within an interpreter
+    </span>InterpreterError(InterpreterError),
 
     <span class="doccomment">/// An error occurred within a kernel module.
     </span>ModuleError(ModuleError),
 
     <span class="doccomment">/// An error occurred within application logic, like the RE models.
     </span>ApplicationError(ApplicationError),
+
+    <span class="doccomment">/// An unexpected error occurred
+    </span>UnexpectedError(String),
 }
 
-<span class="attribute">#[derive(Debug, Encode, Decode, TypeId)]
+<span class="kw">impl </span>From&lt;KernelError&gt; <span class="kw">for </span>RuntimeError {
+    <span class="kw">fn </span>from(error: KernelError) -&gt; <span class="self">Self </span>{
+        RuntimeError::KernelError(error)
+    }
+}
+
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub enum </span>KernelError {
+    InvalidModeTransition(ExecutionMode, ExecutionMode),
+
     <span class="comment">// invocation
     </span>WasmError(WasmError),
-    InvokeMethodInvalidReceiver(RENodeId),
-    InvokeMethodInvalidReferencePass(RENodeId),
-    InvokeMethodInvalidReferenceReturn(RENodeId),
+
+    InvalidReferenceWrite(GlobalAddress),
+
+    RENodeNotFound(RENodeId),
+
     MaxCallDepthLimitReached,
-    MethodNotFound(FnIdentifier),
-    InvalidFnInput { fn_identifier: FnIdentifier },
-    InvalidFnOutput { fn_identifier: FnIdentifier },
+    InvalidScryptoFnOutput,
+    MethodReceiverNotMatch(NativeMethod, RENodeId),
 
     <span class="comment">// ID allocation
     </span>IdAllocationError(IdAllocationError),
 
     <span class="comment">// SBOR decoding
-    </span>DecodeError(DecodeError),
+    </span>InvalidScryptoValue(ScryptoValueDecodeError),
+    InvalidSborValue(DecodeError),
+    InvalidSborValueOnEncode(EncodeError),
 
     <span class="comment">// RENode
-    </span>BucketNotFound(BucketId),
-    ProofNotFound(ProofId),
-    PackageNotFound(PackageAddress),
-    BlueprintNotFound(PackageAddress, String),
-    ResourceManagerNotFound(ResourceAddress),
-    WorktopNotFound,
-    RENodeNotFound(RENodeId),
-    StoredNodeRemoved(RENodeId),
+    </span>StoredNodeRemoved(RENodeId),
     RENodeGlobalizeTypeNotAllowed(RENodeId),
-    RENodeCreateInvalidPermission,
-    RENodeCreateNodeNotFound(RENodeId),
-    RENodeAlreadyTouched,
-    RENodeNotInTrack,
-
-    <span class="comment">// Substate
-    </span>Reentrancy(SubstateId),
-    SubstateReadNotReadable(REActor, SubstateId),
-    SubstateWriteNotWriteable(REActor, SubstateId),
-    SubstateReadSubstateNotFound(SubstateId),
-
-    <span class="comment">// constraints
-    </span>ValueNotAllowed,
-    BucketNotAllowed,
-    ProofNotAllowed,
-    VaultNotAllowed,
-    KeyValueStoreNotAllowed,
-    CantMoveLockedBucket,
-    CantMoveRestrictedProof,
-    CantMoveWorktop,
-    CantMoveAuthZone,
-    DropFailure(DropFailure),
-
+    TrackError(TrackError),
+    LockDoesNotExist(LockHandle),
+    LockNotMutable(LockHandle),
     BlobNotFound(Hash),
+    DropNodeFailure(RENodeId),
+
+    <span class="comment">// Substate Constraints
+    </span>InvalidOffset(SubstateOffset),
+    InvalidOwnership(SubstateOffset, RENodeId),
+    InvalidOverwrite,
+    InvalidId(RENodeId),
+
+    <span class="comment">// Actor Constraints
+    </span>InvalidDropNodeVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+        node_id: RENodeId,
+    },
+    InvalidCreateNodeVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+    },
+    InvalidSubstateVisibility {
+        mode: ExecutionMode,
+        actor: REActor,
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        flags: LockFlags,
+    },
 }
 
-<span class="attribute">#[derive(Debug, Encode, Decode, TypeId)]
-</span><span class="kw">pub enum </span>ModuleError {
-    AuthorizationError {
-        function: FnIdentifier,
-        authorization: MethodAuthorization,
-        error: MethodAuthorizationError,
-    },
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>CallFrameError {
+    OffsetDoesNotExist(RENodeId, SubstateOffset),
+    RENodeNotVisible(RENodeId),
+    RENodeNotOwned(RENodeId),
+    MovingLockedRENode(RENodeId),
+    RENodeIdWasNotAllocated(RENodeId),
+    CallFrameCleanupAllocatedIdsNotEmpty,
+}
 
-    CostingError(FeeReserveError),
+<span class="kw">impl </span>From&lt;CallFrameError&gt; <span class="kw">for </span>RuntimeError {
+    <span class="kw">fn </span>from(error: CallFrameError) -&gt; <span class="self">Self </span>{
+        RuntimeError::CallFrameError(error)
+    }
+}
+
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+</span><span class="kw">pub enum </span>ScryptoFnResolvingError {
+    BlueprintNotFound,
+    FunctionNotFound,
+    MethodNotFound,
+    InvalidInput,
+}
+
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>InterpreterError {
+    InvalidInvocation,
+    InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
+    InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
+}
+
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>ModuleError {
+    NodeMoveError(NodeMoveError),
+    AuthError(AuthError),
+    CostingError(CostingError),
+    RoyaltyError(RoyaltyError),
+    ExecutionTraceError(ExecutionTraceError),
+}
+
+<span class="kw">impl </span>Into&lt;ModuleError&gt; <span class="kw">for </span>AuthError {
+    <span class="kw">fn </span>into(<span class="self">self</span>) -&gt; ModuleError {
+        ModuleError::AuthError(<span class="self">self</span>)
+    }
 }
 
 <span class="attribute">#[derive(Debug)]
 </span><span class="kw">pub enum </span>InvokeError&lt;E&gt; {
     Error(E),
     Downstream(RuntimeError),
+}
+
+<span class="kw">impl</span>&lt;E&gt; From&lt;RuntimeError&gt; <span class="kw">for </span>InvokeError&lt;E&gt; {
+    <span class="kw">fn </span>from(runtime_error: RuntimeError) -&gt; <span class="self">Self </span>{
+        InvokeError::Downstream(runtime_error)
+    }
 }
 
 <span class="kw">impl</span>&lt;E&gt; InvokeError&lt;E&gt; {
@@ -270,17 +425,18 @@
     }
 }
 
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub enum </span>ApplicationError {
     TransactionProcessorError(TransactionProcessorError),
 
     PackageError(PackageError),
 
-    SystemError(SystemError),
+    EpochManagerError(EpochManagerError),
 
     ResourceManagerError(ResourceManagerError),
 
-    ComponentError(ComponentError),
+    AccessRulesChainError(AccessRulesChainError),
 
     BucketError(BucketError),
 
@@ -291,18 +447,6 @@
     WorktopError(WorktopError),
 
     AuthZoneError(AuthZoneError),
-}
-
-<span class="attribute">#[derive(Debug, PartialEq, Encode, Decode, TypeId)]
-</span><span class="kw">pub enum </span>DropFailure {
-    System,
-    Resource,
-    Component,
-    Bucket,
-    Worktop,
-    Vault,
-    Package,
-    KeyValueStore,
 }
 
 <span class="kw">impl </span>fmt::Display <span class="kw">for </span>RuntimeError {

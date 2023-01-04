@@ -1,4 +1,4 @@
 (function() {var implementors = {
-"sbor":[],
-"scrypto":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.65.0/core/iter/traits/accum/trait.Sum.html\" title=\"trait core::iter::traits::accum::Sum\">Sum</a>&lt;<a class=\"struct\" href=\"scrypto/math/decimal/struct.Decimal.html\" title=\"struct scrypto::math::decimal::Decimal\">Decimal</a>&gt; for <a class=\"struct\" href=\"scrypto/math/decimal/struct.Decimal.html\" title=\"struct scrypto::math::decimal::Decimal\">Decimal</a>"],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.65.0/core/iter/traits/accum/trait.Sum.html\" title=\"trait core::iter::traits::accum::Sum\">Sum</a>&lt;<a class=\"struct\" href=\"scrypto/math/precise_decimal/struct.PreciseDecimal.html\" title=\"struct scrypto::math::precise_decimal::PreciseDecimal\">PreciseDecimal</a>&gt; for <a class=\"struct\" href=\"scrypto/math/precise_decimal/struct.PreciseDecimal.html\" title=\"struct scrypto::math::precise_decimal::PreciseDecimal\">PreciseDecimal</a>"]]
+"radix_engine":[],
+"sbor":[]
 };if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
