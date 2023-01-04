@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/component/component.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>component.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `scrypto/src/component/component.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>component.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -190,83 +190,420 @@
 <span id="190">190</span>
 <span id="191">191</span>
 <span id="192">192</span>
-</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::fmt;
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+</pre><pre class="rust"><code><span class="kw">use </span>radix_engine_derive::Describe;
+<span class="kw">use </span>radix_engine_interface::api::api::Invokable;
+<span class="kw">use </span>radix_engine_interface::api::types::{
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
+    SubstateOffset,
+};
+<span class="kw">use </span>radix_engine_interface::data::{
+    scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
+};
+<span class="kw">use </span>radix_engine_interface::model::<span class="kw-2">*</span>;
+<span class="kw">use </span>radix_engine_interface::scrypto_type;
+<span class="kw">use </span>sbor::rust::borrow::ToOwned;
+<span class="kw">use </span>sbor::rust::fmt;
+<span class="kw">use </span>sbor::rust::fmt::Debug;
 <span class="kw">use </span>sbor::rust::str::FromStr;
 <span class="kw">use </span>sbor::rust::string::String;
+<span class="kw">use </span>sbor::rust::string::ToString;
 <span class="kw">use </span>sbor::rust::vec::Vec;
 <span class="kw">use </span>sbor::<span class="kw-2">*</span>;
+<span class="kw">use </span>utils::copy_u8_array;
 
 <span class="kw">use </span><span class="kw">crate</span>::abi::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::address::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::buffer::scrypto_encode;
-<span class="kw">use </span><span class="kw">crate</span>::component::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::core::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::engine::types::{RENodeId, SubstateId};
-<span class="kw">use </span><span class="kw">crate</span>::engine::{api::<span class="kw-2">*</span>, call_engine};
-<span class="kw">use </span><span class="kw">crate</span>::misc::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::resource::AccessRules;
+<span class="kw">use </span><span class="kw">crate</span>::engine::scrypto_env::ScryptoEnv;
+<span class="kw">use </span><span class="kw">crate</span>::runtime::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::scrypto;
 
-<span class="attribute">#[derive(Debug, TypeId, Encode, Decode)]
-</span><span class="kw">pub struct </span>ComponentAddAccessCheckInput {
-    <span class="kw">pub </span>access_rules: AccessRules,
-}
+<span class="kw">use </span><span class="kw">super</span>::ComponentAccessRules;
 
 <span class="doccomment">/// Represents the state of a component.
-</span><span class="kw">pub trait </span>ComponentState&lt;C: LocalComponent&gt;: Encode + Decode {
+</span><span class="kw">pub trait </span>ComponentState&lt;C: LocalComponent&gt;: ScryptoEncode + ScryptoDecode {
     <span class="doccomment">/// Instantiates a component from this data structure.
     </span><span class="kw">fn </span>instantiate(<span class="self">self</span>) -&gt; C;
 }
 
-<span class="kw">pub trait </span>LocalComponent {
+<span class="doccomment">/// A separate trait for standardized calls so that component methods don&#39;t
+/// name clash
+/// TODO: unify with LocalComponent and use Own&lt;C&gt; and GlobalRef&lt;C&gt; Deref structures
+</span><span class="kw">pub trait </span>GlobalComponent {
     <span class="kw">fn </span>package_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PackageAddress;
     <span class="kw">fn </span>blueprint_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String;
+    <span class="kw">fn </span>metadata&lt;K: AsRef&lt;str&gt;, V: AsRef&lt;str&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: K, value: V) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>;
     <span class="kw">fn </span>add_access_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rules: AccessRules) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>;
+    <span class="kw">fn </span>set_royalty_config(<span class="kw-2">&amp;mut </span><span class="self">self</span>, royalty_config: RoyaltyConfig) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>;
+    <span class="kw">fn </span>claim_royalty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Bucket;
+    <span class="kw">fn </span>access_rules_chain(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;ComponentAccessRules&gt;;
+}
+
+<span class="doccomment">/// A separate trait for standardized calls so that component methods don&#39;t
+/// name clash
+</span><span class="kw">pub trait </span>LocalComponent {
+    <span class="kw">fn </span>package_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PackageAddress;
+    <span class="kw">fn </span>blueprint_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String;
+    <span class="kw">fn </span>metadata&lt;K: AsRef&lt;str&gt;, V: AsRef&lt;str&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: K, value: V) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>;
+    <span class="kw">fn </span>add_access_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rules: AccessRules) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>;
+    <span class="kw">fn </span>set_royalty_config(<span class="kw-2">&amp;mut </span><span class="self">self</span>, royalty_config: RoyaltyConfig) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self</span>;
     <span class="kw">fn </span>globalize(<span class="self">self</span>) -&gt; ComponentAddress;
+    <span class="kw">fn </span>globalize_with_owner(<span class="self">self</span>, owner_badge: NonFungibleAddress) -&gt; ComponentAddress;
+}
+
+<span class="comment">// TODO: de-duplication
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+</span><span class="kw">pub struct </span>ComponentInfoSubstate {
+    <span class="kw">pub </span>package_address: PackageAddress,
+    <span class="kw">pub </span>blueprint_name: String,
+}
+
+<span class="comment">// TODO: de-duplication
+</span><span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>ComponentStateSubstate {
+    <span class="kw">pub </span>raw: Vec&lt;u8&gt;,
 }
 
 <span class="doccomment">/// Represents an instantiated component.
-</span><span class="attribute">#[derive(PartialEq, Eq, Hash)]
-</span><span class="kw">pub struct </span>Component(<span class="kw">pub</span>(<span class="kw">crate</span>) ComponentAddress);
+</span><span class="attribute">#[derive(PartialEq, Eq, Hash, Clone)]
+</span><span class="kw">pub struct </span>Component(<span class="kw">pub </span>ComponentId);
 
 <span class="kw">impl </span>Component {
     <span class="doccomment">/// Invokes a method on this component.
-    </span><span class="kw">pub fn </span>call&lt;T: Decode&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, method: <span class="kw-2">&amp;</span>str, args: Vec&lt;u8&gt;) -&gt; T {
-        Runtime::call_method(<span class="self">self</span>.<span class="number">0</span>, method, args)
+    </span><span class="kw">pub fn </span>call&lt;T: ScryptoDecode&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, method: <span class="kw-2">&amp;</span>str, args: Vec&lt;u8&gt;) -&gt; T {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        <span class="kw">let </span>buffer = env
+            .invoke(ScryptoInvocation::Method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Component(<span class="self">self</span>.<span class="number">0</span>),
+                    method_name: method.to_string(),
+                },
+                args,
+            ))
+            .unwrap();
+        scrypto_decode(<span class="kw-2">&amp;</span>buffer).unwrap()
     }
 
     <span class="doccomment">/// Returns the package ID of this component.
     </span><span class="kw">pub fn </span>package_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PackageAddress {
-        <span class="kw">let </span>substate_id = SubstateId::ComponentInfo(<span class="self">self</span>.<span class="number">0</span>);
-        <span class="kw">let </span>input = RadixEngineInput::SubstateRead(substate_id);
-        <span class="kw">let </span>output: (PackageAddress, String) = call_engine(input);
-        output.<span class="number">0
-    </span>}
+        <span class="kw">let </span>pointer = DataPointer::new(
+            RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        <span class="kw">let </span>state: DataRef&lt;ComponentInfoSubstate&gt; = pointer.get();
+        state.package_address
+    }
 
     <span class="doccomment">/// Returns the blueprint name of this component.
     </span><span class="kw">pub fn </span>blueprint_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
-        <span class="kw">let </span>substate_id = SubstateId::ComponentInfo(<span class="self">self</span>.<span class="number">0</span>);
-        <span class="kw">let </span>input = RadixEngineInput::SubstateRead(substate_id);
-        <span class="kw">let </span>output: (PackageAddress, String) = call_engine(input);
-        output.<span class="number">1
+        <span class="kw">let </span>pointer = DataPointer::new(
+            RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        <span class="kw">let </span>state: DataRef&lt;ComponentInfoSubstate&gt; = pointer.get();
+        state.blueprint_name.clone()
+    }
+
+    <span class="doccomment">/// Add access check on the component.
+    </span><span class="kw">pub fn </span>add_access_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rules: AccessRules) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesAddAccessCheckInvocation {
+            receiver: RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>),
+            access_rules,
+        })
+        .unwrap();
+        <span class="self">self
     </span>}
 
-    <span class="kw">pub fn </span>add_access_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rules: AccessRules) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
-        <span class="kw">let </span>input = RadixEngineInput::InvokeMethod(
-            Receiver::Ref(RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>)),
-            FnIdentifier::Native(NativeFnIdentifier::Component(
-                ComponentFnIdentifier::AddAccessCheck,
-            )),
-            scrypto_encode(<span class="kw-2">&amp;</span>ComponentAddAccessCheckInput { access_rules }),
-        );
-        <span class="kw">let _</span>: () = call_engine(input);
+    <span class="doccomment">/// Set the royalty configuration of the component.
+    </span><span class="kw">pub fn </span>set_royalty_config(<span class="kw-2">&amp;mut </span><span class="self">self</span>, royalty_config: RoyaltyConfig) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        ScryptoEnv
+            .invoke(ComponentSetRoyaltyConfigInvocation {
+                receiver: RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>),
+                royalty_config,
+            })
+            .unwrap();
+        <span class="self">self
+    </span>}
 
+    <span class="kw">pub fn </span>metadata&lt;K: AsRef&lt;str&gt;, V: AsRef&lt;str&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: K, value: V) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        ScryptoEnv
+            .invoke(MetadataSetInvocation {
+                receiver: RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>),
+                key: name.as_ref().to_owned(),
+                value: value.as_ref().to_owned(),
+            })
+            .unwrap();
         <span class="self">self
     </span>}
 
     <span class="kw">pub fn </span>globalize(<span class="self">self</span>) -&gt; ComponentAddress {
-        <span class="kw">let </span>input = RadixEngineInput::RENodeGlobalize(RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>));
-        <span class="kw">let _</span>: () = call_engine(input);
-        <span class="self">self</span>.<span class="number">0</span>.clone()
+        ScryptoEnv
+            .invoke(ComponentGlobalizeInvocation {
+                component_id: <span class="self">self</span>.<span class="number">0</span>,
+            })
+            .unwrap()
+    }
+
+    <span class="doccomment">/// Globalize with owner badge. This will add additional access rules to protect native
+    /// methods, such as metadata and royalty.
+    </span><span class="kw">pub fn </span>globalize_with_owner(<span class="self">self</span>, owner_badge: NonFungibleAddress) -&gt; ComponentAddress {
+        ScryptoEnv
+            .invoke(ComponentGlobalizeWithOwnerInvocation {
+                component_id: <span class="self">self</span>.<span class="number">0</span>,
+                owner_badge,
+            })
+            .unwrap()
+    }
+
+    <span class="doccomment">/// Returns the layers of access rules on this component.
+    </span><span class="kw">pub fn </span>access_rules_chain(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;ComponentAccessRules&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        <span class="kw">let </span>length = env
+            .invoke(AccessRulesGetLengthInvocation {
+                receiver: RENodeId::Component(<span class="self">self</span>.<span class="number">0</span>),
+            })
+            .unwrap();
+        (<span class="number">0</span>..length)
+            .into_iter()
+            .map(|id| ComponentAccessRules::new(<span class="self">self</span>.<span class="number">0</span>, id))
+            .collect()
+    }
+}
+
+<span class="attribute">#[derive(PartialEq, Eq, Hash, Clone)]
+</span><span class="kw">pub struct </span>GlobalComponentRef(<span class="kw">pub </span>ComponentAddress);
+
+<span class="kw">impl </span>GlobalComponentRef {
+    <span class="doccomment">/// Invokes a method on this component.
+    </span><span class="kw">pub fn </span>call&lt;T: ScryptoDecode&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, method: <span class="kw-2">&amp;</span>str, args: Vec&lt;u8&gt;) -&gt; T {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        <span class="kw">let </span>raw = env
+            .invoke(ScryptoInvocation::Method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(<span class="self">self</span>.<span class="number">0</span>),
+                    method_name: method.to_string(),
+                },
+                args,
+            ))
+            .unwrap();
+        scrypto_decode(<span class="kw-2">&amp;</span>raw).unwrap()
+    }
+
+    <span class="kw">pub fn </span>metadata&lt;K: AsRef&lt;str&gt;, V: AsRef&lt;str&gt;&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, name: K, value: V) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        ScryptoEnv
+            .invoke(MetadataSetInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Component(<span class="self">self</span>.<span class="number">0</span>)),
+                key: name.as_ref().to_owned(),
+                value: value.as_ref().to_owned(),
+            })
+            .unwrap();
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Add access check on the component.
+    </span><span class="kw">pub fn </span>add_access_check(<span class="kw-2">&amp;mut </span><span class="self">self</span>, access_rules: AccessRules) -&gt; <span class="kw-2">&amp;mut </span><span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        env.invoke(AccessRulesAddAccessCheckInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(<span class="self">self</span>.<span class="number">0</span>)),
+            access_rules,
+        })
+        .unwrap();
+        <span class="self">self
+    </span>}
+
+    <span class="doccomment">/// Returns the package ID of this component.
+    </span><span class="kw">pub fn </span>package_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; PackageAddress {
+        <span class="kw">let </span>pointer = DataPointer::new(
+            RENodeId::Global(GlobalAddress::Component(<span class="self">self</span>.<span class="number">0</span>)),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        <span class="kw">let </span>state: DataRef&lt;ComponentInfoSubstate&gt; = pointer.get();
+        state.package_address
+    }
+
+    <span class="doccomment">/// Returns the blueprint name of this component.
+    </span><span class="kw">pub fn </span>blueprint_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+        <span class="kw">let </span>pointer = DataPointer::new(
+            RENodeId::Global(GlobalAddress::Component(<span class="self">self</span>.<span class="number">0</span>)),
+            SubstateOffset::Component(ComponentOffset::Info),
+        );
+        <span class="kw">let </span>state: DataRef&lt;ComponentInfoSubstate&gt; = pointer.get();
+        state.blueprint_name.clone()
+    }
+
+    <span class="kw">pub fn </span>set_royalty_config(<span class="kw-2">&amp;</span><span class="self">self</span>, royalty_config: RoyaltyConfig) {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+
+        env.invoke(ComponentSetRoyaltyConfigInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(<span class="self">self</span>.<span class="number">0</span>)),
+            royalty_config,
+        })
+        .unwrap();
+    }
+
+    <span class="kw">pub fn </span>claim_royalty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Bucket {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+
+        env.invoke(ComponentClaimRoyaltyInvocation {
+            receiver: RENodeId::Global(GlobalAddress::Component(<span class="self">self</span>.<span class="number">0</span>)),
+        })
+        .unwrap()
+    }
+
+    <span class="doccomment">/// Returns the layers of access rules on this component.
+    </span><span class="kw">pub fn </span>access_rules_chain(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;ComponentAccessRules&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        <span class="kw">let </span>length = env
+            .invoke(AccessRulesGetLengthInvocation {
+                receiver: RENodeId::Global(GlobalAddress::Component(<span class="self">self</span>.<span class="number">0</span>)),
+            })
+            .unwrap();
+        (<span class="number">0</span>..length)
+            .into_iter()
+            .map(|id| ComponentAccessRules::new(<span class="self">self</span>.<span class="number">0</span>, id))
+            .collect()
     }
 }
 
@@ -274,19 +611,21 @@
 // binary
 //========
 
-</span><span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>Component {
-    <span class="kw">type </span>Error = AddressError;
-
-    <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="kw">let </span>component_address = ComponentAddress::try_from(slice)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(component_address))
-    }
+</span><span class="doccomment">/// Represents an error when decoding key value store.
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>ParseComponentError {
+    InvalidHex(String),
+    InvalidLength(usize),
 }
 
-<span class="kw">impl </span>From&lt;ComponentAddress&gt; <span class="kw">for </span>Component {
-    <span class="kw">fn </span>from(component: ComponentAddress) -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>component_address = ComponentAddress::try_from(component.to_vec().as_slice()).unwrap();
-        <span class="self">Self</span>(component_address)
+<span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>Component {
+    <span class="kw">type </span>Error = ParseComponentError;
+
+    <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+        <span class="kw">match </span>slice.len() {
+            <span class="number">36 </span>=&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>(copy_u8_array(slice))),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(ParseComponentError::InvalidLength(slice.len())),
+        }
     }
 }
 
@@ -296,90 +635,35 @@
     }
 }
 
-<span class="macro">scrypto_type!</span>(Component, ScryptoType::Component, Vec::new());
+<span class="macro">scrypto_type!</span>(
+    Component,
+    ScryptoCustomTypeId::Component,
+    Type::Component,
+    <span class="number">36
+</span>);
 
 <span class="comment">//======
 // text
 //======
 
-</span><span class="kw">impl </span>fmt::Display <span class="kw">for </span>Component {
+</span><span class="kw">impl </span>FromStr <span class="kw">for </span>Component {
+    <span class="kw">type </span><span class="prelude-val">Err </span>= ParseComponentError;
+
+    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
+        <span class="kw">let </span>bytes = hex::decode(s).map_err(|<span class="kw">_</span>| ParseComponentError::InvalidHex(s.to_owned()))<span class="question-mark">?</span>;
+        <span class="self">Self</span>::try_from(bytes.as_slice())
+    }
+}
+
+<span class="kw">impl </span>fmt::Display <span class="kw">for </span>Component {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
+        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, hex::encode(<span class="self">self</span>.to_vec()))
     }
 }
 
 <span class="kw">impl </span>fmt::Debug <span class="kw">for </span>Component {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
-    }
-}
-
-<span class="doccomment">/// An instance of a blueprint, which lives in the ledger state.
-</span><span class="attribute">#[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-</span><span class="kw">pub enum </span>ComponentAddress {
-    Normal([u8; <span class="number">26</span>]),
-    Account([u8; <span class="number">26</span>]),
-    System([u8; <span class="number">26</span>]),
-}
-
-<span class="kw">impl </span>ComponentAddress {}
-
-<span class="comment">//========
-// binary
-//========
-
-</span><span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt; <span class="kw">for </span>ComponentAddress {
-    <span class="kw">type </span>Error = AddressError;
-
-    <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
-        <span class="kw">match </span>slice.len() {
-            <span class="number">27 </span>=&gt; <span class="kw">match </span>EntityType::try_from(slice[<span class="number">0</span>])
-                .map_err(|<span class="kw">_</span>| AddressError::InvalidEntityTypeId(slice[<span class="number">0</span>]))<span class="question-mark">?
-            </span>{
-                EntityType::NormalComponent =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Normal(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">1</span>..]))),
-                EntityType::AccountComponent =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Account(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">1</span>..]))),
-                EntityType::SystemComponent =&gt; <span class="prelude-val">Ok</span>(<span class="self">Self</span>::System(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">1</span>..]))),
-                <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(AddressError::InvalidEntityTypeId(slice[<span class="number">0</span>])),
-            },
-            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(AddressError::InvalidLength(slice.len())),
-        }
-    }
-}
-
-<span class="kw">impl </span>ComponentAddress {
-    <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>buf = Vec::new();
-        buf.push(EntityType::component(<span class="self">self</span>).id());
-        <span class="kw">match </span><span class="self">self </span>{
-            <span class="self">Self</span>::Normal(v) | <span class="self">Self</span>::Account(v) | <span class="self">Self</span>::System(v) =&gt; buf.extend(v),
-        }
-        buf
-    }
-}
-
-<span class="macro">scrypto_type!</span>(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
-
-<span class="comment">//======
-// text
-//======
-
-</span><span class="kw">impl </span>FromStr <span class="kw">for </span>ComponentAddress {
-    <span class="kw">type </span><span class="prelude-val">Err </span>= AddressError;
-
-    <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
-        BECH32_DECODER.validate_and_decode_component_address(s)
-    }
-}
-
-<span class="kw">impl </span>fmt::Display <span class="kw">for </span>ComponentAddress {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, BECH32_ENCODER.encode_component_address(<span class="self">self</span>))
-    }
-}
-
-<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>ComponentAddress {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
-        <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
+        <span class="macro">write!</span>(f, <span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>.<span class="number">0</span>)
     }
 }
 </code></pre></div>

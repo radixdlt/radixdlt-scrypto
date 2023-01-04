@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/modules/costing_module.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>costing_module.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../radix_engine/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/engine/modules/costing_module.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>costing_module.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../radix_engine/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -420,78 +420,16 @@
 <span id="420">420</span>
 <span id="421">421</span>
 <span id="422">422</span>
-<span id="423">423</span>
-<span id="424">424</span>
-<span id="425">425</span>
-<span id="426">426</span>
-<span id="427">427</span>
-<span id="428">428</span>
-<span id="429">429</span>
-<span id="430">430</span>
-<span id="431">431</span>
-<span id="432">432</span>
-<span id="433">433</span>
-<span id="434">434</span>
-<span id="435">435</span>
-<span id="436">436</span>
-<span id="437">437</span>
-<span id="438">438</span>
-<span id="439">439</span>
-<span id="440">440</span>
-<span id="441">441</span>
-<span id="442">442</span>
-<span id="443">443</span>
-<span id="444">444</span>
-<span id="445">445</span>
-<span id="446">446</span>
-<span id="447">447</span>
-<span id="448">448</span>
-<span id="449">449</span>
-<span id="450">450</span>
-<span id="451">451</span>
-<span id="452">452</span>
-<span id="453">453</span>
-<span id="454">454</span>
-<span id="455">455</span>
-<span id="456">456</span>
-<span id="457">457</span>
-<span id="458">458</span>
-<span id="459">459</span>
-<span id="460">460</span>
-<span id="461">461</span>
-<span id="462">462</span>
-<span id="463">463</span>
-<span id="464">464</span>
-<span id="465">465</span>
-<span id="466">466</span>
-<span id="467">467</span>
-<span id="468">468</span>
-<span id="469">469</span>
-<span id="470">470</span>
-<span id="471">471</span>
-<span id="472">472</span>
-<span id="473">473</span>
-<span id="474">474</span>
-<span id="475">475</span>
-<span id="476">476</span>
-<span id="477">477</span>
-<span id="478">478</span>
-<span id="479">479</span>
-<span id="480">480</span>
-<span id="481">481</span>
-<span id="482">482</span>
-<span id="483">483</span>
-<span id="484">484</span>
-<span id="485">485</span>
-<span id="486">486</span>
-<span id="487">487</span>
-<span id="488">488</span>
-<span id="489">489</span>
-<span id="490">490</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::fee::{FeeReserve, SystemApiCostingEntry};
-<span class="kw">use </span><span class="kw">crate</span>::model::ResourceContainer;
+<span class="kw">use </span><span class="kw">crate</span>::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
+<span class="kw">use </span><span class="kw">crate</span>::model::Resource;
 <span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span>radix_engine_interface::api::types::{RENodeId, VaultId};
+
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+</span><span class="kw">pub enum </span>CostingError {
+    FeeReserveError(FeeReserveError),
+}
 
 <span class="attribute">#[derive(Default)]
 </span><span class="kw">pub struct </span>CostingModule;
@@ -499,75 +437,69 @@
 <span class="kw">impl</span>&lt;R: FeeReserve&gt; Module&lt;R&gt; <span class="kw">for </span>CostingModule {
     <span class="kw">fn </span>pre_sys_call(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
         track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
-        _heap: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;,
         input: SysCallInput,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
         <span class="kw">match </span>input {
-            SysCallInput::InvokeFunction {
-                fn_identifier,
-                input,
+            SysCallInput::Invoke {
+                depth,
+                input_size,
+                value_count,
+                ..
             } =&gt; {
-                track
-                    .fee_reserve
-                    .consume(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::InvokeFunction {
-                                fn_identifier: fn_identifier.clone(),
-                                input: <span class="kw-2">&amp;</span>input,
-                            }),
-                        <span class="string">&quot;invoke_function&quot;</span>,
-                        <span class="bool-val">false</span>,
-                    )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
-                track
-                    .fee_reserve
-                    .consume(
-                        track
-                            .fee_table
-                            .run_method_cost(<span class="prelude-val">None</span>, <span class="kw-2">&amp;</span>fn_identifier, <span class="kw-2">&amp;</span>input),
-                        <span class="string">&quot;run_function&quot;</span>,
-                        <span class="bool-val">false</span>,
-                    )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                <span class="kw">if </span>depth &gt; <span class="number">0 </span>{
+                    track
+                        .fee_reserve
+                        .consume_execution(
+                            track
+                                .fee_table
+                                .system_api_cost(SystemApiCostingEntry::Invoke {
+                                    input_size,
+                                    value_count,
+                                }),
+                            <span class="number">1</span>,
+                            <span class="string">&quot;invoke&quot;</span>,
+                            <span class="bool-val">false</span>,
+                        )
+                        .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
+                }
             }
-            SysCallInput::InvokeMethod {
-                receiver,
-                fn_identifier,
-                input,
-            } =&gt; {
+            SysCallInput::ReadOwnedNodes =&gt; {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
-                            .system_api_cost(SystemApiCostingEntry::InvokeMethod {
-                                receiver: receiver.clone(),
-                                input: <span class="kw-2">&amp;</span>input,
-                            }),
-                        <span class="string">&quot;invoke_method&quot;</span>,
+                            .system_api_cost(SystemApiCostingEntry::ReadOwnedNodes),
+                        <span class="number">1</span>,
+                        <span class="string">&quot;read_owned_nodes&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
-
-                track
-                    .fee_reserve
-                    .consume(
-                        track
-                            .fee_table
-                            .run_method_cost(<span class="prelude-val">Some</span>(receiver), <span class="kw-2">&amp;</span>fn_identifier, <span class="kw-2">&amp;</span>input),
-                        <span class="string">&quot;run_method&quot;</span>,
-                        <span class="bool-val">false</span>,
-                    )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
             SysCallInput::BorrowNode { node_id } =&gt; {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track.fee_table.system_api_cost({
                             <span class="kw">match </span>node_id {
+                                RENodeId::Global(<span class="kw">_</span>) =&gt; SystemApiCostingEntry::BorrowNode {
+                                    <span class="comment">// TODO: figure out loaded state and size
+                                    </span>loaded: <span class="bool-val">true</span>,
+                                    size: <span class="number">0</span>,
+                                },
+                                RENodeId::AuthZoneStack(<span class="kw">_</span>) =&gt; SystemApiCostingEntry::BorrowNode {
+                                    <span class="comment">// TODO: figure out loaded state and size
+                                    </span>loaded: <span class="bool-val">true</span>,
+                                    size: <span class="number">0</span>,
+                                },
+                                RENodeId::FeeReserve(<span class="kw">_</span>) =&gt; SystemApiCostingEntry::BorrowNode {
+                                    <span class="comment">// TODO: figure out loaded state and size
+                                    </span>loaded: <span class="bool-val">true</span>,
+                                    size: <span class="number">0</span>,
+                                },
                                 RENodeId::Bucket(<span class="kw">_</span>) =&gt; SystemApiCostingEntry::BorrowNode {
                                     <span class="comment">// TODO: figure out loaded state and size
                                     </span>loaded: <span class="bool-val">true</span>,
@@ -598,6 +530,13 @@
                                     </span>loaded: <span class="bool-val">false</span>,
                                     size: <span class="number">0</span>,
                                 },
+                                RENodeId::NonFungibleStore(<span class="kw">_</span>) =&gt; {
+                                    SystemApiCostingEntry::BorrowNode {
+                                        <span class="comment">// TODO: figure out loaded state and size
+                                        </span>loaded: <span class="bool-val">false</span>,
+                                        size: <span class="number">0</span>,
+                                    }
+                                }
                                 RENodeId::ResourceManager(<span class="kw">_</span>) =&gt; SystemApiCostingEntry::BorrowNode {
                                     <span class="comment">// TODO: figure out loaded state and size
                                     </span>loaded: <span class="bool-val">false</span>,
@@ -608,319 +547,208 @@
                                     </span>loaded: <span class="bool-val">false</span>,
                                     size: <span class="number">0</span>,
                                 },
-                                RENodeId::System =&gt; SystemApiCostingEntry::BorrowNode {
+                                RENodeId::EpochManager(..) =&gt; SystemApiCostingEntry::BorrowNode {
+                                    <span class="comment">// TODO: figure out loaded state and size
+                                    </span>loaded: <span class="bool-val">false</span>,
+                                    size: <span class="number">0</span>,
+                                },
+                                RENodeId::Clock(..) =&gt; SystemApiCostingEntry::BorrowNode {
                                     <span class="comment">// TODO: figure out loaded state and size
                                     </span>loaded: <span class="bool-val">false</span>,
                                     size: <span class="number">0</span>,
                                 },
                             }
                         }),
+                        <span class="number">1</span>,
                         <span class="string">&quot;borrow_node&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
             SysCallInput::DropNode { .. } =&gt; {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::DropNode { size: <span class="number">0 </span>}),
+                        <span class="number">1</span>,
                         <span class="string">&quot;drop_node&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
             SysCallInput::CreateNode { .. } =&gt; {
                 <span class="comment">// Costing
                 </span>track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::CreateNode {
                                 size: <span class="number">0</span>, <span class="comment">// TODO: get size of the value
                             </span>}),
+                        <span class="number">1</span>,
                         <span class="string">&quot;create_node&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
-            SysCallInput::GlobalizeNode { .. } =&gt; {
+            SysCallInput::LockSubstate { .. } =&gt; {
                 <span class="comment">// Costing
                 </span>track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
-                            .system_api_cost(SystemApiCostingEntry::GlobalizeNode {
+                            .system_api_cost(SystemApiCostingEntry::LockSubstate {
                                 size: <span class="number">0</span>, <span class="comment">// TODO: get size of the value
                             </span>}),
-                        <span class="string">&quot;globalize_node&quot;</span>,
+                        <span class="number">1</span>,
+                        <span class="string">&quot;lock_substate&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
-            SysCallInput::BorrowSubstateMut { substate_id } =&gt; {
+            SysCallInput::GetRef { .. } =&gt; {
                 <span class="comment">// Costing
                 </span>track
                     .fee_reserve
-                    .consume(
-                        track.fee_table.system_api_cost({
-                            <span class="kw">match </span>substate_id {
-                                SubstateId::Bucket(<span class="kw">_</span>) =&gt; SystemApiCostingEntry::BorrowSubstate {
-                                    <span class="comment">// TODO: figure out loaded state and size
-                                    </span>loaded: <span class="bool-val">true</span>,
-                                    size: <span class="number">0</span>,
-                                },
-                                SubstateId::Proof(<span class="kw">_</span>) =&gt; SystemApiCostingEntry::BorrowSubstate {
-                                    <span class="comment">// TODO: figure out loaded state and size
-                                    </span>loaded: <span class="bool-val">true</span>,
-                                    size: <span class="number">0</span>,
-                                },
-                                SubstateId::Worktop =&gt; SystemApiCostingEntry::BorrowSubstate {
-                                    <span class="comment">// TODO: figure out loaded state and size
-                                    </span>loaded: <span class="bool-val">true</span>,
-                                    size: <span class="number">0</span>,
-                                },
-                                SubstateId::Vault(<span class="kw">_</span>) =&gt; SystemApiCostingEntry::BorrowSubstate {
-                                    <span class="comment">// TODO: figure out loaded state and size
-                                    </span>loaded: <span class="bool-val">false</span>,
-                                    size: <span class="number">0</span>,
-                                },
-                                SubstateId::ComponentState(..) =&gt; {
-                                    SystemApiCostingEntry::BorrowSubstate {
-                                        <span class="comment">// TODO: figure out loaded state and size
-                                        </span>loaded: <span class="bool-val">false</span>,
-                                        size: <span class="number">0</span>,
-                                    }
-                                }
-                                SubstateId::ComponentInfo(..) =&gt; {
-                                    SystemApiCostingEntry::BorrowSubstate {
-                                        <span class="comment">// TODO: figure out loaded state and size
-                                        </span>loaded: <span class="bool-val">false</span>,
-                                        size: <span class="number">0</span>,
-                                    }
-                                }
-                                SubstateId::KeyValueStoreSpace(<span class="kw">_</span>) =&gt; {
-                                    SystemApiCostingEntry::BorrowSubstate {
-                                        <span class="comment">// TODO: figure out loaded state and size
-                                        </span>loaded: <span class="bool-val">false</span>,
-                                        size: <span class="number">0</span>,
-                                    }
-                                }
-                                SubstateId::KeyValueStoreEntry(..) =&gt; {
-                                    SystemApiCostingEntry::BorrowSubstate {
-                                        <span class="comment">// TODO: figure out loaded state and size
-                                        </span>loaded: <span class="bool-val">false</span>,
-                                        size: <span class="number">0</span>,
-                                    }
-                                }
-                                SubstateId::ResourceManager(..) =&gt; {
-                                    SystemApiCostingEntry::BorrowSubstate {
-                                        <span class="comment">// TODO: figure out loaded state and size
-                                        </span>loaded: <span class="bool-val">false</span>,
-                                        size: <span class="number">0</span>,
-                                    }
-                                }
-                                SubstateId::NonFungibleSpace(..) =&gt; {
-                                    SystemApiCostingEntry::BorrowSubstate {
-                                        <span class="comment">// TODO: figure out loaded state and size
-                                        </span>loaded: <span class="bool-val">false</span>,
-                                        size: <span class="number">0</span>,
-                                    }
-                                }
-                                SubstateId::NonFungible(..) =&gt; {
-                                    SystemApiCostingEntry::BorrowSubstate {
-                                        <span class="comment">// TODO: figure out loaded state and size
-                                        </span>loaded: <span class="bool-val">false</span>,
-                                        size: <span class="number">0</span>,
-                                    }
-                                }
-                                SubstateId::Package(..) =&gt; SystemApiCostingEntry::BorrowSubstate {
-                                    <span class="comment">// TODO: figure out loaded state and size
-                                    </span>loaded: <span class="bool-val">false</span>,
-                                    size: <span class="number">0</span>,
-                                },
-                                SubstateId::System =&gt; SystemApiCostingEntry::BorrowSubstate {
-                                    <span class="comment">// TODO: figure out loaded state and size
-                                    </span>loaded: <span class="bool-val">false</span>,
-                                    size: <span class="number">0</span>,
-                                },
-                            }
-                        }),
-                        <span class="string">&quot;borrow_substate&quot;</span>,
-                        <span class="bool-val">false</span>,
-                    )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
-            }
-            SysCallInput::ReturnSubstateMut { substate_ref } =&gt; {
-                track
-                    .fee_reserve
-                    .consume(
-                        track.fee_table.system_api_cost({
-                            <span class="kw">match </span><span class="kw-2">&amp;</span>substate_ref {
-                                NativeSubstateRef::Stack(..) =&gt; {
-                                    SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                }
-                                NativeSubstateRef::Track(substate_id, <span class="kw">_</span>) =&gt; <span class="kw">match </span>substate_id {
-                                    SubstateId::Vault(<span class="kw">_</span>) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::KeyValueStoreSpace(<span class="kw">_</span>) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::KeyValueStoreEntry(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::ResourceManager(<span class="kw">_</span>) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::Package(<span class="kw">_</span>) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::NonFungibleSpace(<span class="kw">_</span>) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::NonFungible(<span class="kw">_</span>, <span class="kw">_</span>) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::ComponentInfo(..) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::ComponentState(<span class="kw">_</span>) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::System =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::Bucket(..) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::Proof(..) =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                    SubstateId::Worktop =&gt; {
-                                        SystemApiCostingEntry::ReturnSubstate { size: <span class="number">0 </span>}
-                                    }
-                                },
-                            }
-                        }),
-                        <span class="string">&quot;return_substate&quot;</span>,
-                        <span class="bool-val">false</span>,
-                    )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
-            }
-            SysCallInput::ReadSubstate { .. } =&gt; {
-                <span class="comment">// Costing
-                </span>track
-                    .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadSubstate {
                                 size: <span class="number">0</span>, <span class="comment">// TODO: get size of the value
                             </span>}),
+                        <span class="number">1</span>,
                         <span class="string">&quot;read_substate&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
-            SysCallInput::WriteSubstate { .. } =&gt; {
+            SysCallInput::GetRefMut { .. } =&gt; {
                 <span class="comment">// Costing
                 </span>track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::WriteSubstate {
                                 size: <span class="number">0</span>, <span class="comment">// TODO: get size of the value
                             </span>}),
+                        <span class="number">1</span>,
                         <span class="string">&quot;write_substate&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
+            }
+            SysCallInput::DropLock { .. } =&gt; {
+                <span class="comment">// Costing
+                </span>track
+                    .fee_reserve
+                    .consume_execution(
+                        track
+                            .fee_table
+                            .system_api_cost(SystemApiCostingEntry::DropLock),
+                        <span class="number">1</span>,
+                        <span class="string">&quot;drop_lock&quot;</span>,
+                        <span class="bool-val">false</span>,
+                    )
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
             SysCallInput::TakeSubstate { .. } =&gt; {
                 <span class="comment">// Costing
                 </span>track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::TakeSubstate {
                                 size: <span class="number">0</span>, <span class="comment">// TODO: get size of the value
                             </span>}),
-                        <span class="string">&quot;read_substate&quot;</span>,
+                        <span class="number">1</span>,
+                        <span class="string">&quot;take_substate&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
             SysCallInput::ReadTransactionHash =&gt; {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
+                        <span class="number">1</span>,
                         <span class="string">&quot;read_transaction_hash&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
             SysCallInput::ReadBlob { .. } =&gt; {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::ReadBlob { size: <span class="number">0 </span>}), <span class="comment">// TODO pass the right size
-                        </span><span class="string">&quot;read_blob&quot;</span>,
+                        </span><span class="number">1</span>,
+                        <span class="string">&quot;read_blob&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
             SysCallInput::GenerateUuid =&gt; {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::GenerateUuid),
+                        <span class="number">1</span>,
                         <span class="string">&quot;generate_uuid&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
             SysCallInput::EmitLog { message, .. } =&gt; {
                 track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
                             .system_api_cost(SystemApiCostingEntry::EmitLog {
                                 size: message.len() <span class="kw">as </span>u32,
                             }),
+                        <span class="number">1</span>,
                         <span class="string">&quot;emit_log&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
-            SysCallInput::CheckAccessRule { proof_ids, .. } =&gt; {
-                <span class="comment">// Costing
-                </span>track
+            SysCallInput::EmitEvent { event } =&gt; {
+                <span class="kw">let </span>(native, tracked, size) = <span class="kw">match </span>event {
+                    Event::Runtime(<span class="kw">_</span>) =&gt; (<span class="bool-val">true</span>, <span class="bool-val">false</span>, <span class="number">0</span>),
+                    Event::Tracked(TrackedEvent::Native(..)) =&gt; (<span class="bool-val">true</span>, <span class="bool-val">true</span>, <span class="number">0</span>),
+                    Event::Tracked(TrackedEvent::Scrypto(value)) =&gt; {
+                        (<span class="bool-val">false</span>, <span class="bool-val">true</span>, value.len() <span class="kw">as </span>u32)
+                    }
+                };
+                track
                     .fee_reserve
-                    .consume(
+                    .consume_execution(
                         track
                             .fee_table
-                            .system_api_cost(SystemApiCostingEntry::CheckAccessRule {
-                                size: proof_ids.len() <span class="kw">as </span>u32,
+                            .system_api_cost(SystemApiCostingEntry::EmitEvent {
+                                native,
+                                tracked,
+                                size,
                             }),
-                        <span class="string">&quot;check_access_rule&quot;</span>,
+                        <span class="number">1</span>,
+                        <span class="string">&quot;emit_event&quot;</span>,
                         <span class="bool-val">false</span>,
                     )
-                    .map_err(ModuleError::CostingError)<span class="question-mark">?</span>;
+                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))<span class="question-mark">?</span>;
             }
         }
 
@@ -929,8 +757,9 @@
 
     <span class="kw">fn </span>post_sys_call(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
         _track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
-        _heap: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;,
         _output: SysCallOutput,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
         <span class="prelude-val">Ok</span>(())
@@ -938,44 +767,79 @@
 
     <span class="kw">fn </span>on_wasm_instantiation(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
         track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
-        _heap: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;,
         code: <span class="kw-2">&amp;</span>[u8],
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
         track
             .fee_reserve
-            .consume(
-                track.fee_table.wasm_instantiation_per_byte() * code.len() <span class="kw">as </span>u32,
+            .consume_execution(
+                track.fee_table.wasm_instantiation_per_byte(),
+                code.len(),
                 <span class="string">&quot;instantiate_wasm&quot;</span>,
                 <span class="bool-val">false</span>,
             )
-            .map_err(ModuleError::CostingError)
+            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
     <span class="kw">fn </span>on_wasm_costing(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
         track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
-        _heap: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;,
         units: u32,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
         track
             .fee_reserve
-            .consume(units, <span class="string">&quot;run_wasm&quot;</span>, <span class="bool-val">false</span>)
-            .map_err(ModuleError::CostingError)
+            .consume_execution(units, <span class="number">1</span>, <span class="string">&quot;run_wasm&quot;</span>, <span class="bool-val">false</span>)
+            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
     <span class="kw">fn </span>on_lock_fee(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
         track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
-        _heap: <span class="kw-2">&amp;mut </span>Vec&lt;CallFrame&gt;,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, ModuleError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Resource, ModuleError&gt; {
         track
             .fee_reserve
-            .repay(vault_id, fee, contingent)
-            .map_err(ModuleError::CostingError)
+            .lock_fee(vault_id, fee, contingent)
+            .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
+    }
+
+    <span class="kw">fn </span>pre_execute_invocation(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        actor: <span class="kw-2">&amp;</span>REActor,
+        _call_frame_update: <span class="kw-2">&amp;</span>CallFrameUpdate,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="kw">match </span>actor {
+            REActor::Function(ResolvedFunction::Native(native_function)) =&gt; track
+                .fee_reserve
+                .consume_execution(
+                    track.fee_table.run_native_function_cost(<span class="kw-2">&amp;</span>native_function),
+                    <span class="number">1</span>,
+                    <span class="string">&quot;run_native_function&quot;</span>,
+                    <span class="bool-val">false</span>,
+                )
+                .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
+            REActor::Method(ResolvedMethod::Native(native_method), <span class="kw">_</span>) =&gt; track
+                .fee_reserve
+                .consume_execution(
+                    track.fee_table.run_native_method_cost(<span class="kw-2">&amp;</span>native_method),
+                    <span class="number">1</span>,
+                    <span class="string">&quot;run_native_method&quot;</span>,
+                    <span class="bool-val">false</span>,
+                )
+                .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Ok</span>(()),
+        }
     }
 }
 </code></pre></div>

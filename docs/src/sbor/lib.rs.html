@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/sbor/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sbor/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -35,6 +35,16 @@
 <span id="35">35</span>
 <span id="36">36</span>
 <span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
 </pre><pre class="rust"><code><span class="attribute">#![cfg_attr(not(feature = <span class="string">&quot;std&quot;</span>), no_std)]
 
 #[cfg(not(any(feature = <span class="string">&quot;std&quot;</span>, feature = <span class="string">&quot;alloc&quot;</span>)))]
@@ -42,32 +52,42 @@
 <span class="attribute">#[cfg(all(feature = <span class="string">&quot;std&quot;</span>, feature = <span class="string">&quot;alloc&quot;</span>))]
 </span><span class="macro">compile_error!</span>(<span class="string">&quot;Feature `std` and `alloc` can&#39;t be enabled at the same time.&quot;</span>);
 
-<span class="doccomment">/// SBOR any data encoding and decoding.
-</span><span class="kw">pub mod </span>any;
-<span class="doccomment">/// SBOR decoding.
+<span class="doccomment">/// SBOR basic, no custom types
+</span><span class="kw">pub mod </span>basic;
+<span class="doccomment">/// SBOR codec for core Rust types.
+</span><span class="kw">pub mod </span>codec;
+<span class="doccomment">/// SBOR constants
+</span><span class="kw">pub mod </span>constants;
+<span class="doccomment">/// SBOR decode trait.
 </span><span class="kw">pub mod </span>decode;
-<span class="doccomment">/// SBOR describing.
-</span><span class="kw">pub mod </span>describe;
-<span class="doccomment">/// SBOR encoding.
+<span class="doccomment">/// SBOR decoding.
+</span><span class="kw">pub mod </span>decoder;
+<span class="doccomment">/// SBOR encode trait.
 </span><span class="kw">pub mod </span>encode;
+<span class="doccomment">/// SBOR encoding.
+</span><span class="kw">pub mod </span>encoder;
 <span class="doccomment">/// SBOR paths.
 </span><span class="kw">pub mod </span>path;
 <span class="doccomment">/// A facade of Rust types.
 </span><span class="kw">pub mod </span>rust;
 <span class="doccomment">/// SBOR type ids.
 </span><span class="kw">pub mod </span>type_id;
-<span class="kw">mod </span>utils;
+<span class="doccomment">/// SBOR value model and any decoding/encoding.
+</span><span class="kw">pub mod </span>value;
 
-<span class="kw">pub use </span>any::{decode_any, encode_any, encode_any_with_buffer, Value};
-<span class="kw">pub use </span>decode::{Decode, DecodeError, Decoder};
-<span class="kw">pub use </span>describe::{Describe, Type};
-<span class="kw">pub use </span>encode::{Encode, Encoder};
-<span class="kw">pub use </span>type_id::TypeId;
-<span class="kw">pub use </span>utils::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>basic::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>constants::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>decode::Decode;
+<span class="kw">pub use </span>decoder::{DecodeError, Decoder, VecDecoder};
+<span class="kw">pub use </span>encode::Encode;
+<span class="kw">pub use </span>encoder::{EncodeError, Encoder, VecEncoder};
+<span class="kw">pub use </span>path::{SborPath, SborPathBuf};
+<span class="kw">pub use </span>type_id::<span class="kw-2">*</span>;
+<span class="kw">pub use </span>value::<span class="kw-2">*</span>;
 
 <span class="comment">// Re-export derives
 </span><span class="kw">extern crate </span>sbor_derive;
-<span class="kw">pub use </span>sbor_derive::{Decode, Describe, Encode, TypeId};
+<span class="kw">pub use </span>sbor_derive::{Decode, Encode, TypeId};
 
 <span class="comment">// This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

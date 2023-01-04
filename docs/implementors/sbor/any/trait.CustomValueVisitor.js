@@ -1,3 +1,0 @@
-(function() {var implementors = {
-"scrypto":[["impl <a class=\"trait\" href=\"sbor/any/trait.CustomValueVisitor.html\" title=\"trait sbor::any::CustomValueVisitor\">CustomValueVisitor</a> for <a class=\"struct\" href=\"scrypto/values/struct.ScryptoCustomValueChecker.html\" title=\"struct scrypto::values::ScryptoCustomValueChecker\">ScryptoCustomValueChecker</a>"]]
-};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

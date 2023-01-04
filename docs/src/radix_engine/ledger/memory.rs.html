@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/ledger/memory.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/ledger/memory.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>memory.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -69,31 +69,31 @@
 <span id="69">69</span>
 <span id="70">70</span>
 <span id="71">71</span>
-<span id="72">72</span>
-<span id="73">73</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::Substate;
-<span class="kw">use </span><span class="kw">crate</span>::ledger::<span class="kw-2">*</span>;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::ledger::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::ledger::{OutputValue, WriteableSubstateStore};
+<span class="kw">use </span><span class="kw">crate</span>::model::PersistedSubstate;
 <span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span>radix_engine_interface::api::types::{
+    KeyValueStoreId, KeyValueStoreOffset, RENodeId, SubstateId, SubstateOffset,
+};
 
 <span class="doccomment">/// A substate store that stores all typed substates in host memory.
 </span><span class="attribute">#[derive(Debug, PartialEq, Eq)]
 </span><span class="kw">pub struct </span>TypedInMemorySubstateStore {
     substates: HashMap&lt;SubstateId, OutputValue&gt;,
-    root_substates: HashSet&lt;SubstateId&gt;,
 }
 
 <span class="kw">impl </span>TypedInMemorySubstateStore {
     <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             substates: HashMap::new(),
-            root_substates: HashSet::new(),
         }
     }
 
     <span class="kw">pub fn </span>with_bootstrap() -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>substate_store = <span class="self">Self</span>::new();
-        bootstrap(substate_store)
+        <span class="kw">let </span><span class="kw-2">mut </span>substate_store = <span class="self">Self</span>::new();
+        bootstrap(<span class="kw-2">&amp;mut </span>substate_store);
+        substate_store
     }
 }
 
@@ -107,19 +107,11 @@
     <span class="kw">fn </span>get_substate(<span class="kw-2">&amp;</span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId) -&gt; <span class="prelude-ty">Option</span>&lt;OutputValue&gt; {
         <span class="self">self</span>.substates.get(substate_id).cloned()
     }
-
-    <span class="kw">fn </span>is_root(<span class="kw-2">&amp;</span><span class="self">self</span>, substate_id: <span class="kw-2">&amp;</span>SubstateId) -&gt; bool {
-        <span class="self">self</span>.root_substates.contains(substate_id)
-    }
 }
 
 <span class="kw">impl </span>WriteableSubstateStore <span class="kw">for </span>TypedInMemorySubstateStore {
     <span class="kw">fn </span>put_substate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId, substate: OutputValue) {
         <span class="self">self</span>.substates.insert(substate_id, substate);
-    }
-
-    <span class="kw">fn </span>set_root(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId) {
-        <span class="self">self</span>.root_substates.insert(substate_id);
     }
 }
 
@@ -127,11 +119,15 @@
     <span class="kw">fn </span>get_kv_store_entries(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         kv_store_id: <span class="kw-2">&amp;</span>KeyValueStoreId,
-    ) -&gt; HashMap&lt;sbor::rust::vec::Vec&lt;u8&gt;, Substate&gt; {
+    ) -&gt; HashMap&lt;sbor::rust::vec::Vec&lt;u8&gt;, PersistedSubstate&gt; {
         <span class="self">self</span>.substates
             .iter()
             .filter_map(|(key, value)| {
-                <span class="kw">if let </span>SubstateId::KeyValueStoreEntry(id, key) = key {
+                <span class="kw">if let </span>SubstateId(
+                    RENodeId::KeyValueStore(id),
+                    SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(key)),
+                ) = key
+                {
                     <span class="kw">if </span>id == kv_store_id {
                         <span class="prelude-val">Some</span>((key.clone(), value.substate.clone()))
                     } <span class="kw">else </span>{

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/sbor/src/type_id.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>type_id.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sbor/src/type_id.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>type_id.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -234,12 +234,177 @@
 <span id="234">234</span>
 <span id="235">235</span>
 <span id="236">236</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::rust::boxed::Box;
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::constants::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rust::borrow::Cow;
+<span class="kw">use </span><span class="kw">crate</span>::rust::borrow::ToOwned;
+<span class="kw">use </span><span class="kw">crate</span>::rust::boxed::Box;
 <span class="kw">use </span><span class="kw">crate</span>::rust::cell::RefCell;
 <span class="kw">use </span><span class="kw">crate</span>::rust::collections::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rust::fmt::Debug;
 <span class="kw">use </span><span class="kw">crate</span>::rust::rc::Rc;
 <span class="kw">use </span><span class="kw">crate</span>::rust::string::String;
 <span class="kw">use </span><span class="kw">crate</span>::rust::vec::Vec;
+
+<span class="attribute">#[cfg_attr(
+    feature = <span class="string">&quot;serde&quot;</span>,
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = <span class="string">&quot;type&quot;</span>) <span class="comment">// See https://serde.rs/enum-representations.html
+</span>)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+</span><span class="kw">pub enum </span>SborTypeId&lt;X: CustomTypeId&gt; {
+    Unit,
+    Bool,
+    I8,
+    I16,
+    I32,
+    I64,
+    I128,
+    U8,
+    U16,
+    U32,
+    U64,
+    U128,
+    String,
+    Enum,
+    Array,
+    Tuple,
+    Custom(X),
+}
+
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; SborTypeId&lt;X&gt; {
+    <span class="kw">pub fn </span>as_u8(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8 {
+        <span class="kw">match </span><span class="self">self </span>{
+            SborTypeId::Unit =&gt; TYPE_UNIT,
+            SborTypeId::Bool =&gt; TYPE_BOOL,
+            SborTypeId::I8 =&gt; TYPE_I8,
+            SborTypeId::I16 =&gt; TYPE_I16,
+            SborTypeId::I32 =&gt; TYPE_I32,
+            SborTypeId::I64 =&gt; TYPE_I64,
+            SborTypeId::I128 =&gt; TYPE_I128,
+            SborTypeId::U8 =&gt; TYPE_U8,
+            SborTypeId::U16 =&gt; TYPE_U16,
+            SborTypeId::U32 =&gt; TYPE_U32,
+            SborTypeId::U64 =&gt; TYPE_U64,
+            SborTypeId::U128 =&gt; TYPE_U128,
+            SborTypeId::String =&gt; TYPE_STRING,
+            SborTypeId::Tuple =&gt; TYPE_TUPLE,
+            SborTypeId::Enum =&gt; TYPE_ENUM,
+            SborTypeId::Array =&gt; TYPE_ARRAY,
+            SborTypeId::Custom(type_id) =&gt; type_id.as_u8(),
+        }
+    }
+
+    <span class="kw">pub fn </span>from_u8(id: u8) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">match </span>id {
+            TYPE_UNIT =&gt; <span class="prelude-val">Some</span>(SborTypeId::Unit),
+            TYPE_BOOL =&gt; <span class="prelude-val">Some</span>(SborTypeId::Bool),
+            TYPE_I8 =&gt; <span class="prelude-val">Some</span>(SborTypeId::I8),
+            TYPE_I16 =&gt; <span class="prelude-val">Some</span>(SborTypeId::I16),
+            TYPE_I32 =&gt; <span class="prelude-val">Some</span>(SborTypeId::I32),
+            TYPE_I64 =&gt; <span class="prelude-val">Some</span>(SborTypeId::I64),
+            TYPE_I128 =&gt; <span class="prelude-val">Some</span>(SborTypeId::I128),
+            TYPE_U8 =&gt; <span class="prelude-val">Some</span>(SborTypeId::U8),
+            TYPE_U16 =&gt; <span class="prelude-val">Some</span>(SborTypeId::U16),
+            TYPE_U32 =&gt; <span class="prelude-val">Some</span>(SborTypeId::U32),
+            TYPE_U64 =&gt; <span class="prelude-val">Some</span>(SborTypeId::U64),
+            TYPE_U128 =&gt; <span class="prelude-val">Some</span>(SborTypeId::U128),
+            TYPE_STRING =&gt; <span class="prelude-val">Some</span>(SborTypeId::String),
+            TYPE_TUPLE =&gt; <span class="prelude-val">Some</span>(SborTypeId::Tuple),
+            TYPE_ENUM =&gt; <span class="prelude-val">Some</span>(SborTypeId::Enum),
+            TYPE_ARRAY =&gt; <span class="prelude-val">Some</span>(SborTypeId::Array),
+            type_id <span class="kw">if </span>type_id &gt;= CUSTOM_TYPE_START =&gt; X::from_u8(type_id).map(SborTypeId::Custom),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">None</span>,
+        }
+    }
+}
 
 <span class="comment">// primitive types
 </span><span class="kw">pub const </span>TYPE_UNIT: u8 = <span class="number">0x00</span>;
@@ -255,163 +420,152 @@
 <span class="kw">pub const </span>TYPE_U64: u8 = <span class="number">0x0a</span>;
 <span class="kw">pub const </span>TYPE_U128: u8 = <span class="number">0x0b</span>;
 <span class="kw">pub const </span>TYPE_STRING: u8 = <span class="number">0x0c</span>;
+<span class="comment">// composite types
+</span><span class="kw">pub const </span>TYPE_TUPLE: u8 = <span class="number">0x21</span>; <span class="comment">// Any &quot;product type&quot; - Tuples and Structs (T1, T2, T3)
+</span><span class="kw">pub const </span>TYPE_ENUM: u8 = <span class="number">0x11</span>;
+<span class="kw">pub const </span>TYPE_ARRAY: u8 = <span class="number">0x20</span>; <span class="comment">// [T; N]
 
-<span class="comment">// struct and enum
-</span><span class="kw">pub const </span>TYPE_STRUCT: u8 = <span class="number">0x10</span>;
-<span class="kw">pub const </span>TYPE_ENUM: u8 = <span class="number">0x11</span>;
-<span class="kw">pub const </span>TYPE_OPTION: u8 = <span class="number">0x12</span>; <span class="comment">// enum Option&lt;T&gt; { Some(T), None }
-</span><span class="kw">pub const </span>TYPE_RESULT: u8 = <span class="number">0x13</span>; <span class="comment">// enum Result&lt;T, E&gt; { Ok(T), Err(E) }
-
-// composite types
-</span><span class="kw">pub const </span>TYPE_ARRAY: u8 = <span class="number">0x20</span>; <span class="comment">// [T; N]
-</span><span class="kw">pub const </span>TYPE_TUPLE: u8 = <span class="number">0x21</span>; <span class="comment">// (A, B, C)
-
-// collections
-</span><span class="kw">pub const </span>TYPE_LIST: u8 = <span class="number">0x30</span>;
-<span class="kw">pub const </span>TYPE_SET: u8 = <span class="number">0x31</span>;
-<span class="kw">pub const </span>TYPE_MAP: u8 = <span class="number">0x32</span>;
-
-<span class="comment">// custom types start from 0x80 and values are encoded as `len + data`
-</span><span class="kw">pub const </span>TYPE_CUSTOM_START: u8 = <span class="number">0x80</span>;
-
-<span class="comment">// enum variant indices
-</span><span class="kw">pub const </span>OPTION_VARIANT_SOME: u8 = <span class="number">0x00</span>;
-<span class="kw">pub const </span>OPTION_VARIANT_NONE: u8 = <span class="number">0x01</span>;
-<span class="kw">pub const </span>RESULT_VARIANT_OK: u8 = <span class="number">0x00</span>;
-<span class="kw">pub const </span>RESULT_VARIANT_ERR: u8 = <span class="number">0x01</span>;
-
-<span class="doccomment">/// A SBOR type ID.
-</span><span class="kw">pub trait </span>TypeId {
-    <span class="kw">fn </span>type_id() -&gt; u8;
+</span><span class="doccomment">/// A SBOR type ID.
+</span><span class="kw">pub trait </span>TypeId&lt;X: CustomTypeId&gt; {
+    <span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt;;
 }
 
-<span class="kw">impl </span>TypeId <span class="kw">for </span>() {
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span>() {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_UNIT
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Unit
     }
 }
 
-<span class="kw">impl </span>TypeId <span class="kw">for </span>bool {
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span>bool {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_BOOL
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Bool
     }
 }
 
-<span class="kw">impl </span>TypeId <span class="kw">for </span>i8 {
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span>i8 {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_I8
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::I8
     }
 }
-<span class="kw">impl </span>TypeId <span class="kw">for </span>u8 {
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span>u8 {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_U8
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::U8
     }
 }
 
 <span class="macro">macro_rules! </span>type_id_int {
-    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ident</span>, <span class="macro-nonterminal">$type_id</span>:ident) =&gt; {
-        <span class="kw">impl </span>TypeId <span class="kw">for </span><span class="macro-nonterminal">$</span><span class="kw">type </span>{
+    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ty</span>, <span class="macro-nonterminal">$type_id</span>:expr) =&gt; {
+        <span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span><span class="macro-nonterminal">$</span><span class="kw">type </span>{
             <span class="attribute">#[<span class="macro-nonterminal">inline</span>]
-            </span><span class="kw">fn </span>type_id() -&gt; u8 {
+            </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
                 <span class="macro-nonterminal">$type_id
             </span>}
         }
     };
 }
 
-<span class="macro">type_id_int!</span>(i16, TYPE_I16);
-<span class="macro">type_id_int!</span>(i32, TYPE_I32);
-<span class="macro">type_id_int!</span>(i64, TYPE_I64);
-<span class="macro">type_id_int!</span>(i128, TYPE_I128);
-<span class="macro">type_id_int!</span>(u16, TYPE_U16);
-<span class="macro">type_id_int!</span>(u32, TYPE_U32);
-<span class="macro">type_id_int!</span>(u64, TYPE_U64);
-<span class="macro">type_id_int!</span>(u128, TYPE_U128);
+<span class="macro">type_id_int!</span>(i16, SborTypeId::I16);
+<span class="macro">type_id_int!</span>(i32, SborTypeId::I32);
+<span class="macro">type_id_int!</span>(i64, SborTypeId::I64);
+<span class="macro">type_id_int!</span>(i128, SborTypeId::I128);
+<span class="macro">type_id_int!</span>(u16, SborTypeId::U16);
+<span class="macro">type_id_int!</span>(u32, SborTypeId::U32);
+<span class="macro">type_id_int!</span>(u64, SborTypeId::U64);
+<span class="macro">type_id_int!</span>(u128, SborTypeId::U128);
 
-<span class="kw">impl </span>TypeId <span class="kw">for </span>isize {
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span>isize {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        i64::type_id()
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::I64
     }
 }
 
-<span class="kw">impl </span>TypeId <span class="kw">for </span>usize {
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span>usize {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        u64::type_id()
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::U64
     }
 }
 
-<span class="kw">impl </span>TypeId <span class="kw">for </span>str {
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span>str {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_STRING
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::String
     }
 }
 
-<span class="kw">impl </span>TypeId <span class="kw">for </span><span class="kw-2">&amp;</span>str {
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span><span class="kw-2">&amp;</span>str {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_STRING
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::String
     }
 }
 
-<span class="kw">impl </span>TypeId <span class="kw">for </span>String {
+<span class="kw">impl</span>&lt;X: CustomTypeId&gt; TypeId&lt;X&gt; <span class="kw">for </span>String {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_STRING
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::String
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span><span class="prelude-ty">Option</span>&lt;T&gt; {
+<span class="kw">impl</span>&lt;X: CustomTypeId, T&gt; TypeId&lt;X&gt; <span class="kw">for </span><span class="prelude-ty">Option</span>&lt;T&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_OPTION
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Enum
     }
 }
 
-<span class="kw">impl</span>&lt;T: TypeId&gt; TypeId <span class="kw">for </span>Box&lt;T&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, X: CustomTypeId, B: <span class="question-mark">?</span>Sized + <span class="lifetime">&#39;a </span>+ ToOwned + TypeId&lt;X&gt;&gt; TypeId&lt;X&gt; <span class="kw">for </span>Cow&lt;<span class="lifetime">&#39;a</span>, B&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        B::type_id()
+    }
+}
+
+<span class="kw">impl</span>&lt;X: CustomTypeId, T: TypeId&lt;X&gt;&gt; TypeId&lt;X&gt; <span class="kw">for </span>Box&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
         T::type_id()
     }
 }
 
-<span class="kw">impl</span>&lt;T: TypeId&gt; TypeId <span class="kw">for </span>Rc&lt;T&gt; {
+<span class="kw">impl</span>&lt;X: CustomTypeId, T: TypeId&lt;X&gt;&gt; TypeId&lt;X&gt; <span class="kw">for </span>Rc&lt;T&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
         T::type_id()
     }
 }
 
-<span class="kw">impl</span>&lt;T: TypeId&gt; TypeId <span class="kw">for </span>RefCell&lt;T&gt; {
+<span class="kw">impl</span>&lt;X: CustomTypeId, T: TypeId&lt;X&gt;&gt; TypeId&lt;X&gt; <span class="kw">for </span>RefCell&lt;T&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
         T::type_id()
     }
 }
 
-<span class="kw">impl</span>&lt;T, <span class="kw">const </span>N: usize&gt; TypeId <span class="kw">for </span>[T; N] {
+<span class="kw">impl</span>&lt;X: CustomTypeId, T, <span class="kw">const </span>N: usize&gt; TypeId&lt;X&gt; <span class="kw">for </span>[T; N] {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_ARRAY
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Array
     }
 }
+
 <span class="macro">macro_rules! </span>type_id_tuple {
     (<span class="macro-nonterminal">$n</span>:tt $(<span class="macro-nonterminal">$idx</span>:tt <span class="macro-nonterminal">$name</span>:ident)+) =&gt; {
-        <span class="kw">impl</span>&lt;$(<span class="macro-nonterminal">$name</span>),+&gt; TypeId <span class="kw">for </span>($(<span class="macro-nonterminal">$name</span>,)+) {
+        <span class="kw">impl</span>&lt;X: CustomTypeId, $(<span class="macro-nonterminal">$name</span>),+&gt; TypeId&lt;X&gt; <span class="kw">for </span>($(<span class="macro-nonterminal">$name</span>,)+) {
             <span class="attribute">#[inline]
-            </span><span class="kw">fn </span>type_id() -&gt; u8 {
-                TYPE_TUPLE
+            </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+                SborTypeId::Tuple
             }
         }
     };
 }
 
+<span class="macro">type_id_tuple! </span>{ <span class="number">1 0 </span>A }
 <span class="macro">type_id_tuple! </span>{ <span class="number">2 0 </span>A <span class="number">1 </span>B }
 <span class="macro">type_id_tuple! </span>{ <span class="number">3 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C }
 <span class="macro">type_id_tuple! </span>{ <span class="number">4 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D }
@@ -422,53 +576,75 @@
 <span class="macro">type_id_tuple! </span>{ <span class="number">9 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G <span class="number">7 </span>H <span class="number">8 </span>I }
 <span class="macro">type_id_tuple! </span>{ <span class="number">10 0 </span>A <span class="number">1 </span>B <span class="number">2 </span>C <span class="number">3 </span>D <span class="number">4 </span>E <span class="number">5 </span>F <span class="number">6 </span>G <span class="number">7 </span>H <span class="number">8 </span>I <span class="number">9 </span>J }
 
-<span class="kw">impl</span>&lt;T, E&gt; TypeId <span class="kw">for </span><span class="prelude-ty">Result</span>&lt;T, E&gt; {
+<span class="kw">impl</span>&lt;X: CustomTypeId, T, E&gt; TypeId&lt;X&gt; <span class="kw">for </span><span class="prelude-ty">Result</span>&lt;T, E&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_RESULT
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Enum
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span>Vec&lt;T&gt; {
+<span class="kw">impl</span>&lt;X: CustomTypeId, T&gt; TypeId&lt;X&gt; <span class="kw">for </span>Vec&lt;T&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_LIST
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Array
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span>[T] {
+<span class="kw">impl</span>&lt;X: CustomTypeId, T&gt; TypeId&lt;X&gt; <span class="kw">for </span>[T] {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_LIST
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Array
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span>BTreeSet&lt;T&gt; {
+<span class="kw">impl</span>&lt;X: CustomTypeId, T&gt; TypeId&lt;X&gt; <span class="kw">for </span>BTreeSet&lt;T&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_SET
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Array
     }
 }
 
-<span class="kw">impl</span>&lt;K, V&gt; TypeId <span class="kw">for </span>BTreeMap&lt;K, V&gt; {
+<span class="kw">impl</span>&lt;X: CustomTypeId, K, V&gt; TypeId&lt;X&gt; <span class="kw">for </span>BTreeMap&lt;K, V&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_MAP
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Array
     }
 }
 
-<span class="kw">impl</span>&lt;T&gt; TypeId <span class="kw">for </span>HashSet&lt;T&gt; {
+<span class="kw">impl</span>&lt;X: CustomTypeId, T&gt; TypeId&lt;X&gt; <span class="kw">for </span>HashSet&lt;T&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_SET
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Array
     }
 }
 
-<span class="kw">impl</span>&lt;K, V&gt; TypeId <span class="kw">for </span>HashMap&lt;K, V&gt; {
+<span class="kw">impl</span>&lt;X: CustomTypeId, K, V&gt; TypeId&lt;X&gt; <span class="kw">for </span>HashMap&lt;K, V&gt; {
     <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        TYPE_MAP
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Array
     }
+}
+
+<span class="attribute">#[cfg(feature = <span class="string">&quot;indexmap&quot;</span>)]
+</span><span class="kw">impl</span>&lt;X: CustomTypeId, T&gt; TypeId&lt;X&gt; <span class="kw">for </span>IndexSet&lt;T&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Array
+    }
+}
+
+<span class="attribute">#[cfg(feature = <span class="string">&quot;indexmap&quot;</span>)]
+</span><span class="kw">impl</span>&lt;X: CustomTypeId, K, V&gt; TypeId&lt;X&gt; <span class="kw">for </span>IndexMap&lt;K, V&gt; {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; SborTypeId&lt;X&gt; {
+        SborTypeId::Array
+    }
+}
+
+<span class="kw">pub trait </span>CustomTypeId: Copy + Debug + Clone + PartialEq + Eq {
+    <span class="kw">fn </span>as_u8(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u8;
+
+    <span class="kw">fn </span>from_u8(id: u8) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;;
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="sbor" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

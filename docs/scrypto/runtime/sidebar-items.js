@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["ParseExpressionError","Represents an error when parsing Expression."]],"struct":[["Clock","The system clock"],["DataPointer",""],["DataRef",""],["DataRefMut",""],["Expression",""],["Logger","A utility for logging messages."],["Runtime","The transaction runtime."]]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["ParseDecimalError","Represents an error when parsing Decimal from another type."]],"struct":[["Decimal","`Decimal` represents a 256 bit representation of a fixed-scale decimal number."]]};

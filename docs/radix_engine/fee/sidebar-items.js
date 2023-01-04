@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["FeeReserveError",""],["SystemApiCostingEntry",""]],"struct":[["FeeSummary",""],["FeeTable",""],["SystemLoanFeeReserve",""]],"trait":[["FeeReserve",""]]};
+window.SIDEBAR_ITEMS = {"enum":[["FeeReserveError",""],["RoyaltyReceiver",""],["SystemApiCostingEntry",""]],"fn":[["decimal_to_u128",""],["u128_to_decimal",""]],"struct":[["FeeSummary",""],["FeeTable",""],["SystemLoanFeeReserve",""]],"trait":[["FeeReserve",""]]};

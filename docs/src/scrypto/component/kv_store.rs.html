@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/scrypto/src/component/kv_store.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>kv_store.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `scrypto/src/component/kv_store.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>kv_store.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../scrypto/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../scrypto/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -182,39 +182,94 @@
 <span id="182">182</span>
 <span id="183">183</span>
 <span id="184">184</span>
-</pre><pre class="rust"><code><span class="kw">use </span>sbor::rust::borrow::ToOwned;
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+</pre><pre class="rust"><code><span class="kw">use </span>radix_engine_interface::api::api::EngineApi;
+<span class="kw">use </span>radix_engine_interface::api::types::{
+    KeyValueStoreId, KeyValueStoreOffset, RENodeId, ScryptoRENode, SubstateOffset,
+};
+<span class="kw">use </span>radix_engine_interface::data::<span class="kw-2">*</span>;
+
+<span class="kw">use </span>sbor::rust::borrow::ToOwned;
+<span class="kw">use </span>sbor::rust::boxed::Box;
 <span class="kw">use </span>sbor::rust::fmt;
 <span class="kw">use </span>sbor::rust::marker::PhantomData;
 <span class="kw">use </span>sbor::rust::str::FromStr;
 <span class="kw">use </span>sbor::rust::string::<span class="kw-2">*</span>;
-<span class="kw">use </span>sbor::rust::vec;
 <span class="kw">use </span>sbor::rust::vec::Vec;
 <span class="kw">use </span>sbor::<span class="kw-2">*</span>;
-<span class="kw">use </span>scrypto::core::ScryptoRENode;
+<span class="kw">use </span>utils::copy_u8_array;
 
 <span class="kw">use </span><span class="kw">crate</span>::abi::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::buffer::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::core::{DataRef, DataRefMut};
-<span class="kw">use </span><span class="kw">crate</span>::crypto::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::engine::types::{RENodeId, SubstateId};
-<span class="kw">use </span><span class="kw">crate</span>::engine::{api::<span class="kw-2">*</span>, call_engine, types::KeyValueStoreId};
-<span class="kw">use </span><span class="kw">crate</span>::misc::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::engine::scrypto_env::ScryptoEnv;
+<span class="kw">use </span><span class="kw">crate</span>::runtime::{DataRef, DataRefMut};
 
 <span class="doccomment">/// A scalable key-value map which loads entries on demand.
-</span><span class="kw">pub struct </span>KeyValueStore&lt;K: Encode + Decode, V: <span class="lifetime">&#39;static </span>+ Encode + Decode + TypeId&gt; {
+</span><span class="kw">pub struct </span>KeyValueStore&lt;K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode&gt; {
     <span class="kw">pub </span>id: KeyValueStoreId,
     <span class="kw">pub </span>key: PhantomData&lt;K&gt;,
     <span class="kw">pub </span>value: PhantomData&lt;V&gt;,
 }
 
-<span class="kw">impl</span>&lt;K: Encode + Decode, V: <span class="lifetime">&#39;static </span>+ Encode + Decode + TypeId&gt; KeyValueStore&lt;K, V&gt; {
+<span class="comment">// TODO: de-duplication
+</span><span class="attribute">#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+</span><span class="kw">pub struct </span>KeyValueStoreEntrySubstate(<span class="kw">pub </span><span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;);
+
+<span class="kw">impl</span>&lt;K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode&gt; KeyValueStore&lt;K, V&gt; {
     <span class="doccomment">/// Creates a new key value store.
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>input = RadixEngineInput::RENodeCreate(ScryptoRENode::KeyValueStore);
-        <span class="kw">let </span>output: RENodeId = call_engine(input);
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        <span class="kw">let </span>id = env.sys_create_node(ScryptoRENode::KeyValueStore).unwrap();
 
         <span class="self">Self </span>{
-            id: output.into(),
+            id: id.into(),
             key: PhantomData,
             value: PhantomData,
         }
@@ -222,24 +277,56 @@
 
     <span class="doccomment">/// Returns the value that is associated with the given key.
     </span><span class="kw">pub fn </span>get(<span class="kw-2">&amp;</span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;DataRef&lt;V&gt;&gt; {
-        <span class="kw">let </span>substate_id = SubstateId::KeyValueStoreEntry(<span class="self">self</span>.id, scrypto_encode(key));
-        <span class="kw">let </span>input = RadixEngineInput::SubstateRead(substate_id.clone());
-        <span class="kw">let </span>value: <span class="prelude-ty">Option</span>&lt;V&gt; = call_engine(input);
-        value.map(|value| DataRef::new(value))
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        <span class="kw">let </span>offset =
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
+        <span class="kw">let </span>lock_handle = env
+            .sys_lock_substate(RENodeId::KeyValueStore(<span class="self">self</span>.id), offset, <span class="bool-val">false</span>)
+            .unwrap();
+        <span class="kw">let </span>raw_bytes = env.sys_read(lock_handle).unwrap();
+        <span class="kw">let </span>value: KeyValueStoreEntrySubstate = scrypto_decode(<span class="kw-2">&amp;</span>raw_bytes).unwrap();
+
+        <span class="kw">if </span>value.<span class="number">0</span>.is_none() {
+            env.sys_drop_lock(lock_handle).unwrap();
+        }
+
+        value
+            .<span class="number">0
+            </span>.map(|raw| DataRef::new(lock_handle, scrypto_decode(<span class="kw-2">&amp;</span>raw).unwrap()))
     }
 
     <span class="kw">pub fn </span>get_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key: <span class="kw-2">&amp;</span>K) -&gt; <span class="prelude-ty">Option</span>&lt;DataRefMut&lt;V&gt;&gt; {
-        <span class="kw">let </span>substate_id = SubstateId::KeyValueStoreEntry(<span class="self">self</span>.id, scrypto_encode(key));
-        <span class="kw">let </span>input = RadixEngineInput::SubstateRead(substate_id.clone());
-        <span class="kw">let </span>value: <span class="prelude-ty">Option</span>&lt;V&gt; = call_engine(input);
-        value.map(|value| DataRefMut::new(substate_id, value))
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        <span class="kw">let </span>offset =
+            SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(scrypto_encode(key).unwrap()));
+        <span class="kw">let </span>lock_handle = env
+            .sys_lock_substate(RENodeId::KeyValueStore(<span class="self">self</span>.id), offset.clone(), <span class="bool-val">true</span>)
+            .unwrap();
+        <span class="kw">let </span>raw_bytes = env.sys_read(lock_handle).unwrap();
+        <span class="kw">let </span>value: KeyValueStoreEntrySubstate = scrypto_decode(<span class="kw-2">&amp;</span>raw_bytes).unwrap();
+
+        <span class="kw">if </span>value.<span class="number">0</span>.is_none() {
+            env.sys_drop_lock(lock_handle).unwrap();
+        }
+
+        value
+            .<span class="number">0
+            </span>.map(|raw| DataRefMut::new(lock_handle, offset, scrypto_decode(<span class="kw-2">&amp;</span>raw).unwrap()))
     }
 
     <span class="doccomment">/// Inserts a new key-value pair into this map.
     </span><span class="kw">pub fn </span>insert(<span class="kw-2">&amp;</span><span class="self">self</span>, key: K, value: V) {
-        <span class="kw">let </span>substate_id = SubstateId::KeyValueStoreEntry(<span class="self">self</span>.id, scrypto_encode(<span class="kw-2">&amp;</span>key));
-        <span class="kw">let </span>input = RadixEngineInput::SubstateWrite(substate_id, scrypto_encode(<span class="kw-2">&amp;</span>value));
-        call_engine(input)
+        <span class="kw">let </span><span class="kw-2">mut </span>env = ScryptoEnv;
+        <span class="kw">let </span>offset = SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(
+            scrypto_encode(<span class="kw-2">&amp;</span>key).unwrap(),
+        ));
+        <span class="kw">let </span>lock_handle = env
+            .sys_lock_substate(RENodeId::KeyValueStore(<span class="self">self</span>.id), offset.clone(), <span class="bool-val">true</span>)
+            .unwrap();
+        <span class="kw">let </span>substate = KeyValueStoreEntrySubstate(<span class="prelude-val">Some</span>(scrypto_encode(<span class="kw-2">&amp;</span>value).unwrap()));
+        env.sys_write(lock_handle, scrypto_encode(<span class="kw-2">&amp;</span>substate).unwrap())
+            .unwrap();
+        env.sys_drop_lock(lock_handle).unwrap();
     }
 }
 
@@ -268,7 +355,7 @@
 // binary
 //========
 
-</span><span class="kw">impl</span>&lt;K: Encode + Decode, V: <span class="lifetime">&#39;static </span>+ Encode + Decode + TypeId&gt; TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt;
+</span><span class="kw">impl</span>&lt;K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode&gt; TryFrom&lt;<span class="kw-2">&amp;</span>[u8]&gt;
     <span class="kw">for </span>KeyValueStore&lt;K, V&gt;
 {
     <span class="kw">type </span>Error = ParseKeyValueStoreError;
@@ -276,10 +363,7 @@
     <span class="kw">fn </span>try_from(slice: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         <span class="kw">match </span>slice.len() {
             <span class="number">36 </span>=&gt; <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-                id: (
-                    Hash(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">0</span>..<span class="number">32</span>])),
-                    u32::from_le_bytes(copy_u8_array(<span class="kw-2">&amp;</span>slice[<span class="number">32</span>..])),
-                ),
+                id: copy_u8_array(slice),
                 key: PhantomData,
                 value: PhantomData,
             }),
@@ -288,55 +372,63 @@
     }
 }
 
-<span class="kw">impl</span>&lt;K: Encode + Decode, V: <span class="lifetime">&#39;static </span>+ Encode + Decode + TypeId&gt; KeyValueStore&lt;K, V&gt; {
+<span class="kw">impl</span>&lt;K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode&gt; KeyValueStore&lt;K, V&gt; {
     <span class="kw">pub fn </span>to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>v = <span class="self">self</span>.id.<span class="number">0</span>.to_vec();
-        v.extend(<span class="self">self</span>.id.<span class="number">1</span>.to_le_bytes());
-        v
+        <span class="self">self</span>.id.to_vec()
     }
 }
 
-<span class="kw">impl</span>&lt;K: Encode + Decode, V: <span class="lifetime">&#39;static </span>+ Encode + Decode + TypeId&gt; TypeId <span class="kw">for </span>KeyValueStore&lt;K, V&gt; {
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>type_id() -&gt; u8 {
-        ScryptoType::KeyValueStore.id()
-    }
-}
+<span class="comment">// TODO: extend scrypto_type! macro to support generics
 
-<span class="kw">impl</span>&lt;K: Encode + Decode, V: <span class="lifetime">&#39;static </span>+ Encode + Decode + TypeId&gt; Encode <span class="kw">for </span>KeyValueStore&lt;K, V&gt; {
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>encode_type_id(encoder: <span class="kw-2">&amp;mut </span>Encoder) {
-        encoder.write_type_id(<span class="self">Self</span>::type_id());
-    }
-
-    <span class="attribute">#[inline]
-    </span><span class="kw">fn </span>encode_value(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>Encoder) {
-        <span class="kw">let </span>bytes = <span class="self">self</span>.to_vec();
-        encoder.write_dynamic_size(bytes.len());
-        encoder.write_slice(<span class="kw-2">&amp;</span>bytes);
-    }
-}
-
-<span class="kw">impl</span>&lt;K: Encode + Decode, V: <span class="lifetime">&#39;static </span>+ Encode + Decode + TypeId&gt; Decode <span class="kw">for </span>KeyValueStore&lt;K, V&gt; {
-    <span class="kw">fn </span>check_type_id(decoder: <span class="kw-2">&amp;mut </span>Decoder) -&gt; <span class="prelude-ty">Result</span>&lt;(), DecodeError&gt; {
-        decoder.check_type_id(<span class="self">Self</span>::type_id())
-    }
-
-    <span class="kw">fn </span>decode_value(decoder: <span class="kw-2">&amp;mut </span>Decoder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodeError&gt; {
-        <span class="kw">let </span>len = decoder.read_dynamic_size()<span class="question-mark">?</span>;
-        <span class="kw">let </span>slice = decoder.read_bytes(len)<span class="question-mark">?</span>;
-        <span class="self">Self</span>::try_from(slice)
-            .map_err(|<span class="kw">_</span>| DecodeError::CustomError(<span class="string">&quot;Failed to decode KeyValueStore&quot;</span>.to_string()))
-    }
-}
-
-<span class="kw">impl</span>&lt;K: Encode + Decode + Describe, V: <span class="lifetime">&#39;static </span>+ Encode + Decode + TypeId + Describe&gt; Describe
+</span><span class="kw">impl</span>&lt;K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode&gt; TypeId&lt;ScryptoCustomTypeId&gt;
     <span class="kw">for </span>KeyValueStore&lt;K, V&gt;
 {
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>type_id() -&gt; ScryptoSborTypeId {
+        SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore)
+    }
+}
+
+<span class="kw">impl</span>&lt;
+        K: ScryptoEncode + ScryptoDecode,
+        V: ScryptoEncode + ScryptoDecode,
+        E: Encoder&lt;ScryptoCustomTypeId&gt;,
+    &gt; Encode&lt;ScryptoCustomTypeId, E&gt; <span class="kw">for </span>KeyValueStore&lt;K, V&gt;
+{
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_type_id(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>E) -&gt; <span class="prelude-ty">Result</span>&lt;(), EncodeError&gt; {
+        encoder.write_type_id(<span class="self">Self</span>::type_id())
+    }
+
+    <span class="attribute">#[inline]
+    </span><span class="kw">fn </span>encode_body(<span class="kw-2">&amp;</span><span class="self">self</span>, encoder: <span class="kw-2">&amp;mut </span>E) -&gt; <span class="prelude-ty">Result</span>&lt;(), EncodeError&gt; {
+        encoder.write_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.to_vec())
+    }
+}
+
+<span class="kw">impl</span>&lt;
+        K: ScryptoEncode + ScryptoDecode,
+        V: ScryptoEncode + ScryptoDecode,
+        D: Decoder&lt;ScryptoCustomTypeId&gt;,
+    &gt; Decode&lt;ScryptoCustomTypeId, D&gt; <span class="kw">for </span>KeyValueStore&lt;K, V&gt;
+{
+    <span class="kw">fn </span>decode_body_with_type_id(
+        decoder: <span class="kw-2">&amp;mut </span>D,
+        type_id: ScryptoSborTypeId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, DecodeError&gt; {
+        decoder.check_preloaded_type_id(type_id, <span class="self">Self</span>::type_id())<span class="question-mark">?</span>;
+        <span class="kw">let </span>slice = decoder.read_slice(<span class="number">36</span>)<span class="question-mark">?</span>;
+        <span class="self">Self</span>::try_from(slice).map_err(|<span class="kw">_</span>| DecodeError::InvalidCustomValue)
+    }
+}
+
+<span class="kw">impl</span>&lt;K: ScryptoEncode + ScryptoDecode + Describe, V: ScryptoEncode + ScryptoDecode + Describe&gt;
+    Describe <span class="kw">for </span>KeyValueStore&lt;K, V&gt;
+{
     <span class="kw">fn </span>describe() -&gt; Type {
-        Type::Custom {
-            type_id: ScryptoType::KeyValueStore.id(),
-            generics: <span class="macro">vec!</span>[K::describe(), V::describe()],
+        Type::KeyValueStore {
+            key_type: Box::new(K::describe()),
+            value_type: Box::new(V::describe()),
         }
     }
 }
@@ -345,7 +437,9 @@
 // text
 //======
 
-</span><span class="kw">impl</span>&lt;K: Encode + Decode, V: Encode + Decode + TypeId&gt; FromStr <span class="kw">for </span>KeyValueStore&lt;K, V&gt; {
+</span><span class="kw">impl</span>&lt;K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode&gt; FromStr
+    <span class="kw">for </span>KeyValueStore&lt;K, V&gt;
+{
     <span class="kw">type </span><span class="prelude-val">Err </span>= ParseKeyValueStoreError;
 
     <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
@@ -355,13 +449,17 @@
     }
 }
 
-<span class="kw">impl</span>&lt;K: Encode + Decode, V: Encode + Decode + TypeId&gt; fmt::Display <span class="kw">for </span>KeyValueStore&lt;K, V&gt; {
+<span class="kw">impl</span>&lt;K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode&gt; fmt::Display
+    <span class="kw">for </span>KeyValueStore&lt;K, V&gt;
+{
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
         <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, hex::encode(<span class="self">self</span>.to_vec()))
     }
 }
 
-<span class="kw">impl</span>&lt;K: Encode + Decode, V: Encode + Decode + TypeId&gt; fmt::Debug <span class="kw">for </span>KeyValueStore&lt;K, V&gt; {
+<span class="kw">impl</span>&lt;K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode&gt; fmt::Debug
+    <span class="kw">for </span>KeyValueStore&lt;K, V&gt;
+{
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter) -&gt; <span class="prelude-ty">Result</span>&lt;(), fmt::Error&gt; {
         <span class="macro">write!</span>(f, <span class="string">&quot;{}&quot;</span>, <span class="self">self</span>)
     }
