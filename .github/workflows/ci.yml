@@ -43,11 +43,13 @@ jobs:
         toolchain: stable
     - run: |
         echo HOME=$HOME
-    - uses: bmwill/rust-cache@v1
+
+    - uses: lrubaszewski/rust-cache@dont_clean_registry_src
       with:
-        path:
+        cache-directories:
           ~/.cargo/registry/src/**/librocksdb-sys-*
-        working-directory: simulator
+        workspaces: simulator
+
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
