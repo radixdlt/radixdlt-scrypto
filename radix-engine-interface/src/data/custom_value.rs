@@ -19,7 +19,7 @@ pub enum ScryptoCustomValue {
     Own(Own),
     Blob(Blob),
 
-    // TX interpreted types (TODO: rename?)
+    // TX interpreted types
     Bucket(ManifestBucket),
     Proof(ManifestProof),
     Expression(ManifestExpression),

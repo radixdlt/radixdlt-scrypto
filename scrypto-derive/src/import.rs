@@ -137,106 +137,6 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::U64 => parse_quote! { u64 },
         SchemaType::U128 => parse_quote! { u128 },
         SchemaType::String => parse_quote! { String },
-        // struct & enum
-        SchemaType::Struct { name, fields } => {
-            let ident = format_ident!("{}", name);
-
-            match fields {
-                SchemaFields::Named { named } => {
-                    let names: Vec<Ident> =
-                        named.iter().map(|k| format_ident!("{}", k.0)).collect();
-                    let mut types: Vec<Type> = vec![];
-                    for (_, v) in named {
-                        let (new_type, new_structs) = get_native_type(v)?;
-                        types.push(new_type);
-                        structs.extend(new_structs);
-                    }
-                    structs.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
-                        pub struct #ident {
-                            #( pub #names : #types, )*
-                        }
-                    });
-                }
-                SchemaFields::Unnamed { unnamed } => {
-                    let mut types: Vec<Type> = vec![];
-                    for v in unnamed {
-                        let (new_type, new_structs) = get_native_type(v)?;
-                        types.push(new_type);
-                        structs.extend(new_structs);
-                    }
-                    structs.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
-                        pub struct #ident (
-                            #( pub #types ),*
-                        );
-                    });
-                }
-                SchemaFields::Unit => {
-                    structs.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
-                        pub struct #ident;
-                    });
-                }
-            }
-
-            parse_quote! { #ident }
-        }
-        SchemaType::Enum { name, variants } => {
-            let ident = format_ident!("{}", name);
-            let mut native_variants = Vec::<Variant>::new();
-
-            for variant in variants {
-                let v_ident = format_ident!("{}", variant.name);
-
-                match &variant.fields {
-                    SchemaFields::Named { named } => {
-                        let mut names: Vec<Ident> = vec![];
-                        let mut types: Vec<Type> = vec![];
-                        for (n, v) in named {
-                            names.push(format_ident!("{}", n));
-                            let (new_type, new_structs) = get_native_type(v)?;
-                            types.push(new_type);
-                            structs.extend(new_structs);
-                        }
-                        native_variants.push(parse_quote! {
-                            #v_ident {
-                                #(#names: #types),*
-                            }
-                        });
-                    }
-                    SchemaFields::Unnamed { unnamed } => {
-                        let mut types: Vec<Type> = vec![];
-                        for v in unnamed {
-                            let (new_type, new_structs) = get_native_type(v)?;
-                            types.push(new_type);
-                            structs.extend(new_structs);
-                        }
-                        native_variants.push(parse_quote! {
-                            #v_ident ( #(#types),* )
-                        });
-                    }
-                    SchemaFields::Unit => {
-                        native_variants.push(parse_quote! {
-                            #v_ident
-                        });
-                    }
-                };
-            }
-
-            structs.push(parse_quote! {
-                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
-                pub enum #ident {
-                    #( #native_variants ),*
-                }
-            });
-
-            parse_quote! { #ident }
-        }
 
         // array
         SchemaType::Array {
@@ -305,8 +205,107 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::NonFungibleAddress => {
             parse_quote! { ::scrypto::model::NonFungibleAddress}
         }
+        SchemaType::Struct { name, fields } => {
+            let ident = format_ident!("{}", name);
 
-        // other enums
+            match fields {
+                SchemaFields::Named { named } => {
+                    let names: Vec<Ident> =
+                        named.iter().map(|k| format_ident!("{}", k.0)).collect();
+                    let mut types: Vec<Type> = vec![];
+                    for (_, v) in named {
+                        let (new_type, new_structs) = get_native_type(v)?;
+                        types.push(new_type);
+                        structs.extend(new_structs);
+                    }
+                    structs.push(parse_quote! {
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                        pub struct #ident {
+                            #( pub #names : #types, )*
+                        }
+                    });
+                }
+                SchemaFields::Unnamed { unnamed } => {
+                    let mut types: Vec<Type> = vec![];
+                    for v in unnamed {
+                        let (new_type, new_structs) = get_native_type(v)?;
+                        types.push(new_type);
+                        structs.extend(new_structs);
+                    }
+                    structs.push(parse_quote! {
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                        pub struct #ident (
+                            #( pub #types ),*
+                        );
+                    });
+                }
+                SchemaFields::Unit => {
+                    structs.push(parse_quote! {
+                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                        pub struct #ident;
+                    });
+                }
+            }
+
+            parse_quote! { #ident }
+        }
+
+        // enums
+        SchemaType::Enum { name, variants } => {
+            let ident = format_ident!("{}", name);
+            let mut native_variants = Vec::<Variant>::new();
+
+            for variant in variants {
+                let v_ident = format_ident!("{}", variant.name);
+
+                match &variant.fields {
+                    SchemaFields::Named { named } => {
+                        let mut names: Vec<Ident> = vec![];
+                        let mut types: Vec<Type> = vec![];
+                        for (n, v) in named {
+                            names.push(format_ident!("{}", n));
+                            let (new_type, new_structs) = get_native_type(v)?;
+                            types.push(new_type);
+                            structs.extend(new_structs);
+                        }
+                        native_variants.push(parse_quote! {
+                            #v_ident {
+                                #(#names: #types),*
+                            }
+                        });
+                    }
+                    SchemaFields::Unnamed { unnamed } => {
+                        let mut types: Vec<Type> = vec![];
+                        for v in unnamed {
+                            let (new_type, new_structs) = get_native_type(v)?;
+                            types.push(new_type);
+                            structs.extend(new_structs);
+                        }
+                        native_variants.push(parse_quote! {
+                            #v_ident ( #(#types),* )
+                        });
+                    }
+                    SchemaFields::Unit => {
+                        native_variants.push(parse_quote! {
+                            #v_ident
+                        });
+                    }
+                };
+            }
+
+            structs.push(parse_quote! {
+                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                pub enum #ident {
+                    #( #native_variants ),*
+                }
+            });
+
+            parse_quote! { #ident }
+        }
         SchemaType::Option { some_type } => {
             let (new_type, new_structs) = get_native_type(some_type)?;
             structs.extend(new_structs);

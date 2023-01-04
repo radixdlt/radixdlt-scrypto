@@ -38,10 +38,10 @@ pub enum ScryptoCustomTypeId {
     Own,
     Blob,
 
-    // TX interpreted types (TODO: rename?)
-    Bucket,     // super::types::ManifestBucket
-    Proof,      // super::types::ManifestProof
-    Expression, // super::types::ManifestExpression
+    // TX interpreted types
+    Bucket,
+    Proof,
+    Expression,
 
     // Uninterpreted
     Hash,
