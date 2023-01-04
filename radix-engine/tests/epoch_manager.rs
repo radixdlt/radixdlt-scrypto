@@ -445,7 +445,7 @@ fn cannot_claim_unstake_immediately() {
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unstake_validator(validator_address, Decimal::one())
-        .take_from_worktop(validator_substate.unstake_nft_address, |builder, bucket| {
+        .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
@@ -509,8 +509,8 @@ fn can_claim_unstake_after_epochs() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account_address, validator_substate.unstake_nft_address)
-        .take_from_worktop(validator_substate.unstake_nft_address, |builder, bucket| {
+        .withdraw_from_account(account_address, validator_substate.unstake_nft)
+        .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(

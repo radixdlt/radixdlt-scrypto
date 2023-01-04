@@ -14,11 +14,13 @@ use radix_engine_interface::model::*;
 pub struct ValidatorSubstate {
     pub manager: SystemAddress,
     pub address: SystemAddress,
-    pub unstake_nft_address: ResourceAddress,
     pub key: EcdsaSecp256k1PublicKey,
-    pub stake_vault_id: VaultId,
-    pub unstake_vault_id: VaultId,
     pub is_registered: bool,
+
+    pub unstake_nft: ResourceAddress,
+    pub liquidity_token: ResourceAddress,
+    pub stake_xrd_vault_id: VaultId,
+    pub pending_xrd_withdraw_vault_id: VaultId,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -78,7 +80,7 @@ impl Executor for ValidatorRegisterExecutable {
         {
             let substate = api.get_ref(handle)?;
             let validator = substate.validator();
-            let stake_vault = Vault(validator.stake_vault_id);
+            let stake_vault = Vault(validator.stake_xrd_vault_id);
             let stake_amount = stake_vault.sys_amount(api)?;
             if stake_amount.is_positive() {
                 let substate = api.get_ref(handle)?;
@@ -196,7 +198,7 @@ impl Executor for ValidatorStakeExecutable {
         {
             let substate = api.get_ref(handle)?;
             let validator = substate.validator();
-            let mut xrd_vault = Vault(validator.stake_vault_id);
+            let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
             xrd_vault.sys_put(self.1, api)?;
         }
 
@@ -208,7 +210,7 @@ impl Executor for ValidatorStakeExecutable {
                 let receiver = validator.manager;
                 let key = validator.key;
                 let validator_address = validator.address;
-                let xrd_vault = Vault(validator.stake_vault_id);
+                let xrd_vault = Vault(validator.stake_xrd_vault_id);
                 let xrd_amount = xrd_vault.sys_amount(api)?;
                 let invocation = EpochManagerUpdateValidatorInvocation {
                     receiver,
@@ -269,9 +271,9 @@ impl Executor for ValidatorUnstakeExecutable {
             let validator = substate.validator();
 
             let manager = validator.manager;
-            let mut stake_vault = Vault(validator.stake_vault_id);
-            let mut unstake_vault = Vault(validator.unstake_vault_id);
-            let mut nft_resman = ResourceManager(validator.unstake_nft_address);
+            let mut stake_vault = Vault(validator.stake_xrd_vault_id);
+            let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
+            let mut nft_resman = ResourceManager(validator.unstake_nft);
             let manager_handle = api.lock_substate(
                 RENodeId::Global(GlobalAddress::System(manager)),
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
@@ -297,7 +299,7 @@ impl Executor for ValidatorUnstakeExecutable {
         {
             let substate = api.get_ref(handle)?;
             let validator = substate.validator();
-            let stake_vault = Vault(validator.stake_vault_id);
+            let stake_vault = Vault(validator.stake_xrd_vault_id);
             if validator.is_registered {
                 let stake_amount = stake_vault.sys_amount(api)?;
                 let substate = api.get_ref(handle)?;
@@ -361,10 +363,10 @@ impl Executor for ValidatorClaimXrdExecutable {
         let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
         let substate = api.get_ref(handle)?;
         let validator = substate.validator();
-        let mut nft_resman = ResourceManager(validator.unstake_nft_address);
-        let resource_address = validator.unstake_nft_address;
+        let mut nft_resman = ResourceManager(validator.unstake_nft);
+        let resource_address = validator.unstake_nft;
         let manager = validator.manager;
-        let mut unstake_vault = Vault(validator.unstake_vault_id);
+        let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
 
         // TODO: Move this check into a more appropriate place
         let bucket = Bucket(self.1 .0);

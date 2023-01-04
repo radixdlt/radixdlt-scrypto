@@ -1023,9 +1023,9 @@ impl<'a> SubstateRef<'a> {
                 let mut references = HashSet::new();
                 let mut owned_nodes = HashSet::new();
                 references.insert(GlobalAddress::System(substate.manager));
-                references.insert(GlobalAddress::Resource(substate.unstake_nft_address));
-                owned_nodes.insert(RENodeId::Vault(substate.stake_vault_id));
-                owned_nodes.insert(RENodeId::Vault(substate.unstake_vault_id));
+                references.insert(GlobalAddress::Resource(substate.unstake_nft));
+                owned_nodes.insert(RENodeId::Vault(substate.stake_xrd_vault_id));
+                owned_nodes.insert(RENodeId::Vault(substate.pending_xrd_withdraw_vault_id));
                 (references, owned_nodes)
             }
             SubstateRef::ComponentState(substate) => {
