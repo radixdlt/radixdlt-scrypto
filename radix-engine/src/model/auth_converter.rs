@@ -28,7 +28,7 @@ fn soft_to_hard_decimal(
                             ),
                         )
                     }
-                    _ => HardDecimal::DisallowType,
+                    _ => HardDecimal::DisallowdValueType,
                 }
             } else {
                 HardDecimal::InvalidSchemaPath
@@ -58,7 +58,7 @@ fn soft_to_hard_count(
                             ),
                         )
                     }
-                    _ => HardCount::DisallowType,
+                    _ => HardCount::DisallowdValueType,
                 }
             } else {
                 HardCount::InvalidSchemaPath
@@ -118,7 +118,7 @@ fn soft_to_hard_resource_list(
                                 .collect(),
                         )
                     }
-                    _ => HardProofRuleResourceList::DisallowType,
+                    _ => HardProofRuleResourceList::DisallowdValueType,
                 }
             } else {
                 HardProofRuleResourceList::InvalidSchemaPath
@@ -147,7 +147,7 @@ fn soft_to_hard_resource(
                             ),
                         )
                     }
-                    _ => HardResourceOrNonFungible::DisallowType,
+                    _ => HardResourceOrNonFungible::DisallowdValueType,
                 }
             } else {
                 HardResourceOrNonFungible::InvalidSchemaPath
@@ -190,7 +190,7 @@ fn soft_to_hard_resource_or_non_fungible(
                             ),
                         )
                     }
-                    _ => HardResourceOrNonFungible::DisallowType,
+                    _ => HardResourceOrNonFungible::DisallowdValueType,
                 }
             } else {
                 HardResourceOrNonFungible::InvalidSchemaPath

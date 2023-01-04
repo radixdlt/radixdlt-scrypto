@@ -25,7 +25,7 @@ impl AuthVerification {
                 proof_resource_address == *resource_address
             }
             HardResourceOrNonFungible::InvalidSchemaPath
-            | HardResourceOrNonFungible::DisallowType => false,
+            | HardResourceOrNonFungible::DisallowdValueType => false,
         }
     }
 

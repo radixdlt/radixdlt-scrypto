@@ -15,14 +15,14 @@ pub enum MethodAuthorizationError {
 pub enum HardDecimal {
     Amount(Decimal),
     InvalidSchemaPath,
-    DisallowType,
+    DisallowdValueType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardCount {
     Count(u8),
     InvalidSchemaPath,
-    DisallowType,
+    DisallowdValueType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -31,7 +31,7 @@ pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleAddress),
     Resource(ResourceAddress),
     InvalidSchemaPath,
-    DisallowType,
+    DisallowdValueType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -39,7 +39,7 @@ pub enum HardResourceOrNonFungible {
 pub enum HardProofRuleResourceList {
     List(Vec<HardResourceOrNonFungible>),
     InvalidSchemaPath,
-    DisallowType,
+    DisallowdValueType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
