@@ -1,8 +1,9 @@
+use crate::rust::borrow::Cow;
+use crate::rust::collections::BTreeMap;
+use crate::rust::string::String;
+use crate::rust::vec;
+use crate::rust::vec::Vec;
 use crate::*;
-use sbor::rust::borrow::Cow;
-use sbor::rust::collections::BTreeMap;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 
 /// The `Schema` trait allows a type to describe how to interpret and validate a corresponding SBOR payload.
 ///

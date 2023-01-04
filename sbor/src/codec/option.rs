@@ -1,4 +1,6 @@
 use crate::constants::*;
+use crate::rust::borrow::ToOwned;
+use crate::rust::vec;
 use crate::type_id::*;
 use crate::*;
 

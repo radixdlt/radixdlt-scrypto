@@ -1,5 +1,6 @@
 use crate::type_id::*;
 use crate::*;
+use sbor::rust::vec;
 
 macro_rules! encode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {

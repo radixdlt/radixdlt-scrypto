@@ -68,7 +68,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                         fn get_local_type_data() -> Option<::sbor::LocalTypeData<C, ::sbor::GlobalTypeRef>> {
                             Some(::sbor::LocalTypeData::named_fields_tuple(
                                 stringify!(#ident),
-                                vec![
+                                ::sbor::rust::vec![
                                     #((#field_names, <#field_types as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),)*
                                 ],
                             ))
@@ -107,7 +107,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                         fn get_local_type_data() -> Option<::sbor::LocalTypeData<C, ::sbor::GlobalTypeRef>> {
                             Some(::sbor::LocalTypeData::named_tuple(
                                 stringify!(#ident),
-                                vec![
+                                ::sbor::rust::vec![
                                     #(<#field_types as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,)*
                                 ],
                             ))
@@ -163,7 +163,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                                 quote! {
                                     ::sbor::LocalTypeData::named_fields_tuple(
                                         #variant_name,
-                                        vec![
+                                        ::sbor::rust::vec![
                                             #((#field_names, <#field_types as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),)*
                                         ],
                                     )
@@ -178,7 +178,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                                 quote! {
                                     ::sbor::LocalTypeData::named_tuple(
                                         #variant_name,
-                                        vec![
+                                        ::sbor::rust::vec![
                                             #(<#field_types as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,)*
                                         ],
                                     )
@@ -260,7 +260,7 @@ mod tests {
                     fn get_local_type_data() -> Option<::sbor::LocalTypeData <C, ::sbor::GlobalTypeRef>> {
                         Some(::sbor::LocalTypeData::named_fields_tuple(
                             stringify!(Test),
-                            vec![
+                            ::sbor::rust::vec![
                                 ("a", <u32 as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),
                                 ("b", <Vec<u8> as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),
                                 ("c", <u32 as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),
@@ -295,7 +295,7 @@ mod tests {
                     fn get_local_type_data() -> Option<::sbor::LocalTypeData <C, ::sbor::GlobalTypeRef>> {
                         Some(::sbor::LocalTypeData::named_tuple(
                             stringify!(Test),
-                            vec![
+                            ::sbor::rust::vec![
                                 <u32 as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
                                 <Vec<u8> as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
                                 <u32 as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
@@ -358,14 +358,14 @@ mod tests {
                                 "A".to_owned() => ::sbor::LocalTypeData::named_unit("A"),
                                 "B".to_owned() => ::sbor::LocalTypeData::named_tuple(
                                     "B",
-                                    vec![
+                                    ::sbor::rust::vec![
                                         <T as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
                                         <Vec<T2> as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
                                     ],
                                 ),
                                 "C".to_owned() => ::sbor::LocalTypeData::named_fields_tuple(
                                     "C",
-                                    vec![
+                                    ::sbor::rust::vec![
                                         ("x", <[u8; 5] as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),
                                     ],
                                 ),
