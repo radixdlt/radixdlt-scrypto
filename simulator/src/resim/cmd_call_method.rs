@@ -3,6 +3,7 @@
 use clap::Parser;
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
+use radix_engine_interface::node::*;
 use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;

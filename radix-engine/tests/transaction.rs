@@ -4,6 +4,7 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
+use scrypto::runtime::Blob;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;

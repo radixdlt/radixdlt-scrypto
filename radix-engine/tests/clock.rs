@@ -4,7 +4,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{SystemInstruction, SystemTransaction};
+use transaction::model::{Instruction, SystemTransaction};
 
 #[test]
 fn a_new_clock_instance_can_be_created_by_the_system() {
@@ -12,14 +12,9 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let instructions = vec![SystemInstruction::CallNativeFunction {
-        function_ident: NativeFunctionIdent {
-            blueprint_name: CLOCK_BLUEPRINT.to_owned(),
-            function_name: ClockFunction::Create.as_ref().to_owned(),
-        },
-        args: args!(),
-    }
-    .into()];
+    let instructions = vec![Instruction::System(NativeInvocation::Clock(
+        ClockInvocation::Create(ClockCreateInvocation {}),
+    ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -40,14 +35,9 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let instructions = vec![SystemInstruction::CallNativeFunction {
-        function_ident: NativeFunctionIdent {
-            blueprint_name: CLOCK_BLUEPRINT.to_owned(),
-            function_name: ClockFunction::Create.as_ref().to_owned(),
-        },
-        args: args!(),
-    }
-    .into()];
+    let instructions = vec![Instruction::System(NativeInvocation::Clock(
+        ClockInvocation::Create(ClockCreateInvocation {}),
+    ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {

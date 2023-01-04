@@ -386,6 +386,13 @@ pub fn serialize_custom_value<S: Serializer>(
             )
         }
         // RE node types
+        ScryptoCustomValue::Own(value) => serialize_value(
+            ValueEncoding::WithType,
+            serializer,
+            context,
+            ScryptoCustomTypeId::Own,
+            &hex::encode(value.to_vec()),
+        ),
         ScryptoCustomValue::Component(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
@@ -438,13 +445,6 @@ pub fn serialize_custom_value<S: Serializer>(
                 )
             }
         }
-        ScryptoCustomValue::Vault(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomTypeId::Vault,
-            &hex::encode(value),
-        ),
         // Other interpreted types
         ScryptoCustomValue::Expression(value) => serialize_value(
             // The fact it's an expression isn't so relevant, so favour simplicity over verbosity
@@ -725,11 +725,11 @@ mod tests {
     fn test_complex_encoding_with_network() {
         use crate::{
             constants::{ACCOUNT_PACKAGE, EPOCH_MANAGER, FAUCET_COMPONENT},
-            core::Expression,
             crypto::{
-                Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
+                EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
                 EddsaEd25519Signature,
             },
+            data::types::{Blob, Expression, Own},
             math::{Decimal, PreciseDecimal},
         };
 
@@ -793,6 +793,9 @@ mod tests {
                             value: ScryptoCustomValue::SystemAddress(EPOCH_MANAGER),
                         },
                         SborValue::Custom {
+                            value: ScryptoCustomValue::Own(Own::Vault([0; 36])),
+                        },
+                        SborValue::Custom {
                             value: ScryptoCustomValue::Component([0; 36]),
                         },
                         SborValue::Custom {
@@ -806,9 +809,6 @@ mod tests {
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Proof(2),
-                        },
-                        SborValue::Custom {
-                            value: ScryptoCustomValue::Vault([0; 36]),
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Expression(Expression::entire_worktop()),
@@ -901,12 +901,12 @@ mod tests {
                 faucet_address,
                 radix_token_address,
                 epoch_manager_address,
+                { "type": "Own", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "Bucket", "value": "Hello" },
                 { "type": "Bucket", "value": 10 },
                 { "type": "Proof", "value": 2 },
-                { "type": "Vault", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 "ENTIRE_WORKTOP",
                 { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "NonFungibleAddress", "value": [radix_token_address, { "hex": "0002" }] },
@@ -960,12 +960,12 @@ mod tests {
                         { "type": "ComponentAddress", "value": faucet_address },
                         { "type": "ResourceAddress", "value": radix_token_address },
                         { "type": "SystemAddress", "value": epoch_manager_address },
+                        { "type": "Own", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Bucket", "value": "Hello" },
                         { "type": "Bucket", "value": 10 },
                         { "type": "Proof", "value": 2 },
-                        { "type": "Vault", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Expression", "value": "ENTIRE_WORKTOP" },
                         { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "NonFungibleAddress", "value": [radix_token_address, { "type": "Array", "element_type": "U8", "value": { "hex": "0002" } }] },

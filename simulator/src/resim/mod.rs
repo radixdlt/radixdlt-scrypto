@@ -63,9 +63,9 @@ use radix_engine::types::*;
 use radix_engine::wasm::*;
 use radix_engine_constants::*;
 use radix_engine_interface::abi;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::model::FromPublicKey;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_stores::rocks_db::RadixEngineDB;
 use std::env;
 use std::fs;
@@ -266,6 +266,8 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<Option<Transaction
                         state_updates: commit.state_updates,
                         entity_changes: commit.entity_changes,
                         resource_changes: commit.resource_changes,
+                        application_logs: commit.application_logs,
+                        next_validator_set: commit.next_validator_set,
                     }),
                 })),
             }

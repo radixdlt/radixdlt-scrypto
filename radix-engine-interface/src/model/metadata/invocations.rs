@@ -4,7 +4,7 @@ use crate::api::{api::*, types::*};
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct MetadataSetInvocation {
     pub receiver: RENodeId,
@@ -22,14 +22,11 @@ impl SerializableInvocation for MetadataSetInvocation {
 
 impl Into<SerializedInvocation> for MetadataSetInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Metadata(
-            MetadataMethodInvocation::Set(self),
-        ))
-        .into()
+        NativeInvocation::Metadata(MetadataInvocation::Set(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct MetadataGetInvocation {
     pub receiver: RENodeId,
@@ -46,9 +43,6 @@ impl SerializableInvocation for MetadataGetInvocation {
 
 impl Into<SerializedInvocation> for MetadataGetInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Metadata(
-            MetadataMethodInvocation::Get(self),
-        ))
-        .into()
+        NativeInvocation::Metadata(MetadataInvocation::Get(self)).into()
     }
 }

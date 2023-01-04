@@ -1,6 +1,6 @@
 use crate::api::api::Invocation;
 use crate::api::types::RENodeId;
-use crate::crypto::Blob;
+use crate::data::types::Blob;
 use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
@@ -8,7 +8,7 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackagePublishInvocation {
     pub code: Blob,
@@ -28,14 +28,11 @@ impl SerializableInvocation for PackagePublishInvocation {
 
 impl Into<SerializedInvocation> for PackagePublishInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Function(NativeFunctionInvocation::Package(
-            PackageFunctionInvocation::Publish(self),
-        ))
-        .into()
+        NativeInvocation::Package(PackageInvocation::Publish(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
@@ -52,21 +49,18 @@ impl SerializableInvocation for PackageSetRoyaltyConfigInvocation {
 
 impl Into<SerializedInvocation> for PackageSetRoyaltyConfigInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Package(
-            PackageMethodInvocation::SetRoyaltyConfig(self),
-        ))
-        .into()
+        NativeInvocation::Package(PackageInvocation::SetRoyaltyConfig(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct PackageClaimRoyaltyInvocation {
     pub receiver: PackageAddress,
@@ -82,10 +76,7 @@ impl SerializableInvocation for PackageClaimRoyaltyInvocation {
 
 impl Into<SerializedInvocation> for PackageClaimRoyaltyInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::Package(
-            PackageMethodInvocation::ClaimRoyalty(self),
-        ))
-        .into()
+        NativeInvocation::Package(PackageInvocation::ClaimRoyalty(self)).into()
     }
 }
 

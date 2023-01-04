@@ -1,7 +1,8 @@
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::{BucketId, GlobalAddress, ProofId, VaultId};
 use radix_engine_interface::constants::*;
-use radix_engine_interface::crypto::{hash, Blob, Hash};
+use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;

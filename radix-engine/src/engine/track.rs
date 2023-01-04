@@ -83,7 +83,7 @@ pub enum TrackError {
 
 pub struct TrackReceipt {
     pub fee_summary: FeeSummary,
-    pub application_logs: Vec<(Level, String)>,
+    //pub application_logs: Vec<(Level, String)>,
     pub result: TransactionResult,
     pub events: Vec<TrackedEvent>,
 }
@@ -515,7 +515,6 @@ impl<'s, R: FeeReserve> Track<'s, R> {
 
         TrackReceipt {
             fee_summary,
-            application_logs: self.application_logs,
             result,
             events,
         }
@@ -583,14 +582,41 @@ impl<'s> FinalizingTrack<'s> {
 
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
+        let mut application_logs = Vec::new();
+        let mut next_validator_set = None;
         let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
                 let old_version = match &loaded.metastate {
-                    SubstateMetaState::New => Option::None,
-                    SubstateMetaState::Existing { old_version, .. } => Option::Some(*old_version),
+                    SubstateMetaState::New => None,
+                    SubstateMetaState::Existing { old_version, .. } => Some(*old_version),
                 };
 
-                to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+                match id.1 {
+                    SubstateOffset::Logger(LoggerOffset::Logger) => {
+                        let logger: LoggerSubstate = loaded.substate.into();
+                        application_logs.extend(logger.logs);
+                    }
+                    SubstateOffset::EpochManager(EpochManagerOffset::ValidatorSet) => {
+                        // TODO: Use application layer events rather than state updates to get this info
+                        match &loaded.metastate {
+                            SubstateMetaState::New
+                            | SubstateMetaState::Existing {
+                                state: ExistingMetaState::Updated(..),
+                                ..
+                            } => {
+                                let validator_set =
+                                    loaded.substate.validator_set().validator_set.clone();
+                                next_validator_set = Some(validator_set);
+                            }
+                            _ => {}
+                        }
+
+                        to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+                    }
+                    _ => {
+                        to_persist.insert(id, (loaded.substate.to_persisted(), old_version));
+                    }
+                }
             }
 
             self.new_global_addresses
@@ -721,6 +747,8 @@ impl<'s> FinalizingTrack<'s> {
             state_updates: Self::generate_diff(self.substate_store, to_persist),
             entity_changes: EntityChanges::new(new_global_addresses),
             resource_changes: execution_trace_receipt.resource_changes,
+            application_logs,
+            next_validator_set,
         })
     }
 
