@@ -80,9 +80,7 @@ pub enum Type {
     SystemAddress,
 
     // RE interpreted
-    /* generic */
-    Own,
-    /* custom */
+    Own, /* generic, either bucket, proof, vault, component or kv store. TODO: do we really need this? */
     Bucket,
     Proof,
     Vault,
@@ -91,7 +89,6 @@ pub enum Type {
         key_type: Box<Type>,
         value_type: Box<Type>,
     },
-    /* other */
     Blob,
 
     // Uninterpreted
