@@ -3,7 +3,6 @@ use radix_engine::types::*;
 use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
@@ -15,7 +14,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     let (_, _, other_account) = test_runner.new_account(use_virtual);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN)
         .call_method(
             other_account,
@@ -60,7 +59,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     let resource_address = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 10.into(), resource_address)
         .call_method(
             other_account,
@@ -92,7 +91,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account(is_virtual);
     let (_, _, other_account) = test_runner.new_account(is_virtual);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10u32.into())
         .withdraw_from_account(other_account, RADIX_TOKEN)
         .call_method(
@@ -126,7 +125,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account(use_virtual);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 10u32.into(), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
@@ -165,7 +164,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account1) = test_runner.new_account(use_virtual);
     let (_, _, account2) = test_runner.new_account(use_virtual);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10.into())
         .call_method(account2, "balance", args!(RADIX_TOKEN))
         .build();

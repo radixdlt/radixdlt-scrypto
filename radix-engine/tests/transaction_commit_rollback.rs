@@ -2,7 +2,6 @@ use radix_engine::engine::*;
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -14,7 +13,7 @@ fn test_state_track_success() {
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10u32.into())
         .withdraw_from_account(account, RADIX_TOKEN)
         .call_method(
@@ -45,7 +44,7 @@ fn test_state_track_failure() {
     let (_, _, other_account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10u32.into())
         .withdraw_from_account(account, RADIX_TOKEN)
         .call_method(

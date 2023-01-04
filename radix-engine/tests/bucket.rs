@@ -3,7 +3,6 @@ use radix_engine::model::{BucketError, ResourceOperationError};
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use utils::ContextualDisplay;
@@ -15,7 +14,7 @@ fn test_bucket_internal(method_name: &str) {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .call_function(package_address, "BucketTest", method_name, args!())
         .call_method(
@@ -84,7 +83,7 @@ fn test_bucket_of_badges() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .call_function(package_address, "BadgeTest", "combine", args!())
         .call_function(package_address, "BadgeTest", "split", args!())
@@ -109,22 +108,21 @@ fn test_take_with_invalid_granularity() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let resource_address_str =
-        Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
-        .call_function_with_abi(
-            package_address,
-            "BucketTest",
-            "take_from_bucket",
-            vec![format!("100,{}", resource_address_str), "1.123".to_owned()],
-            Some(account),
-            &test_runner.export_abi(package_address, "BucketTest"),
-        )
-        .unwrap()
+        .withdraw_from_account_by_amount(account, 100.into(), resource_address)
+        .take_from_worktop(resource_address, |builder, bucket_id| {
+            let bucket = Bucket(bucket_id);
+            builder.call_function(
+                package_address,
+                "BucketTest",
+                "take_from_bucket",
+                args!(bucket, dec!("1.123")),
+            )
+        })
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -153,22 +151,21 @@ fn test_take_with_negative_amount() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let resource_address_str =
-        Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/bucket");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
-        .call_function_with_abi(
-            package_address,
-            "BucketTest",
-            "take_from_bucket",
-            vec![format!("100,{}", resource_address_str), "-2".to_owned()],
-            Some(account),
-            &test_runner.export_abi(package_address, "BucketTest"),
-        )
-        .unwrap()
+        .withdraw_from_account_by_amount(account, 100.into(), resource_address)
+        .take_from_worktop(resource_address, |builder, bucket_id| {
+            let bucket = Bucket(bucket_id);
+            builder.call_function(
+                package_address,
+                "BucketTest",
+                "take_from_bucket",
+                args!(bucket, dec!("-2")),
+            )
+        })
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -199,7 +196,7 @@ fn create_empty_bucket() {
     let non_fungible_resource = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.return_to_worktop(bucket_id)

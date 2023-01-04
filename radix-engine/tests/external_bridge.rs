@@ -1,6 +1,5 @@
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -17,7 +16,7 @@ fn test_external_bridges() {
         test_runner.compile_and_publish("./tests/blueprints/external_blueprint_caller");
 
     // Part 2 - Get a target component address
-    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest1 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             target_package_address,
@@ -35,7 +34,7 @@ fn test_external_bridges() {
         .new_component_addresses[0];
 
     // Part 3 - Get the caller component address
-    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             caller_package_address,
@@ -53,7 +52,7 @@ fn test_external_bridges() {
         .new_component_addresses[0];
 
     // ACT
-    let manifest3 = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest3 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(
             caller_component_address,
@@ -67,7 +66,7 @@ fn test_external_bridges() {
     receipt3.expect_commit_success();
 
     // ACT
-    let manifest4 = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest4 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(
             caller_component_address,

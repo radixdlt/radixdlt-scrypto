@@ -68,7 +68,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(&NetworkDefinition::simulator())
+            ManifestBuilder::new()
                 .withdraw_from_account_by_amount(account1, 1u32.into(), RADIX_TOKEN)
                 .call_method(
                     account2,

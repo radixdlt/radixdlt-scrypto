@@ -1,7 +1,6 @@
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -22,7 +21,7 @@ fn set_up_package_and_component() -> (
     // Publish package
     let (code, abi) = Compile::compile("./tests/blueprints/royalty-auth");
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .publish_package_with_owner(code, abi, owner_badge_addr.clone())
             .build(),
@@ -32,7 +31,7 @@ fn set_up_package_and_component() -> (
 
     // Enable package royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .create_proof_from_account(account, owner_badge_resource)
             .set_package_royalty_config(
@@ -52,7 +51,7 @@ fn set_up_package_and_component() -> (
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .create_proof_from_account(account, owner_badge_resource)
             .call_function(
@@ -97,7 +96,7 @@ fn test_only_package_owner_can_set_royalty_config() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
             .set_package_royalty_config(
@@ -114,7 +113,7 @@ fn test_only_package_owner_can_set_royalty_config() {
 
     // Negative case
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .set_package_royalty_config(
                 package_address,
@@ -141,7 +140,7 @@ fn test_only_package_owner_can_claim_royalty() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
             .claim_package_royalty(package_address)
@@ -157,7 +156,7 @@ fn test_only_package_owner_can_claim_royalty() {
 
     // Negative case
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .claim_package_royalty(package_address)
             .call_method(
@@ -183,7 +182,7 @@ fn test_only_component_owner_can_set_royalty_config() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
             .set_component_royalty_config(component_address, RoyaltyConfigBuilder::new().default(0))
@@ -194,7 +193,7 @@ fn test_only_component_owner_can_set_royalty_config() {
 
     // Negative case
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .set_component_royalty_config(component_address, RoyaltyConfigBuilder::new().default(0))
             .build(),
@@ -215,7 +214,7 @@ fn test_only_component_owner_can_claim_royalty() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
             .claim_component_royalty(component_address)
@@ -231,7 +230,7 @@ fn test_only_component_owner_can_claim_royalty() {
 
     // Negative case
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .claim_component_royalty(component_address)
             .call_method(

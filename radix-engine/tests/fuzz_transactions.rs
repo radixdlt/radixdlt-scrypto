@@ -60,7 +60,7 @@ impl TransactionFuzzer {
     }
 
     fn next_transaction(&mut self) -> NotarizedTransaction {
-        let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+        let mut builder = ManifestBuilder::new();
         let instruction_count = self.rng.gen_range(0u32..20u32);
         for _ in 0..instruction_count {
             let next = self.rng.gen_range(0u32..4u32);
