@@ -21,9 +21,8 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
         generics,
         ..
     } = parse2(input)?;
-    let custom_type_id = custom_type_id(&attrs);
     let (impl_generics, ty_generics, where_clause, custom_type_id_generic, decoder_generic) =
-        build_decode_generics(&generics, custom_type_id)?;
+        build_decode_generics(&generics, &attrs)?;
 
     let output = match data {
         Data::Struct(s) => match s.fields {
@@ -261,21 +260,24 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_struct_with_lifetime() {
-        let input = TokenStream::from_str("struct Test<'a> {a: &'a u32}").unwrap();
+    fn test_decode_struct_with_generic_params() {
+        let input = TokenStream::from_str("#[sbor(generic_type_id_bounds = \"T1, T2\")] struct Test<'a, S, T1, T2> {a: &'a u32, b: S, c: Vec<T1>, d: Vec<T2>}").unwrap();
         let output = handle_decode(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <'a, D: ::sbor::Decoder<X>, X: ::sbor::CustomTypeId > ::sbor::Decode<X, D> for Test<'a> {
+                impl <'a, S: ::sbor::Decode<X, D>, T1: ::sbor::Decode<X,D> + ::sbor::TypeId<X>, T2: ::sbor::Decode <X, D>, D: ::sbor::Decoder<X>, X: ::sbor::CustomTypeId > ::sbor::Decode<X, D> for Test<'a, S, T1, T2> {
                     #[inline]
                     fn decode_body_with_type_id(decoder: &mut D, type_id: ::sbor::SborTypeId<X>) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_type_id(type_id, ::sbor::SborTypeId::Tuple)?;
-                        decoder.read_and_check_size(1)?;
+                        decoder.read_and_check_size(4)?;
                         Ok(Self {
                             a: decoder.decode::<&'a u32>()?,
+                            b: decoder.decode::<S>()?,
+                            c: decoder.decode::<Vec<T1> >()?,
+                            d: decoder.decode::<Vec<T2> >()?,
                         })
                     }
                 }

@@ -23,9 +23,8 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
         generics,
         ..
     } = parse2(input)?;
-    let custom_type_schema = custom_type_schema(&attrs);
     let (impl_generics, ty_generics, where_clause, custom_type_schema_generic) =
-        build_schema_generics(&generics, custom_type_schema)?;
+        build_schema_generics(&generics, &attrs)?;
 
     let generic_type_idents = ty_generics
         .type_params()
@@ -70,7 +69,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                             Some(::sbor::LocalTypeData::named_fields_tuple(
                                 stringify!(#ident),
                                 vec![
-                                    #((#field_names, <#field_types>::SCHEMA_TYPE_REF),)*
+                                    #((#field_names, <#field_types as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),)*
                                 ],
                             ))
                         }
@@ -109,7 +108,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                             Some(::sbor::LocalTypeData::named_tuple(
                                 stringify!(#ident),
                                 vec![
-                                    #(<#field_types>::SCHEMA_TYPE_REF,)*
+                                    #(<#field_types as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,)*
                                 ],
                             ))
                         }
@@ -138,6 +137,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
         },
         Data::Enum(DataEnum { variants, .. }) => {
             let variant_names: Vec<_> = variants.iter().map(|v| v.ident.to_string()).collect();
+            let mut all_field_types = Vec::new();
 
             let variant_type_data: Vec<_> = {
                 variants
@@ -150,6 +150,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                                     named.iter().filter(|f| !is_encoding_skipped(f)).collect();
                                 let field_types: Vec<_> =
                                     unskipped_fields.iter().map(|f| &f.ty).collect();
+                                all_field_types.extend_from_slice(&field_types);
                                 let field_names: Vec<_> = unskipped_fields
                                     .iter()
                                     .map(|f| {
@@ -163,7 +164,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                                     ::sbor::LocalTypeData::named_fields_tuple(
                                         #variant_name,
                                         vec![
-                                            #((#field_names, <#field_types>::SCHEMA_TYPE_REF),)*
+                                            #((#field_names, <#field_types as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),)*
                                         ],
                                     )
                                 }
@@ -173,11 +174,12 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                                     unnamed.iter().filter(|f| !is_encoding_skipped(f)).collect();
                                 let field_types: Vec<_> =
                                     unskipped_fields.iter().map(|f| &f.ty).collect();
+                                all_field_types.extend_from_slice(&field_types);
                                 quote! {
                                     ::sbor::LocalTypeData::named_tuple(
                                         #variant_name,
                                         vec![
-                                            #(<#field_types>::SCHEMA_TYPE_REF,)*
+                                            #(<#field_types as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,)*
                                         ],
                                     )
                                 }
@@ -191,6 +193,8 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                     })
                     .collect()
             };
+
+            let unique_field_types: Vec<_> = get_unique_types(&all_field_types);
 
             quote! {
                 impl #impl_generics ::sbor::Schema <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
@@ -210,8 +214,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                     }
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::SchemaAggregator<C>) {
-                        // Add the generic type descendents
-                        #(aggregator.add_child_type_and_descendents::<#generic_type_idents>();)*
+                        #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                     }
                 }
             }
@@ -258,9 +261,9 @@ mod tests {
                         Some(::sbor::LocalTypeData::named_fields_tuple(
                             stringify!(Test),
                             vec![
-                                ("a", <u32>::SCHEMA_TYPE_REF),
-                                ("b", <Vec<u8> >::SCHEMA_TYPE_REF),
-                                ("c", <u32>::SCHEMA_TYPE_REF),
+                                ("a", <u32 as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),
+                                ("b", <Vec<u8> as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),
+                                ("c", <u32 as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),
                             ],
                         ))
                     }
@@ -293,9 +296,9 @@ mod tests {
                         Some(::sbor::LocalTypeData::named_tuple(
                             stringify!(Test),
                             vec![
-                                <u32>::SCHEMA_TYPE_REF,
-                                <Vec<u8> >::SCHEMA_TYPE_REF,
-                                <u32>::SCHEMA_TYPE_REF,
+                                <u32 as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
+                                <Vec<u8> as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
+                                <u32 as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
                             ],
                         ))
                     }
@@ -333,19 +336,19 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_enum() {
+    fn test_complex_enum_schema() {
         let input =
-            TokenStream::from_str("enum Test<T: SomeTrait> {A, B (T), C {x: [u8; 5]}}").unwrap();
+            TokenStream::from_str("#[sbor(generic_type_id_bounds = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
         let output = handle_schema(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <T: SomeTrait + ::sbor::Schema<C>, C: ::sbor::CustomTypeSchema> ::sbor::Schema<C> for Test<T> {
+                impl <T: SomeTrait + ::sbor::Schema<C>, T2: ::sbor::Schema<C> + ::sbor::TypeId<C::CustomTypeId>, C: ::sbor::CustomTypeSchema> ::sbor::Schema<C> for Test<T, T2> {
                     const SCHEMA_TYPE_REF: ::sbor::GlobalTypeRef = ::sbor::GlobalTypeRef::complex_with_code(
                         stringify!(Test),
-                        &[T::SCHEMA_TYPE_REF,],
-                        &[39u8, 90u8, 96u8, 95u8, 44u8, 58u8, 217u8, 111u8, 89u8, 23u8, 189u8, 8u8, 81u8, 137u8, 165u8, 47u8, 224u8, 216u8, 203u8, 240u8]
+                        &[T::SCHEMA_TYPE_REF, T2::SCHEMA_TYPE_REF,],
+                        &[211u8, 164u8, 57u8, 227u8, 220u8, 74u8, 90u8, 141u8, 72u8, 27u8, 35u8, 85u8, 171u8, 13u8, 176u8, 124u8, 122u8, 28u8, 53u8, 105u8]
                     );
 
                     fn get_local_type_data() -> Option<::sbor::LocalTypeData <C, ::sbor::GlobalTypeRef>> {
@@ -356,13 +359,14 @@ mod tests {
                                 "B".to_owned() => ::sbor::LocalTypeData::named_tuple(
                                     "B",
                                     vec![
-                                        <T>::SCHEMA_TYPE_REF,
+                                        <T as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
+                                        <Vec<T2> as ::sbor::Schema<C>>::SCHEMA_TYPE_REF,
                                     ],
                                 ),
                                 "C".to_owned() => ::sbor::LocalTypeData::named_fields_tuple(
                                     "C",
                                     vec![
-                                        ("x", <[u8; 5]>::SCHEMA_TYPE_REF),
+                                        ("x", <[u8; 5] as ::sbor::Schema<C>>::SCHEMA_TYPE_REF),
                                     ],
                                 ),
                             ],
@@ -371,6 +375,8 @@ mod tests {
 
                     fn add_all_dependencies(aggregator: &mut ::sbor::SchemaAggregator<C>) {
                         aggregator.add_child_type_and_descendents::<T>();
+                        aggregator.add_child_type_and_descendents::<Vec<T2> >();
+                        aggregator.add_child_type_and_descendents::<[u8; 5]>();
                     }
                 }
             },

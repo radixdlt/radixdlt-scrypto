@@ -84,18 +84,32 @@ pub fn is_encoding_skipped(f: &Field) -> bool {
     parsed.contains_key("skip") || parsed.contains_key("skip_decoding")
 }
 
-pub fn custom_type_id(attrs: &[Attribute]) -> Option<String> {
-    extract_attributes(attrs)
+pub fn get_custom_type_id(attributes: &[Attribute]) -> Option<String> {
+    extract_attributes(attributes)
         .get("custom_type_id")
         .cloned()
         .unwrap_or(None)
 }
 
-pub fn custom_type_schema(attrs: &[Attribute]) -> Option<String> {
-    extract_attributes(attrs)
+pub fn get_custom_type_schema(attributes: &[Attribute]) -> Option<String> {
+    extract_attributes(attributes)
         .get("custom_type_schema")
         .cloned()
         .unwrap_or(None)
+}
+
+pub fn get_generic_type_names_requiring_type_id_bound(attributes: &[Attribute]) -> HashSet<String> {
+    let contents = extract_attributes(attributes)
+        .get("generic_type_id_bounds")
+        .cloned()
+        .unwrap_or(None);
+    let Some(comma_separated_types) = contents else {
+        return HashSet::new();
+    };
+    comma_separated_types
+        .split(',')
+        .map(|s| s.to_owned())
+        .collect()
 }
 
 pub fn get_code_hash_const_array_token_stream(input: &TokenStream) -> TokenStream {
@@ -124,10 +138,19 @@ pub fn get_unique_types<'a>(types: &[&'a syn::Type]) -> Vec<&'a syn::Type> {
     out
 }
 
-pub fn build_decode_generics(
-    original_generics: &Generics,
-    custom_type_id: Option<String>,
-) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path, Path)> {
+pub fn build_decode_generics<'a>(
+    original_generics: &'a Generics,
+    attributes: &'a [Attribute],
+) -> syn::Result<(
+    Generics,
+    TypeGenerics<'a>,
+    Option<&'a WhereClause>,
+    Path,
+    Path,
+)> {
+    let custom_type_id = get_custom_type_id(&attributes);
+    let generic_type_names_needing_type_id_bound =
+        get_generic_type_names_requiring_type_id_bound(&attributes);
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
@@ -155,6 +178,12 @@ pub fn build_decode_generics(
         type_param
             .bounds
             .push(parse_quote!(::sbor::Decode<#custom_type_id_generic, #decoder_generic>));
+
+        if generic_type_names_needing_type_id_bound.contains(&type_param.ident.to_string()) {
+            type_param
+                .bounds
+                .push(parse_quote!(::sbor::TypeId<#custom_type_id_generic>));
+        }
     }
 
     impl_generics
@@ -176,10 +205,19 @@ pub fn build_decode_generics(
     ))
 }
 
-pub fn build_encode_generics(
-    original_generics: &Generics,
-    custom_type_id: Option<String>,
-) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path, Path)> {
+pub fn build_encode_generics<'a>(
+    original_generics: &'a Generics,
+    attributes: &'a [Attribute],
+) -> syn::Result<(
+    Generics,
+    TypeGenerics<'a>,
+    Option<&'a WhereClause>,
+    Path,
+    Path,
+)> {
+    let custom_type_id = get_custom_type_id(&attributes);
+    let generic_type_names_needing_type_id_bound =
+        get_generic_type_names_requiring_type_id_bound(&attributes);
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
@@ -207,6 +245,12 @@ pub fn build_encode_generics(
         type_param
             .bounds
             .push(parse_quote!(::sbor::Encode<#custom_type_id_generic, #encoder_generic>));
+
+        if generic_type_names_needing_type_id_bound.contains(&type_param.ident.to_string()) {
+            type_param
+                .bounds
+                .push(parse_quote!(::sbor::TypeId<#custom_type_id_generic>));
+        }
     }
 
     impl_generics
@@ -228,10 +272,14 @@ pub fn build_encode_generics(
     ))
 }
 
-pub fn build_schema_generics(
-    original_generics: &Generics,
-    custom_type_schema: Option<String>,
-) -> syn::Result<(Generics, Generics, Option<&WhereClause>, Path)> {
+pub fn build_schema_generics<'a>(
+    original_generics: &'a Generics,
+    attributes: &'a [Attribute],
+) -> syn::Result<(Generics, Generics, Option<&'a WhereClause>, Path)> {
+    let custom_type_schema = get_custom_type_schema(attributes);
+    let generic_type_names_needing_type_id_bound =
+        get_generic_type_names_requiring_type_id_bound(&attributes);
+
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
@@ -256,6 +304,12 @@ pub fn build_schema_generics(
         type_param
             .bounds
             .push(parse_quote!(::sbor::Schema<#custom_type_schema_generic>));
+
+        if generic_type_names_needing_type_id_bound.contains(&type_param.ident.to_string()) {
+            type_param
+                .bounds
+                .push(parse_quote!(::sbor::TypeId<#custom_type_schema_generic::CustomTypeId>));
+        }
     }
 
     if need_to_add_cti_generic {
@@ -274,10 +328,11 @@ pub fn build_schema_generics(
     ))
 }
 
-pub fn build_custom_type_id_generic(
-    original_generics: &Generics,
-    custom_type_id: Option<String>,
-) -> syn::Result<(Generics, TypeGenerics, Option<&WhereClause>, Path)> {
+pub fn build_custom_type_id_generic<'a>(
+    original_generics: &'a Generics,
+    attributes: &'a [Attribute],
+) -> syn::Result<(Generics, TypeGenerics<'a>, Option<&'a WhereClause>, Path)> {
+    let custom_type_id = get_custom_type_id(&attributes);
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Unwrap for mutation
