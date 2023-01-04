@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{
     AccessRulesChainMethod, AuthZoneStackMethod, BucketMethod, ClockFunction, ClockMethod,
-    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, MetadataMethod,
-    NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
+    ComponentFunction, ComponentMethod, EpochManagerFunction, EpochManagerMethod, LoggerMethod,
+    MetadataMethod, NativeFunction, NativeMethod, PackageFunction, PackageMethod, ProofMethod,
     ResourceManagerFunction, ResourceManagerMethod, TransactionHashMethod,
     TransactionProcessorFunction, VaultMethod, WorktopMethod,
 };
@@ -27,15 +27,6 @@ pub enum SystemApiCostingEntry {
     DropNode {
         size: u32,
     },
-    /// Globalizes a RENode.
-    GlobalizeNode {
-        size: u32,
-    },
-    /// Borrows a RENode.
-    BorrowNode {
-        loaded: bool,
-        size: u32,
-    },
 
     /*
      * Substate
@@ -43,14 +34,6 @@ pub enum SystemApiCostingEntry {
     /// Borrows a substate
     BorrowSubstate {
         loaded: bool,
-        size: u32,
-    },
-    /// Returns a substate.
-    ReturnSubstate {
-        size: u32,
-    },
-    /// Takes a substate
-    TakeSubstate {
         size: u32,
     },
     LockSubstate {
@@ -64,7 +47,6 @@ pub enum SystemApiCostingEntry {
     WriteSubstate {
         size: u32,
     },
-
     DropLock,
 
     /*
@@ -72,16 +54,6 @@ pub enum SystemApiCostingEntry {
      */
     /// Reads blob in transaction
     ReadBlob {
-        size: u32,
-    },
-    /// Emits a log.
-    EmitLog {
-        size: u32,
-    },
-
-    EmitEvent {
-        native: bool,
-        tracked: bool,
         size: u32,
     },
 }
@@ -221,6 +193,9 @@ impl FeeTable {
                 WorktopMethod::AssertContainsNonFungibles => self.fixed_low,
                 WorktopMethod::Drain => self.fixed_low,
             },
+            NativeMethod::Logger(logger_method) => match logger_method {
+                LoggerMethod::Log => self.fixed_low,
+            },
             NativeMethod::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainMethod::AddAccessCheck => self.fixed_low,
                 AccessRulesChainMethod::SetMethodAccessRule => self.fixed_low,
@@ -275,14 +250,6 @@ impl FeeTable {
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropNode { .. } => self.fixed_medium,
-            SystemApiCostingEntry::GlobalizeNode { size } => self.fixed_high + 200 * size,
-            SystemApiCostingEntry::BorrowNode { loaded, size } => {
-                if loaded {
-                    self.fixed_high
-                } else {
-                    self.fixed_low + 100 * size
-                }
-            }
 
             SystemApiCostingEntry::BorrowSubstate { loaded, size } => {
                 if loaded {
@@ -291,26 +258,12 @@ impl FeeTable {
                     self.fixed_low + 100 * size
                 }
             }
-            SystemApiCostingEntry::ReturnSubstate { size } => self.fixed_low + 100 * size,
-
             SystemApiCostingEntry::LockSubstate { .. } => self.fixed_low,
-            SystemApiCostingEntry::TakeSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::ReadSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::WriteSubstate { .. } => self.fixed_medium,
             SystemApiCostingEntry::DropLock => self.fixed_low,
 
             SystemApiCostingEntry::ReadBlob { size } => self.fixed_low + size,
-            SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
-            SystemApiCostingEntry::EmitEvent {
-                native,
-                tracked,
-                size,
-            } => match (native, tracked) {
-                (true, true) => self.fixed_high,
-                (true, false) => self.fixed_low,
-                (false, true) => self.fixed_low + 10 * size,
-                (false, false) => todo!("No such events yet"),
-            },
         }
     }
 }

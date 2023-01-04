@@ -12,6 +12,7 @@ use radix_engine_interface::data::IndexedScryptoValue;
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
+    ValidatorSet(ValidatorSetSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
@@ -52,6 +53,22 @@ impl PersistedSubstate {
             panic!("Not a package royalty accumulator");
         }
     }
+
+    pub fn global(&self) -> &GlobalAddressSubstate {
+        if let PersistedSubstate::Global(state) = self {
+            state
+        } else {
+            panic!("Not a global address substate");
+        }
+    }
+
+    pub fn resource_manager(&self) -> &ResourceManagerSubstate {
+        if let PersistedSubstate::ResourceManager(state) = self {
+            state
+        } else {
+            panic!("Not a resource manager substate");
+        }
+    }
 }
 
 impl Into<VaultSubstate> for PersistedSubstate {
@@ -69,6 +86,7 @@ impl PersistedSubstate {
         match self {
             PersistedSubstate::Global(value) => RuntimeSubstate::Global(value),
             PersistedSubstate::EpochManager(value) => RuntimeSubstate::EpochManager(value),
+            PersistedSubstate::ValidatorSet(value) => RuntimeSubstate::ValidatorSet(value),
             PersistedSubstate::CurrentTimeRoundedToMinutes(value) => {
                 RuntimeSubstate::CurrentTimeRoundedToMinutes(value)
             }
@@ -109,6 +127,7 @@ pub enum PersistError {
 pub enum RuntimeSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
+    ValidatorSet(ValidatorSetSubstate),
     CurrentTimeRoundedToMinutes(CurrentTimeRoundedToMinutesSubstate),
     ResourceManager(ResourceManagerSubstate),
     AccessRulesChain(AccessRulesChainSubstate),
@@ -127,8 +146,9 @@ pub enum RuntimeSubstate {
     Bucket(BucketSubstate),
     Proof(ProofSubstate),
     Worktop(WorktopSubstate),
+    Logger(LoggerSubstate),
     FeeReserve(FeeReserveSubstate),
-    TransactionHash(TransactionHashSubstate),
+    TransactionRuntime(TransactionRuntimeSubstate),
 }
 
 impl RuntimeSubstate {
@@ -136,6 +156,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value.clone()),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value.clone()),
+            RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value.clone()),
             RuntimeSubstate::AccessRulesChain(value) => {
                 PersistedSubstate::AccessRulesChain(value.clone())
             }
@@ -177,8 +198,9 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::Logger(..)
             | RuntimeSubstate::FeeReserve(..)
-            | RuntimeSubstate::TransactionHash(..) => {
+            | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
             }
         }
@@ -188,6 +210,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => PersistedSubstate::Global(value),
             RuntimeSubstate::EpochManager(value) => PersistedSubstate::EpochManager(value),
+            RuntimeSubstate::ValidatorSet(value) => PersistedSubstate::ValidatorSet(value),
             RuntimeSubstate::AccessRulesChain(value) => PersistedSubstate::AccessRulesChain(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 PersistedSubstate::CurrentTimeRoundedToMinutes(value)
@@ -223,8 +246,9 @@ impl RuntimeSubstate {
             | RuntimeSubstate::Bucket(..)
             | RuntimeSubstate::Proof(..)
             | RuntimeSubstate::Worktop(..)
+            | RuntimeSubstate::Logger(..)
             | RuntimeSubstate::FeeReserve(..)
-            | RuntimeSubstate::TransactionHash(..) => {
+            | RuntimeSubstate::TransactionRuntime(..) => {
                 panic!("Should not get here");
             }
         }
@@ -264,6 +288,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRefMut::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRefMut::EpochManager(value),
+            RuntimeSubstate::ValidatorSet(value) => SubstateRefMut::ValidatorSet(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRefMut::CurrentTimeRoundedToMinutes(value)
             }
@@ -292,8 +317,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRefMut::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRefMut::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRefMut::Worktop(value),
+            RuntimeSubstate::Logger(value) => SubstateRefMut::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRefMut::FeeReserve(value),
-            RuntimeSubstate::TransactionHash(value) => SubstateRefMut::TransactionHash(value),
+            RuntimeSubstate::TransactionRuntime(value) => SubstateRefMut::TransactionRuntime(value),
         }
     }
 
@@ -301,6 +327,7 @@ impl RuntimeSubstate {
         match self {
             RuntimeSubstate::Global(value) => SubstateRef::Global(value),
             RuntimeSubstate::EpochManager(value) => SubstateRef::EpochManager(value),
+            RuntimeSubstate::ValidatorSet(value) => SubstateRef::ValidatorSet(value),
             RuntimeSubstate::CurrentTimeRoundedToMinutes(value) => {
                 SubstateRef::CurrentTimeRoundedToMinutes(value)
             }
@@ -329,8 +356,9 @@ impl RuntimeSubstate {
             RuntimeSubstate::Bucket(value) => SubstateRef::Bucket(value),
             RuntimeSubstate::Proof(value) => SubstateRef::Proof(value),
             RuntimeSubstate::Worktop(value) => SubstateRef::Worktop(value),
+            RuntimeSubstate::Logger(value) => SubstateRef::Logger(value),
             RuntimeSubstate::FeeReserve(value) => SubstateRef::FeeReserve(value),
-            RuntimeSubstate::TransactionHash(value) => SubstateRef::TransactionHash(value),
+            RuntimeSubstate::TransactionRuntime(value) => SubstateRef::TransactionRuntime(value),
         }
     }
 
@@ -390,11 +418,35 @@ impl RuntimeSubstate {
         }
     }
 
+    pub fn logger(&self) -> &LoggerSubstate {
+        if let RuntimeSubstate::Logger(logger) = self {
+            logger
+        } else {
+            panic!("Not a logger");
+        }
+    }
+
     pub fn metadata(&self) -> &MetadataSubstate {
         if let RuntimeSubstate::Metadata(metadata) = self {
             metadata
         } else {
             panic!("Not metadata");
+        }
+    }
+
+    pub fn epoch_manager(&self) -> &EpochManagerSubstate {
+        if let RuntimeSubstate::EpochManager(epoch_manager) = self {
+            epoch_manager
+        } else {
+            panic!("Not epoch manager");
+        }
+    }
+
+    pub fn validator_set(&self) -> &ValidatorSetSubstate {
+        if let RuntimeSubstate::ValidatorSet(validator_set) = self {
+            validator_set
+        } else {
+            panic!("Not a validator set");
         }
     }
 }
@@ -414,6 +466,12 @@ impl Into<RuntimeSubstate> for MetadataSubstate {
 impl Into<RuntimeSubstate> for EpochManagerSubstate {
     fn into(self) -> RuntimeSubstate {
         RuntimeSubstate::EpochManager(self)
+    }
+}
+
+impl Into<RuntimeSubstate> for ValidatorSetSubstate {
+    fn into(self) -> RuntimeSubstate {
+        RuntimeSubstate::ValidatorSet(self)
     }
 }
 
@@ -495,9 +553,19 @@ impl Into<RuntimeSubstate> for PackageRoyaltyAccumulatorSubstate {
     }
 }
 
-impl Into<RuntimeSubstate> for TransactionHashSubstate {
+impl Into<RuntimeSubstate> for TransactionRuntimeSubstate {
     fn into(self) -> RuntimeSubstate {
-        RuntimeSubstate::TransactionHash(self)
+        RuntimeSubstate::TransactionRuntime(self)
+    }
+}
+
+impl Into<LoggerSubstate> for RuntimeSubstate {
+    fn into(self) -> LoggerSubstate {
+        if let RuntimeSubstate::Logger(logger) = self {
+            logger
+        } else {
+            panic!("Not a logger");
+        }
     }
 }
 
@@ -674,6 +742,7 @@ impl Into<MetadataSubstate> for RuntimeSubstate {
 pub enum SubstateRef<'a> {
     AuthZoneStack(&'a AuthZoneStackSubstate),
     Worktop(&'a WorktopSubstate),
+    Logger(&'a LoggerSubstate),
     FeeReserve(&'a FeeReserveSubstate),
     Proof(&'a ProofSubstate),
     Bucket(&'a BucketSubstate),
@@ -689,11 +758,12 @@ pub enum SubstateRef<'a> {
     Vault(&'a VaultRuntimeSubstate),
     ResourceManager(&'a ResourceManagerSubstate),
     EpochManager(&'a EpochManagerSubstate),
+    ValidatorSet(&'a ValidatorSetSubstate),
     CurrentTimeRoundedToMinutes(&'a CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a AccessRulesChainSubstate),
     Metadata(&'a MetadataSubstate),
     Global(&'a GlobalAddressSubstate),
-    TransactionHash(&'a TransactionHashSubstate),
+    TransactionRuntime(&'a TransactionRuntimeSubstate),
 }
 
 impl<'a> SubstateRef<'a> {
@@ -856,10 +926,10 @@ impl<'a> SubstateRef<'a> {
         }
     }
 
-    pub fn transaction_hash(&self) -> &TransactionHashSubstate {
+    pub fn transaction_runtime(&self) -> &TransactionRuntimeSubstate {
         match self {
-            SubstateRef::TransactionHash(value) => *value,
-            _ => panic!("Not transaction hash"),
+            SubstateRef::TransactionRuntime(value) => *value,
+            _ => panic!("Not transaction runtime"),
         }
     }
 
@@ -965,6 +1035,7 @@ pub enum SubstateRefMut<'a> {
     Vault(&'a mut VaultRuntimeSubstate),
     ResourceManager(&'a mut ResourceManagerSubstate),
     EpochManager(&'a mut EpochManagerSubstate),
+    ValidatorSet(&'a mut ValidatorSetSubstate),
     CurrentTimeRoundedToMinutes(&'a mut CurrentTimeRoundedToMinutesSubstate),
     AccessRulesChain(&'a mut AccessRulesChainSubstate),
     Metadata(&'a mut MetadataSubstate),
@@ -972,8 +1043,9 @@ pub enum SubstateRefMut<'a> {
     Bucket(&'a mut BucketSubstate),
     Proof(&'a mut ProofSubstate),
     Worktop(&'a mut WorktopSubstate),
+    Logger(&'a mut LoggerSubstate),
     FeeReserve(&'a mut FeeReserveSubstate),
-    TransactionHash(&'a mut TransactionHashSubstate),
+    TransactionRuntime(&'a mut TransactionRuntimeSubstate),
     AuthZoneStack(&'a mut AuthZoneStackSubstate),
     AuthZone(&'a mut AuthZoneStackSubstate),
 }
@@ -1098,10 +1170,17 @@ impl<'a> SubstateRefMut<'a> {
         }
     }
 
-    pub fn transaction_hash(&mut self) -> &mut TransactionHashSubstate {
+    pub fn transaction_runtime(&mut self) -> &mut TransactionRuntimeSubstate {
         match self {
-            SubstateRefMut::TransactionHash(value) => *value,
-            _ => panic!("Not a transaction hash"),
+            SubstateRefMut::TransactionRuntime(value) => *value,
+            _ => panic!("Not a transaction runtime"),
+        }
+    }
+
+    pub fn logger(&mut self) -> &mut LoggerSubstate {
+        match self {
+            SubstateRefMut::Logger(value) => *value,
+            _ => panic!("Not a logger"),
         }
     }
 

@@ -1,5 +1,8 @@
 use crate::engine::*;
 use crate::fee::FeeReserve;
+use crate::model::LoggerSubstate;
+use radix_engine_interface::api::types::{RENodeId, RENodeType};
+use sbor::rust::vec::Vec;
 
 pub struct LoggerModule;
 
@@ -11,8 +14,31 @@ macro_rules! log {
     };
 }
 
+impl LoggerModule {
+    pub fn initialize<Y: SystemApi>(api: &mut Y) -> Result<(), RuntimeError> {
+        let logger = LoggerSubstate { logs: Vec::new() };
+        let node_id = api.allocate_node_id(RENodeType::Logger)?;
+        api.create_node(node_id, RENode::Logger(logger))?;
+        Ok(())
+    }
+
+    pub fn on_call_frame_enter<Y: SystemApi>(
+        call_frame_update: &mut CallFrameUpdate,
+        _actor: &ResolvedActor,
+        api: &mut Y,
+    ) -> Result<(), RuntimeError> {
+        let refed = api.get_visible_node_ids()?;
+        let maybe_id = refed.into_iter().find(|e| matches!(e, RENodeId::Logger));
+        if let Some(logger_id) = maybe_id {
+            call_frame_update.node_refs_to_copy.insert(logger_id);
+        }
+
+        Ok(())
+    }
+}
+
 #[allow(unused_variables)] // for no_std
-impl<R: FeeReserve> Module<R> for LoggerModule {
+impl<R: FeeReserve> BaseModule<R> for LoggerModule {
     fn pre_sys_call(
         &mut self,
         call_frame: &CallFrame,
@@ -26,9 +52,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             }
             SysCallInput::ReadOwnedNodes => {
                 log!(call_frame, "Reading owned nodes");
-            }
-            SysCallInput::BorrowNode { node_id } => {
-                log!(call_frame, "Borrowing node: node_id = {:?}", node_id);
             }
             SysCallInput::DropNode { node_id } => {
                 log!(call_frame, "Dropping node: node_id = {:?}", node_id);
@@ -62,21 +85,8 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallInput::DropLock { lock_handle } => {
                 log!(call_frame, "Drop Lock: lock_handle = {:?}", lock_handle);
             }
-            SysCallInput::TakeSubstate { substate_id } => {
-                log!(
-                    call_frame,
-                    "Taking substate: substate_id = {:?}",
-                    substate_id
-                );
-            }
             SysCallInput::ReadBlob { blob_hash } => {
                 log!(call_frame, "Reading blob: hash = {}", blob_hash);
-            }
-            SysCallInput::EmitLog { .. } => {
-                log!(call_frame, "Emitting application log");
-            }
-            SysCallInput::EmitEvent { .. } => {
-                log!(call_frame, "Emitting an event");
             }
         }
 
@@ -95,7 +105,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
                 log!(call_frame, "Exiting invoke: output = {:?}", rtn);
             }
             SysCallOutput::ReadOwnedNodes { .. } => {}
-            SysCallOutput::BorrowNode { .. } => {}
             SysCallOutput::DropNode { .. } => {}
             SysCallOutput::CreateNode { .. } => {}
             SysCallOutput::LockSubstate { lock_handle } => {
@@ -109,9 +118,6 @@ impl<R: FeeReserve> Module<R> for LoggerModule {
             SysCallOutput::GetRefMut { .. } => {}
             SysCallOutput::DropLock { .. } => {}
             SysCallOutput::ReadBlob { .. } => {}
-            SysCallOutput::GenerateUuid { .. } => {}
-            SysCallOutput::EmitLog { .. } => {}
-            SysCallOutput::EmitEvent { .. } => {}
         }
 
         Ok(())

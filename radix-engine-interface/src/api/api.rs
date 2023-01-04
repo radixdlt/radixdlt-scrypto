@@ -1,6 +1,5 @@
 use crate::model::*;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 use super::types::*;
@@ -28,12 +27,12 @@ pub trait EngineApi<E: Debug> {
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
 }
 
-pub trait ActorApi<E: Debug> {
-    fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
+pub trait BlobApi<E: Debug> {
+    fn get_blob(&mut self, hash: &Hash) -> Result<&[u8], E>;
 }
 
-pub trait LoggerApi<E: Debug> {
-    fn emit_log(&mut self, level: Level, message: String) -> Result<(), E>;
+pub trait ActorApi<E: Debug> {
+    fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
 }
 
 pub trait InvokableModel<E>:
@@ -115,7 +114,8 @@ pub trait InvokableModel<E>:
     + Invokable<WorktopAssertContainsAmountInvocation, E>
     + Invokable<WorktopAssertContainsNonFungiblesInvocation, E>
     + Invokable<WorktopDrainInvocation, E>
-    + Invokable<TransactionHashGetInvocation, E>
-    + Invokable<TransactionHashGenerateUuidInvocation, E>
+    + Invokable<TransactionRuntimeGetHashInvocation, E>
+    + Invokable<TransactionRuntimeGenerateUuidInvocation, E>
+    + Invokable<LoggerLogInvocation, E>
 {
 }

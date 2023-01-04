@@ -10,7 +10,7 @@ use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZonePopInvocation {
     pub receiver: AuthZoneStackId,
@@ -26,18 +26,24 @@ impl SerializableInvocation for AuthZonePopInvocation {
 
 impl Into<SerializedInvocation> for AuthZonePopInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
-            AuthZoneStackMethodInvocation::Pop(self),
-        ))
-        .into()
+        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Pop(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZonePushInvocation {
     pub receiver: AuthZoneStackId,
     pub proof: Proof,
+}
+
+impl Clone for AuthZonePushInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            proof: Proof(self.proof.0),
+        }
+    }
 }
 
 impl Invocation for AuthZonePushInvocation {
@@ -50,14 +56,11 @@ impl SerializableInvocation for AuthZonePushInvocation {
 
 impl Into<SerializedInvocation> for AuthZonePushInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
-            AuthZoneStackMethodInvocation::Push(self),
-        ))
-        .into()
+        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Push(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofInvocation {
     pub receiver: AuthZoneStackId,
@@ -74,14 +77,11 @@ impl SerializableInvocation for AuthZoneCreateProofInvocation {
 
 impl Into<SerializedInvocation> for AuthZoneCreateProofInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
-            AuthZoneStackMethodInvocation::CreateProof(self),
-        ))
-        .into()
+        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::CreateProof(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByAmountInvocation {
     pub receiver: AuthZoneStackId,
@@ -99,14 +99,11 @@ impl SerializableInvocation for AuthZoneCreateProofByAmountInvocation {
 
 impl Into<SerializedInvocation> for AuthZoneCreateProofByAmountInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
-            AuthZoneStackMethodInvocation::CreateProofByAmount(self),
-        ))
-        .into()
+        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::CreateProofByAmount(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInvocation {
     pub receiver: AuthZoneStackId,
@@ -124,14 +121,11 @@ impl SerializableInvocation for AuthZoneCreateProofByIdsInvocation {
 
 impl Into<SerializedInvocation> for AuthZoneCreateProofByIdsInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
-            AuthZoneStackMethodInvocation::CreateProofByIds(self),
-        ))
-        .into()
+        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::CreateProofByIds(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneClearInvocation {
     pub receiver: AuthZoneStackId,
@@ -147,14 +141,11 @@ impl SerializableInvocation for AuthZoneClearInvocation {
 
 impl Into<SerializedInvocation> for AuthZoneClearInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
-            AuthZoneStackMethodInvocation::Clear(self),
-        ))
-        .into()
+        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Clear(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneStackId,
@@ -170,14 +161,11 @@ impl SerializableInvocation for AuthZoneDrainInvocation {
 
 impl Into<SerializedInvocation> for AuthZoneDrainInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
-            AuthZoneStackMethodInvocation::Drain(self),
-        ))
-        .into()
+        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::Drain(self)).into()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct AuthZoneAssertAccessRuleInvocation {
     pub receiver: AuthZoneStackId,
@@ -194,9 +182,6 @@ impl SerializableInvocation for AuthZoneAssertAccessRuleInvocation {
 
 impl Into<SerializedInvocation> for AuthZoneAssertAccessRuleInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeFnInvocation::Method(NativeMethodInvocation::AuthZoneStack(
-            AuthZoneStackMethodInvocation::AssertAuthRule(self),
-        ))
-        .into()
+        NativeInvocation::AuthZoneStack(AuthZoneStackInvocation::AssertAuthRule(self)).into()
     }
 }

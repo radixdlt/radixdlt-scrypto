@@ -7,7 +7,7 @@ use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -32,10 +32,10 @@ fn low_cost_unit_limit_should_result_in_rejection() {
 
     // Assert
     assert_eq!(
-        result,
-        Err(TransactionValidationError::HeaderValidationError(
+        result.expect_err("Should be an error"),
+        TransactionValidationError::HeaderValidationError(
             HeaderValidationError::InvalidCostUnitLimit
-        ))
+        )
     );
 }
 
@@ -187,7 +187,7 @@ fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransacti
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(&NetworkDefinition::simulator())
+            ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 10.into())
                 .clear_auth_zone()
                 .build(),

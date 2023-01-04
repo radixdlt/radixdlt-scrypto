@@ -25,8 +25,8 @@ non_fungible=`echo "$non_fungible_create_receipt" | awk '/NFAddress:/ {print $NF
 non_fungible_resource=`echo "$non_fungible_create_receipt" | awk '/Resource:/ {print $NF}'`
 non_fungible_id=`echo "$non_fungible_create_receipt" | awk '/NFID:/ {print $NF}'`
 # The below line looks like this: U32#1,resource_address
-# You can put multiple ids into a bucket like so: String#Id1,String#num2,String#num3,resource_address
-$resim call-method $account2 deposit "$non_fungible_id,$non_fungible_resource"
+# You can put multiple ids into a bucket like so: resource_address:id1,id2,id3
+$resim call-method $account2 deposit "$non_fungible_resource:$non_fungible_id"
 
 # Test - mint and transfer (Mintable that requires a `ResourceAddress`)
 $resim mint 777 $token_address --proofs 1,$minter_badge
@@ -101,4 +101,4 @@ non_fungible_id=`echo "$non_fungible_create_receipt" | awk '/NFID:/ {print $NF}'
 token_address=`$resim new-token-mutable $non_fungible | awk '/Resource:/ {print $NF}'`
 
 # Test - mint and transfer (Mintable that requires a `NonFungibleAddress`)
-$resim mint 777 $token_address --proofs "$non_fungible_id,$non_fungible_resource"
+$resim mint 777 $token_address --proofs "$non_fungible_resource:$non_fungible_id"

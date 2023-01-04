@@ -962,7 +962,7 @@ macro_rules! roots_op_impl
         };
 }
 
-roots_op_impl! {U8, U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512}
+roots_op_impl! {U8, U16, U32, U64, U128, U256, U384, U512, U768, I8, I16, I32, I64, I128, I256, I384, I512, I768}
 
 #[cfg(test)]
 mod tests {

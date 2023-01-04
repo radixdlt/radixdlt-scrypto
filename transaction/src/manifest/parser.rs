@@ -291,16 +291,16 @@ impl Parser {
             TokenKind::SystemAddress |
             TokenKind::ComponentAddress |
             TokenKind::ResourceAddress |
-            /* RE Nodes */
+            /* RE types */
+            TokenKind::Ownership |
             TokenKind::Component |
             TokenKind::KeyValueStore |
+            TokenKind::NonFungibleAddress |
+            TokenKind::Blob |
+            /* TX types */
             TokenKind::Bucket |
             TokenKind::Proof |
-            TokenKind::Vault |
-            /* Other interpreted */
             TokenKind::Expression |
-            TokenKind::Blob |
-            TokenKind::NonFungibleAddress |
             /* Uninterpreted */
             TokenKind::Hash |
             TokenKind::EcdsaSecp256k1PublicKey |
@@ -360,7 +360,7 @@ impl Parser {
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            // Global address types
+            // RE global address types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
             TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
@@ -370,20 +370,20 @@ impl Parser {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
 
-            // RE nodes
+            // RE interpreted types
+            TokenKind::Ownership => Ok(Value::Own(self.parse_values_one()?.into())),
             TokenKind::Component => Ok(Value::Component(self.parse_values_one()?.into())),
             TokenKind::KeyValueStore => Ok(Value::KeyValueStore(self.parse_values_one()?.into())),
-            TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
-            TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
-            TokenKind::Vault => Ok(Value::Vault(self.parse_values_one()?.into())),
-
-            // Interpreted
-            TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
-            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
             TokenKind::NonFungibleAddress => {
                 let values = self.parse_values_two()?;
                 Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
             }
+            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
+
+            // TX interpreted types
+            TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
+            TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
+            TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
@@ -492,23 +492,23 @@ impl Parser {
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
 
-            // Globals
+            // RE global address types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
             TokenKind::SystemAddress => Ok(Type::SystemAddress),
 
-            // RE Nodes
+            // RE interpreted types
+            TokenKind::Ownership => Ok(Type::Own),
             TokenKind::Component => Ok(Type::Component),
             TokenKind::KeyValueStore => Ok(Type::KeyValueStore),
+            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+            TokenKind::Blob => Ok(Type::Blob),
+
+            // TX interpreted types
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
-            TokenKind::Vault => Ok(Type::Vault),
-
-            // Other interpreted types
             TokenKind::Expression => Ok(Type::Expression),
-            TokenKind::Blob => Ok(Type::Blob),
-            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Type::Hash),

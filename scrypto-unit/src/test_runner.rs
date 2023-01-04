@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -17,21 +18,22 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::types::{EpochManagerMethod, NativeMethodIdent, RENodeId};
+use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::constants::EPOCH_MANAGER;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, AccessRules, FromPublicKey, NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, EpochManagerInvocation, FromPublicKey, NativeInvocation,
+    NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
 use scrypto::NonFungibleData;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{Executable, SystemInstruction, SystemTransaction, TransactionManifest};
+use transaction::model::{Executable, Instruction, SystemTransaction, TransactionManifest};
 use transaction::model::{PreviewIntent, TestTransaction};
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use transaction::validation::TestIntentHashManager;
@@ -290,7 +292,7 @@ impl TestRunner {
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -303,7 +305,7 @@ impl TestRunner {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -399,7 +401,7 @@ impl TestRunner {
         metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .publish_package(code, abi, royalty_config, metadata, access_rules)
             .build();
@@ -415,7 +417,7 @@ impl TestRunner {
         abi: BTreeMap<String, BlueprintAbi>,
         owner_badge: NonFungibleAddress,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .publish_package_with_owner(code, abi, owner_badge)
             .build();
@@ -554,7 +556,7 @@ impl TestRunner {
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
         let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
             .call_function(package, "ResourceCreator", function, args!(token))
@@ -576,7 +578,7 @@ impl TestRunner {
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
         let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
@@ -598,7 +600,7 @@ impl TestRunner {
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         to: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
             .call_method(to, "deposit_batch", args!(Expression::entire_worktop()))
@@ -735,7 +737,7 @@ impl TestRunner {
         entries.insert(NonFungibleId::U32(2), SampleNonFungibleData {});
         entries.insert(NonFungibleId::U32(3), SampleNonFungibleData {});
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_non_fungible_resource(
                 NonFungibleIdType::U32,
@@ -766,7 +768,7 @@ impl TestRunner {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
@@ -793,7 +795,7 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
@@ -810,52 +812,31 @@ impl TestRunner {
             .new_resource_addresses[0]
     }
 
-    pub fn instantiate_component(
+    pub fn instantiate_component<F>(
         &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<String>,
-        account: ComponentAddress,
-        signer_public_key: EcdsaSecp256k1PublicKey,
-    ) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_function_with_abi(
-                package_address,
-                blueprint_name,
-                function_name,
-                args,
-                Some(account),
-                &self.export_abi(package_address, blueprint_name),
-            )
+        initial_proofs: Vec<NonFungibleAddress>,
+        handler: F,
+    ) -> ComponentAddress
+    where
+        F: FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
+    {
+        let manifest = ManifestBuilder::new()
+            .call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("10")))
+            .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
             .unwrap()
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
             .build();
-        let receipt = self.execute_manifest(
-            manifest,
-            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
-        );
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit()
-            .entity_changes
-            .new_component_addresses[0]
+
+        let receipt = self.execute_manifest(manifest, initial_proofs);
+        receipt.new_component_addresses()[0]
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
-        let instructions = vec![SystemInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                method_name: EpochManagerMethod::SetEpoch.as_ref().to_owned(),
-            },
-            args: args!(EPOCH_MANAGER, epoch),
-        }
-        .into()];
+        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+            EpochManagerInvocation::SetEpoch(EpochManagerSetEpochInvocation {
+                receiver: EPOCH_MANAGER,
+                epoch,
+            }),
+        ))];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 
@@ -871,14 +852,11 @@ impl TestRunner {
     }
 
     pub fn get_current_epoch(&mut self) -> u64 {
-        let instructions = vec![SystemInstruction::CallNativeMethod {
-            method_ident: NativeMethodIdent {
-                receiver: RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
-                method_name: EpochManagerMethod::GetCurrentEpoch.as_ref().to_owned(),
-            },
-            args: args!(EPOCH_MANAGER),
-        }
-        .into()];
+        let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
+            EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
+                receiver: EPOCH_MANAGER,
+            }),
+        ))];
         let blobs = vec![];
         let nonce = self.next_transaction_nonce();
 

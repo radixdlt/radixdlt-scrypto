@@ -36,7 +36,7 @@ impl AuthModule {
 
         if !matches!(
             actor.identifier,
-            FnIdentifier::NativeMethod(NativeMethod::AuthZoneStack(..))
+            FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..)))
         ) {
             let handle = system_api.lock_substate(
                 auth_zone_id,
@@ -77,14 +77,14 @@ impl AuthModule {
     {
         if matches!(
             actor.identifier,
-            FnIdentifier::NativeMethod(NativeMethod::AuthZoneStack(..))
+            FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..)))
         ) {
             return Ok(());
         }
 
         let method_auths = match &actor {
             ResolvedActor {
-                identifier: FnIdentifier::NativeFunction(native_function),
+                identifier: FnIdentifier::Native(NativeFn::Function(native_function)),
                 ..
             } => match native_function {
                 NativeFunction::EpochManager(epoch_manager_func) => {
@@ -94,7 +94,7 @@ impl AuthModule {
                 _ => vec![],
             },
             ResolvedActor {
-                identifier: FnIdentifier::NativeMethod(method),
+                identifier: FnIdentifier::Native(NativeFn::Method(method)),
                 receiver: Some(resolved_receiver),
             } => {
                 match (method, resolved_receiver) {
@@ -288,7 +288,7 @@ impl AuthModule {
     {
         if matches!(
             api.fn_identifier()?,
-            FnIdentifier::NativeMethod(NativeMethod::AuthZoneStack(..)),
+            FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..))),
         ) {
             return Ok(());
         }

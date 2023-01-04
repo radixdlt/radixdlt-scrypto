@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;
 use crate::types::*;
-use radix_engine_interface::api::types::{RENodeId, VaultId};
+use radix_engine_interface::api::types::VaultId;
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum CostingError {
@@ -20,7 +20,7 @@ impl CostingModule {
     }
 }
 
-impl<R: FeeReserve> Module<R> for CostingModule {
+impl<R: FeeReserve> BaseModule<R> for CostingModule {
     fn pre_sys_call(
         &mut self,
         _call_frame: &CallFrame,
@@ -67,99 +67,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::ReadOwnedNodes),
                         1,
                         "read_owned_nodes",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
-            SysCallInput::BorrowNode { node_id } => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track.fee_table.system_api_cost({
-                            match node_id {
-                                RENodeId::Global(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: true,
-                                    size: 0,
-                                },
-                                RENodeId::AuthZoneStack(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: true,
-                                    size: 0,
-                                },
-                                RENodeId::FeeReserve(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: true,
-                                    size: 0,
-                                },
-                                RENodeId::Bucket(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: true,
-                                    size: 0,
-                                },
-                                RENodeId::Proof(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: true,
-                                    size: 0,
-                                },
-                                RENodeId::Worktop => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: true,
-                                    size: 0,
-                                },
-                                RENodeId::Vault(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: false,
-                                    size: 0,
-                                },
-                                RENodeId::Component(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: false,
-                                    size: 0,
-                                },
-                                RENodeId::KeyValueStore(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: false,
-                                    size: 0,
-                                },
-                                RENodeId::NonFungibleStore(_) => {
-                                    SystemApiCostingEntry::BorrowNode {
-                                        // TODO: figure out loaded state and size
-                                        loaded: false,
-                                        size: 0,
-                                    }
-                                }
-                                RENodeId::ResourceManager(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: false,
-                                    size: 0,
-                                },
-                                RENodeId::Package(_) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: false,
-                                    size: 0,
-                                },
-                                RENodeId::EpochManager(..) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: false,
-                                    size: 0,
-                                },
-                                RENodeId::Clock(..) => SystemApiCostingEntry::BorrowNode {
-                                    // TODO: figure out loaded state and size
-                                    loaded: false,
-                                    size: 0,
-                                },
-                                RENodeId::TransactionHash(..) => {
-                                    SystemApiCostingEntry::BorrowNode {
-                                        // TODO: figure out loaded state and size
-                                        loaded: false,
-                                        size: 0,
-                                    }
-                                }
-                            }
-                        }),
-                        1,
-                        "borrow_node",
                         false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
@@ -255,22 +162,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
-            SysCallInput::TakeSubstate { .. } => {
-                // Costing
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::TakeSubstate {
-                                size: 0, // TODO: get size of the value
-                            }),
-                        1,
-                        "take_substate",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
             SysCallInput::ReadBlob { .. } => {
                 track
                     .fee_reserve
@@ -280,45 +171,6 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::ReadBlob { size: 0 }), // TODO pass the right size
                         1,
                         "read_blob",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
-            SysCallInput::EmitLog { message, .. } => {
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::EmitLog {
-                                size: message.len() as u32,
-                            }),
-                        1,
-                        "emit_log",
-                        false,
-                    )
-                    .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
-            }
-            SysCallInput::EmitEvent { event } => {
-                let (native, tracked, size) = match event {
-                    Event::Runtime(_) => (true, false, 0),
-                    Event::Tracked(TrackedEvent::Native(..)) => (true, true, 0),
-                    Event::Tracked(TrackedEvent::Scrypto(value)) => {
-                        (false, true, value.len() as u32)
-                    }
-                };
-                track
-                    .fee_reserve
-                    .consume_execution(
-                        track
-                            .fee_table
-                            .system_api_cost(SystemApiCostingEntry::EmitEvent {
-                                native,
-                                tracked,
-                                size,
-                            }),
-                        1,
-                        "emit_event",
                         false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
@@ -393,7 +245,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         match &actor.identifier {
-            FnIdentifier::NativeFunction(native_function) => track
+            FnIdentifier::Native(NativeFn::Function(native_function)) => track
                 .fee_reserve
                 .consume_execution(
                     track.fee_table.run_native_function_cost(&native_function),
@@ -402,7 +254,7 @@ impl<R: FeeReserve> Module<R> for CostingModule {
                     false,
                 )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
-            FnIdentifier::NativeMethod(native_method) => track
+            FnIdentifier::Native(NativeFn::Method(native_method)) => track
                 .fee_reserve
                 .consume_execution(
                     track.fee_table.run_native_method_cost(&native_method),

@@ -206,7 +206,7 @@ pub enum ApplicationError {
 
     AccessRulesChainError(AccessRulesChainError),
 
-    TransactionHashError(TransactionHashError),
+    TransactionRuntimeError(TransactionRuntimeError),
 
     BucketError(BucketError),
 

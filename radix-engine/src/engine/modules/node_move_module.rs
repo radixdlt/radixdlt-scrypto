@@ -67,7 +67,7 @@ impl NodeMoveModule {
             }
             RENodeId::Component(..) => Ok(()),
 
-            RENodeId::TransactionHash(..)
+            RENodeId::TransactionRuntime(..)
             | RENodeId::AuthZoneStack(..)
             | RENodeId::FeeReserve(..)
             | RENodeId::ResourceManager(..)
@@ -76,6 +76,7 @@ impl NodeMoveModule {
             | RENodeId::Vault(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
+            | RENodeId::Logger
             | RENodeId::EpochManager(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
@@ -109,7 +110,7 @@ impl NodeMoveModule {
             }
             RENodeId::Proof(..) | RENodeId::Component(..) | RENodeId::Vault(..) => Ok(()),
 
-            RENodeId::TransactionHash(..)
+            RENodeId::TransactionRuntime(..)
             | RENodeId::AuthZoneStack(..)
             | RENodeId::FeeReserve(..)
             | RENodeId::ResourceManager(..)
@@ -117,6 +118,7 @@ impl NodeMoveModule {
             | RENodeId::NonFungibleStore(..)
             | RENodeId::Package(..)
             | RENodeId::Worktop
+            | RENodeId::Logger
             | RENodeId::EpochManager(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(

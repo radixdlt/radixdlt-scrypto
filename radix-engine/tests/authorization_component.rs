@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::rule;
@@ -21,7 +20,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     );
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -37,7 +36,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .entity_changes
         .new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -54,7 +53,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
             my_component,
@@ -83,7 +82,7 @@ fn can_make_cross_component_call_with_authorization() {
     );
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -99,7 +98,7 @@ fn can_make_cross_component_call_with_authorization() {
         .entity_changes
         .new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -115,7 +114,7 @@ fn can_make_cross_component_call_with_authorization() {
         .entity_changes
         .new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account_by_ids(account, &BTreeSet::from([auth_id]), auth)
         .call_method(
@@ -131,7 +130,7 @@ fn can_make_cross_component_call_with_authorization() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
             my_component,
@@ -160,7 +159,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     );
 
     let package_address = test_runner.compile_and_publish("./tests/blueprints/component");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -176,7 +175,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
         .entity_changes
         .new_component_addresses[0];
 
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -193,7 +192,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, auth)
         .call_method(

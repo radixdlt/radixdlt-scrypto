@@ -362,10 +362,11 @@ mod tests {
                     execution_cost_unit_breakdown: HashMap::new(),
                     royalty_cost_unit_breakdown: HashMap::new(),
                 },
-                application_logs: Vec::new(),
                 events: Vec::new(),
             },
             result: TransactionResult::Commit(CommitResult {
+                application_logs: Vec::new(),
+                next_validator_set: None,
                 outcome: TransactionOutcome::Success(Vec::new()),
                 state_updates: state_diff,
                 entity_changes: EntityChanges {

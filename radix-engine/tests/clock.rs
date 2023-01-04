@@ -1,11 +1,10 @@
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use transaction::model::{SystemInstruction, SystemTransaction};
+use transaction::model::{Instruction, SystemTransaction};
 
 #[test]
 fn a_new_clock_instance_can_be_created_by_the_system() {
@@ -13,14 +12,9 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let instructions = vec![SystemInstruction::CallNativeFunction {
-        function_ident: NativeFunctionIdent {
-            blueprint_name: CLOCK_BLUEPRINT.to_owned(),
-            function_name: ClockFunction::Create.as_ref().to_owned(),
-        },
-        args: args!(),
-    }
-    .into()];
+    let instructions = vec![Instruction::System(NativeInvocation::Clock(
+        ClockInvocation::Create(ClockCreateInvocation {}),
+    ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -41,14 +35,9 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let instructions = vec![SystemInstruction::CallNativeFunction {
-        function_ident: NativeFunctionIdent {
-            blueprint_name: CLOCK_BLUEPRINT.to_owned(),
-            function_name: ClockFunction::Create.as_ref().to_owned(),
-        },
-        args: args!(),
-    }
-    .into()];
+    let instructions = vec![Instruction::System(NativeInvocation::Clock(
+        ClockInvocation::Create(ClockCreateInvocation {}),
+    ))];
     let blobs = vec![];
     let receipt = test_runner.execute_transaction(
         SystemTransaction {
@@ -72,7 +61,7 @@ fn set_current_time_should_fail_without_validator_auth() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -99,7 +88,7 @@ fn validator_can_set_current_time() {
     let expected_unix_time_rounded_to_minutes: i64 = 1669663680;
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -132,7 +121,7 @@ fn no_auth_required_to_get_current_time_rounded_to_minutes() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -156,7 +145,7 @@ fn test_clock_comparison_methods_against_the_current_time() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -184,7 +173,7 @@ fn test_date_time_conversions() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/clock");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,

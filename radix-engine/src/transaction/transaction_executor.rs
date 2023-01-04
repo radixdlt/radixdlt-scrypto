@@ -12,6 +12,7 @@ use radix_engine_constants::{
 use radix_engine_interface::api::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
+use transaction::validation::{IdAllocator, IdSpace};
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
@@ -135,13 +136,12 @@ where
 
         // Apply pre execution costing
         let pre_execution_result = track.apply_pre_execution_costs(transaction);
-        let track = match pre_execution_result {
+        let mut track = match pre_execution_result {
             Ok(track) => track,
             Err(err) => {
                 return TransactionReceipt {
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
-                        application_logs: vec![],
                         events: vec![],
                     },
                     result: TransactionResult::Reject(RejectResult {
@@ -155,33 +155,37 @@ where
 
         // Invoke the function/method
         let track_receipt = {
-            let module = KernelModule::new(execution_config);
+            let mut module = KernelModule::new(execution_config);
+            let mut id_allocator = IdAllocator::new(IdSpace::Application, transaction_hash.clone());
+
             let mut kernel = Kernel::new(
-                transaction_hash.clone(),
                 auth_zone_params.clone(),
+                &mut id_allocator,
                 blobs,
-                track,
+                &mut track,
                 self.scrypto_interpreter,
-                module,
+                &mut module,
             );
 
             let invoke_result = kernel.invoke(TransactionProcessorRunInvocation {
+                transaction_hash: transaction_hash.clone(),
                 runtime_validations: Cow::Borrowed(transaction.runtime_validations()),
                 instructions: match instructions {
                     InstructionList::Basic(instructions) => {
                         Cow::Owned(instructions.iter().map(|e| e.clone().into()).collect())
                     }
                     InstructionList::Any(instructions) => Cow::Borrowed(instructions),
+                    InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
                 },
             });
 
-            kernel.finalize(invoke_result)
+            let events = module.collect_events();
+            track.finalize(invoke_result, events)
         };
 
         let receipt = TransactionReceipt {
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
-                application_logs: track_receipt.application_logs,
                 events: track_receipt.events,
             },
             result: track_receipt.result,
@@ -199,12 +203,17 @@ where
                 println!("{:<30}: {:>8}", k, v);
             }
 
-            println!("{:-^80}", "Application Logs");
-            for (level, message) in &receipt.execution.application_logs {
-                println!("[{}] {}", level, message);
-            }
-            if receipt.execution.application_logs.is_empty() {
-                println!("None");
+            match &receipt.result {
+                TransactionResult::Commit(commit) => {
+                    println!("{:-^80}", "Application Logs");
+                    for (level, message) in &commit.application_logs {
+                        println!("[{}] {}", level, message);
+                    }
+                    if commit.application_logs.is_empty() {
+                        println!("None");
+                    }
+                }
+                _ => {}
             }
         }
         receipt

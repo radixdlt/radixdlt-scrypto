@@ -2,31 +2,31 @@ use sbor::type_id::*;
 use sbor::*;
 
 use crate::api::types::*;
-use crate::core::*;
 use crate::crypto::*;
+use crate::data::types::*;
 use crate::data::*;
 use crate::math::{Decimal, PreciseDecimal};
 use utils::copy_u8_array;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
-    // Global address types
+    // RE global address types
     PackageAddress(PackageAddress),
     ComponentAddress(ComponentAddress),
     ResourceAddress(ResourceAddress),
     SystemAddress(SystemAddress),
 
-    // RE nodes types
+    // RE interpreted types
+    Own(Own),
     Component(ComponentId),
     KeyValueStore(KeyValueStoreId),
+    NonFungibleAddress(NonFungibleAddress),
+    Blob(Blob),
+
+    // TX interpreted types
     Bucket(BucketId),
     Proof(ProofId),
-    Vault(VaultId),
-
-    // Other interpreted types
     Expression(Expression),
-    Blob(Blob),
-    NonFungibleAddress(NonFungibleAddress), // for resource address contained
 
     // Uninterpreted
     Hash(Hash),
@@ -54,6 +54,9 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             ScryptoCustomValue::SystemAddress(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress))
             }
+            ScryptoCustomValue::Own(_) => {
+                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Own))
+            }
             ScryptoCustomValue::Component(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Component))
             }
@@ -65,9 +68,6 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             }
             ScryptoCustomValue::Proof(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Proof))
-            }
-            ScryptoCustomValue::Vault(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Vault))
             }
             ScryptoCustomValue::Expression(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Expression))
@@ -112,11 +112,11 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             ScryptoCustomValue::ComponentAddress(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::ResourceAddress(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::SystemAddress(v) => encoder.write_slice(&v.to_vec()),
+            ScryptoCustomValue::Own(v) => encoder.write_slice(&v.to_vec()),
             ScryptoCustomValue::Component(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::KeyValueStore(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::Bucket(v) => encoder.write_slice(&v.to_le_bytes()),
             ScryptoCustomValue::Proof(v) => encoder.write_slice(&v.to_le_bytes()),
-            ScryptoCustomValue::Vault(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::Expression(v) => {
                 let buf = v.to_vec();
                 encoder.write_size(buf.len())?;
@@ -181,6 +181,15 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Scrypto
                     .map_err(|_| DecodeError::InvalidCustomValue)
                     .map(Self::SystemAddress)
             }
+            ScryptoCustomTypeId::Own => {
+                let n = 36;
+                let slice = decoder.read_slice(n)?;
+                Ok(Self::Own(
+                    slice
+                        .try_into()
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                ))
+            }
             ScryptoCustomTypeId::Component => {
                 let n = 36;
                 let slice = decoder.read_slice(n)?;
@@ -208,15 +217,6 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Scrypto
                 let n = 4;
                 let slice = decoder.read_slice(n)?;
                 Ok(Self::Proof(u32::from_le_bytes(copy_u8_array(slice))))
-            }
-            ScryptoCustomTypeId::Vault => {
-                let n = 36;
-                let slice = decoder.read_slice(n)?;
-                Ok(Self::Vault(
-                    slice
-                        .try_into()
-                        .map_err(|_| DecodeError::InvalidCustomValue)?,
-                ))
             }
             ScryptoCustomTypeId::Expression => {
                 let n = decoder.read_size()?;
