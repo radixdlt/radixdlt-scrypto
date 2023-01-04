@@ -97,9 +97,9 @@ pub const TYPE_U64: u8 = 0x0a;
 pub const TYPE_U128: u8 = 0x0b;
 pub const TYPE_STRING: u8 = 0x0c;
 // composite types
-pub const TYPE_TUPLE: u8 = 0x21; // Any "product type" - Tuples and Structs (T1, T2, T3)
-pub const TYPE_ENUM: u8 = 0x11;
 pub const TYPE_ARRAY: u8 = 0x20; // [T; N]
+pub const TYPE_TUPLE: u8 = 0x21; // Any "product type" - Tuples and Structs (T1, T2, T3)
+pub const TYPE_ENUM: u8 = 0x22;
 
 /// A SBOR type ID.
 pub trait TypeId<X: CustomTypeId> {
