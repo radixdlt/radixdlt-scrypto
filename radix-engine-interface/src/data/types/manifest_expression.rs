@@ -6,7 +6,6 @@ use sbor::*;
 
 use crate::data::*;
 use crate::scrypto_type;
-use scrypto_abi::Type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ManifestExpression {
@@ -69,9 +68,4 @@ impl ManifestExpression {
     }
 }
 
-scrypto_type!(
-    ManifestExpression,
-    ScryptoCustomTypeId::Expression,
-    Type::ManifestExpression,
-    1
-);
+scrypto_type!(ManifestExpression, ScryptoCustomTypeId::Expression, 1);

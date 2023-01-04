@@ -94,11 +94,6 @@ pub enum Type {
     /* other */
     Blob,
 
-    // TX interpreted types
-    ManifestBucket,
-    ManifestProof,
-    ManifestExpression,
-
     // Uninterpreted
     Hash,
     EcdsaSecp256k1PublicKey,

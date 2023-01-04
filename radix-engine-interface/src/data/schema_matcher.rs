@@ -48,10 +48,6 @@ pub fn sbor_type_id(ty: &Type) -> Option<ScryptoSborTypeId> {
         | Type::KeyValueStore { .. } => Some(SborTypeId::Custom(ScryptoCustomTypeId::Own)),
         Type::Blob => Some(SborTypeId::Custom(ScryptoCustomTypeId::Blob)),
 
-        Type::ManifestBucket => Some(SborTypeId::Custom(ScryptoCustomTypeId::Bucket)),
-        Type::ManifestProof => Some(SborTypeId::Custom(ScryptoCustomTypeId::Proof)),
-        Type::ManifestExpression => Some(SborTypeId::Custom(ScryptoCustomTypeId::Expression)),
-
         Type::Hash => Some(SborTypeId::Custom(ScryptoCustomTypeId::Hash)),
         Type::EcdsaSecp256k1PublicKey => Some(SborTypeId::Custom(
             ScryptoCustomTypeId::EcdsaSecp256k1PublicKey,
@@ -360,29 +356,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
-
-        Type::ManifestBucket => {
-            if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Bucket(_))
-            } else {
-                false
-            }
-        }
-        Type::ManifestProof => {
-            if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Proof(_))
-            } else {
-                false
-            }
-        }
-        Type::ManifestExpression => {
-            if let SborValue::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Expression(_))
-            } else {
-                false
-            }
-        }
-
         Type::Hash => {
             if let SborValue::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Hash(_))

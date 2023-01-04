@@ -356,17 +356,6 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         }
         SchemaType::Blob => parse_quote! { ::scrypto::engine_lib::data::types::Blob},
 
-        // TX
-        SchemaType::ManifestBucket => {
-            parse_quote! { ::scrypto::radix_engine_interface::data::types::ManifestBucket }
-        }
-        SchemaType::ManifestProof => {
-            parse_quote! { ::scrypto::radix_engine_interface::data::types::ManifestProof }
-        }
-        SchemaType::ManifestExpression => {
-            parse_quote! { ::scrypto::radix_engine_interface::data::types::ManifestExpression }
-        }
-
         // Misc
         SchemaType::Hash => parse_quote! { ::scrypto::crypto::Hash},
         SchemaType::EcdsaSecp256k1PublicKey => {
