@@ -2,9 +2,9 @@ use super::*;
 use sbor::rust::collections::IndexSet;
 use sbor::*;
 
-#[allow(dead_code)]
-type ScryptoTypeSchema<TypeLink> =
-    TypeSchema<ScryptoCustomTypeId, ScryptoCustomTypeSchema<TypeLink>, TypeLink>;
+pub type ScryptoTypeSchema<L> = TypeSchema<ScryptoCustomTypeId, ScryptoCustomTypeSchema<L>, L>;
+pub type ScryptoLocalTypeSchema = ScryptoTypeSchema<SchemaLocalTypeRef>;
+pub type ScryptoFullTypeSchema = FullTypeSchema<ScryptoTypeSchema<SchemaLocalTypeRef>>;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]

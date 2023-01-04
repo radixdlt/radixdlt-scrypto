@@ -20,6 +20,8 @@ mod value_formatter;
 mod value_serializer;
 
 pub use crate::args;
+#[cfg(feature = "schema")]
+pub use custom_schema::*;
 pub use custom_type_id::*;
 pub use custom_value::*;
 pub use indexed_value::*;

@@ -130,6 +130,6 @@ mod schema {
     }
 
     pub type BasicTypeSchema<L> = TypeSchema<NoCustomTypeId, NoCustomTypeSchema, L>;
-    pub type BasicLinearTypeSchema = BasicTypeSchema<SchemaLocalTypeRef>;
+    pub type BasicLocalTypeSchema = BasicTypeSchema<SchemaLocalTypeRef>;
     pub type BasicFullTypeSchema = FullTypeSchema<NoCustomTypeSchema>;
 }
