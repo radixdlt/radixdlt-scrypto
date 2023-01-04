@@ -2,6 +2,7 @@ use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::data::{ScryptoDecode, ScryptoTypeId};
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
+use std::collections::BTreeSet;
 
 pub trait SysBucket {
     fn sys_new<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
@@ -27,6 +28,11 @@ pub trait SysBucket {
     ) -> Result<Proof, E>
     where
         Y: Invokable<BucketCreateProofInvocation, E>;
+
+    fn sys_non_fungible_ids<Y, E>(&self, env: &mut Y) -> Result<BTreeSet<NonFungibleId>, E>
+    where
+        Y: Invokable<BucketGetNonFungibleIdsInvocation, E>,
+        E: Debug + ScryptoTypeId + ScryptoDecode;
 }
 
 impl SysBucket for Bucket {
@@ -52,21 +58,29 @@ impl SysBucket for Bucket {
         })
     }
 
-    fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
+    fn sys_non_fungible_ids<Y, E>(&self, api: &mut Y) -> Result<BTreeSet<NonFungibleId>, E>
+    where
+        Y: Invokable<BucketGetNonFungibleIdsInvocation, E>,
+        E: Debug + ScryptoTypeId + ScryptoDecode,
+    {
+        api.invoke(BucketGetNonFungibleIdsInvocation { receiver: self.0 })
+    }
+
+    fn sys_resource_address<Y, E>(&self, api: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: Invokable<BucketGetResourceAddressInvocation, E>,
         E: Debug + ScryptoTypeId + ScryptoDecode,
     {
-        env.invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
+        api.invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
     }
 
     fn sys_create_proof<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
         &self,
-        sys_calls: &mut Y,
+        api: &mut Y,
     ) -> Result<Proof, E>
     where
         Y: Invokable<BucketCreateProofInvocation, E>,
     {
-        sys_calls.invoke(BucketCreateProofInvocation { receiver: self.0 })
+        api.invoke(BucketCreateProofInvocation { receiver: self.0 })
     }
 }

@@ -1,6 +1,6 @@
 use crate::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
-use radix_engine_interface::data::{scrypto_encode, ScryptoDecode, ScryptoEncode};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::model::*;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
@@ -49,6 +49,37 @@ impl ResourceManager {
         api.invoke(ResourceManagerMintInvocation {
             mint_params: MintParams::NonFungible { entries },
             receiver: self.0,
+        })
+    }
+
+    pub fn get_non_fungible_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
+        &self,
+        id: NonFungibleId,
+        api: &mut Y,
+    ) -> Result<T, E>
+    where
+        Y: EngineApi<E> + InvokableModel<E>,
+    {
+        let output = api.invoke(ResourceManagerGetNonFungibleInvocation {
+            id,
+            receiver: self.0,
+        })?;
+
+        let data = scrypto_decode(&output[0]).unwrap();
+        Ok(data)
+    }
+
+    pub fn burn<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), E>
+    where
+        Y: EngineApi<E> + InvokableModel<E>,
+    {
+        api.invoke(ResourceManagerBurnInvocation {
+            receiver: self.0,
+            bucket,
         })
     }
 }

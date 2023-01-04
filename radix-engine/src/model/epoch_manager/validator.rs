@@ -1,10 +1,10 @@
 use crate::engine::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, ResolvedActor,
-    ResolverApi, RuntimeError, SystemApi,
+    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
+    ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::{NativeVault, ResourceManager};
+use native_sdk::resource::{NativeVault, ResourceManager, SysBucket};
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{GlobalAddress, NativeFn, RENodeId, SubstateOffset};
 use radix_engine_interface::model::*;
@@ -19,6 +19,12 @@ pub struct ValidatorSubstate {
     pub stake_vault_id: VaultId,
     pub unstake_vault_id: VaultId,
     pub is_registered: bool,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+pub enum ValidatorError {
+    InvalidClaimResource,
+    EpochUnlockHasNotOccurredYet,
 }
 
 pub struct ValidatorRegisterExecutable(RENodeId);
@@ -254,13 +260,19 @@ impl Executor for ValidatorUnstakeExecutable {
             let mut nft_resman = ResourceManager(validator.unstake_nft_address);
 
             let manager_handle = api.lock_substate(
-                RENodeId::Global(GlobalAddress::System(manager)), SubstateOffset::EpochManager(EpochManagerOffset::EpochManager), LockFlags::read_only())?;
+                RENodeId::Global(GlobalAddress::System(manager)),
+                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                LockFlags::read_only(),
+            )?;
             let manager_substate = api.get_ref(manager_handle)?;
             let current_epoch = manager_substate.epoch_manager().epoch;
             api.drop_lock(manager_handle)?;
 
             let epoch_unlocked = current_epoch + 2;
-            let data = UnstakeData { epoch_unlocked, amount: self.1 };
+            let data = UnstakeData {
+                epoch_unlocked,
+                amount: self.1,
+            };
 
             let bucket = stake_vault.sys_take(self.1, api)?;
             unstake_vault.sys_put(bucket, api)?;
@@ -294,5 +306,85 @@ impl Executor for ValidatorUnstakeExecutable {
 
         let update = CallFrameUpdate::move_node(RENodeId::Bucket(unstake_bucket.0));
         Ok((unstake_bucket, update))
+    }
+}
+
+pub struct ValidatorClaimXrdExecutable(RENodeId, Bucket);
+
+impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorClaimXrdInvocation {
+    type Exec = ValidatorClaimXrdExecutable;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::Validator(ValidatorFn::ClaimXrd),
+            resolved_receiver,
+        );
+        let executor = ValidatorClaimXrdExecutable(resolved_receiver.receiver, self.bucket);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for ValidatorClaimXrdExecutable {
+    type Output = Bucket;
+
+    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
+        let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let substate = api.get_ref(handle)?;
+        let validator = substate.validator();
+        let mut nft_resman = ResourceManager(validator.unstake_nft_address);
+        let resource_address = validator.unstake_nft_address;
+        let manager = validator.manager;
+        let mut unstake_vault = Vault(validator.unstake_vault_id);
+
+        // TODO: Move this check into a more appropriate place
+        let bucket = Bucket(self.1 .0);
+        if !resource_address.eq(&bucket.sys_resource_address(api)?) {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ValidatorError(ValidatorError::InvalidClaimResource),
+            ));
+        }
+
+        let current_epoch = {
+            let mgr_handle = api.lock_substate(
+                RENodeId::Global(GlobalAddress::System(manager)),
+                SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+                LockFlags::read_only(),
+            )?;
+            let mgr_substate = api.get_ref(mgr_handle)?;
+            let epoch = mgr_substate.epoch_manager().epoch;
+            api.drop_lock(mgr_handle)?;
+            epoch
+        };
+
+        let mut unstake_amount = Decimal::zero();
+
+        for id in bucket.sys_non_fungible_ids(api)? {
+            let data: UnstakeData = nft_resman.get_non_fungible_data(id, api)?;
+            if data.epoch_unlocked < current_epoch {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ValidatorError(ValidatorError::EpochUnlockHasNotOccurredYet),
+                ));
+            }
+            unstake_amount += data.amount;
+        }
+        nft_resman.burn(bucket, api)?;
+
+        let claimed_bucket = unstake_vault.sys_take(unstake_amount, api)?;
+        let update = CallFrameUpdate::move_node(RENodeId::Bucket(claimed_bucket.0));
+        Ok((claimed_bucket, update))
     }
 }

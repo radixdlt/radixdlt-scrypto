@@ -200,6 +200,8 @@ pub enum ApplicationError {
 
     EpochManagerError(EpochManagerError),
 
+    ValidatorError(ValidatorError),
+
     ResourceManagerError(ResourceManagerError),
 
     AccessRulesChainError(AccessRulesChainError),

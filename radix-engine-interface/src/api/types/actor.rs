@@ -271,6 +271,7 @@ pub enum ValidatorFn {
     Unregister,
     Stake,
     Unstake,
+    ClaimXrd,
 }
 
 #[derive(

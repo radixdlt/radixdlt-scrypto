@@ -249,3 +249,33 @@ impl Into<SerializedInvocation> for ValidatorUnstakeInvocation {
         NativeInvocation::Validator(ValidatorInvocation::Unstake(self)).into()
     }
 }
+
+#[derive(Debug, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ValidatorClaimXrdInvocation {
+    pub receiver: SystemAddress,
+    pub bucket: Bucket,
+}
+
+impl Clone for ValidatorClaimXrdInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            bucket: Bucket(self.bucket.0),
+        }
+    }
+}
+
+impl Invocation for ValidatorClaimXrdInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for ValidatorClaimXrdInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<SerializedInvocation> for ValidatorClaimXrdInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::ClaimXrd(self)).into()
+    }
+}

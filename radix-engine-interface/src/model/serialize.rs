@@ -133,6 +133,7 @@ pub enum ValidatorInvocation {
     Unregister(ValidatorUnregisterInvocation),
     Stake(ValidatorStakeInvocation),
     Unstake(ValidatorUnstakeInvocation),
+    ClaimXrd(ValidatorClaimXrdInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -399,6 +400,9 @@ impl NativeInvocation {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
                 }
                 ValidatorInvocation::Unstake(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+                ValidatorInvocation::ClaimXrd(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
                 }
             },
