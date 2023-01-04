@@ -5,12 +5,12 @@ pub const TYPE_COMPONENT_ADDRESS: u8 = 0x81;
 pub const TYPE_RESOURCE_ADDRESS: u8 = 0x82;
 pub const TYPE_SYSTEM_ADDRESS: u8 = 0x83;
 
-pub const TYPE_OWN: u8 = 0x94;
-pub const TYPE_BLOB: u8 = 0xa1;
+pub const TYPE_OWN: u8 = 0x90;
+pub const TYPE_BLOB: u8 = 0x91;
 
-pub const TYPE_BUCKET: u8 = 0x92;
-pub const TYPE_PROOF: u8 = 0x93;
-pub const TYPE_EXPRESSION: u8 = 0xa0;
+pub const TYPE_BUCKET: u8 = 0xa0;
+pub const TYPE_PROOF: u8 = 0xa1;
+pub const TYPE_EXPRESSION: u8 = 0xa2;
 
 pub const TYPE_HASH: u8 = 0xb0;
 pub const TYPE_ECDSA_SECP256K1_PUBIC_KEY: u8 = 0xb1;
