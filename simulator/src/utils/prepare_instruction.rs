@@ -33,6 +33,7 @@ macro_rules! args_from_bytes_vec {
 // Types
 // ======
 
+#[derive(Debug, PartialEq, Eq)]
 enum ResourceSpecifier {
     Amount(Decimal, ResourceAddress),
     Ids(BTreeSet<NonFungibleId>, ResourceAddress),
@@ -461,6 +462,7 @@ fn parse_resource_specifier(
 // Errors
 // ========
 
+#[derive(Debug)]
 enum ParseResourceSpecifierError {
     InvalidAmount(ParseDecimalError),
     InvalidResourceAddress(AddressError),
@@ -515,5 +517,469 @@ pub enum BuildCallWithAbiError {
 impl From<BuildArgsError> for BuildCallWithAbiError {
     fn from(error: BuildArgsError) -> Self {
         Self::FailedToBuildArgs(error)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use radix_engine_interface::abi::Type;
+    use serial_test::serial;
+    use transaction::builder::ManifestBuilder;
+    use transaction::validation::{IdAllocator, IdSpace};
+
+    #[test]
+    pub fn parsing_of_u8_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::U8;
+
+        // Act
+        let parsed_arg: u8 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12u8)
+    }
+
+    #[test]
+    pub fn parsing_of_u16_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::U16;
+
+        // Act
+        let parsed_arg: u16 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12u16)
+    }
+
+    #[test]
+    pub fn parsing_of_u32_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::U32;
+
+        // Act
+        let parsed_arg: u32 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12u32)
+    }
+
+    #[test]
+    pub fn parsing_of_u64_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::U64;
+
+        // Act
+        let parsed_arg: u64 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12u64)
+    }
+
+    #[test]
+    pub fn parsing_of_u128_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::U128;
+
+        // Act
+        let parsed_arg: u128 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12u128)
+    }
+
+    #[test]
+    pub fn parsing_of_i8_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::I8;
+
+        // Act
+        let parsed_arg: i8 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12i8)
+    }
+
+    #[test]
+    pub fn parsing_of_i16_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::I16;
+
+        // Act
+        let parsed_arg: i16 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12i16)
+    }
+
+    #[test]
+    pub fn parsing_of_i32_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::I32;
+
+        // Act
+        let parsed_arg: i32 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12i32)
+    }
+
+    #[test]
+    pub fn parsing_of_i64_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::I64;
+
+        // Act
+        let parsed_arg: i64 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12i64)
+    }
+
+    #[test]
+    pub fn parsing_of_i128_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::I128;
+
+        // Act
+        let parsed_arg: i128 = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, 12i128)
+    }
+
+    #[test]
+    pub fn parsing_of_decimal_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::Decimal;
+
+        // Act
+        let parsed_arg: Decimal = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, Decimal::from_str("12").unwrap())
+    }
+
+    #[test]
+    pub fn parsing_of_component_address_succeeds() {
+        // Arrange
+        let mock_tx_hash = Hash([0; 32]);
+        let mut id_allocator = IdAllocator::new(IdSpace::Application, mock_tx_hash);
+        let component_address = id_allocator
+            .new_component_address()
+            .expect("Failed to allocate a component address");
+
+        let arg =
+            Bech32Encoder::for_simulator().encode_component_address_to_string(&component_address);
+        let arg_type = Type::ComponentAddress;
+
+        // Act
+        let parsed_arg: ComponentAddress = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, component_address)
+    }
+
+    #[test]
+    pub fn parsing_of_package_address_succeeds() {
+        // Arrange
+        let mock_tx_hash = Hash([0; 32]);
+        let mut id_allocator = IdAllocator::new(IdSpace::Application, mock_tx_hash);
+        let package_address = id_allocator
+            .new_package_address()
+            .expect("Failed to allocate a package address");
+
+        let arg = Bech32Encoder::for_simulator().encode_package_address_to_string(&package_address);
+        let arg_type = Type::PackageAddress;
+
+        // Act
+        let parsed_arg: PackageAddress = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, package_address)
+    }
+
+    #[test]
+    pub fn parsing_of_resource_address_succeeds() {
+        // Arrange
+        let mock_tx_hash = Hash([0; 32]);
+        let mut id_allocator = IdAllocator::new(IdSpace::Application, mock_tx_hash);
+        let resource_address = id_allocator
+            .new_resource_address()
+            .expect("Failed to allocate a resource address");
+
+        let arg =
+            Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);
+        let arg_type = Type::ResourceAddress;
+
+        // Act
+        let parsed_arg: ResourceAddress = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, resource_address)
+    }
+
+    #[test]
+    pub fn parsing_of_precise_decimal_succeeds() {
+        // Arrange
+        let arg = "12";
+        let arg_type = Type::PreciseDecimal;
+
+        // Act
+        let parsed_arg: PreciseDecimal = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, PreciseDecimal::from_str("12").unwrap())
+    }
+
+    #[test]
+    pub fn parsing_of_hash_succeeds() {
+        // Arrange
+        let arg = "c41fa9ef2ab31f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
+        let arg_type = Type::Hash;
+
+        // Act
+        let parsed_arg: Hash = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(
+            parsed_arg,
+            Hash([
+                196, 31, 169, 239, 42, 179, 31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73,
+                178, 64, 175, 124, 185, 57, 234, 210, 144, 88, 253, 255, 44
+            ])
+        )
+    }
+
+    #[test]
+    pub fn parsing_of_string_non_fungible_id_succeeds() {
+        // Arrange
+        let arg = "String#HelloWorld";
+        let arg_type = Type::NonFungibleId;
+
+        // Act
+        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, NonFungibleId::String("HelloWorld".into()))
+    }
+
+    #[test]
+    pub fn parsing_of_bytes_non_fungible_id_succeeds() {
+        // Arrange
+        let arg = "Bytes#c41fa9ef2ab31f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
+        let arg_type = Type::NonFungibleId;
+
+        // Act
+        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(
+            parsed_arg,
+            NonFungibleId::Bytes(vec![
+                196, 31, 169, 239, 42, 179, 31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73,
+                178, 64, 175, 124, 185, 57, 234, 210, 144, 88, 253, 255, 44
+            ])
+        )
+    }
+
+    #[test]
+    pub fn parsing_of_u32_non_fungible_id_succeeds() {
+        // Arrange
+        let arg = "U32#12";
+        let arg_type = Type::NonFungibleId;
+
+        // Act
+        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, NonFungibleId::U32(12))
+    }
+
+    #[test]
+    pub fn parsing_of_u64_non_fungible_id_succeeds() {
+        // Arrange
+        let arg = "U64#12";
+        let arg_type = Type::NonFungibleId;
+
+        // Act
+        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, NonFungibleId::U64(12))
+    }
+
+    #[test]
+    pub fn parsing_of_u128_non_fungible_id_succeeds() {
+        // Arrange
+        let arg = "U128#12";
+        let arg_type = Type::NonFungibleId;
+
+        // Act
+        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, NonFungibleId::UUID(12))
+    }
+
+    #[test]
+    pub fn parsing_of_uuid_non_fungible_id_succeeds() {
+        // Arrange
+        let arg = "UUID#12";
+        let arg_type = Type::NonFungibleId;
+
+        // Act
+        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(parsed_arg, NonFungibleId::UUID(12))
+    }
+
+    #[test]
+    #[serial] // Performs ledger lookups. Can not be run in parallel to avoid lock contention on the RocksDB.
+    pub fn parsing_of_bytes_non_fungible_address_succeeds() {
+        // Arrange
+        let arg = "resource_sim1qrzezvws80xnjrjmlac58ghjhml8rpjl2wdw3k8yhc3s5krr2s:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
+        let arg_type = Type::NonFungibleAddress;
+
+        // Act
+        let parsed_arg: NonFungibleAddress = parse_arg(arg, arg_type).expect("Failed to parse arg");
+
+        // Assert
+        assert_eq!(
+            parsed_arg,
+            NonFungibleAddress::new(
+                ECDSA_SECP256K1_TOKEN,
+                NonFungibleId::Bytes(vec![
+                    31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124, 185,
+                    57, 234, 210, 144, 88, 253, 255, 44
+                ])
+            )
+        )
+    }
+
+    #[test]
+    pub fn parsing_of_fungible_resource_specifier_succeeds() {
+        // Arrange
+        let resource_specifier_string =
+            "900,resource_sim1qrzezvws80xnjrjmlac58ghjhml8rpjl2wdw3k8yhc3s5krr2s";
+        let bech32_decoder = Bech32Decoder::for_simulator();
+
+        // Act
+        let resource_specifier =
+            parse_resource_specifier(resource_specifier_string, &bech32_decoder)
+                .expect("Failed to parse resource specifier");
+
+        // Assert
+        assert_eq!(
+            resource_specifier,
+            ResourceSpecifier::Amount(
+                900.into(),
+                bech32_decoder
+                    .validate_and_decode_resource_address(
+                        "resource_sim1qrzezvws80xnjrjmlac58ghjhml8rpjl2wdw3k8yhc3s5krr2s"
+                    )
+                    .unwrap()
+            )
+        )
+    }
+
+    #[test]
+    #[serial] // Performs ledger lookups. Can not be run in parallel to avoid lock contention on the RocksDB.
+    pub fn parsing_of_single_non_fungible_resource_specifier_succeeds() {
+        // Arrange
+        let resource_specifier_string =
+            "resource_sim1qrzezvws80xnjrjmlac58ghjhml8rpjl2wdw3k8yhc3s5krr2s:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
+        let bech32_decoder = Bech32Decoder::for_simulator();
+
+        // Act
+        let resource_specifier =
+            parse_resource_specifier(resource_specifier_string, &bech32_decoder)
+                .expect("Failed to parse resource specifier");
+
+        // Assert
+        assert_eq!(
+            resource_specifier,
+            ResourceSpecifier::Ids(
+                BTreeSet::from([NonFungibleId::Bytes(vec![
+                    31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124, 185,
+                    57, 234, 210, 144, 88, 253, 255, 44
+                ])]),
+                ECDSA_SECP256K1_TOKEN
+            )
+        )
+    }
+
+    #[test]
+    #[serial] // Performs ledger lookups. Can not be run in parallel to avoid lock contention on the RocksDB.
+    pub fn parsing_of_multiple_non_fungible_resource_specifier_succeeds() {
+        // Arrange
+        let resource_specifier_string =
+            "resource_sim1qrzezvws80xnjrjmlac58ghjhml8rpjl2wdw3k8yhc3s5krr2s:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c,d85dc446d8e5eff48db25b56f6b5001d14627b5a199598485a8d,005d1ae87b0e7c5401d38e58d43291ffbd9ba6e1da54f87504a7";
+        let bech32_decoder = Bech32Decoder::for_simulator();
+
+        // Act
+        let resource_specifier =
+            parse_resource_specifier(resource_specifier_string, &bech32_decoder)
+                .expect("Failed to parse resource specifier");
+
+        // Assert
+        assert_eq!(
+            resource_specifier,
+            ResourceSpecifier::Ids(
+                BTreeSet::from([
+                    NonFungibleId::Bytes(vec![
+                        31, 93, 178, 97, 76, 28, 76, 98, 110, 156, 39, 147, 73, 178, 64, 175, 124,
+                        185, 57, 234, 210, 144, 88, 253, 255, 44
+                    ]),
+                    NonFungibleId::Bytes(vec![
+                        216, 93, 196, 70, 216, 229, 239, 244, 141, 178, 91, 86, 246, 181, 0, 29,
+                        20, 98, 123, 90, 25, 149, 152, 72, 90, 141
+                    ]),
+                    NonFungibleId::Bytes(vec![
+                        0, 93, 26, 232, 123, 14, 124, 84, 1, 211, 142, 88, 212, 50, 145, 255, 189,
+                        155, 166, 225, 218, 84, 248, 117, 4, 167
+                    ])
+                ]),
+                ECDSA_SECP256K1_TOKEN
+            )
+        )
+    }
+
+    pub fn parse_arg<S: AsRef<str>, T: ScryptoDecode>(
+        arg: S,
+        arg_type: Type,
+    ) -> Result<T, ParseArgsError> {
+        let (_, encoded_arg) = parse_args(
+            &mut ManifestBuilder::new(),
+            &Bech32Decoder::for_simulator(),
+            &Type::Struct {
+                name: "MyNamedStruct".into(),
+                fields: radix_engine::types::Fields::Named {
+                    named: vec![("my_named_field".into(), arg_type)],
+                },
+            },
+            vec![arg.as_ref().to_owned()],
+            None,
+        )
+        .map_err(ParseArgsError::BuildArgsError)?;
+        scrypto_decode(&encoded_arg[0]).map_err(ParseArgsError::DecodeError)
+    }
+
+    #[derive(Debug, Clone)]
+    pub enum ParseArgsError {
+        BuildArgsError(BuildArgsError),
+        DecodeError(DecodeError),
     }
 }
