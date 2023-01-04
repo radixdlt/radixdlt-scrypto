@@ -9,7 +9,7 @@ pub use radix_engine_interface::data::{
     ScryptoTypeId,
 };
 pub use radix_engine_interface::dec;
-pub use radix_engine_interface::math::{Decimal, RoundingMode, I256};
+pub use radix_engine_interface::math::{BnumI256, Decimal, RoundingMode};
 pub use radix_engine_interface::model::*;
 pub use radix_engine_interface::scrypto;
 pub use sbor::rust::borrow::ToOwned;
