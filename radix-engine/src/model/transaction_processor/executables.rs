@@ -101,6 +101,9 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             }
             | BasicInstruction::UnstakeValidator {
                 validator_address, ..
+            }
+            | BasicInstruction::ClaimXrd {
+                validator_address, ..
             } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::System(*validator_address)));
             }
@@ -422,6 +425,18 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = api.invoke(ValidatorUnstakeInvocation {
                         receiver: *validator_address,
                         amount: *amount,
+                    })?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::ClaimXrd {
+                    validator_address,
+                    claim_bucket,
+                }) => {
+                    let claim = processor.take_bucket(claim_bucket)?;
+                    let rtn = api.invoke(ValidatorClaimXrdInvocation {
+                        receiver: *validator_address,
+                        bucket: claim,
                     })?;
                     Worktop::sys_put(Bucket(rtn.0), api)?;
                     InstructionOutput::Native(Box::new(rtn))

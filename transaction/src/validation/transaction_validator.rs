@@ -289,6 +289,11 @@ impl NotarizedTransactionValidator {
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 BasicInstruction::UnstakeValidator { .. } => {}
+                BasicInstruction::ClaimXrd { claim_bucket, .. } => {
+                    id_validator
+                        .drop_bucket(*claim_bucket)
+                        .map_err(TransactionValidationError::IdValidationError)?;
+                }
                 BasicInstruction::RecallResource { .. } => {}
                 BasicInstruction::SetMetadata { .. } => {}
                 BasicInstruction::SetPackageRoyaltyConfig { .. } => {}

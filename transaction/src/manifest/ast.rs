@@ -207,6 +207,11 @@ pub enum Instruction {
         validator: Value,
         amount: Value,
     },
+
+    ClaimXrd {
+        validator: Value,
+        claim: Value,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

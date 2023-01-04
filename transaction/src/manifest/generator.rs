@@ -557,6 +557,17 @@ pub fn generate_instruction(
                 amount: generate_decimal(amount)?,
             }
         }
+
+        ast::Instruction::ClaimXrd { validator, claim } => {
+            let bucket_id = generate_bucket(claim, resolver)?;
+            id_validator
+                .drop_bucket(bucket_id)
+                .map_err(GeneratorError::IdValidationError)?;
+            BasicInstruction::ClaimXrd {
+                validator_address: generate_system_address(validator, bech32_decoder)?,
+                claim_bucket: bucket_id,
+            }
+        }
     })
 }
 

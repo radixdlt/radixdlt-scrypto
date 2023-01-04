@@ -255,6 +255,10 @@ impl Parser {
                 validator: self.parse_value()?,
                 amount: self.parse_value()?,
             },
+            TokenKind::ClaimXrd => Instruction::ClaimXrd {
+                validator: self.parse_value()?,
+                claim: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }

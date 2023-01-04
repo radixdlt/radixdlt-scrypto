@@ -229,6 +229,11 @@ pub enum BasicInstruction {
         validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
         amount: Decimal,
     },
+
+    ClaimXrd {
+        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
+        claim_bucket: BucketId,
+    },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

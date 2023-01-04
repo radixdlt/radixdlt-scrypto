@@ -578,6 +578,21 @@ pub fn decompile_instruction<F: fmt::Write>(
                 amount,
             )?;
         }
+        BasicInstruction::ClaimXrd {
+            validator_address,
+            claim_bucket,
+        } => {
+            write!(
+                f,
+                "CLAIM_XRD SystemAddress(\"{}\") Bucket(\"{}\");",
+                validator_address.display(context.bech32_encoder),
+                context
+                    .bucket_names
+                    .get(&claim_bucket)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", claim_bucket)),
+            )?;
+        }
     }
     Ok(())
 }
