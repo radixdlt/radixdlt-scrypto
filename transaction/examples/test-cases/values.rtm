@@ -34,8 +34,6 @@ CALL_METHOD
 
     # RE nodes types
     # TODO: Ownership("000000000000000000000000000000000000000000000000000000000000000005000000")
-    Component("000000000000000000000000000000000000000000000000000000000000000005000000")
-    KeyValueStore("000000000000000000000000000000000000000000000000000000000000000005000000")
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value")
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 123u32)
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 456u64)
