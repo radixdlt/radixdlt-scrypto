@@ -102,7 +102,6 @@ impl NonFungibleAddress {
 /// Represents an error when parsing non-fungible address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleAddressError {
-    InvalidLength(usize),
     InvalidResourceAddress(AddressError),
     InvalidNonFungibleId(ParseNonFungibleIdError),
     RequiresTwoParts,
