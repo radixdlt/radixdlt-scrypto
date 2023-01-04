@@ -7,7 +7,7 @@ use sbor::rust::vec::Vec;
 /// The `Schema` trait allows a type to describe how to interpret and validate a corresponding SBOR payload.
 ///
 /// Each unique interpretation/validation of a type should have its own distinct type in the schema.
-/// Uniqueness of a type in the schema is defined by its TypeRef.
+/// Uniqueness of a type in the schema is defined by its `GlobalTypeRef`.
 #[allow(unused_variables)]
 pub trait Schema<C: CustomTypeSchema> {
     /// The `TYPE_REF` should denote a unique identifier for this type (once turned into a payload)
@@ -18,12 +18,12 @@ pub trait Schema<C: CustomTypeSchema> {
     ///   the value a different display interpretation, this should create a unique identifier.
     ///
     /// Note however that entirely "transparent" types such as pointers/smart pointers/etc are intended to be
-    /// transparent to the schema, so should inherit their wrapped type id.
+    /// transparent to the schema, so should inherit the `GlobalTypeRef` of the wrapped type.
     ///
     /// If needing to generate a new type id, this can be generated via something like:
     /// ```
-    /// impl Schema for MyType {
-    ///     const SCHEMA_TYPE_REF: GlobalTypeRef = GlobalTypeRef::complex(stringify!(MyType), &[], &[]);
+    /// impl Schema<C: CustomTypeSchema, T1: Schema<C>> for MyType<T1> {
+    ///     const SCHEMA_TYPE_REF: GlobalTypeRef = GlobalTypeRef::complex(stringify!(MyType), &[T1::SCHEMA_TYPE_REF]);
     /// #   fn get_local_type_data() { todo!() }
     /// }
     /// ```
@@ -34,20 +34,23 @@ pub trait Schema<C: CustomTypeSchema> {
         None
     }
 
-    /// Should add all the dependent schemas, if the type depends on any.
+    /// For each type referenced in `get_local_type_data`, we need to ensure that the type and all of its own references
+    /// get added to the aggregator.
     ///
     /// For direct/simple type dependencies, simply call `aggregator.add_child_type_and_descendents::<D>()`
     /// for each dependency.
     ///
-    /// For more complicated type dependencies, where new types are being created (EG enum variants, or
-    /// where a dependent type ie being customised/mutated via annotations), then the algorithm should be:
+    /// For more complicated type dependencies, where new types are being created (EG where a dependent type
+    /// is being customised/mutated via annotations on the parent type - such as a TypeName override),
+    /// then the algorithm should be:
     ///
-    /// - For each (possibly customised) type dependency needed directly by this type
-    ///   - Ensure that if it's customised, then its `type_ref` is mutated from its underlying type
-    ///   - Do `aggregator.add_child_type(type_ref, local_type_data)`
+    /// - Step 1: For each (possibly customised) type dependency needed directly by this type:
+    ///   - Create a new mutated `mutated_type_ref` for the underlying type plus its mutation
+    ///   - Use `mutated_type_ref` in the relevant place/s in `get_local_type_data`
+    ///   - In `add_all_dependencies` add a line `aggregator.add_child_type(mutated_type_ref, mutated_local_type_data)`
     ///
-    /// - For each (base/unmutated) type dependency `D`:
-    ///   - Call `aggregator.add_schema_descendents::<D>()`
+    /// - Step 2: For each (base/unmutated) type dependency `D`:
+    ///   - In `add_all_dependencies` add a line `aggregator.add_schema_descendents::<D>()`
     fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {}
 }
 
