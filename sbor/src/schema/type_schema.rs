@@ -76,9 +76,13 @@ pub trait CustomTypeSchema: Clone + PartialEq + Eq {
     type CustomTypeId: CustomTypeId;
 }
 
+pub trait CompleteCustomTypeSchema: CustomTypeSchema {
+    type WellKnownTypes: CustomWellKnownType<CustomTypeSchema = Self>;
+}
+
 // This should be implemented on CustomTypeSchema<ComplexTypeHash>
 pub trait LinearizableCustomTypeSchema: CustomTypeSchema {
-    type Linearized: CustomTypeSchema<CustomTypeId = Self::CustomTypeId>;
+    type Linearized: CompleteCustomTypeSchema<CustomTypeId = Self::CustomTypeId>;
 
     fn linearize(self, schemas: &IndexSet<ComplexTypeHash>) -> Self::Linearized;
 }

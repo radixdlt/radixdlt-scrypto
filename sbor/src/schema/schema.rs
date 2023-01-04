@@ -160,26 +160,26 @@ pub enum ChildNames {
 
 /// An array of custom types, and associated extra information.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FullTypeSchema<C: CustomTypeSchema> {
+pub struct FullTypeSchema<C: CompleteCustomTypeSchema> {
     pub custom_types: Vec<TypeSchema<C::CustomTypeId, C, SchemaLocalTypeRef>>,
     pub naming: Vec<TypeNaming>,
 }
 
 // TODO: Could get rid of the Cow by using some per-custom type once_cell to cache basic well-known-types,
 //       and return references to the static cached values
-pub struct ResolvedLocalTypeData<'a, C: CustomTypeSchema> {
+pub struct ResolvedLocalTypeData<'a, C: CompleteCustomTypeSchema> {
     pub schema: Cow<'a, TypeSchema<C::CustomTypeId, C, SchemaLocalTypeRef>>,
     pub naming: Cow<'a, TypeNaming>,
 }
 
-impl<C: CustomTypeSchema> FullTypeSchema<C> {
-    pub fn resolve<'a, W: CustomWellKnownType<CustomTypeSchema = C>>(
+impl<C: CompleteCustomTypeSchema> FullTypeSchema<C> {
+    pub fn resolve<'a>(
         &'a self,
         type_ref: SchemaLocalTypeRef,
     ) -> Option<ResolvedLocalTypeData<'a, C>> {
         match type_ref {
             SchemaLocalTypeRef::WellKnown(index) => {
-                resolve_well_known_type_data::<W>(index).map(|local_type_data| {
+                resolve_well_known_type_data::<C::WellKnownTypes>(index).map(|local_type_data| {
                     ResolvedLocalTypeData {
                         schema: Cow::Owned(local_type_data.schema),
                         naming: Cow::Owned(local_type_data.naming),

@@ -90,3 +90,46 @@ impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for NoCustomValue {
         panic!("No custom value")
     }
 }
+
+#[cfg(feature = "schema")]
+pub use schema::*;
+
+#[cfg(feature = "schema")]
+mod schema {
+    use super::*;
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum NoCustomTypeSchema {}
+
+    impl CustomTypeSchema for NoCustomTypeSchema {
+        type CustomTypeId = NoCustomTypeId;
+    }
+
+    pub enum NoCustomWellKnownTypes {}
+
+    impl CustomWellKnownType for NoCustomWellKnownTypes {
+        type CustomTypeSchema = NoCustomTypeSchema;
+
+        fn from_well_known_index(
+            _well_known_index: u8,
+        ) -> Option<LocalTypeData<Self::CustomTypeSchema, SchemaLocalTypeRef>> {
+            None
+        }
+    }
+
+    impl CompleteCustomTypeSchema for NoCustomTypeSchema {
+        type WellKnownTypes = NoCustomWellKnownTypes;
+    }
+
+    impl LinearizableCustomTypeSchema for NoCustomTypeSchema {
+        type Linearized = NoCustomTypeSchema;
+
+        fn linearize(self, _schemas: &indexmap::IndexSet<ComplexTypeHash>) -> Self::Linearized {
+            self
+        }
+    }
+
+    pub type BasicTypeSchema<L> = TypeSchema<NoCustomTypeId, NoCustomTypeSchema, L>;
+    pub type BasicLinearTypeSchema = BasicTypeSchema<SchemaLocalTypeRef>;
+    pub type BasicFullTypeSchema = FullTypeSchema<NoCustomTypeSchema>;
+}
