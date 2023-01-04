@@ -42,6 +42,10 @@ impl<L: TypeLink> CustomTypeSchema for ScryptoCustomTypeSchema<L> {
     type CustomTypeId = ScryptoCustomTypeId;
 }
 
+impl CompleteCustomTypeSchema for ScryptoCustomTypeSchema<SchemaLocalTypeRef> {
+    type WellKnownTypes = ScryptoCustomWellKnownType;
+}
+
 impl LinearizableCustomTypeSchema for ScryptoCustomTypeSchema<GlobalTypeRef> {
     type Linearized = ScryptoCustomTypeSchema<SchemaLocalTypeRef>;
 
