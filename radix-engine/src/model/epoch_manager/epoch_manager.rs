@@ -471,6 +471,10 @@ impl EpochManager {
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unstake)),
             rule!(require(NonFungibleAddress::from_public_key(&key))),
         );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::ClaimXrd)),
+            rule!(allow_all),
+        );
 
         let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         if let Some(bucket) = bucket {

@@ -8,7 +8,7 @@ use radix_engine::engine::{KernelError, ModuleError, ScryptoInterpreter};
 use radix_engine::ledger::*;
 use radix_engine::model::{
     export_abi, export_abi_by_component, extract_abi, GlobalAddressSubstate, MetadataSubstate,
-    ValidatorSetSubstate,
+    ValidatorSetSubstate, ValidatorSubstate,
 };
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
@@ -391,6 +391,22 @@ impl TestRunner {
             .unwrap();
 
         substate.node_deref()
+    }
+
+    pub fn get_validator_info(&mut self, system_address: SystemAddress) -> ValidatorSubstate {
+        let node_id = self.deref_system_address(system_address);
+        let substate_id = SubstateId(
+            node_id,
+            SubstateOffset::Validator(ValidatorOffset::Validator),
+        );
+        let substate: ValidatorSubstate = self
+            .substate_store()
+            .get_substate(&substate_id)
+            .unwrap()
+            .substate
+            .to_runtime()
+            .into();
+        substate
     }
 
     pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> SystemAddress {

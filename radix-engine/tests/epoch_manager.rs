@@ -1,6 +1,6 @@
-use radix_engine::engine::{ModuleError, RuntimeError};
+use radix_engine::engine::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
-use radix_engine::model::Validator;
+use radix_engine::model::{Validator, ValidatorError};
 use radix_engine::types::*;
 use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
@@ -368,6 +368,103 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
     assert!(!next_epoch.0.contains_key(&validator_address));
+}
+
+#[test]
+fn cannot_claim_unstake_immediately() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let mut validator_set = BTreeMap::new();
+    validator_set.insert(pub_key, Decimal::from(10));
+    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
+    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let (_, _, account_address) = test_runner.new_account(true);
+    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .unstake_validator(validator_address, Decimal::one())
+        .take_from_worktop(validator_substate.unstake_nft_address, |builder, bucket| {
+            builder.claim_xrd(validator_address, bucket)
+        })
+        .call_method(
+            account_address,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&pub_key)],
+    );
+
+    receipt.expect_specific_failure(|e| {
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::ValidatorError(
+                ValidatorError::EpochUnlockHasNotOccurredYet
+            ))
+        )
+    });
+}
+
+#[test]
+fn can_claim_unstake_after_epochs() {
+    // Arrange
+    let initial_epoch = 5u64;
+    let rounds_per_epoch = 2u64;
+    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let mut validator_set = BTreeMap::new();
+    validator_set.insert(pub_key, Decimal::from(10));
+    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
+    let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let (_, _, account_address) = test_runner.new_account(true);
+    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .unstake_validator(validator_address, Decimal::one())
+        .call_method(
+            account_address,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&pub_key)],
+    );
+    receipt.expect_commit_success();
+    test_runner.set_current_epoch(initial_epoch + 2);
+
+    // Act
+    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .withdraw_from_account(account_address, validator_substate.unstake_nft_address)
+        .take_from_worktop(validator_substate.unstake_nft_address, |builder, bucket| {
+            builder.claim_xrd(validator_address, bucket)
+        })
+        .call_method(
+            account_address,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&pub_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
 }
 
 #[test]

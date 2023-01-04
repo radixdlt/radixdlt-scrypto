@@ -686,6 +686,16 @@ impl Into<EpochManagerSubstate> for RuntimeSubstate {
     }
 }
 
+impl Into<ValidatorSubstate> for RuntimeSubstate {
+    fn into(self) -> ValidatorSubstate {
+        if let RuntimeSubstate::Validator(validator) = self {
+            validator
+        } else {
+            panic!("Not a validator");
+        }
+    }
+}
+
 impl Into<GlobalAddressSubstate> for RuntimeSubstate {
     fn into(self) -> GlobalAddressSubstate {
         if let RuntimeSubstate::Global(substate) = self {

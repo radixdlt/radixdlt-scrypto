@@ -324,6 +324,9 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorClaimXrdInvocation {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        call_frame_update
+            .nodes_to_move
+            .push(RENodeId::Bucket(self.bucket.0));
 
         let actor = ResolvedActor::method(
             NativeFn::Validator(ValidatorFn::ClaimXrd),
@@ -374,7 +377,7 @@ impl Executor for ValidatorClaimXrdExecutable {
 
         for id in bucket.sys_non_fungible_ids(api)? {
             let data: UnstakeData = nft_resman.get_non_fungible_data(id, api)?;
-            if data.epoch_unlocked < current_epoch {
+            if current_epoch < data.epoch_unlocked {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ValidatorError(ValidatorError::EpochUnlockHasNotOccurredYet),
                 ));
