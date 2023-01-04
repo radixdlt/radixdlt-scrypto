@@ -205,6 +205,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                     );
 
                     fn get_local_type_data() -> Option<::sbor::LocalTypeData<C, ::sbor::GlobalTypeRef>> {
+                        use ::sbor::rust::borrow::ToOwned;
                         Some(::sbor::LocalTypeData::named_enum(
                             stringify!(#ident),
                             ::sbor::rust::collections::btree_map::btreemap![
@@ -352,6 +353,7 @@ mod tests {
                     );
 
                     fn get_local_type_data() -> Option<::sbor::LocalTypeData <C, ::sbor::GlobalTypeRef>> {
+                        use ::sbor::rust::borrow::ToOwned;
                         Some(::sbor::LocalTypeData::named_enum(
                             stringify!(Test),
                             ::sbor::rust::collections::btree_map::btreemap![
