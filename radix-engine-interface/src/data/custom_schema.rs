@@ -15,17 +15,17 @@ pub enum ScryptoCustomTypeSchema<L: TypeLink> {
     ResourceAddress,
     SystemAddress,
 
-    // RE nodes types
+    // Other Engine types
+    Own,
+    NonFungibleAddress,
     Component,
     KeyValueStore { key_type: L, value_type: L },
+
+    // Manifest types
+    Blob,
     Bucket,
     Proof,
-    Vault,
-
-    // Other interpreted types
     Expression,
-    Blob,
-    NonFungibleAddress,
 
     // Uninterpreted
     Hash,
@@ -65,7 +65,7 @@ impl LinearizableCustomTypeSchema for ScryptoCustomTypeSchema<GlobalTypeRef> {
             },
             Self::Bucket => ScryptoCustomTypeSchema::Bucket,
             Self::Proof => ScryptoCustomTypeSchema::Proof,
-            Self::Vault => ScryptoCustomTypeSchema::Vault,
+            Self::Own => ScryptoCustomTypeSchema::Own,
             Self::Expression => ScryptoCustomTypeSchema::Expression,
             Self::Blob => ScryptoCustomTypeSchema::Blob,
             Self::NonFungibleAddress => ScryptoCustomTypeSchema::NonFungibleAddress,
@@ -91,14 +91,15 @@ mod well_known_scrypto_schemas {
     pub const RESOURCE_ADDRESS_INDEX: u8 = TYPE_RESOURCE_ADDRESS;
     pub const SYSTEM_ADDRESS_INDEX: u8 = TYPE_SYSTEM_ADDRESS;
 
+    pub const OWN_INDEX: u8 = TYPE_OWN;
+    pub const NON_FUNGIBLE_ADDRESS_INDEX: u8 = TYPE_NON_FUNGIBLE_ADDRESS;
     pub const COMPONENT_INDEX: u8 = TYPE_COMPONENT;
+    // We skip KeyValueStore because it has generic parameters
+
+    pub const BLOB_INDEX: u8 = TYPE_BLOB;
     pub const BUCKET_INDEX: u8 = TYPE_BUCKET;
     pub const PROOF_INDEX: u8 = TYPE_PROOF;
-    pub const VAULT_INDEX: u8 = TYPE_VAULT;
-
     pub const EXPRESSION_INDEX: u8 = TYPE_EXPRESSION;
-    pub const BLOB_INDEX: u8 = TYPE_BLOB;
-    pub const NON_FUNGIBLE_ADDRESS_INDEX: u8 = TYPE_NON_FUNGIBLE_ADDRESS;
 
     pub const HASH_INDEX: u8 = TYPE_HASH;
     pub const ECDSA_SECP256K1_PUBLIC_KEY_INDEX: u8 = TYPE_ECDSA_SECP256K1_PUBLIC_KEY;
@@ -127,17 +128,17 @@ impl CustomWellKnownType for ScryptoCustomWellKnownType {
             RESOURCE_ADDRESS_INDEX => ("ResourceAddress", ScryptoCustomTypeSchema::ResourceAddress),
             SYSTEM_ADDRESS_INDEX => ("SystemAddress", ScryptoCustomTypeSchema::SystemAddress),
 
-            COMPONENT_INDEX => ("Component", ScryptoCustomTypeSchema::Component),
-            BUCKET_INDEX => ("Bucket", ScryptoCustomTypeSchema::Bucket),
-            PROOF_INDEX => ("Proof", ScryptoCustomTypeSchema::Proof),
-            VAULT_INDEX => ("Vault", ScryptoCustomTypeSchema::Vault),
-
-            EXPRESSION_INDEX => ("Expression", ScryptoCustomTypeSchema::Expression),
-            BLOB_INDEX => ("Blob", ScryptoCustomTypeSchema::Blob),
+            OWN_INDEX => ("Own", ScryptoCustomTypeSchema::Own),
             NON_FUNGIBLE_ADDRESS_INDEX => (
                 "NonFungibleAddress",
                 ScryptoCustomTypeSchema::NonFungibleAddress,
             ),
+            COMPONENT_INDEX => ("Component", ScryptoCustomTypeSchema::Component),
+
+            BLOB_INDEX => ("Blob", ScryptoCustomTypeSchema::Blob),
+            BUCKET_INDEX => ("Bucket", ScryptoCustomTypeSchema::Bucket),
+            PROOF_INDEX => ("Proof", ScryptoCustomTypeSchema::Proof),
+            EXPRESSION_INDEX => ("Expression", ScryptoCustomTypeSchema::Expression),
 
             HASH_INDEX => ("Hash", ScryptoCustomTypeSchema::Hash),
             ECDSA_SECP256K1_PUBLIC_KEY_INDEX => (
