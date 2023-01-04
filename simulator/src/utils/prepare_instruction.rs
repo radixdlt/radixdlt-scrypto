@@ -10,7 +10,7 @@ use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
 
-use crate::ledger::{lookup_id_type, LedgerLookupError};
+use crate::ledger::{lookup_non_fungible_id_type, LedgerLookupError};
 use crate::resim::SimulatorNonFungibleAddress;
 
 // =======
@@ -443,7 +443,7 @@ fn parse_resource_specifier(
         let resource_address = bech32_decoder
             .validate_and_decode_resource_address(resource_address_string)
             .map_err(ParseResourceSpecifierError::InvalidResourceAddress)?;
-        let non_fungible_id_type = lookup_id_type(&resource_address)
+        let non_fungible_id_type = lookup_non_fungible_id_type(&resource_address)
             .map_err(ParseResourceSpecifierError::LedgerLookupError)?;
 
         // Parsing the non-fungible ids with the available id type

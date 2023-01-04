@@ -10,7 +10,7 @@ use radix_engine_stores::rocks_db::RadixEngineDB;
 
 use crate::resim::get_data_dir;
 
-pub fn lookup_id_type(
+pub fn lookup_non_fungible_id_type(
     resource_address: &ResourceAddress,
 ) -> Result<NonFungibleIdType, LedgerLookupError> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
@@ -75,7 +75,7 @@ pub enum LedgerLookupError {
 mod tests {
     use radix_engine::types::{NonFungibleIdType, ECDSA_SECP256K1_TOKEN};
 
-    use super::lookup_id_type;
+    use super::lookup_non_fungible_id_type;
 
     #[test]
     pub fn non_fungible_id_type_ledger_lookup_matches_expected() {
@@ -83,7 +83,7 @@ mod tests {
         let resource_address = ECDSA_SECP256K1_TOKEN;
 
         // Act
-        let non_fungible_id_type = lookup_id_type(&resource_address).unwrap();
+        let non_fungible_id_type = lookup_non_fungible_id_type(&resource_address).unwrap();
 
         // Assert
         assert_eq!(non_fungible_id_type, NonFungibleIdType::Bytes)
