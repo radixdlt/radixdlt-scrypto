@@ -39,6 +39,7 @@ pub fn create_genesis(
     validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
+    num_unstake_epochs: u64,
 ) -> SystemTransaction {
     let mocked_hash = hash([0u8; 1]);
     let mut blobs = Vec::new();
@@ -202,6 +203,7 @@ pub fn create_genesis(
                 validator_set: validators,
                 initial_epoch,
                 rounds_per_epoch,
+                num_unstake_epochs,
             }),
         )));
     }
@@ -281,6 +283,7 @@ where
         BTreeMap::new(),
         1u64,
         1u64,
+        1u64,
     )
 }
 
@@ -290,6 +293,7 @@ pub fn bootstrap_with_validator_set<S, W>(
     validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
+    num_unstake_epochs: u64,
 ) -> Option<TransactionReceipt>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
@@ -302,7 +306,12 @@ where
         ))
         .is_none()
     {
-        let genesis_transaction = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
+        let genesis_transaction = create_genesis(
+            validator_set,
+            initial_epoch,
+            rounds_per_epoch,
+            num_unstake_epochs,
+        );
 
         let transaction_receipt = execute_transaction(
             substate_store,
@@ -334,7 +343,7 @@ mod tests {
         let substate_store = TypedInMemorySubstateStore::new();
         let mut initial_validator_set = BTreeMap::new();
         initial_validator_set.insert(EcdsaSecp256k1PublicKey([0; 33]), Decimal::one());
-        let genesis_transaction = create_genesis(initial_validator_set.clone(), 1u64, 1u64);
+        let genesis_transaction = create_genesis(initial_validator_set.clone(), 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,

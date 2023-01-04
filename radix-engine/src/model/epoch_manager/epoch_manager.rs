@@ -23,7 +23,10 @@ pub struct EpochManagerSubstate {
     pub address: SystemAddress, // TODO: Does it make sense for this to be stored here?
     pub epoch: u64,
     pub round: u64,
+
+    // TODO: Move configuration to an immutable substate
     pub rounds_per_epoch: u64,
+    pub num_unstake_epochs: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
@@ -86,6 +89,7 @@ impl Executor for EpochManagerCreateInvocation {
             epoch: self.initial_epoch,
             round: 0,
             rounds_per_epoch: self.rounds_per_epoch,
+            num_unstake_epochs: self.num_unstake_epochs,
         };
 
         let mut validator_set = BTreeMap::new();

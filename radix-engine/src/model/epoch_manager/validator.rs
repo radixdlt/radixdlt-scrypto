@@ -265,10 +265,11 @@ impl Executor for ValidatorUnstakeExecutable {
                 LockFlags::read_only(),
             )?;
             let manager_substate = api.get_ref(manager_handle)?;
-            let current_epoch = manager_substate.epoch_manager().epoch;
+            let epoch_manager = manager_substate.epoch_manager();
+            let current_epoch = epoch_manager.epoch;
+            let epoch_unlocked = current_epoch + epoch_manager.num_unstake_epochs;
             api.drop_lock(manager_handle)?;
 
-            let epoch_unlocked = current_epoch + 2;
             let data = UnstakeData {
                 epoch_unlocked,
                 amount: self.1,

@@ -15,6 +15,7 @@ pub struct EpochManagerCreateInvocation {
     pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Bucket>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
+    pub num_unstake_epochs: u64,
 }
 
 impl Clone for EpochManagerCreateInvocation {
@@ -28,6 +29,7 @@ impl Clone for EpochManagerCreateInvocation {
             validator_set,
             initial_epoch: self.initial_epoch,
             rounds_per_epoch: self.rounds_per_epoch,
+            num_unstake_epochs: self.num_unstake_epochs,
         }
     }
 }
