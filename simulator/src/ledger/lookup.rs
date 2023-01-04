@@ -2,7 +2,7 @@ use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::ReadableSubstateStore;
 use radix_engine::model::GlobalAddressSubstate;
 use radix_engine::types::{
-    GlobalAddress, GlobalOffset, NonFungibleIdType, RENodeId, ResourceAddress, ResourceManagerId,
+    GlobalAddress, GlobalOffset, NonFungibleIdType, RENodeId, ResourceAddress,
     ResourceManagerOffset, ResourceType, SubstateId, SubstateOffset,
 };
 use radix_engine::wasm::DefaultWasmEngine;
@@ -20,36 +20,39 @@ pub fn lookup_non_fungible_id_type(
     );
 
     // Reading the global address substate to get the ResourceManagerId from there
-    let global_address = GlobalAddress::Resource(*resource_address);
-    let node_id = RENodeId::Global(global_address);
-    let offset = SubstateOffset::Global(GlobalOffset::Global);
-    let substate_id = SubstateId(node_id, offset);
-    let global_address_substate = substate_store.get_substate(&substate_id).map_or(
-        Err(LedgerLookupError::GlobalAddressNotFound(global_address)),
-        |value| Ok(value.substate.global().clone()),
-    )?;
+    let resource_manager_id = {
+        let global_address = GlobalAddress::Resource(*resource_address);
+        let node_id = RENodeId::Global(global_address);
+        let offset = SubstateOffset::Global(GlobalOffset::Global);
+        let substate_id = SubstateId(node_id, offset);
+        let global_address_substate = substate_store.get_substate(&substate_id).map_or(
+            Err(LedgerLookupError::GlobalAddressNotFound(global_address)),
+            |value| Ok(value.substate.global().clone()),
+        )?;
 
-    let resource_manager_id = match global_address_substate {
-        GlobalAddressSubstate::Resource(id) => id,
-        _ => panic!(
-            "A global resource address can not point to anything other than a resource manager"
-        ),
+        match global_address_substate {
+            GlobalAddressSubstate::Resource(id) => id,
+            _ => panic!(
+                "A global resource address can not point to anything other than a resource manager"
+            ),
+        }
     };
 
-    // Reading the resource manager substate from the substate store
-    let node_id = RENodeId::ResourceManager(resource_manager_id);
-    let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
-    let substate_id = SubstateId(node_id, offset);
-    let resource_manager_substate = substate_store.get_substate(&substate_id).map_or(
-        Err(LedgerLookupError::ResourceManagerNotFound(
-            global_address,
-            resource_manager_id,
-        )),
-        |value| Ok(value.substate.resource_manager().clone()),
-    )?;
+    // Reading the resource manager substate from the substate store and getting the resource type
+    let resource_type = {
+        let node_id = RENodeId::ResourceManager(resource_manager_id);
+        let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
+        let substate_id = SubstateId(node_id, offset);
+        substate_store
+            .get_substate(&substate_id)
+            .expect("Impossible case! Global address is valid but resource manager id is not valid")
+            .substate
+            .resource_manager()
+            .resource_type
+    };
 
     // Getting the non-fungible id type for this resource if it is a non-fungible resource
-    match resource_manager_substate.resource_type {
+    match resource_type {
         ResourceType::NonFungible { id_type } => Ok(id_type),
         _ => Err(LedgerLookupError::ResourceIsNotNonFungible),
     }
@@ -62,7 +65,6 @@ pub fn lookup_non_fungible_id_type(
 #[derive(Debug, Clone)]
 pub enum LedgerLookupError {
     GlobalAddressNotFound(GlobalAddress),
-    ResourceManagerNotFound(GlobalAddress, ResourceManagerId),
     ResourceIsNotNonFungible,
     FailedToGetLocalSubstateStorePath,
 }
