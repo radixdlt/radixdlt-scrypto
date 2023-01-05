@@ -141,7 +141,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             // Find all vaults owned by the component, assuming a tree structure.
             let mut vaults_found: HashSet<VaultId> = state_data
-                .ownerships
+                .owned_nodes
                 .iter()
                 .cloned()
                 .filter_map(|o| match o {
@@ -198,7 +198,7 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 value.display(value_display_context)
             );
             owned_kv_stores.extend(value.kv_store_ids);
-            for ownership in value.ownerships {
+            for ownership in value.owned_nodes {
                 match ownership {
                     Own::Vault(vault_id) => {
                         owned_vaults.push(vault_id);
