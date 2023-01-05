@@ -1,6 +1,5 @@
 use radix_engine_interface::data::types::ManifestBucket;
 use radix_engine_interface::data::types::ManifestProof;
-use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::collections::*;
 
 use crate::errors::*;
@@ -127,12 +126,13 @@ impl ManifestIdValidator {
 
     pub fn move_resources(
         &mut self,
-        args: &IndexedScryptoValue,
+        buckets: &Vec<ManifestBucket>,
+        proofs: &Vec<ManifestProof>,
     ) -> Result<(), ManifestIdValidationError> {
-        for (bucket_id, _) in &args.buckets {
+        for bucket_id in buckets {
             self.drop_bucket(bucket_id)?;
         }
-        for (proof_id, _) in &args.proofs {
+        for proof_id in proofs {
             self.drop_proof(proof_id)?;
         }
         Ok(())

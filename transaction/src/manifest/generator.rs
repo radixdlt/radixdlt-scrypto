@@ -343,8 +343,9 @@ pub fn generate_instruction(
 
             let args_encoded =
                 scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
+            let args_indexed = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&IndexedScryptoValue::from_value(args))
+                .move_resources(&args_indexed.buckets(), &args_indexed.proofs())
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallFunction {
@@ -365,8 +366,9 @@ pub fn generate_instruction(
 
             let args_encoded =
                 scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
+            let args_indexed = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&IndexedScryptoValue::from_value(args))
+                .move_resources(&args_indexed.buckets(), &args_indexed.proofs())
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallMethod {

@@ -383,15 +383,15 @@ impl NotarizedTransactionValidator {
     }
 
     pub fn validate_call_data(
-        call_data: &[u8],
+        args: &[u8],
         id_validator: &mut ManifestIdValidator,
     ) -> Result<(), CallDataValidationError> {
-        let value = IndexedScryptoValue::from_slice(call_data)
-            .map_err(CallDataValidationError::DecodeError)?;
+        let args_indexed =
+            IndexedScryptoValue::from_slice(args).map_err(CallDataValidationError::DecodeError)?;
         id_validator
-            .move_resources(&value)
+            .move_resources(&args_indexed.buckets(), &args_indexed.proofs())
             .map_err(CallDataValidationError::IdValidationError)?;
-        if value.owned_node_count() != 0 {
+        if args_indexed.owned_node_count() != 0 {
             return Err(CallDataValidationError::OwnNotAllowed);
         }
         Ok(())

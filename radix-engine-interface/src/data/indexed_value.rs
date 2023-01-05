@@ -32,21 +32,21 @@ pub struct IndexedScryptoValue {
     pub value: ScryptoValue,
 
     // Global addresses
-    pub component_addresses: HashSet<ComponentAddress>,
-    pub resource_addresses: HashSet<ResourceAddress>,
-    pub package_addresses: HashSet<PackageAddress>,
-    pub system_addresses: HashSet<SystemAddress>,
+    component_addresses: HashSet<ComponentAddress>,
+    resource_addresses: HashSet<ResourceAddress>,
+    package_addresses: HashSet<PackageAddress>,
+    system_addresses: HashSet<SystemAddress>,
 
     // RE interpreted
-    pub owned_nodes: Vec<(Own, SborPath)>,
-    pub blobs: Vec<(Blob, SborPath)>,
+    owned_nodes: Vec<(Own, SborPath)>,
+    blobs: Vec<(Blob, SborPath)>,
 
     // TX interpreted
-    pub buckets: Vec<(ManifestBucket, SborPath)>,
-    pub proofs: Vec<(ManifestProof, SborPath)>,
+    buckets: Vec<(ManifestBucket, SborPath)>,
+    proofs: Vec<(ManifestProof, SborPath)>,
     pub expressions: Vec<(ManifestExpression, SborPath)>,
-    pub bucket_arrays: Vec<SborPath>,
-    pub proof_arrays: Vec<SborPath>,
+    bucket_arrays: Vec<SborPath>,
+    proof_arrays: Vec<SborPath>,
 }
 
 impl IndexedScryptoValue {
@@ -94,6 +94,14 @@ impl IndexedScryptoValue {
     pub fn as_typed<T: ScryptoDecode>(&self) -> Result<T, DecodeError> {
         let bytes = self.as_vec();
         scrypto_decode(&bytes)
+    }
+
+    pub fn buckets(&self) -> Vec<ManifestBucket> {
+        self.buckets.iter().cloned().map(|x| x.0).collect()
+    }
+
+    pub fn proofs(&self) -> Vec<ManifestProof> {
+        self.proofs.iter().cloned().map(|x| x.0).collect()
     }
 
     pub fn owned_node_ids(&self) -> Result<HashSet<RENodeId>, ReadOwnedNodesError> {

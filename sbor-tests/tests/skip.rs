@@ -83,19 +83,19 @@ fn test_enum_with_skip() {
     #[rustfmt::skip]
     assert_eq!(
         vec![
-            17, // enum type
+            34, // enum type
             1,  // string size
             65, // "A"
             1,  // number of fields
             9, 2, 0, 0, 0, // field value
 
-            17, // enum type
+            34, // enum type
             1,  // string size
             66, // "B"
             1,  // number of fields
             9, 4, 0, 0, 0, // field value
             
-            17, // enum type
+            34, // enum type
             1,  // string size
             67, // "C"
             0,  // number of fields
