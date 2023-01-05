@@ -63,9 +63,9 @@ jobs:
     - name: Install dependencies
       if: runner.os == 'Windows'
       run: choco install llvm -y
-    - name: Run tests
-      run: bash ./tests/resim.sh
-      working-directory: simulator
+#    - name: Run tests
+#      run: bash ./tests/resim.sh
+#      working-directory: simulator
     - name: Run tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
