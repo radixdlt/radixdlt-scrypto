@@ -7,8 +7,6 @@ pub const TYPE_SYSTEM_ADDRESS: u8 = 0x83;
 
 pub const TYPE_OWN: u8 = 0x94;
 pub const TYPE_NON_FUNGIBLE_ADDRESS: u8 = 0xa2;
-pub const TYPE_COMPONENT: u8 = 0x90;
-pub const TYPE_KEY_VALUE_STORE: u8 = 0x91;
 pub const TYPE_BLOB: u8 = 0xa1;
 
 pub const TYPE_BUCKET: u8 = 0x92;
@@ -39,15 +37,13 @@ pub enum ScryptoCustomTypeId {
 
     // RE interpreted types
     Own,
-    Component,
-    KeyValueStore,
     NonFungibleAddress, // for resource address contained
     Blob,
 
-    // TX interpreted types
-    Bucket,     // super::types::ManifestBucket, also interpreted by engine at the moment
-    Proof,      // super::types::ManifestProof, also interpreted by engine at the moment
-    Expression, // super::types::Expression
+    // TX interpreted types (TODO: rename?)
+    Bucket,     // super::types::ManifestBucket
+    Proof,      // super::types::ManifestProof
+    Expression, // super::types::ManifestExpression
 
     // Uninterpreted
     Hash,
@@ -74,8 +70,6 @@ impl CustomTypeId for ScryptoCustomTypeId {
             Self::ResourceAddress => TYPE_RESOURCE_ADDRESS,
             Self::SystemAddress => TYPE_SYSTEM_ADDRESS,
             Self::Own => TYPE_OWN,
-            Self::Component => TYPE_COMPONENT,
-            Self::KeyValueStore => TYPE_KEY_VALUE_STORE,
             Self::Bucket => TYPE_BUCKET,
             Self::Proof => TYPE_PROOF,
             Self::Expression => TYPE_EXPRESSION,
@@ -99,8 +93,6 @@ impl CustomTypeId for ScryptoCustomTypeId {
             TYPE_RESOURCE_ADDRESS => Some(ScryptoCustomTypeId::ResourceAddress),
             TYPE_SYSTEM_ADDRESS => Some(ScryptoCustomTypeId::SystemAddress),
             TYPE_OWN => Some(ScryptoCustomTypeId::Own),
-            TYPE_COMPONENT => Some(ScryptoCustomTypeId::Component),
-            TYPE_KEY_VALUE_STORE => Some(ScryptoCustomTypeId::KeyValueStore),
             TYPE_BUCKET => Some(ScryptoCustomTypeId::Bucket),
             TYPE_PROOF => Some(ScryptoCustomTypeId::Proof),
             TYPE_EXPRESSION => Some(ScryptoCustomTypeId::Expression),

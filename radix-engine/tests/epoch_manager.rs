@@ -3,7 +3,6 @@ use radix_engine::ledger::create_genesis;
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::{Instruction, SystemTransaction};
@@ -15,7 +14,7 @@ fn get_epoch_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "EpochManagerTest", "get_epoch", args![])
         .build();
@@ -34,7 +33,7 @@ fn next_round_without_supervisor_auth_fails() {
 
     // Act
     let round = 9876u64;
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,

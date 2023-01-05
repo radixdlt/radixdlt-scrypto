@@ -2,7 +2,6 @@ use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::*;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -13,7 +12,7 @@ fn stored_bucket_in_committed_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -43,7 +42,7 @@ fn stored_bucket_in_owned_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/stored_values");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,

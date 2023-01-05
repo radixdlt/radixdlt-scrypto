@@ -9,19 +9,18 @@ use radix_engine::wasm::WasmEngine;
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
 
 fn self_transfer_txn(account: ComponentAddress, amount: Decimal) -> TransactionManifest {
-    ManifestBuilder::new(&NetworkDefinition::simulator())
+    ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .withdraw_from_account_by_amount(account, amount, RADIX_TOKEN)
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build()
 }
