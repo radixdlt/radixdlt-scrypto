@@ -15,7 +15,7 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, SystemTransaction};
-use transaction::validation::{IdAllocator, IdSpace};
+use transaction::validation::ManifestIdAllocator;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -36,9 +36,8 @@ pub struct GenesisReceipt {
 }
 
 pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTransaction {
-    let mocked_hash = hash([0u8; 1]);
     let mut blobs = Vec::new();
-    let mut id_allocator = IdAllocator::new(IdSpace::Transaction, mocked_hash);
+    let mut id_allocator = ManifestIdAllocator::new();
     let create_faucet_package = {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
@@ -135,7 +134,7 @@ pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTran
     };
 
     let create_xrd_faucet = {
-        let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
+        let bucket = id_allocator.new_bucket_id().unwrap();
         BasicInstruction::CallFunction {
             package_address: FAUCET_PACKAGE,
             blueprint_name: FAUCET_BLUEPRINT.to_string(),
@@ -274,9 +273,11 @@ mod tests {
             &substate_store,
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::debug(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
+        #[cfg(not(feature = "alloc"))]
+        println!("{:?}", transaction_receipt);
 
         let validator_set = transaction_receipt
             .result

@@ -1,4 +1,4 @@
-use radix_engine_interface::api::types::{BucketId, KeyValueStoreId, ProofId, VaultId};
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::ScryptoValueDecodeError;
 use sbor::*;
 
@@ -29,24 +29,23 @@ impl From<EncodeError> for SignatureValidationError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum IdAllocationError {
+pub enum ManifestIdAllocationError {
     OutOfID,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IdValidationError {
-    IdAllocationError(IdAllocationError),
-    BucketNotFound(BucketId),
-    ProofNotFound(ProofId),
-    BucketLocked(BucketId),
+pub enum ManifestIdValidationError {
+    IdAllocationError(ManifestIdAllocationError),
+    BucketNotFound(ManifestBucket),
+    ProofNotFound(ManifestProof),
+    BucketLocked(ManifestBucket),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallDataValidationError {
     InvalidScryptoValue(ScryptoValueDecodeError),
-    IdValidationError(IdValidationError),
-    VaultNotAllowed(VaultId),
-    KeyValueStoreNotAllowed(KeyValueStoreId),
+    IdValidationError(ManifestIdValidationError),
+    OwnNotAllowed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,7 +56,7 @@ pub enum TransactionValidationError {
     IntentHashRejected,
     HeaderValidationError(HeaderValidationError),
     SignatureValidationError(SignatureValidationError),
-    IdValidationError(IdValidationError),
+    IdValidationError(ManifestIdValidationError),
     CallDataValidationError(CallDataValidationError),
 }
 

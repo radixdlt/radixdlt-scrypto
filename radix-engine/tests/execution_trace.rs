@@ -98,7 +98,7 @@ fn test_trace_fee_payments() {
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .clear_auth_zone()
         .build();
@@ -153,7 +153,7 @@ fn test_instruction_traces() {
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                .create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                     builder.drop_proof(proof_id)
                 })
                 .return_to_worktop(bucket_id)
@@ -162,7 +162,7 @@ fn test_instruction_traces() {
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

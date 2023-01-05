@@ -144,13 +144,13 @@ fn recursion_bomb() {
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                args!(Bucket(bucket_id)),
+                args!(bucket_id),
             )
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -178,13 +178,13 @@ fn recursion_bomb_to_failure() {
                 package_address,
                 "LocalRecursionBomb",
                 "recursion_bomb",
-                args!(Bucket(bucket_id)),
+                args!(bucket_id),
             )
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -220,13 +220,13 @@ fn recursion_bomb_2() {
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                args!(Bucket(bucket_id)),
+                args!(bucket_id),
             )
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -254,13 +254,13 @@ fn recursion_bomb_2_to_failure() {
                 package_address,
                 "LocalRecursionBomb2",
                 "recursion_bomb",
-                args!(Bucket(bucket_id)),
+                args!(bucket_id),
             )
         })
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(

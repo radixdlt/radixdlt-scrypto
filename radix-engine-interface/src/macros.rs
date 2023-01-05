@@ -110,52 +110,6 @@ macro_rules! scrypto_type {
             }
         }
     };
-
-    // dynamic size
-    ($t:ty, $type_id:expr, $schema_type: expr) => {
-        impl sbor::TypeId<crate::data::ScryptoCustomTypeId> for $t {
-            #[inline]
-            fn type_id() -> sbor::SborTypeId<crate::data::ScryptoCustomTypeId> {
-                sbor::SborTypeId::Custom($type_id)
-            }
-        }
-
-        impl<E: sbor::Encoder<crate::data::ScryptoCustomTypeId>>
-            sbor::Encode<crate::data::ScryptoCustomTypeId, E> for $t
-        {
-            #[inline]
-            fn encode_type_id(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
-                encoder.write_type_id(Self::type_id())
-            }
-
-            #[inline]
-            fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
-                let bytes = self.to_vec();
-                encoder.write_size(bytes.len())?;
-                encoder.write_slice(&bytes)
-            }
-        }
-
-        impl<D: sbor::Decoder<crate::data::ScryptoCustomTypeId>>
-            sbor::Decode<crate::data::ScryptoCustomTypeId, D> for $t
-        {
-            fn decode_body_with_type_id(
-                decoder: &mut D,
-                type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
-            ) -> Result<Self, sbor::DecodeError> {
-                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
-                let len = decoder.read_size()?;
-                let slice = decoder.read_slice(len)?;
-                Self::try_from(slice).map_err(|_| sbor::DecodeError::InvalidCustomValue)
-            }
-        }
-
-        impl scrypto_abi::Describe for $t {
-            fn describe() -> scrypto_abi::Type {
-                $schema_type
-            }
-        }
-    };
 }
 
 // TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.

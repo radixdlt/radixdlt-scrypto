@@ -140,7 +140,15 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             );
 
             // Find all vaults owned by the component, assuming a tree structure.
-            let mut vaults_found: HashSet<VaultId> = state_data.vault_ids.iter().cloned().collect();
+            let mut vaults_found: HashSet<VaultId> = state_data
+                .owned_nodes
+                .iter()
+                .cloned()
+                .filter_map(|o| match o {
+                    Own::Vault(vault_id) => Some(vault_id),
+                    _ => None,
+                })
+                .collect();
             let mut queue: VecDeque<KeyValueStoreId> =
                 state_data.kv_store_ids.iter().cloned().collect();
             while !queue.is_empty() {
@@ -165,8 +173,8 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     output: &mut O,
 ) -> Result<(Vec<KeyValueStoreId>, Vec<VaultId>), DisplayError> {
     let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-    let mut referenced_maps = Vec::new();
-    let mut referenced_vaults = Vec::new();
+    let mut owned_kv_stores = Vec::new();
+    let mut owned_vaults = Vec::new();
     let map = substate_store.get_kv_store_entries(kv_store_id);
     writeln!(
         output,
@@ -189,11 +197,18 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 key.display(value_display_context),
                 value.display(value_display_context)
             );
-            referenced_maps.extend(value.kv_store_ids);
-            referenced_vaults.extend(value.vault_ids);
+            owned_kv_stores.extend(value.kv_store_ids);
+            for ownership in value.owned_nodes {
+                match ownership {
+                    Own::Vault(vault_id) => {
+                        owned_vaults.push(vault_id);
+                    }
+                    _ => {}
+                }
+            }
         }
     }
-    Ok((referenced_maps, referenced_vaults))
+    Ok((owned_kv_stores, owned_vaults))
 }
 
 fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(

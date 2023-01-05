@@ -298,8 +298,8 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_method(account_address, "deposit", args!(Bucket(bucket_id)))
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+                builder.call_method(account_address, "deposit", args!(bucket))
             })
             .build();
 
@@ -311,8 +311,8 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.new_account_with_resource(withdraw_auth, bucket_id)
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+                builder.new_account_with_resource(withdraw_auth, bucket)
             })
             .build();
 
@@ -582,7 +582,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         self.execute_manifest(
@@ -600,7 +600,11 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
-            .call_method(to, "deposit_batch", args!(Expression::entire_worktop()))
+            .call_method(
+                to,
+                "deposit_batch",
+                args!(ManifestExpression::EntireWorktop),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -745,7 +749,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -771,7 +775,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -798,7 +802,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);

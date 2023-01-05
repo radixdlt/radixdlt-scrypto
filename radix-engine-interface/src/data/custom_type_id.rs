@@ -39,15 +39,15 @@ pub enum ScryptoCustomTypeId {
 
     // RE interpreted types
     Own,
-    Component,
-    KeyValueStore,
+    Component,          // TODO: merge into Own
+    KeyValueStore,      // TODO: merge into Own
     NonFungibleAddress, // for resource address contained
     Blob,
 
-    // TX interpreted types
-    Bucket,     // super::types::ManifestBucket, also interpreted by engine at the moment
-    Proof,      // super::types::ManifestProof, also interpreted by engine at the moment
-    Expression, // super::types::Expression
+    // TX interpreted types (TODO: rename?)
+    Bucket,     // super::types::ManifestBucket
+    Proof,      // super::types::ManifestProof
+    Expression, // super::types::ManifestExpression
 
     // Uninterpreted
     Hash,

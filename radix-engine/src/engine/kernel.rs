@@ -13,7 +13,6 @@ use radix_engine_interface::rule;
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
 use transaction::model::AuthZoneParams;
-use transaction::validation::*;
 
 use crate::engine::node_move_module::NodeMoveModule;
 use crate::engine::system_api::LockInfo;
@@ -627,8 +626,8 @@ where
                 &mut self.track,
                 SysCallInput::Invoke {
                     invocation: &invocation,
-                    input_size: 0,  // TODO: Fix this
-                    value_count: 0, // TODO: Fix this
+                    input_size: 0,       // TODO: Fix this
+                    owned_node_count: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
                 },
             )

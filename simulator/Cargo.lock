@@ -93,6 +93,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bnum"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1476379af3b7c37c15d168c6afe72742de86f2f1cb82549bfc9ff5ffb9580d9"
+dependencies = [
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1137,8 +1147,10 @@ name = "radix-engine-interface"
 version = "0.8.0"
 dependencies = [
  "bech32",
+ "bnum",
  "hex",
  "num-bigint",
+ "num-integer",
  "num-traits",
  "paste",
  "radix-engine-derive",

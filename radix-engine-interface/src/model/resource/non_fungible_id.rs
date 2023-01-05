@@ -9,20 +9,20 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::data::*;
-use crate::scrypto_type;
 use crate::Describe;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NonFungibleId {
-    String(String),
     U32(u32),
     U64(u64),
-    Bytes(Vec<u8>),
     UUID(u128),
+    Bytes(Vec<u8>),
+    String(String),
 }
 
 /// Represents type of non-fungible id
@@ -209,54 +209,86 @@ impl fmt::Display for ParseNonFungibleIdError {
 // binary
 //========
 
-// Extract internal type id to optimize decoding process.
-fn validate_id(slice: &[u8]) -> Result<SborTypeId<ScryptoCustomTypeId>, DecodeError> {
-    let mut decoder = ScryptoDecoder::new(slice);
-    decoder.read_and_check_payload_prefix(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)?;
-    decoder.read_type_id()
+impl TypeId<ScryptoCustomTypeId> for NonFungibleId {
+    #[inline]
+    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+        SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId)
+    }
 }
 
-impl TryFrom<&[u8]> for NonFungibleId {
-    type Error = ParseNonFungibleIdError;
+impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for NonFungibleId {
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        let non_fungible_id = match validate_id(slice) {
-            Ok(type_id) => match type_id {
-                ScryptoSborTypeId::Array => NonFungibleId::Bytes(scrypto_decode::<Vec<u8>>(slice)?),
-                ScryptoSborTypeId::String => {
-                    NonFungibleId::String(scrypto_decode::<String>(slice)?)
-                }
-                ScryptoSborTypeId::U32 => NonFungibleId::U32(scrypto_decode::<u32>(slice)?),
-                ScryptoSborTypeId::U64 => NonFungibleId::U64(scrypto_decode::<u64>(slice)?),
-                ScryptoSborTypeId::U128 => NonFungibleId::UUID(scrypto_decode::<u128>(slice)?),
-                _ => return Err(ParseNonFungibleIdError::UnexpectedTypeId),
-            },
-            Err(err) => return Err(err.into()),
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        match self {
+            NonFungibleId::U32(v) => {
+                encoder.write_byte(0)?;
+                encoder.write_slice(&v.to_le_bytes())?;
+            }
+            NonFungibleId::U64(v) => {
+                encoder.write_byte(1)?;
+                encoder.write_slice(&v.to_le_bytes())?;
+            }
+            NonFungibleId::UUID(v) => {
+                encoder.write_byte(2)?;
+                encoder.write_slice(&v.to_le_bytes())?;
+            }
+            NonFungibleId::Bytes(v) => {
+                encoder.write_byte(3)?;
+                encoder.write_size(v.len())?;
+                encoder.write_slice(v.as_slice())?;
+            }
+            NonFungibleId::String(v) => {
+                encoder.write_byte(4)?;
+                encoder.write_size(v.len())?;
+                encoder.write_slice(v.as_bytes())?;
+            }
+        }
+        Ok(())
+    }
+}
+
+impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for NonFungibleId {
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        let non_fungible_id = match decoder.read_byte()? {
+            0 => Self::U32(u32::from_le_bytes(copy_u8_array(decoder.read_slice(4)?))),
+            1 => Self::U64(u64::from_le_bytes(copy_u8_array(decoder.read_slice(8)?))),
+            2 => Self::UUID(u128::from_le_bytes(copy_u8_array(decoder.read_slice(16)?))),
+            3 => {
+                let size = decoder.read_size()?;
+                Self::Bytes(decoder.read_slice(size)?.to_vec())
+            }
+            4 => {
+                let size = decoder.read_size()?;
+                Self::String(
+                    String::from_utf8(decoder.read_slice(size)?.to_vec())
+                        .map_err(|_| DecodeError::InvalidCustomValue)?,
+                )
+            }
+            _ => return Err(DecodeError::InvalidCustomValue),
         };
 
-        non_fungible_id.validate_contents()?;
+        non_fungible_id
+            .validate_contents()
+            .map_err(|_| DecodeError::InvalidCustomValue)?;
 
         Ok(non_fungible_id)
     }
 }
 
-impl NonFungibleId {
-    pub fn to_vec(&self) -> Vec<u8> {
-        match self {
-            NonFungibleId::Bytes(b) => scrypto_encode(&b).expect("Error encoding Byte array"),
-            NonFungibleId::String(s) => scrypto_encode(&s).expect("Error encoding String"),
-            NonFungibleId::U32(n) => scrypto_encode(&n).expect("Error encoding Number 32-bits"),
-            NonFungibleId::U64(n) => scrypto_encode(&n).expect("Error encoding Number 64-bits"),
-            NonFungibleId::UUID(u) => scrypto_encode(&u).expect("Error encoding UUID"),
-        }
+impl scrypto_abi::Describe for NonFungibleId {
+    fn describe() -> scrypto_abi::Type {
+        Type::NonFungibleId
     }
 }
-
-scrypto_type!(
-    NonFungibleId,
-    ScryptoCustomTypeId::NonFungibleId,
-    Type::NonFungibleId
-);
 
 //======
 // text
@@ -415,73 +447,6 @@ mod tests {
         assert_eq!(
             validation_result,
             Err(ParseNonFungibleIdError::InvalidCharacter(char))
-        );
-    }
-
-    #[test]
-    fn test_non_fungible_id_encode_decode() {
-        let n = NonFungibleId::U32(1);
-        let buf = n.to_vec();
-        let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
-        assert_eq!(n.id_type(), val.id_type());
-        assert!(matches!(val, NonFungibleId::U32(v) if v == 1));
-
-        let n = NonFungibleId::U64(u64::MAX);
-        let buf = n.to_vec();
-        let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
-        assert_eq!(n.id_type(), val.id_type());
-        assert!(matches!(val, NonFungibleId::U64(v) if v == u64::MAX));
-
-        let n = NonFungibleId::UUID(u128::MAX);
-        let buf = n.to_vec();
-        let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
-        assert_eq!(n.id_type(), val.id_type());
-        assert!(matches!(val, NonFungibleId::UUID(v) if v == u128::MAX));
-
-        const TEST_STR: &str = "test_string_0123";
-        let n = NonFungibleId::String(TEST_STR.to_string());
-        let buf = n.to_vec();
-        let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
-        assert_eq!(n.id_type(), val.id_type());
-        assert!(matches!(val, NonFungibleId::String(s) if s == TEST_STR));
-
-        let array: [u8; 5] = [1, 2, 3, 4, 5];
-        let n = NonFungibleId::Bytes(array.to_vec());
-        let buf = n.to_vec();
-        let val = NonFungibleId::try_from(buf.as_slice()).unwrap();
-        assert_eq!(n.id_type(), val.id_type());
-        assert!(matches!(val, NonFungibleId::Bytes(b) if b == array));
-    }
-
-    #[test]
-    fn test_non_fungible_id_bytes_rep() {
-        // internal buffer representation:
-        //   <sbor-v1 prefix: 5c><sbor type id><optional element id><optional size><bytes>
-        assert_eq!(
-            NonFungibleId::try_from(hex::decode("5c2007023575").unwrap().as_slice()).unwrap(),
-            NonFungibleId::Bytes(vec![53u8, 117u8]),
-        );
-        assert_eq!(
-            NonFungibleId::try_from(hex::decode("5c0905000000").unwrap().as_slice()).unwrap(),
-            NonFungibleId::U32(5)
-        );
-        assert_eq!(
-            NonFungibleId::try_from(hex::decode("5c0a0500000000000000").unwrap().as_slice())
-                .unwrap(),
-            NonFungibleId::U64(5)
-        );
-        assert_eq!(
-            NonFungibleId::try_from(
-                hex::decode("5c0b05000000000000000000000000000000")
-                    .unwrap()
-                    .as_slice()
-            )
-            .unwrap(),
-            NonFungibleId::UUID(5)
-        );
-        assert_eq!(
-            NonFungibleId::try_from(hex::decode("5c0c0474657374").unwrap().as_slice()).unwrap(),
-            NonFungibleId::String(String::from("test"))
         );
     }
 

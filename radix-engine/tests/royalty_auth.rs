@@ -63,7 +63,7 @@ fn set_up_package_and_component() -> (
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
@@ -147,7 +147,7 @@ fn test_only_package_owner_can_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
@@ -162,7 +162,7 @@ fn test_only_package_owner_can_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
@@ -221,7 +221,7 @@ fn test_only_component_owner_can_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],
@@ -236,7 +236,7 @@ fn test_only_component_owner_can_claim_royalty() {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build(),
         vec![NonFungibleAddress::from_public_key(&public_key)],

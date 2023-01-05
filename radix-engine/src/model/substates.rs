@@ -993,7 +993,10 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
-                (scrypto_value.global_references(), scrypto_value.node_ids())
+                (
+                    scrypto_value.global_references(),
+                    scrypto_value.owned_node_ids(),
+                )
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 let maybe_scrypto_value = substate
@@ -1001,7 +1004,10 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|raw| IndexedScryptoValue::from_slice(raw).unwrap());
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                    (
+                        scrypto_value.global_references(),
+                        scrypto_value.owned_node_ids(),
+                    )
                 } else {
                     (HashSet::new(), HashSet::new())
                 }
@@ -1012,7 +1018,10 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                    (
+                        scrypto_value.global_references(),
+                        scrypto_value.owned_node_ids(),
+                    )
                 } else {
                     (HashSet::new(), HashSet::new())
                 }

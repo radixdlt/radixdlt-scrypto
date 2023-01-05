@@ -2,15 +2,13 @@ use sbor::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::api::{api::*, types::*};
+use crate::data::types::Own;
 use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
-use crate::scrypto_type;
 use crate::wasm::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
@@ -89,10 +87,6 @@ impl Into<SerializedInvocation> for ProofCloneInvocation {
     }
 }
 
-/// Represents a proof of owning some resource.
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Proof(pub ProofId);
-
 // TODO: Evaluate if we should have a ProofValidationModeBuilder to construct more complex validation modes.
 /// Specifies the validation mode that should be used for validating a `Proof`.
 pub enum ProofValidationMode {
@@ -126,26 +120,6 @@ impl From<NonFungibleAddress> for ProofValidationMode {
     }
 }
 
-//========
-// error
-//========
-
-/// Represents an error when decoding proof.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseProofError {
-    InvalidLength(usize),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseProofError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseProofError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 /// Represents an error when validating proof.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofValidationError {
@@ -166,28 +140,47 @@ impl fmt::Display for ProofValidationError {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Proof(pub ProofId); // scrypto stub
+
 //========
 // binary
 //========
 
-impl TryFrom<&[u8]> for Proof {
-    type Error = ParseProofError;
+impl TypeId<ScryptoCustomTypeId> for Proof {
+    #[inline]
+    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    }
+}
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
-            _ => Err(ParseProofError::InvalidLength(slice.len())),
+impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Proof {
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Own::Proof(self.0).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Proof {
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
+    ) -> Result<Self, DecodeError> {
+        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        match o {
+            Own::Proof(proof_id) => Ok(Self(proof_id)),
+            _ => Err(DecodeError::InvalidCustomValue),
         }
     }
 }
 
-impl Proof {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_le_bytes().to_vec()
+impl scrypto_abi::Describe for Proof {
+    fn describe() -> scrypto_abi::Type {
+        Type::Proof
     }
 }
-
-// Note: Only `Proof` is a Scrypto type, `ValidatedProof` is not. This is because `ValidatedProof`s doesn't need to
-// implement the sbor::Encode and sbor::Decode traits as they are not meant to be used as arguments and returns to and
-// from methods. They are meant ot be used inside methods.
-scrypto_type!(Proof, ScryptoCustomTypeId::Proof, Type::Proof, 4);

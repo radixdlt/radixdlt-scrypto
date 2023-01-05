@@ -165,7 +165,7 @@ fn test_basic_transfer() {
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -188,9 +188,9 @@ fn test_basic_transfer() {
         + 28500 /* read_substate */
         + 1000 /* run_native_function */
         + 2200 /* run_native_method */
-        + 298194 /* run_wasm */
+        + 297885 /* run_wasm */
         + 10000 /* tx_base_fee */
-        + 318 /* tx_payload_cost */
+        + 304 /* tx_payload_cost */
         + 3750 /* tx_signature_verification */
         + 18500, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
@@ -252,7 +252,7 @@ fn should_be_able_run_large_manifest() {
     builder.call_method(
         account,
         "deposit_batch",
-        args!(Expression::entire_worktop()),
+        args!(ManifestExpression::EntireWorktop),
     );
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(

@@ -71,7 +71,7 @@ fn bench_transfer(c: &mut Criterion) {
         .call_method(
             account1,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     for nonce in 0..1000 {
@@ -93,7 +93,7 @@ fn bench_transfer(c: &mut Criterion) {
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

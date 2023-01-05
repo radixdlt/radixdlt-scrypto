@@ -294,7 +294,7 @@ pub enum Value {
     NonFungibleAddress(Box<Value>, Box<Value>),
     Blob(Box<Value>),
 
-    // Other interpreted types
+    // TX interpreted types
     Bucket(Box<Value>),
     Proof(Box<Value>),
     Expression(Box<Value>),
