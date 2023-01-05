@@ -1,8 +1,5 @@
-use radix_engine_interface::abi::Type;
-use radix_engine_interface::data::types::{ManifestBucket, ManifestProof};
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::ScryptoValueDecodeError;
-use radix_engine_interface::model::*;
-use sbor::rust::string::String;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,44 +64,4 @@ impl From<EncodeError> for TransactionValidationError {
     fn from(err: EncodeError) -> Self {
         Self::SerializationError(err)
     }
-}
-
-/// Represents an error when parsing arguments.
-#[derive(Debug, Clone)]
-pub enum BuildArgsError {
-    /// The argument is not provided.
-    MissingArgument(usize, Type),
-
-    /// The argument is of unsupported type.
-    UnsupportedType(usize, Type),
-
-    UnsupportedRootType(Type),
-
-    /// Failure when parsing an argument.
-    FailedToParse(usize, Type, String),
-
-    /// Failed to interpret this string as a resource specifier
-    InvalidResourceSpecifier(String),
-}
-
-/// Represents an error when building a transaction.
-#[derive(Debug, Clone)]
-pub enum BuildCallWithAbiError {
-    /// The given blueprint function does not exist.
-    FunctionNotFound(String),
-
-    /// The given component method does not exist.
-    MethodNotFound(String),
-
-    /// The provided arguments do not match ABI.
-    FailedToBuildArgs(BuildArgsError),
-
-    /// Failed to export the ABI of a function.
-    FailedToExportFunctionAbi(PackageAddress, String, String),
-
-    /// Failed to export the ABI of a method.
-    FailedToExportMethodAbi(ComponentAddress, String),
-
-    /// Account is required but not provided.
-    AccountNotProvided,
 }

@@ -3,7 +3,6 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -14,7 +13,7 @@ fn test_worktop_resource_leak() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account(account, RADIX_TOKEN)
         .build();
