@@ -247,7 +247,11 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
 
     // Components
     let clock: SystemAddress = receipt.output(7);
-    let faucet_component = receipt.new_component_addresses()[0];
+    let faucet_component = receipt.new_component_addresses()
+        .iter()
+        .find(|addr| matches!(addr, ComponentAddress::Normal(..)))
+        .cloned()
+        .unwrap();
     let epoch_manager = receipt
         .new_system_addresses()
         .iter()

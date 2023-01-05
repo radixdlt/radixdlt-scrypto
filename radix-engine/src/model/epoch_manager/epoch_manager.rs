@@ -63,6 +63,18 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
 
         let mut call_frame_update =
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+
+        // TODO: Clean this up, this is currently required in order to be able to call the scrypto account component
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::System(CLOCK)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+
         for (bucket, account_address) in self.validator_set.values() {
             call_frame_update
                 .nodes_to_move
@@ -72,6 +84,13 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
 
         Ok((actor, call_frame_update, self))
     }
+}
+
+// TODO: Cleanup once native accounts implemented
+#[derive(Debug, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct AccountDepositInput {
+    bucket: Bucket,
 }
 
 impl Executor for EpochManagerCreateInvocation {
@@ -94,9 +113,9 @@ impl Executor for EpochManagerCreateInvocation {
 
         let mut validator_set = BTreeMap::new();
 
-        for (key, (initial_stake, _account_address)) in self.validator_set {
+        for (key, (initial_stake, account_address)) in self.validator_set {
             let stake = Decimal::one();
-            let address = ValidatorCreator::create_with_initial_stake(
+            let (address, lp_bucket) = ValidatorCreator::create_with_initial_stake(
                 global_node_id.into(),
                 key,
                 initial_stake,
@@ -105,6 +124,13 @@ impl Executor for EpochManagerCreateInvocation {
             )?;
             let validator = Validator { key, stake };
             validator_set.insert(address, validator);
+            api.invoke(ParsedScryptoInvocation::Method(
+                ScryptoMethodIdent {
+                    receiver: ScryptoReceiver::Global(account_address),
+                    method_name: "deposit".to_string(),
+                },
+                IndexedScryptoValue::from_typed(&AccountDepositInput { bucket: lp_bucket }),
+            ))?;
         }
 
         let current_validator_set = ValidatorSetSubstate {

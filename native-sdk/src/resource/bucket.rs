@@ -1,5 +1,6 @@
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::data::{ScryptoDecode, ScryptoTypeId};
+use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 use std::collections::BTreeSet;
@@ -11,6 +12,13 @@ pub trait SysBucket {
     ) -> Result<Bucket, E>
     where
         Y: Invokable<ResourceManagerCreateBucketInvocation, E>;
+
+    fn sys_amount<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+        &self,
+        env: &mut Y,
+    ) -> Result<Decimal, E>
+    where
+        Y: Invokable<BucketGetAmountInvocation, E>;
 
     fn sys_burn<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(self, env: &mut Y) -> Result<(), E>
     where
@@ -44,6 +52,16 @@ impl SysBucket for Bucket {
         Y: Invokable<ResourceManagerCreateBucketInvocation, E>,
     {
         api.invoke(ResourceManagerCreateBucketInvocation { receiver })
+    }
+
+    fn sys_amount<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+        &self,
+        env: &mut Y,
+    ) -> Result<Decimal, E>
+    where
+        Y: Invokable<BucketGetAmountInvocation, E>,
+    {
+        env.invoke(BucketGetAmountInvocation { receiver: self.0 })
     }
 
     fn sys_burn<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(self, env: &mut Y) -> Result<(), E>

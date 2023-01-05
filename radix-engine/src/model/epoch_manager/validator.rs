@@ -412,6 +412,43 @@ impl Executor for ValidatorClaimXrdExecutable {
 pub(crate) struct ValidatorCreator;
 
 impl ValidatorCreator {
+    fn create_liquidity_token_with_initial_amount<Y>(
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<(ResourceAddress, Bucket), RuntimeError>
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        let mut liquidity_token_auth = BTreeMap::new();
+        let non_fungible_id = NonFungibleId::Bytes(
+            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
+        );
+        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
+        liquidity_token_auth.insert(
+            Mint,
+            (
+                rule!(require(non_fungible_address.clone())),
+                rule!(deny_all),
+            ),
+        );
+        liquidity_token_auth.insert(
+            Burn,
+            (rule!(require(non_fungible_address)), rule!(deny_all)),
+        );
+        liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
+
+        let (unstake_resource_manager, bucket) = ResourceManager::sys_new(
+            ResourceType::Fungible { divisibility: 0 },
+            BTreeMap::new(),
+            liquidity_token_auth,
+            Some(MintParams::Fungible { amount }),
+            api,
+        )?;
+
+        Ok((unstake_resource_manager.0, bucket.unwrap()))
+    }
+
     fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
@@ -514,18 +551,20 @@ impl ValidatorCreator {
         initial_stake: Bucket,
         is_registered: bool,
         api: &mut Y,
-    ) -> Result<SystemAddress, RuntimeError>
+    ) -> Result<(SystemAddress, Bucket), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let node_id = api.allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
         let address: SystemAddress = global_node_id.into();
+        let initial_liquidity_amount = initial_stake.sys_amount(api)?;
         let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         stake_vault.sys_put(initial_stake, api)?;
         let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
         let unstake_nft = Self::create_unstake_nft(api)?;
-        let liquidity_token = Self::create_liquidity_token(api)?;
+        let (liquidity_token, liquidity_bucket) =
+            Self::create_liquidity_token_with_initial_amount(initial_liquidity_amount, api)?;
         let node = RENode::Validator(
             ValidatorSubstate {
                 manager,
@@ -547,7 +586,7 @@ impl ValidatorCreator {
             RENode::Global(GlobalAddressSubstate::Validator(node_id.into())),
         )?;
 
-        Ok(global_node_id.into())
+        Ok((global_node_id.into(), liquidity_bucket))
     }
 
     pub fn create<Y>(
