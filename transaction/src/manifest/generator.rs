@@ -7,7 +7,7 @@ use radix_engine_interface::crypto::{
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomValue, ScryptoDecode,
-    ScryptoSborTypeId, ScryptoValue, ScryptoValueDecodeError,
+    ScryptoSborTypeId, ScryptoValue,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
@@ -65,7 +65,6 @@ pub enum GeneratorError {
     IdValidationError(ManifestIdValidationError),
     ArgumentEncodingError(EncodeError),
     ArgumentDecodingError(DecodeError),
-    ArgumentIndexingError(ScryptoValueDecodeError),
     InvalidEntityAddress(String),
     InvalidLength {
         value_type: ast::Type,
@@ -344,10 +343,8 @@ pub fn generate_instruction(
 
             let args_encoded =
                 scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
-            let args_indexed = IndexedScryptoValue::from_value(args.clone())
-                .map_err(GeneratorError::ArgumentIndexingError)?;
             id_validator
-                .move_resources(&args_indexed)
+                .move_resources(&IndexedScryptoValue::from_value(args))
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallFunction {
@@ -368,10 +365,8 @@ pub fn generate_instruction(
 
             let args_encoded =
                 scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
-            let args_indexed = IndexedScryptoValue::from_value(args.clone())
-                .map_err(GeneratorError::ArgumentIndexingError)?;
             id_validator
-                .move_resources(&args_indexed)
+                .move_resources(&IndexedScryptoValue::from_value(args))
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallMethod {

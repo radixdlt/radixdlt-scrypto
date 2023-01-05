@@ -20,8 +20,8 @@ pub enum ReadOwnedNodesError {
 /// Represents an error when replacing manifest values.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReplaceManifestValuesError {
-    ProofIdNotFound(ManifestProof),
-    BucketIdNotFound(ManifestBucket),
+    BucketNotExistsOrConsumed(ManifestBucket),
+    ProofNotExistsOrConsumed(ManifestProof),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -140,9 +140,9 @@ impl IndexedScryptoValue {
         bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
     ) -> Result<(), ReplaceManifestValuesError> {
         for (bucket_id, path) in self.buckets.drain(..) {
-            let next_id = bucket_replacements
-                .remove(&bucket_id)
-                .ok_or(ReplaceManifestValuesError::BucketIdNotFound(bucket_id))?;
+            let next_id = bucket_replacements.remove(&bucket_id).ok_or(
+                ReplaceManifestValuesError::BucketNotExistsOrConsumed(bucket_id),
+            )?;
             let value = path.get_from_value_mut(&mut self.value).unwrap();
             if let SborValue::Custom { value } = value {
                 *value = ScryptoCustomValue::Own(Own::Bucket(next_id));
@@ -153,9 +153,9 @@ impl IndexedScryptoValue {
         }
 
         for (proof_id, path) in self.proofs.drain(..) {
-            let next_id = proof_replacements
-                .remove(&proof_id)
-                .ok_or(ReplaceManifestValuesError::ProofIdNotFound(proof_id))?;
+            let next_id = proof_replacements.remove(&proof_id).ok_or(
+                ReplaceManifestValuesError::ProofNotExistsOrConsumed(proof_id),
+            )?;
             let value = path.get_from_value_mut(&mut self.value).unwrap();
             if let SborValue::Custom { value } = value {
                 *value = ScryptoCustomValue::Own(Own::Proof(next_id));
@@ -346,7 +346,7 @@ mod tests {
                 &mut HashMap::from([(ManifestProof(0), 0u32)]),
                 &mut HashMap::from([(ManifestBucket(0), 0u32)])
             ),
-            Err(ReplaceManifestValuesError::BucketIdNotFound(
+            Err(ReplaceManifestValuesError::BucketNotExistsOrConsumed(
                 ManifestBucket(0)
             ))
         );

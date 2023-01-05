@@ -811,10 +811,10 @@ impl TransactionProcessor {
         value
             .replace_manifest_values(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
             .map_err(|e| match e {
-                ReplaceManifestValuesError::BucketIdNotFound(bucket_id) => {
+                ReplaceManifestValuesError::BucketNotExistsOrConsumed(bucket_id) => {
                     TransactionProcessorError::BucketNotFound(bucket_id)
                 }
-                ReplaceManifestValuesError::ProofIdNotFound(proof_id) => {
+                ReplaceManifestValuesError::ProofNotExistsOrConsumed(proof_id) => {
                     TransactionProcessorError::ProofNotFound(proof_id)
                 }
             })?;
