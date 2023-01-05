@@ -44,6 +44,15 @@ jobs:
     - run: |
         echo HOME=$HOME
 
+    - name: Cache Rust compilation
+      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        # Optional, default is `sccache-`
+        cache-from: sccache-${{ runner.os }}-
+        # Optional, default is `sccache-latest`
+        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
+
     - uses: lrubaszewski/rust-cache@allow_registry_src_caching
       with:
         key: with_registry_src
