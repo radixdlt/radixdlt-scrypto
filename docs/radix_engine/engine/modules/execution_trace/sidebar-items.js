@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["ExecutionTraceError",""],["SysCallTraceOrigin",""],["VaultOp",""]],"struct":[["ExecutionTraceModule",""],["ExecutionTraceReceipt",""],["ProofSnapshot",""],["ResourceChange",""],["SysCallTrace",""],["TracedSysCallData",""]]};

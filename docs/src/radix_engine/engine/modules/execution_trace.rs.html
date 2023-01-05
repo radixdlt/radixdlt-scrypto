@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/modules/execution_trace.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>execution_trace.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../radix_engine/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/engine/modules/execution_trace.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>execution_trace.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../../normalize.css"><link rel="stylesheet" href="../../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../../ayu.css" disabled><link rel="stylesheet" href="../../../../dark.css" disabled><link rel="stylesheet" href="../../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../../storage.js"></script><script defer src="../../../../source-script.js"></script><script defer src="../../../../source-files.js"></script><script defer src="../../../../main.js"></script><noscript><link rel="stylesheet" href="../../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../../radix_engine/index.html"><img class="rust-logo" src="../../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -177,16 +177,518 @@
 <span id="177">177</span>
 <span id="178">178</span>
 <span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
+<span id="659">659</span>
+<span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
+<span id="663">663</span>
+<span id="664">664</span>
+<span id="665">665</span>
+<span id="666">666</span>
+<span id="667">667</span>
+<span id="668">668</span>
+<span id="669">669</span>
+<span id="670">670</span>
+<span id="671">671</span>
+<span id="672">672</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
 <span class="kw">use </span><span class="kw">crate</span>::model::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span>indexmap::IndexMap;
+<span class="kw">use </span>radix_engine_interface::api::types::{
+    BucketOffset, ComponentId, NativeMethod, RENodeId, SubstateId, SubstateOffset, VaultId,
+    VaultMethod, VaultOffset,
+};
+<span class="kw">use </span>radix_engine_interface::math::Decimal;
+<span class="kw">use </span>radix_engine_interface::model::<span class="kw-2">*</span>;
+<span class="kw">use </span>sbor::rust::fmt::Debug;
 
-<span class="attribute">#[derive(Debug, Clone, PartialEq, TypeId, Encode, Decode)]
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 </span><span class="kw">pub struct </span>ResourceChange {
     <span class="kw">pub </span>resource_address: ResourceAddress,
-    <span class="kw">pub </span>component_address: ComponentAddress,
-    <span class="kw">pub </span>vault_id: VaultId,
+    <span class="kw">pub </span>component_id: ComponentId, <span class="comment">// TODO: support non component actor
+    </span><span class="kw">pub </span>vault_id: VaultId,
     <span class="kw">pub </span>amount: Decimal,
 }
 
@@ -196,164 +698,648 @@
 }
 
 <span class="attribute">#[derive(Debug)]
-</span><span class="kw">pub struct </span>ExecutionTrace {
-    <span class="kw">pub </span>resource_changes: HashMap&lt;ComponentAddress, HashMap&lt;VaultId, (ResourceAddress, Decimal)&gt;&gt;,
+</span><span class="kw">pub enum </span>VaultOp {
+    Create(Decimal), <span class="comment">// TODO: add trace of vault creation
+    </span>Put(Decimal),    <span class="comment">// TODO: add non-fungible support
+    </span>Take(Decimal),
+    LockFee,
 }
 
-<span class="kw">impl </span>ExecutionTrace {
-    <span class="kw">pub fn </span>new() -&gt; ExecutionTrace {
+<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>ExecutionTraceError {
+    InvalidState(String),
+    CallFrameError(CallFrameError),
+}
+
+<span class="kw">pub struct </span>ExecutionTraceModule {
+    <span class="doccomment">/// Maximum depth up to which sys calls are being traced.
+    </span>max_sys_call_trace_depth: usize,
+
+    <span class="doccomment">/// Current sys calls depth. Note that this doesn&#39;t necessarily correspond to the
+    /// call frame depth, as there can be nested sys calls within a single call frame
+    /// (e.g. lock_substate call inside drop_node).
+    </span>current_sys_call_depth: usize,
+
+    <span class="doccomment">/// The index of the manifest instruction currently being executed.
+    /// None for any sys calls that happen before transaction processor
+    /// starts processing instructions.
+    </span>current_instruction_index: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+
+    <span class="doccomment">/// A stack of traced sys call inputs, their origin, and the instruction index.
+    </span>traced_sys_call_inputs_stack: Vec&lt;(TracedSysCallData, SysCallTraceOrigin, <span class="prelude-ty">Option</span>&lt;usize&gt;)&gt;,
+
+    <span class="doccomment">/// A mapping of complete SysCallTrace stacks (\w both inputs and outputs), indexed by depth.
+    </span>sys_call_traces_stacks: HashMap&lt;usize, Vec&lt;SysCallTrace&gt;&gt;,
+}
+
+<span class="attribute">#[derive(Clone, Debug, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>ProofSnapshot {
+    <span class="kw">pub </span>resource_address: ResourceAddress,
+    <span class="kw">pub </span>resource_type: ResourceType,
+    <span class="kw">pub </span>restricted: bool,
+    <span class="kw">pub </span>total_locked: LockedAmountOrIds,
+}
+
+<span class="attribute">#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>TracedSysCallData {
+    <span class="kw">pub </span>buckets: HashMap&lt;BucketId, Resource&gt;,
+    <span class="kw">pub </span>proofs: HashMap&lt;ProofId, ProofSnapshot&gt;,
+}
+
+<span class="kw">impl </span>TracedSysCallData {
+    <span class="kw">pub fn </span>new_empty() -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
-            resource_changes: HashMap::new(),
+            buckets: HashMap::new(),
+            proofs: HashMap::new(),
         }
     }
 
-    <span class="kw">pub fn </span>trace_invoke_method&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
+    <span class="kw">pub fn </span>is_empty(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.buckets.is_empty() &amp;&amp; <span class="self">self</span>.proofs.is_empty()
+    }
+}
+
+<span class="attribute">#[derive(Debug, Clone)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub struct </span>SysCallTrace {
+    <span class="kw">pub </span>origin: SysCallTraceOrigin,
+    <span class="kw">pub </span>sys_call_depth: usize,
+    <span class="kw">pub </span>call_frame_actor: REActor,
+    <span class="kw">pub </span>call_frame_depth: usize,
+    <span class="kw">pub </span>instruction_index: <span class="prelude-ty">Option</span>&lt;usize&gt;,
+    <span class="kw">pub </span>input: TracedSysCallData,
+    <span class="kw">pub </span>output: TracedSysCallData,
+    <span class="kw">pub </span>children: Vec&lt;SysCallTrace&gt;,
+}
+
+<span class="attribute">#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>SysCallTraceOrigin {
+    ScryptoFunction(PackageAddress, String, String),
+    ScryptoMethod(PackageAddress, String, String),
+    NativeFunction(NativeFunction),
+    NativeMethod(NativeMethod),
+    CreateNode,
+    DropNode,
+    <span class="doccomment">/// Anything else that isn&#39;t traced on its own, but the trace exists for its children
+    </span>Opaque,
+}
+
+<span class="kw">impl</span>&lt;R: FeeReserve&gt; Module&lt;R&gt; <span class="kw">for </span>ExecutionTraceModule {
+    <span class="kw">fn </span>pre_sys_call(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        call_frames: <span class="kw-2">&amp;</span>Vec&lt;CallFrame&gt;,
-        track: <span class="kw-2">&amp;</span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+        _track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+        input: SysCallInput,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="self">self</span>.handle_pre_sys_call(heap, input)
+    }
+
+    <span class="kw">fn </span>post_sys_call(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+        _track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+        output: SysCallOutput,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="self">self</span>.handle_post_sys_call(call_frame, heap, output)
+    }
+
+    <span class="kw">fn </span>pre_execute_invocation(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         actor: <span class="kw-2">&amp;</span>REActor,
-        fn_identifier: <span class="kw-2">&amp;</span>FnIdentifier,
-        node_id: <span class="kw-2">&amp;</span>RENodeId,
-        node_pointer: RENodePointer,
-        input: <span class="kw-2">&amp;</span>ScryptoValue,
-        next_owned_values: <span class="kw-2">&amp;</span>HashMap&lt;RENodeId, HeapRootRENode&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-        <span class="kw">if let </span>RENodeId::Vault(vault_id) = node_id {
-            <span class="comment">/* TODO: Warning: depends on call frame&#39;s actor being the vault&#39;s parent component!
-            This isn&#39;t always the case! For example, when vault is instantiated in a blueprint
-            before the component is globalized (see: test_restricted_transfer in bucket.rs).
-            For now, such vault calls are NOT traced.
-            Possible solution:
-            1. Separately record vault calls that have a blueprint parent
-            2. Hook up to when the component is globalized and convert
-               blueprint-parented vaults (if any) to regular
-               trace entries with component parents. */
-            </span><span class="kw">if let </span><span class="prelude-val">Some</span>(Receiver::Ref(RENodeId::Component(component_address))) = <span class="kw-2">&amp;</span>actor.receiver {
-                <span class="kw">match </span>fn_identifier {
-                    FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Put)) =&gt; {
-                        <span class="kw">let </span>decoded_input = scrypto_decode(<span class="kw-2">&amp;</span>input.raw).map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                                VaultError::InvalidRequestData(e),
-                            ))
-                        })<span class="question-mark">?</span>;
+        update: <span class="kw-2">&amp;</span>CallFrameUpdate,
+        call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="kw">if </span><span class="self">self</span>.current_sys_call_depth &lt;= <span class="self">self</span>.max_sys_call_trace_depth {
+            <span class="kw">let </span>origin = <span class="kw">match </span>actor {
+                REActor::Method(
+                    ResolvedMethod::Scrypto {
+                        package_address,
+                        blueprint_name,
+                        ident,
+                        ..
+                    },
+                    ..,
+                ) =&gt; SysCallTraceOrigin::ScryptoMethod(
+                    <span class="kw-2">*</span>package_address,
+                    blueprint_name.clone(),
+                    ident.clone(),
+                ),
+                REActor::Function(ResolvedFunction::Scrypto {
+                    package_address,
+                    blueprint_name,
+                    ident,
+                    ..
+                }) =&gt; SysCallTraceOrigin::ScryptoFunction(
+                    <span class="kw-2">*</span>package_address,
+                    blueprint_name.clone(),
+                    ident.clone(),
+                ),
+                REActor::Method(ResolvedMethod::Native(native_method), ..) =&gt; {
+                    SysCallTraceOrigin::NativeMethod(native_method.clone())
+                }
+                REActor::Function(ResolvedFunction::Native(native_function)) =&gt; {
+                    SysCallTraceOrigin::NativeFunction(native_function.clone())
+                }
+            };
 
-                        <span class="self">self</span>.handle_vault_put(
-                            component_address,
-                            vault_id,
-                            decoded_input,
-                            next_owned_values,
-                        )<span class="question-mark">?</span>;
-                    }
-                    FnIdentifier::Native(NativeFnIdentifier::Vault(VaultFnIdentifier::Take)) =&gt; {
-                        <span class="kw">let </span>decoded_input = scrypto_decode(<span class="kw-2">&amp;</span>input.raw).map_err(|e| {
-                            RuntimeError::ApplicationError(ApplicationError::VaultError(
-                                VaultError::InvalidRequestData(e),
-                            ))
-                        })<span class="question-mark">?</span>;
+            <span class="kw">let </span>trace_data = <span class="self">Self</span>::extract_trace_data(update, heap)<span class="question-mark">?</span>;
+            <span class="self">self</span>.traced_sys_call_inputs_stack.push((
+                trace_data,
+                origin,
+                <span class="self">self</span>.current_instruction_index,
+            ));
+        }
 
-                        <span class="kw">let </span>vault_node_ref = node_pointer.to_ref(call_frames, track);
+        <span class="self">self</span>.current_sys_call_depth += <span class="number">1</span>;
 
-                        <span class="kw">let </span>resource_address = vault_node_ref.vault().resource_address();
+        <span class="kw">if let </span>REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) = actor {
+            <span class="kw">let </span>caller = <span class="kw-2">&amp;</span>call_frame.actor;
 
-                        <span class="self">self</span>.handle_vault_take(
-                            <span class="kw-2">&amp;</span>resource_address,
-                            component_address,
-                            vault_id,
-                            decoded_input,
-                        )<span class="question-mark">?</span>;
-                    }
-                    <span class="kw">_ </span>=&gt; {} <span class="comment">// no-op
-                </span>}
+            <span class="kw">match </span>(native_method, resolved_receiver.receiver) {
+                (NativeMethod::Vault(VaultMethod::Put), RENodeId::Vault(vault_id)) =&gt; {
+                    <span class="self">Self</span>::handle_vault_put(update, heap, track, caller, <span class="kw-2">&amp;</span>vault_id)
+                }
+                (NativeMethod::Vault(VaultMethod::LockFee), RENodeId::Vault(vault_id)) =&gt; {
+                    <span class="self">Self</span>::handle_vault_lock_fee(track, caller, <span class="kw-2">&amp;</span>vault_id)
+                }
+                <span class="kw">_ </span>=&gt; {}
             }
         }
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>handle_vault_put(
+    <span class="kw">fn </span>post_execute_invocation(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        component_address: <span class="kw-2">&amp;</span>ComponentAddress,
-        vault_id: <span class="kw-2">&amp;</span>VaultId,
-        input: VaultPutInput,
-        next_owned_values: <span class="kw-2">&amp;</span>HashMap&lt;RENodeId, HeapRootRENode&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-        <span class="kw">let </span>bucket_id = input.bucket.<span class="number">0</span>;
-        <span class="kw">let </span>bucket_node_id = RENodeId::Bucket(bucket_id);
-
-        <span class="kw">let </span>bucket_node =
-            next_owned_values
-                .get(<span class="kw-2">&amp;</span>bucket_node_id)
-                .ok_or(RuntimeError::KernelError(KernelError::RENodeNotFound(
-                    bucket_node_id,
-                )))<span class="question-mark">?</span>;
-
-        <span class="kw">if let </span>HeapRENode::Bucket(bucket) = <span class="kw-2">&amp;</span>bucket_node.root {
-            <span class="kw">if let </span>ResourceType::Fungible { divisibility: <span class="kw">_ </span>} = bucket.resource_type() {
-                <span class="self">self</span>.record_resource_change(
-                    <span class="kw-2">&amp;</span>bucket.resource_address(),
-                    component_address,
-                    vault_id,
-                    bucket.total_amount(),
-                )
-            } <span class="kw">else </span>{
-                <span class="comment">/* TODO: Also handle non-fungible resource changes */
-                </span><span class="prelude-val">Ok</span>(())
+        caller: <span class="kw-2">&amp;</span>REActor,
+        update: <span class="kw-2">&amp;</span>CallFrameUpdate,
+        call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="kw">if let </span>REActor::Method(ResolvedMethod::Native(native_method), resolved_receiver) =
+            <span class="kw-2">&amp;</span>call_frame.actor
+        {
+            <span class="kw">match </span>(native_method, resolved_receiver.receiver) {
+                (NativeMethod::Vault(VaultMethod::Take), RENodeId::Vault(vault_id)) =&gt; {
+                    <span class="self">Self</span>::handle_vault_take(update, heap, track, caller, <span class="kw-2">&amp;</span>vault_id)
+                }
+                <span class="kw">_ </span>=&gt; {}
             }
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Err</span>(RuntimeError::KernelError(KernelError::BucketNotFound(
-                bucket_id,
-            )))
+        }
+
+        <span class="comment">// Important to always update the counter (even if we&#39;re over the depth limit).
+        </span><span class="self">self</span>.current_sys_call_depth -= <span class="number">1</span>;
+
+        <span class="kw">if </span><span class="self">self</span>.current_sys_call_depth &gt; <span class="self">self</span>.max_sys_call_trace_depth {
+            <span class="comment">// Nothing to trace at this depth, exit.
+            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
+
+        <span class="kw">let </span>traced_output = <span class="self">Self</span>::extract_trace_data(update, heap)<span class="question-mark">?</span>;
+        <span class="self">self</span>.finalize_sys_call_trace(call_frame, traced_output)
+    }
+
+    <span class="kw">fn </span>on_wasm_instantiation(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
+        _track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+        _code: <span class="kw-2">&amp;</span>[u8],
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>on_wasm_costing(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
+        _track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+        _units: u32,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>on_lock_fee(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
+        _track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+        _vault_id: VaultId,
+        fee: Resource,
+        _contingent: bool,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Resource, ModuleError&gt; {
+        <span class="prelude-val">Ok</span>(fee)
+    }
+
+    <span class="kw">fn </span>on_finished_processing(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        _heap: <span class="kw-2">&amp;mut </span>Heap,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="self">self</span>.handle_processing_completed(track)
+    }
+}
+
+<span class="kw">impl </span>ExecutionTraceModule {
+    <span class="kw">pub fn </span>new(max_sys_call_trace_depth: usize) -&gt; ExecutionTraceModule {
+        <span class="self">Self </span>{
+            max_sys_call_trace_depth,
+            current_sys_call_depth: <span class="number">0</span>,
+            current_instruction_index: <span class="prelude-val">None</span>,
+            traced_sys_call_inputs_stack: <span class="macro">vec!</span>[],
+            sys_call_traces_stacks: HashMap::new(),
         }
     }
 
-    <span class="kw">fn </span>handle_vault_take(
+    <span class="kw">fn </span>handle_pre_sys_call(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        resource_address: <span class="kw-2">&amp;</span>ResourceAddress,
-        component_address: <span class="kw-2">&amp;</span>ComponentAddress,
-        vault_id: <span class="kw-2">&amp;</span>VaultId,
-        input: VaultTakeInput,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-        <span class="self">self</span>.record_resource_change(resource_address, component_address, vault_id, -input.amount)
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+        input: SysCallInput,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="kw">if let </span>SysCallInput::Invoke { .. } = input {
+            <span class="comment">// Invoke calls are handled separately in pre_execute_invocation
+            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
+
+        <span class="kw">if </span><span class="self">self</span>.current_sys_call_depth &lt;= <span class="self">self</span>.max_sys_call_trace_depth {
+            <span class="comment">// Handle transaction processor events
+            </span><span class="kw">match </span>input {
+                SysCallInput::EmitEvent {
+                    event:
+                        Event::Runtime(RuntimeEvent::PreExecuteInstruction {
+                            instruction_index, ..
+                        }),
+                } =&gt; {
+                    <span class="self">self</span>.current_instruction_index = <span class="prelude-val">Some</span>(instruction_index.clone());
+                }
+                SysCallInput::EmitEvent {
+                    event: Event::Runtime(RuntimeEvent::PostExecuteManifest),
+                } =&gt; {
+                    <span class="self">self</span>.current_instruction_index = <span class="prelude-val">None</span>;
+                }
+                <span class="kw">_ </span>=&gt; {}
+            };
+
+            <span class="kw">let </span>traced_input = <span class="kw">match </span>input {
+                SysCallInput::DropNode { node_id } =&gt; {
+                    <span class="comment">// Buckets can&#39;t be dropped, so only tracking Proofs here
+                    </span><span class="kw">let </span>data = <span class="kw">if let </span>RENodeId::Proof(proof_id) = node_id {
+                        <span class="kw">let </span>proof = <span class="self">Self</span>::read_proof(heap, proof_id)<span class="question-mark">?</span>;
+                        TracedSysCallData {
+                            buckets: HashMap::new(),
+                            proofs: HashMap::from([(proof_id.clone(), proof)]),
+                        }
+                    } <span class="kw">else </span>{
+                        <span class="comment">// Not a proof, so nothing to trace
+                        </span>TracedSysCallData::new_empty()
+                    };
+
+                    (
+                        data,
+                        SysCallTraceOrigin::DropNode,
+                        <span class="self">self</span>.current_instruction_index,
+                    )
+                }
+                SysCallInput::CreateNode { .. } =&gt; (
+                    TracedSysCallData::new_empty(),
+                    SysCallTraceOrigin::CreateNode,
+                    <span class="self">self</span>.current_instruction_index,
+                ),
+                <span class="kw">_ </span>=&gt; (
+                    TracedSysCallData::new_empty(),
+                    SysCallTraceOrigin::Opaque,
+                    <span class="self">self</span>.current_instruction_index,
+                ),
+            };
+            <span class="self">self</span>.traced_sys_call_inputs_stack.push(traced_input);
+        }
+
+        <span class="self">self</span>.current_sys_call_depth += <span class="number">1</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>record_resource_change(
+    <span class="kw">fn </span>handle_post_sys_call(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        resource_address: <span class="kw-2">&amp;</span>ResourceAddress,
-        component_address: <span class="kw-2">&amp;</span>ComponentAddress,
-        vault_id: <span class="kw-2">&amp;</span>VaultId,
-        amount: Decimal,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt; {
-        <span class="kw">let </span>component_changes = <span class="self">self
-            </span>.resource_changes
-            .entry(component_address.clone())
-            .or_insert(HashMap::new());
+        call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+        output: SysCallOutput,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="kw">if let </span>SysCallOutput::Invoke { .. } = output {
+            <span class="comment">// Invoke calls are handled separately in post_execute_invocation
+            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
 
-        <span class="kw">let </span>vault_change = component_changes
-            .entry(vault_id.clone())
-            .or_insert((resource_address.clone(), Decimal::zero()));
+        <span class="comment">// Important to always update the counter (even if we&#39;re over the depth limit).
+        </span><span class="self">self</span>.current_sys_call_depth -= <span class="number">1</span>;
 
-        vault_change.<span class="number">1 </span>+= amount;
+        <span class="kw">if </span><span class="self">self</span>.current_sys_call_depth &gt; <span class="self">self</span>.max_sys_call_trace_depth {
+            <span class="comment">// Nothing to trace at this depth, exit.
+            </span><span class="kw">return </span><span class="prelude-val">Ok</span>(());
+        }
+
+        <span class="kw">let </span>traced_output = <span class="kw">match </span>output {
+            SysCallOutput::CreateNode { node_id } =&gt; <span class="kw">match </span>node_id {
+                RENodeId::Bucket(bucket_id) =&gt; {
+                    <span class="kw">let </span>bucket_resource = <span class="self">Self</span>::read_bucket_resource(heap, bucket_id)<span class="question-mark">?</span>;
+                    TracedSysCallData {
+                        buckets: HashMap::from([(bucket_id.clone(), bucket_resource)]),
+                        proofs: HashMap::new(),
+                    }
+                }
+                RENodeId::Proof(proof_id) =&gt; {
+                    <span class="kw">let </span>proof = <span class="self">Self</span>::read_proof(heap, proof_id)<span class="question-mark">?</span>;
+                    TracedSysCallData {
+                        buckets: HashMap::new(),
+                        proofs: HashMap::from([(proof_id.clone(), proof)]),
+                    }
+                }
+                <span class="kw">_ </span>=&gt; TracedSysCallData::new_empty(),
+            },
+            <span class="kw">_ </span>=&gt; TracedSysCallData::new_empty(),
+        };
+
+        <span class="self">self</span>.finalize_sys_call_trace(call_frame, traced_output)
+    }
+
+    <span class="kw">fn </span>finalize_sys_call_trace(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        call_frame: <span class="kw-2">&amp;</span>CallFrame,
+        traced_output: TracedSysCallData,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="kw">let </span>child_traces = <span class="self">self
+            </span>.sys_call_traces_stacks
+            .remove(<span class="kw-2">&amp;</span>(<span class="self">self</span>.current_sys_call_depth + <span class="number">1</span>))
+            .unwrap_or(<span class="macro">vec!</span>[]);
+
+        <span class="kw">let </span>(traced_input, origin, instruction_index) = <span class="self">self
+            </span>.traced_sys_call_inputs_stack
+            .pop()
+            .expect(<span class="string">&quot;Sys call input stack underflow&quot;</span>);
+
+        <span class="comment">// Only include the trace if:
+        // * there&#39;s a non-empty traced input or output
+        // * OR there are any child traces: they need a parent regardless of whether it traces any inputs/outputs.
+        //   At some depth (up to the tracing limit) there must have been at least one traced input/output
+        //   so we need to include the full path up to the root.
+        </span><span class="kw">if </span>!traced_input.is_empty() || !traced_output.is_empty() || !child_traces.is_empty() {
+            <span class="kw">let </span>trace = SysCallTrace {
+                origin,
+                sys_call_depth: <span class="self">self</span>.current_sys_call_depth,
+                call_frame_actor: call_frame.actor.clone(),
+                call_frame_depth: call_frame.depth,
+                instruction_index,
+                input: traced_input,
+                output: traced_output,
+                children: child_traces,
+            };
+
+            <span class="kw">let </span>siblings = <span class="self">self
+                </span>.sys_call_traces_stacks
+                .entry(<span class="self">self</span>.current_sys_call_depth)
+                .or_insert(<span class="macro">vec!</span>[]);
+            siblings.push(trace);
+        }
 
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub fn </span>to_receipt(<span class="self">self</span>) -&gt; ExecutionTraceReceipt {
-        <span class="kw">let </span>resource_changes: Vec&lt;ResourceChange&gt; = <span class="self">self
-            </span>.resource_changes
-            .into_iter()
-            .flat_map(|(component_address, v)| {
-                v.into_iter().map(
-                    <span class="kw">move </span>|(vault_id, (resource_address, amount))| ResourceChange {
+    <span class="kw">fn </span>handle_processing_completed&lt;R: FeeReserve&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;R&gt;,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), ModuleError&gt; {
+        <span class="comment">// Some sanity checks
+        // No leftover inputs
+        </span><span class="kw">if </span>!<span class="self">self</span>.traced_sys_call_inputs_stack.is_empty() {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ModuleError::ExecutionTraceError(
+                ExecutionTraceError::InvalidState(<span class="string">&quot;Leftover sys call inputs on stack&quot;</span>.to_string()),
+            ));
+        }
+        <span class="comment">// At most one entry in call traces mapping (the root level)
+        </span><span class="kw">if </span><span class="self">self</span>.sys_call_traces_stacks.len() &gt; <span class="number">1 </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(ModuleError::ExecutionTraceError(
+                ExecutionTraceError::InvalidState(<span class="string">&quot;Leftover sys call traces on stack&quot;</span>.to_string()),
+            ));
+        }
+
+        <span class="kw">for </span>(<span class="kw">_</span>, traces) <span class="kw">in </span><span class="self">self</span>.sys_call_traces_stacks.drain() {
+            <span class="comment">// Emit an output event for each &quot;root&quot; sys call trace
+            </span><span class="kw">for </span>trace <span class="kw">in </span>traces {
+                track.add_event(TrackedEvent::Native(NativeEvent::SysCallTrace(trace)));
+            }
+        }
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>extract_trace_data(
+        call_frame_update: <span class="kw-2">&amp;</span>CallFrameUpdate,
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;TracedSysCallData, ModuleError&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>buckets: HashMap&lt;BucketId, Resource&gt; = HashMap::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>proofs: HashMap&lt;ProofId, ProofSnapshot&gt; = HashMap::new();
+
+        <span class="kw">for </span>node_id <span class="kw">in </span><span class="kw-2">&amp;</span>call_frame_update.nodes_to_move {
+            <span class="kw">match </span>node_id {
+                RENodeId::Bucket(bucket_id) =&gt; {
+                    <span class="kw">let </span>bucket_resource = <span class="self">Self</span>::read_bucket_resource(heap, <span class="kw-2">&amp;</span>bucket_id)<span class="question-mark">?</span>;
+                    buckets.insert(<span class="kw-2">*</span>bucket_id, bucket_resource);
+                }
+                RENodeId::Proof(proof_id) =&gt; {
+                    <span class="kw">let </span>proof = <span class="self">Self</span>::read_proof(heap, <span class="kw-2">&amp;</span>proof_id)<span class="question-mark">?</span>;
+                    proofs.insert(<span class="kw-2">*</span>proof_id, proof);
+                }
+                <span class="kw">_ </span>=&gt; {}
+            }
+        }
+
+        <span class="prelude-val">Ok</span>(TracedSysCallData { buckets, proofs })
+    }
+
+    <span class="kw">fn </span>read_proof(heap: <span class="kw-2">&amp;mut </span>Heap, proof_id: <span class="kw-2">&amp;</span>ProofId) -&gt; <span class="prelude-ty">Result</span>&lt;ProofSnapshot, ModuleError&gt; {
+        <span class="kw">let </span>node_id = RENodeId::Proof(proof_id.clone());
+        <span class="kw">let </span>substate_ref = heap
+            .get_substate(node_id, <span class="kw-2">&amp;</span>SubstateOffset::Proof(ProofOffset::Proof))
+            .map_err(|e| {
+                ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
+            })<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(substate_ref.proof().snapshot())
+    }
+
+    <span class="kw">fn </span>read_bucket_resource(
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+        bucket_id: <span class="kw-2">&amp;</span>BucketId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Resource, ModuleError&gt; {
+        <span class="kw">let </span>node_id = RENodeId::Bucket(bucket_id.clone());
+        <span class="kw">let </span>substate_ref = heap
+            .get_substate(node_id, <span class="kw-2">&amp;</span>SubstateOffset::Bucket(BucketOffset::Bucket))
+            .map_err(|e| {
+                ModuleError::ExecutionTraceError(ExecutionTraceError::CallFrameError(e))
+            })<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(substate_ref.bucket().peek_resource())
+    }
+
+    <span class="kw">fn </span>handle_vault_put&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
+        call_frame_update: <span class="kw-2">&amp;</span>CallFrameUpdate,
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+        actor: <span class="kw-2">&amp;</span>REActor,
+        vault_id: <span class="kw-2">&amp;</span>VaultId,
+    ) {
+        <span class="kw">for </span>node_id <span class="kw">in </span><span class="kw-2">&amp;</span>call_frame_update.nodes_to_move {
+            <span class="kw">match </span>node_id {
+                RENodeId::Bucket(bucket_id) =&gt; {
+                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(bucket_substate) = heap.get_substate(
+                        RENodeId::Bucket(<span class="kw-2">*</span>bucket_id),
+                        <span class="kw-2">&amp;</span>SubstateOffset::Bucket(BucketOffset::Bucket),
+                    ) {
+                        track.vault_ops.push((
+                            actor.clone(),
+                            vault_id.clone(),
+                            VaultOp::Put(bucket_substate.bucket().total_amount()),
+                        ));
+                    }
+                }
+                <span class="kw">_ </span>=&gt; {}
+            }
+        }
+    }
+
+    <span class="kw">fn </span>handle_vault_take&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
+        update: <span class="kw-2">&amp;</span>CallFrameUpdate,
+        heap: <span class="kw-2">&amp;mut </span>Heap,
+        track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+        actor: <span class="kw-2">&amp;</span>REActor,
+        vault_id: <span class="kw-2">&amp;</span>VaultId,
+    ) {
+        <span class="kw">for </span>node_id <span class="kw">in </span><span class="kw-2">&amp;</span>update.nodes_to_move {
+            <span class="kw">match </span>node_id {
+                RENodeId::Bucket(bucket_id) =&gt; {
+                    <span class="kw">if let </span><span class="prelude-val">Ok</span>(bucket_substate) = heap.get_substate(
+                        RENodeId::Bucket(<span class="kw-2">*</span>bucket_id),
+                        <span class="kw-2">&amp;</span>SubstateOffset::Bucket(BucketOffset::Bucket),
+                    ) {
+                        track.vault_ops.push((
+                            actor.clone(),
+                            vault_id.clone(),
+                            VaultOp::Take(bucket_substate.bucket().total_amount()),
+                        ));
+                    }
+                }
+                <span class="kw">_ </span>=&gt; {}
+            }
+        }
+    }
+
+    <span class="kw">fn </span>handle_vault_lock_fee&lt;<span class="lifetime">&#39;s</span>, R: FeeReserve&gt;(
+        track: <span class="kw-2">&amp;mut </span>Track&lt;<span class="lifetime">&#39;s</span>, R&gt;,
+        actor: <span class="kw-2">&amp;</span>REActor,
+        vault_id: <span class="kw-2">&amp;</span>VaultId,
+    ) {
+        track
+            .vault_ops
+            .push((actor.clone(), vault_id.clone(), VaultOp::LockFee));
+    }
+}
+
+<span class="kw">impl </span>ExecutionTraceReceipt {
+    <span class="comment">// TODO: is it better to derive resource changes from substate diff, instead of execution trace?
+    // The current approach relies on various runtime invariants.
+
+    </span><span class="kw">pub fn </span>new(
+        ops: Vec&lt;(REActor, VaultId, VaultOp)&gt;,
+        actual_fee_payments: <span class="kw-2">&amp;</span>IndexMap&lt;VaultId, Decimal&gt;,
+        to_persist: <span class="kw-2">&amp;mut </span>HashMap&lt;SubstateId, (PersistedSubstate, <span class="prelude-ty">Option</span>&lt;u32&gt;)&gt;,
+        is_commit_success: bool,
+    ) -&gt; <span class="self">Self </span>{
+        <span class="kw">let </span><span class="kw-2">mut </span>vault_changes = HashMap::&lt;ComponentId, HashMap&lt;VaultId, Decimal&gt;&gt;::new();
+        <span class="kw">let </span><span class="kw-2">mut </span>vault_locked_by = HashMap::&lt;VaultId, ComponentId&gt;::new();
+        <span class="kw">for </span>(actor, vault_id, vault_op) <span class="kw">in </span>ops {
+            <span class="kw">if let </span>REActor::Method(<span class="kw">_</span>, resolved_receiver) = actor {
+                <span class="kw">if let </span>RENodeId::Component(component_id) = resolved_receiver.receiver {
+                    <span class="kw">match </span>vault_op {
+                        VaultOp::Create(<span class="kw">_</span>) =&gt; <span class="macro">todo!</span>(<span class="string">&quot;Not supported yet!&quot;</span>),
+                        VaultOp::Put(amount) =&gt; {
+                            <span class="kw-2">*</span>vault_changes
+                                .entry(component_id)
+                                .or_default()
+                                .entry(vault_id)
+                                .or_default() += amount;
+                        }
+                        VaultOp::Take(amount) =&gt; {
+                            <span class="kw-2">*</span>vault_changes
+                                .entry(component_id)
+                                .or_default()
+                                .entry(vault_id)
+                                .or_default() -= amount;
+                        }
+                        VaultOp::LockFee =&gt; {
+                            <span class="kw-2">*</span>vault_changes
+                                .entry(component_id)
+                                .or_default()
+                                .entry(vault_id)
+                                .or_default() -= <span class="number">0</span>;
+
+                            <span class="comment">// Hack: Additional check to avoid second `lock_fee` attempts (runtime failure) from
+                            // polluting the `vault_locked_by` index.
+                            </span><span class="kw">if </span>!vault_locked_by.contains_key(<span class="kw-2">&amp;</span>vault_id) {
+                                vault_locked_by.insert(vault_id, component_id);
+                            }
+                        }
+                    };
+                }
+            }
+        }
+
+        <span class="kw">let </span><span class="kw-2">mut </span>resource_changes = Vec::&lt;ResourceChange&gt;::new();
+        <span class="kw">for </span>(component_id, map) <span class="kw">in </span>vault_changes {
+            <span class="kw">for </span>(vault_id, delta) <span class="kw">in </span>map {
+                <span class="comment">// Amount = put/take amount - fee_amount
+                </span><span class="kw">let </span>fee_amount = actual_fee_payments
+                    .get(<span class="kw-2">&amp;</span>vault_id)
+                    .cloned()
+                    .unwrap_or_default();
+                <span class="kw">let </span>amount = <span class="kw">if </span>is_commit_success {
+                    delta
+                } <span class="kw">else </span>{
+                    Decimal::zero()
+                } - fee_amount;
+
+                <span class="comment">// Add a resource change log if non-zero
+                </span><span class="kw">if </span>!amount.is_zero() {
+                    <span class="kw">let </span>resource_address = <span class="self">Self</span>::get_vault_resource_address(vault_id, to_persist);
+                    resource_changes.push(ResourceChange {
                         resource_address,
-                        component_address,
+                        component_id,
                         vault_id,
                         amount,
-                    },
-                )
-            })
-            .filter(|el| !el.amount.is_zero())
-            .collect();
+                    });
+                }
+            }
+        }
+
         ExecutionTraceReceipt { resource_changes }
+    }
+
+    <span class="kw">fn </span>get_vault_resource_address(
+        vault_id: VaultId,
+        to_persist: <span class="kw-2">&amp;mut </span>HashMap&lt;SubstateId, (PersistedSubstate, <span class="prelude-ty">Option</span>&lt;u32&gt;)&gt;,
+    ) -&gt; ResourceAddress {
+        <span class="kw">let </span>(substate, <span class="kw">_</span>) = to_persist
+            .get(<span class="kw-2">&amp;</span>SubstateId(
+                RENodeId::Vault(vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
+            .expect(<span class="string">&quot;Failed to find the vault substate&quot;</span>);
+        substate.vault().resource_address()
     }
 }
 </code></pre></div>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Kernel",""]],"trait":[["ExecutableInvocation",""],["Executor",""]]};

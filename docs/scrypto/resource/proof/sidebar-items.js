@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["ValidatedProof","Represents a proof of owning some resource that has had its resource address validated."]],"trait":[["ScryptoProof",""]]};

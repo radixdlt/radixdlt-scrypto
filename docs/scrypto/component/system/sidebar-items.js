@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["component_system","Returns the component subsystem."],["init_component_system","Initializes component subsystem."]],"static":[["COMPONENT_SYSTEM",""]],"struct":[["ComponentSystem","Represents the Radix Engine component subsystem."]]};

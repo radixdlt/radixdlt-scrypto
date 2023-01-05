@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/Users/jprimero/radix/radixdlt-scrypto/sbor/src/path.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>path.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `sbor/src/path.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>path.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../normalize.css"><link rel="stylesheet" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../ayu.css" disabled><link rel="stylesheet" href="../../dark.css" disabled><link rel="stylesheet" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script><script defer src="../../main.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../sbor/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../sbor/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -118,19 +118,17 @@
 <span id="118">118</span>
 <span id="119">119</span>
 <span id="120">120</span>
-<span id="121">121</span>
-<span id="122">122</span>
-<span id="123">123</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::any::Value;
-<span class="kw">use </span><span class="kw">crate</span>::rust::vec;
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::rust::vec;
 <span class="kw">use </span><span class="kw">crate</span>::rust::vec::Vec;
+<span class="kw">use </span><span class="kw">crate</span>::value::SborValue;
+<span class="kw">use </span><span class="kw">crate</span>::CustomTypeId;
 
 <span class="attribute">#[derive(Eq, PartialEq, Clone)]
-</span><span class="kw">pub struct </span>MutableSborPath(Vec&lt;usize&gt;);
+</span><span class="kw">pub struct </span>SborPathBuf(Vec&lt;usize&gt;);
 
-<span class="kw">impl </span>MutableSborPath {
+<span class="kw">impl </span>SborPathBuf {
     <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
-        MutableSborPath(<span class="macro">vec!</span>[])
+        SborPathBuf(<span class="macro">vec!</span>[])
     }
 
     <span class="kw">pub fn </span>push(<span class="kw-2">&amp;mut </span><span class="self">self</span>, path: usize) {
@@ -142,8 +140,8 @@
     }
 }
 
-<span class="kw">impl </span>From&lt;MutableSborPath&gt; <span class="kw">for </span>SborPath {
-    <span class="kw">fn </span>from(mutable: MutableSborPath) -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>From&lt;SborPathBuf&gt; <span class="kw">for </span>SborPath {
+    <span class="kw">fn </span>from(mutable: SborPathBuf) -&gt; <span class="self">Self </span>{
         SborPath::new(mutable.<span class="number">0</span>)
     }
 }
@@ -157,12 +155,18 @@
         SborPath(path)
     }
 
-    <span class="kw">pub fn </span>get_from_value&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value&gt; {
+    <span class="kw">pub fn </span>get_from_value&lt;<span class="lifetime">&#39;a</span>, X: CustomTypeId, Y&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+        value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>SborValue&lt;X, Y&gt;,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>SborValue&lt;X, Y&gt;&gt; {
         <span class="kw">let </span>rel_path = SborValueRetriever(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>);
         rel_path.get_from(value)
     }
 
-    <span class="kw">pub fn </span>get_from_value_mut&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>, value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value&gt; {
+    <span class="kw">pub fn </span>get_from_value_mut&lt;<span class="lifetime">&#39;a</span>, X: CustomTypeId, Y&gt;(
+        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>,
+        value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>SborValue&lt;X, Y&gt;,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>SborValue&lt;X, Y&gt;&gt; {
         <span class="kw">let </span>rel_path = SborValueRetriever(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>);
         rel_path.get_from_mut(value)
     }
@@ -182,64 +186,54 @@
         (index, SborValueRetriever(extended_path))
     }
 
-    <span class="kw">fn </span>get_from_vector(<span class="kw-2">&amp;</span><span class="self">self</span>, values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[Value]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value&gt; {
+    <span class="kw">fn </span>get_from_vector&lt;X: CustomTypeId, Y&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[SborValue&lt;X, Y&gt;],
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>SborValue&lt;X, Y&gt;&gt; {
         <span class="kw">let </span>(index, next_path) = <span class="self">self</span>.pop();
         values
             .get(index)
             .and_then(|value| next_path.get_from(value))
     }
 
-    <span class="kw">fn </span>get_from(<span class="self">self</span>, value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Value&gt; {
+    <span class="kw">fn </span>get_from&lt;X: CustomTypeId, Y&gt;(
+        <span class="self">self</span>,
+        value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>SborValue&lt;X, Y&gt;,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>SborValue&lt;X, Y&gt;&gt; {
         <span class="kw">if </span><span class="self">self</span>.is_empty() {
             <span class="kw">return </span>Option::Some(value);
         }
 
         <span class="kw">match </span>value {
-            Value::Struct { fields: vec }
-            | Value::Enum { fields: vec, .. }
-            | Value::Array { elements: vec, .. }
-            | Value::Tuple { elements: vec, .. }
-            | Value::List { elements: vec, .. }
-            | Value::Set { elements: vec, .. }
-            | Value::Map { elements: vec, .. } =&gt; <span class="self">self</span>.get_from_vector(vec),
-            Value::Option { value } =&gt; <span class="kw">match </span>value.as_ref() {
-                Option::Some(value) =&gt; Option::Some(value),
-                Option::None =&gt; Option::None,
-            },
-            Value::Result { value } =&gt; <span class="kw">match </span>value.as_ref() {
-                <span class="prelude-val">Ok</span>(result) | <span class="prelude-val">Err</span>(result) =&gt; <span class="prelude-val">Some</span>(result),
-            },
+            SborValue::Tuple { fields: vec, .. }
+            | SborValue::Enum { fields: vec, .. }
+            | SborValue::Array { elements: vec, .. } =&gt; <span class="self">self</span>.get_from_vector(vec),
             <span class="kw">_ </span>=&gt; Option::None,
         }
     }
 
-    <span class="kw">fn </span>get_from_vector_mut(<span class="kw-2">&amp;</span><span class="self">self</span>, values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[Value]) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value&gt; {
+    <span class="kw">fn </span>get_from_vector_mut&lt;X: CustomTypeId, Y&gt;(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        values: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>[SborValue&lt;X, Y&gt;],
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>SborValue&lt;X, Y&gt;&gt; {
         <span class="kw">let </span>(index, next_path) = <span class="self">self</span>.pop();
         values
             .get_mut(index)
             .and_then(|value| next_path.get_from_mut(value))
     }
 
-    <span class="kw">fn </span>get_from_mut(<span class="self">self</span>, value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Value&gt; {
+    <span class="kw">fn </span>get_from_mut&lt;X: CustomTypeId, Y&gt;(
+        <span class="self">self</span>,
+        value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>SborValue&lt;X, Y&gt;,
+    ) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>SborValue&lt;X, Y&gt;&gt; {
         <span class="kw">if </span><span class="self">self</span>.is_empty() {
             <span class="kw">return </span>Option::Some(value);
         }
 
         <span class="kw">match </span>value {
-            Value::Struct { fields: vec }
-            | Value::Enum { fields: vec, .. }
-            | Value::Array { elements: vec, .. }
-            | Value::Tuple { elements: vec, .. }
-            | Value::List { elements: vec, .. }
-            | Value::Set { elements: vec, .. }
-            | Value::Map { elements: vec, .. } =&gt; <span class="self">self</span>.get_from_vector_mut(vec),
-            Value::Option { value } =&gt; <span class="kw">match </span>value.as_mut() {
-                Option::Some(value) =&gt; Option::Some(value),
-                Option::None =&gt; Option::None,
-            },
-            Value::Result { value } =&gt; <span class="kw">match </span>value.as_mut() {
-                <span class="prelude-val">Ok</span>(result) | <span class="prelude-val">Err</span>(result) =&gt; <span class="prelude-val">Some</span>(result),
-            },
+            SborValue::Tuple { fields: vec, .. }
+            | SborValue::Enum { fields: vec, .. }
+            | SborValue::Array { elements: vec, .. } =&gt; <span class="self">self</span>.get_from_vector_mut(vec),
             <span class="kw">_ </span>=&gt; Option::None,
         }
     }

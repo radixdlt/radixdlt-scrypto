@@ -4,17 +4,17 @@
 <em>O</em>(1) pop (from the end).</p>
 <p>Vectors ensure they never allocate more than <code>isize::MAX</code> bytes.</p>
 <h2 id="examples"><a href="#examples">Examples</a></h2>
-<p>You can explicitly create a <a href="../struct.Vec.html" title="Vec"><code>Vec</code></a> with <a href="../struct.Vec.html#method.new" title="Vec::new"><code>Vec::new</code></a>:</p>
+<p>You can explicitly create a <a href="../rust/vec/struct.Vec.html" title="Vec"><code>Vec</code></a> with <a href="../rust/vec/struct.Vec.html#method.new" title="Vec::new"><code>Vec::new</code></a>:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>v: Vec&lt;i32&gt; = Vec::new();</code></pre></div>
-<p>…or by using the <a href="../macro.vec.html" title="vec!"><code>vec!</code></a> macro:</p>
+<p>…or by using the <a href="../rust/macro.vec.html" title="vec!"><code>vec!</code></a> macro:</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span>v: Vec&lt;i32&gt; = <span class="macro">vec!</span>[];
 
 <span class="kw">let </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>];
 
 <span class="kw">let </span>v = <span class="macro">vec!</span>[<span class="number">0</span>; <span class="number">10</span>]; <span class="comment">// ten zeroes</span></code></pre></div>
-<p>You can <a href="../struct.Vec.html#method.push"><code>push</code></a> values onto the end of a vector (which will grow the vector
+<p>You can <a href="../rust/vec/struct.Vec.html#method.push"><code>push</code></a> values onto the end of a vector (which will grow the vector
 as needed):</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>];
@@ -25,7 +25,7 @@ v.push(<span class="number">3</span>);</code></pre></div>
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>];
 
 <span class="kw">let </span>two = v.pop();</code></pre></div>
-<p>Vectors also support indexing (through the <a href="https://doc.rust-lang.org/1.65.0/core/ops/index/trait.Index.html" title="Index"><code>Index</code></a> and <a href="https://doc.rust-lang.org/1.65.0/core/ops/index/trait.IndexMut.html" title="IndexMut"><code>IndexMut</code></a> traits):</p>
+<p>Vectors also support indexing (through the <a href="../rust/ops/trait.Index.html" title="Index"><code>Index</code></a> and <a href="../rust/ops/trait.IndexMut.html" title="IndexMut"><code>IndexMut</code></a> traits):</p>
 
 <div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">let </span><span class="kw-2">mut </span>v = <span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>];
 <span class="kw">let </span>three = v[<span class="number">2</span>];

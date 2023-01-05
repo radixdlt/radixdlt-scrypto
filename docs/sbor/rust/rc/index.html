@@ -15,7 +15,7 @@ low, but an <a href="struct.Rc.html" title="Rc"><code>Rc</code></a> cannot be se
 does not implement <a href="../marker/trait.Send.html"><code>Send</code></a>. As a result, the Rust compiler
 will check <em>at compile time</em> that you are not sending <a href="struct.Rc.html" title="Rc"><code>Rc</code></a>s between
 threads. If you need multi-threaded, atomic reference counting, use
-<a href="https://doc.rust-lang.org/1.65.0/alloc/sync/struct.Arc.html"><code>sync::Arc</code></a>.</p>
+<a href="../sync/struct.Arc.html"><code>sync::Arc</code></a>.</p>
 <p>The <a href="struct.Rc.html#method.downgrade"><code>downgrade</code></a> method can be used to create a non-owning
 <a href="struct.Weak.html" title="Weak"><code>Weak</code></a> pointer. A <a href="struct.Weak.html" title="Weak"><code>Weak</code></a> pointer can be <a href="struct.Weak.html#method.upgrade"><code>upgrade</code></a>d
 to an <a href="struct.Rc.html" title="Rc"><code>Rc</code></a>, but this will return <a href="https://doc.rust-lang.org/1.65.0/core/option/enum.Option.html#variant.None" title="None"><code>None</code></a> if the value stored in the allocation has

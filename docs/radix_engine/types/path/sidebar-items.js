@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["SborPath","A series of indexes which describes some value in the sbor tree"],["SborPathBuf",""]]};

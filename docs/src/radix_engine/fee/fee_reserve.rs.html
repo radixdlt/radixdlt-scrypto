@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/fee/fee_reserve.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>fee_reserve.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/fee/fee_reserve.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>fee_reserve.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -300,240 +300,418 @@
 <span id="300">300</span>
 <span id="301">301</span>
 <span id="302">302</span>
-</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::constants::{DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN};
-<span class="kw">use </span><span class="kw">crate</span>::fee::FeeSummary;
-<span class="kw">use </span><span class="kw">crate</span>::model::ResourceContainer;
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+</pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::fee::FeeSummary;
+<span class="kw">use </span><span class="kw">crate</span>::model::Resource;
 <span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
+<span class="kw">use </span>radix_engine_constants::{
+    DEFAULT_COST_UNIT_LIMIT, DEFAULT_COST_UNIT_PRICE, DEFAULT_SYSTEM_LOAN,
+};
+<span class="kw">use </span>radix_engine_interface::api::types::{RENodeId, VaultId};
 <span class="kw">use </span>sbor::rust::cmp::min;
 
-<span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+<span class="comment">// Note: for performance reason, `u128` is used to represent decimal in this file.
+
+</span><span class="attribute">#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 </span><span class="kw">pub enum </span>FeeReserveError {
-    OutOfCostUnit,
+    InsufficientBalance,
     Overflow,
     LimitExceeded,
-    SystemLoanNotCleared,
+    LoanRepaymentFailed,
+    NotXrd,
 }
 
 <span class="kw">pub trait </span>FeeReserve {
-    <span class="kw">fn </span>consume&lt;T: ToString&gt;(
+    <span class="kw">fn </span>consume_royalty(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        n: u32,
-        reason: T,
+        receiver: RoyaltyReceiver,
+        amount: u32,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), FeeReserveError&gt;;
+
+    <span class="kw">fn </span>consume_execution(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        amount: u32,
+        multiplier: usize,
+        reason: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
         deferred: bool,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), FeeReserveError&gt;;
 
-    <span class="kw">fn </span>repay(
+    <span class="kw">fn </span>lock_fee(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, FeeReserveError&gt;;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Resource, FeeReserveError&gt;;
 
     <span class="kw">fn </span>finalize(<span class="self">self</span>) -&gt; FeeSummary;
-
-    <span class="kw">fn </span>limit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32;
-
-    <span class="kw">fn </span>consumed_instant(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32;
-
-    <span class="kw">fn </span>consumed_deferred(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32;
-
-    <span class="kw">fn </span>balance(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32;
-
-    <span class="kw">fn </span>owed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32;
 }
 
-<span class="kw">pub struct </span>SystemLoanFeeReserve {
+<span class="attribute">#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[scrypto(TypeId, Encode, Decode)]
+</span><span class="kw">pub enum </span>RoyaltyReceiver {
+    Package(PackageAddress, RENodeId),
+    Component(ComponentAddress, RENodeId),
+}
+
+<span class="attribute">#[derive(Debug)]
+</span><span class="kw">pub struct </span>SystemLoanFeeReserve {
     <span class="doccomment">/// The price of cost unit
-    </span>cost_unit_price: Decimal,
+    </span>cost_unit_price: u128,
     <span class="doccomment">/// The tip percentage
-    </span>tip_percentage: u32,
+    </span>tip_percentage: u8,
+
     <span class="doccomment">/// Payments made during the execution of a transaction.
-    </span>payments: Vec&lt;(VaultId, ResourceContainer, bool)&gt;,
-    <span class="doccomment">/// The balance cost units
-    </span>balance: u32,
-    <span class="doccomment">/// The number of cost units owed to the system
-    </span>owed: u32,
-    <span class="doccomment">/// The total cost units consumed so far, instant
-    </span>consumed_instant: u32,
-    <span class="doccomment">/// The total cost units consumed so far, deferred
-    </span>consumed_deferred: u32,
+    </span>payments: Vec&lt;(VaultId, Resource, bool)&gt;,
+
+    <span class="doccomment">/// The cost unit balance (from system loan)
+    </span>loan_balance: u32,
+    <span class="doccomment">/// The XRD balance (from `lock_fee` payments)
+    </span>xrd_balance: u128,
+    <span class="doccomment">/// The amount of XRD owed to the system
+    </span>xrd_owed: u128,
+
+    <span class="doccomment">/// The amount of cost units consumed
+    </span>cost_unit_consumed: u32,
     <span class="doccomment">/// The max number of cost units that can be consumed
-    </span>limit: u32,
+    </span>cost_unit_limit: u32,
     <span class="doccomment">/// At which point the system loan repayment is checked
     </span>check_point: u32,
-    <span class="doccomment">/// Cost breakdown
-    </span>cost_breakdown: HashMap&lt;String, u32&gt;,
+
+    <span class="doccomment">/// Execution costs that are deferred
+    </span>execution_deferred: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, u32&gt;,
+    <span class="doccomment">/// Execution cost breakdown
+    </span>execution: HashMap&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str, u32&gt;,
+    <span class="doccomment">/// Royalty cost breakdown
+    </span>royalty: HashMap&lt;RoyaltyReceiver, u32&gt;,
+
+    <span class="doccomment">/// Cache: effective execution price
+    </span>effective_execution_price: u128,
+    <span class="doccomment">/// Cache: effective royalty price
+    </span>effective_royalty_price: u128,
+}
+
+<span class="kw">fn </span>checked_add(a: u32, b: u32) -&gt; <span class="prelude-ty">Result</span>&lt;u32, FeeReserveError&gt; {
+    a.checked_add(b).ok_or(FeeReserveError::Overflow)
+}
+
+<span class="kw">fn </span>checked_assign_add(a: <span class="kw-2">&amp;mut </span>u32, b: u32) -&gt; <span class="prelude-ty">Result</span>&lt;(), FeeReserveError&gt; {
+    <span class="kw-2">*</span>a = checked_add(<span class="kw-2">*</span>a, b)<span class="question-mark">?</span>;
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="kw">pub fn </span>u128_to_decimal(a: u128) -&gt; Decimal {
+    Decimal(a.into())
+}
+
+<span class="kw">pub fn </span>decimal_to_u128(a: Decimal) -&gt; u128 {
+    <span class="kw">let </span>i256 = a.<span class="number">0</span>;
+    i256.try_into().expect(<span class="string">&quot;Overflow&quot;</span>)
 }
 
 <span class="kw">impl </span>SystemLoanFeeReserve {
+    <span class="kw">pub fn </span>no_fee() -&gt; <span class="self">Self </span>{
+        <span class="self">Self</span>::new(<span class="number">0</span>, <span class="number">0</span>, DEFAULT_COST_UNIT_LIMIT, DEFAULT_SYSTEM_LOAN)
+    }
+
     <span class="kw">pub fn </span>new(
+        cost_unit_price: u128,
+        tip_percentage: u8,
         cost_unit_limit: u32,
-        tip_percentage: u32,
-        cost_unit_price: Decimal,
         system_loan: u32,
     ) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
             cost_unit_price,
             tip_percentage,
             payments: Vec::new(),
-            balance: system_loan,
-            owed: system_loan,
-            consumed_instant: <span class="number">0</span>,
-            consumed_deferred: <span class="number">0</span>,
-            limit: cost_unit_limit,
-            check_point: system_loan,
-            cost_breakdown: HashMap::new(),
+            loan_balance: system_loan.into(),
+            xrd_balance: <span class="number">0</span>,
+            xrd_owed: <span class="number">0</span>,
+            cost_unit_consumed: <span class="number">0</span>,
+            cost_unit_limit: cost_unit_limit.into(),
+            check_point: system_loan.into(),
+            execution_deferred: HashMap::new(),
+            execution: HashMap::new(),
+            royalty: HashMap::new(),
+            effective_execution_price: cost_unit_price
+                + cost_unit_price * tip_percentage <span class="kw">as </span>u128 / <span class="number">100</span>,
+            effective_royalty_price: cost_unit_price,
         }
     }
 
-    <span class="doccomment">/// Adds free credit.
-    ///
-    /// Note that overflow is not checked.
-    </span><span class="kw">pub fn </span>credit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: u32) {
-        <span class="kw">let </span>repay = min(n, <span class="self">self</span>.owed);
-        <span class="self">self</span>.owed = <span class="self">self</span>.owed - repay;
-        <span class="self">self</span>.balance = <span class="self">self</span>.balance + (n - repay);
+    <span class="kw">fn </span>consume(<span class="kw-2">&amp;mut </span><span class="self">self</span>, n: u32, price: u128) -&gt; <span class="prelude-ty">Result</span>&lt;(), FeeReserveError&gt; {
+        <span class="comment">// Check limit
+        </span><span class="kw">if </span>checked_add(<span class="self">self</span>.cost_unit_consumed, n)<span class="question-mark">? </span>&gt; <span class="self">self</span>.cost_unit_limit {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(FeeReserveError::LimitExceeded);
+        }
+
+        <span class="comment">// Sort out the amount from system loan
+        </span><span class="kw">let </span>from_loan = min(<span class="self">self</span>.loan_balance, n);
+
+        <span class="comment">// Sort out the amount from locked payments
+        </span><span class="kw">let </span>from_locked = price * (n - from_loan) <span class="kw">as </span>u128;
+        <span class="kw">if </span><span class="self">self</span>.xrd_balance &lt; from_locked {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(FeeReserveError::InsufficientBalance);
+        }
+
+        <span class="comment">// Finally, apply state updates
+        </span><span class="self">self</span>.loan_balance -= from_loan;
+        <span class="self">self</span>.xrd_balance -= from_locked;
+        <span class="self">self</span>.xrd_owed += price * from_loan <span class="kw">as </span>u128;
+        <span class="self">self</span>.cost_unit_consumed += n;
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="doccomment">/// Repays loan and deferred costs in full.
+    </span><span class="kw">fn </span>repay_all(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(), FeeReserveError&gt; {
+        <span class="comment">// Apply deferred execution costs
+        </span><span class="kw">let </span><span class="kw-2">mut </span>sum = <span class="number">0</span>;
+        <span class="kw">for </span>v <span class="kw">in </span><span class="self">self</span>.execution_deferred.values() {
+            checked_assign_add(<span class="kw-2">&amp;mut </span>sum, <span class="kw-2">*</span>v)<span class="question-mark">?</span>;
+        }
+        <span class="self">self</span>.consume(sum, <span class="self">self</span>.execution_price())<span class="question-mark">?</span>;
+        <span class="kw">for </span>(k, v) <span class="kw">in </span><span class="self">self</span>.execution_deferred.drain() {
+            <span class="self">self</span>.execution.entry(k).or_default().add_assign(v);
+        }
+
+        <span class="comment">// Repay owed
+        </span><span class="kw">if </span><span class="self">self</span>.xrd_balance &lt; <span class="self">self</span>.xrd_owed {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(FeeReserveError::LoanRepaymentFailed);
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.xrd_balance -= <span class="self">self</span>.xrd_owed;
+            <span class="self">self</span>.xrd_owed = <span class="number">0</span>;
+        }
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>attempt_to_repay_all(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+        <span class="self">self</span>.repay_all().ok();
+    }
+
+    <span class="kw">fn </span>execution_price(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u128 {
+        <span class="self">self</span>.effective_execution_price
+    }
+
+    <span class="kw">fn </span>royalty_price(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u128 {
+        <span class="self">self</span>.effective_royalty_price
+    }
+
+    <span class="kw">fn </span>fully_repaid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.xrd_owed &lt;= <span class="number">0 </span>&amp;&amp; <span class="self">self</span>.execution_deferred.is_empty()
     }
 }
 
 <span class="kw">impl </span>FeeReserve <span class="kw">for </span>SystemLoanFeeReserve {
-    <span class="kw">fn </span>consume&lt;T: ToString&gt;(
+    <span class="kw">fn </span>consume_royalty(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        n: u32,
-        reason: T,
-        deferred: bool,
+        receiver: RoyaltyReceiver,
+        amount: u32,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), FeeReserveError&gt; {
-        <span class="comment">// update consumed
-        </span><span class="kw">if </span>!deferred {
-            <span class="self">self</span>.consumed_instant = <span class="self">self
-                </span>.consumed_instant
-                .checked_add(n)
-                .ok_or(FeeReserveError::Overflow)<span class="question-mark">?</span>;
-        } <span class="kw">else </span>{
-            <span class="self">self</span>.consumed_deferred = <span class="self">self
-                </span>.consumed_deferred
-                .checked_add(n)
-                .ok_or(FeeReserveError::Overflow)<span class="question-mark">?</span>;
-        }
-        <span class="kw">if </span><span class="self">self</span>.consumed_instant + <span class="self">self</span>.consumed_deferred &gt; <span class="self">self</span>.limit {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(FeeReserveError::LimitExceeded);
+        <span class="kw">if </span>amount == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="comment">// update cost breakdown
-        </span><span class="self">self</span>.cost_breakdown
-            .entry(reason.to_string())
-            .or_default()
-            .add_assign(n);
+        <span class="self">self</span>.consume(amount.into(), <span class="self">self</span>.execution_price())<span class="question-mark">?</span>;
+        checked_assign_add(<span class="self">self</span>.royalty.entry(receiver).or_default(), amount)<span class="question-mark">?</span>;
 
-        <span class="comment">// update balance or owed
-        </span><span class="kw">if </span>!deferred {
-            <span class="self">self</span>.balance = <span class="self">self
-                </span>.balance
-                .checked_sub(n)
-                .ok_or(FeeReserveError::OutOfCostUnit)<span class="question-mark">?</span>;
-        } <span class="kw">else </span>{
-            <span class="macro">assert!</span>(<span class="self">self</span>.consumed_instant &lt; <span class="self">self</span>.check_point);
-            <span class="self">self</span>.owed = <span class="self">self</span>.owed.checked_add(n).ok_or(FeeReserveError::Overflow)<span class="question-mark">?</span>;
-        }
-
-        <span class="comment">// check system loan
-        </span><span class="kw">if </span><span class="self">self</span>.consumed_instant &gt;= <span class="self">self</span>.check_point &amp;&amp; <span class="self">self</span>.owed &gt; <span class="number">0 </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(FeeReserveError::SystemLoanNotCleared);
+        <span class="kw">if </span><span class="self">self</span>.cost_unit_consumed &gt;= <span class="self">self</span>.check_point &amp;&amp; !<span class="self">self</span>.fully_repaid() {
+            <span class="self">self</span>.repay_all()<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">fn </span>repay(
+    <span class="kw">fn </span>consume_execution(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        vault_id: VaultId,
-        <span class="kw-2">mut </span>fee: ResourceContainer,
-        contingent: bool,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, FeeReserveError&gt; {
-        <span class="kw">let </span>effective_cost_unit_price =
-            <span class="self">self</span>.cost_unit_price + <span class="self">self</span>.cost_unit_price * <span class="self">self</span>.tip_percentage / <span class="number">100</span>;
-
-        <span class="comment">// TODO: Add `TryInto` implementation once the new decimal types are in place
-        </span><span class="kw">let </span>n = u32::from_str(
-            (fee.liquid_amount() / effective_cost_unit_price)
-                .round(<span class="number">0</span>, RoundingMode::TowardsZero)
-                .to_string()
-                .as_str(),
-        )
-        .map_err(|<span class="kw">_</span>| FeeReserveError::Overflow)<span class="question-mark">?</span>;
-
-        <span class="kw">if </span>!contingent {
-            <span class="kw">if </span>n &gt;= <span class="self">self</span>.owed {
-                <span class="self">self</span>.balance = <span class="self">self
-                    </span>.balance
-                    .checked_add(n - <span class="self">self</span>.owed)
-                    .ok_or(FeeReserveError::Overflow)<span class="question-mark">?</span>;
-                <span class="self">self</span>.owed = <span class="number">0</span>;
-            } <span class="kw">else </span>{
-                <span class="self">self</span>.owed -= n;
-            }
+        amount: u32,
+        multiplier: usize,
+        reason: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str,
+        deferred: bool,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), FeeReserveError&gt; {
+        <span class="kw">if </span>amount == <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="kw">let </span>actual_amount = effective_cost_unit_price * n;
-        <span class="self">self</span>.payments.push((
-            vault_id,
-            fee.take_by_amount(actual_amount)
-                .expect(<span class="string">&quot;Failed to take from fee resource&quot;</span>),
-            contingent,
-        ));
+        <span class="kw">let </span>n = u32::try_from(multiplier)
+            .map_err(|<span class="kw">_</span>| FeeReserveError::Overflow)
+            .and_then(|x| x.checked_mul(amount).ok_or(FeeReserveError::Overflow))<span class="question-mark">?</span>;
+
+        <span class="kw">if </span>deferred {
+            checked_assign_add(<span class="self">self</span>.execution_deferred.entry(reason).or_default(), n)<span class="question-mark">?</span>;
+        } <span class="kw">else </span>{
+            <span class="self">self</span>.consume(n, <span class="self">self</span>.execution_price())<span class="question-mark">?</span>;
+            checked_assign_add(<span class="self">self</span>.execution.entry(reason).or_default(), n)<span class="question-mark">?</span>;
+        }
+
+        <span class="kw">if </span><span class="self">self</span>.cost_unit_consumed &gt;= <span class="self">self</span>.check_point &amp;&amp; !<span class="self">self</span>.fully_repaid() {
+            <span class="self">self</span>.repay_all()<span class="question-mark">?</span>;
+        }
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="kw">fn </span>lock_fee(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        vault_id: VaultId,
+        <span class="kw-2">mut </span>fee: Resource,
+        contingent: bool,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Resource, FeeReserveError&gt; {
+        <span class="kw">if </span>fee.resource_address() != RADIX_TOKEN {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(FeeReserveError::NotXrd);
+        }
+
+        <span class="comment">// Update balance
+        </span><span class="kw">if </span>!contingent {
+            <span class="comment">// Assumption: no overflow due to limited XRD supply
+            </span><span class="self">self</span>.xrd_balance += decimal_to_u128(fee.amount());
+        }
+
+        <span class="comment">// Move resource
+        </span><span class="self">self</span>.payments.push((vault_id, fee.take_all(), contingent));
 
         <span class="prelude-val">Ok</span>(fee)
     }
 
     <span class="kw">fn </span>finalize(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; FeeSummary {
-        <span class="kw">if </span><span class="self">self</span>.owed &gt; <span class="number">0 </span>&amp;&amp; <span class="self">self</span>.balance != <span class="number">0 </span>{
-            <span class="kw">let </span>n = u32::min(<span class="self">self</span>.owed, <span class="self">self</span>.balance);
-            <span class="self">self</span>.owed -= n;
-            <span class="self">self</span>.balance -= n;
-        }
+        <span class="comment">// In case the transaction finishes before check point.
+        </span><span class="self">self</span>.attempt_to_repay_all();
 
-        <span class="kw">let </span>consumed = <span class="self">self</span>.consumed_instant + <span class="self">self</span>.consumed_deferred;
         FeeSummary {
-            loan_fully_repaid: <span class="self">self</span>.owed == <span class="number">0</span>,
-            cost_unit_limit: <span class="self">self</span>.limit,
-            cost_unit_consumed: consumed,
-            cost_unit_price: <span class="self">self</span>.cost_unit_price,
+            cost_unit_limit: <span class="self">self</span>.cost_unit_limit,
+            cost_unit_consumed: <span class="self">self</span>.cost_unit_consumed,
+            cost_unit_price: u128_to_decimal(<span class="self">self</span>.cost_unit_price),
             tip_percentage: <span class="self">self</span>.tip_percentage,
-            burned: <span class="self">self</span>.cost_unit_price * consumed,
-            tipped: <span class="self">self</span>.cost_unit_price * <span class="self">self</span>.tip_percentage / <span class="number">100 </span>* consumed,
-            payments: <span class="self">self</span>.payments,
-            cost_breakdown: <span class="self">self</span>.cost_breakdown,
+            total_execution_cost_xrd: u128_to_decimal(
+                <span class="self">self</span>.execution_price() * <span class="self">self</span>.execution.values().sum::&lt;u32&gt;() <span class="kw">as </span>u128,
+            ),
+            total_royalty_cost_xrd: u128_to_decimal(
+                <span class="self">self</span>.royalty_price() * <span class="self">self</span>.royalty.values().sum::&lt;u32&gt;() <span class="kw">as </span>u128,
+            ),
+            bad_debt_xrd: u128_to_decimal(<span class="self">self</span>.xrd_owed),
+            vault_locks: <span class="self">self</span>.payments,
+            vault_payments_xrd: <span class="prelude-val">None</span>, <span class="comment">// Resolved later
+            </span>execution_cost_unit_breakdown: <span class="self">self
+                </span>.execution
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v))
+                .collect(),
+            royalty_cost_unit_breakdown: <span class="self">self</span>.royalty,
         }
-    }
-
-    <span class="kw">fn </span>limit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
-        <span class="self">self</span>.limit
-    }
-
-    <span class="kw">fn </span>consumed_instant(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
-        <span class="self">self</span>.consumed_instant
-    }
-
-    <span class="kw">fn </span>consumed_deferred(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
-        <span class="self">self</span>.consumed_deferred
-    }
-
-    <span class="kw">fn </span>balance(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
-        <span class="self">self</span>.balance
-    }
-
-    <span class="kw">fn </span>owed(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u32 {
-        <span class="self">self</span>.owed
     }
 }
 
 <span class="kw">impl </span>Default <span class="kw">for </span>SystemLoanFeeReserve {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>::new(
-            DEFAULT_COST_UNIT_LIMIT,
+            DEFAULT_COST_UNIT_PRICE,
             <span class="number">0</span>,
-            DEFAULT_COST_UNIT_PRICE
-                .parse()
-                .expect(<span class="string">&quot;Invalid DEFAULT_COST_UNIT_PRICE&quot;</span>),
+            DEFAULT_COST_UNIT_LIMIT,
             DEFAULT_SYSTEM_LOAN,
         )
     }
@@ -542,64 +720,104 @@
 <span class="attribute">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use </span>scrypto::{constants::RADIX_TOKEN, crypto::Hash};
+    <span class="kw">use </span>radix_engine_interface::constants::RADIX_TOKEN;
 
-    <span class="kw">const </span>TEST_VAULT_ID: VaultId = (Hash([<span class="number">0u8</span>; <span class="number">32</span>]), <span class="number">1</span>);
+    <span class="kw">const </span>TEST_VAULT_ID: VaultId = [<span class="number">0u8</span>; <span class="number">36</span>];
 
-    <span class="kw">fn </span>xrd&lt;T: Into&lt;Decimal&gt;&gt;(amount: T) -&gt; ResourceContainer {
-        ResourceContainer::new_fungible(RADIX_TOKEN, <span class="number">18</span>, amount.into())
+    <span class="kw">fn </span>xrd&lt;T: Into&lt;Decimal&gt;&gt;(amount: T) -&gt; Resource {
+        Resource::new_fungible(RADIX_TOKEN, <span class="number">18</span>, amount.into())
     }
 
     <span class="attribute">#[test]
     </span><span class="kw">fn </span>test_consume_and_repay() {
-        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(<span class="number">100</span>, <span class="number">0</span>, <span class="number">1</span>.into(), <span class="number">5</span>);
-        fee_reserve.consume(<span class="number">2</span>, <span class="string">&quot;test&quot;</span>, <span class="bool-val">false</span>).unwrap();
-        fee_reserve.repay(TEST_VAULT_ID, xrd(<span class="number">3</span>), <span class="bool-val">false</span>).unwrap();
-        <span class="macro">assert_eq!</span>(<span class="number">3</span>, fee_reserve.balance());
-        <span class="macro">assert_eq!</span>(<span class="number">2</span>, fee_reserve.consumed_instant());
-        <span class="macro">assert_eq!</span>(<span class="number">2</span>, fee_reserve.owed());
+        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(<span class="macro">dec!</span>(<span class="number">1</span>)), <span class="number">2</span>, <span class="number">100</span>, <span class="number">5</span>);
+        fee_reserve.consume_execution(<span class="number">2</span>, <span class="number">1</span>, <span class="string">&quot;test&quot;</span>, <span class="bool-val">false</span>).unwrap();
+        fee_reserve.lock_fee(TEST_VAULT_ID, xrd(<span class="number">3</span>), <span class="bool-val">false</span>).unwrap();
+        <span class="kw">let </span>summary = fee_reserve.finalize();
+        <span class="macro">assert_eq!</span>(summary.loan_fully_repaid(), <span class="bool-val">true</span>);
+        <span class="macro">assert_eq!</span>(summary.cost_unit_consumed, <span class="number">2</span>);
+        <span class="macro">assert_eq!</span>(summary.total_execution_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;2&quot;</span>) + <span class="macro">dec!</span>(<span class="string">&quot;0.04&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.total_royalty_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.bad_debt_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
     }
 
     <span class="attribute">#[test]
     </span><span class="kw">fn </span>test_out_of_cost_unit() {
-        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(<span class="number">100</span>, <span class="number">0</span>, <span class="number">1</span>.into(), <span class="number">5</span>);
+        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(<span class="macro">dec!</span>(<span class="number">1</span>)), <span class="number">2</span>, <span class="number">100</span>, <span class="number">5</span>);
         <span class="macro">assert_eq!</span>(
-            <span class="prelude-val">Err</span>(FeeReserveError::OutOfCostUnit),
-            fee_reserve.consume(<span class="number">6</span>, <span class="string">&quot;test&quot;</span>, <span class="bool-val">false</span>)
+            <span class="prelude-val">Err</span>(FeeReserveError::InsufficientBalance),
+            fee_reserve.consume_execution(<span class="number">6</span>, <span class="number">1</span>, <span class="string">&quot;test&quot;</span>, <span class="bool-val">false</span>)
         );
+        <span class="kw">let </span>summary = fee_reserve.finalize();
+        <span class="macro">assert_eq!</span>(summary.loan_fully_repaid(), <span class="bool-val">true</span>);
+        <span class="macro">assert_eq!</span>(summary.cost_unit_consumed, <span class="number">0</span>);
+        <span class="macro">assert_eq!</span>(summary.total_execution_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.total_royalty_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.bad_debt_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
     }
 
     <span class="attribute">#[test]
-    </span><span class="kw">fn </span>test_overflow() {
-        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(<span class="number">100</span>, <span class="number">0</span>, <span class="number">1</span>.into(), <span class="number">0</span>);
-        <span class="macro">assert_eq!</span>(
-            <span class="prelude-val">Ok</span>(xrd(<span class="number">0</span>)),
-            fee_reserve.repay(TEST_VAULT_ID, xrd(u32::max_value()), <span class="bool-val">false</span>)
-        );
-        <span class="macro">assert_eq!</span>(
-            <span class="prelude-val">Err</span>(FeeReserveError::Overflow),
-            fee_reserve.repay(TEST_VAULT_ID, xrd(<span class="number">1</span>), <span class="bool-val">false</span>)
-        );
-    }
-
-    <span class="attribute">#[test]
-    </span><span class="kw">fn </span>test_repay() {
-        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(<span class="number">100</span>, <span class="number">0</span>, <span class="number">1</span>.into(), <span class="number">500</span>);
-        fee_reserve.repay(TEST_VAULT_ID, xrd(<span class="number">100</span>), <span class="bool-val">false</span>).unwrap();
-        <span class="macro">assert_eq!</span>(<span class="number">500</span>, fee_reserve.balance());
-        <span class="macro">assert_eq!</span>(<span class="number">400</span>, fee_reserve.owed());
+    </span><span class="kw">fn </span>test_lock_fee() {
+        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(<span class="macro">dec!</span>(<span class="number">1</span>)), <span class="number">2</span>, <span class="number">100</span>, <span class="number">500</span>);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(<span class="number">100</span>), <span class="bool-val">false</span>)
+            .unwrap();
+        <span class="kw">let </span>summary = fee_reserve.finalize();
+        <span class="macro">assert_eq!</span>(summary.loan_fully_repaid(), <span class="bool-val">true</span>);
+        <span class="macro">assert_eq!</span>(summary.cost_unit_consumed, <span class="number">0</span>);
+        <span class="macro">assert_eq!</span>(summary.total_execution_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.total_royalty_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.bad_debt_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
     }
 
     <span class="attribute">#[test]
     </span><span class="kw">fn </span>test_xrd_cost_unit_conversion() {
-        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(<span class="number">100</span>, <span class="number">0</span>, <span class="number">5</span>.into(), <span class="number">500</span>);
-        fee_reserve.repay(TEST_VAULT_ID, xrd(<span class="number">100</span>), <span class="bool-val">false</span>).unwrap();
-        <span class="macro">assert_eq!</span>(<span class="number">500</span>, fee_reserve.balance());
-        <span class="macro">assert_eq!</span>(<span class="number">500 </span>- <span class="number">100 </span>/ <span class="number">5</span>, fee_reserve.owed());
-        <span class="macro">assert_eq!</span>(
-            <span class="macro">vec!</span>[(TEST_VAULT_ID, xrd(<span class="number">100</span>), <span class="bool-val">false</span>)],
-            fee_reserve.finalize().payments
-        )
+        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(<span class="macro">dec!</span>(<span class="number">5</span>)), <span class="number">0</span>, <span class="number">100</span>, <span class="number">500</span>);
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(<span class="number">100</span>), <span class="bool-val">false</span>)
+            .unwrap();
+        <span class="kw">let </span>summary = fee_reserve.finalize();
+        <span class="macro">assert_eq!</span>(summary.loan_fully_repaid(), <span class="bool-val">true</span>);
+        <span class="macro">assert_eq!</span>(summary.cost_unit_consumed, <span class="number">0</span>);
+        <span class="macro">assert_eq!</span>(summary.total_execution_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.total_royalty_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.bad_debt_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.vault_locks, <span class="macro">vec!</span>[(TEST_VAULT_ID, xrd(<span class="number">100</span>), <span class="bool-val">false</span>)],);
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_bad_debt() {
+        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(<span class="macro">dec!</span>(<span class="number">5</span>)), <span class="number">1</span>, <span class="number">100</span>, <span class="number">50</span>);
+        fee_reserve.consume_execution(<span class="number">2</span>, <span class="number">1</span>, <span class="string">&quot;test&quot;</span>, <span class="bool-val">false</span>).unwrap();
+        <span class="kw">let </span>summary = fee_reserve.finalize();
+        <span class="macro">assert_eq!</span>(summary.loan_fully_repaid(), <span class="bool-val">false</span>);
+        <span class="macro">assert_eq!</span>(summary.cost_unit_consumed, <span class="number">2</span>);
+        <span class="macro">assert_eq!</span>(summary.total_execution_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;10.1&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.total_royalty_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.bad_debt_xrd, <span class="macro">dec!</span>(<span class="string">&quot;10.1&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.vault_locks, <span class="macro">vec!</span>[],);
+    }
+
+    <span class="attribute">#[test]
+    </span><span class="kw">fn </span>test_royalty_execution_mix() {
+        <span class="kw">let </span><span class="kw-2">mut </span>fee_reserve = SystemLoanFeeReserve::new(decimal_to_u128(<span class="macro">dec!</span>(<span class="number">5</span>)), <span class="number">1</span>, <span class="number">100</span>, <span class="number">50</span>);
+        fee_reserve.consume_execution(<span class="number">2</span>, <span class="number">1</span>, <span class="string">&quot;test&quot;</span>, <span class="bool-val">false</span>).unwrap();
+        fee_reserve
+            .consume_royalty(
+                RoyaltyReceiver::Package(FAUCET_PACKAGE, RENodeId::Package([<span class="number">0u8</span>; <span class="number">36</span>])),
+                <span class="number">2</span>,
+            )
+            .unwrap();
+        fee_reserve
+            .lock_fee(TEST_VAULT_ID, xrd(<span class="number">100</span>), <span class="bool-val">false</span>)
+            .unwrap();
+        <span class="kw">let </span>summary = fee_reserve.finalize();
+        <span class="macro">assert_eq!</span>(summary.loan_fully_repaid(), <span class="bool-val">true</span>);
+        <span class="macro">assert_eq!</span>(summary.cost_unit_consumed, <span class="number">4</span>);
+        <span class="macro">assert_eq!</span>(summary.total_execution_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;10.1&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.total_royalty_cost_xrd, <span class="macro">dec!</span>(<span class="string">&quot;10&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.bad_debt_xrd, <span class="macro">dec!</span>(<span class="string">&quot;0&quot;</span>));
+        <span class="macro">assert_eq!</span>(summary.vault_locks, <span class="macro">vec!</span>[(TEST_VAULT_ID, xrd(<span class="number">100</span>), <span class="bool-val">false</span>)],);
     }
 }
 </code></pre></div>

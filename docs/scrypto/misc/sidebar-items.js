@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":[["combine","Combines a u8 with a u8 slice."],["copy_u8_array","Copies a slice to a fixed-sized array."],["set_up_panic_hook","Sets up panic hook."]]};

@@ -10,8 +10,8 @@ are used; see <a href="../std/fmt/index.html"><code>std::fmt</code></a> for more
 <p>A common use for <code>format!</code> is concatenation and interpolation of strings.
 The same convention is used with <a href="../std/macro.print.html"><code>print!</code></a> and <a href="https://doc.rust-lang.org/1.65.0/core/macro.write.html"><code>write!</code></a> macros,
 depending on the intended destination of the string.</p>
-<p>To convert a single value to a string, use the <a href="trait.ToString.html"><code>to_string</code></a> method. This
-will use the <a href="fmt/trait.Display.html"><code>Display</code></a> formatting trait.</p>
+<p>To convert a single value to a string, use the <a href="rust/string/trait.ToString.html"><code>to_string</code></a> method. This
+will use the <a href="rust/fmt/trait.Display.html"><code>Display</code></a> formatting trait.</p>
 <h2 id="panics"><a href="#panics">Panics</a></h2>
 <p><code>format!</code> panics if a formatting trait implementation returns an error.
 This indicates an incorrect implementation

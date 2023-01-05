@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `src/engine/system_api.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>system_api.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `radix-engine/src/engine/system_api.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>system_api.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" href="../../../normalize.css"><link rel="stylesheet" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" href="../../../ayu.css" disabled><link rel="stylesheet" href="../../../dark.css" disabled><link rel="stylesheet" href="../../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../../storage.js"></script><script defer src="../../../source-script.js"></script><script defer src="../../../source-files.js"></script><script defer src="../../../main.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a><h2 class="location"></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../../../radix_engine/index.html"><div class="logo-container"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></div></a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../../radix_engine/index.html"><img class="rust-logo" src="../../../rust-logo.svg" alt="logo"></a><nav class="sub"><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><button type="button">?</button></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../wheel.svg"></a></div></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
 <span id="2">2</span>
 <span id="3">3</span>
 <span id="4">4</span>
@@ -81,88 +81,136 @@
 <span id="81">81</span>
 <span id="82">82</span>
 <span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
 </pre><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::engine::node::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::engine::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::fee::FeeReserve;
-<span class="kw">use </span><span class="kw">crate</span>::model::AuthZone;
-<span class="kw">use </span><span class="kw">crate</span>::model::ResourceContainer;
+<span class="kw">use </span><span class="kw">crate</span>::model::{Resource, SubstateRef, SubstateRefMut};
 <span class="kw">use </span><span class="kw">crate</span>::types::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::wasm::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::wasm::WasmEngine;
+<span class="kw">use </span>bitflags::bitflags;
+<span class="kw">use </span>radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
 
-<span class="kw">pub trait </span>SystemApi&lt;<span class="lifetime">&#39;s</span>, W, I, R&gt;
-<span class="kw">where
-    </span>W: WasmEngine&lt;I&gt;,
-    I: WasmInstance,
-    R: FeeReserve,
-{
-    <span class="comment">// TODO: possible to consider AuthZone as a RENode?
-    </span><span class="kw">fn </span>auth_zone(<span class="kw-2">&amp;mut </span><span class="self">self</span>, frame_id: usize) -&gt; <span class="kw-2">&amp;mut </span>AuthZone;
+<span class="macro">bitflags! </span>{
+    <span class="attribute">#[derive(Encode, Decode, TypeId)]
+    </span><span class="kw">pub struct </span>LockFlags: u32 {
+        <span class="doccomment">/// Allows the locked substate to be mutated
+        </span><span class="kw">const </span>MUTABLE = <span class="number">0b00000001</span>;
+        <span class="doccomment">/// Checks that the substate locked is unmodified from the beginning of
+        /// the transaction. This is used mainly for locking fees in vaults which
+        /// requires this in order to be able to support rollbacks
+        </span><span class="kw">const </span>UNMODIFIED_BASE = <span class="number">0b00000010</span>;
+        <span class="doccomment">/// Forces a write of a substate even on a transaction failure
+        /// Currently used for vault fees.
+        </span><span class="kw">const </span>FORCE_WRITE = <span class="number">0b00000100</span>;
+    }
+}
+
+<span class="kw">impl </span>LockFlags {
+    <span class="kw">pub fn </span>read_only() -&gt; <span class="self">Self </span>{
+        LockFlags::empty()
+    }
+}
+
+<span class="kw">pub struct </span>LockInfo {
+    <span class="kw">pub </span>offset: SubstateOffset,
+}
+
+<span class="kw">pub trait </span>SystemApi {
+    <span class="kw">fn </span>execute_in_mode&lt;X, RTN, E&gt;(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        execution_mode: ExecutionMode,
+        execute: X,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;RTN, RuntimeError&gt;
+    <span class="kw">where
+        </span>RuntimeError: From&lt;E&gt;,
+        X: FnOnce(<span class="kw-2">&amp;mut </span><span class="self">Self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;RTN, E&gt;;
 
     <span class="kw">fn </span>consume_cost_units(<span class="kw-2">&amp;mut </span><span class="self">self</span>, units: u32) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;;
 
     <span class="kw">fn </span>lock_fee(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         vault_id: VaultId,
-        fee: ResourceContainer,
+        fee: Resource,
         contingent: bool,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ResourceContainer, RuntimeError&gt;;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Resource, RuntimeError&gt;;
 
-    <span class="kw">fn </span>invoke_function(
+    <span class="doccomment">/// Retrieve the running actor for the current frame
+    </span><span class="kw">fn </span>get_actor(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>REActor;
+
+    <span class="doccomment">/// Retrieves all nodes referenceable by the current frame
+    </span><span class="kw">fn </span>get_visible_node_ids(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;RENodeId&gt;, RuntimeError&gt;;
+
+    <span class="kw">fn </span>get_visible_node_data(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        fn_identifier: FnIdentifier,
-        input: ScryptoValue,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, RuntimeError&gt;;
-
-    <span class="kw">fn </span>invoke_method(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        receiver: Receiver,
-        function: FnIdentifier,
-        input: ScryptoValue,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, RuntimeError&gt;;
-
-    <span class="comment">// TODO: Convert to substate_borrow
-    </span><span class="kw">fn </span>borrow_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_id: <span class="kw-2">&amp;</span>RENodeId) -&gt; <span class="prelude-ty">Result</span>&lt;RENodeRef&lt;<span class="lifetime">&#39;_</span>, <span class="lifetime">&#39;s</span>, R&gt;, RuntimeError&gt;;
+        node_id: RENodeId,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;RENodeVisibilityOrigin, RuntimeError&gt;;
 
     <span class="doccomment">/// Removes an RENode and all of it&#39;s children from the Heap
-    </span><span class="kw">fn </span>node_drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_id: <span class="kw-2">&amp;</span>RENodeId) -&gt; <span class="prelude-ty">Result</span>&lt;HeapRootRENode, RuntimeError&gt;;
+    </span><span class="kw">fn </span>drop_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_id: RENodeId) -&gt; <span class="prelude-ty">Result</span>&lt;HeapRENode, RuntimeError&gt;;
 
-    <span class="doccomment">/// Creates a new RENode and places it in the Heap
-    </span><span class="kw">fn </span>node_create(<span class="kw-2">&amp;mut </span><span class="self">self</span>, re_node: HeapRENode) -&gt; <span class="prelude-ty">Result</span>&lt;RENodeId, RuntimeError&gt;;
+    <span class="doccomment">/// Allocates a new node id useable for create_node
+    </span><span class="kw">fn </span>allocate_node_id(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_type: RENodeType) -&gt; <span class="prelude-ty">Result</span>&lt;RENodeId, RuntimeError&gt;;
 
-    <span class="doccomment">/// Moves an RENode from Heap to Store
-    </span><span class="kw">fn </span>node_globalize(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_id: RENodeId) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;;
+    <span class="doccomment">/// Creates a new RENode
+    /// TODO: Remove, replace with lock_substate + get_ref_mut use
+    </span><span class="kw">fn </span>create_node(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_id: RENodeId, re_node: RENode) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;;
 
-    <span class="doccomment">/// Borrow a mutable substate
-    </span><span class="kw">fn </span>substate_borrow_mut(
+    <span class="doccomment">/// Locks a visible substate
+    </span><span class="kw">fn </span>lock_substate(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        substate_id: <span class="kw-2">&amp;</span>SubstateId,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;NativeSubstateRef, RuntimeError&gt;;
+        node_id: RENodeId,
+        offset: SubstateOffset,
+        flags: LockFlags,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;LockHandle, RuntimeError&gt;;
 
-    <span class="doccomment">/// Return a mutable substate
-    </span><span class="kw">fn </span>substate_return_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val_ref: NativeSubstateRef) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;;
+    <span class="kw">fn </span>get_lock_info(<span class="kw-2">&amp;mut </span><span class="self">self</span>, lock_handle: LockHandle) -&gt; <span class="prelude-ty">Result</span>&lt;LockInfo, RuntimeError&gt;;
 
-    <span class="comment">// TODO: Convert use substate_borrow interface
-    </span><span class="kw">fn </span>substate_read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, RuntimeError&gt;;
-    <span class="kw">fn </span>substate_write(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        substate_id: SubstateId,
-        value: ScryptoValue,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;;
-    <span class="kw">fn </span>substate_take(<span class="kw-2">&amp;mut </span><span class="self">self</span>, substate_id: SubstateId) -&gt; <span class="prelude-ty">Result</span>&lt;ScryptoValue, RuntimeError&gt;;
+    <span class="doccomment">/// Drops a lock
+    </span><span class="kw">fn </span>drop_lock(<span class="kw-2">&amp;mut </span><span class="self">self</span>, lock_handle: LockHandle) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;;
 
-    <span class="kw">fn </span>transaction_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Hash, RuntimeError&gt;;
+    <span class="doccomment">/// Get a non-mutable reference to a locked substate
+    </span><span class="kw">fn </span>get_ref(<span class="kw-2">&amp;mut </span><span class="self">self</span>, lock_handle: LockHandle) -&gt; <span class="prelude-ty">Result</span>&lt;SubstateRef, RuntimeError&gt;;
+
+    <span class="doccomment">/// Get a mutable reference to a locked substate
+    </span><span class="kw">fn </span>get_ref_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>, lock_handle: LockHandle) -&gt; <span class="prelude-ty">Result</span>&lt;SubstateRefMut, RuntimeError&gt;;
+
+    <span class="kw">fn </span>read_transaction_hash(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Hash, RuntimeError&gt;;
 
     <span class="kw">fn </span>read_blob(<span class="kw-2">&amp;mut </span><span class="self">self</span>, blob_hash: <span class="kw-2">&amp;</span>Hash) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>[u8], RuntimeError&gt;;
 
     <span class="kw">fn </span>generate_uuid(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;u128, RuntimeError&gt;;
 
-    <span class="kw">fn </span>emit_log(<span class="kw-2">&amp;mut </span><span class="self">self</span>, level: Level, message: String) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;;
+    <span class="kw">fn </span>emit_event(<span class="kw-2">&amp;mut </span><span class="self">self</span>, event: Event) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;;
+}
 
-    <span class="kw">fn </span>check_access_rule(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        access_rule: AccessRule,
-        proof_ids: Vec&lt;ProofId&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;bool, RuntimeError&gt;;
+<span class="comment">// TODO: Clean this up
+</span><span class="kw">pub trait </span>ResolverApi&lt;W: WasmEngine&gt; {
+    <span class="kw">fn </span>deref(<span class="kw-2">&amp;mut </span><span class="self">self</span>, node_id: RENodeId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;(RENodeId, LockHandle)&gt;, RuntimeError&gt;;
+    <span class="kw">fn </span>vm(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ScryptoInterpreter&lt;W&gt;;
+    <span class="kw">fn </span>on_wasm_instantiation(<span class="kw-2">&amp;mut </span><span class="self">self</span>, code: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;(), RuntimeError&gt;;
 }
 </code></pre></div>
 </section></div></main><div id="rustdoc-vars" data-root-path="../../../" data-current-crate="radix_engine" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.65.0 (897e37553 2022-11-02)" ></div></body></html>

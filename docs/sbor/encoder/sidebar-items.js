@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["EncodeError","Represents an error occurred during encoding."]],"struct":[["VecEncoder","An `Encoder` abstracts the logic for writing core types into a byte buffer."]],"trait":[["Encoder",""]]};
