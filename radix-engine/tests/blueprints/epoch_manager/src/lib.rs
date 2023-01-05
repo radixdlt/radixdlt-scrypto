@@ -11,12 +11,12 @@ blueprint! {
             Runtime::current_epoch()
         }
 
-        pub fn set_epoch(epoch_manager: SystemAddress, epoch: u64) {
+        pub fn next_round(epoch_manager: SystemAddress, round: u64) {
             let input = RadixEngineInput::Invoke(SerializedInvocation::Native(
-                NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
-                    EpochManagerSetEpochInvocation {
+                NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(
+                    EpochManagerNextRoundInvocation {
                         receiver: epoch_manager,
-                        epoch,
+                        round,
                     },
                 )),
             ));
