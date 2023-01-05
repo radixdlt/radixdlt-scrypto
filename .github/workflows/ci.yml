@@ -63,16 +63,16 @@ jobs:
     - name: Install dependencies
       if: runner.os == 'Windows'
       run: choco install llvm -y
-#    - name: Run tests
-#      run: bash ./tests/resim.sh
-#      working-directory: simulator
+    - name: Run tests
+      run: bash ./tests/resim.sh
+      working-directory: simulator
     - name: Run tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
 
-#    - name: Run tests
-#      run: bash ./tests/scrypto.sh
-#      working-directory: simulator
+    - name: Run tests
+      run: bash ./tests/scrypto.sh
+      working-directory: simulator
     - uses: actions/upload-artifact@v3
       with:
         name: artifact-${{ matrix.os }}
