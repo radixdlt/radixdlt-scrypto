@@ -44,7 +44,7 @@ jobs:
     - run: |
         echo HOME=$HOME
 
-    - uses: lrubaszewski/rust-cache@dont_clean_registry_src
+    - uses: lrubaszewski/rust-cache@allow_registry_src_caching
       with:
         key: with_registry_src
         cache-directories:
