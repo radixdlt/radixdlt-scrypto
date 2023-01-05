@@ -17,8 +17,6 @@ pub enum ScryptoCustomValue {
 
     // RE interpreted types
     Own(Own),
-    Component(ComponentId),
-    KeyValueStore(KeyValueStoreId),
     NonFungibleAddress(NonFungibleAddress),
     Blob(Blob),
 
@@ -55,12 +53,6 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             }
             ScryptoCustomValue::Own(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Own))
-            }
-            ScryptoCustomValue::Component(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Component))
-            }
-            ScryptoCustomValue::KeyValueStore(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore))
             }
             ScryptoCustomValue::Bucket(_) => {
                 encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Bucket))
@@ -112,8 +104,6 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
             ScryptoCustomValue::ResourceAddress(v) => v.encode_body(encoder),
             ScryptoCustomValue::SystemAddress(v) => v.encode_body(encoder),
             ScryptoCustomValue::Own(v) => v.encode_body(encoder),
-            ScryptoCustomValue::Component(v) => encoder.write_slice(v.as_slice()),
-            ScryptoCustomValue::KeyValueStore(v) => encoder.write_slice(v.as_slice()),
             ScryptoCustomValue::Bucket(v) => v.encode_body(encoder),
             ScryptoCustomValue::Proof(v) => v.encode_body(encoder),
             ScryptoCustomValue::Expression(v) => v.encode_body(encoder),
@@ -156,24 +146,6 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Scrypto
                 }
                 ScryptoCustomTypeId::Own => {
                     Own::decode_body_with_type_id(decoder, type_id).map(Self::Own)
-                }
-                ScryptoCustomTypeId::Component => {
-                    let n = 36;
-                    let slice = decoder.read_slice(n)?;
-                    Ok(Self::Component(
-                        slice
-                            .try_into()
-                            .map_err(|_| DecodeError::InvalidCustomValue)?,
-                    ))
-                }
-                ScryptoCustomTypeId::KeyValueStore => {
-                    let n = 36;
-                    let slice = decoder.read_slice(n)?;
-                    Ok(Self::KeyValueStore(
-                        slice
-                            .try_into()
-                            .map_err(|_| DecodeError::InvalidCustomValue)?,
-                    ))
                 }
                 ScryptoCustomTypeId::NonFungibleAddress => {
                     NonFungibleAddress::decode_body_with_type_id(decoder, type_id)
@@ -288,12 +260,8 @@ mod tests {
             Own::Bucket(1),
             Own::Proof(2),
             Own::Vault([3u8; 36]),
-            ScryptoValue::Custom {
-                value: ScryptoCustomValue::Component([4u8; 36]),
-            },
-            ScryptoValue::Custom {
-                value: ScryptoCustomValue::KeyValueStore([5u8; 36]),
-            },
+            Own::Component([4u8; 36]),
+            Own::KeyValueStore([5u8; 36]),
             NonFungibleAddress {
                 resource_address: ResourceAddress::Normal([6u8; 26]),
                 non_fungible_id: NonFungibleId::U32(7),
@@ -306,12 +274,12 @@ mod tests {
             vec![
                 92, 33, 7, 148, 0, 1, 0, 0, 0, 148, 1, 2, 0, 0, 0, 148, 2, 3, 3, 3, 3, 3, 3, 3, 3,
                 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                144, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 145, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 162, 0, 6, 6, 6, 6, 6,
-                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 7, 0, 0, 0, 161,
-                8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-                8, 8, 8, 8
+                148, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 148, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 162, 0, 6, 6, 6,
+                6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 7, 0, 0, 0,
+                161, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                8, 8, 8, 8, 8, 8
             ]
         );
         assert_eq!(
@@ -328,10 +296,10 @@ mod tests {
                         value: ScryptoCustomValue::Own(Own::Vault([3u8; 36])),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Component([4u8; 36]),
+                        value: ScryptoCustomValue::Own(Own::Component([4u8; 36])),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::KeyValueStore([5u8; 36]),
+                        value: ScryptoCustomValue::Own(Own::KeyValueStore([5u8; 36])),
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::NonFungibleAddress(NonFungibleAddress {

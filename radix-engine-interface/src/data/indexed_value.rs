@@ -36,8 +36,6 @@ pub struct IndexedScryptoValue {
 
     // RE interpreted
     pub owned_nodes: HashSet<Own>,
-    pub kv_store_ids: HashSet<KeyValueStoreId>,
-    pub component_ids: HashSet<ComponentId>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
     pub blobs: Vec<(Blob, SborPath)>,
 
@@ -80,8 +78,6 @@ impl IndexedScryptoValue {
             system_addresses: visitor.system_addresses,
 
             owned_nodes: visitor.owned_nodes,
-            kv_store_ids: visitor.kv_stores,
-            component_ids: visitor.components,
             non_fungible_addresses: visitor.non_fungible_addresses,
             blobs: visitor.blobs,
 
@@ -95,28 +91,28 @@ impl IndexedScryptoValue {
         let mut node_ids = HashSet::new();
         for ownership in &self.owned_nodes {
             match ownership {
-                Own::Vault(vault_id) => {
-                    node_ids.insert(RENodeId::Vault(*vault_id));
-                }
                 Own::Bucket(bucket_id) => {
                     node_ids.insert(RENodeId::Bucket(*bucket_id));
                 }
                 Own::Proof(proof_id) => {
                     node_ids.insert(RENodeId::Proof(*proof_id));
                 }
+                Own::Vault(vault_id) => {
+                    node_ids.insert(RENodeId::Vault(*vault_id));
+                }
+                Own::Component(component_id) => {
+                    node_ids.insert(RENodeId::Component(*component_id));
+                }
+                Own::KeyValueStore(kv_store_id) => {
+                    node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
+                }
             }
-        }
-        for kv_store_id in &self.kv_store_ids {
-            node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
-        }
-        for component_id in &self.component_ids {
-            node_ids.insert(RENodeId::Component(*component_id));
         }
         node_ids
     }
 
     pub fn owned_node_count(&self) -> usize {
-        self.owned_nodes.len() + self.component_ids.len() + self.kv_store_ids.len()
+        self.owned_nodes.len()
     }
 
     pub fn global_references(&self) -> HashSet<GlobalAddress> {
@@ -253,8 +249,6 @@ pub struct ScryptoCustomValueVisitor {
     pub system_addresses: HashSet<SystemAddress>,
     // RE interpreted
     pub owned_nodes: HashSet<Own>,
-    pub kv_stores: HashSet<KeyValueStoreId>,
-    pub components: HashSet<ComponentId>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
     pub blobs: Vec<(Blob, SborPath)>,
     // TX interpreted
@@ -279,8 +273,6 @@ impl ScryptoCustomValueVisitor {
             system_addresses: HashSet::new(),
 
             owned_nodes: HashSet::new(),
-            kv_stores: HashSet::new(),
-            components: HashSet::new(),
             non_fungible_addresses: HashSet::new(),
             blobs: Vec::new(),
 
@@ -317,16 +309,6 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
             // RE interpreted
             ScryptoCustomValue::Own(value) => {
                 if !self.owned_nodes.insert(value.clone()) {
-                    return Err(ValueIndexingError::DuplicateOwnership);
-                }
-            }
-            ScryptoCustomValue::Component(value) => {
-                if !self.components.insert(value.clone()) {
-                    return Err(ValueIndexingError::DuplicateOwnership);
-                }
-            }
-            ScryptoCustomValue::KeyValueStore(value) => {
-                if !self.kv_stores.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
             }

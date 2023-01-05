@@ -223,8 +223,6 @@ pub enum Type {
 
     // RE interpreted types
     Own,
-    Component,
-    KeyValueStore,
     NonFungibleAddress,
     Blob,
 
@@ -289,8 +287,6 @@ pub enum Value {
 
     // RE interpreted types
     Own(Box<Value>),
-    Component(Box<Value>),
-    KeyValueStore(Box<Value>),
     NonFungibleAddress(Box<Value>, Box<Value>),
     Blob(Box<Value>),
 
@@ -352,17 +348,15 @@ impl Value {
             Value::ResourceAddress(_) => Type::ResourceAddress,
             Value::SystemAddress(_) => Type::SystemAddress,
 
-            // RE Nodes
-            Value::Component(_) => Type::Component,
-            Value::KeyValueStore(_) => Type::KeyValueStore,
+            // RE interpreted
+            Value::Own(_) => Type::Own,
+            Value::NonFungibleAddress(_, _) => Type::NonFungibleAddress,
+            Value::Blob(_) => Type::Blob,
+
+            // TX interpreted
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
-            Value::Own(_) => Type::Own,
-
-            // Other interpreted types
             Value::Expression(_) => Type::Expression,
-            Value::Blob(_) => Type::Blob,
-            Value::NonFungibleAddress(_, _) => Type::NonFungibleAddress,
 
             // Uninterpreted,
             Value::Hash(_) => Type::Hash,

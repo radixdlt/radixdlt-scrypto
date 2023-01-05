@@ -149,8 +149,15 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                     _ => None,
                 })
                 .collect();
-            let mut queue: VecDeque<KeyValueStoreId> =
-                state_data.kv_store_ids.iter().cloned().collect();
+            let mut queue: VecDeque<KeyValueStoreId> = state_data
+                .owned_nodes
+                .iter()
+                .cloned()
+                .filter_map(|o| match o {
+                    Own::KeyValueStore(kv_store_id) => Some(kv_store_id),
+                    _ => None,
+                })
+                .collect();
             while !queue.is_empty() {
                 let kv_store_id = queue.pop_front().unwrap();
                 let (maps, vaults) =
@@ -197,11 +204,13 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 key.display(value_display_context),
                 value.display(value_display_context)
             );
-            owned_kv_stores.extend(value.kv_store_ids);
             for ownership in value.owned_nodes {
                 match ownership {
                     Own::Vault(vault_id) => {
                         owned_vaults.push(vault_id);
+                    }
+                    Own::KeyValueStore(kv_store_id) => {
+                        owned_kv_stores.push(kv_store_id);
                     }
                     _ => {}
                 }

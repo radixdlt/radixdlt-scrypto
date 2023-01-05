@@ -13,6 +13,8 @@ pub enum Own {
     Bucket(BucketId),
     Proof(ProofId),
     Vault(VaultId),
+    Component(ComponentId),
+    KeyValueStore(KeyValueStoreId),
 }
 
 impl Own {
@@ -88,6 +90,14 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Own {
                 encoder.write_byte(2)?;
                 encoder.write_slice(v)?;
             }
+            Own::Component(v) => {
+                encoder.write_byte(3)?;
+                encoder.write_slice(v)?;
+            }
+            Own::KeyValueStore(v) => {
+                encoder.write_byte(4)?;
+                encoder.write_slice(v)?;
+            }
         }
         Ok(())
     }
@@ -107,6 +117,8 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Own {
                 decoder.read_slice(4)?,
             )))),
             2 => Ok(Self::Vault(copy_u8_array(decoder.read_slice(36)?))),
+            3 => Ok(Self::Component(copy_u8_array(decoder.read_slice(36)?))),
+            4 => Ok(Self::KeyValueStore(copy_u8_array(decoder.read_slice(36)?))),
             _ => Err(DecodeError::InvalidCustomValue),
         }
     }

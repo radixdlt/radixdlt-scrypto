@@ -195,8 +195,6 @@ pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoSborTypeId) -> 
             ScryptoCustomTypeId::ResourceAddress => f.write_str("ResourceAddress"),
             ScryptoCustomTypeId::SystemAddress => f.write_str("SystemAddress"),
             ScryptoCustomTypeId::Own => f.write_str("Own"),
-            ScryptoCustomTypeId::Component => f.write_str("Component"),
-            ScryptoCustomTypeId::KeyValueStore => f.write_str("KeyValueStore"),
             ScryptoCustomTypeId::Bucket => f.write_str("Bucket"),
             ScryptoCustomTypeId::Proof => f.write_str("Proof"),
             ScryptoCustomTypeId::Expression => f.write_str("Expression"),
@@ -290,12 +288,6 @@ pub fn format_custom_value<F: fmt::Write>(
         // RE interpreted
         ScryptoCustomValue::Own(value) => {
             write!(f, "Own(\"{:?}\")", value)?; // TODO: fix syntax
-        }
-        ScryptoCustomValue::Component(value) => {
-            write!(f, "Component(\"{}\")", hex::encode(value))?;
-        }
-        ScryptoCustomValue::KeyValueStore(value) => {
-            write!(f, "KeyValueStore(\"{}\")", hex::encode(value))?;
         }
         ScryptoCustomValue::NonFungibleAddress(value) => {
             f.write_str("NonFungibleAddress(\"")?;
