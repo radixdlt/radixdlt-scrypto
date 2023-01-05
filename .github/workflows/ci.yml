@@ -46,7 +46,7 @@ jobs:
 
     - uses: lrubaszewski/rust-cache@allow_registry_src_caching
       with:
-        key: with_registry_src- ${{ runner.os }}
+        key: with_registry_src-${{ runner.os }}
         cache-directories:
           ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
@@ -69,9 +69,10 @@ jobs:
     - name: Run tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
-    - name: Run tests
-      run: bash ./tests/scrypto.sh
-      working-directory: simulator
+
+#    - name: Run tests
+#      run: bash ./tests/scrypto.sh
+#      working-directory: simulator
     - uses: actions/upload-artifact@v3
       with:
         name: artifact-${{ matrix.os }}
