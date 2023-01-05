@@ -6,8 +6,8 @@ use radix_engine_interface::crypto::{
 };
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomValue, ScryptoDecode,
-    ScryptoSborTypeId, ScryptoValue,
+    scrypto_decode, scrypto_encode, ScryptoCustomValue, ScryptoDecode, ScryptoSborTypeId,
+    ScryptoValue,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
@@ -341,18 +341,15 @@ pub fn generate_instruction(
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
 
-            let args_encoded =
-                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
-            let args_indexed = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&args_indexed.buckets(), &args_indexed.proofs())
+                .move_resources(&args)
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallFunction {
                 package_address,
                 blueprint_name,
                 function_name,
-                args: args_encoded,
+                args,
             }
         }
         ast::Instruction::CallMethod {
@@ -364,17 +361,14 @@ pub fn generate_instruction(
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
 
-            let args_encoded =
-                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
-            let args_indexed = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&args_indexed.buckets(), &args_indexed.proofs())
+                .move_resources(&args)
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallMethod {
                 component_address,
                 method_name,
-                args: args_encoded,
+                args,
             }
         }
         ast::Instruction::PublishPackage {
@@ -1024,7 +1018,7 @@ fn generate_non_fungible_mint_params(
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>, GeneratorError> {
+) -> Result<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>, GeneratorError> {
     match value {
         ast::Value::Array(kind, elements) => {
             if kind != &ast::Type::Tuple {
@@ -1059,20 +1053,18 @@ fn generate_non_fungible_mint_params(
                                         });
                                     }
 
-                                    let immutable_data = scrypto_encode(&generate_args_from_tuple(
+                                    let immutable_data = generate_args_from_tuple(
                                         &values[0],
                                         resolver,
                                         bech32_decoder,
                                         blobs,
-                                    )?)
-                                    .map_err(GeneratorError::ArgumentEncodingError)?;
-                                    let mutable_data = scrypto_encode(&generate_args_from_tuple(
+                                    )?;
+                                    let mutable_data = generate_args_from_tuple(
                                         &values[1],
                                         resolver,
                                         bech32_decoder,
                                         blobs,
-                                    )?)
-                                    .map_err(GeneratorError::ArgumentEncodingError)?;
+                                    )?;
 
                                     (immutable_data, mutable_data)
                                 }

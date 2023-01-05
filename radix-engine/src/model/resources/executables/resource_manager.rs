@@ -17,6 +17,7 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
@@ -1053,7 +1054,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateNonFungible
     }
 }
 
-pub struct ResourceManagerUpdateNonFungibleDataExecutable(RENodeId, NonFungibleId, Vec<u8>);
+pub struct ResourceManagerUpdateNonFungibleDataExecutable(RENodeId, NonFungibleId, ScryptoValue);
 
 impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
     type Output = ();
@@ -1185,9 +1186,12 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetNonFungibleInv
 pub struct ResourceManagerGetNonFungibleExecutable(RENodeId, NonFungibleId);
 
 impl Executor for ResourceManagerGetNonFungibleExecutable {
-    type Output = [Vec<u8>; 2];
+    type Output = (ScryptoValue, ScryptoValue);
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
+    fn execute<Y>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((ScryptoValue, ScryptoValue), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1217,7 +1221,7 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
         let wrapper = non_fungible_ref.non_fungible();
         if let Some(non_fungible) = wrapper.0.as_ref() {
             Ok((
-                [non_fungible.immutable_data(), non_fungible.mutable_data()],
+                (non_fungible.immutable_data(), non_fungible.mutable_data()),
                 CallFrameUpdate::empty(),
             ))
         } else {

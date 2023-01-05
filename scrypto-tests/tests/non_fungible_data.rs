@@ -15,11 +15,8 @@ fn test_non_fungible_data() {
         a: 1,
         b: "Test".to_owned(),
     };
-    let instance_decoded = Sample::decode(
-        &instance.immutable_data().unwrap(),
-        &instance.mutable_data().unwrap(),
-    )
-    .unwrap();
+    let instance_decoded =
+        Sample::decode(&instance.immutable_data(), &instance.mutable_data()).unwrap();
     assert_eq!(instance_decoded, instance);
 
     let immutable_data_schema = Sample::immutable_data_schema();

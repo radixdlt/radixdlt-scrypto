@@ -77,9 +77,11 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 ..
             } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::Package(*package_address)));
-                for node_id in slice_to_global_references(args) {
-                    update.add_ref(node_id);
-                }
+                IndexedScryptoValue::from_value(args.clone())
+                    .global_references()
+                    .into_iter()
+                    .map(|addr| RENodeId::Global(addr))
+                    .for_each(|node_id| update.add_ref(node_id));
             }
             BasicInstruction::CallMethod {
                 args,
@@ -89,9 +91,11 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 update.add_ref(RENodeId::Global(GlobalAddress::Component(
                     *component_address,
                 )));
-                for node_id in slice_to_global_references(args) {
-                    update.add_ref(node_id);
-                }
+                IndexedScryptoValue::from_value(args.clone())
+                    .global_references()
+                    .into_iter()
+                    .map(|addr| RENodeId::Global(addr))
+                    .for_each(|node_id| update.add_ref(node_id));
             }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
@@ -179,15 +183,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             }
         }
     }
-}
-
-fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
-    let scrypto_value = IndexedScryptoValue::from_slice(slice).expect("Invalid CALL arguments");
-    scrypto_value
-        .global_references()
-        .into_iter()
-        .map(|addr| RENodeId::Global(addr))
-        .collect()
 }
 
 impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvocation<'a> {
@@ -382,10 +377,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     args,
                 }) => {
                     let args = processor
-                        .replace_manifest_values(
-                            IndexedScryptoValue::from_slice(args)
-                                .expect("Invalid CALL_FUNCTION arguments"),
-                        )
+                        .replace_manifest_values(IndexedScryptoValue::from_value(args.clone()))
                         .map_err(|e| {
                             RuntimeError::ApplicationError(
                                 ApplicationError::TransactionProcessorError(e),
@@ -414,10 +406,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     args,
                 }) => {
                     let args = processor
-                        .replace_manifest_values(
-                            IndexedScryptoValue::from_slice(args)
-                                .expect("Invalid CALL_METHOD arguments"),
-                        )
+                        .replace_manifest_values(IndexedScryptoValue::from_value(args.clone()))
                         .map_err(|e| {
                             RuntimeError::ApplicationError(
                                 ApplicationError::TransactionProcessorError(e),

@@ -96,7 +96,7 @@ macro_rules! args {
             let arg = $args;
             encoder.encode(&arg).unwrap();
         )*
-        buf
+        radix_engine_interface::data::scrypto_decode::<ScryptoValue>(&buf).unwrap()
     }};
 }
 
@@ -127,10 +127,13 @@ mod tests {
 
         assert_eq!(
             args!(1u32, "abc"),
-            scrypto_encode(&A {
-                a: 1,
-                b: "abc".to_owned(),
-            })
+            scrypto_decode(
+                &scrypto_encode(&A {
+                    a: 1,
+                    b: "abc".to_owned(),
+                })
+                .unwrap()
+            )
             .unwrap()
         )
     }

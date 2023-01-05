@@ -476,7 +476,7 @@ impl NonFungibleResourceBuilder {
     {
         let mut encoded = BTreeMap::new();
         for (id, e) in entries {
-            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
+            encoded.insert(id, (e.immutable_data(), e.mutable_data()));
         }
         self.build(Some(MintParams::NonFungible { entries: encoded }))
             .1
@@ -515,7 +515,7 @@ impl NonFungibleResourceBuilder {
     {
         let mut encoded = BTreeMap::new();
         for (id, e) in entries {
-            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
+            encoded.insert(id, (e.immutable_data(), e.mutable_data()));
         }
 
         let (_resource_address, bucket) = ScryptoEnv
@@ -640,7 +640,7 @@ impl NonFungibleResourceWithAuthBuilder {
     {
         let mut encoded = BTreeMap::new();
         for (id, e) in entries {
-            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
+            encoded.insert(id, (e.immutable_data(), e.mutable_data()));
         }
         self.build(Some(MintParams::NonFungible { entries: encoded }))
             .1

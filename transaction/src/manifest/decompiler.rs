@@ -593,11 +593,9 @@ pub fn format_entity_address<F: fmt::Write>(
 pub fn format_args<F: fmt::Write>(
     f: &mut F,
     context: &mut DecompilationContext,
-    args: &Vec<u8>,
+    args: &ScryptoValue,
 ) -> Result<(), DecompileError> {
-    let value =
-        IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
-    if let SborValue::Tuple { fields } = value.value {
+    if let SborValue::Tuple { fields } = args {
         for field in fields {
             let bytes = scrypto_encode(&field)?;
             let arg = IndexedScryptoValue::from_slice(&bytes)
@@ -613,18 +611,12 @@ pub fn format_args<F: fmt::Write>(
 }
 
 fn transform_non_fungible_mint_params(
-    mint_params: &BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+    mint_params: &BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>,
 ) -> Result<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>, DecodeError> {
     let mut mint_params_scrypto_value =
         BTreeMap::<NonFungibleId, (ScryptoValue, ScryptoValue)>::new();
-    for (id, (immutable_data, mutable_data)) in mint_params.into_iter() {
-        mint_params_scrypto_value.insert(
-            id.clone(),
-            (
-                scrypto_decode(&immutable_data)?,
-                scrypto_decode(&mutable_data)?,
-            ),
-        );
+    for (id, (immutable_data, mutable_data)) in mint_params.clone().into_iter() {
+        mint_params_scrypto_value.insert(id.clone(), (immutable_data, mutable_data));
     }
     Ok(mint_params_scrypto_value)
 }

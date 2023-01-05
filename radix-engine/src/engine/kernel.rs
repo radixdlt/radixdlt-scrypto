@@ -174,7 +174,7 @@ where
                         blueprint_name: "Account".to_string(),
                         function_name: "create".to_string(),
                     },
-                    IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
+                    IndexedScryptoValue::from_value(args!(access_rule)),
                 ))?;
                 let component_id = result
                     .owned_node_ids()

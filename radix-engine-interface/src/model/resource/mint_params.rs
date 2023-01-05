@@ -1,22 +1,21 @@
 use sbor::rust::collections::BTreeMap;
-use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::data::ScryptoValue;
 use crate::math::*;
 use crate::model::*;
 use crate::scrypto;
-use crate::Describe;
 
 /// Represents the minting config
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Encode, Decode, TypeId, Describe)]
+#[scrypto(Encode, Decode, TypeId)]
 pub enum MintParams {
     /// To mint fungible resource, represented by an amount
     Fungible { amount: Decimal },
 
     /// To mint non-fungible resource, represented by non-fungible id and data pairs
     NonFungible {
-        entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+        entries: BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>,
     },
 }
 
@@ -34,7 +33,7 @@ impl MintParams {
     {
         let mut encoded = BTreeMap::new();
         for (id, e) in entries {
-            encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
+            encoded.insert(id, (e.immutable_data(), e.mutable_data()));
         }
 
         Self::NonFungible { entries: encoded }

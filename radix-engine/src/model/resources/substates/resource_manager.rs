@@ -1,6 +1,7 @@
 use crate::model::{InvokeError, NonFungible, Resource, ResourceManagerError};
 use crate::types::*;
 use radix_engine_interface::api::types::NonFungibleStoreId;
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 
@@ -93,7 +94,7 @@ impl ResourceManagerSubstate {
 
     pub fn mint_non_fungibles(
         &mut self,
-        entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+        entries: BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>,
         self_address: ResourceAddress,
     ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
     {

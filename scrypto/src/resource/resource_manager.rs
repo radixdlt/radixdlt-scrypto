@@ -2,6 +2,7 @@ use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
     GlobalAddress, MetadataMethod, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod,
 };
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
@@ -211,7 +212,7 @@ impl ResourceManager {
         .unwrap()
     }
 
-    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
+    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: ScryptoValue) {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateNonFungibleDataInvocation {
             id,
@@ -221,7 +222,7 @@ impl ResourceManager {
         .unwrap()
     }
 
-    fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
+    fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> (ScryptoValue, ScryptoValue) {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerGetNonFungibleInvocation {
             id,
@@ -265,10 +266,7 @@ impl ResourceManager {
     /// Mints non-fungible resources
     pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
         let mut entries = BTreeMap::new();
-        entries.insert(
-            id.clone(),
-            (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
-        );
+        entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
         self.mint_internal(MintParams::NonFungible { entries })
     }
 
@@ -278,7 +276,7 @@ impl ResourceManager {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
         let non_fungible = self.get_non_fungible_data_internal(id.clone());
-        T::decode(&non_fungible[0], &non_fungible[1]).unwrap()
+        T::decode(&non_fungible.0, &non_fungible.1).unwrap()
     }
 
     /// Updates the mutable part of a non-fungible unit.
@@ -290,6 +288,6 @@ impl ResourceManager {
         id: &NonFungibleId,
         new_data: T,
     ) {
-        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data().unwrap())
+        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
     }
 }

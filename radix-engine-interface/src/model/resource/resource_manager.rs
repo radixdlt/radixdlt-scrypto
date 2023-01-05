@@ -1,3 +1,4 @@
+use crate::data::ScryptoValue;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
@@ -269,7 +270,7 @@ impl Into<SerializedInvocation> for ResourceManagerGetTotalSupplyInvocation {
 pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub receiver: ResourceAddress,
     pub id: NonFungibleId,
-    pub data: Vec<u8>,
+    pub data: ScryptoValue,
 }
 
 impl Invocation for ResourceManagerUpdateNonFungibleDataInvocation {
@@ -315,11 +316,11 @@ pub struct ResourceManagerGetNonFungibleInvocation {
 }
 
 impl Invocation for ResourceManagerGetNonFungibleInvocation {
-    type Output = [Vec<u8>; 2];
+    type Output = (ScryptoValue, ScryptoValue);
 }
 
 impl SerializableInvocation for ResourceManagerGetNonFungibleInvocation {
-    type ScryptoOutput = [Vec<u8>; 2];
+    type ScryptoOutput = (ScryptoValue, ScryptoValue);
 }
 
 impl Into<SerializedInvocation> for ResourceManagerGetNonFungibleInvocation {

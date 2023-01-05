@@ -1,11 +1,11 @@
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::data::types::{Blob, ManifestBucket, ManifestProof};
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -104,7 +104,7 @@ pub enum BasicInstruction {
         package_address: PackageAddress,
         blueprint_name: String,
         function_name: String,
-        args: Vec<u8>,
+        args: ScryptoValue,
     },
 
     /// Calls a scrypto method.
@@ -113,7 +113,7 @@ pub enum BasicInstruction {
     CallMethod {
         component_address: ComponentAddress,
         method_name: String,
-        args: Vec<u8>,
+        args: ScryptoValue,
     },
 
     /// Publish a package.
@@ -179,7 +179,7 @@ pub enum BasicInstruction {
 
     MintNonFungible {
         resource_address: ResourceAddress,
-        entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+        entries: BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>,
     },
 
     CreateFungibleResource {
@@ -200,14 +200,14 @@ pub enum BasicInstruction {
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+        initial_supply: Option<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>>,
     },
 
     CreateNonFungibleResourceWithOwner {
         id_type: NonFungibleIdType,
         metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleAddress,
-        initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+        initial_supply: Option<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>>,
     },
 }
 

@@ -308,7 +308,7 @@ impl ManifestBuilder {
         let initial_supply = initial_supply.map(|entries| {
             entries
                 .into_iter()
-                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+                .map(|(id, e)| (id, (e.immutable_data(), e.mutable_data())))
                 .collect()
         });
         let access_rules = access_rules
@@ -339,7 +339,7 @@ impl ManifestBuilder {
         let initial_supply = initial_supply.map(|entries| {
             entries
                 .into_iter()
-                .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+                .map(|(id, e)| (id, (e.immutable_data(), e.mutable_data())))
                 .collect()
         });
         self.add_instruction(BasicInstruction::CreateNonFungibleResourceWithOwner {
@@ -357,7 +357,7 @@ impl ManifestBuilder {
         package_address: PackageAddress,
         blueprint_name: &str,
         function_name: &str,
-        args: Vec<u8>,
+        args: ScryptoValue,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallFunction {
             package_address,
@@ -373,7 +373,7 @@ impl ManifestBuilder {
         &mut self,
         component_address: ComponentAddress,
         method_name: &str,
-        args: Vec<u8>,
+        args: ScryptoValue,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address,
@@ -601,7 +601,7 @@ impl ManifestBuilder {
     {
         let entries = entries
             .into_iter()
-            .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
+            .map(|(id, e)| (id, (e.immutable_data(), e.mutable_data())))
             .collect();
         self.add_instruction(BasicInstruction::MintNonFungible {
             resource_address,
