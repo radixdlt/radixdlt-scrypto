@@ -187,9 +187,9 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorStakeInvocation {
 }
 
 impl Executor for ValidatorStakeExecutable {
-    type Output = ();
+    type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
@@ -197,12 +197,26 @@ impl Executor for ValidatorStakeExecutable {
         let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
 
         // Stake
-        {
+        let lp_token_bucket = {
             let substate = api.get_ref(handle)?;
             let validator = substate.validator();
+            let mut lp_token_resman = ResourceManager(validator.liquidity_token);
             let mut xrd_vault = Vault(validator.stake_xrd_vault_id);
-            xrd_vault.sys_put(self.1, api)?;
-        }
+
+            let total_lp_supply = lp_token_resman.total_supply(api)?;
+            let active_stake_amount = xrd_vault.sys_amount(api)?;
+            let xrd_bucket = self.1;
+            let stake_amount = xrd_bucket.sys_amount(api)?;
+            let lp_mint_amount = if active_stake_amount.is_zero() {
+                stake_amount
+            } else {
+                stake_amount * total_lp_supply / active_stake_amount
+            };
+
+            let lp_token_bucket = lp_token_resman.mint_fungible(lp_mint_amount, api)?;
+            xrd_vault.sys_put(xrd_bucket, api)?;
+            lp_token_bucket
+        };
 
         // Update EpochManager
         {
@@ -223,7 +237,8 @@ impl Executor for ValidatorStakeExecutable {
             }
         }
 
-        Ok(((), CallFrameUpdate::empty()))
+        let update = CallFrameUpdate::move_node(RENodeId::Bucket(lp_token_bucket.0));
+        Ok((lp_token_bucket, update))
     }
 }
 

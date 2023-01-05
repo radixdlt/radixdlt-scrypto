@@ -353,6 +353,11 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.stake_validator(validator_address, bucket_id)
         })
+        .call_method(
+            account_address,
+            "deposit_batch",
+            args!(Expression::entire_worktop()),
+        )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,

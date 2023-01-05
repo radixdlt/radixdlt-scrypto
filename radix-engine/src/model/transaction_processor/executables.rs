@@ -416,6 +416,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         receiver: *validator_address,
                         stake,
                     })?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::Basic(BasicInstruction::UnstakeValidator {

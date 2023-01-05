@@ -218,11 +218,11 @@ impl Clone for ValidatorStakeInvocation {
 }
 
 impl Invocation for ValidatorStakeInvocation {
-    type Output = ();
+    type Output = Bucket;
 }
 
 impl SerializableInvocation for ValidatorStakeInvocation {
-    type ScryptoOutput = ();
+    type ScryptoOutput = Bucket;
 }
 
 impl Into<SerializedInvocation> for ValidatorStakeInvocation {

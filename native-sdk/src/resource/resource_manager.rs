@@ -1,9 +1,10 @@
 use crate::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, InvokableModel};
+use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::model::*;
 use std::collections::BTreeMap;
 use std::fmt::Debug;
+use radix_engine_interface::math::Decimal;
 
 /// Represents a resource manager.
 #[derive(Debug)]
@@ -52,6 +53,21 @@ impl ResourceManager {
         })
     }
 
+    /// Mints non-fungible resources
+    pub fn mint_fungible<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        amount: Decimal,
+        api: &mut Y,
+    ) -> Result<Bucket, E>
+        where
+            Y: EngineApi<E> + Invokable<ResourceManagerMintInvocation, E>,
+    {
+        api.invoke(ResourceManagerMintInvocation {
+            mint_params: MintParams::Fungible { amount },
+            receiver: self.0,
+        })
+    }
+
     pub fn get_non_fungible_data<Y, E: Debug + ScryptoDecode, T: ScryptoDecode>(
         &self,
         id: NonFungibleId,
@@ -80,6 +96,18 @@ impl ResourceManager {
         api.invoke(ResourceManagerBurnInvocation {
             receiver: self.0,
             bucket,
+        })
+    }
+
+    pub fn total_supply<Y, E: Debug + ScryptoDecode>(
+        &self,
+        api: &mut Y,
+    ) -> Result<Decimal, E>
+        where
+            Y: EngineApi<E> + Invokable<ResourceManagerGetTotalSupplyInvocation, E>,
+    {
+        api.invoke(ResourceManagerGetTotalSupplyInvocation {
+            receiver: self.0,
         })
     }
 }
