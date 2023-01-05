@@ -1,6 +1,7 @@
 use sbor::path::{SborPath, SborPathBuf};
 use sbor::rust::collections::HashMap;
 use sbor::rust::collections::HashSet;
+use sbor::rust::convert::Infallible;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -10,14 +11,14 @@ use crate::data::types::*;
 use crate::data::*;
 use utils::ContextualDisplay;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-pub enum ScryptoValueDecodeError {
-    RawValueEncodeError(EncodeError),
-    TypedValueEncodeError(EncodeError),
-    DecodeError(DecodeError),
-    ValueIndexingError(ValueIndexingError),
+/// Represents an error when reading the owned node ids from a value.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReadOwnedNodesError {
+    DuplicateOwn,
 }
 
+/// Represents an error when replacing manifest values.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ReplaceManifestValuesError {
     ProofIdNotFound(ManifestProof),
     BucketIdNotFound(ManifestBucket),
@@ -34,12 +35,12 @@ pub struct IndexedScryptoValue {
     pub system_addresses: HashSet<SystemAddress>,
 
     // RE interpreted
-    pub owned_nodes: HashSet<Own>,
+    pub owned_nodes: Vec<(Own, SborPath)>,
     pub blobs: Vec<(Blob, SborPath)>,
 
     // TX interpreted
-    pub buckets: HashMap<ManifestBucket, SborPath>,
-    pub proofs: HashMap<ManifestProof, SborPath>,
+    pub buckets: Vec<(ManifestBucket, SborPath)>,
+    pub proofs: Vec<(ManifestProof, SborPath)>,
     pub expressions: Vec<(ManifestExpression, SborPath)>,
     pub bucket_arrays: Vec<SborPath>,
     pub proof_arrays: Vec<SborPath>,
@@ -51,24 +52,21 @@ impl IndexedScryptoValue {
     }
 
     pub fn from_typed<T: ScryptoEncode + ?Sized>(value: &T) -> Self {
-        let bytes =
-            scrypto_encode(value).expect("Failed to encode trusted value for IndexedScryptoValue");
-        Self::from_slice(&bytes).expect("Failed to convert trusted value into IndexedScryptoValue")
-    }
-
-    pub fn from_slice(slice: &[u8]) -> Result<Self, ScryptoValueDecodeError> {
-        let value = scrypto_decode(slice).map_err(ScryptoValueDecodeError::DecodeError)?;
+        let bytes = scrypto_encode(value).expect("Failed to encode trusted value");
+        let value = scrypto_decode(&bytes).expect("Failed to decode trusted value");
         Self::from_value(value)
     }
 
-    pub fn from_value(value: ScryptoValue) -> Result<Self, ScryptoValueDecodeError> {
-        let mut visitor = ScryptoValueVisitor::new();
-        let index_result = traverse_any(&mut SborPathBuf::new(), &value, &mut visitor);
-        if let Err(error) = index_result {
-            return Err(ScryptoValueDecodeError::ValueIndexingError(error));
-        }
+    pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
+        let value = scrypto_decode(slice)?;
+        Ok(Self::from_value(value))
+    }
 
-        Ok(Self {
+    pub fn from_value(value: ScryptoValue) -> Self {
+        let mut visitor = ScryptoValueVisitor::new();
+        traverse_any(&mut SborPathBuf::new(), &value, &mut visitor).expect("Infallible");
+
+        Self {
             value: value,
             component_addresses: visitor.component_addresses,
             resource_addresses: visitor.resource_addresses,
@@ -83,7 +81,7 @@ impl IndexedScryptoValue {
             expressions: visitor.expressions,
             bucket_arrays: visitor.bucket_arrays,
             proof_arrays: visitor.proof_arrays,
-        })
+        }
     }
 
     pub fn as_vec(&self) -> Vec<u8> {
@@ -95,28 +93,23 @@ impl IndexedScryptoValue {
         scrypto_decode(&bytes)
     }
 
-    pub fn owned_node_ids(&self) -> HashSet<RENodeId> {
+    pub fn owned_node_ids(&self) -> Result<HashSet<RENodeId>, ReadOwnedNodesError> {
         let mut node_ids = HashSet::new();
-        for ownership in &self.owned_nodes {
-            match ownership {
-                Own::Bucket(bucket_id) => {
-                    node_ids.insert(RENodeId::Bucket(*bucket_id));
-                }
-                Own::Proof(proof_id) => {
-                    node_ids.insert(RENodeId::Proof(*proof_id));
-                }
-                Own::Vault(vault_id) => {
-                    node_ids.insert(RENodeId::Vault(*vault_id));
-                }
-                Own::Component(component_id) => {
-                    node_ids.insert(RENodeId::Component(*component_id));
-                }
+        for (owned_node, _) in &self.owned_nodes {
+            let newly_inserted = match owned_node {
+                Own::Bucket(bucket_id) => node_ids.insert(RENodeId::Bucket(*bucket_id)),
+                Own::Proof(proof_id) => node_ids.insert(RENodeId::Proof(*proof_id)),
+                Own::Vault(vault_id) => node_ids.insert(RENodeId::Vault(*vault_id)),
+                Own::Component(component_id) => node_ids.insert(RENodeId::Component(*component_id)),
                 Own::KeyValueStore(kv_store_id) => {
-                    node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
+                    node_ids.insert(RENodeId::KeyValueStore(*kv_store_id))
                 }
+            };
+            if !newly_inserted {
+                return Err(ReadOwnedNodesError::DuplicateOwn);
             }
         }
-        node_ids
+        Ok(node_ids)
     }
 
     pub fn owned_node_count(&self) -> usize {
@@ -146,27 +139,27 @@ impl IndexedScryptoValue {
         proof_replacements: &mut HashMap<ManifestProof, ProofId>,
         bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
     ) -> Result<(), ReplaceManifestValuesError> {
-        for (proof_id, path) in self.proofs.drain() {
-            let next_id = proof_replacements
-                .remove(&proof_id)
-                .ok_or(ReplaceManifestValuesError::ProofIdNotFound(proof_id))?;
-            let value = path.get_from_value_mut(&mut self.value).unwrap();
-            if let SborValue::Custom { value } = value {
-                *value = ScryptoCustomValue::Own(Own::Proof(next_id));
-                self.owned_nodes.insert(Own::Proof(next_id));
-            } else {
-                panic!("Should be a custom value");
-            }
-        }
-
-        for (bucket_id, path) in self.buckets.drain() {
+        for (bucket_id, path) in self.buckets.drain(..) {
             let next_id = bucket_replacements
                 .remove(&bucket_id)
                 .ok_or(ReplaceManifestValuesError::BucketIdNotFound(bucket_id))?;
             let value = path.get_from_value_mut(&mut self.value).unwrap();
             if let SborValue::Custom { value } = value {
                 *value = ScryptoCustomValue::Own(Own::Bucket(next_id));
-                self.owned_nodes.insert(Own::Bucket(next_id));
+                self.owned_nodes.push((Own::Bucket(next_id), path));
+            } else {
+                panic!("Should be a custom value");
+            }
+        }
+
+        for (proof_id, path) in self.proofs.drain(..) {
+            let next_id = proof_replacements
+                .remove(&proof_id)
+                .ok_or(ReplaceManifestValuesError::ProofIdNotFound(proof_id))?;
+            let value = path.get_from_value_mut(&mut self.value).unwrap();
+            if let SborValue::Custom { value } = value {
+                *value = ScryptoCustomValue::Own(Own::Proof(next_id));
+                self.owned_nodes.push((Own::Proof(next_id), path));
             } else {
                 panic!("Should be a custom value");
             }
@@ -226,11 +219,11 @@ pub struct ScryptoValueVisitor {
     pub package_addresses: HashSet<PackageAddress>,
     pub system_addresses: HashSet<SystemAddress>,
     // RE interpreted
-    pub owned_nodes: HashSet<Own>,
+    pub owned_nodes: Vec<(Own, SborPath)>,
     pub blobs: Vec<(Blob, SborPath)>,
     // TX interpreted
-    pub buckets: HashMap<ManifestBucket, SborPath>,
-    pub proofs: HashMap<ManifestProof, SborPath>,
+    pub buckets: Vec<(ManifestBucket, SborPath)>,
+    pub proofs: Vec<(ManifestProof, SborPath)>,
     pub expressions: Vec<(ManifestExpression, SborPath)>,
     pub bucket_arrays: Vec<SborPath>,
     pub proof_arrays: Vec<SborPath>,
@@ -251,11 +244,11 @@ impl ScryptoValueVisitor {
             package_addresses: HashSet::new(),
             system_addresses: HashSet::new(),
 
-            owned_nodes: HashSet::new(),
+            owned_nodes: Vec::new(),
             blobs: Vec::new(),
 
-            buckets: HashMap::new(),
-            proofs: HashMap::new(),
+            buckets: Vec::new(),
+            proofs: Vec::new(),
             expressions: Vec::new(),
             bucket_arrays: Vec::new(),
             proof_arrays: Vec::new(),
@@ -264,7 +257,7 @@ impl ScryptoValueVisitor {
 }
 
 impl ValueVisitor<ScryptoCustomTypeId, ScryptoCustomValue> for ScryptoValueVisitor {
-    type Err = ValueIndexingError;
+    type Err = Infallible;
 
     fn visit_array(
         &mut self,
@@ -306,9 +299,7 @@ impl ValueVisitor<ScryptoCustomTypeId, ScryptoCustomValue> for ScryptoValueVisit
 
             // RE interpreted
             ScryptoCustomValue::Own(value) => {
-                if !self.owned_nodes.insert(value.clone()) {
-                    return Err(ValueIndexingError::DuplicateOwnership);
-                }
+                self.owned_nodes.push((value.clone(), path.clone().into()));
             }
             ScryptoCustomValue::Blob(value) => {
                 self.blobs.push((value.clone(), path.clone().into()));
@@ -316,22 +307,10 @@ impl ValueVisitor<ScryptoCustomTypeId, ScryptoCustomValue> for ScryptoValueVisit
 
             // TX interpreted
             ScryptoCustomValue::Bucket(value) => {
-                if self
-                    .buckets
-                    .insert(value.clone(), path.clone().into())
-                    .is_some()
-                {
-                    return Err(ValueIndexingError::DuplicateManifestBucket);
-                }
+                self.buckets.push((value.clone(), path.clone().into()));
             }
             ScryptoCustomValue::Proof(value) => {
-                if self
-                    .proofs
-                    .insert(value.clone(), path.clone().into())
-                    .is_some()
-                {
-                    return Err(ValueIndexingError::DuplicateManifestProof);
-                }
+                self.proofs.push((value.clone(), path.clone().into()));
             }
             ScryptoCustomValue::Expression(value) => {
                 self.expressions.push((value.clone(), path.clone().into()));
@@ -359,13 +338,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_reject_duplicate_ids() {
-        let buckets = scrypto_encode(&vec![ManifestBucket(0), ManifestBucket(0)]).unwrap();
+    fn should_reject_duplicate_manifest_buckets() {
+        let mut value =
+            IndexedScryptoValue::from_typed(&vec![ManifestBucket(0), ManifestBucket(0)]);
         assert_eq!(
-            IndexedScryptoValue::from_slice(&buckets),
-            Err(ScryptoValueDecodeError::ValueIndexingError(
-                ValueIndexingError::DuplicateManifestBucket
+            value.replace_manifest_values(
+                &mut HashMap::from([(ManifestProof(0), 0u32)]),
+                &mut HashMap::from([(ManifestBucket(0), 0u32)])
+            ),
+            Err(ReplaceManifestValuesError::BucketIdNotFound(
+                ManifestBucket(0)
             ))
+        );
+    }
+
+    #[test]
+    fn should_reject_duplicate_owned_buckets() {
+        let value = IndexedScryptoValue::from_typed(&vec![Bucket(0), Bucket(0)]);
+        assert_eq!(
+            value.owned_node_ids(),
+            Err(ReadOwnedNodesError::DuplicateOwn)
         );
     }
 }
