@@ -1,7 +1,6 @@
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -19,7 +18,7 @@ fn test_loop() {
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -45,7 +44,7 @@ fn test_loop_out_of_cost_unit() {
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 45.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -70,7 +69,7 @@ fn test_recursion() {
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -94,7 +93,7 @@ fn test_recursion_stack_overflow() {
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -118,7 +117,7 @@ fn test_grow_memory() {
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -142,7 +141,7 @@ fn test_grow_memory_out_of_cost_unit() {
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -160,7 +159,7 @@ fn test_basic_transfer() {
     let (_, _, account2) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10u32.into())
         .withdraw_from_account_by_amount(account1, 100u32.into(), RADIX_TOKEN)
         .call_method(
@@ -215,7 +214,7 @@ fn test_publish_large_package() {
         "i".repeat(4 * 1024 * 1024)
     ));
     assert_eq!(4194343, code.len());
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
             code,
@@ -242,7 +241,7 @@ fn should_be_able_run_large_manifest() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account_by_amount(account, 100u32.into(), RADIX_TOKEN);
     for _ in 0..500 {
@@ -272,7 +271,7 @@ fn should_be_able_invoke_account_balance_50_times() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     for _ in 0..50 {
         builder.call_method(account, "balance", args!(RADIX_TOKEN));
@@ -295,7 +294,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 
     // Act
-    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    let mut builder = ManifestBuilder::new();
     for _ in 0..5 {
         builder.create_proof_from_account_by_amount(account, 1.into(), resource_address);
     }

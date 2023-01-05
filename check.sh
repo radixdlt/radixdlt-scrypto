@@ -1,6 +1,12 @@
 #!/bin/bash
 
-set -e
+set -Ee
+
+err_report() {
+    echo "Code format check FAILED on line $1"
+}
+
+trap 'err_report $LINENO' ERR
 
 cd "$(dirname "$0")"
 
@@ -13,6 +19,7 @@ cd "$(dirname "$0")"
 (cd scrypto-tests; cargo fmt --check --quiet)
 (cd scrypto-unit; cargo fmt --check --quiet)
 (cd radix-engine; cargo fmt --check --quiet)
+(cd radix-engine-interface; cargo fmt --check --quiet)
 (cd radix-engine-stores; cargo fmt --check --quiet)
 (cd simulator; cargo fmt --check --quiet)
 (cd transaction; cargo fmt --check --quiet)

@@ -2,7 +2,6 @@ use radix_engine::engine::{KernelError, LockState, RuntimeError, TrackError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
 use radix_engine_interface::data::*;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -11,7 +10,7 @@ fn mut_reentrancy_should_not_be_possible() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
@@ -23,7 +22,7 @@ fn mut_reentrancy_should_not_be_possible() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component_address, "call_mut_self", args!(component_address))
         .build();
@@ -49,7 +48,7 @@ fn read_reentrancy_should_be_possible() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
@@ -61,7 +60,7 @@ fn read_reentrancy_should_be_possible() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(component_address, "call_self", args!(component_address))
         .build();
@@ -76,7 +75,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/reentrancy");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(package_address, "ReentrantComponent", "new", args!())
         .build();
@@ -88,7 +87,7 @@ fn read_then_mut_reentrancy_should_not_be_possible() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_method(
             component_address,

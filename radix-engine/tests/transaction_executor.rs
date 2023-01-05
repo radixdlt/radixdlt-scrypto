@@ -187,7 +187,7 @@ fn create_notarized_transaction(params: TransactionParams) -> NotarizedTransacti
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(&NetworkDefinition::simulator())
+            ManifestBuilder::new()
                 .lock_fee(FAUCET_COMPONENT, 10.into())
                 .clear_auth_zone()
                 .build(),
