@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":[["WasmEngine","A Scrypto WASM engine validates, instruments and runs Scrypto modules."],["WasmInstance","Represents an instantiated, invokable Scrypto module."],["WasmRuntime","Represents the runtime that can be invoked by Scrypto modules."]]};

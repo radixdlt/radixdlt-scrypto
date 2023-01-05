@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["LockableResource","Resource that can be partially or completely locked for proofs."],["LockedAmountOrIds",""],["Resource",""],["ResourceContainerId",""],["ResourceOperationError",""]]};

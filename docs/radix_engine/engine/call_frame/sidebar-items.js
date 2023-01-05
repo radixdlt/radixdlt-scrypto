@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["RENodeLocation",""],["RENodeVisibilityOrigin",""]],"struct":[["CallFrame","A call frame is the basic unit that forms a transaction call stack, which keeps track of the owned objects by this function."],["CallFrameUpdate",""],["RENodeRefData",""],["SubstateLock","A lock on a substate controlled by a call frame"]]};

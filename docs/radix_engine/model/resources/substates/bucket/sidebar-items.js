@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["BucketSubstate","A transient resource container."]]};

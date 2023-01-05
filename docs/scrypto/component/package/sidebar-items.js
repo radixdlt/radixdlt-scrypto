@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["BorrowedPackage","Represents a published package."]]};

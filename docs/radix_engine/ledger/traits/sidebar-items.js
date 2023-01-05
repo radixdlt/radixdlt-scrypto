@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["OutputId",""],["OutputValue",""]],"trait":[["QueryableSubstateStore",""],["ReadableSubstateStore",""],["SubstateStore",""],["WriteableSubstateStore",""]]};

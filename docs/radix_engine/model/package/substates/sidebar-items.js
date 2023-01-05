@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["PackageInfoSubstate","A collection of blueprints, compiled and published as a single unit."],["PackageRoyaltyAccumulatorSubstate",""],["PackageRoyaltyConfigSubstate",""]]};
