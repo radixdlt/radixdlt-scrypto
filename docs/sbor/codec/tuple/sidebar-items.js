@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":[["decode_tuple",""],["encode_tuple",""]]};

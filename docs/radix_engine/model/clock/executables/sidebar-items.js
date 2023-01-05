@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["MINUTES_TO_MS_FACTOR",""],["MINUTES_TO_SECONDS_FACTOR",""],["SECONDS_TO_MS_FACTOR",""]],"struct":[["Clock",""],["ClockCompareCurrentTimeExecutable",""],["ClockGetCurrentTimeExecutable",""],["ClockSetCurrentTimeExecutable",""]]};

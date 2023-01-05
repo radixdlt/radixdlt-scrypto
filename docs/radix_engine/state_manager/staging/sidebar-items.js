@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":[["StagedSubstateStore",""],["StagedSubstateStoreManager","Structure which manages the acyclic graph"]]};
+window.SIDEBAR_ITEMS = {"struct":[["StagedSubstateStore",""],["StagedSubstateStoreManager","Structure which manages the acyclic graph"],["StagedSubstateStoreNode","Nodes form an acyclic graph towards the parent"]]};

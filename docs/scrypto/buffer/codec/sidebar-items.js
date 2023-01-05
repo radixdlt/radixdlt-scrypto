@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["scrypto_buffer_to_vec","Decode a data structure from a Scrypto buffer."],["scrypto_decode_from_buffer","Decode a data structure from a Scrypto buffer."],["scrypto_encode_to_buffer","Encodes a data structure into a Scrypto buffer."]]};

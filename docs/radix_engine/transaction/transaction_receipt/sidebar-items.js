@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["TransactionOutcome",""],["TransactionResult",""]],"macro":[["prefix",""]],"struct":[["CommitResult",""],["EntityChanges",""],["RejectResult",""],["TransactionContents",""],["TransactionExecution",""],["TransactionReceipt",""]]};

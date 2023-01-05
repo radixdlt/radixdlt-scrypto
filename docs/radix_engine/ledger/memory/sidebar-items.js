@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["TypedInMemorySubstateStore","A substate store that stores all typed substates in host memory."]]};

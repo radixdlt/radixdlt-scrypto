@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["ComponentAuthZone","Represents the auth zone, which is used by system for checking if this component is allowed to"]]};

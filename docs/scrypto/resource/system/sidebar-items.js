@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["init_resource_system","Initializes resource subsystem."],["resource_system","Returns the resource subsystem."]],"static":[["RESOURCE_SYSTEM",""]],"struct":[["ResourceSystem","Represents the Radix Engine resource subsystem."]]};

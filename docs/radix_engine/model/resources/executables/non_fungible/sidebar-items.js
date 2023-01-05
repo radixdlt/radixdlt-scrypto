@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["NonFungible","A non-fungible is a piece of data that is uniquely identified within a resource."]]};

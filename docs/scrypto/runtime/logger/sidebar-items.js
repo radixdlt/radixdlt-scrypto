@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Logger","A utility for logging messages."]]};
