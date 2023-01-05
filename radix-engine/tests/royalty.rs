@@ -3,7 +3,6 @@ use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_COST_UNIT_PRICE;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -18,7 +17,7 @@ fn test_component_royalty() {
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .call_function(
                 package_address,
@@ -33,7 +32,7 @@ fn test_component_royalty() {
 
     // Call the paid method
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
@@ -67,7 +66,7 @@ fn set_up_package_and_component() -> (
 
     // Enable package royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .create_proof_from_account(account, owner_badge_resource)
             .call_function(
@@ -83,7 +82,7 @@ fn set_up_package_and_component() -> (
 
     // Instantiate component
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 10u32.into())
             .call_function(
                 package_address,
@@ -118,7 +117,7 @@ fn test_package_royalty() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
@@ -144,7 +143,7 @@ fn test_royalty_accumulation_when_success() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
@@ -174,7 +173,7 @@ fn test_royalty_accumulation_when_failure() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method_panic", args!())
             .build(),
@@ -204,7 +203,7 @@ fn test_claim_royalty() {
     ) = set_up_package_and_component();
 
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_method(component_address, "paid_method", args!())
             .build(),
@@ -223,7 +222,7 @@ fn test_claim_royalty() {
 
     // Claim package royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .create_proof_from_account(account, owner_badge_resource)
             .call_function(
@@ -244,7 +243,7 @@ fn test_claim_royalty() {
 
     // Claim component royalty
     let receipt = test_runner.execute_manifest(
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
             .lock_fee(account, 100.into())
             .call_function(
                 package_address,

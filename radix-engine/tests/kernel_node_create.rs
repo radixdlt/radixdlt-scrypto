@@ -1,7 +1,6 @@
 use radix_engine::engine::{KernelError, ResolvedActor, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -12,7 +11,7 @@ fn should_not_be_able_to_node_create_with_invalid_blueprint() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -49,7 +48,7 @@ fn should_not_be_able_to_node_create_with_invalid_package() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,

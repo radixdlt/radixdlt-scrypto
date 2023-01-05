@@ -1,43 +1,23 @@
-use radix_engine_interface::abi;
 use radix_engine_interface::abi::*;
-use radix_engine_interface::address::Bech32Decoder;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::constants::*;
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
-use radix_engine_interface::math::{Decimal, PreciseDecimal};
+use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
-use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
-use crate::errors::*;
 use crate::model::*;
 use crate::validation::*;
 
-#[macro_export]
-macro_rules! args_from_bytes_vec {
-    ($args: expr) => {{
-        let mut fields = Vec::new();
-        for arg in $args {
-            fields.push(::radix_engine_interface::data::scrypto_decode(&arg).unwrap());
-        }
-        let input_struct = ::radix_engine_interface::data::ScryptoValue::Tuple { fields };
-        ::radix_engine_interface::data::scrypto_encode(&input_struct).unwrap()
-    }};
-}
-
 /// Utility for building transaction manifest.
 pub struct ManifestBuilder {
-    /// The decoder used by the manifest (mainly for the `call_*_with_abi)
-    decoder: Bech32Decoder,
     /// ID validator for calculating transaction object id
     id_allocator: ManifestIdAllocator,
     /// Instructions generated.
@@ -48,9 +28,8 @@ pub struct ManifestBuilder {
 
 impl ManifestBuilder {
     /// Starts a new transaction builder.
-    pub fn new(network: &NetworkDefinition) -> Self {
+    pub fn new() -> Self {
         Self {
-            decoder: Bech32Decoder::new(network),
             id_allocator: ManifestIdAllocator::new(),
             instructions: Vec::new(),
             blobs: BTreeMap::default(),
@@ -389,50 +368,6 @@ impl ManifestBuilder {
         self
     }
 
-    /// Calls a function.
-    ///
-    /// The implementation will automatically prepare the arguments based on the
-    /// function ABI, including resource buckets and proofs.
-    ///
-    /// If an Account component address is provided, resources will be withdrawn from the given account;
-    /// otherwise, they will be taken from transaction worktop.
-    pub fn call_function_with_abi(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function: &str,
-        args: Vec<String>,
-        account: Option<ComponentAddress>,
-        blueprint_abi: &abi::BlueprintAbi,
-    ) -> Result<&mut Self, BuildCallWithAbiError> {
-        let abi = blueprint_abi
-            .fns
-            .iter()
-            .find(|f| f.ident == function)
-            .map(Clone::clone)
-            .ok_or_else(|| BuildCallWithAbiError::FunctionNotFound(function.to_owned()))?;
-
-        let arguments = self
-            .parse_args(&abi.input, args, account)
-            .map_err(|e| BuildCallWithAbiError::FailedToBuildArgs(e))?;
-
-        let mut fields = Vec::new();
-        for arg in arguments {
-            fields.push(scrypto_decode(&arg).unwrap());
-        }
-        let input_struct = ScryptoValue::Tuple { fields };
-        let bytes = scrypto_encode(&input_struct).unwrap();
-
-        Ok(self
-            .add_instruction(BasicInstruction::CallFunction {
-                package_address,
-                blueprint_name: blueprint_name.to_string(),
-                function_name: function.to_string(),
-                args: bytes,
-            })
-            .0)
-    }
-
     /// Calls a scrypto method where the arguments should be an array of encoded Scrypto value.
     pub fn call_method(
         &mut self,
@@ -510,41 +445,6 @@ impl ManifestBuilder {
             value,
         })
         .0
-    }
-
-    /// Calls a method.
-    ///
-    /// The implementation will automatically prepare the arguments based on the
-    /// method ABI, including resource buckets and proofs.
-    ///
-    /// If an Account component address is provided, resources will be withdrawn from the given account;
-    /// otherwise, they will be taken from transaction worktop.
-    pub fn call_method_with_abi(
-        &mut self,
-        component_address: ComponentAddress,
-        method_name: &str,
-        args: Vec<String>,
-        account: Option<ComponentAddress>,
-        blueprint_abi: &abi::BlueprintAbi,
-    ) -> Result<&mut Self, BuildCallWithAbiError> {
-        let abi = blueprint_abi
-            .fns
-            .iter()
-            .find(|m| m.ident == method_name)
-            .map(Clone::clone)
-            .ok_or_else(|| BuildCallWithAbiError::MethodNotFound(method_name.to_owned()))?;
-
-        let arguments = self
-            .parse_args(&abi.input, args, account)
-            .map_err(|e| BuildCallWithAbiError::FailedToBuildArgs(e))?;
-
-        Ok(self
-            .add_instruction(BasicInstruction::CallMethod {
-                component_address,
-                method_name: method_name.to_owned(),
-                args: args_from_bytes_vec!(arguments),
-            })
-            .0)
     }
 
     /// Publishes a package.
@@ -916,274 +816,10 @@ impl ManifestBuilder {
         .0
     }
 
-    /// Creates resource proof from an account.
-    pub fn create_proof_from_account_by_resource_specifier(
-        &mut self,
-        account: ComponentAddress,
-        resource_specifier: String,
-    ) -> Result<&mut Self, BuildArgsError> {
-        let resource_specifier = parse_resource_specifier(&resource_specifier, &self.decoder)
-            .map_err(|_| BuildArgsError::InvalidResourceSpecifier(resource_specifier))?;
-        let builder = match resource_specifier {
-            ResourceSpecifier::Amount(amount, resource_address) => {
-                self.create_proof_from_account_by_amount(account, amount, resource_address)
-            }
-            ResourceSpecifier::Ids(non_fungible_ids, resource_address) => {
-                self.create_proof_from_account_by_ids(account, &non_fungible_ids, resource_address)
-            }
-        };
-        Ok(builder)
-    }
-
-    //===============================
-    // private methods below
-    //===============================
-
-    fn parse_args(
-        &mut self,
-        arg_type: &Type,
-        args: Vec<String>,
-        account: Option<ComponentAddress>,
-    ) -> Result<Vec<Vec<u8>>, BuildArgsError> {
-        let mut encoded = Vec::new();
-
-        match arg_type {
-            Type::Struct {
-                name: _,
-                fields: Fields::Named { named },
-            } => {
-                for (i, (_, t)) in named.iter().enumerate() {
-                    let arg = args
-                        .get(i)
-                        .ok_or_else(|| BuildArgsError::MissingArgument(i, t.clone()))?;
-                    let res = match t {
-                        Type::Bool => self.parse_basic_ty::<bool>(i, t, arg),
-                        Type::I8 => self.parse_basic_ty::<i8>(i, t, arg),
-                        Type::I16 => self.parse_basic_ty::<i16>(i, t, arg),
-                        Type::I32 => self.parse_basic_ty::<i32>(i, t, arg),
-                        Type::I64 => self.parse_basic_ty::<i64>(i, t, arg),
-                        Type::I128 => self.parse_basic_ty::<i128>(i, t, arg),
-                        Type::U8 => self.parse_basic_ty::<u8>(i, t, arg),
-                        Type::U16 => self.parse_basic_ty::<u16>(i, t, arg),
-                        Type::U32 => self.parse_basic_ty::<u32>(i, t, arg),
-                        Type::U64 => self.parse_basic_ty::<u64>(i, t, arg),
-                        Type::U128 => self.parse_basic_ty::<u128>(i, t, arg),
-                        Type::String => self.parse_basic_ty::<String>(i, t, arg),
-                        Type::Decimal => {
-                            let value = arg.parse::<Decimal>().map_err(|_| {
-                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                            })?;
-                            Ok(scrypto_encode(&value).unwrap())
-                        }
-                        Type::PreciseDecimal => {
-                            let value = arg.parse::<PreciseDecimal>().map_err(|_| {
-                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                            })?;
-                            Ok(scrypto_encode(&value).unwrap())
-                        }
-                        Type::PackageAddress => {
-                            let value = self
-                                .decoder
-                                .validate_and_decode_package_address(arg)
-                                .map_err(|_| {
-                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                                })?;
-                            Ok(scrypto_encode(&value).unwrap())
-                        }
-                        Type::ComponentAddress => {
-                            let value = self
-                                .decoder
-                                .validate_and_decode_component_address(arg)
-                                .map_err(|_| {
-                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                                })?;
-                            Ok(scrypto_encode(&value).unwrap())
-                        }
-                        Type::ResourceAddress => {
-                            let value = self
-                                .decoder
-                                .validate_and_decode_resource_address(arg)
-                                .map_err(|_| {
-                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                                })?;
-                            Ok(scrypto_encode(&value).unwrap())
-                        }
-                        Type::Hash => {
-                            let value = arg.parse::<Hash>().map_err(|_| {
-                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                            })?;
-                            Ok(scrypto_encode(&value).unwrap())
-                        }
-                        Type::NonFungibleId => {
-                            let value = NonFungibleId::try_from_combined_simple_string(arg)
-                                .map_err(|_| {
-                                    BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                                })?;
-                            Ok(scrypto_encode(&value).unwrap())
-                        }
-                        Type::Bucket => {
-                            let resource_specifier = parse_resource_specifier(arg, &self.decoder)
-                                .map_err(|_| {
-                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                            })?;
-                            let bucket_id = match resource_specifier {
-                                ResourceSpecifier::Amount(amount, resource_address) => {
-                                    if let Some(account) = account {
-                                        self.withdraw_from_account_by_amount(
-                                            account,
-                                            amount,
-                                            resource_address,
-                                        );
-                                    }
-                                    self.add_instruction(
-                                        BasicInstruction::TakeFromWorktopByAmount {
-                                            amount,
-                                            resource_address,
-                                        },
-                                    )
-                                    .1
-                                    .unwrap()
-                                }
-                                ResourceSpecifier::Ids(ids, resource_address) => {
-                                    if let Some(account) = account {
-                                        self.withdraw_from_account_by_ids(
-                                            account,
-                                            &ids,
-                                            resource_address,
-                                        );
-                                    }
-                                    self.add_instruction(BasicInstruction::TakeFromWorktopByIds {
-                                        ids,
-                                        resource_address,
-                                    })
-                                    .1
-                                    .unwrap()
-                                }
-                            };
-                            Ok(scrypto_encode(&bucket_id).unwrap())
-                        }
-                        Type::Proof => {
-                            let resource_specifier = parse_resource_specifier(arg, &self.decoder)
-                                .map_err(|_| {
-                                BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
-                            })?;
-                            let proof_id = match resource_specifier {
-                                ResourceSpecifier::Amount(amount, resource_address) => {
-                                    if let Some(account) = account {
-                                        self.create_proof_from_account_by_amount(
-                                            account,
-                                            amount,
-                                            resource_address,
-                                        );
-                                        self.add_instruction(BasicInstruction::PopFromAuthZone)
-                                            .2
-                                            .unwrap()
-                                    } else {
-                                        todo!("Take from worktop and create proof")
-                                    }
-                                }
-                                ResourceSpecifier::Ids(ids, resource_address) => {
-                                    if let Some(account) = account {
-                                        self.create_proof_from_account_by_ids(
-                                            account,
-                                            &ids,
-                                            resource_address,
-                                        );
-                                        self.add_instruction(BasicInstruction::PopFromAuthZone)
-                                            .2
-                                            .unwrap()
-                                    } else {
-                                        todo!("Take from worktop and create proof")
-                                    }
-                                }
-                            };
-                            Ok(scrypto_encode(&proof_id).unwrap())
-                        }
-                        _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
-                    };
-                    encoded.push(res?);
-                }
-                Ok(())
-            }
-            _ => Err(BuildArgsError::UnsupportedRootType(arg_type.clone())),
-        }?;
-
-        Ok(encoded)
-    }
-
-    fn parse_basic_ty<T>(
-        &mut self,
-        i: usize,
-        t: &Type,
-        arg: &str,
-    ) -> Result<Vec<u8>, BuildArgsError>
+    pub fn borrow_mut<F, E>(&mut self, handler: F) -> Result<&mut Self, E>
     where
-        T: FromStr + ScryptoEncode,
-        T::Err: fmt::Debug,
+        F: FnOnce(&mut Self) -> Result<&mut Self, E>,
     {
-        let value = arg
-            .parse::<T>()
-            .map_err(|_| BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned()))?;
-        Ok(scrypto_encode(&value).unwrap())
-    }
-}
-
-enum ResourceSpecifier {
-    Amount(Decimal, ResourceAddress),
-    Ids(BTreeSet<NonFungibleId>, ResourceAddress),
-}
-
-enum ParseResourceSpecifierError {
-    IncompleteResourceSpecifier,
-    InvalidResourceAddress(String),
-    InvalidAmount(String),
-    InvalidNonFungibleId(String),
-    MoreThanOneAmountSpecified,
-}
-
-fn parse_resource_specifier(
-    input: &str,
-    decoder: &Bech32Decoder,
-) -> Result<ResourceSpecifier, ParseResourceSpecifierError> {
-    let tokens: Vec<&str> = input.trim().split(',').map(|s| s.trim()).collect();
-
-    // check length
-    if tokens.len() < 2 {
-        return Err(ParseResourceSpecifierError::IncompleteResourceSpecifier);
-    }
-
-    // parse resource address
-    let resource_address_token = tokens[tokens.len() - 1];
-    let resource_address = decoder
-        .validate_and_decode_resource_address(resource_address_token)
-        .map_err(|_| {
-            ParseResourceSpecifierError::InvalidResourceAddress(resource_address_token.to_owned())
-        })?;
-
-    // parse non-fungible ids or amount
-    if tokens[0].contains('#') {
-        let mut ids = BTreeSet::<NonFungibleId>::new();
-        for id in tokens[..tokens.len() - 1].iter() {
-            let mut id = *id;
-            if id.starts_with('#') {
-                // Support the ids optionally starting with a # (which was an old encoding)
-                // EG: #String#123,resource_address
-                id = &id[1..];
-            }
-            ids.insert(
-                NonFungibleId::try_from_combined_simple_string(id).map_err(|_| {
-                    ParseResourceSpecifierError::InvalidNonFungibleId(id.to_string())
-                })?,
-            );
-        }
-        Ok(ResourceSpecifier::Ids(ids, resource_address))
-    } else {
-        if tokens.len() != 2 {
-            return Err(ParseResourceSpecifierError::MoreThanOneAmountSpecified);
-        }
-        let amount: Decimal = tokens[0]
-            .parse()
-            .map_err(|_| ParseResourceSpecifierError::InvalidAmount(tokens[0].to_owned()))?;
-        Ok(ResourceSpecifier::Amount(amount, resource_address))
+        handler(self)
     }
 }

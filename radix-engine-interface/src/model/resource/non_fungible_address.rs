@@ -4,6 +4,8 @@ use crate::crypto::*;
 use crate::model::*;
 use radix_engine_derive::scrypto;
 use sbor::rust::fmt;
+use sbor::rust::format;
+use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto_abi::Describe;
