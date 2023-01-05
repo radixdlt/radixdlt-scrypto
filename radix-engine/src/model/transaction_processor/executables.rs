@@ -56,8 +56,8 @@ pub enum InstructionOutput {
 impl InstructionOutput {
     pub fn as_vec(&self) -> Vec<u8> {
         match self {
-            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).raw,
-            InstructionOutput::Scrypto(value) => value.raw.clone(),
+            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).as_vec(),
+            InstructionOutput::Scrypto(value) => value.as_vec(),
         }
     }
 }
@@ -831,7 +831,7 @@ impl TransactionProcessor {
     where
         Y: EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let mut value = args.dom;
+        let mut value = args.value;
         for (expression, path) in args.expressions {
             match expression {
                 ManifestExpression::EntireWorktop => {

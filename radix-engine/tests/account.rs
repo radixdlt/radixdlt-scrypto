@@ -180,7 +180,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     assert_eq!(1, receipt.expect_commit().resource_changes.len()); // Just the fee payment
     assert_eq!(
         outputs[1].as_vec(),
-        IndexedScryptoValue::from_typed(&Decimal::from(1000)).raw
+        IndexedScryptoValue::from_typed(&Decimal::from(1000)).as_vec()
     );
 }
 

@@ -25,8 +25,7 @@ pub enum ValueReplacingError {
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
-    pub raw: Vec<u8>,
-    pub dom: ScryptoValue,
+    pub value: ScryptoValue,
 
     // Global addresses
     pub component_addresses: HashSet<ComponentAddress>,
@@ -68,9 +67,7 @@ impl IndexedScryptoValue {
         }
 
         Ok(Self {
-            raw: scrypto_encode(&value)
-                .map_err(|err| ScryptoValueDecodeError::RawValueEncodeError(err))?,
-            dom: value,
+            value: value,
             component_addresses: visitor.component_addresses,
             resource_addresses: visitor.resource_addresses,
             package_addresses: visitor.package_addresses,
@@ -83,6 +80,15 @@ impl IndexedScryptoValue {
             proofs: visitor.proofs,
             expressions: visitor.expressions,
         })
+    }
+
+    pub fn as_vec(&self) -> Vec<u8> {
+        scrypto_encode(&self.value).expect("Failed to encode IndexedScryptoValue")
+    }
+
+    pub fn as_typed<T: ScryptoDecode>(&self) -> Result<T, DecodeError> {
+        let bytes = self.as_vec();
+        scrypto_decode(&bytes)
     }
 
     pub fn owned_node_ids(&self) -> HashSet<RENodeId> {
@@ -140,7 +146,7 @@ impl IndexedScryptoValue {
             let next_id = proof_replacements
                 .remove(&proof_id)
                 .ok_or(ValueReplacingError::ProofIdNotFound(proof_id))?;
-            let value = path.get_from_value_mut(&mut self.dom).unwrap();
+            let value = path.get_from_value_mut(&mut self.value).unwrap();
             if let SborValue::Custom { value } = value {
                 *value = ScryptoCustomValue::Own(Own::Proof(next_id));
                 self.owned_nodes.insert(Own::Proof(next_id));
@@ -153,7 +159,7 @@ impl IndexedScryptoValue {
             let next_id = bucket_replacements
                 .remove(&bucket_id)
                 .ok_or(ValueReplacingError::BucketIdNotFound(bucket_id))?;
-            let value = path.get_from_value_mut(&mut self.dom).unwrap();
+            let value = path.get_from_value_mut(&mut self.value).unwrap();
             if let SborValue::Custom { value } = value {
                 *value = ScryptoCustomValue::Own(Own::Bucket(next_id));
                 self.owned_nodes.insert(Own::Bucket(next_id));
@@ -162,10 +168,7 @@ impl IndexedScryptoValue {
             }
         }
 
-        replace_array_element_type_id(&mut self.dom);
-
-        self.raw = scrypto_encode(&self.dom)
-            .expect("Previously encodable raw value is no longer encodable after replacement");
+        replace_array_element_type_id(&mut self.value);
 
         Ok(())
     }
@@ -216,7 +219,7 @@ pub fn replace_array_element_type_id(value: &mut ScryptoValue) {
 
 impl fmt::Debug for IndexedScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        format_scrypto_value(f, &self.dom, &ValueFormattingContext::no_context())
+        format_scrypto_value(f, &self.value, &ValueFormattingContext::no_context())
     }
 }
 
@@ -228,7 +231,7 @@ impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for IndexedScryptoValue {
         f: &mut F,
         context: &ValueFormattingContext<'a>,
     ) -> Result<(), Self::Error> {
-        format_scrypto_value(f, &self.dom, context)
+        format_scrypto_value(f, &self.value, context)
     }
 }
 

@@ -19,7 +19,7 @@ fn soft_to_hard_decimal(
                 match &ty {
                     Type::Decimal => {
                         let v = sbor_path
-                            .get_from_value(&value.dom)
+                            .get_from_value(&value.value)
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardDecimal::Amount(
@@ -49,7 +49,7 @@ fn soft_to_hard_count(
                 match &ty {
                     Type::U8 => {
                         let v = sbor_path
-                            .get_from_value(&value.dom)
+                            .get_from_value(&value.value)
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardCount::Count(
@@ -88,7 +88,7 @@ fn soft_to_hard_resource_list(
                         if matches!(element_type.as_ref(), Type::ResourceAddress) =>
                     {
                         let v = sbor_path
-                            .get_from_value(&value.dom)
+                            .get_from_value(&value.value)
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardProofRuleResourceList::List(
@@ -105,7 +105,7 @@ fn soft_to_hard_resource_list(
                         if matches!(element_type.as_ref(), Type::NonFungibleAddress) =>
                     {
                         let v = sbor_path
-                            .get_from_value(&value.dom)
+                            .get_from_value(&value.value)
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardProofRuleResourceList::List(
@@ -138,7 +138,7 @@ fn soft_to_hard_resource(
                 match &ty {
                     Type::ResourceAddress => {
                         let v = sbor_path
-                            .get_from_value(&value.dom)
+                            .get_from_value(&value.value)
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardResourceOrNonFungible::Resource(
@@ -170,7 +170,7 @@ fn soft_to_hard_resource_or_non_fungible(
                 match &ty {
                     Type::ResourceAddress => {
                         let v = sbor_path
-                            .get_from_value(&value.dom)
+                            .get_from_value(&value.value)
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardResourceOrNonFungible::Resource(
@@ -181,7 +181,7 @@ fn soft_to_hard_resource_or_non_fungible(
                     }
                     Type::NonFungibleAddress => {
                         let v = sbor_path
-                            .get_from_value(&value.dom)
+                            .get_from_value(&value.value)
                             .expect(format!("Value missing at {:?}", schema_path).as_str());
 
                         HardResourceOrNonFungible::NonFungible(
