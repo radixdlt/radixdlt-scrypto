@@ -9,10 +9,12 @@ use sbor::*;
 use crate::api::types::*;
 use crate::data::types::*;
 use crate::data::*;
+use radix_engine_derive::scrypto;
 use utils::ContextualDisplay;
 
 /// Represents an error when reading the owned node ids from a value.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ReadOwnedNodesError {
     DuplicateOwn,
 }

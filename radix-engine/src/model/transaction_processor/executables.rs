@@ -788,8 +788,8 @@ impl TransactionProcessor {
             + InvokableModel<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
-        for ownership in &value.owned_nodes {
-            match ownership {
+        for (owned_node, _) in &value.owned_nodes {
+            match owned_node {
                 Own::Bucket(bucket_id) => {
                     Worktop::sys_put(Bucket(*bucket_id), api)?;
                 }
@@ -856,8 +856,7 @@ impl TransactionProcessor {
             }
         }
 
-        Ok(IndexedScryptoValue::from_value(value)
-            .expect("SborValue became invalid post expression transformation"))
+        Ok(IndexedScryptoValue::from_value(value))
     }
 
     fn perform_validation<'a, Y>(

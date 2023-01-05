@@ -102,7 +102,7 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     receipt.expect_specific_failure(|f| {
         matches!(
             f,
-            RuntimeError::KernelError(KernelError::WasmError(WasmError::InvalidScryptoValue(
+            RuntimeError::KernelError(KernelError::WasmError(WasmError::SborDecodeError(
                 ScryptoValueDecodeError::DecodeError(DecodeError::MaxDepthExceeded(_))
             )))
         )

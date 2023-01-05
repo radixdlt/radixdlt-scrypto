@@ -13,7 +13,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
         let args = IndexedScryptoValue::from_slice(&self.args())
-            .map_err(|e| RuntimeError::KernelError(KernelError::InvalidScryptoValue(e)))?;
+            .map_err(|e| RuntimeError::KernelError(KernelError::SborDecodeError(e)))?;
 
         let nodes_to_move = args.owned_node_ids().into_iter().collect();
         for global_address in args.global_references() {

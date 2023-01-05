@@ -31,9 +31,7 @@ where
 
 fn encode<T: ScryptoEncode>(output: T) -> Result<Vec<u8>, InvokeError<WasmError>> {
     scrypto_encode(&output).map_err(|err| {
-        InvokeError::Downstream(RuntimeError::KernelError(
-            KernelError::InvalidSborValueOnEncode(err),
-        ))
+        InvokeError::Downstream(RuntimeError::KernelError(KernelError::SborEncodeError(err)))
     })
 }
 

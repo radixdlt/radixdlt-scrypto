@@ -1,4 +1,3 @@
-use radix_engine_interface::data::ScryptoValueDecodeError;
 use wasmi::HostError;
 
 use crate::fee::FeeReserveError;
@@ -84,8 +83,8 @@ pub enum InvalidTable {
 pub enum WasmError {
     MemoryAllocError,
     MemoryAccessError,
-    InvalidScryptoValue(ScryptoValueDecodeError),
-    InvalidScryptoValueResponse(EncodeError),
+    SborDecodeError(DecodeError),
+    SborEncodeError(EncodeError),
     WasmError(String),
     FunctionNotFound,
     InvalidRadixEngineInput,
