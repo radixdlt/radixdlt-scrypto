@@ -12,7 +12,7 @@ use crate::wasm::*;
 #[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
-    pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Bucket>,
+    pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, (Bucket, ComponentAddress)>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
     pub num_unstake_epochs: u64,
@@ -21,8 +21,8 @@ pub struct EpochManagerCreateInvocation {
 impl Clone for EpochManagerCreateInvocation {
     fn clone(&self) -> Self {
         let mut validator_set = BTreeMap::new();
-        for (key, bucket) in &self.validator_set {
-            validator_set.insert(key.clone(), Bucket(bucket.0));
+        for (key, (bucket, account_address)) in &self.validator_set {
+            validator_set.insert(key.clone(), (Bucket(bucket.0), account_address.clone()));
         }
 
         Self {

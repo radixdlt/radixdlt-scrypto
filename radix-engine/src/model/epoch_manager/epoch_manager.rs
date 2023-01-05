@@ -63,10 +63,11 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
 
         let mut call_frame_update =
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        for bucket in self.validator_set.values() {
+        for (bucket, account_address) in self.validator_set.values() {
             call_frame_update
                 .nodes_to_move
                 .push(RENodeId::Bucket(bucket.0));
+            call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(*account_address)));
         }
 
         Ok((actor, call_frame_update, self))
@@ -93,7 +94,7 @@ impl Executor for EpochManagerCreateInvocation {
 
         let mut validator_set = BTreeMap::new();
 
-        for (key, initial_stake) in self.validator_set {
+        for (key, (initial_stake, _account_address)) in self.validator_set {
             let stake = Decimal::one();
             let address = ValidatorCreator::create_with_initial_stake(
                 global_node_id.into(),

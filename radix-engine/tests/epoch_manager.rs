@@ -135,7 +135,13 @@ fn register_validator_with_auth_succeeds() {
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -169,7 +175,13 @@ fn register_validator_without_auth_fails() {
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -202,7 +214,13 @@ fn unregister_validator_with_auth_succeeds() {
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -236,7 +254,13 @@ fn unregister_validator_without_auth_fails() {
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -376,7 +400,13 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::one());
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::one(),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -429,7 +459,13 @@ fn cannot_claim_unstake_immediately() {
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::from(10));
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::from(10),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -479,7 +515,13 @@ fn can_claim_unstake_after_epochs() {
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::from(10));
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::from(10),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -538,7 +580,13 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(pub_key, Decimal::from(10));
+    validator_set.insert(
+        pub_key,
+        (
+            Decimal::from(10),
+            ComponentAddress::virtual_account_from_public_key(&pub_key),
+        ),
+    );
     let genesis = create_genesis(
         validator_set,
         initial_epoch,

@@ -36,7 +36,7 @@ pub struct GenesisReceipt {
 }
 
 pub fn create_genesis(
-    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
+    validator_set_and_stake_owners: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
@@ -186,7 +186,7 @@ pub fn create_genesis(
     // Epoch Manager
     {
         let mut validators = BTreeMap::new();
-        for (key, amount) in validator_set {
+        for (key, (amount, account_address)) in validator_set_and_stake_owners {
             let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
             instructions.push(
                 BasicInstruction::TakeFromWorktopByAmount {
@@ -195,7 +195,7 @@ pub fn create_genesis(
                 }
                 .into(),
             );
-            validators.insert(key, bucket);
+            validators.insert(key, (bucket, account_address));
         }
 
         instructions.push(Instruction::System(NativeInvocation::EpochManager(
@@ -290,7 +290,7 @@ where
 pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Decimal>,
+    validator_set: BTreeMap<EcdsaSecp256k1PublicKey, (Decimal, ComponentAddress)>,
     initial_epoch: u64,
     rounds_per_epoch: u64,
     num_unstake_epochs: u64,
@@ -334,6 +334,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::{ledger::TypedInMemorySubstateStore, wasm::DefaultWasmEngine};
+    use transaction::signing::EcdsaSecp256k1PrivateKey;
 
     use super::*;
 
@@ -342,8 +343,13 @@ mod tests {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
         let mut initial_validator_set = BTreeMap::new();
-        initial_validator_set.insert(EcdsaSecp256k1PublicKey([0; 33]), Decimal::one());
-        let genesis_transaction = create_genesis(initial_validator_set.clone(), 1u64, 1u64, 1u64);
+        let public_key = EcdsaSecp256k1PrivateKey::from_u64(1).unwrap().public_key();
+        let account_address = ComponentAddress::virtual_account_from_public_key(&public_key);
+        initial_validator_set.insert(
+            EcdsaSecp256k1PublicKey([0; 33]),
+            (Decimal::one(), account_address),
+        );
+        let genesis_transaction = create_genesis(initial_validator_set, 1u64, 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
