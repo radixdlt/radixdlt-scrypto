@@ -4,11 +4,10 @@ use crate::engine::{
 };
 use crate::model::{
     AccessRulesChainSubstate, GlobalAddressSubstate, HardAuthRule, HardProofRule,
-    HardResourceOrNonFungible, MethodAuthorization, ValidatorSubstate,
+    HardResourceOrNonFungible, MethodAuthorization, ValidatorCreator,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::{NativeVault, ResourceManager};
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
@@ -94,12 +93,12 @@ impl Executor for EpochManagerCreateInvocation {
 
         let mut validator_set = BTreeMap::new();
 
-        for (key, bucket) in self.validator_set {
+        for (key, initial_stake) in self.validator_set {
             let stake = Decimal::one();
-            let address = EpochManager::create_validator(
+            let address = ValidatorCreator::create_with_initial_stake(
                 global_node_id.into(),
                 key,
-                Some(bucket),
+                initial_stake,
                 true,
                 api,
             )?;
@@ -380,7 +379,7 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         let substate_ref = api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         let manager = epoch_manager.address;
-        let validator_address = EpochManager::create_validator(manager, self.1, None, false, api)?;
+        let validator_address = ValidatorCreator::create(manager, self.1, false, api)?;
         Ok((
             validator_address,
             CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::System(validator_address))),
@@ -445,144 +444,6 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
 }
 
 impl EpochManager {
-    fn create_liquidity_token<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
-        where
-            Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError> {
-        let mut liquidity_token_auth = BTreeMap::new();
-        let non_fungible_id = NonFungibleId::Bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
-        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
-        liquidity_token_auth.insert(
-            Mint,
-            (
-                rule!(require(non_fungible_address.clone())),
-                rule!(deny_all),
-            ),
-        );
-        liquidity_token_auth.insert(
-            Burn,
-            (rule!(require(non_fungible_address)), rule!(deny_all)),
-        );
-        liquidity_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        liquidity_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
-
-        let (unstake_resource_manager, _) = ResourceManager::sys_new(
-            ResourceType::Fungible {
-                divisibility: 0,
-            },
-            BTreeMap::new(),
-            liquidity_token_auth,
-            None,
-            api,
-        )?;
-
-        Ok(unstake_resource_manager.0)
-    }
-
-    fn create_unstake_nft<Y>(api: &mut Y) -> Result<ResourceAddress, RuntimeError>
-        where
-            Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError> {
-        let mut unstake_token_auth = BTreeMap::new();
-        let non_fungible_id = NonFungibleId::Bytes(
-            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
-        );
-        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
-        unstake_token_auth.insert(
-            Mint,
-            (
-                rule!(require(non_fungible_address.clone())),
-                rule!(deny_all),
-            ),
-        );
-        unstake_token_auth.insert(
-            Burn,
-            (rule!(require(non_fungible_address)), rule!(deny_all)),
-        );
-        unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
-
-        let (unstake_resource_manager, _) = ResourceManager::sys_new(
-            ResourceType::NonFungible {
-                id_type: NonFungibleIdType::UUID,
-            },
-            BTreeMap::new(),
-            unstake_token_auth,
-            None,
-            api,
-        )?;
-
-        Ok(unstake_resource_manager.0)
-    }
-
-    pub fn create_validator<Y>(
-        manager: SystemAddress,
-        key: EcdsaSecp256k1PublicKey,
-        bucket: Option<Bucket>,
-        is_registered: bool,
-        api: &mut Y,
-    ) -> Result<SystemAddress, RuntimeError>
-    where
-        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
-    {
-        let node_id = api.allocate_node_id(RENodeType::Validator)?;
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
-        let address: SystemAddress = global_node_id.into();
-        let mut access_rules = AccessRules::new();
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
-        );
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
-        );
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
-        );
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unstake)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
-        );
-        access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::ClaimXrd)),
-            rule!(allow_all),
-        );
-
-        let mut stake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-        if let Some(bucket) = bucket {
-            stake_vault.sys_put(bucket, api)?;
-        }
-        let unstake_vault = Vault::sys_new(RADIX_TOKEN, api)?;
-
-        let unstake_nft = Self::create_unstake_nft(api)?;
-        let liquidity_token = Self::create_liquidity_token(api)?;
-
-        let node = RENode::Validator(
-            ValidatorSubstate {
-                manager,
-                key,
-                address,
-                liquidity_token,
-                unstake_nft,
-                stake_xrd_vault_id: stake_vault.0,
-                pending_xrd_withdraw_vault_id: unstake_vault.0,
-                is_registered,
-            },
-            AccessRulesChainSubstate {
-                access_rules_chain: vec![access_rules],
-            },
-        );
-        api.create_node(node_id, node)?;
-        api.create_node(
-            global_node_id,
-            RENode::Global(GlobalAddressSubstate::Validator(node_id.into())),
-        )?;
-
-        Ok(global_node_id.into())
-    }
-
     pub fn create_auth() -> Vec<MethodAuthorization> {
         vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
             HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
