@@ -53,12 +53,12 @@ jobs:
         # Optional, default is `sccache-latest`
         cache-to: sccache-${{ runner.os }}-${{ github.sha }}
 
-    - uses: lrubaszewski/rust-cache@allow_registry_src_caching
-      with:
-        key: with_registry_src
-        cache-directories:
-          ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
+#    - uses: lrubaszewski/rust-cache@allow_registry_src_caching
+#      with:
+#        key: with_registry_src
+#        cache-directories:
+#          ~/.cargo/registry/src/**/librocksdb-sys-*
+#        workspaces: simulator
 
     - run: |
         sudo apt-get update -qq
