@@ -5,7 +5,7 @@ use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, Invokab
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFunction, ProofId, RENodeId, TransactionProcessorFunction,
 };
-use radix_engine_interface::data::{IndexedScryptoValue, ValueReplacingError};
+use radix_engine_interface::data::{IndexedScryptoValue, ReplaceManifestValuesError};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Cow;
 use transaction::errors::ManifestIdAllocationError;
@@ -380,7 +380,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     args,
                 }) => {
                     let args = processor
-                        .replace_manifest_buckets_and_proofs(
+                        .replace_manifest_values(
                             IndexedScryptoValue::from_slice(args)
                                 .expect("Invalid CALL_FUNCTION arguments"),
                         )
@@ -412,7 +412,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     args,
                 }) => {
                     let args = processor
-                        .replace_manifest_buckets_and_proofs(
+                        .replace_manifest_values(
                             IndexedScryptoValue::from_slice(args)
                                 .expect("Invalid CALL_METHOD arguments"),
                         )
@@ -804,20 +804,17 @@ impl TransactionProcessor {
         Ok(())
     }
 
-    fn replace_manifest_buckets_and_proofs(
+    fn replace_manifest_values(
         &mut self,
         mut value: IndexedScryptoValue,
     ) -> Result<IndexedScryptoValue, TransactionProcessorError> {
         value
-            .replace_manifest_buckets_and_proofs(
-                &mut self.proof_id_mapping,
-                &mut self.bucket_id_mapping,
-            )
+            .replace_manifest_values(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
             .map_err(|e| match e {
-                ValueReplacingError::BucketIdNotFound(bucket_id) => {
+                ReplaceManifestValuesError::BucketIdNotFound(bucket_id) => {
                     TransactionProcessorError::BucketNotFound(bucket_id)
                 }
-                ValueReplacingError::ProofIdNotFound(proof_id) => {
+                ReplaceManifestValuesError::ProofIdNotFound(proof_id) => {
                     TransactionProcessorError::ProofNotFound(proof_id)
                 }
             })?;

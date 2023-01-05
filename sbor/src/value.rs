@@ -258,7 +258,7 @@ impl<X: CustomTypeId, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for SborValue
     }
 }
 
-pub fn traverse_any<X: CustomTypeId, Y, V: CustomValueVisitor<Y, Err = E>, E>(
+pub fn traverse_any<X: CustomTypeId, Y, V: ValueVisitor<X, Y, Err = E>, E>(
     path: &mut SborPathBuf,
     value: &SborValue<X, Y>,
     visitor: &mut V,
@@ -292,7 +292,11 @@ pub fn traverse_any<X: CustomTypeId, Y, V: CustomValueVisitor<Y, Err = E>, E>(
                 path.pop();
             }
         }
-        SborValue::Array { elements, .. } => {
+        SborValue::Array {
+            element_type_id,
+            elements,
+        } => {
+            visitor.visit_array(path, element_type_id, elements)?;
             for (i, e) in elements.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, e, visitor)?;
@@ -308,8 +312,15 @@ pub fn traverse_any<X: CustomTypeId, Y, V: CustomValueVisitor<Y, Err = E>, E>(
     Ok(())
 }
 
-pub trait CustomValueVisitor<Y> {
+pub trait ValueVisitor<X: CustomTypeId, Y> {
     type Err;
+
+    fn visit_array(
+        &mut self,
+        path: &mut SborPathBuf,
+        element_type_id: &SborTypeId<X>,
+        elements: &[SborValue<X, Y>],
+    ) -> Result<(), Self::Err>;
 
     fn visit(&mut self, path: &mut SborPathBuf, value: &Y) -> Result<(), Self::Err>;
 }
