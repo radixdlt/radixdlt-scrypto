@@ -569,13 +569,17 @@ pub fn decompile_instruction<F: fmt::Write>(
         }
         BasicInstruction::UnstakeValidator {
             validator_address,
-            amount,
+            lp_tokens,
         } => {
             write!(
                 f,
-                "UNSTAKE_VALIDATOR SystemAddress(\"{}\") Decimal(\"{}\");",
+                "UNSTAKE_VALIDATOR SystemAddress(\"{}\") Bucket(\"{}\");",
                 validator_address.display(context.bech32_encoder),
-                amount,
+                context
+                    .bucket_names
+                    .get(&lp_tokens)
+                    .map(|name| format!("\"{}\"", name))
+                    .unwrap_or(format!("{}u32", lp_tokens)),
             )?;
         }
         BasicInstruction::ClaimXrd {

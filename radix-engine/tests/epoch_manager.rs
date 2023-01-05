@@ -401,15 +401,18 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
     validator_set.insert(
-        pub_key,
+        validator_pub_key,
         (
             Decimal::one(),
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
+            ComponentAddress::virtual_account_from_public_key(&account_pub_key),
         ),
     );
     let genesis = create_genesis(
@@ -419,14 +422,14 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleAddress::from_public_key(&validator_pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -460,17 +463,15 @@ fn cannot_claim_unstake_immediately() {
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
+        .unwrap()
+        .public_key();
+    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(
-        pub_key,
-        (
-            Decimal::from(10),
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
-        ),
-    );
+    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
+    validator_set.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -478,26 +479,28 @@ fn cannot_claim_unstake_immediately() {
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let (_, _, account_address) = test_runner.new_account(true);
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
 
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .unstake_validator(validator_address, Decimal::one())
+        .withdraw_from_account(account_with_lp, validator_substate.liquidity_token)
+        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+            builder.unstake_validator(validator_address, bucket)
+        })
         .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
-            account_address,
+            account_with_lp,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleAddress::from_public_key(&account_pub_key)],
     );
 
     receipt.expect_specific_failure(|e| {
@@ -516,17 +519,15 @@ fn can_claim_unstake_after_epochs() {
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
+    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(
-        pub_key,
-        (
-            Decimal::from(10),
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
-        ),
-    );
+    validator_set.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -534,21 +535,23 @@ fn can_claim_unstake_after_epochs() {
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let (_, _, account_address) = test_runner.new_account(true);
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .unstake_validator(validator_address, Decimal::one())
+        .withdraw_from_account(account_with_lp, validator_substate.liquidity_token)
+        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+            builder.unstake_validator(validator_address, bucket)
+        })
         .call_method(
-            account_address,
+            account_with_lp,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleAddress::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
     test_runner.set_current_epoch(initial_epoch + 1 + num_unstake_epochs);
@@ -556,19 +559,19 @@ fn can_claim_unstake_after_epochs() {
     // Act
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .withdraw_from_account(account_address, validator_substate.unstake_nft)
+        .withdraw_from_account(account_with_lp, validator_substate.unstake_nft)
         .take_from_worktop(validator_substate.unstake_nft, |builder, bucket| {
             builder.claim_xrd(validator_address, bucket)
         })
         .call_method(
-            account_address,
+            account_with_lp,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleAddress::from_public_key(&account_pub_key)],
     );
 
     // Assert
@@ -581,17 +584,15 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
     let num_unstake_epochs = 1u64;
-    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+    let validator_pub_key = EcdsaSecp256k1PrivateKey::from_u64(2u64)
         .unwrap()
         .public_key();
+    let account_pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let account_with_lp = ComponentAddress::virtual_account_from_public_key(&account_pub_key);
     let mut validator_set = BTreeMap::new();
-    validator_set.insert(
-        pub_key,
-        (
-            Decimal::from(10),
-            ComponentAddress::virtual_account_from_public_key(&pub_key),
-        ),
-    );
+    validator_set.insert(validator_pub_key, (Decimal::from(10), account_with_lp));
     let genesis = create_genesis(
         validator_set,
         initial_epoch,
@@ -599,20 +600,27 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
         num_unstake_epochs,
     );
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let (_, _, account_address) = test_runner.new_account(true);
-    let validator_address = test_runner.get_validator_with_key(&pub_key);
+    let validator_address = test_runner.get_validator_with_key(&validator_pub_key);
+    let validator_substate = test_runner.get_validator_info(validator_address);
     let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .unstake_validator(validator_address, Decimal::one())
+        .withdraw_from_account_by_amount(
+            account_with_lp,
+            Decimal::one(),
+            validator_substate.liquidity_token,
+        )
+        .take_from_worktop(validator_substate.liquidity_token, |builder, bucket| {
+            builder.unstake_validator(validator_address, bucket)
+        })
         .call_method(
-            account_address,
+            account_with_lp,
             "deposit_batch",
             args!(Expression::entire_worktop()),
         )
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
-        vec![NonFungibleAddress::from_public_key(&pub_key)],
+        vec![NonFungibleAddress::from_public_key(&account_pub_key)],
     );
     receipt.expect_commit_success();
 
@@ -640,7 +648,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     assert_eq!(
         next_epoch.0.get(&validator_address).unwrap(),
         &Validator {
-            key: pub_key,
+            key: validator_pub_key,
             stake: Decimal::from(9),
         }
     );

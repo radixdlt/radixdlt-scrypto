@@ -242,7 +242,7 @@ impl Executor for ValidatorStakeExecutable {
     }
 }
 
-pub struct ValidatorUnstakeExecutable(RENodeId, Decimal);
+pub struct ValidatorUnstakeExecutable(RENodeId, Bucket);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnstakeInvocation {
     type Exec = ValidatorUnstakeExecutable;
@@ -257,10 +257,13 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnstakeInvocation {
         let mut call_frame_update = CallFrameUpdate::empty();
         let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        call_frame_update
+            .nodes_to_move
+            .push(RENodeId::Bucket(self.lp_tokens.0));
 
         let actor =
             ResolvedActor::method(NativeFn::Validator(ValidatorFn::Unstake), resolved_receiver);
-        let executor = ValidatorUnstakeExecutable(resolved_receiver.receiver, self.amount);
+        let executor = ValidatorUnstakeExecutable(resolved_receiver.receiver, self.lp_tokens);
         Ok((actor, call_frame_update, executor))
     }
 }
@@ -291,6 +294,16 @@ impl Executor for ValidatorUnstakeExecutable {
             let mut stake_vault = Vault(validator.stake_xrd_vault_id);
             let mut unstake_vault = Vault(validator.pending_xrd_withdraw_vault_id);
             let mut nft_resman = ResourceManager(validator.unstake_nft);
+            let mut lp_token_resman = ResourceManager(validator.liquidity_token);
+
+            let active_stake_amount = stake_vault.sys_amount(api)?;
+            let total_lp_supply = lp_token_resman.total_supply(api)?;
+            let lp_tokens = self.1;
+            let lp_token_amount = lp_tokens.sys_amount(api)?;
+            let xrd_amount = lp_token_amount * active_stake_amount / total_lp_supply;
+
+            lp_token_resman.burn(lp_tokens, api)?;
+
             let manager_handle = api.lock_substate(
                 RENodeId::Global(GlobalAddress::System(manager)),
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
@@ -304,10 +317,10 @@ impl Executor for ValidatorUnstakeExecutable {
 
             let data = UnstakeData {
                 epoch_unlocked,
-                amount: self.1,
+                amount: xrd_amount,
             };
 
-            let bucket = stake_vault.sys_take(self.1, api)?;
+            let bucket = stake_vault.sys_take(xrd_amount, api)?;
             unstake_vault.sys_put(bucket, api)?;
             nft_resman.mint_non_fungible_uuid(data, api)?
         };
@@ -546,11 +559,11 @@ impl ValidatorCreator {
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Stake)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(allow_all),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unstake)),
-            rule!(require(NonFungibleAddress::from_public_key(&key))),
+            rule!(allow_all),
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::ClaimXrd)),

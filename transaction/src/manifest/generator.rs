@@ -551,10 +551,18 @@ pub fn generate_instruction(
             }
         }
 
-        ast::Instruction::UnstakeValidator { validator, amount } => {
+        ast::Instruction::UnstakeValidator {
+            validator,
+            lp_tokens,
+        } => {
+            let bucket_id = generate_bucket(lp_tokens, resolver)?;
+            id_validator
+                .drop_bucket(bucket_id)
+                .map_err(GeneratorError::IdValidationError)?;
+
             BasicInstruction::UnstakeValidator {
                 validator_address: generate_system_address(validator, bech32_decoder)?,
-                amount: generate_decimal(amount)?,
+                lp_tokens: bucket_id,
             }
         }
 

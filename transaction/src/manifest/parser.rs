@@ -253,7 +253,7 @@ impl Parser {
             },
             TokenKind::UnstakeValidator => Instruction::UnstakeValidator {
                 validator: self.parse_value()?,
-                amount: self.parse_value()?,
+                lp_tokens: self.parse_value()?,
             },
             TokenKind::ClaimXrd => Instruction::ClaimXrd {
                 validator: self.parse_value()?,

@@ -401,11 +401,11 @@ impl ManifestBuilder {
     pub fn unstake_validator(
         &mut self,
         validator_address: SystemAddress,
-        amount: Decimal,
+        bucket_id: BucketId,
     ) -> &mut Self {
         self.add_instruction(BasicInstruction::UnstakeValidator {
             validator_address,
-            amount,
+            lp_tokens: bucket_id,
         });
         self
     }

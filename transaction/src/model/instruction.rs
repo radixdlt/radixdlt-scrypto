@@ -227,7 +227,7 @@ pub enum BasicInstruction {
 
     UnstakeValidator {
         validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
-        amount: Decimal,
+        lp_tokens: BucketId,
     },
 
     ClaimXrd {

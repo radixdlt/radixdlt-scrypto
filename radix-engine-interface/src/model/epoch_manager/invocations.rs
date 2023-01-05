@@ -231,11 +231,20 @@ impl Into<SerializedInvocation> for ValidatorStakeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ValidatorUnstakeInvocation {
     pub receiver: SystemAddress,
-    pub amount: Decimal,
+    pub lp_tokens: Bucket,
+}
+
+impl Clone for ValidatorUnstakeInvocation {
+    fn clone(&self) -> Self {
+        Self {
+            receiver: self.receiver,
+            lp_tokens: Bucket(self.lp_tokens.0),
+        }
+    }
 }
 
 impl Invocation for ValidatorUnstakeInvocation {

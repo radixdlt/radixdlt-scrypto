@@ -421,11 +421,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::Basic(BasicInstruction::UnstakeValidator {
                     validator_address,
-                    amount,
+                    lp_tokens,
                 }) => {
+                    let lp_tokens = processor.take_bucket(lp_tokens)?;
                     let rtn = api.invoke(ValidatorUnstakeInvocation {
                         receiver: *validator_address,
-                        amount: *amount,
+                        lp_tokens,
                     })?;
                     Worktop::sys_put(Bucket(rtn.0), api)?;
                     InstructionOutput::Native(Box::new(rtn))

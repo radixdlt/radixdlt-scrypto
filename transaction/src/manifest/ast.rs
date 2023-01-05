@@ -205,7 +205,7 @@ pub enum Instruction {
 
     UnstakeValidator {
         validator: Value,
-        amount: Value,
+        lp_tokens: Value,
     },
 
     ClaimXrd {
