@@ -5,7 +5,9 @@ use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, Invokab
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, NativeFunction, ProofId, RENodeId, TransactionProcessorFunction,
 };
-use radix_engine_interface::data::{IndexedScryptoValue, ReplaceManifestValuesError};
+use radix_engine_interface::data::{
+    IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
+};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Cow;
 use transaction::errors::ManifestIdAllocationError;
@@ -36,12 +38,12 @@ pub enum TransactionProcessorError {
         valid_until: u64,
         current_epoch: u64,
     },
-    InvalidRequestData(DecodeError),
-    InvalidGetEpochResponseData(DecodeError),
-    InvalidMethod,
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
     IdAllocationError(ManifestIdAllocationError),
+    InvalidCallData(DecodeError),
+    ReadOwnedNodesError(ReadOwnedNodesError),
+    ReplaceManifestValuesError(ReplaceManifestValuesError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug {}
@@ -811,10 +813,10 @@ impl TransactionProcessor {
         value
             .replace_manifest_values(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
             .map_err(|e| match e {
-                ReplaceManifestValuesError::BucketNotExistsOrConsumed(bucket_id) => {
+                ReplaceManifestValuesError::BucketNotExistOrConsumed(bucket_id) => {
                     TransactionProcessorError::BucketNotFound(bucket_id)
                 }
-                ReplaceManifestValuesError::ProofNotExistsOrConsumed(proof_id) => {
+                ReplaceManifestValuesError::ProofNotExistOrConsumed(proof_id) => {
                     TransactionProcessorError::ProofNotFound(proof_id)
                 }
             })?;

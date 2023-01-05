@@ -144,7 +144,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .owned_nodes
                 .iter()
                 .cloned()
-                .filter_map(|o| match o {
+                .filter_map(|(owned_node, _)| match owned_node {
                     Own::Vault(vault_id) => Some(vault_id),
                     _ => None,
                 })
@@ -153,7 +153,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 .owned_nodes
                 .iter()
                 .cloned()
-                .filter_map(|o| match o {
+                .filter_map(|(owned_node, _)| match owned_node {
                     Own::KeyValueStore(kv_store_id) => Some(kv_store_id),
                     _ => None,
                 })
@@ -204,8 +204,8 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 key.display(value_display_context),
                 value.display(value_display_context)
             );
-            for ownership in value.owned_nodes {
-                match ownership {
+            for owned_node in value.owned_nodes {
+                match owned_node.0 {
                     Own::Vault(vault_id) => {
                         owned_vaults.push(vault_id);
                     }

@@ -21,9 +21,10 @@ pub enum ReadOwnedNodesError {
 
 /// Represents an error when replacing manifest values.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum ReplaceManifestValuesError {
-    BucketNotExistsOrConsumed(ManifestBucket),
-    ProofNotExistsOrConsumed(ManifestProof),
+    BucketNotExistOrConsumed(ManifestBucket),
+    ProofNotExistOrConsumed(ManifestProof),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -143,7 +144,7 @@ impl IndexedScryptoValue {
     ) -> Result<(), ReplaceManifestValuesError> {
         for (bucket_id, path) in self.buckets.drain(..) {
             let next_id = bucket_replacements.remove(&bucket_id).ok_or(
-                ReplaceManifestValuesError::BucketNotExistsOrConsumed(bucket_id),
+                ReplaceManifestValuesError::BucketNotExistOrConsumed(bucket_id),
             )?;
             let value = path.get_from_value_mut(&mut self.value).unwrap();
             if let SborValue::Custom { value } = value {
@@ -156,7 +157,7 @@ impl IndexedScryptoValue {
 
         for (proof_id, path) in self.proofs.drain(..) {
             let next_id = proof_replacements.remove(&proof_id).ok_or(
-                ReplaceManifestValuesError::ProofNotExistsOrConsumed(proof_id),
+                ReplaceManifestValuesError::ProofNotExistOrConsumed(proof_id),
             )?;
             let value = path.get_from_value_mut(&mut self.value).unwrap();
             if let SborValue::Custom { value } = value {
@@ -348,7 +349,7 @@ mod tests {
                 &mut HashMap::from([(ManifestProof(0), 0u32)]),
                 &mut HashMap::from([(ManifestBucket(0), 0u32)])
             ),
-            Err(ReplaceManifestValuesError::BucketNotExistsOrConsumed(
+            Err(ReplaceManifestValuesError::BucketNotExistOrConsumed(
                 ManifestBucket(0)
             ))
         );

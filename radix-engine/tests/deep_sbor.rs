@@ -103,7 +103,7 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
         matches!(
             f,
             RuntimeError::KernelError(KernelError::WasmError(WasmError::SborDecodeError(
-                ScryptoValueDecodeError::DecodeError(DecodeError::MaxDepthExceeded(_))
+                DecodeError::MaxDepthExceeded(_)
             )))
         )
     });

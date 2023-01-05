@@ -1,6 +1,7 @@
 use radix_engine_interface::data::*;
 
 use crate::engine::*;
+use crate::model::TransactionProcessorError;
 use crate::types::*;
 use crate::wasm::*;
 
@@ -12,10 +13,21 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
-        let args = IndexedScryptoValue::from_slice(&self.args())
-            .map_err(|e| RuntimeError::KernelError(KernelError::SborDecodeError(e)))?;
+        let args = IndexedScryptoValue::from_slice(&self.args()).map_err(|e| {
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::InvalidCallData(e),
+            ))
+        })?;
 
-        let nodes_to_move = args.owned_node_ids().into_iter().collect();
+        let nodes_to_move = args
+            .owned_node_ids()
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::ReadOwnedNodesError(e),
+                ))
+            })?
+            .into_iter()
+            .collect();
         for global_address in args.global_references() {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
@@ -250,7 +262,16 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
 
-        let nodes_to_move = self.args().owned_node_ids().into_iter().collect();
+        let nodes_to_move = self
+            .args()
+            .owned_node_ids()
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::ReadOwnedNodesError(e),
+                ))
+            })?
+            .into_iter()
+            .collect();
         for global_address in self.args().global_references() {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
