@@ -1,6 +1,5 @@
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -11,7 +10,7 @@ fn vector_of_buckets_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
@@ -37,7 +36,7 @@ fn tuple_of_buckets_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
@@ -63,7 +62,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
@@ -88,7 +87,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id1| {
             builder.take_from_worktop(RADIX_TOKEN, |builder, bucket_id2| {
@@ -113,7 +112,7 @@ fn some_optional_bucket_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
@@ -137,7 +136,7 @@ fn none_optional_bucket_argument_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/arguments");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,

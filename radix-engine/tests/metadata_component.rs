@@ -1,6 +1,5 @@
 use radix_engine::types::*;
 use radix_engine_interface::args;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -11,7 +10,7 @@ fn can_set_component_metadata() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/metadata_component");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "MetadataComponent", "new", args!())
         .build();

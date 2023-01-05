@@ -788,7 +788,7 @@ impl TransactionProcessor {
             + InvokableModel<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
-        for ownership in &value.ownerships {
+        for ownership in &value.owned_nodes {
             match ownership {
                 Own::Bucket(bucket_id) => {
                     Worktop::sys_put(Bucket(*bucket_id), api)?;

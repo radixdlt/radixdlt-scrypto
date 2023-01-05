@@ -82,7 +82,7 @@ impl NewSimpleBadge {
         let mut initial_supply = BTreeMap::new();
         initial_supply.insert(NonFungibleId::U32(1), EmptyStruct {});
 
-        let manifest = ManifestBuilder::new(&network_definition)
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100.into())
             .add_instruction(BasicInstruction::CreateNonFungibleResource {
                 id_type: NonFungibleIdType::U32,
@@ -126,7 +126,7 @@ impl NewSimpleBadge {
                 "NFAddress: {}",
                 NonFungibleAddress::new(resource_address, NonFungibleId::U32(1))
                     // This should be the opposite of parse_args in the manifest builder
-                    .to_canonical_combined_string(&bech32_encoder)
+                    .to_canonical_string(&bech32_encoder)
                     .green()
             )
             .map_err(Error::IOError)?;
@@ -136,12 +136,8 @@ impl NewSimpleBadge {
                 resource_address.to_string(&bech32_encoder).green()
             )
             .map_err(Error::IOError)?;
-            writeln!(
-                out,
-                "NFID: {}",
-                NonFungibleId::U32(1).to_combined_simple_string()
-            )
-            .map_err(Error::IOError)?;
+            writeln!(out, "NFID: {}", NonFungibleId::U32(1).to_simple_string())
+                .map_err(Error::IOError)?;
         };
 
         Ok(())
