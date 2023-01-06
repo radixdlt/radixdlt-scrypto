@@ -999,6 +999,11 @@ impl<'a> SubstateRef<'a> {
                 }
                 (HashSet::new(), owned_nodes)
             }
+            SubstateRef::PackageRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
+            }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
                 (
@@ -1007,6 +1012,11 @@ impl<'a> SubstateRef<'a> {
                         .owned_node_ids()
                         .expect("No duplicates expected"),
                 )
+            }
+            SubstateRef::ComponentRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 let maybe_scrypto_value = substate
