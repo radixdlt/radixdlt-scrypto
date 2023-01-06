@@ -226,6 +226,32 @@ impl VisibilityProperties {
     }
 }
 
+pub struct NodeProperties;
+
+impl NodeProperties {
+    pub fn is_persisted_immutable(node_id: RENodeId) -> bool {
+        match node_id {
+            RENodeId::Bucket(..) => false,
+            RENodeId::Proof(..) => false,
+            RENodeId::AuthZoneStack(..) => false,
+            RENodeId::FeeReserve(..) => false,
+            RENodeId::Worktop => false,
+            RENodeId::Logger => false,
+            RENodeId::Global(..) => true,
+            RENodeId::KeyValueStore(..) => true,
+            RENodeId::NonFungibleStore(..) => true,
+            RENodeId::Component(..) => true,
+            RENodeId::Vault(..) => true,
+            RENodeId::ResourceManager(..) => true,
+            RENodeId::Package(..) => true,
+            RENodeId::EpochManager(..) => true,
+            RENodeId::Clock(..) => true,
+            RENodeId::TransactionRuntime(..) => false,
+        }
+    }
+}
+
+
 pub struct SubstateProperties;
 
 impl SubstateProperties {
@@ -249,6 +275,13 @@ impl SubstateProperties {
                         node_id,
                     ))),
                 }
+            }
+            SubstateOffset::Worktop(WorktopOffset::Worktop) => match node_id {
+                RENodeId::Bucket(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
             }
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)

@@ -9,13 +9,13 @@ use crate::types::*;
 /// Worktop collects resources from function or method returns.
 #[derive(Debug)]
 pub struct WorktopSubstate {
-    pub resources: HashMap<ResourceAddress, Own>,
+    pub resources: BTreeMap<ResourceAddress, Own>,
 }
 
 impl WorktopSubstate {
     pub fn new() -> Self {
         Self {
-            resources: HashMap::new(),
+            resources: BTreeMap::new(),
         }
     }
 }

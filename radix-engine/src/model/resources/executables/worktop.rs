@@ -1,3 +1,4 @@
+use std::mem;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use crate::engine::{
@@ -164,16 +165,18 @@ impl Executor for WorktopTakeAllInvocation {
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
-        let rtn_bucket = if let Some(bucket) = worktop.resources.remove(&self.resource_address) {
-            bucket
+        let rtn_bucket = if let Some(bucket) = worktop.resources.get(&self.resource_address) {
+            let bucket = Bucket(bucket.bucket_id());
+            let amount = bucket.sys_amount(api)?;
+            let rtn_bucket = bucket.sys_take(amount, api)?;
+            rtn_bucket
         } else {
             let resman = ResourceManager(self.resource_address);
-            Own::Bucket(resman.new_empty_bucket(api)?.0)
+            resman.new_empty_bucket(api)?
         };
 
-        let bucket = Bucket(rtn_bucket.bucket_id());
-        let update = CallFrameUpdate::move_node(RENodeId::Bucket(bucket.0));
-        Ok((bucket, update))
+        let update = CallFrameUpdate::move_node(RENodeId::Bucket(rtn_bucket.0));
+        Ok((rtn_bucket, update))
     }
 }
 
@@ -414,15 +417,14 @@ impl Executor for WorktopDrainInvocation {
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
         let worktop_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
         let mut buckets = Vec::new();
+        let mut nodes_to_move = Vec::new();
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
-        for (_, resource) in worktop.resources.drain() {
+        let resources = mem::replace(&mut worktop.resources, BTreeMap::new());
+        for (_, resource) in resources {
             let bucket = Bucket(resource.bucket_id());
-            buckets.push(bucket);
-        }
-        let mut nodes_to_move = Vec::new();
-        for bucket in &buckets {
             nodes_to_move.push(RENodeId::Bucket(bucket.0));
+            buckets.push(bucket);
         }
 
         Ok((

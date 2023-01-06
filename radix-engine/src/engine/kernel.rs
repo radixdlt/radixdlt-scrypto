@@ -1,3 +1,4 @@
+use std::ptr::replace;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::{
     ActorApi, BlobApi, EngineApi, Invocation, Invokable, InvokableModel,
@@ -236,7 +237,7 @@ where
                     let buckets = {
                         let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
                         let worktop = substate_ref_mut.worktop();
-                        worktop.resources.clone()
+                        mem::replace(&mut worktop.resources, BTreeMap::new())
                     };
                     for (_, bucket) in buckets {
                         let bucket = Bucket(bucket.bucket_id());
