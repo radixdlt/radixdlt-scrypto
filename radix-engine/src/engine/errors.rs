@@ -1,8 +1,7 @@
 use crate::engine::node_move_module::NodeMoveError;
 use crate::engine::{AuthError, ExecutionMode, LockFlags, ResolvedActor};
 use radix_engine_interface::api::types::{
-    GlobalAddress, LockHandle, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
-    SubstateOffset,
+    GlobalAddress, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, SubstateOffset,
 };
 use radix_engine_interface::data::ScryptoValueDecodeError;
 use sbor::*;
@@ -83,7 +82,6 @@ pub enum KernelError {
     RENodeNotFound(RENodeId),
 
     InvalidScryptoFnOutput,
-    MethodReceiverNotMatch(NativeMethod, RENodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),

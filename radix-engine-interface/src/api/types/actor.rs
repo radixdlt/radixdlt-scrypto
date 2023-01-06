@@ -8,9 +8,37 @@ use crate::Describe;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
+pub enum PackageIdentifier {
+    Scrypto(PackageAddress),
+    Native(NativePackage),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum NativePackage {
+    Auth,
+    Component,
+    Package,
+    Metadata,
+    EpochManager,
+    Resource,
+    Clock,
+    Logger,
+    TransactionRuntime,
+    TransactionProcessor,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
     Native(NativeFn),
+}
+
+impl From<NativeFn> for FnIdentifier {
+    fn from(native_fn: NativeFn) -> Self {
+        FnIdentifier::Native(native_fn)
+    }
 }
 
 impl FnIdentifier {
@@ -18,10 +46,17 @@ impl FnIdentifier {
         matches!(
             self,
             FnIdentifier::Scrypto(..)
-                | FnIdentifier::Native(NativeFn::Function(NativeFunction::TransactionProcessor(
-                    TransactionProcessorFunction::Run
-                )))
+                | FnIdentifier::Native(NativeFn::TransactionProcessor(TransactionProcessorFn::Run))
         )
+    }
+
+    pub fn package_identifier(&self) -> PackageIdentifier {
+        match self {
+            FnIdentifier::Scrypto(identifier) => {
+                PackageIdentifier::Scrypto(identifier.package_address)
+            }
+            FnIdentifier::Native(identifier) => PackageIdentifier::Native(identifier.package()),
+        }
     }
 }
 
@@ -54,51 +89,41 @@ impl ScryptoFnIdentifier {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 pub enum NativeFn {
-    Method(NativeMethod),
-    Function(NativeFunction),
+    AccessRulesChain(AccessRulesChainFn),
+    Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
+    Package(PackageFn),
+    Metadata(MetadataFn),
+    EpochManager(EpochManagerFn),
+    AuthZoneStack(AuthZoneStackFn),
+    ResourceManager(ResourceManagerFn),
+    Bucket(BucketFn),
+    Vault(VaultFn),
+    Proof(ProofFn),
+    Worktop(WorktopFn),
+    Clock(ClockFn),
+    Logger(LoggerFn),
+    TransactionRuntime(TransactionRuntimeFn),
+    TransactionProcessor(TransactionProcessorFn),
 }
 
-// Native function enum used by Kernel SystemAPI and WASM
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-pub enum NativeMethod {
-    AccessRulesChain(AccessRulesChainMethod),
-    Component(ComponentMethod), // TODO: investigate whether to make royalty universal and take any "receiver".
-    Package(PackageMethod),
-    Metadata(MetadataMethod),
-    EpochManager(EpochManagerMethod),
-    AuthZoneStack(AuthZoneStackMethod),
-    ResourceManager(ResourceManagerMethod),
-    Bucket(BucketMethod),
-    Vault(VaultMethod),
-    Proof(ProofMethod),
-    Worktop(WorktopMethod),
-    Clock(ClockMethod),
-    Logger(LoggerMethod),
-    TransactionHash(TransactionHashMethod),
-}
-
-impl Into<FnIdentifier> for NativeMethod {
-    fn into(self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Method(self))
-    }
-}
-
-// Native method enum used by Kernel SystemAPI and WASM
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-pub enum NativeFunction {
-    Component(ComponentFunction),
-    EpochManager(EpochManagerFunction),
-    ResourceManager(ResourceManagerFunction),
-    Package(PackageFunction),
-    TransactionProcessor(TransactionProcessorFunction),
-    Clock(ClockFunction),
-}
-
-impl Into<FnIdentifier> for NativeFunction {
-    fn into(self) -> FnIdentifier {
-        FnIdentifier::Native(NativeFn::Function(self))
+impl NativeFn {
+    pub fn package(&self) -> NativePackage {
+        match self {
+            NativeFn::AccessRulesChain(..) | NativeFn::AuthZoneStack(..) => NativePackage::Auth,
+            NativeFn::Component(..) => NativePackage::Component,
+            NativeFn::Package(..) => NativePackage::Package,
+            NativeFn::Metadata(..) => NativePackage::Metadata,
+            NativeFn::EpochManager(..) => NativePackage::EpochManager,
+            NativeFn::ResourceManager(..)
+            | NativeFn::Bucket(..)
+            | NativeFn::Vault(..)
+            | NativeFn::Proof(..)
+            | NativeFn::Worktop(..) => NativePackage::Resource,
+            NativeFn::Clock(..) => NativePackage::Clock,
+            NativeFn::Logger(..) => NativePackage::Logger,
+            NativeFn::TransactionRuntime(..) => NativePackage::TransactionRuntime,
+            NativeFn::TransactionProcessor(..) => NativePackage::TransactionProcessor,
+        }
     }
 }
 
@@ -119,7 +144,7 @@ impl Into<FnIdentifier> for NativeFunction {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum AccessRulesChainMethod {
+pub enum AccessRulesChainFn {
     AddAccessCheck,
     SetMethodAccessRule,
     SetGroupAccessRule,
@@ -145,7 +170,7 @@ pub enum AccessRulesChainMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum MetadataMethod {
+pub enum MetadataFn {
     Set,
     Get,
 }
@@ -167,7 +192,9 @@ pub enum MetadataMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum ComponentFunction {
+pub enum ComponentFn {
+    SetRoyaltyConfig,
+    ClaimRoyalty,
     Globalize,
     GlobalizeWithOwner,
 }
@@ -189,72 +216,31 @@ pub enum ComponentFunction {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum EpochManagerFunction {
+pub enum PackageFn {
+    Publish,
+    SetRoyaltyConfig,
+    ClaimRoyalty,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+)]
+#[scrypto(TypeId, Encode, Decode, Describe)]
+#[strum(serialize_all = "snake_case")]
+pub enum EpochManagerFn {
     Create,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-#[strum(serialize_all = "snake_case")]
-pub enum ComponentMethod {
-    SetRoyaltyConfig,
-    ClaimRoyalty,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-#[strum(serialize_all = "snake_case")]
-pub enum PackageMethod {
-    SetRoyaltyConfig,
-    ClaimRoyalty,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-#[strum(serialize_all = "snake_case")]
-pub enum EpochManagerMethod {
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
@@ -277,7 +263,7 @@ pub enum EpochManagerMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum AuthZoneStackMethod {
+pub enum AuthZoneStackFn {
     Pop,
     Push,
     CreateProof,
@@ -305,7 +291,18 @@ pub enum AuthZoneStackMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum ResourceManagerFunction {
+pub enum ResourceManagerFn {
+    Mint,
+    Burn,
+    UpdateVaultAuth,
+    LockAuth,
+    UpdateNonFungibleData,
+    GetNonFungible,
+    GetResourceType,
+    GetTotalSupply,
+    NonFungibleExists,
+    CreateBucket,
+    CreateVault,
     Create,
     BurnBucket,
 }
@@ -327,38 +324,7 @@ pub enum ResourceManagerFunction {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum ResourceManagerMethod {
-    Mint,
-    Burn,
-    UpdateVaultAuth,
-    LockAuth,
-    UpdateNonFungibleData,
-    GetNonFungible,
-    GetResourceType,
-    GetTotalSupply,
-    NonFungibleExists,
-    CreateBucket,
-    CreateVault,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-#[strum(serialize_all = "snake_case")]
-pub enum BucketMethod {
+pub enum BucketFn {
     Take,
     TakeNonFungibles,
     Put,
@@ -385,7 +351,7 @@ pub enum BucketMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum VaultMethod {
+pub enum VaultFn {
     Take,
     LockFee,
     Put,
@@ -417,7 +383,7 @@ pub enum VaultMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum ProofMethod {
+pub enum ProofFn {
     Clone,
     GetAmount,
     GetNonFungibleIds,
@@ -441,7 +407,7 @@ pub enum ProofMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum WorktopMethod {
+pub enum WorktopFn {
     TakeAll,
     TakeAmount,
     TakeNonFungibles,
@@ -469,28 +435,8 @@ pub enum WorktopMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum ClockFunction {
+pub enum ClockFn {
     Create,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-#[strum(serialize_all = "snake_case")]
-pub enum ClockMethod {
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
@@ -513,7 +459,7 @@ pub enum ClockMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum LoggerMethod {
+pub enum LoggerFn {
     Log,
 }
 
@@ -534,7 +480,7 @@ pub enum LoggerMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum TransactionHashMethod {
+pub enum TransactionRuntimeFn {
     Get,
     GenerateUuid,
 }
@@ -556,27 +502,6 @@ pub enum TransactionHashMethod {
 )]
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
-pub enum PackageFunction {
-    Publish,
-}
-
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    Hash,
-    PartialOrd,
-    Ord,
-    EnumString,
-    EnumVariantNames,
-    IntoStaticStr,
-    AsRefStr,
-    Display,
-)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
-#[strum(serialize_all = "snake_case")]
-pub enum TransactionProcessorFunction {
+pub enum TransactionProcessorFn {
     Run,
 }
