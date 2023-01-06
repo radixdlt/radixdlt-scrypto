@@ -20,6 +20,12 @@ impl SborPathBuf {
     }
 }
 
+impl From<SborPath> for SborPathBuf {
+    fn from(path: SborPath) -> Self {
+        Self(path.0)
+    }
+}
+
 impl From<SborPathBuf> for SborPath {
     fn from(mutable: SborPathBuf) -> Self {
         SborPath::new(mutable.0)

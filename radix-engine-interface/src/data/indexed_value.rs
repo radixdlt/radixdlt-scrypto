@@ -172,43 +172,10 @@ impl IndexedScryptoValue {
             return Err(ReplaceManifestValuesError::InvalidExpressionReplacements);
         }
 
-        for (bucket, path) in self.buckets.drain(..) {
-            let replacement = bucket_replacements
-                .remove(&bucket)
-                .ok_or(ReplaceManifestValuesError::BucketNotFound(bucket))?;
-            let value = path.get_from_value_mut(&mut self.value).unwrap();
-            *value = ScryptoValue::Custom {
-                value: ScryptoCustomValue::Own(Own::Bucket(replacement)),
-            };
-            self.owned_nodes.push((Own::Bucket(replacement), path));
-        }
-
-        for (proof, path) in self.proofs.drain(..) {
-            let replacement = proof_replacements
-                .remove(&proof)
-                .ok_or(ReplaceManifestValuesError::ProofNotFound(proof))?;
-            let value = path.get_from_value_mut(&mut self.value).unwrap();
-            *value = ScryptoValue::Custom {
-                value: ScryptoCustomValue::Own(Own::Proof(replacement)),
-            };
-            self.owned_nodes.push((Own::Proof(replacement), path));
-        }
-
-        for (_, path) in self.expressions.drain(..).rev() {
-            let value = path.get_from_value_mut(&mut self.value).unwrap();
-            *value = ScryptoValue::Array {
-                element_type_id: ScryptoSborTypeId::Array,
-                elements: expression_replacements
-                    .pop()
-                    .expect("Expression replacements checked upfront!")
-                    .into_iter()
-                    .map(|r| ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Own(r),
-                    })
-                    .collect(),
-            }
-        }
-
+        // Array replacement:
+        // * Vec<ManifestBucket> ==> Vec<Own>
+        // * Vec<ManifestProof> ==> Vec<Own>
+        // * Vec<Expression> ==> Vec<Vec<Own>>
         let mut retained_arrays = Vec::new();
         for (element_type_id, path) in self.arrays.drain(..) {
             match element_type_id {
@@ -241,6 +208,63 @@ impl IndexedScryptoValue {
             }
         }
         self.arrays = retained_arrays;
+
+        // Bucket replacement
+        for (bucket, path) in self.buckets.drain(..) {
+            let replacement = bucket_replacements
+                .remove(&bucket)
+                .ok_or(ReplaceManifestValuesError::BucketNotFound(bucket))?;
+
+            let value = path.get_from_value_mut(&mut self.value).unwrap();
+            *value = ScryptoValue::Custom {
+                value: ScryptoCustomValue::Own(Own::Bucket(replacement)),
+            };
+
+            // new own
+            self.owned_nodes.push((Own::Bucket(replacement), path));
+        }
+
+        // Proof replacement
+        for (proof, path) in self.proofs.drain(..) {
+            let replacement = proof_replacements
+                .remove(&proof)
+                .ok_or(ReplaceManifestValuesError::ProofNotFound(proof))?;
+            let value = path.get_from_value_mut(&mut self.value).unwrap();
+            *value = ScryptoValue::Custom {
+                value: ScryptoCustomValue::Own(Own::Proof(replacement)),
+            };
+
+            // new own
+            self.owned_nodes.push((Own::Proof(replacement), path));
+        }
+
+        // Expression replacement
+        for (_, path) in self.expressions.drain(..).rev() {
+            let replacement = expression_replacements.pop().unwrap();
+
+            let value = path.get_from_value_mut(&mut self.value).unwrap();
+            let element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+            let elements = replacement
+                .iter()
+                .map(|r| ScryptoValue::Custom {
+                    value: ScryptoCustomValue::Own(r.clone()),
+                })
+                .collect();
+            *value = ScryptoValue::Array {
+                element_type_id,
+                elements,
+            };
+
+            // new array
+            self.arrays.push((element_type_id, path.clone()));
+
+            // new owns
+            replacement.into_iter().enumerate().for_each(|(i, o)| {
+                let mut buf = SborPathBuf::from(path.clone());
+                buf.push(i);
+                self.owned_nodes.push((o, buf.into()));
+            })
+        }
 
         // Potential optimization: in-place replacement
         self.raw =
