@@ -145,7 +145,7 @@ impl FeeTable {
                 ProofFn::Clone => self.fixed_low,
             },
             NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerFn::Create => self.fixed_low,
+                ResourceManagerFn::Create => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::BurnBucket => self.fixed_low,
                 ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
                 ResourceManagerFn::LockAuth => self.fixed_medium,
@@ -185,13 +185,13 @@ impl FeeTable {
                 MetadataFn::Get => self.fixed_low,
             },
             NativeFn::Component(method_ident) => match method_ident {
-                ComponentFn::Globalize => self.fixed_medium,
-                ComponentFn::GlobalizeWithOwner => self.fixed_medium,
+                ComponentFn::Globalize => self.fixed_high,
+                ComponentFn::GlobalizeWithOwner => self.fixed_high,
                 ComponentFn::SetRoyaltyConfig => self.fixed_medium,
                 ComponentFn::ClaimRoyalty => self.fixed_medium,
             },
             NativeFn::Package(method_ident) => match method_ident {
-                PackageFn::Publish => self.fixed_medium,
+                PackageFn::Publish => self.fixed_high,
                 PackageFn::SetRoyaltyConfig => self.fixed_medium,
                 PackageFn::ClaimRoyalty => self.fixed_medium,
             },
