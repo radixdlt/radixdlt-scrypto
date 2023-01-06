@@ -55,10 +55,10 @@ jobs:
     - name: Setup rust-cache to reduce build time
       uses: lrubaszewski/rust-cache@allow_registry_src_caching
       with:
-        key: cache-${{ runner.os }}
+        key: cache_new-${{ runner.os }}
         cache-directories:
           ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: .
+          #        workspaces: .
 
     - run: |
         sudo apt-get update -qq
