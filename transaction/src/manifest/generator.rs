@@ -341,18 +341,16 @@ pub fn generate_instruction(
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
 
-            let args_encoded =
-                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
-            let args_indexed = IndexedScryptoValue::from_value(args);
+            let indexed_args = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&args_indexed.buckets(), &args_indexed.proofs())
+                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallFunction {
                 package_address,
                 blueprint_name,
                 function_name,
-                args: args_encoded,
+                args: indexed_args.to_vec(),
             }
         }
         ast::Instruction::CallMethod {
@@ -364,15 +362,15 @@ pub fn generate_instruction(
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
 
-            let args_indexed = IndexedScryptoValue::from_value(args);
+            let indexed_args = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&args_indexed.buckets(), &args_indexed.proofs())
+                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallMethod {
                 component_address,
                 method_name,
-                args: args_indexed.into_vec(),
+                args: indexed_args.into_vec(),
             }
         }
         ast::Instruction::PublishPackage {

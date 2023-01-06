@@ -12,7 +12,6 @@ pub enum SystemApiCostingEntry {
      */
     Invoke {
         input_size: u32,
-        owned_node_count: u32,
     },
 
     /*
@@ -241,11 +240,9 @@ impl FeeTable {
 
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::Invoke {
-                input_size,
-                owned_node_count,
-                ..
-            } => self.fixed_low + (5 * input_size + 10 * owned_node_count) as u32,
+            SystemApiCostingEntry::Invoke { input_size, .. } => {
+                self.fixed_low + (5 * input_size) as u32
+            }
 
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,

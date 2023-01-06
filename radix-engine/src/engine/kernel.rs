@@ -632,8 +632,7 @@ where
                 &mut self.track,
                 SysCallInput::Invoke {
                     invocation: &invocation,
-                    input_size: 0,       // TODO: Fix this
-                    owned_node_count: 0, // TODO: Fix this
+                    input_size: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
                 },
             )

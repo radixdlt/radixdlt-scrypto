@@ -273,7 +273,7 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::CallFunction { args, .. }
                 | BasicInstruction::CallMethod { args, .. } => {
                     // TODO: decode into Value
-                    Self::validate_call_data(&args, &mut id_validator)
+                    Self::validate_call_args(&args, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                 }
                 BasicInstruction::PublishPackage { .. } => {}
@@ -382,18 +382,25 @@ impl NotarizedTransactionValidator {
         Ok(signers.into_iter().collect())
     }
 
-    pub fn validate_call_data(
+    pub fn validate_call_args(
         args: &[u8],
         id_validator: &mut ManifestIdValidator,
     ) -> Result<(), CallDataValidationError> {
-        let args_indexed =
+        let indexed_args =
             IndexedScryptoValue::from_slice(args).map_err(CallDataValidationError::DecodeError)?;
+
         id_validator
-            .move_resources(&args_indexed.buckets(), &args_indexed.proofs())
+            .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
             .map_err(CallDataValidationError::IdValidationError)?;
-        if args_indexed.owned_node_count() != 0 {
+
+        if let Ok(node_ids) = indexed_args.owned_node_ids() {
+            if !node_ids.is_empty() {
+                return Err(CallDataValidationError::OwnNotAllowed);
+            }
+        } else {
             return Err(CallDataValidationError::OwnNotAllowed);
         }
+
         Ok(())
     }
 }

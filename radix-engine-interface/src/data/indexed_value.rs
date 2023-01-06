@@ -144,10 +144,6 @@ impl IndexedScryptoValue {
         Ok(node_ids)
     }
 
-    pub fn owned_node_count(&self) -> usize {
-        self.owned_nodes.len()
-    }
-
     pub fn global_references(&self) -> HashSet<GlobalAddress> {
         let mut node_ids = HashSet::new();
         for component_address in &self.component_addresses {
