@@ -317,9 +317,7 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { HashMap<#key_type, #value_type> }
         }
-        SchemaType::Any => {
-            panic!("Any type not currently supported for importing.");
-        }
+
         SchemaType::PackageAddress => {
             parse_quote! { ::scrypto::model::PackageAddress }
         }
@@ -332,6 +330,12 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::SystemAddress => {
             parse_quote! { ::scrypto::model::SystemAddress}
         }
+
+        // RE
+        SchemaType::Own => parse_quote! { ::scrypto::radix_engine_interface::data::types::Own },
+        SchemaType::Bucket => parse_quote! {::scrypto::model::Bucket },
+        SchemaType::Proof => parse_quote! { ::scrypto::model::Proof},
+        SchemaType::Vault => parse_quote! { ::scrypto::model::Vault},
         SchemaType::Component => parse_quote! {::scrypto::model::Component },
         SchemaType::KeyValueStore {
             key_type,
@@ -343,14 +347,23 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             structs.extend(s);
             parse_quote! { ::scrypto::component::KeyValueStore<#k, #v> }
         }
-        SchemaType::Bucket => parse_quote! {::scrypto::model::Bucket },
-        SchemaType::Proof => parse_quote! { ::scrypto::model::Proof},
-        SchemaType::Vault => parse_quote! { ::scrypto::model::Vault},
-        SchemaType::Expression => parse_quote! {::scrypto::runtime::Expression },
-        SchemaType::Blob => parse_quote! { ::scrypto::model::Blob},
         SchemaType::NonFungibleAddress => {
             parse_quote! { ::scrypto::model::NonFungibleAddress}
         }
+        SchemaType::Blob => parse_quote! { ::scrypto::engine_lib::data::types::Blob},
+
+        // TX
+        SchemaType::ManifestBucket => {
+            parse_quote! { ::scrypto::radix_engine_interface::data::types::ManifestBucket }
+        }
+        SchemaType::ManifestProof => {
+            parse_quote! { ::scrypto::radix_engine_interface::data::types::ManifestProof }
+        }
+        SchemaType::ManifestExpression => {
+            parse_quote! { ::scrypto::radix_engine_interface::data::types::ManifestExpression }
+        }
+
+        // Misc
         SchemaType::Hash => parse_quote! { ::scrypto::crypto::Hash},
         SchemaType::EcdsaSecp256k1PublicKey => {
             parse_quote! {::scrypto::crypto::EcdsaSecp256k1PublicKey }
@@ -367,6 +380,10 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::Decimal => parse_quote! { ::scrypto::math::Decimal},
         SchemaType::PreciseDecimal => parse_quote! {::scrypto::math::PreciseDecimal },
         SchemaType::NonFungibleId => parse_quote! {::scrypto::model::NonFungibleId },
+
+        SchemaType::Any => {
+            panic!("Any type not currently supported for importing.");
+        }
     };
 
     Ok((t, structs))

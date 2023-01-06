@@ -7,7 +7,6 @@ use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::model::FromPublicKey;
@@ -30,7 +29,7 @@ fn bench_transfer(c: &mut Criterion) {
     let public_key = private_key.public_key();
 
     // Create two accounts
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -66,13 +65,13 @@ fn bench_transfer(c: &mut Criterion) {
     .new_component_addresses[0];
 
     // Fill first account
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .call_method(
             account1,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     for nonce in 0..1000 {
@@ -88,13 +87,13 @@ fn bench_transfer(c: &mut Criterion) {
     }
 
     // Create a transfer manifest
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .withdraw_from_account_by_amount(account1, dec!("0.000001"), RADIX_TOKEN)
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

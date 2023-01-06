@@ -1,10 +1,8 @@
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
-use utils::ContextualDisplay;
 
 #[test]
 fn create_non_fungible_mutable() {
@@ -14,7 +12,7 @@ fn create_non_fungible_mutable() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package,
@@ -25,7 +23,7 @@ fn create_non_fungible_mutable() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -43,7 +41,7 @@ fn can_burn_non_fungible() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package,
@@ -54,7 +52,7 @@ fn can_burn_non_fungible() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -68,7 +66,7 @@ fn can_burn_non_fungible() {
     ids.insert(NonFungibleId::U32(0));
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account(account, resource_address)
         .burn_non_fungible(non_fungible_address.clone())
@@ -81,7 +79,7 @@ fn can_burn_non_fungible() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -101,7 +99,7 @@ fn test_take_non_fungible() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -112,7 +110,7 @@ fn test_take_non_fungible() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -129,7 +127,7 @@ fn test_take_non_fungibles() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -140,7 +138,7 @@ fn test_take_non_fungibles() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -155,7 +153,7 @@ fn test_non_fungible() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -202,7 +200,7 @@ fn test_non_fungible() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -218,7 +216,7 @@ fn test_singleton_non_fungible() {
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -229,7 +227,7 @@ fn test_singleton_non_fungible() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -246,11 +244,9 @@ fn test_mint_update_and_withdraw() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package_address = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let network = NetworkDefinition::simulator();
-    let bech32_encoder = Bech32Encoder::for_simulator();
 
     // create non-fungible
-    let manifest = ManifestBuilder::new(&network)
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -261,7 +257,7 @@ fn test_mint_update_and_withdraw() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -279,24 +275,24 @@ fn test_mint_update_and_withdraw() {
         .new_resource_addresses[1];
 
     // update data (the NFT is referenced within a Proof)
-    let manifest = ManifestBuilder::new(&network)
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .call_function_with_abi(
-            package_address,
-            "NonFungibleTest",
-            "update_nft",
-            vec![
-                format!("1,{}", badge_resource_address.display(&bech32_encoder)),
-                format!("1,{}", nft_resource_address.display(&bech32_encoder)),
-            ],
-            Some(account),
-            &test_runner.export_abi(package_address, "NonFungibleTest"),
-        )
-        .unwrap()
+        .withdraw_from_account_by_amount(account, 1.into(), badge_resource_address)
+        .create_proof_from_account_by_amount(account, 1.into(), nft_resource_address)
+        .take_from_worktop(badge_resource_address, |builder, bucket_id| {
+            builder.pop_from_auth_zone(|builder, proof_id| {
+                builder.call_function(
+                    package_address,
+                    "NonFungibleTest",
+                    "update_nft",
+                    args!(bucket_id, proof_id),
+                )
+            })
+        })
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -306,13 +302,13 @@ fn test_mint_update_and_withdraw() {
     receipt.expect_commit_success();
 
     // transfer
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account(account, nft_resource_address)
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -330,7 +326,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package,
@@ -341,7 +337,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -361,7 +357,7 @@ fn create_non_fungible_with_default_id_type() {
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package,
@@ -372,7 +368,7 @@ fn create_non_fungible_with_default_id_type() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -390,7 +386,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_id_type() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package,
@@ -401,7 +397,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_id_type() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -413,7 +409,7 @@ fn cant_burn_non_fungible_with_wrong_non_fungible_id_type() {
     let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleId::UUID(0));
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account(account, resource_address)
         .burn_non_fungible(non_fungible_address.clone())

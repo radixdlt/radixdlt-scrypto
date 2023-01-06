@@ -4,14 +4,15 @@ pub const TYPE_PACKAGE_ADDRESS: u8 = 0x80;
 pub const TYPE_COMPONENT_ADDRESS: u8 = 0x81;
 pub const TYPE_RESOURCE_ADDRESS: u8 = 0x82;
 pub const TYPE_SYSTEM_ADDRESS: u8 = 0x83;
-pub const TYPE_COMPONENT: u8 = 0x90;
-pub const TYPE_KEY_VALUE_STORE: u8 = 0x91;
+
+pub const TYPE_OWN: u8 = 0x94;
+pub const TYPE_NON_FUNGIBLE_ADDRESS: u8 = 0xa2;
+pub const TYPE_BLOB: u8 = 0xa1;
+
 pub const TYPE_BUCKET: u8 = 0x92;
 pub const TYPE_PROOF: u8 = 0x93;
-pub const TYPE_VAULT: u8 = 0x94;
 pub const TYPE_EXPRESSION: u8 = 0xa0;
-pub const TYPE_BLOB: u8 = 0xa1;
-pub const TYPE_NON_FUNGIBLE_ADDRESS: u8 = 0xa2;
+
 pub const TYPE_HASH: u8 = 0xb0;
 pub const TYPE_ECDSA_SECP256K1_PUBIC_KEY: u8 = 0xb1;
 pub const TYPE_ECDSA_SECP256K1_SIGNATURE: u8 = 0xb2;
@@ -28,23 +29,21 @@ pub const TYPE_NON_FUNGIBLE_ID: u8 = 0xb7;
 )]
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomTypeId {
-    // Global address types
+    // RE global address types
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
     SystemAddress,
 
-    // RE nodes types
-    Component,
-    KeyValueStore,
-    Bucket,
-    Proof,
-    Vault,
-
-    // Other interpreted types
-    Expression,
-    Blob,
+    // RE interpreted types
+    Own,
     NonFungibleAddress, // for resource address contained
+    Blob,
+
+    // TX interpreted types (TODO: rename?)
+    Bucket,     // super::types::ManifestBucket
+    Proof,      // super::types::ManifestProof
+    Expression, // super::types::ManifestExpression
 
     // Uninterpreted
     Hash,
@@ -70,11 +69,9 @@ impl CustomTypeId for ScryptoCustomTypeId {
             Self::ComponentAddress => TYPE_COMPONENT_ADDRESS,
             Self::ResourceAddress => TYPE_RESOURCE_ADDRESS,
             Self::SystemAddress => TYPE_SYSTEM_ADDRESS,
-            Self::Component => TYPE_COMPONENT,
-            Self::KeyValueStore => TYPE_KEY_VALUE_STORE,
+            Self::Own => TYPE_OWN,
             Self::Bucket => TYPE_BUCKET,
             Self::Proof => TYPE_PROOF,
-            Self::Vault => TYPE_VAULT,
             Self::Expression => TYPE_EXPRESSION,
             Self::Blob => TYPE_BLOB,
             Self::NonFungibleAddress => TYPE_NON_FUNGIBLE_ADDRESS,
@@ -95,11 +92,9 @@ impl CustomTypeId for ScryptoCustomTypeId {
             TYPE_COMPONENT_ADDRESS => Some(ScryptoCustomTypeId::ComponentAddress),
             TYPE_RESOURCE_ADDRESS => Some(ScryptoCustomTypeId::ResourceAddress),
             TYPE_SYSTEM_ADDRESS => Some(ScryptoCustomTypeId::SystemAddress),
-            TYPE_COMPONENT => Some(ScryptoCustomTypeId::Component),
-            TYPE_KEY_VALUE_STORE => Some(ScryptoCustomTypeId::KeyValueStore),
+            TYPE_OWN => Some(ScryptoCustomTypeId::Own),
             TYPE_BUCKET => Some(ScryptoCustomTypeId::Bucket),
             TYPE_PROOF => Some(ScryptoCustomTypeId::Proof),
-            TYPE_VAULT => Some(ScryptoCustomTypeId::Vault),
             TYPE_EXPRESSION => Some(ScryptoCustomTypeId::Expression),
             TYPE_BLOB => Some(ScryptoCustomTypeId::Blob),
             TYPE_NON_FUNGIBLE_ADDRESS => Some(ScryptoCustomTypeId::NonFungibleAddress),

@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
+use radix_engine_interface::node::NetworkDefinition;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::TransactionHeader;
@@ -68,12 +68,12 @@ fn bench_transaction_validation(c: &mut Criterion) {
             tip_percentage: 5,
         })
         .manifest(
-            ManifestBuilder::new(&NetworkDefinition::simulator())
+            ManifestBuilder::new()
                 .withdraw_from_account_by_amount(account1, 1u32.into(), RADIX_TOKEN)
                 .call_method(
                     account2,
                     "deposit_batch",
-                    args!(Expression::entire_worktop()),
+                    args!(ManifestExpression::EntireWorktop),
                 )
                 .build(),
         )

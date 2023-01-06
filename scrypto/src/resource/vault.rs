@@ -1,13 +1,64 @@
 use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::types::VaultId;
+use radix_engine_interface::data::types::Own;
+use radix_engine_interface::data::ScryptoCustomTypeId;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use radix_engine_interface::TypeId;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
+use sbor::*;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
+use scrypto_abi::Type;
 
 use crate::resource::*;
 use crate::scrypto;
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct Vault(pub VaultId); // scrypto stub
+
+//========
+// binary
+//========
+
+impl TypeId<ScryptoCustomTypeId> for Vault {
+    #[inline]
+    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    }
+}
+
+impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Vault {
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Own::Vault(self.0).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Vault {
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
+    ) -> Result<Self, DecodeError> {
+        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        match o {
+            Own::Vault(vault_id) => Ok(Self(vault_id)),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
+    }
+}
+
+impl scrypto_abi::Describe for Vault {
+    fn describe() -> scrypto_abi::Type {
+        Type::Vault
+    }
+}
 
 pub trait ScryptoVault {
     fn with_bucket(bucket: Bucket) -> Self;
@@ -50,12 +101,18 @@ impl ScryptoVault for Vault {
             .unwrap()
     }
 
-    scrypto_env_native_fn! {
-        fn new(resource_address: ResourceAddress) -> Self {
-            ResourceManagerCreateVaultInvocation {
+    fn new(resource_address: ResourceAddress) -> Self {
+        let mut env = ScryptoEnv;
+        Self(
+            env.invoke(ResourceManagerCreateVaultInvocation {
                 receiver: resource_address,
-            }
-        }
+            })
+            .unwrap()
+            .vault_id(),
+        )
+    }
+
+    scrypto_env_native_fn! {
 
         fn take_internal(&mut self, amount: Decimal) -> Bucket {
             VaultTakeInvocation {
@@ -114,11 +171,11 @@ impl ScryptoVault for Vault {
         }
 
         fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-            VaultCreateProofByAmountInvocation { amount, receiver: self.0, }
+            VaultCreateProofByAmountInvocation {  receiver: self.0,amount }
         }
 
         fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-            VaultCreateProofByIdsInvocation { ids: ids.clone(), receiver: self.0 }
+            VaultCreateProofByIdsInvocation {  receiver: self.0, ids: ids.clone(), }
         }
     }
 

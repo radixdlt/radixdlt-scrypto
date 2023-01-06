@@ -223,23 +223,21 @@ pub enum Type {
     // Custom Types
     // ==============
 
-    // Globals
+    // RE global address types
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
     SystemAddress,
 
-    // RE Nodes
-    Component,
-    KeyValueStore,
+    // RE interpreted types
+    Own,
+    NonFungibleAddress,
+    Blob,
+
+    // TX interpreted types
     Bucket,
     Proof,
-    Vault,
-
-    // Other interpreted types
     Expression,
-    Blob,
-    NonFungibleAddress,
 
     // Uninterpreted,
     Hash,
@@ -281,10 +279,8 @@ pub enum Value {
     // ==============
     Some(Box<Value>),
     None,
-
     Ok(Box<Value>),
     Err(Box<Value>),
-
     Bytes(Box<Value>),
 
     // ==============
@@ -297,17 +293,15 @@ pub enum Value {
     ResourceAddress(Box<Value>),
     SystemAddress(Box<Value>),
 
-    // RE Nodes
-    Component(Box<Value>),
-    KeyValueStore(Box<Value>),
+    // RE interpreted types
+    Own(Box<Value>),
+    NonFungibleAddress(Box<Value>, Box<Value>),
+    Blob(Box<Value>),
+
+    // TX interpreted types
     Bucket(Box<Value>),
     Proof(Box<Value>),
-    Vault(Box<Value>),
-
-    // Other interpreted types
     Expression(Box<Value>),
-    Blob(Box<Value>),
-    NonFungibleAddress(Box<Value>, Box<Value>),
 
     // Uninterpreted,
     Hash(Box<Value>),
@@ -362,17 +356,15 @@ impl Value {
             Value::ResourceAddress(_) => Type::ResourceAddress,
             Value::SystemAddress(_) => Type::SystemAddress,
 
-            // RE Nodes
-            Value::Component(_) => Type::Component,
-            Value::KeyValueStore(_) => Type::KeyValueStore,
+            // RE interpreted
+            Value::Own(_) => Type::Own,
+            Value::NonFungibleAddress(_, _) => Type::NonFungibleAddress,
+            Value::Blob(_) => Type::Blob,
+
+            // TX interpreted
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
-            Value::Vault(_) => Type::Vault,
-
-            // Other interpreted types
             Value::Expression(_) => Type::Expression,
-            Value::Blob(_) => Type::Blob,
-            Value::NonFungibleAddress(_, _) => Type::NonFungibleAddress,
 
             // Uninterpreted,
             Value::Hash(_) => Type::Hash,

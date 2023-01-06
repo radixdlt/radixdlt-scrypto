@@ -1,6 +1,6 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::node::NetworkDefinition;
 
 use sbor::rust::collections::BTreeMap;
 
@@ -37,7 +37,7 @@ pub fn compile(
 mod tests {
     use super::*;
     use crate::model::BasicInstruction;
-    use radix_engine_interface::core::Expression;
+    use radix_engine_interface::data::types::{ManifestBucket, ManifestExpression, ManifestProof};
     use radix_engine_interface::data::*;
     use radix_engine_interface::math::Decimal;
     use radix_engine_interface::model::*;
@@ -91,7 +91,7 @@ mod tests {
                 BasicInstruction::CallMethod {
                     component_address: component2,
                     method_name: "buy_gumball".to_string(),
-                    args: args!(Bucket(512))
+                    args: args!(ManifestBucket(512))
                 },
                 BasicInstruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),
@@ -115,10 +115,18 @@ mod tests {
                         )
                         .unwrap(),
                 },
-                BasicInstruction::CreateProofFromBucket { bucket_id: 513 },
-                BasicInstruction::CloneProof { proof_id: 514 },
-                BasicInstruction::DropProof { proof_id: 514 },
-                BasicInstruction::DropProof { proof_id: 515 },
+                BasicInstruction::CreateProofFromBucket {
+                    bucket_id: ManifestBucket(513)
+                },
+                BasicInstruction::CloneProof {
+                    proof_id: ManifestProof(514)
+                },
+                BasicInstruction::DropProof {
+                    proof_id: ManifestProof(514)
+                },
+                BasicInstruction::DropProof {
+                    proof_id: ManifestProof(515)
+                },
                 BasicInstruction::CallMethod {
                     component_address: component1,
                     method_name: "create_proof_by_amount".to_string(),
@@ -132,8 +140,12 @@ mod tests {
                     )
                 },
                 BasicInstruction::PopFromAuthZone,
-                BasicInstruction::DropProof { proof_id: 516 },
-                BasicInstruction::ReturnToWorktop { bucket_id: 513 },
+                BasicInstruction::DropProof {
+                    proof_id: ManifestProof(516)
+                },
+                BasicInstruction::ReturnToWorktop {
+                    bucket_id: ManifestBucket(513)
+                },
                 BasicInstruction::TakeFromWorktopByIds {
                     ids: BTreeSet::from([NonFungibleId::U32(1)]),
                     resource_address: bech32_decoder
@@ -146,7 +158,7 @@ mod tests {
                 BasicInstruction::CallMethod {
                     component_address: component1,
                     method_name: "deposit_batch".to_string(),
-                    args: args!(Expression("ENTIRE_WORKTOP".to_owned()))
+                    args: args!(ManifestExpression::EntireWorktop)
                 },
             ]
         );

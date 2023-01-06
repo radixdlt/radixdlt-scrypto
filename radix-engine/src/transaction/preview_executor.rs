@@ -1,4 +1,4 @@
-use radix_engine_interface::core::NetworkDefinition;
+use radix_engine_interface::node::NetworkDefinition;
 use transaction::errors::TransactionValidationError;
 use transaction::model::PreviewIntent;
 use transaction::validation::IntentHashManager;

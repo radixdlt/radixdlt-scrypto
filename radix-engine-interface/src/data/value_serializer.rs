@@ -5,6 +5,8 @@ use serde::ser::*;
 use serde::*;
 use utils::{ContextSerializable, ContextualDisplay, ContextualSerialize};
 
+use super::types::ManifestExpression;
+
 // TODO - Add a deserializer for invertible JSON, and tests that the process is invertible
 // TODO - Rewrite value formatter as a serializer/deserializer variant?
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -385,21 +387,29 @@ pub fn serialize_custom_value<S: Serializer>(
                 &string_address,
             )
         }
-        // RE node types
-        ScryptoCustomValue::Component(value) => serialize_value(
+        // RE interpreted types
+        ScryptoCustomValue::Own(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::Component,
-            &hex::encode(value),
+            ScryptoCustomTypeId::Own,
+            &format!("{:?}", value), // TODO: fix syntax
         ),
-        ScryptoCustomValue::KeyValueStore(value) => serialize_value(
+        ScryptoCustomValue::NonFungibleAddress(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::KeyValueStore,
-            &hex::encode(value),
+            ScryptoCustomTypeId::NonFungibleAddress,
+            &value.serializable(*context),
         ),
+        ScryptoCustomValue::Blob(value) => serialize_value(
+            ValueEncoding::WithType,
+            serializer,
+            context,
+            ScryptoCustomTypeId::Blob,
+            &format!("{}", value),
+        ),
+        // TX interpreted types
         ScryptoCustomValue::Bucket(value) => {
             if let Some(name) = context.display_context.get_bucket_name(&value) {
                 serialize_value(
@@ -415,7 +425,7 @@ pub fn serialize_custom_value<S: Serializer>(
                     serializer,
                     context,
                     ScryptoCustomTypeId::Bucket,
-                    value,
+                    &value.0,
                 )
             }
         }
@@ -434,39 +444,23 @@ pub fn serialize_custom_value<S: Serializer>(
                     serializer,
                     context,
                     ScryptoCustomTypeId::Proof,
-                    value,
+                    &value.0,
                 )
             }
         }
-        ScryptoCustomValue::Vault(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomTypeId::Vault,
-            &hex::encode(value),
-        ),
-        // Other interpreted types
         ScryptoCustomValue::Expression(value) => serialize_value(
             // The fact it's an expression isn't so relevant, so favour simplicity over verbosity
             ValueEncoding::NoType,
             serializer,
             context,
             ScryptoCustomTypeId::Expression,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::Blob(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomTypeId::Blob,
-            &format!("{}", value),
-        ),
-        ScryptoCustomValue::NonFungibleAddress(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomTypeId::NonFungibleAddress,
-            &value.serializable(*context),
+            &format!(
+                "{}",
+                match value {
+                    ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
+                    ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
+                }
+            ),
         ),
         // Uninterpreted
         ScryptoCustomValue::Hash(value) => serialize_value(
@@ -725,11 +719,11 @@ mod tests {
     fn test_complex_encoding_with_network() {
         use crate::{
             constants::{ACCOUNT_PACKAGE, EPOCH_MANAGER, FAUCET_COMPONENT},
-            core::Expression,
             crypto::{
-                Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
+                EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
                 EddsaEd25519Signature,
             },
+            data::types::{Blob, ManifestBucket, ManifestExpression, ManifestProof, Own},
             math::{Decimal, PreciseDecimal},
         };
 
@@ -793,25 +787,21 @@ mod tests {
                             value: ScryptoCustomValue::SystemAddress(EPOCH_MANAGER),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Component([0; 36]),
+                            value: ScryptoCustomValue::Own(Own::Vault([0; 36])),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::KeyValueStore([0; 36]),
+                            value: ScryptoCustomValue::Bucket(ManifestBucket(1)), // Will be mapped by context to "Hello"
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Bucket(1), // Will be mapped by context to "Hello"
+                            value: ScryptoCustomValue::Bucket(ManifestBucket(10)),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Bucket(10),
+                            value: ScryptoCustomValue::Proof(ManifestProof(2)),
                         },
                         SborValue::Custom {
-                            value: ScryptoCustomValue::Proof(2),
-                        },
-                        SborValue::Custom {
-                            value: ScryptoCustomValue::Vault([0; 36]),
-                        },
-                        SborValue::Custom {
-                            value: ScryptoCustomValue::Expression(Expression::entire_worktop()),
+                            value: ScryptoCustomValue::Expression(
+                                ManifestExpression::EntireWorktop,
+                            ),
                         },
                         SborValue::Custom {
                             value: ScryptoCustomValue::Blob(Blob(Hash([0; 32]))),
@@ -901,12 +891,10 @@ mod tests {
                 faucet_address,
                 radix_token_address,
                 epoch_manager_address,
-                { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
                 { "type": "Bucket", "value": "Hello" },
                 { "type": "Bucket", "value": 10 },
                 { "type": "Proof", "value": 2 },
-                { "type": "Vault", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                 "ENTIRE_WORKTOP",
                 { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "NonFungibleAddress", "value": [radix_token_address, { "hex": "0002" }] },
@@ -960,12 +948,10 @@ mod tests {
                         { "type": "ComponentAddress", "value": faucet_address },
                         { "type": "ResourceAddress", "value": radix_token_address },
                         { "type": "SystemAddress", "value": epoch_manager_address },
-                        { "type": "Component", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "KeyValueStore", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
+                        { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
                         { "type": "Bucket", "value": "Hello" },
                         { "type": "Bucket", "value": 10 },
                         { "type": "Proof", "value": 2 },
-                        { "type": "Vault", "value": "000000000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "Expression", "value": "ENTIRE_WORKTOP" },
                         { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "NonFungibleAddress", "value": [radix_token_address, { "type": "Array", "element_type": "U8", "value": { "hex": "0002" } }] },
@@ -988,7 +974,7 @@ mod tests {
         });
 
         let mut bucket_names = HashMap::new();
-        bucket_names.insert(1, "Hello".to_owned());
+        bucket_names.insert(ManifestBucket(1), "Hello".to_owned());
         let proof_names = HashMap::new();
 
         let context = ValueFormattingContext::with_manifest_context(
