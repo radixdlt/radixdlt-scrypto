@@ -44,7 +44,7 @@ where
     // TODO: do we check existence of blobs when being passed as arguments/return?
 
     fn main(&mut self, input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
-        let input: RadixEngineInput = scrypto_decode(&input.into_vec())
+        let input: RadixEngineInput = scrypto_decode(input.as_slice())
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
             RadixEngineInput::Invoke(invocation) => match invocation {

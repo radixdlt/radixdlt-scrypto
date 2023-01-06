@@ -105,6 +105,10 @@ impl IndexedScryptoValue {
         &self.value
     }
 
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.raw.clone()
+    }
+
     pub fn into_vec(self) -> Vec<u8> {
         self.raw
     }
