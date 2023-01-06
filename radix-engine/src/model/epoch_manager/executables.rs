@@ -10,8 +10,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
-    EpochManagerFunction, EpochManagerMethod, EpochManagerOffset, GlobalAddress, NativeFunction,
-    NativeMethod, RENodeId, SubstateOffset,
+    EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
@@ -34,8 +33,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
     where
         Self: Sized,
     {
-        let actor =
-            ResolvedActor::function(NativeFunction::EpochManager(EpochManagerFunction::Create));
+        let actor = ResolvedActor::function(NativeFn::EpochManager(EpochManagerFn::Create));
 
         let call_frame_update = CallFrameUpdate::empty();
 
@@ -70,36 +68,26 @@ impl Executor for EpochManagerCreateInvocation {
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
-                EpochManagerMethod::NextRound,
-            ))),
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::NextRound)),
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
-                EpochManagerMethod::SetEpoch,
-            ))),
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch)),
             rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
-                EpochManagerMethod::GetCurrentEpoch,
-            ))),
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch)),
             rule!(allow_all),
         );
 
         // Access Rule is checked manually in method
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
-                EpochManagerMethod::RegisterValidator,
-            ))),
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::RegisterValidator)),
             rule!(allow_all),
         );
         // Access Rule is checked manually in method
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::EpochManager(
-                EpochManagerMethod::UnregisterValidator,
-            ))),
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::UnregisterValidator)),
             rule!(allow_all),
         );
 
@@ -153,7 +141,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvoc
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::EpochManager(EpochManagerMethod::GetCurrentEpoch),
+            NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch),
             resolved_receiver,
         );
         let executor = EpochManagerGetCurrentEpochExecutable(resolved_receiver.receiver);
@@ -197,7 +185,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerNextRoundInvocation 
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::EpochManager(EpochManagerMethod::NextRound),
+            NativeFn::EpochManager(EpochManagerFn::NextRound),
             resolved_receiver,
         );
         let executor = EpochManagerNextRoundExecutable {
@@ -275,7 +263,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::EpochManager(EpochManagerMethod::SetEpoch),
+            NativeFn::EpochManager(EpochManagerFn::SetEpoch),
             resolved_receiver,
         );
         let executor = EpochManagerSetEpochExecutable(resolved_receiver.receiver, self.epoch);
@@ -316,7 +304,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerRegisterValidatorInv
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::EpochManager(EpochManagerMethod::RegisterValidator),
+            NativeFn::EpochManager(EpochManagerFn::RegisterValidator),
             resolved_receiver,
         );
         let executor =
@@ -376,7 +364,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUnregisterValidatorI
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::EpochManager(EpochManagerMethod::UnregisterValidator),
+            NativeFn::EpochManager(EpochManagerFn::UnregisterValidator),
             resolved_receiver,
         );
         let executor =
@@ -420,15 +408,11 @@ impl Executor for EpochManagerUnregisterValidatorExecutable {
 }
 
 impl EpochManager {
-    pub fn function_auth(func: &EpochManagerFunction) -> Vec<MethodAuthorization> {
-        match func {
-            EpochManagerFunction::Create => {
-                vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                    HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
-                        AuthAddresses::system_role(),
-                    )),
-                ))]
-            }
-        }
+    pub fn create_auth() -> Vec<MethodAuthorization> {
+        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+            HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
+                AuthAddresses::system_role(),
+            )),
+        ))]
     }
 }

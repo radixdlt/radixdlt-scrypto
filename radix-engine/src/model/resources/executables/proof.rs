@@ -6,7 +6,7 @@ use crate::model::{InvokeError, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeMethod, ProofMethod, ProofOffset, RENodeId, SubstateOffset,
+    GlobalAddress, NativeFn, ProofFn, ProofOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
 
@@ -37,7 +37,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Proof(ProofMethod::GetAmount),
+            NativeFn::Proof(ProofFn::GetAmount),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -71,7 +71,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Proof(ProofMethod::GetNonFungibleIds),
+            NativeFn::Proof(ProofFn::GetNonFungibleIds),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -114,7 +114,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocatio
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Proof(ProofMethod::GetResourceAddress),
+            NativeFn::Proof(ProofFn::GetResourceAddress),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -156,7 +156,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
         let receiver = RENodeId::Proof(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Proof(ProofMethod::Clone),
+            NativeFn::Proof(ProofFn::Clone),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))

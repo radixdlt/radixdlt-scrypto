@@ -9,7 +9,7 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeMethod, RENodeId, SubstateOffset, VaultMethod, VaultOffset,
+    GlobalAddress, NativeFn, RENodeId, SubstateOffset, VaultFn, VaultOffset,
 };
 use radix_engine_interface::model::*;
 
@@ -37,7 +37,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallInvocation {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::Recall),
+            NativeFn::Vault(VaultFn::Recall),
             ResolvedReceiver::new(receiver),
         );
         let executor = VaultTakeInvocation {
@@ -58,7 +58,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeInvocation {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::Take),
+            NativeFn::Vault(VaultFn::Take),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -111,7 +111,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultPutInvocation {
             .nodes_to_move
             .push(RENodeId::Bucket(self.bucket.0));
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::Put),
+            NativeFn::Vault(VaultFn::Put),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -155,7 +155,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultLockFeeInvocation {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::LockFee),
+            NativeFn::Vault(VaultFn::LockFee),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -223,7 +223,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultRecallNonFungiblesInvocatio
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::RecallNonFungibles),
+            NativeFn::Vault(VaultFn::RecallNonFungibles),
             ResolvedReceiver::new(receiver),
         );
         let executor = VaultTakeNonFungiblesInvocation {
@@ -244,7 +244,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeNonFungiblesInvocation 
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::TakeNonFungibles),
+            NativeFn::Vault(VaultFn::TakeNonFungibles),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -296,7 +296,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetAmountInvocation {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::GetAmount),
+            NativeFn::Vault(VaultFn::GetAmount),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -332,7 +332,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetResourceAddressInvocatio
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::GetResourceAddress),
+            NativeFn::Vault(VaultFn::GetResourceAddress),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -374,7 +374,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetNonFungibleIdsInvocation
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::GetNonFungibleIds),
+            NativeFn::Vault(VaultFn::GetNonFungibleIds),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -417,7 +417,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofInvocation {
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::CreateProof),
+            NativeFn::Vault(VaultFn::CreateProof),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -468,7 +468,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByAmountInvocati
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::CreateProofByAmount),
+            NativeFn::Vault(VaultFn::CreateProofByAmount),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -519,7 +519,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByIdsInvocation 
         let receiver = RENodeId::Vault(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Vault(VaultMethod::CreateProofByIds),
+            NativeFn::Vault(VaultFn::CreateProofByIds),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))

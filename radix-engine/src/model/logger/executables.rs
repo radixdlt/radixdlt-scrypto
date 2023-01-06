@@ -14,7 +14,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for LoggerLogInvocation {
         Self: Sized,
     {
         let actor = ResolvedActor::method(
-            NativeMethod::Logger(LoggerMethod::Log),
+            NativeFn::Logger(LoggerFn::Log),
             ResolvedReceiver::new(RENodeId::Logger),
         );
         let call_frame_update = CallFrameUpdate::empty();
