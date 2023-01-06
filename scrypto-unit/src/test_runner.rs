@@ -28,7 +28,8 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, FromPublicKey, NonFungibleAddress, NonFungibleIdType, ClockSetCurrentTimeInvocation, ClockGetCurrentTimeInvocation, TimePrecision,
+    AccessRule, ClockGetCurrentTimeInvocation, ClockSetCurrentTimeInvocation, FromPublicKey,
+    NonFungibleAddress, NonFungibleIdType, TimePrecision,
 };
 use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
