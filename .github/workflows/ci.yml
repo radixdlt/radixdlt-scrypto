@@ -35,7 +35,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        #os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -57,7 +58,7 @@ jobs:
         key: cache-${{ runner.os }}
         cache-directories:
           ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: sbor
+        workspaces: .
 
     - run: |
         sudo apt-get update -qq
@@ -86,7 +87,7 @@ jobs:
         #    - name: Run tests
         #      run: bash ./tests/scrypto.sh
         #      working-directory: simulator
-    - uses: actions/upload-artifact@v3
-      with:
-        name: artifact-${{ matrix.os }}
-        path: simulator/target/cargo-timings/timings_*.html
+        #    - uses: actions/upload-artifact@v3
+        #      with:
+        #        name: artifact-${{ matrix.os }}
+        #        path: simulator/target/cargo-timings/timings_*.html
