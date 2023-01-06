@@ -42,8 +42,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@master
+    - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
+        key: ${{ runner.os }}
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
     - run: |
@@ -276,8 +277,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@master
+    - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
+        key: ${{ runner.os }}
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
     - run: |
