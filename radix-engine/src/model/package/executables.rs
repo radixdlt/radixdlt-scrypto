@@ -3,7 +3,6 @@ use crate::engine::*;
 use crate::engine::{CallFrameUpdate, LockFlags, RuntimeError, SystemApi};
 use crate::model::{
     AccessRulesChainSubstate, GlobalAddressSubstate, MetadataSubstate, PackageInfoSubstate,
-    Resource, VaultRuntimeSubstate,
 };
 use crate::types::*;
 use crate::wasm::*;
@@ -46,7 +45,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
-        let call_frame_update = CallFrameUpdate::empty();
+        let mut call_frame_update = CallFrameUpdate::empty();
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
         let actor = ResolvedActor::function(NativeFunction::Package(PackageFunction::Publish));
         Ok((actor, call_frame_update, self))
     }
@@ -59,22 +59,11 @@ impl Executor for PackagePublishInvocation {
     where
         Y: SystemApi + BlobApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        // Disabled as RADIX_TOKEN isn't visible in this frame
-        //
-        // let royalty_vault_id = api
-        //     .invoke(ResourceManagerCreateVaultInvocation {
-        //         receiver: RADIX_TOKEN,
-        //     })?
-        //     .vault_id();
-        let vault_node_id = api.allocate_node_id(RENodeType::Vault)?;
-        api.create_node(
-            vault_node_id,
-            RENode::Vault(VaultRuntimeSubstate::new(Resource::new_empty(
-                RADIX_TOKEN,
-                ResourceType::Fungible { divisibility: 18 },
-            ))),
-        )?;
-        let royalty_vault_id = vault_node_id.into();
+        let royalty_vault_id = api
+            .invoke(ResourceManagerCreateVaultInvocation {
+                receiver: RADIX_TOKEN,
+            })?
+            .vault_id();
 
         let code = api.get_blob(&self.code.0)?.to_vec();
         let blob = api.get_blob(&self.abi.0)?;

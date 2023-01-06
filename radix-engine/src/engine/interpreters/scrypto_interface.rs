@@ -1,14 +1,13 @@
 use crate::engine::{BaseModule, Kernel, KernelError, LockFlags, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
+use crate::model::MetadataSubstate;
 use crate::model::{
     AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
-    VaultRuntimeSubstate,
 };
-use crate::model::{MetadataSubstate, Resource};
 use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{
     ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoRENode,
     SubstateOffset,
@@ -16,7 +15,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::model::{
-    AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
+    AccessRule, AccessRuleKey, AccessRules, ResourceManagerCreateVaultInvocation, RoyaltyConfig,
 };
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
@@ -31,23 +30,21 @@ where
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
-                let vault_node_id = self.allocate_node_id(RENodeType::Vault)?;
-                self.create_node(
-                    vault_node_id,
-                    RENode::Vault(VaultRuntimeSubstate::new(Resource::new_empty(
-                        RADIX_TOKEN,
-                        ResourceType::Fungible { divisibility: 18 },
-                    ))),
-                )?;
-
                 let node_id = self.allocate_node_id(RENodeType::Component)?;
+
+                // Create a royalty vault
+                let royalty_vault_id = self
+                    .invoke(ResourceManagerCreateVaultInvocation {
+                        receiver: RADIX_TOKEN,
+                    })?
+                    .vault_id();
 
                 // Royalty initialization done here
                 let royalty_config = ComponentRoyaltyConfigSubstate {
                     royalty_config: RoyaltyConfig::default(),
                 };
                 let royalty_accumulator = ComponentRoyaltyAccumulatorSubstate {
-                    royalty: Own::Vault(vault_node_id.into()),
+                    royalty: Own::Vault(royalty_vault_id.into()),
                 };
 
                 // TODO: Remove Royalties from Node's access rule chain, possibly implement this

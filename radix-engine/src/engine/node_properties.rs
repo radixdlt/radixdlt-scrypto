@@ -79,7 +79,6 @@ impl VisibilityProperties {
                     ..
                 }),
             ) => match node {
-                RENode::Vault(..) => true,
                 RENode::Component(info, ..) => {
                     blueprint_name.eq(&info.blueprint_name)
                         && package_address.eq(&info.package_address)
