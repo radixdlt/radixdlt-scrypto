@@ -43,6 +43,7 @@ jobs:
       with:
         toolchain: stable
     - name: Setup Sccache for Rust compilation
+      # TODO: switch to tag (here and below) once this revision is available within some tag (latest tag v1.1.0 does not include it)
       uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
