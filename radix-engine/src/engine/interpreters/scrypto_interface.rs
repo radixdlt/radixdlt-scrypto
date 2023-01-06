@@ -3,6 +3,7 @@ use crate::fee::FeeReserve;
 use crate::model::{
     AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
+    VaultRuntimeSubstate,
 };
 use crate::model::{MetadataSubstate, Resource};
 use crate::types::BTreeMap;
@@ -13,6 +14,7 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
+use radix_engine_interface::data::types::Own;
 use radix_engine_interface::model::{
     AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
 };
@@ -29,6 +31,15 @@ where
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, RuntimeError> {
         let (node_id, node) = match node {
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
+                let vault_node_id = self.allocate_node_id(RENodeType::Vault)?;
+                self.create_node(
+                    vault_node_id,
+                    RENode::Vault(VaultRuntimeSubstate::new(Resource::new_empty(
+                        RADIX_TOKEN,
+                        ResourceType::Fungible { divisibility: 18 },
+                    ))),
+                )?;
+
                 let node_id = self.allocate_node_id(RENodeType::Component)?;
 
                 // Royalty initialization done here
@@ -36,10 +47,7 @@ where
                     royalty_config: RoyaltyConfig::default(),
                 };
                 let royalty_accumulator = ComponentRoyaltyAccumulatorSubstate {
-                    royalty: Resource::new_empty(
-                        RADIX_TOKEN,
-                        ResourceType::Fungible { divisibility: 18 },
-                    ),
+                    royalty: Own::Vault(vault_node_id.into()),
                 };
 
                 // TODO: Remove Royalties from Node's access rule chain, possibly implement this
