@@ -35,8 +35,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        #os: [linux, windows-latest]
-        os: [linux]
+        os: [linux, windows-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -55,10 +54,10 @@ jobs:
     - name: Setup rust-cache to reduce build time
       uses: lrubaszewski/rust-cache@allow_registry_src_caching
       with:
-        key: cache_new-${{ runner.os }}
+        key: cached_librocksdb-${{ runner.os }}
         cache-directories:
           ~/.cargo/registry/src/**/librocksdb-sys-*
-          #        workspaces: .
+        workspaces: simulator
 
     - run: |
         sudo apt-get update -qq
@@ -72,22 +71,17 @@ jobs:
     - name: Install dependencies
       if: runner.os == 'Windows'
       run: choco install llvm -y
+    - name: Run tests
+      run: bash ./tests/resim.sh
+      working-directory: simulator
+    - name: Run tests
+      run: bash ./tests/manifest.sh
+      working-directory: simulator
 
-    - name: cargo test -p sbor
-      run: cargo test -p sbor
-      working-directory: .
-
-        #    - name: Run tests
-        #      run: bash ./tests/resim.sh
-        #      working-directory: simulator
-        #    - name: Run tests
-        #      run: bash ./tests/manifest.sh
-        #      working-directory: simulator
-        #
-        #    - name: Run tests
-        #      run: bash ./tests/scrypto.sh
-        #      working-directory: simulator
-        #    - uses: actions/upload-artifact@v3
-        #      with:
-        #        name: artifact-${{ matrix.os }}
-        #        path: simulator/target/cargo-timings/timings_*.html
+    - name: Run tests
+      run: bash ./tests/scrypto.sh
+      working-directory: simulator
+    - uses: actions/upload-artifact@v3
+      with:
+        name: artifact-${{ matrix.os }}
+        path: simulator/target/cargo-timings/timings_*.html
