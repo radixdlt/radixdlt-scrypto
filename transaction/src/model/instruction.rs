@@ -98,25 +98,6 @@ pub enum BasicInstruction {
     /// Drops all of the proofs in the transaction.
     DropAllProofs,
 
-    /// Calls a scrypto function.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        function_name: String,
-        args: Vec<u8>,
-    },
-
-    /// Calls a scrypto method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallMethod {
-        component_address: ComponentAddress,
-        method_name: String,
-        args: Vec<u8>,
-    },
-
     /// Publish a package.
     PublishPackage {
         code: Blob,
@@ -211,6 +192,26 @@ pub enum BasicInstruction {
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
+    /// Calls a scrypto function.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallFunction {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        function_name: String,
+        args: Vec<u8>,
+    },
+
+    /// Calls a scrypto method.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallMethod {
+        component_address: ComponentAddress,
+        method_name: String,
+        args: Vec<u8>,
+    },
+
+    // TODO: Integrate this with CallMethod
     RegisterValidator {
         validator: EcdsaSecp256k1PublicKey,
     },
