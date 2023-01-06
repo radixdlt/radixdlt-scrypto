@@ -28,6 +28,8 @@ impl ImmutableStore {
 
     fn from_parent(parent: &ImmutableStore) -> Self {
         ImmutableStore {
+            // Note: this clone is O(1), only the root node is actually cloned
+            // Check im::collections::HashMap for details
             outputs: parent.outputs.clone(),
         }
     }
@@ -95,6 +97,8 @@ impl StagedSubstateStoreNode {
     /// done exclusively by this node.
     fn weight(&self) -> usize {
         match &self.receipt.result {
+            // NOTE for future Substate delete support: add down_substates.len()
+            // to the weight as well.
             TransactionResult::Commit(commit) => commit.state_updates.up_substates.len(),
             TransactionResult::Reject(_) => 0,
         }
@@ -142,8 +146,11 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
                 ImmutableStore::from_parent(&self.nodes.get(parent_key).unwrap().store)
             }
         };
+
+        // Build new node by applying the receipt to the parent store
         let new_node = StagedSubstateStoreNode::new(parent_key, receipt, store);
-        // Update the total total_weight of the tree
+
+        // Update the `total_weight` of the tree
         self.total_weight += new_node.weight();
         let new_node_key = self.nodes.insert(new_node);
         match parent_key {
@@ -194,14 +201,17 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
     }
 
     /// Rebuilds ImmutableStores by starting from the root with new, empty ones
-    /// and recursively reapplies the [`state_diffs`]s.
-    pub fn recompute_data(&mut self) {
+    /// and recursively reapplies the [`receipt`]s.
+    fn recompute_data(&mut self) {
         // Reset the [`dead_weight`]
         self.dead_weight = 0;
 
         for node_key in self.children_keys.iter() {
             let node = self.nodes.get_mut(*node_key).unwrap();
             node.store = ImmutableStore::new();
+            if let TransactionResult::Commit(commit) = &node.receipt.result {
+                commit.state_updates.commit(&mut node.store);
+            }
             Self::recompute_data_recursive(&mut self.nodes, *node_key);
         }
     }
@@ -252,6 +262,23 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         dead_weight
     }
 
+    /// Each node created via [`new_child_node`] represents one store state. At some point (e.g
+    /// in `commit` step) after creating multiple versions (e.g in `prepare` step), we want to
+    /// move the chain of state changes from the staging store into the real store.
+    /// While the changes to the real store are out of scope for this structure and done
+    /// separately, we still need to inform the staging store about what current version the
+    /// root store is pointing to in order for it to be able to drop no longer relevant branches.
+    /// Note that because retroactive deletion for a history of persistent/immutable data
+    /// structure is not possible, it is not guaranteed that the chain of state changes
+    /// ([`ImmutableStore`]s. [`StagedSubstateStoreNode`]s however, are always deleted) committed
+    /// to the real store are discarded (every time `reparent` is called).
+    /// This does not really matter from a correctness perspective (the staging store
+    /// will act as a cache for the real store) but as an memory overhead. The memory
+    /// is freed when [`recompute_data`] is called (which is called so that the overall
+    /// cost is amortized).
+    /// To better understand please check:
+    /// Diagram here: https://whimsical.com/persistent-staged-store-amortized-reparenting-Lyc6gRgVXVzLdqWvwVT3v4
+    /// And `test_complicated_reparent` unit test
     pub fn reparent<V: StagedSubstateStoreVisitor>(
         &mut self,
         new_root_key: StagedSubstateStoreKey,
@@ -308,6 +335,10 @@ impl<'t, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore
         match self.key {
             StagedSubstateStoreKey::RootStoreKey => self.manager.root.get_substate(substate_id),
             StagedSubstateStoreKey::InternalNodeStoreKey(key) => {
+                // NOTE for future Substate delete support: in order to properly reflect
+                // deleted keys, a Sentinel/Tombstone value should be stored instead of
+                // actually removing the key. When querying here, convert the Tombstone back
+                // into a None (Option can be used as the Tombstone).
                 match self
                     .manager
                     .nodes
@@ -328,7 +359,7 @@ impl<'t, S: ReadableSubstateStore> ReadableSubstateStore for StagedSubstateStore
 mod tests {
     use crate::engine::ScryptoInterpreter;
     use crate::fee::FeeSummary;
-    use crate::ledger::{OutputValue, TypedInMemorySubstateStore};
+    use crate::ledger::{OutputValue, ReadableSubstateStore, TypedInMemorySubstateStore};
     use crate::model::{PersistedSubstate, Resource, VaultSubstate};
     use crate::state_manager::{
         StagedSubstateStoreIgnoreVisitor, StagedSubstateStoreKey, StagedSubstateStoreManager,
@@ -338,6 +369,7 @@ mod tests {
         CommitResult, EntityChanges, TransactionExecution, TransactionOutcome, TransactionReceipt,
         TransactionResult,
     };
+    use crate::types::rust::iter::zip;
     use crate::wasm::DefaultWasmEngine;
     use radix_engine_interface::api::types::{RENodeId, SubstateId, SubstateOffset, VaultOffset};
     use radix_engine_interface::math::Decimal;
@@ -398,6 +430,11 @@ mod tests {
         }
     }
 
+    struct TestNodeData {
+        parent_id: usize,
+        updates: Vec<(usize, usize)>,
+    }
+
     #[test]
     fn test_complicated_reparent() {
         // Arrange
@@ -414,130 +451,111 @@ mod tests {
             .map(|version| build_dummy_output_value(version))
             .collect();
 
-        let node1_state_diff = StateDiff {
-            up_substates: BTreeMap::from([(substate_ids[0].clone(), output_values[0].clone())]),
-            down_substates: Vec::new(),
-        };
+        let node_test_data = vec![
+            TestNodeData {
+                // child_node[1]
+                parent_id: 0, // root
+                updates: vec![
+                    (0, 1), // manager.get_store(child_node[1]).get_substate(substate_ids[0]) == output_values[1]
+                ],
+            },
+            TestNodeData {
+                // child_node[2]
+                parent_id: 1,
+                updates: vec![(0, 2), (2, 0)],
+            },
+            TestNodeData {
+                // child_node[3]
+                parent_id: 2,
+                updates: vec![(3, 1), (4, 3), (0, 3)],
+            },
+            TestNodeData {
+                // child_node[4]
+                parent_id: 3,
+                updates: vec![(0, 4), (1, 3), (2, 2), (3, 1), (4, 0)],
+            },
+            TestNodeData {
+                // child_node[5]
+                parent_id: 4,
+                updates: vec![(2, 1), (0, 3)],
+            },
+            TestNodeData {
+                // child_node[6]
+                parent_id: 5,
+                updates: vec![(2, 2), (3, 4)],
+            },
+            TestNodeData {
+                // child_node[7]
+                parent_id: 0, // root
+                updates: vec![(2, 2)],
+            },
+            TestNodeData {
+                // child_node[8]
+                parent_id: 7,
+                updates: vec![(2, 1)],
+            },
+            TestNodeData {
+                // child_node[9]
+                parent_id: 6,
+                updates: vec![(2, 3), (4, 4)],
+            },
+            TestNodeData {
+                // child_node[10]
+                parent_id: 9,
+                updates: vec![(2, 0)],
+            },
+        ];
+
         let mut expected_total_weight = 0;
-        let child_node1 = manager.new_child_node(
-            StagedSubstateStoreKey::RootStoreKey,
-            build_transaction_receipt_from_state_diff(node1_state_diff.clone()),
-        );
-        expected_total_weight += node1_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
+        let mut child_node = vec![StagedSubstateStoreKey::RootStoreKey];
+        let mut expected_node_states = Vec::new();
+        expected_node_states.push(BTreeMap::new());
+        let mut expected_weights = Vec::new();
+        expected_weights.push(0);
+        for node_data in node_test_data.iter() {
+            let up_substates: BTreeMap<SubstateId, OutputValue> = node_data
+                .updates
+                .iter()
+                .map(|(substate_id, output_id)| {
+                    (
+                        substate_ids[*substate_id].clone(),
+                        output_values[*output_id].clone(),
+                    )
+                })
+                .collect();
+            let state_diff = StateDiff {
+                up_substates: up_substates.clone(),
+                down_substates: Vec::new(),
+            };
+            let new_child_node = manager.new_child_node(
+                child_node[node_data.parent_id],
+                build_transaction_receipt_from_state_diff(state_diff.clone()),
+            );
+            child_node.push(new_child_node);
 
-        let node2_state_diff = StateDiff {
-            up_substates: BTreeMap::from([
-                (substate_ids[1].clone(), output_values[0].clone()),
-                (substate_ids[2].clone(), output_values[2].clone()),
-            ]),
-            down_substates: Vec::new(),
-        };
-        let child_node2 = manager.new_child_node(
-            child_node1,
-            build_transaction_receipt_from_state_diff(node2_state_diff.clone()),
-        );
-        expected_total_weight += node2_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
+            let mut expected_node_state = expected_node_states[node_data.parent_id].clone();
+            expected_node_state.extend(up_substates);
 
-        let node3_state_diff = StateDiff {
-            up_substates: BTreeMap::from([
-                (substate_ids[3].clone(), output_values[1].clone()),
-                (substate_ids[4].clone(), output_values[3].clone()),
-                (substate_ids[0].clone(), output_values[3].clone()),
-            ]),
-            down_substates: Vec::new(),
-        };
-        let child_node3 = manager.new_child_node(
-            child_node2,
-            build_transaction_receipt_from_state_diff(node3_state_diff.clone()),
-        );
-        expected_total_weight += node3_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
+            expected_node_states.push(expected_node_state);
+            expected_weights.push(node_data.updates.len());
+            expected_total_weight += node_data.updates.len();
 
-        let node4_state_diff = StateDiff {
-            up_substates: BTreeMap::from([
-                (substate_ids[0].clone(), output_values[4].clone()),
-                (substate_ids[1].clone(), output_values[3].clone()),
-                (substate_ids[2].clone(), output_values[2].clone()),
-                (substate_ids[3].clone(), output_values[1].clone()),
-                (substate_ids[4].clone(), output_values[0].clone()),
-            ]),
-            down_substates: Vec::new(),
-        };
-        let _child_node4 = manager.new_child_node(
-            child_node3,
-            build_transaction_receipt_from_state_diff(node4_state_diff.clone()),
-        );
-        expected_total_weight += node4_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
+            // check that all stores have the expected state
+            for (child_node, expected_node_state) in
+                zip(child_node.iter(), expected_node_states.iter())
+            {
+                let store = manager.get_store(*child_node);
+                for (substate_id, output_value) in expected_node_state.iter() {
+                    assert_eq!(
+                        store.get_substate(substate_id),
+                        Some((*output_value).clone())
+                    );
+                }
+            }
 
-        let node5_state_diff = StateDiff {
-            up_substates: BTreeMap::from([(substate_ids[2].clone(), output_values[0].clone())]),
-            down_substates: Vec::new(),
-        };
-        let child_node5 = manager.new_child_node(
-            child_node3,
-            build_transaction_receipt_from_state_diff(node5_state_diff.clone()),
-        );
-        expected_total_weight += node5_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
-
-        let node6_state_diff = StateDiff {
-            up_substates: BTreeMap::from([(substate_ids[2].clone(), output_values[0].clone())]),
-            down_substates: Vec::new(),
-        };
-        let child_node6 = manager.new_child_node(
-            child_node5,
-            build_transaction_receipt_from_state_diff(node6_state_diff.clone()),
-        );
-        expected_total_weight += node6_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
-
-        let node7_state_diff = StateDiff {
-            up_substates: BTreeMap::from([(substate_ids[2].clone(), output_values[0].clone())]),
-            down_substates: Vec::new(),
-        };
-        let child_node7 = manager.new_child_node(
-            StagedSubstateStoreKey::RootStoreKey,
-            build_transaction_receipt_from_state_diff(node7_state_diff.clone()),
-        );
-        expected_total_weight += node7_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
-
-        let node8_state_diff = StateDiff {
-            up_substates: BTreeMap::from([(substate_ids[2].clone(), output_values[0].clone())]),
-            down_substates: Vec::new(),
-        };
-        let _child_node8 = manager.new_child_node(
-            child_node7,
-            build_transaction_receipt_from_state_diff(node8_state_diff.clone()),
-        );
-        expected_total_weight += node8_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
-
-        let node9_state_diff = StateDiff {
-            up_substates: BTreeMap::from([(substate_ids[2].clone(), output_values[0].clone())]),
-            down_substates: Vec::new(),
-        };
-        let child_node9 = manager.new_child_node(
-            child_node6,
-            build_transaction_receipt_from_state_diff(node9_state_diff.clone()),
-        );
-        expected_total_weight += node9_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
-
-        let node10_state_diff = StateDiff {
-            up_substates: BTreeMap::from([(substate_ids[2].clone(), output_values[0].clone())]),
-            down_substates: Vec::new(),
-        };
-        let child_node10 = manager.new_child_node(
-            child_node9,
-            build_transaction_receipt_from_state_diff(node10_state_diff.clone()),
-        );
-        expected_total_weight += node10_state_diff.up_substates.len();
-        assert_eq!(manager.total_weight, expected_total_weight);
-        assert_eq!(manager.dead_weight, 0);
+            assert_eq!(manager.total_weight, expected_total_weight);
+            assert_eq!(manager.dead_weight, 0);
+        }
 
         let mut dummy_visitor = StagedSubstateStoreIgnoreVisitor {};
         // State tree layout:
@@ -545,38 +563,32 @@ mod tests {
         //      │            └──> 5 -> 6 -> 9 -> 10
         //      └> 7 -> 8
         // After reparenting to 3: 7 and 8 are discarded completely. 1, 2 and 3 discarded but leave dead weight behind
-        manager.reparent(child_node3, &mut dummy_visitor);
-        let expected_dead_weight = [&node1_state_diff, &node2_state_diff, &node3_state_diff]
+        manager.reparent(child_node[3], &mut dummy_visitor);
+        let expected_dead_weight = [1, 2, 3]
             .iter()
-            .fold(0, |acc, state_diff| acc + state_diff.up_substates.len());
-        expected_total_weight -= [
-            &node1_state_diff,
-            &node2_state_diff,
-            &node3_state_diff,
-            &node7_state_diff,
-            &node8_state_diff,
-        ]
-        .iter()
-        .fold(0, |acc, state_diff| acc + state_diff.up_substates.len());
+            .fold(0, |acc, node_id| acc + expected_weights[*node_id]);
+        expected_total_weight -= [1, 2, 3, 7, 8]
+            .iter()
+            .fold(0, |acc, node_id| acc + expected_weights[*node_id]);
         assert_eq!(manager.total_weight, expected_total_weight);
         assert_eq!(manager.dead_weight, expected_dead_weight);
         assert_eq!(manager.nodes.len(), 5);
 
         // After reparenting to 5: node 4 gets discarded completely. Node 5 is discarded and added to the dead weight.
         // This should trigger the recomputation/garbage collection.
-        manager.reparent(child_node5, &mut dummy_visitor);
-        expected_total_weight -= [&node4_state_diff, &node5_state_diff]
+        manager.reparent(child_node[5], &mut dummy_visitor);
+        expected_total_weight -= [4, 5]
             .iter()
-            .fold(0, |acc, state_diff| acc + state_diff.up_substates.len());
+            .fold(0, |acc, node_id| acc + expected_weights[*node_id]);
         assert_eq!(manager.total_weight, expected_total_weight);
         assert_eq!(manager.dead_weight, 0);
         assert_eq!(manager.nodes.len(), 3);
 
-        let node = manager.get_node(&child_node6).expect("Should exist");
+        let node = manager.get_node(&child_node[6]).expect("Should exist");
         assert_eq!(node.parent_key, StagedSubstateStoreKey::RootStoreKey);
-        let node = manager.get_node(&child_node9).expect("Should exist");
-        assert_eq!(node.parent_key, child_node6);
-        let node = manager.get_node(&child_node10).expect("Should exist");
-        assert_eq!(node.parent_key, child_node9);
+        let node = manager.get_node(&child_node[9]).expect("Should exist");
+        assert_eq!(node.parent_key, child_node[6]);
+        let node = manager.get_node(&child_node[10]).expect("Should exist");
+        assert_eq!(node.parent_key, child_node[9]);
     }
 }
