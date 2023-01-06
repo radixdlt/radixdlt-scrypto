@@ -58,13 +58,13 @@ impl Executor for PackagePublishInvocation {
     where
         Y: SystemApi + BlobApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let code = api.get_blob(&self.code.0)?.to_vec();
-        let blob = api.get_blob(&self.abi.0)?;
         let royalty_vault_id = api
             .invoke(ResourceManagerCreateVaultInvocation {
                 receiver: RADIX_TOKEN,
             })?
             .vault_id();
+        let code = api.get_blob(&self.code.0)?.to_vec();
+        let blob = api.get_blob(&self.abi.0)?;
 
         let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
@@ -205,7 +205,7 @@ impl Executor for PackageClaimRoyaltyExecutable {
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = api.get_ref_mut(handle)?;
-        let royalty_vault = substate_mut.package_royalty_accumulator().royalty;
+        let royalty_vault = substate_mut.package_royalty_accumulator().royalty.clone();
 
         let amount = api.invoke(VaultGetAmountInvocation {
             receiver: royalty_vault.vault_id(),

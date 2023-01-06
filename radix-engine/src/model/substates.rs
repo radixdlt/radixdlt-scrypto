@@ -38,6 +38,14 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
+        if let PersistedSubstate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
     pub fn component_royalty_accumulator(&self) -> &ComponentRoyaltyAccumulatorSubstate {
         if let PersistedSubstate::ComponentRoyaltyAccumulator(state) = self {
             state

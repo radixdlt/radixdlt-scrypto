@@ -237,35 +237,49 @@ impl TestRunner {
     ) -> Option<Decimal> {
         let node_id = self.deref_component(component_address)?;
 
-        self.substate_store
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
-            ))
-            .map(|output| {
-                output
-                    .substate
-                    .component_royalty_accumulator()
-                    .royalty
-                    .amount()
-            })
+        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+        )) {
+            let royalty_vault: Own = output
+                .substate
+                .component_royalty_accumulator()
+                .royalty
+                .clone();
+
+            self.substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(royalty_vault.vault_id()),
+                    SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                ))
+                .map(|output| output.substate.vault().0.amount())
+        } else {
+            None
+        }
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let node_id = self.deref_package(package_address)?;
 
-        self.substate_store
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
-            ))
-            .map(|output| {
-                output
-                    .substate
-                    .package_royalty_accumulator()
-                    .royalty
-                    .amount()
-            })
+        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+        )) {
+            let royalty_vault: Own = output
+                .substate
+                .package_royalty_accumulator()
+                .royalty
+                .clone();
+
+            self.substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(royalty_vault.vault_id()),
+                    SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                ))
+                .map(|output| output.substate.vault().0.amount())
+        } else {
+            None
+        }
     }
 
     pub fn get_component_vaults(

@@ -249,7 +249,7 @@ impl Executor for ComponentClaimRoyaltyInvocation {
         let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
         let mut substate_mut = api.get_ref_mut(handle)?;
-        let royalty_vault = substate_mut.component_royalty_accumulator().royalty;
+        let royalty_vault = substate_mut.component_royalty_accumulator().royalty.clone();
 
         let amount = api.invoke(VaultGetAmountInvocation {
             receiver: royalty_vault.vault_id(),
