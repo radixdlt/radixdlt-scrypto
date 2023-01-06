@@ -198,7 +198,7 @@ impl NotarizedTransactionValidator {
         manifest: &TransactionManifest,
     ) -> Result<(), TransactionValidationError> {
         // semantic analysis
-        let mut id_validator = IdValidator::new();
+        let mut id_validator = ManifestIdValidator::new();
         for inst in &manifest.instructions {
             match inst {
                 BasicInstruction::TakeFromWorktop { .. } => {
@@ -218,7 +218,7 @@ impl NotarizedTransactionValidator {
                 }
                 BasicInstruction::ReturnToWorktop { bucket_id } => {
                     id_validator
-                        .drop_bucket(*bucket_id)
+                        .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 BasicInstruction::AssertWorktopContains { .. } => {}
@@ -231,7 +231,7 @@ impl NotarizedTransactionValidator {
                 }
                 BasicInstruction::PushToAuthZone { proof_id } => {
                     id_validator
-                        .drop_proof(*proof_id)
+                        .drop_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 BasicInstruction::ClearAuthZone => {}
@@ -252,17 +252,17 @@ impl NotarizedTransactionValidator {
                 }
                 BasicInstruction::CreateProofFromBucket { bucket_id } => {
                     id_validator
-                        .new_proof(ProofKind::BucketProof(*bucket_id))
+                        .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 BasicInstruction::CloneProof { proof_id } => {
                     id_validator
-                        .clone_proof(*proof_id)
+                        .clone_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 BasicInstruction::DropProof { proof_id } => {
                     id_validator
-                        .drop_proof(*proof_id)
+                        .drop_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 BasicInstruction::DropAllProofs => {
@@ -280,7 +280,7 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::PublishPackageWithOwner { .. } => {}
                 BasicInstruction::BurnResource { bucket_id } => {
                     id_validator
-                        .drop_bucket(*bucket_id)
+                        .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
                 BasicInstruction::RecallResource { .. } => {}
@@ -384,20 +384,15 @@ impl NotarizedTransactionValidator {
 
     pub fn validate_call_data(
         call_data: &[u8],
-        id_validator: &mut IdValidator,
+        id_validator: &mut ManifestIdValidator,
     ) -> Result<(), CallDataValidationError> {
         let value = IndexedScryptoValue::from_slice(call_data)
             .map_err(CallDataValidationError::InvalidScryptoValue)?;
         id_validator
             .move_resources(&value)
             .map_err(CallDataValidationError::IdValidationError)?;
-        if let Some(vault_id) = value.vault_ids.iter().nth(0) {
-            return Err(CallDataValidationError::VaultNotAllowed(vault_id.clone()));
-        }
-        if let Some(kv_store_id) = value.kv_store_ids.iter().nth(0) {
-            return Err(CallDataValidationError::KeyValueStoreNotAllowed(
-                kv_store_id.clone(),
-            ));
+        if value.owned_node_count() != 0 {
+            return Err(CallDataValidationError::OwnNotAllowed);
         }
         Ok(())
     }

@@ -19,7 +19,7 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .call_method(other_account, "balance", args!(RADIX_TOKEN))
         .build();
@@ -64,7 +64,7 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -97,7 +97,7 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
@@ -132,7 +132,7 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
                 .add_instruction(BasicInstruction::CallMethod {
                     component_address: account,
                     method_name: "deposit".to_string(),
-                    args: args!(Bucket(bucket_id)),
+                    args: args!(bucket_id),
                 })
                 .0
         })

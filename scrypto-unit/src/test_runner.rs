@@ -12,8 +12,8 @@ use radix_engine::model::{
 };
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_preview, ExecutionConfig, FeeReserveConfig,
-    PreviewError, PreviewResult, TransactionReceipt,
+    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
+    FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
@@ -113,12 +113,26 @@ pub struct TestRunner {
 
 impl TestRunner {
     pub fn new(trace: bool) -> Self {
+        Self::new_with_genesis(trace, create_genesis(HashSet::new(), 1u64, 1u64))
+    }
+
+    pub fn new_with_genesis(trace: bool, genesis: SystemTransaction) -> Self {
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
         };
-        let substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+        let mut substate_store = TypedInMemorySubstateStore::new();
+        let transaction_receipt = execute_transaction(
+            &mut substate_store,
+            &scrypto_interpreter,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
+            &genesis.get_executable(vec![AuthAddresses::system_role()]),
+        );
+        let commit_result = transaction_receipt.expect_commit();
+        commit_result.outcome.expect_success();
+        commit_result.state_updates.commit(&mut substate_store);
         Self {
             scrypto_interpreter,
             staged_substate_store_manager: StagedSubstateStoreManager::new(substate_store),
@@ -295,8 +309,8 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_method(account_address, "deposit", args!(Bucket(bucket_id)))
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+                builder.call_method(account_address, "deposit", args!(bucket))
             })
             .build();
 
@@ -308,8 +322,8 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.new_account_with_resource(withdraw_auth, bucket_id)
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+                builder.new_account_with_resource(withdraw_auth, bucket)
             })
             .build();
 
@@ -585,7 +599,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         self.execute_manifest(
@@ -603,7 +617,11 @@ impl TestRunner {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
-            .call_method(to, "deposit_batch", args!(Expression::entire_worktop()))
+            .call_method(
+                to,
+                "deposit_batch",
+                args!(ManifestExpression::EntireWorktop),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -748,7 +766,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -774,7 +792,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -801,7 +819,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -846,7 +864,7 @@ impl TestRunner {
                 blobs,
                 nonce,
             }
-            .get_executable(vec![AuthAddresses::validator_role()]),
+            .get_executable(vec![AuthAddresses::system_role()]),
         );
         receipt.expect_commit_success();
     }

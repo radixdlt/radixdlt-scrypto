@@ -20,7 +20,7 @@ fn test_bucket_internal(method_name: &str) {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -92,7 +92,7 @@ fn test_bucket_of_badges() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -115,7 +115,7 @@ fn test_take_with_invalid_granularity() {
         .lock_fee(account, 10.into())
         .withdraw_from_account_by_amount(account, 100.into(), resource_address)
         .take_from_worktop(resource_address, |builder, bucket_id| {
-            let bucket = Bucket(bucket_id);
+            let bucket = bucket_id;
             builder.call_function(
                 package_address,
                 "BucketTest",
@@ -158,7 +158,7 @@ fn test_take_with_negative_amount() {
         .lock_fee(account, 10.into())
         .withdraw_from_account_by_amount(account, 100.into(), resource_address)
         .take_from_worktop(resource_address, |builder, bucket_id| {
-            let bucket = Bucket(bucket_id);
+            let bucket = bucket_id;
             builder.call_function(
                 package_address,
                 "BucketTest",

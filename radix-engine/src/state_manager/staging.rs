@@ -398,7 +398,7 @@ mod tests {
             },
             result: TransactionResult::Commit(CommitResult {
                 application_logs: Vec::new(),
-                next_validator_set: None,
+                next_epoch: None,
                 outcome: TransactionOutcome::Success(Vec::new()),
                 state_updates: state_diff,
                 entity_changes: EntityChanges {
@@ -441,6 +441,7 @@ mod tests {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
         let mut manager = StagedSubstateStoreManager::new(store);
+
 
         let substate_ids: Vec<SubstateId> = (0u8..5u8)
             .into_iter()

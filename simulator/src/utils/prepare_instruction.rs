@@ -269,7 +269,7 @@ fn parse_args<'a>(
                                     .unwrap()
                             }
                         };
-                        Ok(scrypto_encode(&Bucket(bucket_id)).unwrap())
+                        Ok(scrypto_encode(&bucket_id).unwrap())
                     }
                     Type::Proof => {
                         let resource_specifier = parse_resource_specifier(arg, bech32_decoder)
@@ -308,7 +308,7 @@ fn parse_args<'a>(
                                 }
                             }
                         };
-                        Ok(scrypto_encode(&Proof(proof_id)).unwrap())
+                        Ok(scrypto_encode(&proof_id).unwrap())
                     }
                     _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
                 };

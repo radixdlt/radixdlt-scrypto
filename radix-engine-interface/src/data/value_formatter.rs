@@ -1,3 +1,5 @@
+use super::types::ManifestBucket;
+use super::types::ManifestProof;
 use crate::address::Bech32Encoder;
 use crate::api::types::*;
 use crate::data::*;
@@ -8,8 +10,8 @@ use utils::ContextualDisplay;
 #[derive(Clone, Copy, Debug)]
 pub struct ValueFormattingContext<'a> {
     pub bech32_encoder: Option<&'a Bech32Encoder>,
-    pub bucket_names: Option<&'a HashMap<BucketId, String>>,
-    pub proof_names: Option<&'a HashMap<ProofId, String>>,
+    pub bucket_names: Option<&'a HashMap<ManifestBucket, String>>,
+    pub proof_names: Option<&'a HashMap<ManifestProof, String>>,
 }
 
 impl<'a> ValueFormattingContext<'a> {
@@ -31,8 +33,8 @@ impl<'a> ValueFormattingContext<'a> {
 
     pub fn with_manifest_context(
         bech32_encoder: Option<&'a Bech32Encoder>,
-        bucket_names: &'a HashMap<BucketId, String>,
-        proof_names: &'a HashMap<ProofId, String>,
+        bucket_names: &'a HashMap<ManifestBucket, String>,
+        proof_names: &'a HashMap<ManifestProof, String>,
     ) -> Self {
         Self {
             bech32_encoder,
@@ -41,12 +43,12 @@ impl<'a> ValueFormattingContext<'a> {
         }
     }
 
-    pub fn get_bucket_name(&self, bucket_id: &BucketId) -> Option<&str> {
+    pub fn get_bucket_name(&self, bucket_id: &ManifestBucket) -> Option<&str> {
         self.bucket_names
             .and_then(|names| names.get(bucket_id).map(|s| s.as_str()))
     }
 
-    pub fn get_proof_name(&self, proof_id: &ProofId) -> Option<&str> {
+    pub fn get_proof_name(&self, proof_id: &ManifestProof) -> Option<&str> {
         self.proof_names
             .and_then(|names| names.get(proof_id).map(|s| s.as_str()))
     }
@@ -193,8 +195,6 @@ pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoSborTypeId) -> 
             ScryptoCustomTypeId::ResourceAddress => f.write_str("ResourceAddress"),
             ScryptoCustomTypeId::SystemAddress => f.write_str("SystemAddress"),
             ScryptoCustomTypeId::Own => f.write_str("Own"),
-            ScryptoCustomTypeId::Component => f.write_str("Component"),
-            ScryptoCustomTypeId::KeyValueStore => f.write_str("KeyValueStore"),
             ScryptoCustomTypeId::Bucket => f.write_str("Bucket"),
             ScryptoCustomTypeId::Proof => f.write_str("Proof"),
             ScryptoCustomTypeId::Expression => f.write_str("Expression"),
@@ -285,36 +285,9 @@ pub fn format_custom_value<F: fmt::Write>(
                 .expect("Failed to format address");
             f.write_str("\")")?;
         }
-        // RE node types
+        // RE interpreted
         ScryptoCustomValue::Own(value) => {
-            write!(f, "Own(\"{}\")", hex::encode(value.to_vec()))?;
-        }
-        ScryptoCustomValue::Component(value) => {
-            write!(f, "Component(\"{}\")", hex::encode(value))?;
-        }
-        ScryptoCustomValue::KeyValueStore(value) => {
-            write!(f, "KeyValueStore(\"{}\")", hex::encode(value))?;
-        }
-        ScryptoCustomValue::Bucket(value) => {
-            if let Some(name) = context.get_bucket_name(&value) {
-                write!(f, "Bucket(\"{}\")", name)?;
-            } else {
-                write!(f, "Bucket({}u32)", value)?;
-            }
-        }
-        ScryptoCustomValue::Proof(value) => {
-            if let Some(name) = context.get_proof_name(&value) {
-                write!(f, "Proof(\"{}\")", name)?;
-            } else {
-                write!(f, "Proof({}u32)", value)?;
-            }
-        }
-        // Other interpreted types
-        ScryptoCustomValue::Expression(value) => {
-            write!(f, "Expression(\"{}\")", value)?;
-        }
-        ScryptoCustomValue::Blob(value) => {
-            write!(f, "Blob(\"{}\")", value)?;
+            write!(f, "Own(\"{:?}\")", value)?; // TODO: fix syntax
         }
         ScryptoCustomValue::NonFungibleAddress(value) => {
             f.write_str("NonFungibleAddress(\"")?;
@@ -325,6 +298,34 @@ pub fn format_custom_value<F: fmt::Write>(
             f.write_str("\", ")?;
             format_non_fungible_id_contents(f, value.non_fungible_id())?;
             write!(f, ")")?;
+        }
+        ScryptoCustomValue::Blob(value) => {
+            write!(f, "Blob(\"{}\")", value)?;
+        }
+        // TX interpreted
+        ScryptoCustomValue::Bucket(value) => {
+            if let Some(name) = context.get_bucket_name(&value) {
+                write!(f, "Bucket(\"{}\")", name)?;
+            } else {
+                write!(f, "Bucket({}u32)", value.0)?;
+            }
+        }
+        ScryptoCustomValue::Proof(value) => {
+            if let Some(name) = context.get_proof_name(&value) {
+                write!(f, "Proof(\"{}\")", name)?;
+            } else {
+                write!(f, "Proof({}u32)", value.0)?;
+            }
+        }
+        ScryptoCustomValue::Expression(value) => {
+            write!(
+                f,
+                "Expression(\"{}\")",
+                match value {
+                    types::ManifestExpression::EntireWorktop => "ENTIRE_WORKTOP",
+                    types::ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
+                }
+            )?;
         }
         // Uninterpreted
         ScryptoCustomValue::Hash(value) => {

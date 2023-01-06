@@ -18,7 +18,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -51,7 +51,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
             &BTreeSet::from([NonFungibleId::U32(1)]),
             auth_resource_address,
             |builder, bucket_id| {
-                builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                     builder
                         .push_to_auth_zone(proof_id)
                         .withdraw_from_account_by_amount(
@@ -67,7 +67,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
