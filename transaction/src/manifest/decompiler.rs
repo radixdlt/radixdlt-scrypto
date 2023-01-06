@@ -597,7 +597,7 @@ pub fn format_args<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     let value =
         IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
-    if let SborValue::Tuple { fields } = value.value {
+    if let SborValue::Tuple { fields } = value.as_value() {
         for field in fields {
             let bytes = scrypto_encode(&field)?;
             let arg = IndexedScryptoValue::from_slice(&bytes)

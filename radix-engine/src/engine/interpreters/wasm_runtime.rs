@@ -44,7 +44,7 @@ where
     // TODO: do we check existence of blobs when being passed as arguments/return?
 
     fn main(&mut self, input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
-        let input: RadixEngineInput = scrypto_decode(&input.as_vec())
+        let input: RadixEngineInput = scrypto_decode(&input.into_vec())
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
             RadixEngineInput::Invoke(invocation) => match invocation {
@@ -95,7 +95,7 @@ impl NopWasmRuntime {
 
 impl WasmRuntime for NopWasmRuntime {
     fn main(&mut self, _input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
-        Ok(IndexedScryptoValue::unit().as_vec())
+        Ok(IndexedScryptoValue::unit().into_vec())
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {

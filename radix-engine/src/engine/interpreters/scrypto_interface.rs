@@ -120,7 +120,7 @@ where
 
     fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.get_ref(lock_handle)
-            .map(|substate_ref| substate_ref.to_scrypto_value().as_vec())
+            .map(|substate_ref| substate_ref.to_scrypto_value().into_vec())
     }
 
     fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {

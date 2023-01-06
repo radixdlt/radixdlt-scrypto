@@ -38,6 +38,18 @@ impl Own {
     }
 }
 
+impl From<Bucket> for Own {
+    fn from(bucket: Bucket) -> Self {
+        Own::Bucket(bucket.0)
+    }
+}
+
+impl From<Proof> for Own {
+    fn from(proof: Proof) -> Self {
+        Own::Proof(proof.0)
+    }
+}
+
 //========
 // error
 //========

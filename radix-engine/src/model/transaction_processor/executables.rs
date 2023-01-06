@@ -58,8 +58,8 @@ pub enum InstructionOutput {
 impl InstructionOutput {
     pub fn as_vec(&self) -> Vec<u8> {
         match self {
-            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).as_vec(),
-            InstructionOutput::Scrypto(value) => value.as_vec(),
+            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).into_vec(),
+            InstructionOutput::Scrypto(value) => value.as_slice().to_owned(),
         }
     }
 }
@@ -381,17 +381,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     function_name,
                     args,
                 }) => {
-                    let args = processor
-                        .replace_manifest_values(
-                            IndexedScryptoValue::from_slice(args)
-                                .expect("Invalid CALL_FUNCTION arguments"),
-                        )
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(e),
-                            )
-                        })
-                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor.replace_manifest_values(
+                        IndexedScryptoValue::from_slice(args)
+                            .expect("Invalid CALL_FUNCTION arguments"),
+                        api,
+                    )?;
 
                     let result = api.invoke(ParsedScryptoInvocation::Function(
                         ScryptoFunctionIdent {
@@ -413,17 +407,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     method_name,
                     args,
                 }) => {
-                    let args = processor
-                        .replace_manifest_values(
-                            IndexedScryptoValue::from_slice(args)
-                                .expect("Invalid CALL_METHOD arguments"),
-                        )
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(e),
-                            )
-                        })
-                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor.replace_manifest_values(
+                        IndexedScryptoValue::from_slice(args)
+                            .expect("Invalid CALL_METHOD arguments"),
+                        api,
+                    )?;
 
                     let result = api.invoke(ParsedScryptoInvocation::Method(
                         ScryptoMethodIdent {
@@ -809,59 +797,39 @@ impl TransactionProcessor {
         Ok(())
     }
 
-    fn replace_manifest_values(
+    fn replace_manifest_values<'a, Y>(
         &mut self,
-        mut value: IndexedScryptoValue,
-    ) -> Result<IndexedScryptoValue, TransactionProcessorError> {
-        value
-            .replace_manifest_values(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
-            .map_err(|e| match e {
-                ReplaceManifestValuesError::BucketNotExistOrConsumed(bucket_id) => {
-                    TransactionProcessorError::BucketNotFound(bucket_id)
-                }
-                ReplaceManifestValuesError::ProofNotExistOrConsumed(proof_id) => {
-                    TransactionProcessorError::ProofNotFound(proof_id)
-                }
-            })?;
-        Ok(value)
-    }
-
-    fn process_expressions<'a, Y>(
-        args: IndexedScryptoValue,
+        value: IndexedScryptoValue,
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let mut value = args.value;
-        for (expression, path) in args.expressions {
+        let mut expression_replacements = Vec::<Vec<Own>>::new();
+        for (expression, _) in value.expressions() {
             match expression {
                 ManifestExpression::EntireWorktop => {
                     let buckets = Worktop::sys_drain(env)?;
-
-                    let val = path
-                        .get_from_value_mut(&mut value)
-                        .expect("Failed to locate an expression value using SBOR path");
-                    *val = scrypto_decode(
-                        &scrypto_encode(&buckets).expect("Failed to encode Vec<Bucket>"),
-                    )
-                    .expect("Failed to decode Vec<Bucket>")
+                    expression_replacements.push(buckets.into_iter().map(Into::into).collect())
                 }
                 ManifestExpression::EntireAuthZone => {
                     let proofs = ComponentAuthZone::sys_drain(env)?;
-
-                    let val = path
-                        .get_from_value_mut(&mut value)
-                        .expect("Failed to locate an expression value using SBOR path");
-                    *val = scrypto_decode(
-                        &scrypto_encode(&proofs).expect("Failed to encode Vec<Proof>"),
-                    )
-                    .expect("Failed to decode Vec<Proof>")
+                    expression_replacements.push(proofs.into_iter().map(Into::into).collect())
                 }
             }
         }
 
-        Ok(IndexedScryptoValue::from_value(value))
+        value
+            .replace_manifest_values(
+                &mut self.proof_id_mapping,
+                &mut self.bucket_id_mapping,
+                expression_replacements,
+            )
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::ReplaceManifestValuesError(e),
+                ))
+            })
     }
 
     fn perform_validation<'a, Y>(

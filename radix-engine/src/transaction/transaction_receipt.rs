@@ -231,9 +231,10 @@ impl TransactionReceipt {
             InstructionOutput::Native(native) => {
                 // TODO: Use downcast
                 let value = IndexedScryptoValue::from_typed(&native.as_ref());
-                scrypto_decode::<T>(&value.as_vec()).expect("Wrong native instruction output type!")
+                scrypto_decode::<T>(&value.into_vec())
+                    .expect("Wrong native instruction output type!")
             }
-            InstructionOutput::Scrypto(value) => scrypto_decode::<T>(&value.as_vec())
+            InstructionOutput::Scrypto(value) => scrypto_decode::<T>(value.as_slice())
                 .expect("Wrong scrypto instruction output type!"),
         }
     }

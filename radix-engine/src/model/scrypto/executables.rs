@@ -85,7 +85,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 }
                 // Check input against the ABI
 
-                if !match_schema_with_value(&fn_abi.input, &args.value) {
+                if !match_schema_with_value(&fn_abi.input, args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
                             function_ident.clone(),
@@ -109,7 +109,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                         &package.code,
                         fn_abi.export_name.clone(),
                         None,
-                        args.as_vec(),
+                        args.into_vec(),
                         fn_abi.output.clone(),
                     ),
                     ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
@@ -196,7 +196,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 }
 
                 // Check input against the ABI
-                if !match_schema_with_value(&fn_abi.input, &args.value) {
+                if !match_schema_with_value(&fn_abi.input, args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoMethodInvocation(
                             method_ident.clone(),
@@ -220,7 +220,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                         &package.code,
                         fn_abi.export_name.clone(),
                         Some(component_node_id.into()),
-                        args.as_vec(),
+                        args.into_vec(),
                         fn_abi.output.clone(),
                     ),
                     ResolvedActor::method(
@@ -329,7 +329,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 }
                 // Check input against the ABI
 
-                if !match_schema_with_value(&fn_abi.input, &args.value) {
+                if !match_schema_with_value(&fn_abi.input, args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
                             function_ident.clone(),
@@ -353,7 +353,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                         &package.code,
                         fn_abi.export_name.clone(),
                         None,
-                        args.as_vec(),
+                        args.into_vec(),
                         fn_abi.output.clone(),
                     ),
                     ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
@@ -440,7 +440,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 }
 
                 // Check input against the ABI
-                if !match_schema_with_value(&fn_abi.input, &args.value) {
+                if !match_schema_with_value(&fn_abi.input, args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoMethodInvocation(
                             method_ident.clone(),
@@ -464,7 +464,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                         &package.code,
                         fn_abi.export_name.clone(),
                         Some(component_node_id.into()),
-                        args.as_vec(),
+                        args.into_vec(),
                         fn_abi.output.clone(),
                     ),
                     ResolvedActor::method(

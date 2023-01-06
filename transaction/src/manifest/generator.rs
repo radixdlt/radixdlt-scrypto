@@ -364,8 +364,6 @@ pub fn generate_instruction(
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
 
-            let args_encoded =
-                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
             let args_indexed = IndexedScryptoValue::from_value(args);
             id_validator
                 .move_resources(&args_indexed.buckets(), &args_indexed.proofs())
@@ -374,7 +372,7 @@ pub fn generate_instruction(
             BasicInstruction::CallMethod {
                 component_address,
                 method_name,
-                args: args_encoded,
+                args: args_indexed.into_vec(),
             }
         }
         ast::Instruction::PublishPackage {

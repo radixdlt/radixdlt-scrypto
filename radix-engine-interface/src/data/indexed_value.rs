@@ -23,13 +23,15 @@ pub enum ReadOwnedNodesError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ReplaceManifestValuesError {
-    BucketNotExistOrConsumed(ManifestBucket),
-    ProofNotExistOrConsumed(ManifestProof),
+    BucketNotFound(ManifestBucket),
+    ProofNotFound(ManifestProof),
+    InvalidExpressionReplacements,
 }
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct IndexedScryptoValue {
-    pub value: ScryptoValue,
+    raw: Vec<u8>,
+    value: ScryptoValue,
 
     // Global addresses
     component_addresses: HashSet<ComponentAddress>,
@@ -44,9 +46,8 @@ pub struct IndexedScryptoValue {
     // TX interpreted
     buckets: Vec<(ManifestBucket, SborPath)>,
     proofs: Vec<(ManifestProof, SborPath)>,
-    pub expressions: Vec<(ManifestExpression, SborPath)>,
-    bucket_arrays: Vec<SborPath>,
-    proof_arrays: Vec<SborPath>,
+    expressions: Vec<(ManifestExpression, SborPath)>,
+    arrays: Vec<(ScryptoSborTypeId, SborPath)>,
 }
 
 impl IndexedScryptoValue {
@@ -55,21 +56,27 @@ impl IndexedScryptoValue {
     }
 
     pub fn from_typed<T: ScryptoEncode + ?Sized>(value: &T) -> Self {
-        let bytes = scrypto_encode(value).expect("Failed to encode trusted value");
-        let value = scrypto_decode(&bytes).expect("Failed to decode trusted value");
-        Self::from_value(value)
+        let bytes = scrypto_encode(value).expect("Failed to encode rust value");
+        let value = scrypto_decode(&bytes).expect("Failed to decode rust value");
+        Self::new(bytes, value)
     }
 
     pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
         let value = scrypto_decode(slice)?;
-        Ok(Self::from_value(value))
+        Ok(Self::new(slice.to_vec(), value))
     }
 
     pub fn from_value(value: ScryptoValue) -> Self {
+        let bytes = scrypto_encode(&value).expect("Failed to decode scrypto value");
+        Self::new(bytes, value)
+    }
+
+    fn new(raw: Vec<u8>, value: ScryptoValue) -> Self {
         let mut visitor = ScryptoValueVisitor::new();
         traverse_any(&mut SborPathBuf::new(), &value, &mut visitor).expect("Infallible");
 
         Self {
+            raw: raw,
             value: value,
             component_addresses: visitor.component_addresses,
             resource_addresses: visitor.resource_addresses,
@@ -82,26 +89,36 @@ impl IndexedScryptoValue {
             buckets: visitor.buckets,
             proofs: visitor.proofs,
             expressions: visitor.expressions,
-            bucket_arrays: visitor.bucket_arrays,
-            proof_arrays: visitor.proof_arrays,
+            arrays: visitor.arrays,
         }
     }
 
-    pub fn as_vec(&self) -> Vec<u8> {
-        scrypto_encode(&self.value).expect("Failed to encode IndexedScryptoValue")
-    }
-
     pub fn as_typed<T: ScryptoDecode>(&self) -> Result<T, DecodeError> {
-        let bytes = self.as_vec();
-        scrypto_decode(&bytes)
+        scrypto_decode(&self.raw)
     }
 
-    pub fn buckets(&self) -> Vec<ManifestBucket> {
-        self.buckets.iter().cloned().map(|x| x.0).collect()
+    pub fn as_slice(&self) -> &[u8] {
+        self.raw.as_slice()
     }
 
-    pub fn proofs(&self) -> Vec<ManifestProof> {
-        self.proofs.iter().cloned().map(|x| x.0).collect()
+    pub fn as_value(&self) -> &ScryptoValue {
+        &self.value
+    }
+
+    pub fn into_vec(self) -> Vec<u8> {
+        self.raw
+    }
+
+    pub fn buckets(&self) -> &Vec<(ManifestBucket, SborPath)> {
+        &self.buckets
+    }
+
+    pub fn proofs(&self) -> &Vec<(ManifestProof, SborPath)> {
+        &self.proofs
+    }
+
+    pub fn expressions(&self) -> &Vec<(ManifestExpression, SborPath)> {
+        &self.expressions
     }
 
     pub fn owned_node_ids(&self) -> Result<HashSet<RENodeId>, ReadOwnedNodesError> {
@@ -146,61 +163,90 @@ impl IndexedScryptoValue {
     }
 
     pub fn replace_manifest_values(
-        &mut self,
+        mut self,
         proof_replacements: &mut HashMap<ManifestProof, ProofId>,
         bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
-    ) -> Result<(), ReplaceManifestValuesError> {
-        for (bucket_id, path) in self.buckets.drain(..) {
-            let next_id = bucket_replacements.remove(&bucket_id).ok_or(
-                ReplaceManifestValuesError::BucketNotExistOrConsumed(bucket_id),
-            )?;
+        mut expression_replacements: Vec<Vec<Own>>,
+    ) -> Result<Self, ReplaceManifestValuesError> {
+        if expression_replacements.len() != self.expressions.len() {
+            return Err(ReplaceManifestValuesError::InvalidExpressionReplacements);
+        }
+
+        for (bucket, path) in self.buckets.drain(..) {
+            let replacement = bucket_replacements
+                .remove(&bucket)
+                .ok_or(ReplaceManifestValuesError::BucketNotFound(bucket))?;
             let value = path.get_from_value_mut(&mut self.value).unwrap();
-            if let SborValue::Custom { value } = value {
-                *value = ScryptoCustomValue::Own(Own::Bucket(next_id));
-                self.owned_nodes.push((Own::Bucket(next_id), path));
-            } else {
-                panic!("Should be a custom value");
+            *value = ScryptoValue::Custom {
+                value: ScryptoCustomValue::Own(Own::Bucket(replacement)),
+            };
+            self.owned_nodes.push((Own::Bucket(replacement), path));
+        }
+
+        for (proof, path) in self.proofs.drain(..) {
+            let replacement = proof_replacements
+                .remove(&proof)
+                .ok_or(ReplaceManifestValuesError::ProofNotFound(proof))?;
+            let value = path.get_from_value_mut(&mut self.value).unwrap();
+            *value = ScryptoValue::Custom {
+                value: ScryptoCustomValue::Own(Own::Proof(replacement)),
+            };
+            self.owned_nodes.push((Own::Proof(replacement), path));
+        }
+
+        for (_, path) in self.expressions.drain(..).rev() {
+            let value = path.get_from_value_mut(&mut self.value).unwrap();
+            *value = ScryptoValue::Array {
+                element_type_id: ScryptoSborTypeId::Array,
+                elements: expression_replacements
+                    .pop()
+                    .expect("Expression replacements checked upfront!")
+                    .into_iter()
+                    .map(|r| ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Own(r),
+                    })
+                    .collect(),
             }
         }
 
-        for (proof_id, path) in self.proofs.drain(..) {
-            let next_id = proof_replacements.remove(&proof_id).ok_or(
-                ReplaceManifestValuesError::ProofNotExistOrConsumed(proof_id),
-            )?;
-            let value = path.get_from_value_mut(&mut self.value).unwrap();
-            if let SborValue::Custom { value } = value {
-                *value = ScryptoCustomValue::Own(Own::Proof(next_id));
-                self.owned_nodes.push((Own::Proof(next_id), path));
-            } else {
-                panic!("Should be a custom value");
+        let mut retained_arrays = Vec::new();
+        for (element_type_id, path) in self.arrays.drain(..) {
+            match element_type_id {
+                SborTypeId::Custom(ScryptoCustomTypeId::Bucket)
+                | SborTypeId::Custom(ScryptoCustomTypeId::Proof) => {
+                    let value = path.get_from_value_mut(&mut self.value).unwrap();
+                    if let SborValue::Array {
+                        element_type_id, ..
+                    } = value
+                    {
+                        *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+                    } else {
+                        panic!("Should be an array");
+                    }
+                }
+                SborTypeId::Custom(ScryptoCustomTypeId::Expression) => {
+                    let value = path.get_from_value_mut(&mut self.value).unwrap();
+                    if let SborValue::Array {
+                        element_type_id, ..
+                    } = value
+                    {
+                        *element_type_id = ScryptoSborTypeId::Array;
+                    } else {
+                        panic!("Should be an array");
+                    }
+                }
+                element_type_id => {
+                    retained_arrays.push((element_type_id, path));
+                }
             }
         }
+        self.arrays = retained_arrays;
 
-        for path in self.bucket_arrays.drain(..) {
-            let value = path.get_from_value_mut(&mut self.value).unwrap();
-            if let SborValue::Array {
-                element_type_id, ..
-            } = value
-            {
-                *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
-            } else {
-                panic!("Should be an array");
-            }
-        }
+        // Potential optimization: in-place replacement
+        self.raw =
+            scrypto_encode(&self.value).expect("Value no longer encodable after replacement");
 
-        for path in self.proof_arrays.drain(..) {
-            let value = path.get_from_value_mut(&mut self.value).unwrap();
-            if let SborValue::Array {
-                element_type_id, ..
-            } = value
-            {
-                *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
-            } else {
-                panic!("Should be an array");
-            }
-        }
-
-        Ok(())
+        Ok(self)
     }
 }
 
@@ -236,8 +282,7 @@ pub struct ScryptoValueVisitor {
     pub buckets: Vec<(ManifestBucket, SborPath)>,
     pub proofs: Vec<(ManifestProof, SborPath)>,
     pub expressions: Vec<(ManifestExpression, SborPath)>,
-    pub bucket_arrays: Vec<SborPath>,
-    pub proof_arrays: Vec<SborPath>,
+    pub arrays: Vec<(ScryptoSborTypeId, SborPath)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
@@ -261,8 +306,7 @@ impl ScryptoValueVisitor {
             buckets: Vec::new(),
             proofs: Vec::new(),
             expressions: Vec::new(),
-            bucket_arrays: Vec::new(),
-            proof_arrays: Vec::new(),
+            arrays: Vec::new(),
         }
     }
 }
@@ -276,15 +320,8 @@ impl ValueVisitor<ScryptoCustomTypeId, ScryptoCustomValue> for ScryptoValueVisit
         element_type_id: &ScryptoSborTypeId,
         _elements: &[ScryptoValue],
     ) -> Result<(), Self::Err> {
-        match element_type_id {
-            ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Bucket) => {
-                self.bucket_arrays.push(path.clone().into());
-            }
-            ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Proof) => {
-                self.proof_arrays.push(path.clone().into());
-            }
-            _ => {}
-        }
+        self.arrays
+            .push((element_type_id.clone(), path.clone().into()));
         Ok(())
     }
 
@@ -350,16 +387,16 @@ mod tests {
 
     #[test]
     fn should_reject_duplicate_manifest_buckets() {
-        let mut value =
-            IndexedScryptoValue::from_typed(&vec![ManifestBucket(0), ManifestBucket(0)]);
+        let value = IndexedScryptoValue::from_typed(&vec![ManifestBucket(0), ManifestBucket(0)]);
         assert_eq!(
             value.replace_manifest_values(
                 &mut HashMap::from([(ManifestProof(0), 0u32)]),
-                &mut HashMap::from([(ManifestBucket(0), 0u32)])
+                &mut HashMap::from([(ManifestBucket(0), 0u32)]),
+                Vec::new(),
             ),
-            Err(ReplaceManifestValuesError::BucketNotExistOrConsumed(
-                ManifestBucket(0)
-            ))
+            Err(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
+                0
+            )))
         );
     }
 

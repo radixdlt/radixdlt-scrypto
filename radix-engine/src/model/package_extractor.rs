@@ -41,7 +41,7 @@ pub fn extract_abi(code: &[u8]) -> Result<BTreeMap<String, BlueprintAbi>, Extrac
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: BlueprintAbi =
-            scrypto_decode(&rtn.as_vec()).map_err(ExtractAbiError::AbiDecodeError)?;
+            scrypto_decode(&rtn.into_vec()).map_err(ExtractAbiError::AbiDecodeError)?;
 
         if let Type::Struct { name, fields: _ } = &abi.structure {
             blueprints.insert(name.clone(), abi);
