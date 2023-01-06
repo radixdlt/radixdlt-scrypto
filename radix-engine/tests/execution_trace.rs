@@ -3,7 +3,6 @@ use radix_engine::model::*;
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -16,7 +15,7 @@ fn test_trace_resource_transfers() {
     let transfer_amount = 10u8;
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .call_function(
             package_address,
@@ -91,14 +90,14 @@ fn test_trace_fee_payments() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
     // Prepare the component that will pay the fee
-    let manifest_prepare = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest_prepare = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .call_function(
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .clear_auth_zone()
         .build();
@@ -117,7 +116,7 @@ fn test_trace_fee_payments() {
         .into();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
             funded_component.clone(),
@@ -148,12 +147,12 @@ fn test_instruction_traces() {
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/execution_trace");
 
-    let manfiest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manfiest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(FAUCET_COMPONENT, "free", args!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
-                .create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                .create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                     builder.drop_proof(proof_id)
                 })
                 .return_to_worktop(bucket_id)
@@ -162,7 +161,7 @@ fn test_instruction_traces() {
             package_address,
             "ExecutionTraceTest",
             "create_and_fund_a_component",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

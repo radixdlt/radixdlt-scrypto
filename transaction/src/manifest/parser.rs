@@ -292,9 +292,7 @@ impl Parser {
             TokenKind::ComponentAddress |
             TokenKind::ResourceAddress |
             /* RE types */
-            TokenKind::Ownership |
-            TokenKind::Component |
-            TokenKind::KeyValueStore |
+            TokenKind::Own |
             TokenKind::NonFungibleAddress |
             TokenKind::Blob |
             /* TX types */
@@ -371,9 +369,7 @@ impl Parser {
             }
 
             // RE interpreted types
-            TokenKind::Ownership => Ok(Value::Own(self.parse_values_one()?.into())),
-            TokenKind::Component => Ok(Value::Component(self.parse_values_one()?.into())),
-            TokenKind::KeyValueStore => Ok(Value::KeyValueStore(self.parse_values_one()?.into())),
+            TokenKind::Own => Ok(Value::Own(self.parse_values_one()?.into())),
             TokenKind::NonFungibleAddress => {
                 let values = self.parse_values_two()?;
                 Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
@@ -499,9 +495,7 @@ impl Parser {
             TokenKind::SystemAddress => Ok(Type::SystemAddress),
 
             // RE interpreted types
-            TokenKind::Ownership => Ok(Type::Own),
-            TokenKind::Component => Ok(Type::Component),
-            TokenKind::KeyValueStore => Ok(Type::KeyValueStore),
+            TokenKind::Own => Ok(Type::Own),
             TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
             TokenKind::Blob => Ok(Type::Blob),
 

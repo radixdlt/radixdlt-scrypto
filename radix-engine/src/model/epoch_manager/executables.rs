@@ -1,6 +1,6 @@
 use crate::engine::{
-    deref_and_update, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
-    ResolvedActor, ResolverApi, RuntimeError, SystemApi,
+    deref_and_update, ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags,
+    RENode, ResolvedActor, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
@@ -18,7 +18,7 @@ use radix_engine_interface::rule;
 
 #[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
 pub enum EpochManagerError {
-    InvalidRequestData(DecodeError),
+    InvalidRoundUpdate { from: u64, to: u64 },
 }
 
 pub struct EpochManager;
@@ -50,16 +50,25 @@ impl Executor for EpochManagerCreateInvocation {
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
 
-        let epoch_manager = EpochManagerSubstate { epoch: 0 };
+        let epoch_manager = EpochManagerSubstate {
+            epoch: self.initial_epoch,
+            round: 0,
+            rounds_per_epoch: self.rounds_per_epoch,
+        };
 
         let validator_set = ValidatorSetSubstate {
+            epoch: self.initial_epoch,
             validator_set: self.validator_set,
         };
 
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch)),
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::NextRound)),
             rule!(require(AuthAddresses::validator_role())),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch)),
+            rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch)),
@@ -136,6 +145,79 @@ impl Executor for EpochManagerGetCurrentEpochExecutable {
         let substate_ref = system_api.get_ref(handle)?;
         let epoch_manager = substate_ref.epoch_manager();
         Ok((epoch_manager.epoch, CallFrameUpdate::empty()))
+    }
+}
+
+pub struct EpochManagerNextRoundExecutable {
+    node_id: RENodeId,
+    round: u64,
+}
+
+impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerNextRoundInvocation {
+    type Exec = EpochManagerNextRoundExecutable;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::EpochManager(EpochManagerFn::NextRound),
+            resolved_receiver,
+        );
+        let executor = EpochManagerNextRoundExecutable {
+            node_id: resolved_receiver.receiver,
+            round: self.round,
+        };
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for EpochManagerNextRoundExecutable {
+    type Output = ();
+
+    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        let offset = SubstateOffset::EpochManager(EpochManagerOffset::EpochManager);
+        let handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
+        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        let epoch_manager = substate_mut.epoch_manager();
+
+        if self.round <= epoch_manager.round {
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::EpochManagerError(EpochManagerError::InvalidRoundUpdate {
+                    from: epoch_manager.round,
+                    to: self.round,
+                }),
+            ));
+        }
+
+        if self.round >= epoch_manager.rounds_per_epoch {
+            let next_epoch = epoch_manager.epoch + 1;
+            epoch_manager.epoch = next_epoch;
+            epoch_manager.round = 0;
+
+            let offset = SubstateOffset::EpochManager(EpochManagerOffset::ValidatorSet);
+            let handle = system_api.lock_substate(self.node_id, offset, LockFlags::MUTABLE)?;
+
+            // Keep same validator set for now
+            let mut substate_mut = system_api.get_ref_mut(handle)?;
+            let validator_set = substate_mut.validator_set();
+            validator_set.epoch = next_epoch;
+        } else {
+            epoch_manager.round = self.round;
+        }
+
+        Ok(((), CallFrameUpdate::empty()))
     }
 }
 

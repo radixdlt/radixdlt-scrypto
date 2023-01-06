@@ -7,7 +7,7 @@ use scrypto::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum GlobalAddressSubstate {
-    Component(scrypto::component::Component),
+    Component(ComponentId),
     Resource(ResourceManagerId),
     Package(PackageId),
     EpochManager(EpochManagerId),

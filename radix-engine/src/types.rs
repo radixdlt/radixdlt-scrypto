@@ -3,13 +3,13 @@ pub use radix_engine_interface::address::{AddressError, Bech32Decoder, Bech32Enc
 pub use radix_engine_interface::api::types::*;
 pub use radix_engine_interface::constants::*;
 pub use radix_engine_interface::crypto::*;
-pub use radix_engine_interface::data::types::Expression;
+pub use radix_engine_interface::data::types::*;
 pub use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoDecode, ScryptoEncode,
     ScryptoTypeId,
 };
 pub use radix_engine_interface::dec;
-pub use radix_engine_interface::math::{Decimal, RoundingMode, I256};
+pub use radix_engine_interface::math::{BnumI256, Decimal, RoundingMode};
 pub use radix_engine_interface::model::*;
 pub use radix_engine_interface::scrypto;
 pub use sbor::rust::borrow::ToOwned;

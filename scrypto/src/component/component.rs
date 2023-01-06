@@ -8,16 +8,12 @@ use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto_type;
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
@@ -277,58 +273,40 @@ impl GlobalComponentRef {
 // binary
 //========
 
-/// Represents an error when decoding key value store.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseComponentError {
-    InvalidHex(String),
-    InvalidLength(usize),
+impl TypeId<ScryptoCustomTypeId> for Component {
+    #[inline]
+    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    }
 }
 
-impl TryFrom<&[u8]> for Component {
-    type Error = ParseComponentError;
+impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Component {
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            36 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseComponentError::InvalidLength(slice.len())),
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Own::Component(self.0).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Component {
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
+    ) -> Result<Self, DecodeError> {
+        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        match o {
+            Own::Component(component_id) => Ok(Self(component_id)),
+            _ => Err(DecodeError::InvalidCustomValue),
         }
     }
 }
 
-impl Component {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
-    }
-}
-
-scrypto_type!(
-    Component,
-    ScryptoCustomTypeId::Component,
-    Type::Component,
-    36
-);
-
-//======
-// text
-//======
-
-impl FromStr for Component {
-    type Err = ParseComponentError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|_| ParseComponentError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-impl fmt::Display for Component {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(self.to_vec()))
-    }
-}
-
-impl fmt::Debug for Component {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{:?}", self.0)
+impl scrypto_abi::Describe for Component {
+    fn describe() -> scrypto_abi::Type {
+        Type::Component
     }
 }

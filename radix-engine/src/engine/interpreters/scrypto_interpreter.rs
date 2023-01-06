@@ -53,7 +53,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
                     .into_iter()
                     .map(|a| RENodeId::Global(a))
                     .collect(),
-                nodes_to_move: output.node_ids().into_iter().collect(),
+                nodes_to_move: output.owned_node_ids().into_iter().collect(),
             };
             Ok((output, update))
         };

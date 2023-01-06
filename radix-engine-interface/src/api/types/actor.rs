@@ -242,6 +242,7 @@ pub enum PackageFn {
 pub enum EpochManagerFn {
     Create,
     GetCurrentEpoch,
+    NextRound,
     SetEpoch,
 }
 
