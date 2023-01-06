@@ -18,7 +18,7 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
@@ -250,7 +250,7 @@ impl TestRunner {
             self.substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
-                    SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+                    SubstateOffset::Vault(VaultOffset::Vault),
                 ))
                 .map(|output| output.substate.vault().0.amount())
         } else {
@@ -274,7 +274,7 @@ impl TestRunner {
             self.substate_store
                 .get_substate(&SubstateId(
                     RENodeId::Vault(royalty_vault.vault_id()),
-                    SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+                    SubstateOffset::Vault(VaultOffset::Vault),
                 ))
                 .map(|output| output.substate.vault().0.amount())
         } else {

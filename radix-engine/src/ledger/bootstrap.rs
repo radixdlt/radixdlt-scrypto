@@ -245,7 +245,7 @@ where
             substate_store,
             scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::debug(),
+            &ExecutionConfig::default(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
 
