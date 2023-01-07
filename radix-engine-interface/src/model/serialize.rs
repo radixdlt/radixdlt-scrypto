@@ -118,6 +118,7 @@ pub enum AuthZoneStackInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceInvocation {
     Create(ResourceManagerCreateInvocation),
+    CreateWithInitialSupply(ResourceManagerCreateWithInitialSupplyInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
@@ -279,6 +280,7 @@ impl NativeInvocation {
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
                 ResourceInvocation::Create(..) => {}
+                ResourceInvocation::CreateWithInitialSupply(..) => {}
                 ResourceInvocation::BurnBucket(..) => {}
                 ResourceInvocation::Burn(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(

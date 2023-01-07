@@ -61,6 +61,29 @@ impl Into<SerializedInvocation> for ResourceManagerCreateInvocation {
     }
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ResourceManagerCreateWithInitialSupplyInvocation {
+    pub resource_type: ResourceType,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub mint_params: MintParams,
+}
+
+impl Invocation for ResourceManagerCreateWithInitialSupplyInvocation {
+    type Output = (ResourceAddress, Bucket);
+}
+
+impl SerializableInvocation for ResourceManagerCreateWithInitialSupplyInvocation {
+    type ScryptoOutput = (ResourceAddress, Bucket);
+}
+
+impl Into<SerializedInvocation> for ResourceManagerCreateWithInitialSupplyInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateWithInitialSupply(self)).into()
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerBucketBurnInvocation {

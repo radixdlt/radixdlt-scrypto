@@ -292,6 +292,8 @@ pub enum AuthZoneStackFn {
 #[scrypto(TypeId, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFn {
+    Create,
+    CreateWithInitialSupply,
     Mint,
     Burn,
     UpdateVaultAuth,
@@ -303,7 +305,6 @@ pub enum ResourceManagerFn {
     NonFungibleExists,
     CreateBucket,
     CreateVault,
-    Create,
     BurnBucket,
 }
 

@@ -164,17 +164,17 @@ impl FungibleResourceBuilder {
         authorization.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
         let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateInvocation {
+            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata,
                 access_rules: authorization,
-                mint_params: Some(MintParams::fungible(amount)),
+                mint_params: MintParams::fungible(amount),
             })
             .unwrap();
 
-        bucket.unwrap()
+        bucket
     }
 
     pub fn no_initial_supply(self) -> ResourceAddress {
@@ -198,17 +198,17 @@ impl FungibleResourceBuilder {
         owner_badge: NonFungibleAddress,
     ) -> Bucket {
         let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateInvocation {
+            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-                mint_params: Some(MintParams::fungible(amount)),
+                mint_params: MintParams::fungible(amount),
             })
             .unwrap();
 
-        bucket.unwrap()
+        bucket
     }
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleAddress) -> ResourceAddress {
@@ -302,31 +302,45 @@ impl FungibleResourceWithAuthBuilder {
         self
     }
 
-    pub fn initial_supply<T: Into<Decimal>>(self, amount: T) -> Bucket {
-        self.build(Some(MintParams::fungible(amount))).1.unwrap()
-    }
-
-    /// Creates resource with no initial supply.
-    pub fn no_initial_supply(self) -> ResourceAddress {
-        self.build(None).0
-    }
-
-    fn build(mut self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+    pub fn initial_supply<T: Into<Decimal>>(mut self, amount: T) -> Bucket {
         if !self.authorization.contains_key(&Withdraw) {
             self.authorization
                 .insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         }
 
-        ScryptoEnv
+        let (_resource_address, bucket) = ScryptoEnv
+            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
+                resource_type: ResourceType::Fungible {
+                    divisibility: self.divisibility,
+                },
+                metadata: self.metadata,
+                access_rules: self.authorization,
+                mint_params: MintParams::fungible(amount),
+            })
+            .unwrap();
+
+        bucket
+    }
+
+    /// Creates resource with no initial supply.
+    pub fn no_initial_supply(mut self) -> ResourceAddress {
+        if !self.authorization.contains_key(&Withdraw) {
+            self.authorization
+                .insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        }
+
+        let (resource_address, _) = ScryptoEnv
             .invoke(ResourceManagerCreateInvocation {
                 resource_type: ResourceType::Fungible {
                     divisibility: self.divisibility,
                 },
                 metadata: self.metadata,
                 access_rules: self.authorization,
-                mint_params,
+                mint_params: None,
             })
-            .unwrap()
+            .unwrap();
+
+        resource_address
     }
 }
 
@@ -478,17 +492,23 @@ impl NonFungibleResourceBuilder {
         for (id, e) in entries {
             encoded.insert(id, (e.immutable_data().unwrap(), e.mutable_data().unwrap()));
         }
-        self.build(Some(MintParams::NonFungible { entries: encoded }))
-            .1
-            .unwrap()
+        let mut authorization = BTreeMap::new();
+        authorization.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+
+        ScryptoEnv
+            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
+                resource_type: ResourceType::NonFungible {
+                    id_type: self.id_type,
+                },
+                metadata: self.metadata,
+                access_rules: authorization,
+                mint_params: MintParams::NonFungible { entries: encoded },
+            })
+            .unwrap().1
     }
 
     /// Creates resource with no initial supply.
     pub fn no_initial_supply(self) -> ResourceAddress {
-        self.build(None).0
-    }
-
-    fn build(self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = BTreeMap::new();
         authorization.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
@@ -499,9 +519,9 @@ impl NonFungibleResourceBuilder {
                 },
                 metadata: self.metadata,
                 access_rules: authorization,
-                mint_params,
+                mint_params: None,
             })
-            .unwrap()
+            .unwrap().0
     }
 
     pub fn initial_supply_with_owner<T, V>(
