@@ -119,6 +119,7 @@ pub enum AuthZoneStackInvocation {
 pub enum ResourceInvocation {
     Create(ResourceManagerCreateInvocation),
     CreateWithInitialSupply(ResourceManagerCreateWithInitialSupplyInvocation),
+    CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
@@ -281,6 +282,7 @@ impl NativeInvocation {
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
                 ResourceInvocation::Create(..) => {}
                 ResourceInvocation::CreateWithInitialSupply(..) => {}
+                ResourceInvocation::CreateFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::BurnBucket(..) => {}
                 ResourceInvocation::Burn(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(

@@ -294,6 +294,7 @@ pub enum AuthZoneStackFn {
 pub enum ResourceManagerFn {
     Create,
     CreateWithInitialSupply,
+    CreateFungibleWithInitialSupply,
     Mint,
     Burn,
     UpdateVaultAuth,
