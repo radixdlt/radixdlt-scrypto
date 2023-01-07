@@ -40,10 +40,10 @@ impl ResourceManager {
 
     pub fn set_mintable(&mut self, access_rule: AccessRule) {
         let mut env = ScryptoEnv;
-        env.invoke(AccessRulesSetMethodAccessRuleInvocation {
+        env.invoke(AccessRulesSetGroupAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Mint)),
+            name: "mint".to_string(),
             rule: access_rule,
         })
         .unwrap();
@@ -116,10 +116,10 @@ impl ResourceManager {
 
     pub fn lock_mintable(&mut self) {
         let mut env = ScryptoEnv;
-        env.invoke(AccessRulesSetMethodMutabilityInvocation {
+        env.invoke(AccessRulesSetGroupMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Mint)),
+            name: "mint".to_string(),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -245,9 +245,11 @@ impl ResourceManager {
 
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> Bucket {
-        self.mint_internal(MintParams::Fungible {
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerMintFungibleInvocation {
             amount: amount.into(),
-        })
+            receiver: self.0,
+        }) .unwrap()
     }
 
     /// Mints non-fungible resources

@@ -324,7 +324,8 @@ impl FungibleResourceWithAuthBuilder {
                 },
                 metadata: self.metadata,
                 access_rules: self.authorization,
-            }).unwrap()
+            })
+            .unwrap()
     }
 }
 
@@ -480,13 +481,16 @@ impl NonFungibleResourceBuilder {
         authorization.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
         ScryptoEnv
-            .invoke(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                id_type: self.id_type,
-                metadata: self.metadata,
-                access_rules: authorization,
-                entries: encoded,
-            })
-            .unwrap().1
+            .invoke(
+                ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                    id_type: self.id_type,
+                    metadata: self.metadata,
+                    access_rules: authorization,
+                    entries: encoded,
+                },
+            )
+            .unwrap()
+            .1
     }
 
     /// Creates resource with no initial supply.
@@ -520,12 +524,14 @@ impl NonFungibleResourceBuilder {
         }
 
         let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                id_type: self.id_type,
-                metadata: self.metadata,
-                access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-                entries: encoded,
-            })
+            .invoke(
+                ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                    id_type: self.id_type,
+                    metadata: self.metadata,
+                    access_rules: resource_access_rules_from_owner_badge(&owner_badge),
+                    entries: encoded,
+                },
+            )
             .unwrap();
 
         bucket
@@ -645,12 +651,14 @@ impl NonFungibleResourceWithAuthBuilder {
         }
 
         let (_, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-                id_type: self.id_type,
-                metadata: self.metadata,
-                access_rules: self.authorization,
-                entries: encoded,
-            })
+            .invoke(
+                ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                    id_type: self.id_type,
+                    metadata: self.metadata,
+                    access_rules: self.authorization,
+                    entries: encoded,
+                },
+            )
             .unwrap();
 
         bucket

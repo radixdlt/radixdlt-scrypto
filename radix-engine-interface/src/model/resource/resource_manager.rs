@@ -79,7 +79,10 @@ impl SerializableInvocation for ResourceManagerCreateNonFungibleWithInitialSuppl
 
 impl Into<SerializedInvocation> for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungibleWithInitialSupply(self)).into()
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungibleWithInitialSupply(
+            self,
+        ))
+        .into()
     }
 }
 
@@ -102,7 +105,8 @@ impl SerializableInvocation for ResourceManagerCreateFungibleWithInitialSupplyIn
 
 impl Into<SerializedInvocation> for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithInitialSupply(self)).into()
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithInitialSupply(self))
+            .into()
     }
 }
 
@@ -266,6 +270,27 @@ impl SerializableInvocation for ResourceManagerMintInvocation {
 impl Into<SerializedInvocation> for ResourceManagerMintInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::ResourceManager(ResourceInvocation::Mint(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ResourceManagerMintFungibleInvocation {
+    pub receiver: ResourceAddress,
+    pub amount: Decimal,
+}
+
+impl Invocation for ResourceManagerMintFungibleInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for ResourceManagerMintFungibleInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<SerializedInvocation> for ResourceManagerMintFungibleInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::MintFungible(self)).into()
     }
 }
 

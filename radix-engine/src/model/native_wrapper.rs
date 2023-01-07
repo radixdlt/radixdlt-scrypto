@@ -251,6 +251,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ResourceInvocation::MintFungible(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             ResourceInvocation::GetResourceType(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

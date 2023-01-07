@@ -54,7 +54,9 @@ impl ResourceManagerSubstate {
     ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
     {
         match mint_params {
-            MintParams::Fungible { amount } => self.mint_fungible(amount, self_address),
+            MintParams::Fungible { amount } => {
+                Ok((self.mint_fungible(amount, self_address)?, BTreeMap::new()))
+            }
             MintParams::NonFungible { entries } => self.mint_non_fungibles(entries, self_address),
         }
     }
@@ -63,8 +65,7 @@ impl ResourceManagerSubstate {
         &mut self,
         amount: Decimal,
         self_address: ResourceAddress,
-    ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
-    {
+    ) -> Result<Resource, InvokeError<ResourceManagerError>> {
         if let ResourceType::Fungible { divisibility } = self.resource_type {
             // check amount
             self.check_amount(amount)?;
@@ -78,10 +79,7 @@ impl ResourceManagerSubstate {
 
             self.total_supply += amount;
 
-            Ok((
-                Resource::new_fungible(self_address, divisibility, amount),
-                BTreeMap::new(),
-            ))
+            Ok(Resource::new_fungible(self_address, divisibility, amount))
         } else {
             Err(InvokeError::Error(
                 ResourceManagerError::ResourceTypeDoesNotMatch,
