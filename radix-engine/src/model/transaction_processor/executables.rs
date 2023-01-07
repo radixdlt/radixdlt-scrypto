@@ -476,13 +476,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     initial_supply,
                 }) => {
                     if let Some(amount) = initial_supply {
-                        let rtn = api.invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                            resource_type: ResourceType::Fungible {
-                                divisibility: *divisibility,
-                            },
+                        let rtn = api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                            divisibility: *divisibility,
                             metadata: metadata.clone(),
                             access_rules: access_rules.clone(),
-                            mint_params: MintParams::Fungible { amount: *amount },
+                            initial_supply: *amount,
                         })?;
 
                         Worktop::sys_put(Bucket(rtn.1.0), api)?;
@@ -507,13 +505,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     initial_supply,
                 }) => {
                     if let Some(amount) = initial_supply {
-                        let rtn = api.invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                            resource_type: ResourceType::Fungible {
-                                divisibility: *divisibility,
-                            },
+                        let rtn = api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                            divisibility: *divisibility,
                             metadata: metadata.clone(),
                             access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                            mint_params: MintParams::Fungible { amount: *amount },
+                            initial_supply: *amount,
                         })?;
 
                         Worktop::sys_put(Bucket(rtn.1.0), api)?;

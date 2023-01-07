@@ -164,13 +164,11 @@ impl FungibleResourceBuilder {
         authorization.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
         let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                resource_type: ResourceType::Fungible {
-                    divisibility: self.divisibility,
-                },
+            .invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: authorization,
-                mint_params: MintParams::fungible(amount),
+                initial_supply: amount.into(),
             })
             .unwrap();
 
@@ -195,13 +193,11 @@ impl FungibleResourceBuilder {
         owner_badge: NonFungibleAddress,
     ) -> Bucket {
         let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                resource_type: ResourceType::Fungible {
-                    divisibility: self.divisibility,
-                },
+            .invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-                mint_params: MintParams::fungible(amount),
+                initial_supply: amount.into(),
             })
             .unwrap();
 
@@ -303,13 +299,11 @@ impl FungibleResourceWithAuthBuilder {
         }
 
         let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                resource_type: ResourceType::Fungible {
-                    divisibility: self.divisibility,
-                },
+            .invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: self.authorization,
-                mint_params: MintParams::fungible(amount),
+                initial_supply: amount.into(),
             })
             .unwrap();
 
