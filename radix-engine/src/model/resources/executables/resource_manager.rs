@@ -140,7 +140,7 @@ where
 
     let bucket = {
         resource_manager
-            .check_amount(initial_supply)
+            .check_fungible_amount(initial_supply)
             .map_err(|e| match e {
                 InvokeError::Error(e) => {
                     RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
@@ -172,8 +172,7 @@ fn build_resource_manager_substate<Y>(
 where
     Y: SystemApi,
 {
-    // TODO: id type needs to be encoded into the ResourceManager
-    if let ResourceType::NonFungible { id_type: _ } = resource_type {
+    if let ResourceType::NonFungible { id_type } = resource_type {
         let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
         api.create_node(
             nf_store_node_id,
@@ -181,7 +180,7 @@ where
         )?;
         let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
         Ok(ResourceManagerSubstate::new(
-            resource_type,
+            ResourceType::NonFungible { id_type },
             Some(nf_store_id),
             resource_address,
         ))

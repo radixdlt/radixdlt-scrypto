@@ -27,7 +27,7 @@ impl ResourceManagerSubstate {
         }
     }
 
-    pub fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
+    pub fn check_fungible_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
         let divisibility = self.resource_type.divisibility();
 
         if amount.is_negative()
@@ -54,7 +54,7 @@ impl ResourceManagerSubstate {
     ) -> Result<Resource, InvokeError<ResourceManagerError>> {
         if let ResourceType::Fungible { divisibility } = self.resource_type {
             // check amount
-            self.check_amount(amount)?;
+            self.check_fungible_amount(amount)?;
 
             // Practically impossible to overflow the Decimal type with this limit in place.
             if amount > dec!("1000000000000000000") {
@@ -91,8 +91,6 @@ impl ResourceManagerSubstate {
 
         // check amount
         let amount: Decimal = entries.len().into();
-        self.check_amount(amount)?;
-
         self.total_supply += amount;
 
         // Allocate non-fungibles
