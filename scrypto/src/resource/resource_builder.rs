@@ -493,10 +493,8 @@ impl NonFungibleResourceBuilder {
         authorization.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
         ScryptoEnv
-            .invoke(ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: self.id_type,
-                },
+            .invoke(ResourceManagerCreateNonFungibleInvocation {
+                id_type: self.id_type,
                 metadata: self.metadata,
                 access_rules: authorization,
             })
@@ -533,10 +531,8 @@ impl NonFungibleResourceBuilder {
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleAddress) -> ResourceAddress {
         ScryptoEnv
-            .invoke(ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: self.id_type,
-                },
+            .invoke(ResourceManagerCreateNonFungibleInvocation {
+                id_type: self.id_type,
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
             })
@@ -666,10 +662,8 @@ impl NonFungibleResourceWithAuthBuilder {
         }
 
         ScryptoEnv
-            .invoke(ResourceManagerCreateInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: self.id_type,
-                },
+            .invoke(ResourceManagerCreateNonFungibleInvocation {
+                id_type: self.id_type,
                 metadata: self.metadata,
                 access_rules: self.authorization,
             })

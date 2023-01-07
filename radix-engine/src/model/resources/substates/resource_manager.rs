@@ -7,8 +7,8 @@ use radix_engine_interface::model::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerSubstate {
-    pub resource_type: ResourceType,
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
+    pub resource_type: ResourceType,
     pub total_supply: Decimal,
     pub nf_store_id: Option<NonFungibleStoreId>,
 }
@@ -27,7 +27,10 @@ impl ResourceManagerSubstate {
         }
     }
 
-    pub fn check_fungible_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
+    pub fn check_fungible_amount(
+        &self,
+        amount: Decimal,
+    ) -> Result<(), InvokeError<ResourceManagerError>> {
         let divisibility = self.resource_type.divisibility();
 
         if amount.is_negative()

@@ -164,35 +164,6 @@ where
     Ok((resource_manager, bucket))
 }
 
-fn build_resource_manager_substate<Y>(
-    resource_address: ResourceAddress,
-    resource_type: ResourceType,
-    api: &mut Y,
-) -> Result<ResourceManagerSubstate, RuntimeError>
-where
-    Y: SystemApi,
-{
-    if let ResourceType::NonFungible { id_type } = resource_type {
-        let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
-        api.create_node(
-            nf_store_node_id,
-            RENode::NonFungibleStore(NonFungibleStore::new()),
-        )?;
-        let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
-        Ok(ResourceManagerSubstate::new(
-            ResourceType::NonFungible { id_type },
-            Some(nf_store_id),
-            resource_address,
-        ))
-    } else {
-        Ok(ResourceManagerSubstate::new(
-            resource_type,
-            None,
-            resource_address,
-        ))
-    }
-}
-
 fn build_substates(
     mut access_rules_map: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 ) -> (AccessRulesChainSubstate, AccessRulesChainSubstate) {
@@ -227,7 +198,9 @@ fn build_substates(
         mint_mutability,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::MintNonFungible)),
+        AccessRuleKey::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::MintNonFungible,
+        )),
         "mint".to_string(),
         DenyAll,
     );
@@ -380,7 +353,7 @@ fn build_substates(
     (substate, vault_substate)
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateNonFungibleInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
@@ -388,12 +361,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateInvocation 
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::Create));
+        let actor = ResolvedActor::function(NativeFn::ResourceManager(
+            ResourceManagerFn::CreateNonFungible,
+        ));
         Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for ResourceManagerCreateInvocation {
+impl Executor for ResourceManagerCreateNonFungibleInvocation {
     type Output = ResourceAddress;
 
     fn execute<Y>(self, api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
@@ -403,8 +378,19 @@ impl Executor for ResourceManagerCreateInvocation {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
-        let resource_manager_substate =
-            build_resource_manager_substate(resource_address, self.resource_type, api)?;
+        let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
+        api.create_node(
+            nf_store_node_id,
+            RENode::NonFungibleStore(NonFungibleStore::new()),
+        )?;
+        let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+        let resource_manager_substate = ResourceManagerSubstate::new(
+            ResourceType::NonFungible {
+                id_type: self.id_type,
+            },
+            Some(nf_store_id),
+            resource_address,
+        );
         let (substate, vault_substate) = build_substates(self.access_rules);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
@@ -440,7 +426,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateFungibleInv
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::CreateFungible));
+        let actor =
+            ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::CreateFungible));
         Ok((actor, call_frame_update, self))
     }
 }
@@ -449,18 +436,19 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
     type Output = ResourceAddress;
 
     fn execute<Y>(self, api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
-        let resource_manager_substate =
-            ResourceManagerSubstate::new(
-                ResourceType::Fungible { divisibility: self.divisibility },
-                None,
-                resource_address,
-            );
+        let resource_manager_substate = ResourceManagerSubstate::new(
+            ResourceType::Fungible {
+                divisibility: self.divisibility,
+            },
+            None,
+            resource_address,
+        );
         let (substate, vault_substate) = build_substates(self.access_rules);
         let metadata_substate = MetadataSubstate {
             metadata: self.metadata,
@@ -1002,7 +990,10 @@ impl Executor for ResourceManagerCreateBucketExecutable {
     }
 }
 
-pub struct ResourceManagerMintNonFungibleExecutable(RENodeId, BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>);
+pub struct ResourceManagerMintNonFungibleExecutable(
+    RENodeId,
+    BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintNonFungibleInvocation {
     type Exec = ResourceManagerMintNonFungibleExecutable;
@@ -1021,7 +1012,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintNonFungibleIn
             NativeFn::ResourceManager(ResourceManagerFn::MintNonFungible),
             resolved_receiver,
         );
-        let executor = ResourceManagerMintNonFungibleExecutable(resolved_receiver.receiver, self.entries);
+        let executor =
+            ResourceManagerMintNonFungibleExecutable(resolved_receiver.receiver, self.entries);
         Ok((actor, call_frame_update, executor))
     }
 }

@@ -40,23 +40,23 @@ pub enum ResourceMethodAuthKey {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerCreateInvocation {
-    pub resource_type: ResourceType,
+pub struct ResourceManagerCreateNonFungibleInvocation {
+    pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
 
-impl Invocation for ResourceManagerCreateInvocation {
+impl Invocation for ResourceManagerCreateNonFungibleInvocation {
     type Output = ResourceAddress;
 }
 
-impl SerializableInvocation for ResourceManagerCreateInvocation {
+impl SerializableInvocation for ResourceManagerCreateNonFungibleInvocation {
     type ScryptoOutput = ResourceAddress;
 }
 
-impl Into<SerializedInvocation> for ResourceManagerCreateInvocation {
+impl Into<SerializedInvocation> for ResourceManagerCreateNonFungibleInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::Create(self)).into()
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungible(self)).into()
     }
 }
 

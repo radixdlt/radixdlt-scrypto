@@ -545,8 +545,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                         InstructionOutput::Native(Box::new(rtn))
                     } else {
-                        let rtn = api.invoke(ResourceManagerCreateInvocation {
-                            resource_type: ResourceType::NonFungible { id_type: *id_type },
+                        let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            id_type: *id_type,
                             metadata: metadata.clone(),
                             access_rules: access_rules.clone(),
                         })?;
@@ -574,8 +574,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                         InstructionOutput::Native(Box::new(rtn))
                     } else {
-                        let rtn = api.invoke(ResourceManagerCreateInvocation {
-                            resource_type: ResourceType::NonFungible { id_type: *id_type },
+                        let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            id_type: *id_type,
                             metadata: metadata.clone(),
                             access_rules: resource_access_rules_from_owner_badge(owner_badge),
                         })?;

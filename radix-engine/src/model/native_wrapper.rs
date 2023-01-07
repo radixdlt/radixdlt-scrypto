@@ -211,7 +211,7 @@ where
             }
         },
         NativeInvocation::ResourceManager(resman_method) => match resman_method {
-            ResourceInvocation::Create(invocation) => {
+            ResourceInvocation::CreateNonFungible(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

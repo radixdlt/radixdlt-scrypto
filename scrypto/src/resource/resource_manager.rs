@@ -241,7 +241,8 @@ impl ResourceManager {
         env.invoke(ResourceManagerMintFungibleInvocation {
             amount: amount.into(),
             receiver: self.0,
-        }) .unwrap()
+        })
+        .unwrap()
     }
 
     /// Mints non-fungible resources
@@ -255,7 +256,8 @@ impl ResourceManager {
         env.invoke(ResourceManagerMintNonFungibleInvocation {
             entries,
             receiver: self.0,
-        }).unwrap()
+        })
+        .unwrap()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
