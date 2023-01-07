@@ -118,7 +118,7 @@ pub enum AuthZoneStackInvocation {
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceInvocation {
     Create(ResourceManagerCreateInvocation),
-    CreateWithInitialSupply(ResourceManagerCreateWithInitialSupplyInvocation),
+    CreateNonFungibleWithInitialSupply(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation),
     CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
@@ -281,7 +281,7 @@ impl NativeInvocation {
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
                 ResourceInvocation::Create(..) => {}
-                ResourceInvocation::CreateWithInitialSupply(..) => {}
+                ResourceInvocation::CreateNonFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::CreateFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::BurnBucket(..) => {}
                 ResourceInvocation::Burn(invocation) => {

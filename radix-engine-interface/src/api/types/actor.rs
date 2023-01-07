@@ -293,7 +293,7 @@ pub enum AuthZoneStackFn {
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFn {
     Create,
-    CreateWithInitialSupply,
+    CreateNonFungibleWithInitialSupply,
     CreateFungibleWithInitialSupply,
     Mint,
     Burn,

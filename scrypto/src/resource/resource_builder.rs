@@ -480,13 +480,11 @@ impl NonFungibleResourceBuilder {
         authorization.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
 
         ScryptoEnv
-            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: self.id_type,
-                },
+            .invoke(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                id_type: self.id_type,
                 metadata: self.metadata,
                 access_rules: authorization,
-                mint_params: MintParams::NonFungible { entries: encoded },
+                entries: encoded,
             })
             .unwrap().1
     }
@@ -522,13 +520,11 @@ impl NonFungibleResourceBuilder {
         }
 
         let (_resource_address, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: self.id_type,
-                },
+            .invoke(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                id_type: self.id_type,
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
-                mint_params: MintParams::NonFungible { entries: encoded },
+                entries: encoded,
             })
             .unwrap();
 
@@ -649,13 +645,11 @@ impl NonFungibleResourceWithAuthBuilder {
         }
 
         let (_, bucket) = ScryptoEnv
-            .invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                resource_type: ResourceType::NonFungible {
-                    id_type: self.id_type,
-                },
+            .invoke(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                id_type: self.id_type,
                 metadata: self.metadata,
                 access_rules: self.authorization,
-                mint_params: MintParams::NonFungible { entries: encoded },
+                entries: encoded,
             })
             .unwrap();
 

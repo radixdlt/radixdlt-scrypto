@@ -26,22 +26,14 @@ use radix_engine_interface::{dec, rule, scrypto};
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum ResourceManagerError {
-    InvalidDivisibility,
     InvalidAmount(Decimal, u8),
-    InvalidResourceFlags(u64),
-    InvalidMintPermission,
-    ResourceTypeDoesNotMatch,
     MaxMintAmountExceeded,
-    InvalidNonFungibleData,
     NonFungibleAlreadyExists(NonFungibleAddress),
     NonFungibleNotFound(NonFungibleAddress),
-    InvalidRequestData(DecodeError),
-    CouldNotCreateBucket,
-    CouldNotCreateVault,
     NotNonFungible,
     MismatchingBucketResource,
-    ResourceAddressAlreadySet,
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
+    ResourceTypeDoesNotMatch,
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBucketBurnInvocation {
@@ -72,122 +64,101 @@ impl Executor for ResourceManagerBucketBurnInvocation {
     }
 }
 
-fn build_resource_manager_substate_with_initial_supply<Y>(
+
+fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
-    resource_type: ResourceType,
-    mint_params: MintParams,
+    id_type: NonFungibleIdType,
+    entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+    api: &mut Y,
+) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
+    where
+        Y: SystemApi {
+
+    let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
+    api.create_node(
+        nf_store_node_id,
+        RENode::NonFungibleStore(NonFungibleStore::new()),
+    )?;
+    let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+
+    let mut resource_manager =
+        ResourceManagerSubstate::new(ResourceType::NonFungible { id_type }, Some(nf_store_id), resource_address);
+
+    let bucket = {
+        for (non_fungible_id, data) in &entries {
+            if non_fungible_id.id_type() != id_type {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                            non_fungible_id.id_type(),
+                            id_type,
+                        ),
+                    ),
+                ));
+            }
+
+            let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
+                non_fungible_id.clone(),
+            ));
+            let non_fungible_handle =
+                api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
+            let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
+            let non_fungible_mut = substate_mut.non_fungible();
+            *non_fungible_mut = NonFungibleSubstate(Some(
+                NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
+            ));
+            api.drop_lock(non_fungible_handle)?;
+        }
+        resource_manager.total_supply = entries.len().into();
+        let ids = entries.into_keys().collect();
+        let container = Resource::new_non_fungible(resource_address, ids, id_type);
+        let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+        api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+        let bucket_id = node_id.into();
+        Bucket(bucket_id)
+    };
+
+    Ok((resource_manager, bucket))
+}
+
+
+fn build_fungible_resource_manager_substate_with_initial_supply<Y>(
+    resource_address: ResourceAddress,
+    divisibility: u8,
+    initial_supply: Decimal,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>
     where
         Y: SystemApi,
 {
-    let substate_and_bucket = if let ResourceType::NonFungible { id_type } = resource_type {
-        let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;
-        api.create_node(
-            nf_store_node_id,
-            RENode::NonFungibleStore(NonFungibleStore::new()),
-        )?;
-        let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
+    let mut resource_manager =
+        ResourceManagerSubstate::new(ResourceType::Fungible { divisibility }, None, resource_address);
 
-        let mut resource_manager =
-            ResourceManagerSubstate::new(resource_type, Some(nf_store_id), resource_address)
-                .map_err(|e| match e {
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                    }
-                    InvokeError::Downstream(e) => e,
-                })?;
-
-        let bucket = {
-            if let MintParams::NonFungible { entries } = mint_params {
-                for (non_fungible_id, data) in &entries {
-                    if non_fungible_id.id_type() != id_type {
-                        return Err(RuntimeError::ApplicationError(
-                            ApplicationError::ResourceManagerError(
-                                ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                                    non_fungible_id.id_type(),
-                                    id_type,
-                                ),
-                            ),
-                        ));
-                    }
-
-                    let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
-                        non_fungible_id.clone(),
-                    ));
-                    let non_fungible_handle =
-                        api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;
-                    let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
-                    let non_fungible_mut = substate_mut.non_fungible();
-                    *non_fungible_mut = NonFungibleSubstate(Some(
-                        NonFungible::new(data.0.clone(), data.1.clone()), // FIXME: verify data
-                    ));
-                    api.drop_lock(non_fungible_handle)?;
+    let bucket = {
+            resource_manager.check_amount(initial_supply).map_err(|e| match e {
+                InvokeError::Error(e) => {
+                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
                 }
-                resource_manager.total_supply = entries.len().into();
-                let ids = entries.into_keys().collect();
-                let container = Resource::new_non_fungible(resource_address, ids, id_type);
-                let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-                api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
-                let bucket_id = node_id.into();
-                Bucket(bucket_id)
-            } else {
+                InvokeError::Downstream(e) => e,
+            })?;
+            // TODO: refactor this into mint function
+            if initial_supply > dec!("1000000000000000000") {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
-                        ResourceManagerError::ResourceTypeDoesNotMatch,
+                        ResourceManagerError::MaxMintAmountExceeded,
                     ),
                 ));
             }
-        };
-
-        (resource_manager, bucket)
-    } else {
-        let mut resource_manager =
-            ResourceManagerSubstate::new(resource_type, None, resource_address).map_err(
-                |e| match e {
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                    }
-                    InvokeError::Downstream(e) => e,
-                },
-            )?;
-
-        let bucket = {
-            if let MintParams::Fungible { amount } = mint_params {
-                resource_manager.check_amount(amount).map_err(|e| match e {
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                    }
-                    InvokeError::Downstream(e) => e,
-                })?;
-                // TODO: refactor this into mint function
-                if amount > dec!("1000000000000000000") {
-                    return Err(RuntimeError::ApplicationError(
-                        ApplicationError::ResourceManagerError(
-                            ResourceManagerError::MaxMintAmountExceeded,
-                        ),
-                    ));
-                }
-                resource_manager.total_supply = amount;
-                let container =
-                    Resource::new_fungible(resource_address, resource_type.divisibility(), amount);
-                let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-                api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
-                let bucket_id = node_id.into();
-                Bucket(bucket_id)
-            } else {
-                return Err(RuntimeError::ApplicationError(
-                    ApplicationError::ResourceManagerError(
-                        ResourceManagerError::ResourceTypeDoesNotMatch,
-                    ),
-                ));
-            }
-        };
-
-        (resource_manager, bucket)
+            resource_manager.total_supply = initial_supply;
+            let container =
+                Resource::new_fungible(resource_address, divisibility, initial_supply);
+            let node_id = api.allocate_node_id(RENodeType::Bucket)?;
+            api.create_node(node_id, RENode::Bucket(BucketSubstate::new(container)))?;
+            let bucket_id = node_id.into();
+            Bucket(bucket_id)
     };
 
-    Ok(substate_and_bucket)
+    Ok((resource_manager, bucket))
 }
 
 fn build_resource_manager_substate<Y>(
@@ -206,22 +177,9 @@ where
             RENode::NonFungibleStore(NonFungibleStore::new()),
         )?;
         let nf_store_id: NonFungibleStoreId = nf_store_node_id.into();
-        ResourceManagerSubstate::new(resource_type, Some(nf_store_id), resource_address)
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(e) => e,
-            })
+        Ok(ResourceManagerSubstate::new(resource_type, Some(nf_store_id), resource_address))
     } else {
-        ResourceManagerSubstate::new(resource_type, None, resource_address).map_err(
-            |e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(e) => e,
-            },
-        )
+        Ok(ResourceManagerSubstate::new(resource_type, None, resource_address))
     }
 }
 
@@ -461,7 +419,7 @@ impl Executor for ResourceManagerCreateInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateWithInitialSupplyInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi<W>>(
@@ -469,12 +427,12 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateWithInitial
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::CreateWithInitialSupply));
+        let actor = ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::CreateNonFungibleWithInitialSupply));
         Ok((actor, call_frame_update, self))
     }
 }
 
-impl Executor for ResourceManagerCreateWithInitialSupplyInvocation {
+impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
 
     fn execute<Y>(
@@ -487,10 +445,10 @@ impl Executor for ResourceManagerCreateWithInitialSupplyInvocation {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
-        let (resource_manager_substate, bucket) = build_resource_manager_substate_with_initial_supply(
+        let (resource_manager_substate, bucket) = build_non_fungible_resource_manager_substate_with_initial_supply(
             resource_address,
-            self.resource_type,
-            self.mint_params,
+            self.id_type,
+            self.entries,
             api,
         )?;
         let (substate, vault_substate) = build_substates(self.access_rules);
@@ -556,10 +514,10 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
-        let (resource_manager_substate, bucket) = build_resource_manager_substate_with_initial_supply(
+        let (resource_manager_substate, bucket) = build_fungible_resource_manager_substate_with_initial_supply(
             resource_address,
-            ResourceType::Fungible { divisibility: self.divisibility },
-            MintParams::Fungible { amount: self.initial_supply },
+            self.divisibility,
+            self.initial_supply,
             api,
         )?;
         let (substate, vault_substate) = build_substates(self.access_rules);

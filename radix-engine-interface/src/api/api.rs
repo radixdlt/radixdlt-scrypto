@@ -84,7 +84,7 @@ pub trait InvokableModel<E>:
     + Invokable<ProofGetResourceAddressInvocation, E>
     + Invokable<ResourceManagerBucketBurnInvocation, E>
     + Invokable<ResourceManagerCreateInvocation, E>
-    + Invokable<ResourceManagerCreateWithInitialSupplyInvocation, E>
+    + Invokable<ResourceManagerCreateNonFungibleWithInitialSupplyInvocation, E>
     + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>
     + Invokable<ResourceManagerBurnInvocation, E>
     + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>

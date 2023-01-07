@@ -18,15 +18,13 @@ impl ResourceManagerSubstate {
         resource_type: ResourceType,
         nf_store_id: Option<NonFungibleStoreId>,
         resource_address: ResourceAddress,
-    ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
-        let resource_manager = ResourceManagerSubstate {
+    ) -> ResourceManagerSubstate {
+        Self {
             resource_type,
             total_supply: 0.into(),
             nf_store_id,
             resource_address,
-        };
-
-        Ok(resource_manager)
+        }
     }
 
     pub fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {

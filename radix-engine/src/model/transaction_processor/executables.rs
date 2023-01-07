@@ -534,13 +534,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     initial_supply,
                 }) => {
                     if let Some(ids) = initial_supply {
-                        let rtn = api.invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                            resource_type: ResourceType::NonFungible {
-                                id_type: *id_type,
-                            },
+                        let rtn = api.invoke(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                            id_type: *id_type,
                             metadata: metadata.clone(),
                             access_rules: access_rules.clone(),
-                            mint_params: MintParams::NonFungible { entries: ids.clone() },
+                            entries: ids.clone(),
                         })?;
 
                         Worktop::sys_put(Bucket(rtn.1.0), api)?;
@@ -565,13 +563,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     initial_supply,
                 }) => {
                     if let Some(ids) = initial_supply {
-                        let rtn = api.invoke(ResourceManagerCreateWithInitialSupplyInvocation {
-                            resource_type: ResourceType::NonFungible {
-                                id_type: *id_type,
-                            },
+                        let rtn = api.invoke(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                            id_type: *id_type,
                             metadata: metadata.clone(),
                             access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                            mint_params: MintParams::NonFungible { entries: ids.clone() },
+                            entries: ids.clone(),
                         })?;
 
                         Worktop::sys_put(Bucket(rtn.1.0), api)?;
