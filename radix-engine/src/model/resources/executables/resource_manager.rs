@@ -432,6 +432,62 @@ impl Executor for ResourceManagerCreateInvocation {
     }
 }
 
+impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateFungibleInvocation {
+    type Exec = Self;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        _api: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let call_frame_update = CallFrameUpdate::empty();
+        let actor = ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::CreateFungible));
+        Ok((actor, call_frame_update, self))
+    }
+}
+
+impl Executor for ResourceManagerCreateFungibleInvocation {
+    type Output = ResourceAddress;
+
+    fn execute<Y>(self, api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi,
+    {
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        let resource_manager_substate =
+            ResourceManagerSubstate::new(
+                ResourceType::Fungible { divisibility: self.divisibility },
+                None,
+                resource_address,
+            );
+        let (substate, vault_substate) = build_substates(self.access_rules);
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
+        };
+
+        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+        api.create_node(
+            underlying_node_id,
+            RENode::ResourceManager(
+                resource_manager_substate,
+                metadata_substate,
+                substate,
+                vault_substate,
+            ),
+        )?;
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        )?;
+
+        let update =
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Resource(resource_address)));
+
+        Ok((resource_address, update))
+    }
+}
+
 impl<W: WasmEngine> ExecutableInvocation<W>
     for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation
 {

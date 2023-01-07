@@ -62,6 +62,28 @@ impl Into<SerializedInvocation> for ResourceManagerCreateInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
+pub struct ResourceManagerCreateFungibleInvocation {
+    pub divisibility: u8,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+}
+
+impl Invocation for ResourceManagerCreateFungibleInvocation {
+    type Output = ResourceAddress;
+}
+
+impl SerializableInvocation for ResourceManagerCreateFungibleInvocation {
+    type ScryptoOutput = ResourceAddress;
+}
+
+impl Into<SerializedInvocation> for ResourceManagerCreateFungibleInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateFungible(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,

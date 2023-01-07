@@ -177,10 +177,8 @@ impl FungibleResourceBuilder {
 
     pub fn no_initial_supply(self) -> ResourceAddress {
         ScryptoEnv
-            .invoke(ResourceManagerCreateInvocation {
-                resource_type: ResourceType::Fungible {
-                    divisibility: self.divisibility,
-                },
+            .invoke(ResourceManagerCreateFungibleInvocation {
+                divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: BTreeMap::new(),
             })
@@ -206,10 +204,8 @@ impl FungibleResourceBuilder {
 
     pub fn no_initial_supply_with_owner(self, owner_badge: NonFungibleAddress) -> ResourceAddress {
         ScryptoEnv
-            .invoke(ResourceManagerCreateInvocation {
-                resource_type: ResourceType::Fungible {
-                    divisibility: self.divisibility,
-                },
+            .invoke(ResourceManagerCreateFungibleInvocation {
+                divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: resource_access_rules_from_owner_badge(&owner_badge),
             })
@@ -318,10 +314,8 @@ impl FungibleResourceWithAuthBuilder {
         }
 
         ScryptoEnv
-            .invoke(ResourceManagerCreateInvocation {
-                resource_type: ResourceType::Fungible {
-                    divisibility: self.divisibility,
-                },
+            .invoke(ResourceManagerCreateFungibleInvocation {
+                divisibility: self.divisibility,
                 metadata: self.metadata,
                 access_rules: self.authorization,
             })

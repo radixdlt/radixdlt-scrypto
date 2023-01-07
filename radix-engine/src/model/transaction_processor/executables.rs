@@ -488,10 +488,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                         InstructionOutput::Native(Box::new(rtn))
                     } else {
-                        let rtn = api.invoke(ResourceManagerCreateInvocation {
-                            resource_type: ResourceType::Fungible {
-                                divisibility: *divisibility,
-                            },
+                        let rtn = api.invoke(ResourceManagerCreateFungibleInvocation {
+                            divisibility: *divisibility,
                             metadata: metadata.clone(),
                             access_rules: access_rules.clone(),
                         })?;
@@ -518,10 +516,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                         InstructionOutput::Native(Box::new(rtn))
                     } else {
-                        let rtn = api.invoke(ResourceManagerCreateInvocation {
-                            resource_type: ResourceType::Fungible {
-                                divisibility: *divisibility,
-                            },
+                        let rtn = api.invoke(ResourceManagerCreateFungibleInvocation {
+                            divisibility: *divisibility,
                             metadata: metadata.clone(),
                             access_rules: resource_access_rules_from_owner_badge(owner_badge),
                         })?;
