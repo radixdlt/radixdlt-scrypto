@@ -251,7 +251,6 @@ impl NodeProperties {
     }
 }
 
-
 pub struct SubstateProperties;
 
 impl SubstateProperties {
@@ -282,7 +281,7 @@ impl SubstateProperties {
                     offset.clone(),
                     node_id,
                 ))),
-            }
+            },
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
                 | RENodeId::Package(..)

@@ -1,4 +1,3 @@
-use std::ptr::replace;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::{
     ActorApi, BlobApi, EngineApi, Invocation, Invokable, InvokableModel,
@@ -242,7 +241,9 @@ where
                     for (_, bucket) in buckets {
                         let bucket = Bucket(bucket.bucket_id());
                         if !bucket.sys_is_empty(system_api)? {
-                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(RENodeId::Worktop)));
+                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                                RENodeId::Worktop,
+                            )));
                         }
                     }
 

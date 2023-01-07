@@ -1,24 +1,34 @@
-use native_sdk::resource::{ResourceManager, SysBucket};
-use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
-    ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
+    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, ResolvedActor,
+    ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
-use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use native_sdk::resource::{ResourceManager, SysBucket};
+use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeFn, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopFn,
-    WorktopOffset,
+    GlobalAddress, NativeFn, RENodeId, SubstateOffset, WorktopFn, WorktopOffset,
 };
 use radix_engine_interface::model::*;
+
+#[derive(Debug)]
+pub struct WorktopSubstate {
+    pub resources: BTreeMap<ResourceAddress, Own>,
+}
+
+impl WorktopSubstate {
+    pub fn new() -> Self {
+        Self {
+            resources: BTreeMap::new(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
-    ResourceOperationError(ResourceOperationError),
     ResourceNotFound(ResourceAddress),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
@@ -62,12 +72,13 @@ impl Executor for WorktopPutInvocation {
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
 
-
         if let Some(own) = worktop.resources.get(&resource_address).cloned() {
             let existing_bucket = Bucket(own.bucket_id());
             existing_bucket.sys_put(self.bucket, api)?;
         } else {
-            worktop.resources.insert(resource_address, Own::Bucket(self.bucket.0));
+            worktop
+                .resources
+                .insert(resource_address, Own::Bucket(self.bucket.0));
         }
 
         Ok(((), CallFrameUpdate::empty()))
@@ -118,7 +129,11 @@ impl Executor for WorktopTakeAmountInvocation {
             let mut substate_mut = api.get_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
             worktop.resources.insert(self.resource_address, bucket);
-            worktop.resources.get(&self.resource_address).cloned().unwrap()
+            worktop
+                .resources
+                .get(&self.resource_address)
+                .cloned()
+                .unwrap()
         };
 
         let rtn_bucket = Bucket(bucket.bucket_id()).sys_take(self.amount, api)?;
@@ -222,7 +237,11 @@ impl Executor for WorktopTakeNonFungiblesInvocation {
             let mut substate_mut = api.get_ref_mut(worktop_handle)?;
             let worktop = substate_mut.worktop();
             worktop.resources.insert(self.resource_address, bucket);
-            worktop.resources.get(&self.resource_address).cloned().unwrap()
+            worktop
+                .resources
+                .get(&self.resource_address)
+                .cloned()
+                .unwrap()
         };
 
         let mut bucket = Bucket(bucket.bucket_id());
@@ -268,11 +287,12 @@ impl Executor for WorktopAssertContainsInvocation {
         let substate_ref = api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
 
-        let total_amount = if let Some(bucket) = worktop.resources.get(&self.resource_address).cloned() {
-            Bucket(bucket.bucket_id()).sys_amount(api)?
-        } else {
-            Decimal::zero()
-        };
+        let total_amount =
+            if let Some(bucket) = worktop.resources.get(&self.resource_address).cloned() {
+                Bucket(bucket.bucket_id()).sys_amount(api)?
+            } else {
+                Decimal::zero()
+            };
         if total_amount.is_zero() {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(WorktopError::AssertionFailed),
@@ -318,11 +338,12 @@ impl Executor for WorktopAssertContainsAmountInvocation {
 
         let substate_ref = api.get_ref(worktop_handle)?;
         let worktop = substate_ref.worktop();
-        let total_amount = if let Some(bucket) = worktop.resources.get(&self.resource_address).cloned() {
-            Bucket(bucket.bucket_id()).sys_amount(api)?
-        } else {
-            Decimal::zero()
-        };
+        let total_amount =
+            if let Some(bucket) = worktop.resources.get(&self.resource_address).cloned() {
+                Bucket(bucket.bucket_id()).sys_amount(api)?
+            } else {
+                Decimal::zero()
+            };
         if total_amount < self.amount {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(WorktopError::AssertionFailed),
@@ -375,9 +396,7 @@ impl Executor for WorktopAssertContainsNonFungiblesInvocation {
         } else {
             BTreeSet::new()
         };
-        if !ids
-            .is_superset(&self.ids)
-        {
+        if !ids.is_superset(&self.ids) {
             return Err(RuntimeError::ApplicationError(
                 ApplicationError::WorktopError(WorktopError::AssertionFailed),
             ));
@@ -409,7 +428,7 @@ impl Executor for WorktopDrainInvocation {
 
     fn execute<Y>(self, api: &mut Y) -> Result<(Vec<Bucket>, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi+ InvokableModel<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         let node_id = RENodeId::Worktop;
         let offset = SubstateOffset::Worktop(WorktopOffset::Worktop);
@@ -418,7 +437,11 @@ impl Executor for WorktopDrainInvocation {
         let mut nodes_to_move = Vec::new();
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
-        let bucket_ids: Vec<BucketId> = worktop.resources.iter().map(|(_, own)| own.bucket_id()).collect();
+        let bucket_ids: Vec<BucketId> = worktop
+            .resources
+            .iter()
+            .map(|(_, own)| own.bucket_id())
+            .collect();
         for bucket_id in bucket_ids {
             let bucket = Bucket(bucket_id);
             let amount = bucket.sys_amount(api)?;

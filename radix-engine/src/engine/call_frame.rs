@@ -199,7 +199,9 @@ impl CallFrame {
             for old_child in &substate_lock.substate_owned_nodes {
                 if !new_children.remove(old_child) {
                     // If both parent and child are persisted, then child should never be removed
-                    if NodeProperties::is_persisted_immutable(node_id) && NodeProperties::is_persisted_immutable(*old_child) {
+                    if NodeProperties::is_persisted_immutable(node_id)
+                        && NodeProperties::is_persisted_immutable(*old_child)
+                    {
                         return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
                             old_child.clone(),
                         )));
