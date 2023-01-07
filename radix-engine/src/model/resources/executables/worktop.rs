@@ -1,4 +1,3 @@
-use std::mem;
 use native_sdk::resource::{ResourceManager, SysBucket};
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use crate::engine::{
@@ -66,7 +65,7 @@ impl Executor for WorktopPutInvocation {
 
         if let Some(own) = worktop.resources.get(&resource_address).cloned() {
             let existing_bucket = Bucket(own.bucket_id());
-            existing_bucket.sys_is_empty(api)?;
+            existing_bucket.sys_put(self.bucket, api)?;
         } else {
             worktop.resources.insert(resource_address, Own::Bucket(self.bucket.0));
         }
@@ -122,11 +121,10 @@ impl Executor for WorktopTakeAmountInvocation {
             worktop.resources.get(&self.resource_address).cloned().unwrap()
         };
 
-        let bucket = Bucket(bucket.bucket_id());
-        let rtn_bucket = bucket.sys_take(self.amount, api)?;
+        let rtn_bucket = Bucket(bucket.bucket_id()).sys_take(self.amount, api)?;
 
         let update = CallFrameUpdate::move_node(RENodeId::Bucket(rtn_bucket.0));
-        Ok((bucket, update))
+        Ok((rtn_bucket, update))
     }
 }
 
@@ -230,7 +228,7 @@ impl Executor for WorktopTakeNonFungiblesInvocation {
         let mut bucket = Bucket(bucket.bucket_id());
         let rtn_bucket = bucket.sys_take_non_fungibles(self.ids, api)?;
         let update = CallFrameUpdate::move_node(RENodeId::Bucket(rtn_bucket.0));
-        Ok((bucket, update))
+        Ok((rtn_bucket, update))
     }
 }
 
@@ -420,9 +418,11 @@ impl Executor for WorktopDrainInvocation {
         let mut nodes_to_move = Vec::new();
         let mut substate_mut = api.get_ref_mut(worktop_handle)?;
         let worktop = substate_mut.worktop();
-        let resources = mem::replace(&mut worktop.resources, BTreeMap::new());
-        for (_, resource) in resources {
-            let bucket = Bucket(resource.bucket_id());
+        let bucket_ids: Vec<BucketId> = worktop.resources.iter().map(|(_, own)| own.bucket_id()).collect();
+        for bucket_id in bucket_ids {
+            let bucket = Bucket(bucket_id);
+            let amount = bucket.sys_amount(api)?;
+            let bucket = bucket.sys_take(amount, api)?;
             nodes_to_move.push(RENodeId::Bucket(bucket.0));
             buckets.push(bucket);
         }

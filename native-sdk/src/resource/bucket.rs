@@ -25,7 +25,7 @@ pub trait SysBucket {
         api: &mut Y,
     ) -> Result<BTreeSet<NonFungibleId>, E> where Y: Invokable<BucketGetNonFungibleIdsInvocation, E>;
 
-    fn sys_put<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(&mut self, other: Self, api: &mut Y) -> Result<(), E>
+    fn sys_put<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(&self, other: Self, api: &mut Y) -> Result<(), E>
         where
             Y: Invokable<BucketPutInvocation, E>;
 
@@ -90,7 +90,7 @@ impl SysBucket for Bucket {
         api.invoke(BucketGetNonFungibleIdsInvocation { receiver: self.0 })
     }
 
-    fn sys_put<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(&mut self, other: Self, api: &mut Y) -> Result<(), E>
+    fn sys_put<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(&self, other: Self, api: &mut Y) -> Result<(), E>
         where
             Y: Invokable<BucketPutInvocation, E> {
         api.invoke(BucketPutInvocation {

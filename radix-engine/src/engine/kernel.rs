@@ -242,7 +242,7 @@ where
                     for (_, bucket) in buckets {
                         let bucket = Bucket(bucket.bucket_id());
                         if !bucket.sys_is_empty(system_api)? {
-                            return Err(RuntimeError::ApplicationError(ApplicationError::WorktopError(WorktopError::CouldNotDrop)));
+                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(RENodeId::Worktop)));
                         }
                     }
 
