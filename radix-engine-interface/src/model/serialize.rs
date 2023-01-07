@@ -123,7 +123,7 @@ pub enum ResourceInvocation {
     BurnBucket(ResourceManagerBucketBurnInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
-    Mint(ResourceManagerMintInvocation),
+    MintNonFungible(ResourceManagerMintNonFungibleInvocation),
     MintFungible(ResourceManagerMintFungibleInvocation),
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
@@ -310,7 +310,7 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-                ResourceInvocation::Mint(invocation) => {
+                ResourceInvocation::MintNonFungible(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));

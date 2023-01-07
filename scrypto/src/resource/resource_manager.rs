@@ -8,6 +8,7 @@ use radix_engine_interface::model::*;
 
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
@@ -190,15 +191,6 @@ impl ResourceManager {
         .unwrap()
     }
 
-    fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-        let mut env = ScryptoEnv;
-        env.invoke(ResourceManagerMintInvocation {
-            mint_params,
-            receiver: self.0,
-        })
-        .unwrap()
-    }
-
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) {
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerUpdateNonFungibleDataInvocation {
@@ -259,7 +251,11 @@ impl ResourceManager {
             id.clone(),
             (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
         );
-        self.mint_internal(MintParams::NonFungible { entries })
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerMintNonFungibleInvocation {
+            entries,
+            receiver: self.0,
+        }).unwrap()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.

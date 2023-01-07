@@ -228,7 +228,7 @@ fn build_substates(
         mint_mutability,
     );
     access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Mint)),
+        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::MintNonFungible)),
         "mint".to_string(),
         DenyAll,
     );
@@ -947,8 +947,10 @@ impl Executor for ResourceManagerCreateBucketExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintInvocation {
-    type Exec = ResourceManagerMintExecutable;
+pub struct ResourceManagerMintNonFungibleExecutable(RENodeId, BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>);
+
+impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintNonFungibleInvocation {
+    type Exec = ResourceManagerMintNonFungibleExecutable;
 
     fn resolve<D: ResolverApi<W>>(
         self,
@@ -961,17 +963,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintInvocation {
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::MintFungible),
+            NativeFn::ResourceManager(ResourceManagerFn::MintNonFungible),
             resolved_receiver,
         );
-        let executor = ResourceManagerMintExecutable(resolved_receiver.receiver, self.mint_params);
+        let executor = ResourceManagerMintNonFungibleExecutable(resolved_receiver.receiver, self.entries);
         Ok((actor, call_frame_update, executor))
     }
 }
 
-pub struct ResourceManagerMintExecutable(RENodeId, MintParams);
-
-impl Executor for ResourceManagerMintExecutable {
+impl Executor for ResourceManagerMintNonFungibleExecutable {
     type Output = Bucket;
 
     fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
@@ -985,7 +985,7 @@ impl Executor for ResourceManagerMintExecutable {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
             let result = resource_manager
-                .mint(self.1, resource_manager.resource_address)
+                .mint_non_fungibles(self.1, resource_manager.resource_address)
                 .map_err(|e| match e {
                     InvokeError::Error(e) => {
                         RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
@@ -1057,7 +1057,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintFungibleInvoc
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeFn::ResourceManager(ResourceManagerFn::Mint),
+            NativeFn::ResourceManager(ResourceManagerFn::MintFungible),
             resolved_receiver,
         );
         let executor =

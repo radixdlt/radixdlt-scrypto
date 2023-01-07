@@ -47,20 +47,6 @@ impl ResourceManagerSubstate {
         self.total_supply -= amount;
     }
 
-    pub fn mint(
-        &mut self,
-        mint_params: MintParams,
-        self_address: ResourceAddress,
-    ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
-    {
-        match mint_params {
-            MintParams::Fungible { amount } => {
-                Ok((self.mint_fungible(amount, self_address)?, BTreeMap::new()))
-            }
-            MintParams::NonFungible { entries } => self.mint_non_fungibles(entries, self_address),
-        }
-    }
-
     pub fn mint_fungible(
         &mut self,
         amount: Decimal,

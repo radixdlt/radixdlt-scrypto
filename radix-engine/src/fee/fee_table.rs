@@ -151,7 +151,7 @@ impl FeeTable {
                 ResourceManagerFn::LockAuth => self.fixed_medium,
                 ResourceManagerFn::CreateVault => self.fixed_medium,
                 ResourceManagerFn::CreateBucket => self.fixed_medium,
-                ResourceManagerFn::Mint => self.fixed_high,
+                ResourceManagerFn::MintNonFungible => self.fixed_high,
                 ResourceManagerFn::MintFungible => self.fixed_high,
                 ResourceManagerFn::GetResourceType => self.fixed_low,
                 ResourceManagerFn::GetTotalSupply => self.fixed_low,

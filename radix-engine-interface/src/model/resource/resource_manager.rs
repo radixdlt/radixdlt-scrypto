@@ -254,22 +254,22 @@ impl Into<SerializedInvocation> for ResourceManagerCreateBucketInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
-pub struct ResourceManagerMintInvocation {
+pub struct ResourceManagerMintNonFungibleInvocation {
     pub receiver: ResourceAddress,
-    pub mint_params: MintParams,
+    pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
 }
 
-impl Invocation for ResourceManagerMintInvocation {
+impl Invocation for ResourceManagerMintNonFungibleInvocation {
     type Output = Bucket;
 }
 
-impl SerializableInvocation for ResourceManagerMintInvocation {
+impl SerializableInvocation for ResourceManagerMintNonFungibleInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for ResourceManagerMintInvocation {
+impl Into<SerializedInvocation> for ResourceManagerMintNonFungibleInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::Mint(self)).into()
+        NativeInvocation::ResourceManager(ResourceInvocation::MintNonFungible(self)).into()
     }
 }
 

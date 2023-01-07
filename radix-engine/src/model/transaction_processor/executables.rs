@@ -609,11 +609,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                     entries,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerMintInvocation {
+                    let rtn = api.invoke(ResourceManagerMintNonFungibleInvocation {
                         receiver: resource_address.clone(),
-                        mint_params: MintParams::NonFungible {
-                            entries: entries.clone(),
-                        },
+                        entries: entries.clone(),
                     })?;
                     Worktop::sys_put(Bucket(rtn.0), api)?;
 

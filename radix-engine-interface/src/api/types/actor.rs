@@ -295,7 +295,7 @@ pub enum ResourceManagerFn {
     Create,
     CreateNonFungibleWithInitialSupply,
     CreateFungibleWithInitialSupply,
-    Mint,
+    MintNonFungible,
     MintFungible,
     Burn,
     UpdateVaultAuth,

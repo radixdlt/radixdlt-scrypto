@@ -247,7 +247,7 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            ResourceInvocation::Mint(invocation) => {
+            ResourceInvocation::MintNonFungible(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
