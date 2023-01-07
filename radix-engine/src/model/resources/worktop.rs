@@ -27,13 +27,7 @@ impl WorktopSubstate {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub enum WorktopError {
-    InvalidRequestData(DecodeError),
-    MethodNotFound(String),
-    ResourceNotFound(ResourceAddress),
-    CouldNotCreateBucket,
-    CouldNotTakeBucket,
     AssertionFailed,
-    CouldNotDrop,
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for WorktopPutInvocation {
