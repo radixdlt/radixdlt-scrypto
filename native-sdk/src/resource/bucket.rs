@@ -3,7 +3,7 @@ use radix_engine_interface::data::{ScryptoDecode, ScryptoTypeId};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
-use std::collections::BTreeSet;
+use sbor::rust::collections::BTreeSet;
 
 pub trait SysBucket {
     fn sys_new<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(

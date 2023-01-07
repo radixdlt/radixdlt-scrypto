@@ -226,34 +226,33 @@ impl VisibilityProperties {
     }
 }
 
-pub struct NodeProperties;
-
-impl NodeProperties {
-    pub fn is_persisted_immutable(node_id: RENodeId) -> bool {
-        match node_id {
-            RENodeId::Bucket(..) => false,
-            RENodeId::Proof(..) => false,
-            RENodeId::AuthZoneStack(..) => false,
-            RENodeId::FeeReserve(..) => false,
-            RENodeId::Worktop => false,
-            RENodeId::Logger => false,
-            RENodeId::Global(..) => true,
-            RENodeId::KeyValueStore(..) => true,
-            RENodeId::NonFungibleStore(..) => true,
-            RENodeId::Component(..) => true,
-            RENodeId::Vault(..) => true,
-            RENodeId::ResourceManager(..) => true,
-            RENodeId::Package(..) => true,
-            RENodeId::EpochManager(..) => true,
-            RENodeId::Clock(..) => true,
-            RENodeId::TransactionRuntime(..) => false,
-        }
-    }
-}
-
 pub struct SubstateProperties;
 
 impl SubstateProperties {
+    pub fn is_persisted(offset: &SubstateOffset) -> bool {
+        match offset {
+            SubstateOffset::Global(..) => true,
+            SubstateOffset::AuthZoneStack(..) => false,
+            SubstateOffset::FeeReserve(..) => false,
+            SubstateOffset::Component(..) => true,
+            SubstateOffset::AccessRulesChain(..) => true,
+            SubstateOffset::VaultAccessRulesChain(..) => true,
+            SubstateOffset::Metadata(..) => true,
+            SubstateOffset::Package(..) => true,
+            SubstateOffset::ResourceManager(..) => true,
+            SubstateOffset::KeyValueStore(..) => true,
+            SubstateOffset::NonFungibleStore(..) => true,
+            SubstateOffset::Vault(..) => true,
+            SubstateOffset::EpochManager(..) => true,
+            SubstateOffset::Bucket(..) => false,
+            SubstateOffset::Proof(..) => false,
+            SubstateOffset::Worktop(..) => false,
+            SubstateOffset::Logger(..) => false,
+            SubstateOffset::Clock(..) => true,
+            SubstateOffset::TransactionRuntime(..) => false,
+        }
+    }
+
     pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
         match offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
