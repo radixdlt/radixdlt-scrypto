@@ -495,7 +495,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             },
                             metadata: metadata.clone(),
                             access_rules: access_rules.clone(),
-                            mint_params: None,
                         })?;
 
                         InstructionOutput::Native(Box::new(rtn))
@@ -527,7 +526,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             },
                             metadata: metadata.clone(),
                             access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                            mint_params: None,
                         })?;
 
                         InstructionOutput::Native(Box::new(rtn))
@@ -559,7 +557,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             },
                             metadata: metadata.clone(),
                             access_rules: access_rules.clone(),
-                            mint_params: None,
                         })?;
 
                         InstructionOutput::Native(Box::new(rtn))
@@ -591,7 +588,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                             },
                             metadata: metadata.clone(),
                             access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                            mint_params: None,
                         })?;
 
                         InstructionOutput::Native(Box::new(rtn))

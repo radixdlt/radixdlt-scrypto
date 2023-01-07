@@ -44,15 +44,14 @@ pub struct ResourceManagerCreateInvocation {
     pub resource_type: ResourceType,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub mint_params: Option<MintParams>,
 }
 
 impl Invocation for ResourceManagerCreateInvocation {
-    type Output = (ResourceAddress, Option<Bucket>);
+    type Output = ResourceAddress;
 }
 
 impl SerializableInvocation for ResourceManagerCreateInvocation {
-    type ScryptoOutput = (ResourceAddress, Option<Bucket>);
+    type ScryptoOutput = ResourceAddress;
 }
 
 impl Into<SerializedInvocation> for ResourceManagerCreateInvocation {
