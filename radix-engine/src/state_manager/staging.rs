@@ -442,7 +442,6 @@ mod tests {
         let store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
         let mut manager = StagedSubstateStoreManager::new(store);
 
-
         let substate_ids: Vec<SubstateId> = (0u8..5u8)
             .into_iter()
             .map(|id| build_dummy_substate_id([id; 36]))
