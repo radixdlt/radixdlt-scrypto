@@ -122,10 +122,10 @@ mod schema {
     impl<'a, C: CustomTypeKind<GlobalTypeId>, B: ?Sized + 'a + ToOwned + Describe<C>> Describe<C>
         for Cow<'a, B>
     {
-        const SCHEMA_TYPE_REF: GlobalTypeId = <B>::SCHEMA_TYPE_REF;
+        const TYPE_ID: GlobalTypeId = <B>::TYPE_ID;
 
-        fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
-            <B>::get_local_type_data()
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            <B>::type_data()
         }
 
         fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {

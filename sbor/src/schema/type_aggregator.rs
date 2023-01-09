@@ -118,8 +118,7 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
 
     /// Adds the dependent type (and its dependencies) to the `TypeAggregator`.
     pub fn add_child_type_and_descendents<T: Describe<C>>(&mut self) -> LocalTypeIndex {
-        let schema_type_index =
-            self.add_child_type(T::SCHEMA_TYPE_REF, || T::get_local_type_data());
+        let schema_type_index = self.add_child_type(T::TYPE_ID, || T::type_data());
         self.add_schema_descendents::<T>();
         schema_type_index
     }
@@ -171,7 +170,7 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     /// [`add_schema_descendents`]: #method.add_schema_descendents
     /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
     pub fn add_schema_descendents<T: Describe<C>>(&mut self) -> bool {
-        let GlobalTypeId::Novel(complex_type_hash) = T::SCHEMA_TYPE_REF else {
+        let GlobalTypeId::Novel(complex_type_hash) = T::TYPE_ID else {
             return false;
         };
 

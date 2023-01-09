@@ -81,19 +81,19 @@ mod schema {
     use super::*;
 
     impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for [T] {
-        const SCHEMA_TYPE_REF: GlobalTypeId = match T::SCHEMA_TYPE_REF {
+        const TYPE_ID: GlobalTypeId = match T::TYPE_ID {
             GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => {
                 GlobalTypeId::well_known(well_known_basic_types::BYTES_ID)
             }
-            _ => GlobalTypeId::complex("Array", &[T::SCHEMA_TYPE_REF]),
+            _ => GlobalTypeId::complex("Array", &[T::TYPE_ID]),
         };
 
-        fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
-            match T::SCHEMA_TYPE_REF {
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            match T::TYPE_ID {
                 GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => None,
                 _ => Some(TypeData {
                     kind: TypeKind::Array {
-                        element_type: T::SCHEMA_TYPE_REF,
+                        element_type: T::TYPE_ID,
                         length_validation: LengthValidation::none(),
                     },
                     metadata: TypeMetadata::named_no_child_names("Array"),
@@ -108,20 +108,19 @@ mod schema {
 
     #[cfg(feature = "schema")]
     impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, const N: usize> Describe<C> for [T; N] {
-        const SCHEMA_TYPE_REF: GlobalTypeId =
-            GlobalTypeId::complex_sized("Array", &[T::SCHEMA_TYPE_REF], N);
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::complex_sized("Array", &[T::TYPE_ID], N);
 
-        fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             let size = N
                 .try_into()
                 .expect("The array length is too large for a u32 for the SBOR schema");
-            let type_name = match T::SCHEMA_TYPE_REF {
+            let type_name = match T::TYPE_ID {
                 GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => "Bytes",
                 _ => "Array",
             };
             Some(TypeData {
                 kind: TypeKind::Array {
-                    element_type: T::SCHEMA_TYPE_REF,
+                    element_type: T::TYPE_ID,
                     length_validation: LengthValidation {
                         min: Some(size),
                         max: Some(size),

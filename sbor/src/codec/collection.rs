@@ -263,12 +263,12 @@ mod schema {
     wrapped_generic_describe!(T, Vec<T>, [T]);
 
     impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
-        const SCHEMA_TYPE_REF: GlobalTypeId = GlobalTypeId::complex("Set", &[T::SCHEMA_TYPE_REF]);
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::complex("Set", &[T::TYPE_ID]);
 
-        fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             Some(TypeData {
                 kind: TypeKind::Array {
-                    element_type: T::SCHEMA_TYPE_REF,
+                    element_type: T::TYPE_ID,
                     length_validation: LengthValidation::none(),
                 },
                 metadata: TypeMetadata::named_no_child_names("Set"),
@@ -287,13 +287,12 @@ mod schema {
     impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
         for BTreeMap<K, V>
     {
-        const SCHEMA_TYPE_REF: GlobalTypeId =
-            GlobalTypeId::complex("Map", &[K::SCHEMA_TYPE_REF, V::SCHEMA_TYPE_REF]);
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::complex("Map", &[K::TYPE_ID, V::TYPE_ID]);
 
-        fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             Some(TypeData {
                 kind: TypeKind::Array {
-                    element_type: <(K, V)>::SCHEMA_TYPE_REF,
+                    element_type: <(K, V)>::TYPE_ID,
                     length_validation: LengthValidation::none(),
                 },
                 metadata: TypeMetadata::named_no_child_names("Map"),

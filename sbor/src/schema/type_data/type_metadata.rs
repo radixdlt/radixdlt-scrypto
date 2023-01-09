@@ -1,8 +1,8 @@
-use crate::TypeHash;
 use crate::rust::borrow::Cow;
 use crate::rust::collections::BTreeMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::TypeHash;
 
 /// This is the struct used in the Schema
 #[derive(Debug, Clone, PartialEq, Eq)]
