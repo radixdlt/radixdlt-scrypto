@@ -64,7 +64,7 @@ mod schema {
     macro_rules! describe_tuple {
         ($n:tt $($idx:tt $name:ident)+) => {
             impl<C: CustomTypeKind<GlobalTypeId>, $($name: Describe<C>),+> Describe<C> for ($($name,)+) {
-                const TYPE_ID: GlobalTypeId = GlobalTypeId::complex("Tuple", &[$($name::TYPE_ID, )+]);
+                const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Tuple", &[$($name::TYPE_ID, )+]);
 
                 fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
                     Some(TypeData::named_tuple("Tuple", vec![

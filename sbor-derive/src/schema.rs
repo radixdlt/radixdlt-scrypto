@@ -49,7 +49,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                     .collect();
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
+                        const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
                             // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
@@ -88,7 +88,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
 
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
+                        const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
                             // The code hash itself is pretty good for this, but if you allow generic types, it's not enough, as the same code can create
@@ -122,7 +122,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
             syn::Fields::Unit => {
                 quote! {
                     impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
-                        const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
+                        const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
                             &[#(#generic_type_idents::TYPE_ID,)*],
                             &#code_hash
@@ -198,7 +198,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
 
             quote! {
                 impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
+                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(#ident),
                         &[#(#generic_type_idents::TYPE_ID,)*],
                         &#code_hash
@@ -252,7 +252,7 @@ mod tests {
             output,
             quote! {
                 impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
+                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
                         &[63u8, 255u8, 173u8, 220u8, 251u8, 214u8, 95u8, 139u8, 106u8, 20u8, 23u8, 4u8, 15u8, 10u8, 124u8, 49u8, 219u8, 44u8, 235u8, 215u8]
@@ -287,7 +287,7 @@ mod tests {
             output,
             quote! {
                 impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
+                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
                         &[85u8, 53u8, 15u8, 85u8, 176u8, 230u8, 4u8, 110u8, 15u8, 96u8, 35u8, 64u8, 192u8, 210u8, 254u8, 146u8, 192u8, 7u8, 246u8, 5u8]
@@ -322,7 +322,7 @@ mod tests {
             output,
             quote! {
                 impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
+                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
                         &[167u8, 108u8, 181u8, 130u8, 168u8, 229u8, 85u8, 237u8, 66u8, 69u8, 34u8, 138u8, 113u8, 220u8, 225u8, 107u8, 0u8, 247u8, 189u8, 58u8]
@@ -346,7 +346,7 @@ mod tests {
             output,
             quote! {
                 impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::TypeId<C::CustomTypeId>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test<T, T2> {
-                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
+                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[T::TYPE_ID, T2::TYPE_ID,],
                         &[211u8, 164u8, 57u8, 227u8, 220u8, 74u8, 90u8, 141u8, 72u8, 27u8, 35u8, 85u8, 171u8, 13u8, 176u8, 124u8, 122u8, 28u8, 53u8, 105u8]

@@ -20,33 +20,16 @@ impl SchemaTypeLink for GlobalTypeId {}
 pub type TypeHash = [u8; 20];
 
 impl GlobalTypeId {
-    pub const fn complex(name: &str, dependencies: &[GlobalTypeId]) -> Self {
-        generate_type_ref(&[name], &[], dependencies)
+    pub const fn novel(name: &str, dependencies: &[GlobalTypeId]) -> Self {
+        generate_type_hash(&[name], &[], dependencies)
     }
 
-    pub const fn complex_with_code(name: &str, dependencies: &[GlobalTypeId], code: &[u8]) -> Self {
-        generate_type_ref(&[name], &[code], dependencies)
+    pub const fn novel_with_code(name: &str, dependencies: &[GlobalTypeId], code: &[u8]) -> Self {
+        generate_type_hash(&[name], &[("code", code)], dependencies)
     }
 
-    pub const fn enum_variant(
-        name: &str,
-        variant_name: &str,
-        dependencies: &[GlobalTypeId],
-    ) -> Self {
-        generate_type_ref(&[name, variant_name], &[], dependencies)
-    }
-
-    pub const fn enum_variant_with_code(
-        name: &str,
-        variant_name: &str,
-        dependencies: &[GlobalTypeId],
-        code: &[u8],
-    ) -> Self {
-        generate_type_ref(&[name, variant_name], &[code], dependencies)
-    }
-
-    pub const fn complex_sized(name: &str, dependencies: &[GlobalTypeId], size: usize) -> Self {
-        generate_type_ref(&[name], &[&size.to_le_bytes()], dependencies)
+    pub const fn novel_validated(name: &str, dependencies: &[GlobalTypeId], validations: &[(&str, &[u8])]) -> Self {
+        generate_type_hash(&[name], validations, dependencies)
     }
 
     pub const fn well_known(type_id: u8) -> Self {
@@ -61,9 +44,9 @@ impl GlobalTypeId {
     }
 }
 
-const fn generate_type_ref(
+const fn generate_type_hash(
     names: &[&str],
-    type_data: &[&[u8]],
+    type_data: &[(&str, &[u8])],
     dependencies: &[GlobalTypeId],
 ) -> GlobalTypeId {
     let buffer = const_sha1::ConstBuffer::new();
@@ -84,18 +67,21 @@ const fn capture_names(
     if next == names.len() {
         return buffer;
     }
-    capture_names(buffer.push_slice(names[next].as_bytes()), next + 1, names)
+    let buffer = buffer.push_slice(names[next].as_bytes());
+    capture_names(buffer, next + 1, names)
 }
 
 const fn capture_type_data(
     buffer: const_sha1::ConstBuffer,
     next: usize,
-    type_data: &[&[u8]],
+    type_data: &[(&str, &[u8])],
 ) -> const_sha1::ConstBuffer {
     if next == type_data.len() {
         return buffer;
     }
-    capture_type_data(buffer.push_slice(type_data[next]), next + 1, type_data)
+    let buffer = buffer.push_slice(type_data[next].0.as_bytes());
+    let buffer = buffer.push_slice(type_data[next].1);
+    capture_type_data(buffer, next + 1, type_data)
 }
 
 const fn capture_dependent_type_ids(
@@ -106,11 +92,8 @@ const fn capture_dependent_type_ids(
     if next == dependencies.len() {
         return buffer;
     }
-    capture_dependent_type_ids(
-        buffer.push_slice(dependencies[next].as_slice()),
-        next + 1,
-        dependencies,
-    )
+    let buffer = buffer.push_slice(dependencies[next].as_slice());
+    capture_dependent_type_ids(buffer, next + 1, dependencies)
 }
 
 /// This is the [`SchemaTypeLink`] used in a linearized [`Schema`] to link [`TypeKind`]s.

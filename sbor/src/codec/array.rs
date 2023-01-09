@@ -85,7 +85,7 @@ mod schema {
             GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => {
                 GlobalTypeId::well_known(well_known_basic_types::BYTES_ID)
             }
-            _ => GlobalTypeId::complex("Array", &[T::TYPE_ID]),
+            _ => GlobalTypeId::novel("Array", &[T::TYPE_ID]),
         };
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
@@ -107,7 +107,11 @@ mod schema {
 
     #[cfg(feature = "schema")]
     impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, const N: usize> Describe<C> for [T; N] {
-        const TYPE_ID: GlobalTypeId = GlobalTypeId::complex_sized("Array", &[T::TYPE_ID], N);
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::novel_validated(
+            "Array",
+            &[T::TYPE_ID],
+            &[("min", &N.to_le_bytes()), ("max", &N.to_le_bytes())]
+        );
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             let size = N

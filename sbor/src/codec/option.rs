@@ -50,7 +50,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option<T>
 
 #[cfg(feature = "schema")]
 impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> {
-    const TYPE_ID: GlobalTypeId = GlobalTypeId::complex("Option", &[T::TYPE_ID]);
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Option", &[T::TYPE_ID]);
 
     fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
         #[allow(unused_imports)]
