@@ -23,11 +23,12 @@ use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, AccessRules, EpochManagerInvocation, FromPublicKey, NativeInvocation,
-    NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
+    NativeInvocation, NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
@@ -870,6 +871,48 @@ impl TestRunner {
         let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
             EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
                 receiver: EPOCH_MANAGER,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        receipt.output(0)
+    }
+
+    pub fn set_current_time(&mut self, current_time_ms: i64) {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+                current_time_ms,
+                receiver: CLOCK,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        receipt.output(0)
+    }
+
+    pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
+                precision,
+                receiver: CLOCK,
             }),
         ))];
         let blobs = vec![];
