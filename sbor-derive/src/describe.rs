@@ -11,8 +11,8 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
-    trace!("handle_schema() starts");
+pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
+    trace!("handle_describe() starts");
 
     let code_hash = get_code_hash_const_array_token_stream(&input);
 
@@ -24,7 +24,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
         ..
     } = parse2(input)?;
     let (impl_generics, ty_generics, where_clause, custom_type_schema_generic) =
-        build_schema_generics(&generics, &attrs)?;
+        build_describe_generics(&generics, &attrs)?;
 
     let generic_type_idents = ty_generics
         .type_params()
@@ -226,9 +226,9 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
     };
 
     #[cfg(feature = "trace")]
-    crate::utils::print_generated_code("Schema", &output);
+    crate::utils::print_generated_code("Describe", &output);
 
-    trace!("handle_schema() finishes");
+    trace!("handle_describe() finishes");
     Ok(output)
 }
 
@@ -246,12 +246,12 @@ mod tests {
     #[test]
     fn test_named_field_struct_schema() {
         let input = TokenStream::from_str("struct Test {a: u32, b: Vec<u8>, c: u32}").unwrap();
-        let output = handle_schema(input).unwrap();
+        let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test {
+                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
@@ -281,12 +281,12 @@ mod tests {
     #[test]
     fn test_unnamed_field_struct_schema() {
         let input = TokenStream::from_str("struct Test(u32, Vec<u8>, u32);").unwrap();
-        let output = handle_schema(input).unwrap();
+        let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test {
+                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
@@ -316,12 +316,12 @@ mod tests {
     #[test]
     fn test_unit_struct_schema() {
         let input = TokenStream::from_str("struct Test;").unwrap();
-        let output = handle_schema(input).unwrap();
+        let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test {
+                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
@@ -340,12 +340,12 @@ mod tests {
     fn test_complex_enum_schema() {
         let input =
             TokenStream::from_str("#[sbor(generic_type_id_bounds = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
-        let output = handle_schema(input).unwrap();
+        let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::TypeId<C::CustomTypeId>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test<T, T2> {
+                impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::TypeId<C::CustomTypeId>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2> {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[T::TYPE_ID, T2::TYPE_ID,],

@@ -72,8 +72,8 @@ fn linearize<E: CustomTypeExtension>(
                 })
                 .collect(),
         },
-        TypeKind::Custom(custom_type_schema) => {
-            TypeKind::Custom(E::linearize_type_kind(custom_type_schema, schemas))
+        TypeKind::Custom(custom_type_kind) => {
+            TypeKind::Custom(E::linearize_type_kind(custom_type_kind, schemas))
         }
     }
 }

@@ -1,6 +1,6 @@
 mod decode;
+mod describe;
 mod encode;
-mod schema;
 mod type_id;
 mod utils;
 
@@ -30,10 +30,10 @@ pub fn decode(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derive code that outputs the SBOR schema for the type.
-#[proc_macro_derive(Schema, attributes(sbor))]
-pub fn schema(input: TokenStream) -> TokenStream {
-    schema::handle_schema(proc_macro2::TokenStream::from(input))
+/// Derive code that describes the SBOR type.
+#[proc_macro_derive(Describe, attributes(sbor))]
+pub fn describe(input: TokenStream) -> TokenStream {
+    describe::handle_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

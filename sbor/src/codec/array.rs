@@ -110,7 +110,7 @@ mod schema {
         const TYPE_ID: GlobalTypeId = GlobalTypeId::novel_validated(
             "Array",
             &[T::TYPE_ID],
-            &[("min", &N.to_le_bytes()), ("max", &N.to_le_bytes())]
+            &[("min", &N.to_le_bytes()), ("max", &N.to_le_bytes())],
         );
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {

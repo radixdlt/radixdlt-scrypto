@@ -28,7 +28,11 @@ impl GlobalTypeId {
         generate_type_hash(&[name], &[("code", code)], dependencies)
     }
 
-    pub const fn novel_validated(name: &str, dependencies: &[GlobalTypeId], validations: &[(&str, &[u8])]) -> Self {
+    pub const fn novel_validated(
+        name: &str,
+        dependencies: &[GlobalTypeId],
+        validations: &[(&str, &[u8])],
+    ) -> Self {
         generate_type_hash(&[name], validations, dependencies)
     }
 

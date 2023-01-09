@@ -99,7 +99,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
     fn resolve_custom_well_known_type(
         well_known_index: u8,
     ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
-        let (name, custom_type_schema) = match well_known_index {
+        let (name, custom_type_kind) = match well_known_index {
             PACKAGE_ADDRESS_ID => ("PackageAddress", ScryptoCustomTypeKind::PackageAddress),
             COMPONENT_ADDRESS_ID => ("ComponentAddress", ScryptoCustomTypeKind::ComponentAddress),
             RESOURCE_ADDRESS_ID => ("ResourceAddress", ScryptoCustomTypeKind::ResourceAddress),
@@ -142,7 +142,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
 
         Some(TypeData::named_no_child_names(
             name,
-            TypeKind::Custom(custom_type_schema),
+            TypeKind::Custom(custom_type_kind),
         ))
     }
 }

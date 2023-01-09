@@ -91,9 +91,9 @@ pub fn get_custom_type_id(attributes: &[Attribute]) -> Option<String> {
         .unwrap_or(None)
 }
 
-pub fn get_custom_type_schema(attributes: &[Attribute]) -> Option<String> {
+pub fn get_custom_type_kind(attributes: &[Attribute]) -> Option<String> {
     extract_attributes(attributes)
-        .get("custom_type_schema")
+        .get("custom_type_kind")
         .cloned()
         .unwrap_or(None)
 }
@@ -272,11 +272,11 @@ pub fn build_encode_generics<'a>(
     ))
 }
 
-pub fn build_schema_generics<'a>(
+pub fn build_describe_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
 ) -> syn::Result<(Generics, Generics, Option<&'a WhereClause>, Path)> {
-    let custom_type_schema = get_custom_type_schema(attributes);
+    let custom_type_kind = get_custom_type_kind(attributes);
     let generic_type_names_needing_type_id_bound =
         get_generic_type_names_requiring_type_id_bound(&attributes);
 
@@ -285,8 +285,8 @@ pub fn build_schema_generics<'a>(
     // Extract owned generic to allow mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };
 
-    let (custom_type_schema_generic, need_to_add_cti_generic): (Path, bool) =
-        if let Some(path) = custom_type_schema {
+    let (custom_type_kind_generic, need_to_add_ctk_generic): (Path, bool) =
+        if let Some(path) = custom_type_kind {
             (parse_str(path.as_str())?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "C")?;
@@ -303,18 +303,18 @@ pub fn build_schema_generics<'a>(
         };
         type_param
             .bounds
-            .push(parse_quote!(::sbor::Describe<#custom_type_schema_generic>));
+            .push(parse_quote!(::sbor::Describe<#custom_type_kind_generic>));
 
         if generic_type_names_needing_type_id_bound.contains(&type_param.ident.to_string()) {
             type_param
                 .bounds
-                .push(parse_quote!(::sbor::TypeId<#custom_type_schema_generic::CustomTypeId>));
+                .push(parse_quote!(::sbor::TypeId<#custom_type_kind_generic::CustomTypeId>));
         }
     }
 
-    if need_to_add_cti_generic {
+    if need_to_add_ctk_generic {
         impl_generics.params.push(
-            parse_quote!(#custom_type_schema_generic: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>),
+            parse_quote!(#custom_type_kind_generic: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>),
         );
     }
 
@@ -324,7 +324,7 @@ pub fn build_schema_generics<'a>(
         impl_generics,
         ty_generics,
         where_clause,
-        custom_type_schema_generic,
+        custom_type_kind_generic,
     ))
 }
 
