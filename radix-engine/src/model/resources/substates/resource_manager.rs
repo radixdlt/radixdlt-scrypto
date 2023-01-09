@@ -1,4 +1,4 @@
-use crate::model::{InvokeError, NonFungible, Resource, ResourceManagerError};
+use crate::model::{InvokeError, Resource, ResourceManagerError};
 use crate::types::*;
 use radix_engine_interface::api::types::NonFungibleStoreId;
 use radix_engine_interface::math::Decimal;
@@ -74,49 +74,5 @@ impl ResourceManagerSubstate {
                 ResourceManagerError::ResourceTypeDoesNotMatch,
             ))
         }
-    }
-
-    pub fn mint_non_fungibles(
-        &mut self,
-        entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
-        self_address: ResourceAddress,
-    ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
-    {
-        // check resource type
-        let this_non_fungible_id_type = match self.resource_type {
-            ResourceType::NonFungible { id_type } => id_type,
-            _ => {
-                return Err(InvokeError::Error(
-                    ResourceManagerError::ResourceTypeDoesNotMatch,
-                ))
-            }
-        };
-
-        // check amount
-        let amount: Decimal = entries.len().into();
-        self.total_supply += amount;
-
-        // Allocate non-fungibles
-        let mut ids = BTreeSet::new();
-        let mut non_fungibles = BTreeMap::new();
-        for (id, data) in entries {
-            if id.id_type() != this_non_fungible_id_type {
-                return Err(InvokeError::Error(
-                    ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                        id.id_type(),
-                        this_non_fungible_id_type,
-                    ),
-                ));
-            }
-
-            let non_fungible = NonFungible::new(data.0, data.1);
-            ids.insert(id.clone());
-            non_fungibles.insert(id, non_fungible);
-        }
-
-        Ok((
-            Resource::new_non_fungible(self_address, ids, this_non_fungible_id_type),
-            non_fungibles,
-        ))
     }
 }

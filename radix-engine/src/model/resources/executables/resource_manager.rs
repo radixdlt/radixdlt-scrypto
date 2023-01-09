@@ -1116,21 +1116,47 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
     where
         Y: SystemApi,
     {
+
+
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
         let (resource, non_fungibles) = {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
-            let result = resource_manager
-                .mint_non_fungibles(self.1, resource_manager.resource_address)
-                .map_err(|e| match e {
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                    }
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                })?;
-            result
+
+            let id_type = match resource_manager.resource_type {
+                ResourceType::NonFungible { id_type } => id_type,
+                _ => return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::ResourceTypeDoesNotMatch)))
+            };
+
+            if id_type == NonFungibleIdTypeId::UUID {
+                return Err(RuntimeError::ApplicationError(
+                    ApplicationError::ResourceManagerError(
+                        ResourceManagerError::InvalidNonFungibleIdTypeId,
+                    ),
+                ));
+            }
+
+            let amount: Decimal = self.1.len().into();
+            resource_manager.total_supply += amount;
+            // Allocate non-fungibles
+            let mut ids = BTreeSet::new();
+            let mut non_fungibles = BTreeMap::new();
+            for (id, data) in self.1 {
+                if id.id_type() != id_type {
+                    return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                        id.id_type(),
+                        id_type,
+                    ))));
+                }
+
+                let non_fungible = NonFungible::new(data.0, data.1);
+                ids.insert(id.clone());
+                non_fungibles.insert(id, non_fungible);
+            }
+
+            (Resource::new_non_fungible(resource_manager.resource_address, ids, id_type), non_fungibles)
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
