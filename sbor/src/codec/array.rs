@@ -91,13 +91,12 @@ mod schema {
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             match T::TYPE_ID {
                 GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => None,
-                _ => Some(TypeData {
-                    kind: TypeKind::Array {
+                _ => Some(TypeData::new(
+                    TypeMetadata::named_no_child_names("Array"),
+                    TypeKind::Array {
                         element_type: T::TYPE_ID,
-                        length_validation: LengthValidation::none(),
                     },
-                    metadata: TypeMetadata::named_no_child_names("Array"),
-                }),
+                )),
             }
         }
 
@@ -118,16 +117,20 @@ mod schema {
                 GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => "Bytes",
                 _ => "Array",
             };
-            Some(TypeData {
-                kind: TypeKind::Array {
-                    element_type: T::TYPE_ID,
+            Some(
+                TypeData::new(
+                    TypeMetadata::named_no_child_names(type_name),
+                    TypeKind::Array {
+                        element_type: T::TYPE_ID,
+                    },
+                )
+                .with_validation(TypeValidation::Array {
                     length_validation: LengthValidation {
                         min: Some(size),
                         max: Some(size),
                     },
-                },
-                metadata: TypeMetadata::named_no_child_names(type_name),
-            })
+                }),
+            )
         }
 
         fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {

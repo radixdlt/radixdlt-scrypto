@@ -1,5 +1,28 @@
 use crate::*;
 
+/// Additional validation to apply to a type
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum TypeValidation<V: CustomTypeValidation> {
+    None,
+
+    // Simple Types
+    I8(NumericValidation<i8>),
+    I16(NumericValidation<i16>),
+    I32(NumericValidation<i32>),
+    I64(NumericValidation<i64>),
+    I128(NumericValidation<i128>),
+    U8(NumericValidation<u8>),
+    U16(NumericValidation<u16>),
+    U32(NumericValidation<u32>),
+    U64(NumericValidation<u64>),
+    U128(NumericValidation<u128>),
+    String { length_validation: LengthValidation },
+    Array { length_validation: LengthValidation },
+
+    // Custom Types
+    Custom(V),
+}
+
 /// Represents additional validation that should be performed on the size.
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode, Default)]
 pub struct LengthValidation {

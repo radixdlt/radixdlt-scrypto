@@ -108,11 +108,17 @@ mod schema {
         type CustomTypeExtension = NoCustomTypeExtension;
     }
 
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum NoCustomTypeValidation {}
+
+    impl CustomTypeValidation for NoCustomTypeValidation {}
+
     pub enum NoCustomTypeExtension {}
 
     impl CustomTypeExtension for NoCustomTypeExtension {
         type CustomTypeId = NoCustomTypeId;
         type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
+        type CustomTypeValidation = NoCustomTypeValidation;
 
         fn linearize_type_kind(
             _: Self::CustomTypeKind<GlobalTypeId>,

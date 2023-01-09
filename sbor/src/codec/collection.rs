@@ -266,13 +266,12 @@ mod schema {
         const TYPE_ID: GlobalTypeId = GlobalTypeId::complex("Set", &[T::TYPE_ID]);
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
-            Some(TypeData {
-                kind: TypeKind::Array {
+            Some(TypeData::new(
+                TypeMetadata::named_no_child_names("Set"),
+                TypeKind::Array {
                     element_type: T::TYPE_ID,
-                    length_validation: LengthValidation::none(),
                 },
-                metadata: TypeMetadata::named_no_child_names("Set"),
-            })
+            ))
         }
 
         fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
@@ -290,13 +289,12 @@ mod schema {
         const TYPE_ID: GlobalTypeId = GlobalTypeId::complex("Map", &[K::TYPE_ID, V::TYPE_ID]);
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
-            Some(TypeData {
-                kind: TypeKind::Array {
+            Some(TypeData::new(
+                TypeMetadata::named_no_child_names("Map"),
+                TypeKind::Array {
                     element_type: <(K, V)>::TYPE_ID,
-                    length_validation: LengthValidation::none(),
                 },
-                metadata: TypeMetadata::named_no_child_names("Map"),
-            })
+            ))
         }
 
         fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {

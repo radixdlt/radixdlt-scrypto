@@ -42,11 +42,17 @@ impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {
     type CustomTypeExtension = ScryptoCustomTypeExtension;
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScryptoCustomTypeValidation {}
+
+impl CustomTypeValidation for ScryptoCustomTypeValidation {}
+
 pub enum ScryptoCustomTypeExtension {}
 
 impl CustomTypeExtension for ScryptoCustomTypeExtension {
     type CustomTypeId = ScryptoCustomTypeId;
     type CustomTypeKind<L: SchemaTypeLink> = ScryptoCustomTypeKind<L>;
+    type CustomTypeValidation = ScryptoCustomTypeValidation;
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,

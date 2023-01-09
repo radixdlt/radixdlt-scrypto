@@ -39,80 +39,24 @@ pub fn resolve_well_known_type<E: CustomTypeExtension>(
         UNIT_ID => TypeData::named_no_child_names("-", TypeKind::Unit),
         BOOL_ID => TypeData::named_no_child_names("Bool", TypeKind::Bool),
 
-        I8_ID => TypeData::named_no_child_names(
-            "I8",
-            TypeKind::I8 {
-                validation: NumericValidation::none(),
-            },
-        ),
-        I16_ID => TypeData::named_no_child_names(
-            "I16",
-            TypeKind::I16 {
-                validation: NumericValidation::none(),
-            },
-        ),
-        I32_ID => TypeData::named_no_child_names(
-            "I32",
-            TypeKind::I32 {
-                validation: NumericValidation::none(),
-            },
-        ),
-        I64_ID => TypeData::named_no_child_names(
-            "I64",
-            TypeKind::I64 {
-                validation: NumericValidation::none(),
-            },
-        ),
-        I128_ID => TypeData::named_no_child_names(
-            "I128",
-            TypeKind::I128 {
-                validation: NumericValidation::none(),
-            },
-        ),
+        I8_ID => TypeData::named_no_child_names("I8", TypeKind::I8),
+        I16_ID => TypeData::named_no_child_names("I16", TypeKind::I16),
+        I32_ID => TypeData::named_no_child_names("I32", TypeKind::I32),
+        I64_ID => TypeData::named_no_child_names("I64", TypeKind::I64),
+        I128_ID => TypeData::named_no_child_names("I128", TypeKind::I128),
 
-        U8_ID => TypeData::named_no_child_names(
-            "U8",
-            TypeKind::U8 {
-                validation: NumericValidation::none(),
-            },
-        ),
-        U16_ID => TypeData::named_no_child_names(
-            "U16",
-            TypeKind::U16 {
-                validation: NumericValidation::none(),
-            },
-        ),
-        U32_ID => TypeData::named_no_child_names(
-            "U32",
-            TypeKind::U32 {
-                validation: NumericValidation::none(),
-            },
-        ),
-        U64_ID => TypeData::named_no_child_names(
-            "U64",
-            TypeKind::U64 {
-                validation: NumericValidation::none(),
-            },
-        ),
-        U128_ID => TypeData::named_no_child_names(
-            "U128",
-            TypeKind::U128 {
-                validation: NumericValidation::none(),
-            },
-        ),
+        U8_ID => TypeData::named_no_child_names("U8", TypeKind::U8),
+        U16_ID => TypeData::named_no_child_names("U16", TypeKind::U16),
+        U32_ID => TypeData::named_no_child_names("U32", TypeKind::U32),
+        U64_ID => TypeData::named_no_child_names("U64", TypeKind::U64),
+        U128_ID => TypeData::named_no_child_names("U128", TypeKind::U128),
 
-        STRING_ID => TypeData::named_no_child_names(
-            "String",
-            TypeKind::String {
-                length_validation: LengthValidation::none(),
-            },
-        ),
+        STRING_ID => TypeData::named_no_child_names("String", TypeKind::String),
 
         BYTES_ID => TypeData::named_no_child_names(
             "Bytes",
             TypeKind::Array {
                 element_type: LocalTypeIndex::WellKnown(U8_ID),
-                length_validation: LengthValidation::none(),
             },
         ),
         index if index >= CUSTOM_WELL_KNOWN_TYPE_START => {

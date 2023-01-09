@@ -1,5 +1,6 @@
 use super::*;
 use crate::rust::collections::IndexSet;
+use crate::rust::fmt::Debug;
 use crate::CustomTypeId;
 
 pub trait CustomTypeKind<L: SchemaTypeLink>: Clone + PartialEq + Eq {
@@ -10,6 +11,8 @@ pub trait CustomTypeKind<L: SchemaTypeLink>: Clone + PartialEq + Eq {
     >;
 }
 
+pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {}
+
 pub trait CustomTypeExtension {
     type CustomTypeId: CustomTypeId;
     type CustomTypeKind<L: SchemaTypeLink>: CustomTypeKind<
@@ -17,11 +20,13 @@ pub trait CustomTypeExtension {
         CustomTypeId = Self::CustomTypeId,
         CustomTypeExtension = Self,
     >;
+    type CustomTypeValidation: CustomTypeValidation;
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,
         schemas: &IndexSet<TypeHash>,
     ) -> Self::CustomTypeKind<LocalTypeIndex>;
+
     fn resolve_custom_well_known_type(
         well_known_index: u8,
     ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>;
