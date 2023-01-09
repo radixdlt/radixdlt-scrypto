@@ -80,27 +80,24 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C> + TypeId<C::CustomTypeId>>
-        Describe<C> for [T]
-    {
-        const SCHEMA_TYPE_REF: GlobalTypeId = if T::IS_U8 {
-            GlobalTypeId::well_known(well_known_basic_types::BYTES_ID)
-        } else {
-            GlobalTypeId::complex("Array", &[T::SCHEMA_TYPE_REF])
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for [T] {
+        const SCHEMA_TYPE_REF: GlobalTypeId = match T::SCHEMA_TYPE_REF {
+            GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => {
+                GlobalTypeId::well_known(well_known_basic_types::BYTES_ID)
+            }
+            _ => GlobalTypeId::complex("Array", &[T::SCHEMA_TYPE_REF]),
         };
 
         fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
-            if T::IS_U8 {
-                None
-            } else {
-                Some(TypeData {
+            match T::SCHEMA_TYPE_REF {
+                GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => None,
+                _ => Some(TypeData {
                     kind: TypeKind::Array {
-                        element_sbor_type_id: T::type_id().as_u8(),
                         element_type: T::SCHEMA_TYPE_REF,
                         length_validation: LengthValidation::none(),
                     },
                     metadata: TypeMetadata::named_no_child_names("Array"),
-                })
+                }),
             }
         }
 
@@ -110,12 +107,7 @@ mod schema {
     }
 
     #[cfg(feature = "schema")]
-    impl<
-            C: CustomTypeKind<GlobalTypeId>,
-            T: Describe<C> + TypeId<C::CustomTypeId>,
-            const N: usize,
-        > Describe<C> for [T; N]
-    {
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, const N: usize> Describe<C> for [T; N] {
         const SCHEMA_TYPE_REF: GlobalTypeId =
             GlobalTypeId::complex_sized("Array", &[T::SCHEMA_TYPE_REF], N);
 
@@ -123,14 +115,12 @@ mod schema {
             let size = N
                 .try_into()
                 .expect("The array length is too large for a u32 for the SBOR schema");
-            let type_name = if T::type_id() == SborTypeId::U8 {
-                "Bytes"
-            } else {
-                "Array"
+            let type_name = match T::SCHEMA_TYPE_REF {
+                GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => "Bytes",
+                _ => "Array",
             };
             Some(TypeData {
                 kind: TypeKind::Array {
-                    element_sbor_type_id: T::type_id().as_u8(),
                     element_type: T::SCHEMA_TYPE_REF,
                     length_validation: LengthValidation {
                         min: Some(size),

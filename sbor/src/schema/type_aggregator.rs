@@ -53,11 +53,9 @@ fn linearize<E: CustomTypeExtension>(
         TypeKind::U128 { validation } => TypeKind::U128 { validation },
         TypeKind::String { length_validation } => TypeKind::String { length_validation },
         TypeKind::Array {
-            element_sbor_type_id,
             element_type,
             length_validation,
         } => TypeKind::Array {
-            element_sbor_type_id,
             element_type: resolve_local_type_ref(schemas, &element_type),
             length_validation,
         },

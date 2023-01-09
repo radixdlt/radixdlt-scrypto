@@ -52,7 +52,6 @@ pub enum TypeKind<
 
     // Composite Types
     Array {
-        element_sbor_type_id: u8,
         element_type: L,
         length_validation: LengthValidation,
     },

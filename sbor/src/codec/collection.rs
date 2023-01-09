@@ -260,17 +260,14 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    wrapped_generic_vec_describe!(T, Vec<T>, [T]);
+    wrapped_generic_describe!(T, Vec<T>, [T]);
 
-    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C> + TypeId<C::CustomTypeId>>
-        Describe<C> for BTreeSet<T>
-    {
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
         const SCHEMA_TYPE_REF: GlobalTypeId = GlobalTypeId::complex("Set", &[T::SCHEMA_TYPE_REF]);
 
         fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
             Some(TypeData {
                 kind: TypeKind::Array {
-                    element_sbor_type_id: T::type_id().as_u8(),
                     element_type: T::SCHEMA_TYPE_REF,
                     length_validation: LengthValidation::none(),
                 },
@@ -283,9 +280,9 @@ mod schema {
         }
     }
 
-    wrapped_generic_vec_describe!(T, HashSet<T>, BTreeSet<T>);
+    wrapped_generic_describe!(T, HashSet<T>, BTreeSet<T>);
     #[cfg(feature = "indexmap")]
-    wrapped_generic_vec_describe!(T, IndexSet<T>, BTreeSet<T>);
+    wrapped_generic_describe!(T, IndexSet<T>, BTreeSet<T>);
 
     impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
         for BTreeMap<K, V>
@@ -296,7 +293,6 @@ mod schema {
         fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
             Some(TypeData {
                 kind: TypeKind::Array {
-                    element_sbor_type_id: <(K, V) as TypeId<C::CustomTypeId>>::type_id().as_u8(),
                     element_type: <(K, V)>::SCHEMA_TYPE_REF,
                     length_validation: LengthValidation::none(),
                 },

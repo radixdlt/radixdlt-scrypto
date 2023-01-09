@@ -111,7 +111,6 @@ pub fn resolve_well_known_type<E: CustomTypeExtension>(
         BYTES_ID => TypeData::named_no_child_names(
             "Bytes",
             TypeKind::Array {
-                element_sbor_type_id: sbor::TYPE_U8,
                 element_type: LocalTypeIndex::WellKnown(U8_ID),
                 length_validation: LengthValidation::none(),
             },

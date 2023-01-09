@@ -104,7 +104,6 @@ pub const TYPE_ARRAY: u8 = 0x20; // [T; N]
 /// A SBOR type ID.
 pub trait TypeId<X: CustomTypeId> {
     fn type_id() -> SborTypeId<X>;
-    const IS_U8: bool = false;
 }
 
 impl<X: CustomTypeId> TypeId<X> for () {
@@ -128,8 +127,6 @@ impl<X: CustomTypeId> TypeId<X> for i8 {
     }
 }
 impl<X: CustomTypeId> TypeId<X> for u8 {
-    const IS_U8: bool = true;
-
     #[inline]
     fn type_id() -> SborTypeId<X> {
         SborTypeId::U8
