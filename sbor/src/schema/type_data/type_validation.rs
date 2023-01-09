@@ -1,11 +1,12 @@
 use crate::*;
 
-/// Additional validation to apply to a type
+/// Additional validation to apply to a payload of the given type, beyond validation from the [`TypeKind`]'s type structure.
+///
+/// Each [`TypeKind`] typically can have either `None` or its type-specific validation.
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum TypeValidation<V: CustomTypeValidation> {
     None,
 
-    // Simple Types
     I8(NumericValidation<i8>),
     I16(NumericValidation<i16>),
     I32(NumericValidation<i32>),
@@ -19,7 +20,6 @@ pub enum TypeValidation<V: CustomTypeValidation> {
     String { length_validation: LengthValidation },
     Array { length_validation: LengthValidation },
 
-    // Custom Types
     Custom(V),
 }
 
