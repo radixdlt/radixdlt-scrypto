@@ -34,7 +34,7 @@ impl Default for RoyaltyModule {
     }
 }
 
-macro_rules! pre_load_vault {
+macro_rules! preload_vault {
     ($track:expr, $royalty_vault:expr) => {
         let vault_node_id = RENodeId::Vault($royalty_vault.vault_id());
         $track
@@ -126,7 +126,9 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
             .release_lock(SubstateId(node_id, offset.clone()), false)
             .map_err(RoyaltyError::from)?;
 
-        // Pre-load vault substate
+        // Pre-load accumulator and royalty vault substate to avoid additional substate loading
+        // during track finalization.
+        // TODO: refactor to defer substate loading to finalization.
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
         track
             .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::MUTABLE)
@@ -136,7 +138,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
             .package_royalty_accumulator()
             .royalty
             .clone();
-        pre_load_vault!(track, royalty_vault);
+        preload_vault!(track, royalty_vault);
         track
             .release_lock(SubstateId(node_id, offset.clone()), false)
             .map_err(RoyaltyError::from)?;
@@ -185,7 +187,9 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                 .release_lock(SubstateId(node_id, offset.clone()), false)
                 .map_err(RoyaltyError::from)?;
 
-            // Pre-load vault substate
+            // Pre-load accumulator and royalty vault substate to avoid additional substate loading
+            // during track finalization.
+            // TODO: refactor to defer substate loading to finalization.
             let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
             track
                 .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::MUTABLE)
@@ -195,7 +199,7 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                 .component_royalty_accumulator()
                 .royalty
                 .clone();
-            pre_load_vault!(track, royalty_vault);
+            preload_vault!(track, royalty_vault);
             track
                 .release_lock(SubstateId(node_id, offset.clone()), false)
                 .map_err(RoyaltyError::from)?;
