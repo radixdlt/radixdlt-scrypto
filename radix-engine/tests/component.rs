@@ -3,7 +3,6 @@ use radix_engine::types::*;
 use radix_engine_interface::api::types::ScryptoFunctionIdent;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -14,7 +13,7 @@ fn test_component() {
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Create component
-    let manifest1 = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest1 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "ComponentTest", "create_component", args!())
         .build();
@@ -28,7 +27,7 @@ fn test_component() {
         .new_component_addresses[0];
 
     // Call functions & methods
-    let manifest2 = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest2 = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package,
@@ -41,7 +40,7 @@ fn test_component() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt2 = test_runner.execute_manifest(
@@ -58,7 +57,7 @@ fn invalid_blueprint_name_should_cause_error() {
     let package_addr = test_runner.compile_and_publish("./tests/blueprints/component");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_addr,

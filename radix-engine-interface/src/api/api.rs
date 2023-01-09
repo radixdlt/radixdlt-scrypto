@@ -39,8 +39,9 @@ pub trait InvokableModel<E>:
     Invokable<ParsedScryptoInvocation, E>
     + Invokable<ScryptoInvocation, E>
     + Invokable<EpochManagerCreateInvocation, E>
-    + Invokable<EpochManagerSetEpochInvocation, E>
+    + Invokable<EpochManagerNextRoundInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>
+    + Invokable<EpochManagerSetEpochInvocation, E>
     + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>
     + Invokable<ClockGetCurrentTimeInvocation, E>

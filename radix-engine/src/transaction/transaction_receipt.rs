@@ -42,7 +42,7 @@ pub struct CommitResult {
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
     pub application_logs: Vec<(Level, String)>,
-    pub next_validator_set: Option<Vec<EcdsaSecp256k1PublicKey>>,
+    pub next_epoch: Option<(HashSet<EcdsaSecp256k1PublicKey>, u64)>,
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure

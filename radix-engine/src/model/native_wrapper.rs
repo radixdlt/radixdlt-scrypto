@@ -273,6 +273,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            EpochManagerInvocation::NextRound(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             EpochManagerInvocation::SetEpoch(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

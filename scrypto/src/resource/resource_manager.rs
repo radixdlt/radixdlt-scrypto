@@ -1,6 +1,6 @@
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
-    GlobalAddress, MetadataMethod, NativeFn, NativeMethod, RENodeId, ResourceManagerMethod,
+    GlobalAddress, MetadataFn, NativeFn, RENodeId, ResourceManagerFn,
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
@@ -43,9 +43,7 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Mint,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Mint)),
             rule: access_rule,
         })
         .unwrap();
@@ -56,9 +54,7 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Burn,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn)),
             rule: access_rule,
         })
         .unwrap();
@@ -99,9 +95,7 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             rule: access_rule,
         })
         .unwrap();
@@ -112,9 +106,9 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodAccessRuleInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateNonFungibleData,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(
+                ResourceManagerFn::UpdateNonFungibleData,
+            )),
             rule: access_rule,
         })
         .unwrap();
@@ -125,9 +119,7 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Mint,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Mint)),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -138,9 +130,7 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::Burn,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn)),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -151,9 +141,7 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()
@@ -164,9 +152,9 @@ impl ResourceManager {
         env.invoke(AccessRulesSetMethodMutabilityInvocation {
             receiver: RENodeId::Global(GlobalAddress::Resource(self.0)),
             index: 0,
-            key: AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-                ResourceManagerMethod::UpdateNonFungibleData,
-            ))),
+            key: AccessRuleKey::Native(NativeFn::ResourceManager(
+                ResourceManagerFn::UpdateNonFungibleData,
+            )),
             mutability: AccessRule::DenyAll,
         })
         .unwrap()

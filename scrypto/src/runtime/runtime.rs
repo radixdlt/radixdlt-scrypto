@@ -1,11 +1,11 @@
 use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable};
 use radix_engine_interface::api::types::{
-    FnIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoFunctionIdent, ScryptoMethodIdent,
-    ScryptoPackage, ScryptoReceiver,
+    FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoFunctionIdent,
+    ScryptoMethodIdent, ScryptoPackage, ScryptoReceiver,
 };
-use radix_engine_interface::constants::EPOCH_MANAGER;
+use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::*;
-use radix_engine_interface::data::{scrypto_decode, ScryptoDecode};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
@@ -25,6 +25,13 @@ impl Runtime {
                 receiver: EPOCH_MANAGER,
             })
             .unwrap()
+    }
+
+    pub fn package_token() -> NonFungibleAddress {
+        let non_fungible_id = NonFungibleId::Bytes(
+            scrypto_encode(&PackageIdentifier::Scrypto(Runtime::package_address())).unwrap(),
+        );
+        NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id)
     }
 
     /// Returns the running entity.

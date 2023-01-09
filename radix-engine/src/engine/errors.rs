@@ -1,18 +1,22 @@
 use crate::engine::node_move_module::NodeMoveError;
 use crate::engine::{AuthError, ExecutionMode, LockFlags, ResolvedActor};
 use radix_engine_interface::api::types::{
-    GlobalAddress, LockHandle, NativeMethod, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent,
-    SubstateOffset,
+    GlobalAddress, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, SubstateOffset,
 };
 use radix_engine_interface::data::ScryptoValueDecodeError;
 use sbor::*;
-use transaction::errors::*;
 
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 
 use super::TrackError;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum IdAllocationError {
+    OutOfID,
+}
 
 /// Represents an error which causes a tranasction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,7 +82,6 @@ pub enum KernelError {
     RENodeNotFound(RENodeId),
 
     InvalidScryptoFnOutput,
-    MethodReceiverNotMatch(NativeMethod, RENodeId),
 
     // ID allocation
     IdAllocationError(IdAllocationError),

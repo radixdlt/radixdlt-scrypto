@@ -98,6 +98,7 @@ pub enum EpochManagerInvocation {
     Create(EpochManagerCreateInvocation),
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
+    NextRound(EpochManagerNextRoundInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -338,6 +339,9 @@ impl NativeInvocation {
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
                 EpochManagerInvocation::Create(..) => {}
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+                EpochManagerInvocation::NextRound(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
                 }
                 EpochManagerInvocation::SetEpoch(invocation) => {

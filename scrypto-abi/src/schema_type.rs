@@ -83,20 +83,23 @@ pub enum Type {
     ResourceAddress,
     SystemAddress,
 
-    // RE nodes types
+    // RE interpreted
+    Own,    // generic
+    Bucket, // specific
+    Proof,
+    Vault,
     Component,
     KeyValueStore {
         key_type: Box<Type>,
         value_type: Box<Type>,
     },
-    Bucket,
-    Proof,
-    Vault,
-
-    // Other interpreted types
-    Expression,
-    Blob,
     NonFungibleAddress,
+    Blob,
+
+    // TX interpreted types
+    ManifestBucket,
+    ManifestProof,
+    ManifestExpression,
 
     // Uninterpreted
     Hash,

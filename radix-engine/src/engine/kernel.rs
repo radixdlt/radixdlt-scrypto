@@ -13,7 +13,6 @@ use radix_engine_interface::rule;
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
 use transaction::model::AuthZoneParams;
-use transaction::validation::*;
 
 use crate::engine::node_move_module::NodeMoveModule;
 use crate::engine::system_api::LockInfo;
@@ -177,7 +176,7 @@ where
                     },
                     IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
                 ))?;
-                let component_id = result.component_ids.into_iter().next().unwrap();
+                let component_id = result.owned_node_ids().into_iter().next().unwrap().into();
 
                 // TODO: Use system_api to globalize component when create_node is refactored
                 // TODO: to allow for address selection
@@ -627,8 +626,8 @@ where
                 &mut self.track,
                 SysCallInput::Invoke {
                     invocation: &invocation,
-                    input_size: 0,  // TODO: Fix this
-                    value_count: 0, // TODO: Fix this
+                    input_size: 0,       // TODO: Fix this
+                    owned_node_count: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
                 },
             )

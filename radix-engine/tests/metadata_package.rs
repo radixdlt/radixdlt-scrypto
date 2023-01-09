@@ -1,6 +1,5 @@
 use radix_engine::engine::{AuthError, ModuleError, RuntimeError};
 use radix_engine::types::*;
-use radix_engine_interface::node::NetworkDefinition;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -9,7 +8,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
@@ -23,7 +22,7 @@ fn cannot_set_package_metadata_with_no_owner() {
     let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .set_metadata(
             GlobalAddress::Package(package_address),
@@ -52,7 +51,7 @@ fn can_set_package_metadata_with_owner() {
     let (public_key, _, account) = test_runner.new_account(false);
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package_with_owner(code, BTreeMap::new(), owner_badge_addr)
         .build();
@@ -61,7 +60,7 @@ fn can_set_package_metadata_with_owner() {
     let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
         .set_metadata(
@@ -89,7 +88,7 @@ fn can_lock_package_metadata_with_owner() {
     let (public_key, _, account) = test_runner.new_account(false);
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
     let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package_with_owner(code, BTreeMap::new(), owner_badge_addr)
         .build();
@@ -98,15 +97,13 @@ fn can_lock_package_metadata_with_owner() {
     let package_address = receipt.expect_commit().entity_changes.new_package_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
         .set_method_access_rule(
             GlobalAddress::Package(package_address),
             0,
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             AccessRule::DenyAll,
         )
         .build();
@@ -117,7 +114,7 @@ fn can_lock_package_metadata_with_owner() {
     receipt.expect_commit_success();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .create_proof_from_account(account, owner_badge_resource)
         .set_metadata(

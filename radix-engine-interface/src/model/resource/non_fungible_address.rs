@@ -9,15 +9,15 @@ use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
 use crate::data::ScryptoCustomTypeId;
+use crate::data::ScryptoSborTypeId;
 use crate::model::*;
-use crate::scrypto_type;
 use utils::ContextualDisplay;
 
 /// Identifier for a non-fungible unit.
 #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct NonFungibleAddress {
-    resource_address: ResourceAddress,
-    non_fungible_id: NonFungibleId,
+    pub resource_address: ResourceAddress,
+    pub non_fungible_id: NonFungibleId,
 }
 
 //=======
@@ -30,8 +30,6 @@ pub enum ParseNonFungibleAddressError {
     InvalidLength(usize),
     InvalidResourceAddress(AddressError),
     InvalidNonFungibleId(ParseNonFungibleIdError),
-    InvalidHex(String),
-    InvalidPrefix,
     RequiresTwoParts,
 }
 
@@ -61,23 +59,55 @@ impl fmt::Display for ParseNonFungibleAddressError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for NonFungibleAddress {
-    type Error = ParseNonFungibleAddressError;
+impl TypeId<ScryptoCustomTypeId> for NonFungibleAddress {
+    #[inline]
+    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+        SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress)
+    }
+}
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() < 27 {
-            return Err(ParseNonFungibleAddressError::InvalidLength(slice.len()));
-        }
+impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for NonFungibleAddress {
+    #[inline]
+    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_type_id(Self::type_id())
+    }
 
-        let (resource_address_slice, non_fungible_id_slice) = slice.split_at(27);
-        let resource_address = ResourceAddress::try_from(resource_address_slice)?;
-        let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)?;
-        Ok(NonFungibleAddress {
-            resource_address,
-            non_fungible_id,
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        self.resource_address.encode_body(encoder)?;
+        self.non_fungible_id.encode_body(encoder)?;
+        Ok(())
+    }
+}
+
+impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for NonFungibleAddress {
+    fn decode_body_with_type_id(
+        decoder: &mut D,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
+    ) -> Result<Self, DecodeError> {
+        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        Ok(Self {
+            resource_address: ResourceAddress::decode_body_with_type_id(
+                decoder,
+                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress),
+            )?,
+            non_fungible_id: NonFungibleId::decode_body_with_type_id(
+                decoder,
+                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId),
+            )?,
         })
     }
 }
+
+impl scrypto_abi::LegacyDescribe for NonFungibleAddress {
+    fn describe() -> scrypto_abi::Type {
+        Type::NonFungibleAddress
+    }
+}
+
+//========
+// impl
+//========
 
 impl NonFungibleAddress {
     pub const fn new(resource_address: ResourceAddress, non_fungible_id: NonFungibleId) -> Self {
@@ -95,13 +125,6 @@ impl NonFungibleAddress {
     /// Returns the non-fungible id.
     pub fn non_fungible_id(&self) -> &NonFungibleId {
         &self.non_fungible_id
-    }
-
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut vec = self.resource_address.to_vec();
-        let mut other_vec = self.non_fungible_id.to_vec();
-        vec.append(&mut other_vec);
-        vec
     }
 
     /// Returns canonical representation of this NonFungibleAddress.
@@ -163,12 +186,6 @@ impl NonFungibleAddress {
         Ok(NonFungibleAddress::new(resource_address, non_fungible_id))
     }
 }
-
-scrypto_type!(
-    NonFungibleAddress,
-    ScryptoCustomTypeId::NonFungibleAddress,
-    Type::NonFungibleAddress
-);
 
 //======
 // text

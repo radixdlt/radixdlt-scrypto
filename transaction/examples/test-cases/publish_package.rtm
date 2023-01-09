@@ -10,11 +10,33 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
+                        "Package",
+                        Enum("SetRoyaltyConfig")
+                    )
+                ),
+                Enum(
+                    "AccessRule", 
+                    Enum(
+                        "Protected", 
                         Enum(
-                            "Package", 
-                            Enum("SetRoyaltyConfig")
+                            "ProofRule", 
+                            Enum(
+                                "Require", 
+                                Enum(
+                                    "StaticNonFungible", 
+                                    NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
+                                )
+                            )
                         )
+                    )
+                )
+            ), 
+            Tuple(
+                Enum(
+                    "Native", 
+                    Enum(
+                        "Package",
+                        Enum("ClaimRoyalty")
                     )
                 ), 
                 Enum(
@@ -38,11 +60,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Package", 
-                            Enum("ClaimRoyalty")
-                        )
+                        "Metadata",
+                        Enum("Set")
                     )
                 ), 
                 Enum(
@@ -66,39 +85,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Metadata", 
-                            Enum("Set")
-                        )
-                    )
-                ), 
-                Enum(
-                    "AccessRule", 
-                    Enum(
-                        "Protected", 
-                        Enum(
-                            "ProofRule", 
-                            Enum(
-                                "Require", 
-                                Enum(
-                                    "StaticNonFungible", 
-                                    NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
-                                )
-                            )
-                        )
-                    )
-                )
-            ), 
-            Tuple(
-                Enum(
-                    "Native", 
-                    Enum(
-                        "Method", 
-                        Enum(
-                            "Metadata", 
-                            Enum("Get")
-                        )
+                        "Metadata",
+                        Enum("Get")
                     )
                 ), 
                 Enum(
@@ -114,11 +102,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Package", 
-                            Enum("SetRoyaltyConfig")
-                        )
+                        "Package",
+                        Enum("SetRoyaltyConfig")
                     )
                 ), 
                 Enum(
@@ -139,11 +124,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Package", 
-                            Enum("ClaimRoyalty")
-                        )
+                        "Package",
+                        Enum("ClaimRoyalty")
                     )
                 ), 
                 Enum(
@@ -164,11 +146,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Metadata", 
-                            Enum("Set")
-                        )
+                        "Metadata",
+                        Enum("Set")
                     )
                 ), 
                 Enum(
@@ -189,11 +168,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Metadata", 
-                            Enum("Get")
-                        )
+                        "Metadata",
+                        Enum("Get")
                     )
                 ), 
                 Enum(

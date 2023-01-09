@@ -66,9 +66,7 @@ pub enum TokenKind {
     ResourceAddress,
 
     /* RE interpreted types */
-    Ownership,
-    KeyValueStore,
-    Component,
+    Own,
     NonFungibleAddress,
     Blob,
 
@@ -416,9 +414,7 @@ impl Lexer {
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
-            "Ownership" => Ok(TokenKind::Ownership),
-            "KeyValueStore" => Ok(TokenKind::KeyValueStore),
-            "Component" => Ok(TokenKind::Component),
+            "Own" => Ok(TokenKind::Own),
             "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
             "Blob" => Ok(TokenKind::Blob),
 

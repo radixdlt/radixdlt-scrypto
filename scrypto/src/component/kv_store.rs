@@ -4,15 +4,11 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::data::*;
 
-use sbor::rust::borrow::ToOwned;
+use radix_engine_interface::data::types::Own;
 use sbor::rust::boxed::Box;
-use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
@@ -98,61 +94,14 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
 }
 
 //========
-// error
-//========
-
-/// Represents an error when decoding key value store.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseKeyValueStoreError {
-    InvalidHex(String),
-    InvalidLength(usize),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseKeyValueStoreError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseKeyValueStoreError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-//========
 // binary
 //========
-
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> TryFrom<&[u8]>
-    for KeyValueStore<K, V>
-{
-    type Error = ParseKeyValueStoreError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            36 => Ok(Self {
-                id: copy_u8_array(slice),
-                key: PhantomData,
-                value: PhantomData,
-            }),
-            _ => Err(ParseKeyValueStoreError::InvalidLength(slice.len())),
-        }
-    }
-}
-
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.id.to_vec()
-    }
-}
-
-// TODO: extend scrypto_type! macro to support generics
-
 impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> TypeId<ScryptoCustomTypeId>
     for KeyValueStore<K, V>
 {
     #[inline]
-    fn type_id() -> ScryptoSborTypeId {
-        SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore)
+    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
+        SborTypeId::Custom(ScryptoCustomTypeId::Own)
     }
 }
 
@@ -169,7 +118,7 @@ impl<
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_slice(&self.to_vec())
+        Own::KeyValueStore(self.id).encode_body(encoder)
     }
 }
 
@@ -181,11 +130,17 @@ impl<
 {
     fn decode_body_with_type_id(
         decoder: &mut D,
-        type_id: ScryptoSborTypeId,
+        type_id: SborTypeId<ScryptoCustomTypeId>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
-        let slice = decoder.read_slice(36)?;
-        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomValue)
+        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        match o {
+            Own::KeyValueStore(kv_store_id) => Ok(Self {
+                id: kv_store_id,
+                key: PhantomData,
+                value: PhantomData,
+            }),
+            _ => Err(DecodeError::InvalidCustomValue),
+        }
     }
 }
 
@@ -194,42 +149,10 @@ impl<
         V: ScryptoEncode + ScryptoDecode + LegacyDescribe,
     > LegacyDescribe for KeyValueStore<K, V>
 {
-    fn describe() -> Type {
+    fn describe() -> scrypto_abi::Type {
         Type::KeyValueStore {
             key_type: Box::new(K::describe()),
             value_type: Box::new(V::describe()),
         }
-    }
-}
-
-//======
-// text
-//======
-
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> FromStr
-    for KeyValueStore<K, V>
-{
-    type Err = ParseKeyValueStoreError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseKeyValueStoreError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> fmt::Display
-    for KeyValueStore<K, V>
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(self.to_vec()))
-    }
-}
-
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> fmt::Debug
-    for KeyValueStore<K, V>
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
     }
 }

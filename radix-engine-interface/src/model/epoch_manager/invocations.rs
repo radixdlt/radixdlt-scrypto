@@ -1,6 +1,6 @@
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::api::api::*;
@@ -11,7 +11,9 @@ use crate::wasm::*;
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
-    pub validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    pub initial_epoch: u64,
+    pub rounds_per_epoch: u64,
 }
 
 impl Invocation for EpochManagerCreateInvocation {
@@ -66,5 +68,26 @@ impl SerializableInvocation for EpochManagerSetEpochInvocation {
 impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct EpochManagerNextRoundInvocation {
+    pub receiver: SystemAddress,
+    pub round: u64,
+}
+
+impl Invocation for EpochManagerNextRoundInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for EpochManagerNextRoundInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(self)).into()
     }
 }

@@ -17,7 +17,6 @@ pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
     // Other Engine types
     Own,
     NonFungibleAddress,
-    Component,
     KeyValueStore { key_type: L, value_type: L },
 
     // Manifest types
@@ -63,7 +62,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::ComponentAddress => ScryptoCustomTypeKind::ComponentAddress,
             ScryptoCustomTypeKind::ResourceAddress => ScryptoCustomTypeKind::ResourceAddress,
             ScryptoCustomTypeKind::SystemAddress => ScryptoCustomTypeKind::SystemAddress,
-            ScryptoCustomTypeKind::Component => ScryptoCustomTypeKind::Component,
             ScryptoCustomTypeKind::KeyValueStore {
                 key_type,
                 value_type,
@@ -110,7 +108,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 "NonFungibleAddress",
                 ScryptoCustomTypeKind::NonFungibleAddress,
             ),
-            COMPONENT_ID => ("Component", ScryptoCustomTypeKind::Component),
 
             BLOB_ID => ("Blob", ScryptoCustomTypeKind::Blob),
             BUCKET_ID => ("Bucket", ScryptoCustomTypeKind::Bucket),
@@ -159,7 +156,6 @@ mod well_known_scrypto_types {
 
     pub const OWN_ID: u8 = TYPE_OWN;
     pub const NON_FUNGIBLE_ADDRESS_ID: u8 = TYPE_NON_FUNGIBLE_ADDRESS;
-    pub const COMPONENT_ID: u8 = TYPE_COMPONENT;
     // We skip KeyValueStore because it has generic parameters
 
     pub const BLOB_ID: u8 = TYPE_BLOB;
