@@ -1,7 +1,9 @@
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue};
+use radix_engine_interface::data::{
+    IndexedScryptoValue, ScryptoCustomValue, ScryptoCustomValueKind,
+};
 use radix_engine_interface::model::*;
 
-use sbor::SborTypeId;
+use sbor::ValueKind;
 
 use crate::model::method_authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
@@ -20,7 +22,7 @@ fn soft_to_hard_decimal(
         SoftDecimal::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::Custom { value }) => match value {
+                    Some(Value::Custom { value }) => match value {
                         ScryptoCustomValue::Decimal(v) => HardDecimal::Amount(v.clone()),
                         _ => HardDecimal::SoftDecimalNotFound,
                     },
@@ -43,7 +45,7 @@ fn soft_to_hard_count(
         SoftCount::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::U8 { value }) => HardCount::Count(value.clone()),
+                    Some(Value::U8 { value }) => HardCount::Count(value.clone()),
                     _ => HardCount::SoftCountNotFound,
                 }
             } else {
@@ -70,16 +72,16 @@ fn soft_to_hard_resource_list(
         SoftResourceOrNonFungibleList::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::Array {
-                        element_type_id,
+                    Some(Value::Array {
+                        element_value_kind,
                         elements,
-                    }) => match element_type_id {
-                        SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress) => {
+                    }) => match element_value_kind {
+                        ValueKind::Custom(ScryptoCustomValueKind::ResourceAddress) => {
                             HardProofRuleResourceList::List(
                                 elements
                                     .iter()
                                     .map(|v| {
-                                        if let SborValue::Custom {
+                                        if let Value::Custom {
                                             value: ScryptoCustomValue::ResourceAddress(address),
                                         } = v
                                         {
@@ -90,12 +92,12 @@ fn soft_to_hard_resource_list(
                                     .collect(),
                             )
                         }
-                        SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress) => {
+                        ValueKind::Custom(ScryptoCustomValueKind::NonFungibleAddress) => {
                             HardProofRuleResourceList::List(
                                 elements
                                     .iter()
                                     .map(|v| {
-                                        if let SborValue::Custom {
+                                        if let Value::Custom {
                                             value: ScryptoCustomValue::NonFungibleAddress(address),
                                         } = v
                                         {
@@ -126,7 +128,7 @@ fn soft_to_hard_resource(
         SoftResource::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::Custom { value }) => match value {
+                    Some(Value::Custom { value }) => match value {
                         ScryptoCustomValue::ResourceAddress(address) => address.clone().into(),
                         _ => HardResourceOrNonFungible::SoftResourceNotFound,
                     },
@@ -151,7 +153,7 @@ fn soft_to_hard_resource_or_non_fungible(
         SoftResourceOrNonFungible::Dynamic(schema_path) => {
             if let Some(sbor_path) = schema_path.to_sbor_path(schema) {
                 match sbor_path.get_from_value(&value.dom) {
-                    Some(SborValue::Custom { value }) => match value {
+                    Some(Value::Custom { value }) => match value {
                         ScryptoCustomValue::ResourceAddress(address) => address.clone().into(),
                         ScryptoCustomValue::NonFungibleAddress(address) => address.clone().into(),
                         _ => HardResourceOrNonFungible::SoftResourceNotFound,

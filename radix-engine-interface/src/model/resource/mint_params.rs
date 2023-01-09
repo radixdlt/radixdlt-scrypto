@@ -9,7 +9,7 @@ use crate::Describe;
 
 /// Represents the minting config
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Encode, Decode, TypeId, Describe)]
+#[scrypto(Encode, Decode, Categorize, Describe)]
 pub enum MintParams {
     /// To mint fungible resource, represented by an amount
     Fungible { amount: Decimal },

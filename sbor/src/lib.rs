@@ -26,10 +26,10 @@ pub mod rust;
 #[cfg(feature = "schema")]
 /// SBOR Schema
 pub mod schema;
-/// SBOR type ids.
-pub mod type_id;
 /// SBOR value model and any decoding/encoding.
 pub mod value;
+/// SBOR value kinds - ie the types of value that are supported.
+pub mod value_kind;
 
 pub use basic::*;
 pub use constants::*;
@@ -40,12 +40,12 @@ pub use encoder::{EncodeError, Encoder, VecEncoder};
 pub use path::{SborPath, SborPathBuf};
 #[cfg(feature = "schema")]
 pub use schema::*;
-pub use type_id::*;
 pub use value::*;
+pub use value_kind::*;
 
 // Re-export derives
 extern crate sbor_derive;
-pub use sbor_derive::{Decode, Encode, TypeId};
+pub use sbor_derive::{Categorize, Decode, Encode};
 
 #[cfg(feature = "schema")]
 pub use sbor_derive::Describe;

@@ -339,13 +339,13 @@ mod tests {
     #[test]
     fn test_complex_enum_schema() {
         let input =
-            TokenStream::from_str("#[sbor(generic_type_id_bounds = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
+            TokenStream::from_str("#[sbor(generic_categorize_bounds = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
         let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::TypeId<C::CustomTypeId>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2> {
+                impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::Categorize<C::CustomValueKind>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2> {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[T::TYPE_ID, T2::TYPE_ID,],

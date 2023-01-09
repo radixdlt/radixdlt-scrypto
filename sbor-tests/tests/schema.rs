@@ -7,17 +7,17 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[derive(TypeId, Encode, Decode, Describe)]
+#[derive(Categorize, Encode, Decode, Describe)]
 pub struct UnitStruct;
 
-#[derive(TypeId, Encode, Decode, Describe)]
+#[derive(Categorize, Encode, Decode, Describe)]
 pub struct BasicSample {
     pub a: (),
     pub b: UnitStruct,
 }
 
-#[derive(TypeId, Encode, Decode, Describe)]
-#[sbor(generic_type_id_bounds = "S,T")]
+#[derive(Categorize, Encode, Decode, Describe)]
+#[sbor(generic_categorize_bounds = "S,T")]
 pub struct AdvancedSample<T, S> {
     pub a: (),
     pub b: u32,
@@ -32,23 +32,23 @@ pub struct AdvancedSample<T, S> {
     pub k: HashMap<[u8; 3], IndexMap<i64, BTreeSet<i32>>>,
 }
 
-#[derive(TypeId, Encode, Decode, Describe)]
+#[derive(Categorize, Encode, Decode, Describe)]
 pub struct Recursive<T> {
     pub hello: Option<Box<Recursive<T>>>,
     pub what: T,
 }
 
-#[derive(TypeId, Encode, Decode, Describe)]
+#[derive(Categorize, Encode, Decode, Describe)]
 pub struct IndirectRecursive1(
     Vec<IndirectRecursive2<Recursive<u8>>>,
     Recursive<String>,
     Box<IndirectRecursiveEnum3>,
 );
 
-#[derive(TypeId, Encode, Decode, Describe)]
+#[derive(Categorize, Encode, Decode, Describe)]
 pub struct IndirectRecursive2<T>(Recursive<T>, IndirectRecursive1);
 
-#[derive(TypeId, Encode, Decode, Describe)]
+#[derive(Categorize, Encode, Decode, Describe)]
 pub enum IndirectRecursiveEnum3 {
     Variant1,
     Variant2(Box<IndirectRecursive1>),

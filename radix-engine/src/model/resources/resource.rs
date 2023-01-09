@@ -3,7 +3,7 @@ use radix_engine_interface::api::types::{BucketId, VaultId};
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ResourceOperationError {
     /// Resource addresses do not match.
     ResourceAddressNotMatching,
@@ -23,7 +23,7 @@ pub enum ResourceOperationError {
 
 /// A raw record of resource persisted in the substate store
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum Resource {
     Fungible {
         /// The resource address.
@@ -276,7 +276,7 @@ pub enum LockableResource {
 ///
 /// Invariant: always consistent with resource fungibility.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum LockedAmountOrIds {
     Amount(Decimal),
     Ids(BTreeSet<NonFungibleId>),

@@ -9,7 +9,7 @@ use crate::scrypto;
 use crate::wasm::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
     pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
     pub initial_epoch: u64,
@@ -31,7 +31,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
 }
@@ -51,7 +51,7 @@ impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
     pub epoch: u64,
@@ -72,7 +72,7 @@ impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerNextRoundInvocation {
     pub receiver: SystemAddress,
     pub round: u64,

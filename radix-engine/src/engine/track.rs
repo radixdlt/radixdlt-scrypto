@@ -27,7 +27,7 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::types::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum LockState {
     Read(usize),
     Write,
@@ -73,7 +73,7 @@ pub struct Track<'s, R: FeeReserve> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),

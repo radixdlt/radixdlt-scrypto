@@ -15,7 +15,7 @@ use radix_engine_interface::model::*;
 
 pub struct Package;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),

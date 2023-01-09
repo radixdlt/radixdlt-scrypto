@@ -4,14 +4,14 @@ use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum SerializedInvocation {
     Native(NativeInvocation),
     Scrypto(ScryptoInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
     Metadata(MetadataInvocation),
@@ -36,14 +36,14 @@ impl Into<SerializedInvocation> for NativeInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum TransactionRuntimeInvocation {
     Get(TransactionRuntimeGetHashInvocation),
     GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum AccessRulesChainInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
     SetMethodAccessRule(AccessRulesSetMethodAccessRuleInvocation),
@@ -54,14 +54,14 @@ pub enum AccessRulesChainInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum MetadataInvocation {
     Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ClockInvocation {
     Create(ClockCreateInvocation),
     GetCurrentTime(ClockGetCurrentTimeInvocation),
@@ -70,13 +70,13 @@ pub enum ClockInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum LoggerInvocation {
     Log(LoggerLogInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ComponentInvocation {
     Globalize(ComponentGlobalizeInvocation),
     GlobalizeWithOwner(ComponentGlobalizeWithOwnerInvocation),
@@ -85,7 +85,7 @@ pub enum ComponentInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
     SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
@@ -93,7 +93,7 @@ pub enum PackageInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum EpochManagerInvocation {
     Create(EpochManagerCreateInvocation),
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
@@ -102,7 +102,7 @@ pub enum EpochManagerInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum AuthZoneStackInvocation {
     Pop(AuthZonePopInvocation),
     Push(AuthZonePushInvocation),
@@ -115,7 +115,7 @@ pub enum AuthZoneStackInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ResourceInvocation {
     Create(ResourceManagerCreateInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
@@ -133,7 +133,7 @@ pub enum ResourceInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum BucketInvocation {
     Take(BucketTakeInvocation),
     TakeNonFungibles(BucketTakeNonFungiblesInvocation),
@@ -145,7 +145,7 @@ pub enum BucketInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum VaultInvocation {
     Take(VaultTakeInvocation),
     LockFee(VaultLockFeeInvocation),
@@ -162,7 +162,7 @@ pub enum VaultInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ProofInvocation {
     Clone(ProofCloneInvocation),
     GetAmount(ProofGetAmountInvocation),
@@ -171,7 +171,7 @@ pub enum ProofInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum WorktopInvocation {
     TakeAll(WorktopTakeAllInvocation),
     TakeAmount(WorktopTakeAmountInvocation),

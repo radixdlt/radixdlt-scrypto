@@ -1,12 +1,12 @@
-use crate::type_id::*;
+use crate::value_kind::*;
 use crate::*;
 
 macro_rules! encode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
-        impl<X: CustomTypeId, E: Encoder<X>, $($name: Encode<X, E>),+> Encode<X, E> for ($($name,)+) {
+        impl<X: CustomValueKind, E: Encoder<X>, $($name: Encode<X, E>),+> Encode<X, E> for ($($name,)+) {
             #[inline]
-            fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-                encoder.write_type_id(Self::type_id())
+            fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+                encoder.write_value_kind(Self::value_kind())
             }
 
             #[inline]
@@ -42,10 +42,10 @@ encode_tuple! { 20 0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T
 
 macro_rules! decode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
-        impl<X: CustomTypeId, D: Decoder<X>, $($name: Decode<X, D>),+> Decode<X, D> for ($($name,)+) {
+        impl<X: CustomValueKind, D: Decoder<X>, $($name: Decode<X, D>),+> Decode<X, D> for ($($name,)+) {
             #[inline]
-            fn decode_body_with_type_id(decoder: &mut D, type_id: SborTypeId<X>) -> Result<Self, DecodeError> {
-                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+            fn decode_body_with_value_kind(decoder: &mut D, value_kind: ValueKind<X>) -> Result<Self, DecodeError> {
+                decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
                 decoder.read_and_check_size($n)?;
 
                 Ok(($(decoder.decode::<$name>()?,)+))

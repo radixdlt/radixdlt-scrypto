@@ -4,9 +4,10 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
 /// A schema for the values that a codec can decode / views as valid
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-#[sbor(generic_type_id_bounds = "L")]
-pub enum TypeKind<X: CustomTypeId, C: CustomTypeKind<L, CustomTypeId = X>, L: SchemaTypeLink> {
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
+#[sbor(generic_categorize_bounds = "L")]
+pub enum TypeKind<X: CustomValueKind, C: CustomTypeKind<L, CustomValueKind = X>, L: SchemaTypeLink>
+{
     Any,
 
     // Simple Types

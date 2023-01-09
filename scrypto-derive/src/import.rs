@@ -87,8 +87,8 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     let output = quote! {
         #(#structs)*
 
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+        #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+        #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
         pub struct #ident {
             component_address: ::scrypto::model::ComponentAddress,
         }
@@ -152,8 +152,8 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
                         structs.extend(new_structs);
                     }
                     structs.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                        #[derive(Debug, ::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                        #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                         pub struct #ident {
                             #( pub #names : #types, )*
                         }
@@ -167,8 +167,8 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
                         structs.extend(new_structs);
                     }
                     structs.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                        #[derive(Debug, ::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                        #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                         pub struct #ident (
                             #( pub #types ),*
                         );
@@ -176,8 +176,8 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
                 }
                 SchemaFields::Unit => {
                     structs.push(parse_quote! {
-                        #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                        #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                        #[derive(Debug, ::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                        #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                         pub struct #ident;
                     });
                 }
@@ -228,8 +228,8 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             }
 
             structs.push(parse_quote! {
-                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                #[derive(Debug, ::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub enum #ident {
                     #( #native_variants ),*
                 }
@@ -461,8 +461,8 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
-                #[sbor(custom_type_id = "::scrypto::data::ScryptoCustomTypeId")]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct SimpleGlobalComponentRef {
                     component_address: ::scrypto::model::ComponentAddress,
                 }

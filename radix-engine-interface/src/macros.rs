@@ -69,20 +69,20 @@ macro_rules! pdec {
 #[macro_export]
 macro_rules! scrypto_type {
     // static size
-    ($t:ty, $type_id:expr, $schema_type: expr, $size: expr) => {
-        impl sbor::TypeId<crate::data::ScryptoCustomTypeId> for $t {
+    ($t:ty, $value_kind:expr, $schema_type: expr, $size: expr) => {
+        impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
             #[inline]
-            fn type_id() -> sbor::SborTypeId<crate::data::ScryptoCustomTypeId> {
-                sbor::SborTypeId::Custom($type_id)
+            fn value_kind() -> sbor::ValueKind<crate::data::ScryptoCustomValueKind> {
+                sbor::ValueKind::Custom($value_kind)
             }
         }
 
-        impl<E: sbor::Encoder<crate::data::ScryptoCustomTypeId>>
-            sbor::Encode<crate::data::ScryptoCustomTypeId, E> for $t
+        impl<E: sbor::Encoder<crate::data::ScryptoCustomValueKind>>
+            sbor::Encode<crate::data::ScryptoCustomValueKind, E> for $t
         {
             #[inline]
-            fn encode_type_id(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
-                encoder.write_type_id(Self::type_id())
+            fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_value_kind(Self::value_kind())
             }
 
             #[inline]
@@ -91,14 +91,14 @@ macro_rules! scrypto_type {
             }
         }
 
-        impl<D: sbor::Decoder<crate::data::ScryptoCustomTypeId>>
-            sbor::Decode<crate::data::ScryptoCustomTypeId, D> for $t
+        impl<D: sbor::Decoder<crate::data::ScryptoCustomValueKind>>
+            sbor::Decode<crate::data::ScryptoCustomValueKind, D> for $t
         {
-            fn decode_body_with_type_id(
+            fn decode_body_with_value_kind(
                 decoder: &mut D,
-                type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
+                value_kind: sbor::ValueKind<crate::data::ScryptoCustomValueKind>,
             ) -> Result<Self, sbor::DecodeError> {
-                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+                decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
                 let slice = decoder.read_slice($size)?;
                 Self::try_from(slice).map_err(|_| sbor::DecodeError::InvalidCustomValue)
             }

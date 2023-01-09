@@ -1,12 +1,12 @@
 use super::*;
 use crate::rust::collections::IndexSet;
 use crate::rust::fmt::Debug;
-use crate::CustomTypeId;
+use crate::CustomValueKind;
 
 pub trait CustomTypeKind<L: SchemaTypeLink>: Clone + PartialEq + Eq {
-    type CustomTypeId: CustomTypeId;
+    type CustomValueKind: CustomValueKind;
     type CustomTypeExtension: CustomTypeExtension<
-        CustomTypeId = Self::CustomTypeId,
+        CustomValueKind = Self::CustomValueKind,
         CustomTypeKind<L> = Self,
     >;
 }
@@ -14,10 +14,10 @@ pub trait CustomTypeKind<L: SchemaTypeLink>: Clone + PartialEq + Eq {
 pub trait CustomTypeValidation: Debug + Clone + PartialEq + Eq {}
 
 pub trait CustomTypeExtension {
-    type CustomTypeId: CustomTypeId;
+    type CustomValueKind: CustomValueKind;
     type CustomTypeKind<L: SchemaTypeLink>: CustomTypeKind<
         L,
-        CustomTypeId = Self::CustomTypeId,
+        CustomValueKind = Self::CustomValueKind,
         CustomTypeExtension = Self,
     >;
     type CustomTypeValidation: CustomTypeValidation;

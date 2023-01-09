@@ -11,7 +11,7 @@ use sbor::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")  // See https://serde.rs/enum-representations.html
 )]
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
 pub enum Type {
     Unit,
     Bool,
@@ -118,7 +118,7 @@ pub enum Type {
 
 /// Represents the type info of an enum variant.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
 pub struct Variant {
     pub name: String,
     pub fields: Fields,
@@ -130,7 +130,7 @@ pub struct Variant {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
 pub enum Fields {
     Named { named: Vec<(String, Type)> },
 
@@ -151,10 +151,10 @@ impl LegacyDescribe for () {
 }
 
 macro_rules! describe_basic_type {
-    ($type:ident, $type_id:expr) => {
-        impl LegacyDescribe for $type {
+    ($type_name:ident, $type:expr) => {
+        impl LegacyDescribe for $type_name {
             fn describe() -> Type {
-                $type_id
+                $type
             }
         }
     };

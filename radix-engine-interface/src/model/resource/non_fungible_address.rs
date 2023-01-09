@@ -8,8 +8,8 @@ use crate::abi::*;
 use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
-use crate::data::ScryptoCustomTypeId;
-use crate::data::ScryptoSborTypeId;
+use crate::data::ScryptoCustomValueKind;
+use crate::data::ScryptoValueKind;
 use crate::model::*;
 use utils::ContextualDisplay;
 
@@ -59,17 +59,17 @@ impl fmt::Display for ParseNonFungibleAddressError {
 // binary
 //========
 
-impl TypeId<ScryptoCustomTypeId> for NonFungibleAddress {
+impl Categorize<ScryptoCustomValueKind> for NonFungibleAddress {
     #[inline]
-    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
-        SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress)
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::NonFungibleAddress)
     }
 }
 
-impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for NonFungibleAddress {
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for NonFungibleAddress {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -80,20 +80,20 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for NonFung
     }
 }
 
-impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for NonFungibleAddress {
-    fn decode_body_with_type_id(
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for NonFungibleAddress {
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<ScryptoCustomTypeId>,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         Ok(Self {
-            resource_address: ResourceAddress::decode_body_with_type_id(
+            resource_address: ResourceAddress::decode_body_with_value_kind(
                 decoder,
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress),
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::ResourceAddress),
             )?,
-            non_fungible_id: NonFungibleId::decode_body_with_type_id(
+            non_fungible_id: NonFungibleId::decode_body_with_value_kind(
                 decoder,
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId),
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleId),
             )?,
         })
     }

@@ -1,4 +1,4 @@
-use sbor::type_id::*;
+use sbor::value_kind::*;
 use sbor::*;
 
 use crate::api::types::*;
@@ -36,62 +36,61 @@ pub enum ScryptoCustomValue {
     NonFungibleId(NonFungibleId),
 }
 
-impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for ScryptoCustomValue {
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for ScryptoCustomValue {
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
             ScryptoCustomValue::PackageAddress(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::PackageAddress))
             }
-            ScryptoCustomValue::ComponentAddress(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress))
-            }
+            ScryptoCustomValue::ComponentAddress(_) => encoder
+                .write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::ComponentAddress)),
             ScryptoCustomValue::ResourceAddress(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::ResourceAddress))
             }
             ScryptoCustomValue::SystemAddress(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::SystemAddress))
             }
             ScryptoCustomValue::Own(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Own))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Own))
             }
             ScryptoCustomValue::Bucket(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Bucket))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Bucket))
             }
             ScryptoCustomValue::Proof(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Proof))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Proof))
             }
             ScryptoCustomValue::Expression(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Expression))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Expression))
             }
             ScryptoCustomValue::Blob(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Blob))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Blob))
             }
-            ScryptoCustomValue::NonFungibleAddress(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress))
-            }
+            ScryptoCustomValue::NonFungibleAddress(_) => encoder.write_value_kind(
+                ValueKind::Custom(ScryptoCustomValueKind::NonFungibleAddress),
+            ),
             ScryptoCustomValue::Hash(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Hash))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Hash))
             }
-            ScryptoCustomValue::EcdsaSecp256k1PublicKey(_) => encoder.write_type_id(
-                SborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey),
+            ScryptoCustomValue::EcdsaSecp256k1PublicKey(_) => encoder.write_value_kind(
+                ValueKind::Custom(ScryptoCustomValueKind::EcdsaSecp256k1PublicKey),
             ),
-            ScryptoCustomValue::EcdsaSecp256k1Signature(_) => encoder.write_type_id(
-                SborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1Signature),
+            ScryptoCustomValue::EcdsaSecp256k1Signature(_) => encoder.write_value_kind(
+                ValueKind::Custom(ScryptoCustomValueKind::EcdsaSecp256k1Signature),
             ),
-            ScryptoCustomValue::EddsaEd25519PublicKey(_) => encoder.write_type_id(
-                SborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519PublicKey),
+            ScryptoCustomValue::EddsaEd25519PublicKey(_) => encoder.write_value_kind(
+                ValueKind::Custom(ScryptoCustomValueKind::EddsaEd25519PublicKey),
             ),
-            ScryptoCustomValue::EddsaEd25519Signature(_) => encoder.write_type_id(
-                SborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519Signature),
+            ScryptoCustomValue::EddsaEd25519Signature(_) => encoder.write_value_kind(
+                ValueKind::Custom(ScryptoCustomValueKind::EddsaEd25519Signature),
             ),
             ScryptoCustomValue::Decimal(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::Decimal))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Decimal))
             }
             ScryptoCustomValue::PreciseDecimal(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::PreciseDecimal))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal))
             }
             ScryptoCustomValue::NonFungibleId(_) => {
-                encoder.write_type_id(SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId))
+                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::NonFungibleId))
             }
         }
     }
@@ -121,82 +120,83 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Scrypto
     }
 }
 
-impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for ScryptoCustomValue {
-    fn decode_body_with_type_id(
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for ScryptoCustomValue {
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<ScryptoCustomTypeId>,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        match type_id {
-            SborTypeId::Custom(cti) => match cti {
-                ScryptoCustomTypeId::PackageAddress => {
-                    PackageAddress::decode_body_with_type_id(decoder, type_id)
+        match value_kind {
+            ValueKind::Custom(cti) => match cti {
+                ScryptoCustomValueKind::PackageAddress => {
+                    PackageAddress::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::PackageAddress)
                 }
-                ScryptoCustomTypeId::ComponentAddress => {
-                    ComponentAddress::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::ComponentAddress => {
+                    ComponentAddress::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::ComponentAddress)
                 }
-                ScryptoCustomTypeId::ResourceAddress => {
-                    ResourceAddress::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::ResourceAddress => {
+                    ResourceAddress::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::ResourceAddress)
                 }
-                ScryptoCustomTypeId::SystemAddress => {
-                    SystemAddress::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::SystemAddress => {
+                    SystemAddress::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::SystemAddress)
                 }
-                ScryptoCustomTypeId::Own => {
-                    Own::decode_body_with_type_id(decoder, type_id).map(Self::Own)
+                ScryptoCustomValueKind::Own => {
+                    Own::decode_body_with_value_kind(decoder, value_kind).map(Self::Own)
                 }
-                ScryptoCustomTypeId::NonFungibleAddress => {
-                    NonFungibleAddress::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::NonFungibleAddress => {
+                    NonFungibleAddress::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::NonFungibleAddress)
                 }
-                ScryptoCustomTypeId::Blob => {
-                    Blob::decode_body_with_type_id(decoder, type_id).map(Self::Blob)
+                ScryptoCustomValueKind::Blob => {
+                    Blob::decode_body_with_value_kind(decoder, value_kind).map(Self::Blob)
                 }
-                ScryptoCustomTypeId::Bucket => {
-                    ManifestBucket::decode_body_with_type_id(decoder, type_id).map(Self::Bucket)
+                ScryptoCustomValueKind::Bucket => {
+                    ManifestBucket::decode_body_with_value_kind(decoder, value_kind)
+                        .map(Self::Bucket)
                 }
-                ScryptoCustomTypeId::Proof => {
-                    ManifestProof::decode_body_with_type_id(decoder, type_id).map(Self::Proof)
+                ScryptoCustomValueKind::Proof => {
+                    ManifestProof::decode_body_with_value_kind(decoder, value_kind).map(Self::Proof)
                 }
-                ScryptoCustomTypeId::Expression => {
-                    ManifestExpression::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::Expression => {
+                    ManifestExpression::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::Expression)
                 }
-                ScryptoCustomTypeId::Hash => {
-                    Hash::decode_body_with_type_id(decoder, type_id).map(Self::Hash)
+                ScryptoCustomValueKind::Hash => {
+                    Hash::decode_body_with_value_kind(decoder, value_kind).map(Self::Hash)
                 }
-                ScryptoCustomTypeId::EcdsaSecp256k1PublicKey => {
-                    EcdsaSecp256k1PublicKey::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::EcdsaSecp256k1PublicKey => {
+                    EcdsaSecp256k1PublicKey::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::EcdsaSecp256k1PublicKey)
                 }
-                ScryptoCustomTypeId::EcdsaSecp256k1Signature => {
-                    EcdsaSecp256k1Signature::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::EcdsaSecp256k1Signature => {
+                    EcdsaSecp256k1Signature::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::EcdsaSecp256k1Signature)
                 }
-                ScryptoCustomTypeId::EddsaEd25519PublicKey => {
-                    EddsaEd25519PublicKey::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::EddsaEd25519PublicKey => {
+                    EddsaEd25519PublicKey::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::EddsaEd25519PublicKey)
                 }
-                ScryptoCustomTypeId::EddsaEd25519Signature => {
-                    EddsaEd25519Signature::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::EddsaEd25519Signature => {
+                    EddsaEd25519Signature::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::EddsaEd25519Signature)
                 }
-                ScryptoCustomTypeId::Decimal => {
-                    Decimal::decode_body_with_type_id(decoder, type_id).map(Self::Decimal)
+                ScryptoCustomValueKind::Decimal => {
+                    Decimal::decode_body_with_value_kind(decoder, value_kind).map(Self::Decimal)
                 }
-                ScryptoCustomTypeId::PreciseDecimal => {
-                    PreciseDecimal::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::PreciseDecimal => {
+                    PreciseDecimal::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::PreciseDecimal)
                 }
-                ScryptoCustomTypeId::NonFungibleId => {
-                    NonFungibleId::decode_body_with_type_id(decoder, type_id)
+                ScryptoCustomValueKind::NonFungibleId => {
+                    NonFungibleId::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::NonFungibleId)
                 }
             },
-            _ => Err(DecodeError::UnexpectedCustomTypeId {
-                actual: type_id.as_u8(),
+            _ => Err(DecodeError::UnexpectedCustomValueKind {
+                actual: value_kind.as_u8(),
             }),
         }
     }

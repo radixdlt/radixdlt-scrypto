@@ -6,14 +6,15 @@ use crate::*;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Schema<C: CustomTypeExtension> {
     pub type_kinds:
-        Vec<TypeKind<C::CustomTypeId, C::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>,
+        Vec<TypeKind<C::CustomValueKind, C::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>,
     pub type_metadata: Vec<NovelTypeMetadata>,
 }
 
 // TODO: Could get rid of the Cow by using some per-custom type once_cell to cache basic well-known-types,
 //       and return references to the static cached values
 pub struct ResolvedTypeData<'a, C: CustomTypeExtension> {
-    pub kind: Cow<'a, TypeKind<C::CustomTypeId, C::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>,
+    pub kind:
+        Cow<'a, TypeKind<C::CustomValueKind, C::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>>,
     pub metadata: Cow<'a, TypeMetadata>,
 }
 

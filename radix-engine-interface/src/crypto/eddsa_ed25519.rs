@@ -101,7 +101,7 @@ impl EddsaEd25519PublicKey {
 
 scrypto_type!(
     EddsaEd25519PublicKey,
-    ScryptoCustomTypeId::EddsaEd25519PublicKey,
+    ScryptoCustomValueKind::EddsaEd25519PublicKey,
     Type::EddsaEd25519PublicKey,
     EddsaEd25519PublicKey::LENGTH
 );
@@ -126,7 +126,7 @@ impl EddsaEd25519Signature {
 
 scrypto_type!(
     EddsaEd25519Signature,
-    ScryptoCustomTypeId::EddsaEd25519Signature,
+    ScryptoCustomValueKind::EddsaEd25519Signature,
     Type::EddsaEd25519Signature,
     EddsaEd25519Signature::LENGTH
 );

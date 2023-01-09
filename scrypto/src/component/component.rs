@@ -5,7 +5,7 @@ use radix_engine_interface::api::types::{
     SubstateOffset,
 };
 use radix_engine_interface::data::{
-    scrypto_decode, ScryptoCustomTypeId, ScryptoDecode, ScryptoEncode,
+    scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
 };
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
@@ -55,14 +55,14 @@ pub trait LocalComponent {
 
 // TODO: de-duplication
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
 }
 
 // TODO: de-duplication
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, Describe, PartialEq, Eq)]
 pub struct ComponentStateSubstate {
     pub raw: Vec<u8>,
 }
@@ -273,17 +273,17 @@ impl GlobalComponentRef {
 // binary
 //========
 
-impl TypeId<ScryptoCustomTypeId> for Component {
+impl Categorize<ScryptoCustomValueKind> for Component {
     #[inline]
-    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
-        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
     }
 }
 
-impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Component {
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Component {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -292,12 +292,12 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Compone
     }
 }
 
-impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Component {
-    fn decode_body_with_type_id(
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Component {
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<ScryptoCustomTypeId>,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
         match o {
             Own::Component(component_id) => Ok(Self(component_id)),
             _ => Err(DecodeError::InvalidCustomValue),
