@@ -2,13 +2,12 @@ use super::*;
 use sbor::rust::collections::IndexSet;
 use sbor::*;
 
-pub type ScryptoTypeSchema<L> = TypeSchema<ScryptoCustomTypeId, ScryptoCustomTypeSchema<L>, L>;
-pub type ScryptoLocalTypeSchema = ScryptoTypeSchema<SchemaLocalTypeRef>;
-pub type ScryptoFullTypeSchema = FullTypeSchema<ScryptoTypeSchema<SchemaLocalTypeRef>>;
+pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomTypeId, ScryptoCustomTypeKind<L>, L>;
+pub type ScryptoSchema = Schema<ScryptoCustomTypeExtension>;
 
 /// A schema for the values that a codec can decode / views as valid
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
-pub enum ScryptoCustomTypeSchema<L: TypeLink> {
+pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
     // Global address types
     PackageAddress,
     ComponentAddress,
@@ -38,134 +37,136 @@ pub enum ScryptoCustomTypeSchema<L: TypeLink> {
     NonFungibleId,
 }
 
-impl<L: TypeLink> CustomTypeSchema for ScryptoCustomTypeSchema<L> {
+impl<L: SchemaTypeLink> CustomTypeKind<L> for ScryptoCustomTypeKind<L> {
     type CustomTypeId = ScryptoCustomTypeId;
+    type CustomTypeExtension = ScryptoCustomTypeExtension;
 }
 
-impl CompleteCustomTypeSchema for ScryptoCustomTypeSchema<SchemaLocalTypeRef> {
-    type WellKnownTypes = ScryptoCustomWellKnownType;
-}
+pub enum ScryptoCustomTypeExtension {}
 
-impl LinearizableCustomTypeSchema for ScryptoCustomTypeSchema<GlobalTypeRef> {
-    type Linearized = ScryptoCustomTypeSchema<SchemaLocalTypeRef>;
+impl CustomTypeExtension for ScryptoCustomTypeExtension {
+    type CustomTypeId = ScryptoCustomTypeId;
+    type CustomTypeKind<L: SchemaTypeLink> = ScryptoCustomTypeKind<L>;
 
-    fn linearize(self, schemas: &IndexSet<ComplexTypeHash>) -> Self::Linearized {
-        match self {
-            Self::PackageAddress => ScryptoCustomTypeSchema::PackageAddress,
-            Self::ComponentAddress => ScryptoCustomTypeSchema::ComponentAddress,
-            Self::ResourceAddress => ScryptoCustomTypeSchema::ResourceAddress,
-            Self::SystemAddress => ScryptoCustomTypeSchema::SystemAddress,
-            Self::Component => ScryptoCustomTypeSchema::Component,
-            Self::KeyValueStore {
+    fn linearize_type_kind(
+        type_kind: Self::CustomTypeKind<GlobalTypeId>,
+        schemas: &IndexSet<TypeHash>,
+    ) -> Self::CustomTypeKind<LocalTypeIndex> {
+        match type_kind {
+            ScryptoCustomTypeKind::PackageAddress => ScryptoCustomTypeKind::PackageAddress,
+            ScryptoCustomTypeKind::ComponentAddress => ScryptoCustomTypeKind::ComponentAddress,
+            ScryptoCustomTypeKind::ResourceAddress => ScryptoCustomTypeKind::ResourceAddress,
+            ScryptoCustomTypeKind::SystemAddress => ScryptoCustomTypeKind::SystemAddress,
+            ScryptoCustomTypeKind::Component => ScryptoCustomTypeKind::Component,
+            ScryptoCustomTypeKind::KeyValueStore {
                 key_type,
                 value_type,
-            } => ScryptoCustomTypeSchema::KeyValueStore {
+            } => ScryptoCustomTypeKind::KeyValueStore {
                 key_type: resolve_local_type_ref(schemas, &key_type),
                 value_type: resolve_local_type_ref(schemas, &value_type),
             },
-            Self::Bucket => ScryptoCustomTypeSchema::Bucket,
-            Self::Proof => ScryptoCustomTypeSchema::Proof,
-            Self::Own => ScryptoCustomTypeSchema::Own,
-            Self::Expression => ScryptoCustomTypeSchema::Expression,
-            Self::Blob => ScryptoCustomTypeSchema::Blob,
-            Self::NonFungibleAddress => ScryptoCustomTypeSchema::NonFungibleAddress,
-            Self::Hash => ScryptoCustomTypeSchema::Hash,
-            Self::EcdsaSecp256k1PublicKey => ScryptoCustomTypeSchema::EcdsaSecp256k1PublicKey,
-            Self::EcdsaSecp256k1Signature => ScryptoCustomTypeSchema::EcdsaSecp256k1Signature,
-            Self::EddsaEd25519PublicKey => ScryptoCustomTypeSchema::EddsaEd25519PublicKey,
-            Self::EddsaEd25519Signature => ScryptoCustomTypeSchema::EddsaEd25519Signature,
-            Self::Decimal => ScryptoCustomTypeSchema::Decimal,
-            Self::PreciseDecimal => ScryptoCustomTypeSchema::PreciseDecimal,
-            Self::NonFungibleId => ScryptoCustomTypeSchema::NonFungibleId,
+            ScryptoCustomTypeKind::Bucket => ScryptoCustomTypeKind::Bucket,
+            ScryptoCustomTypeKind::Proof => ScryptoCustomTypeKind::Proof,
+            ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
+            ScryptoCustomTypeKind::Expression => ScryptoCustomTypeKind::Expression,
+            ScryptoCustomTypeKind::Blob => ScryptoCustomTypeKind::Blob,
+            ScryptoCustomTypeKind::NonFungibleAddress => ScryptoCustomTypeKind::NonFungibleAddress,
+            ScryptoCustomTypeKind::Hash => ScryptoCustomTypeKind::Hash,
+            ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey => {
+                ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
+            }
+            ScryptoCustomTypeKind::EcdsaSecp256k1Signature => {
+                ScryptoCustomTypeKind::EcdsaSecp256k1Signature
+            }
+            ScryptoCustomTypeKind::EddsaEd25519PublicKey => {
+                ScryptoCustomTypeKind::EddsaEd25519PublicKey
+            }
+            ScryptoCustomTypeKind::EddsaEd25519Signature => {
+                ScryptoCustomTypeKind::EddsaEd25519Signature
+            }
+            ScryptoCustomTypeKind::Decimal => ScryptoCustomTypeKind::Decimal,
+            ScryptoCustomTypeKind::PreciseDecimal => ScryptoCustomTypeKind::PreciseDecimal,
+            ScryptoCustomTypeKind::NonFungibleId => ScryptoCustomTypeKind::NonFungibleId,
         }
     }
-}
 
-use well_known_scrypto_schemas::*;
-
-mod well_known_scrypto_schemas {
-    use super::*;
-
-    pub const PACKAGE_ADDRESS_INDEX: u8 = TYPE_PACKAGE_ADDRESS;
-    pub const COMPONENT_ADDRESS_INDEX: u8 = TYPE_COMPONENT_ADDRESS;
-    pub const RESOURCE_ADDRESS_INDEX: u8 = TYPE_RESOURCE_ADDRESS;
-    pub const SYSTEM_ADDRESS_INDEX: u8 = TYPE_SYSTEM_ADDRESS;
-
-    pub const OWN_INDEX: u8 = TYPE_OWN;
-    pub const NON_FUNGIBLE_ADDRESS_INDEX: u8 = TYPE_NON_FUNGIBLE_ADDRESS;
-    pub const COMPONENT_INDEX: u8 = TYPE_COMPONENT;
-    // We skip KeyValueStore because it has generic parameters
-
-    pub const BLOB_INDEX: u8 = TYPE_BLOB;
-    pub const BUCKET_INDEX: u8 = TYPE_BUCKET;
-    pub const PROOF_INDEX: u8 = TYPE_PROOF;
-    pub const EXPRESSION_INDEX: u8 = TYPE_EXPRESSION;
-
-    pub const HASH_INDEX: u8 = TYPE_HASH;
-    pub const ECDSA_SECP256K1_PUBLIC_KEY_INDEX: u8 = TYPE_ECDSA_SECP256K1_PUBLIC_KEY;
-    pub const ECDSA_SECP256K1_SIGNATURE_INDEX: u8 = TYPE_ECDSA_SECP256K1_SIGNATURE;
-    pub const EDDSA_ED25519_PUBLIC_KEY_INDEX: u8 = TYPE_EDDSA_ED25519_PUBLIC_KEY;
-    pub const EDDSA_ED25519_SIGNATURE_INDEX: u8 = TYPE_EDDSA_ED25519_SIGNATURE;
-    pub const DECIMAL_INDEX: u8 = TYPE_DECIMAL;
-    pub const PRECISE_DECIMAL_INDEX: u8 = TYPE_PRECISE_DECIMAL;
-    pub const NON_FUNGIBLE_ID_INDEX: u8 = TYPE_NON_FUNGIBLE_ID;
-}
-
-pub enum ScryptoCustomWellKnownType {}
-
-impl CustomWellKnownType for ScryptoCustomWellKnownType {
-    type CustomTypeSchema = ScryptoCustomTypeSchema<SchemaLocalTypeRef>;
-
-    fn from_well_known_index(
+    fn resolve_custom_well_known_type(
         well_known_index: u8,
-    ) -> Option<LocalTypeData<Self::CustomTypeSchema, SchemaLocalTypeRef>> {
+    ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
         let (name, custom_type_schema) = match well_known_index {
-            PACKAGE_ADDRESS_INDEX => ("PackageAddress", ScryptoCustomTypeSchema::PackageAddress),
-            COMPONENT_ADDRESS_INDEX => (
-                "ComponentAddress",
-                ScryptoCustomTypeSchema::ComponentAddress,
-            ),
-            RESOURCE_ADDRESS_INDEX => ("ResourceAddress", ScryptoCustomTypeSchema::ResourceAddress),
-            SYSTEM_ADDRESS_INDEX => ("SystemAddress", ScryptoCustomTypeSchema::SystemAddress),
+            PACKAGE_ADDRESS_ID => ("PackageAddress", ScryptoCustomTypeKind::PackageAddress),
+            COMPONENT_ADDRESS_ID => ("ComponentAddress", ScryptoCustomTypeKind::ComponentAddress),
+            RESOURCE_ADDRESS_ID => ("ResourceAddress", ScryptoCustomTypeKind::ResourceAddress),
+            SYSTEM_ADDRESS_ID => ("SystemAddress", ScryptoCustomTypeKind::SystemAddress),
 
-            OWN_INDEX => ("Own", ScryptoCustomTypeSchema::Own),
-            NON_FUNGIBLE_ADDRESS_INDEX => (
+            OWN_ID => ("Own", ScryptoCustomTypeKind::Own),
+            NON_FUNGIBLE_ADDRESS_ID => (
                 "NonFungibleAddress",
-                ScryptoCustomTypeSchema::NonFungibleAddress,
+                ScryptoCustomTypeKind::NonFungibleAddress,
             ),
-            COMPONENT_INDEX => ("Component", ScryptoCustomTypeSchema::Component),
+            COMPONENT_ID => ("Component", ScryptoCustomTypeKind::Component),
 
-            BLOB_INDEX => ("Blob", ScryptoCustomTypeSchema::Blob),
-            BUCKET_INDEX => ("Bucket", ScryptoCustomTypeSchema::Bucket),
-            PROOF_INDEX => ("Proof", ScryptoCustomTypeSchema::Proof),
-            EXPRESSION_INDEX => ("Expression", ScryptoCustomTypeSchema::Expression),
+            BLOB_ID => ("Blob", ScryptoCustomTypeKind::Blob),
+            BUCKET_ID => ("Bucket", ScryptoCustomTypeKind::Bucket),
+            PROOF_ID => ("Proof", ScryptoCustomTypeKind::Proof),
+            EXPRESSION_ID => ("Expression", ScryptoCustomTypeKind::Expression),
 
-            HASH_INDEX => ("Hash", ScryptoCustomTypeSchema::Hash),
-            ECDSA_SECP256K1_PUBLIC_KEY_INDEX => (
+            HASH_ID => ("Hash", ScryptoCustomTypeKind::Hash),
+            ECDSA_SECP256K1_PUBLIC_KEY_ID => (
                 "EcdsaSecp256k1PublicKey",
-                ScryptoCustomTypeSchema::EcdsaSecp256k1PublicKey,
+                ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey,
             ),
-            ECDSA_SECP256K1_SIGNATURE_INDEX => (
+            ECDSA_SECP256K1_SIGNATURE_ID => (
                 "EcdsaSecp256k1Signature",
-                ScryptoCustomTypeSchema::EcdsaSecp256k1Signature,
+                ScryptoCustomTypeKind::EcdsaSecp256k1Signature,
             ),
-            EDDSA_ED25519_PUBLIC_KEY_INDEX => (
+            EDDSA_ED25519_PUBLIC_KEY_ID => (
                 "EddsaEd25519PublicKey",
-                ScryptoCustomTypeSchema::EddsaEd25519PublicKey,
+                ScryptoCustomTypeKind::EddsaEd25519PublicKey,
             ),
-            EDDSA_ED25519_SIGNATURE_INDEX => (
+            EDDSA_ED25519_SIGNATURE_ID => (
                 "EddsaEd25519Signature",
-                ScryptoCustomTypeSchema::EddsaEd25519Signature,
+                ScryptoCustomTypeKind::EddsaEd25519Signature,
             ),
-            DECIMAL_INDEX => ("Decimal", ScryptoCustomTypeSchema::Decimal),
-            PRECISE_DECIMAL_INDEX => ("PreciseDecimal", ScryptoCustomTypeSchema::PreciseDecimal),
-            NON_FUNGIBLE_ID_INDEX => ("NonFungibleId", ScryptoCustomTypeSchema::NonFungibleId),
+            DECIMAL_ID => ("Decimal", ScryptoCustomTypeKind::Decimal),
+            PRECISE_DECIMAL_ID => ("PreciseDecimal", ScryptoCustomTypeKind::PreciseDecimal),
+            NON_FUNGIBLE_ID_ID => ("NonFungibleId", ScryptoCustomTypeKind::NonFungibleId),
             _ => return None,
         };
 
-        Some(LocalTypeData::named_no_child_names(
+        Some(TypeData::named_no_child_names(
             name,
-            TypeSchema::Custom(custom_type_schema),
+            TypeKind::Custom(custom_type_schema),
         ))
     }
+}
+
+use well_known_scrypto_types::*;
+
+mod well_known_scrypto_types {
+    use super::*;
+
+    pub const PACKAGE_ADDRESS_ID: u8 = TYPE_PACKAGE_ADDRESS;
+    pub const COMPONENT_ADDRESS_ID: u8 = TYPE_COMPONENT_ADDRESS;
+    pub const RESOURCE_ADDRESS_ID: u8 = TYPE_RESOURCE_ADDRESS;
+    pub const SYSTEM_ADDRESS_ID: u8 = TYPE_SYSTEM_ADDRESS;
+
+    pub const OWN_ID: u8 = TYPE_OWN;
+    pub const NON_FUNGIBLE_ADDRESS_ID: u8 = TYPE_NON_FUNGIBLE_ADDRESS;
+    pub const COMPONENT_ID: u8 = TYPE_COMPONENT;
+    // We skip KeyValueStore because it has generic parameters
+
+    pub const BLOB_ID: u8 = TYPE_BLOB;
+    pub const BUCKET_ID: u8 = TYPE_BUCKET;
+    pub const PROOF_ID: u8 = TYPE_PROOF;
+    pub const EXPRESSION_ID: u8 = TYPE_EXPRESSION;
+
+    pub const HASH_ID: u8 = TYPE_HASH;
+    pub const ECDSA_SECP256K1_PUBLIC_KEY_ID: u8 = TYPE_ECDSA_SECP256K1_PUBLIC_KEY;
+    pub const ECDSA_SECP256K1_SIGNATURE_ID: u8 = TYPE_ECDSA_SECP256K1_SIGNATURE;
+    pub const EDDSA_ED25519_PUBLIC_KEY_ID: u8 = TYPE_EDDSA_ED25519_PUBLIC_KEY;
+    pub const EDDSA_ED25519_SIGNATURE_ID: u8 = TYPE_EDDSA_ED25519_SIGNATURE;
+    pub const DECIMAL_ID: u8 = TYPE_DECIMAL;
+    pub const PRECISE_DECIMAL_ID: u8 = TYPE_PRECISE_DECIMAL;
+    pub const NON_FUNGIBLE_ID_ID: u8 = TYPE_NON_FUNGIBLE_ID;
 }

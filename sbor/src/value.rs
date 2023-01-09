@@ -266,9 +266,9 @@ mod schema {
     use super::*;
     use crate::*;
 
-    impl<X: CustomTypeId, Y, C: CustomTypeSchema> Schema<C> for SborValue<X, Y> {
-        const SCHEMA_TYPE_REF: GlobalTypeRef =
-            GlobalTypeRef::well_known(well_known_basic_schemas::ANY_INDEX);
+    impl<X: CustomTypeId, Y, C: CustomTypeKind<GlobalTypeId>> NewDescribe<C> for SborValue<X, Y> {
+        const SCHEMA_TYPE_REF: GlobalTypeId =
+            GlobalTypeId::well_known(well_known_basic_types::ANY_ID);
     }
 }
 

@@ -303,7 +303,7 @@ pub fn build_schema_generics<'a>(
         };
         type_param
             .bounds
-            .push(parse_quote!(::sbor::Schema<#custom_type_schema_generic>));
+            .push(parse_quote!(::sbor::NewDescribe<#custom_type_schema_generic>));
 
         if generic_type_names_needing_type_id_bound.contains(&type_param.ident.to_string()) {
             type_param
@@ -313,9 +313,9 @@ pub fn build_schema_generics<'a>(
     }
 
     if need_to_add_cti_generic {
-        impl_generics
-            .params
-            .push(parse_quote!(#custom_type_schema_generic: ::sbor::CustomTypeSchema));
+        impl_generics.params.push(
+            parse_quote!(#custom_type_schema_generic: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>),
+        );
     }
 
     let ty_generics: Generics = parse_quote! { #ty_generics };

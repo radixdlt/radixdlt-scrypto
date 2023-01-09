@@ -55,21 +55,23 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode<X,
 }
 
 #[cfg(feature = "schema")]
-impl<C: CustomTypeSchema, T: Schema<C>, E: Schema<C>> Schema<C> for Result<T, E> {
-    const SCHEMA_TYPE_REF: GlobalTypeRef =
-        GlobalTypeRef::complex("Result", &[T::SCHEMA_TYPE_REF, E::SCHEMA_TYPE_REF]);
+impl<C: CustomTypeKind<GlobalTypeId>, T: NewDescribe<C>, E: NewDescribe<C>> NewDescribe<C>
+    for Result<T, E>
+{
+    const SCHEMA_TYPE_REF: GlobalTypeId =
+        GlobalTypeId::complex("Result", &[T::SCHEMA_TYPE_REF, E::SCHEMA_TYPE_REF]);
 
-    fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
-        Some(LocalTypeData::named_enum(
+    fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        Some(TypeData::named_enum(
             "Result",
             crate::rust::collections::btree_map::btreemap![
-                "Ok".to_owned() => LocalTypeData::named_tuple("Ok", vec![T::SCHEMA_TYPE_REF]),
-                "Err".to_owned() => LocalTypeData::named_tuple("Err", vec![E::SCHEMA_TYPE_REF]),
+                "Ok".to_owned() => TypeData::named_tuple("Ok", vec![T::SCHEMA_TYPE_REF]),
+                "Err".to_owned() => TypeData::named_tuple("Err", vec![E::SCHEMA_TYPE_REF]),
             ],
         ))
     }
 
-    fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {
+    fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
         aggregator.add_child_type_and_descendents::<T>();
         aggregator.add_child_type_and_descendents::<E>();
     }

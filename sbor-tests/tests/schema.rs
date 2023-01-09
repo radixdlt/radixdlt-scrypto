@@ -60,26 +60,29 @@ pub enum IndirectRecursiveEnum3 {
 #[test]
 fn create_unit_struct_schema_works_correctly() {
     let (type_ref, schema) =
-        generate_full_schema_from_single_type::<UnitStruct, NoCustomTypeSchema>(); // The original type should be the first type in the schema
-    assert!(matches!(type_ref, SchemaLocalTypeRef::SchemaLocal(0)));
-    assert_eq!(schema.custom_types.len(), 1);
-    assert_eq!(schema.naming.len(), 1);
-    assert_eq!(schema.naming[0].type_name, "UnitStruct");
-    assert!(matches!(&schema.naming[0].child_names, ChildNames::None));
+        generate_full_schema_from_single_type::<UnitStruct, NoCustomTypeExtension>(); // The original type should be the first type in the schema
+    assert!(matches!(type_ref, LocalTypeIndex::SchemaLocalIndex(0)));
+    assert_eq!(schema.type_kinds.len(), 1);
+    assert_eq!(schema.type_naming.len(), 1);
+    assert_eq!(schema.type_naming[0].type_name, "UnitStruct");
+    assert!(matches!(
+        &schema.type_naming[0].child_names,
+        ChildNames::None
+    ));
 }
 
 #[test]
 fn create_basic_sample_schema_works_correctly() {
     let (root_type_ref, schema) =
-        generate_full_schema_from_single_type::<BasicSample, NoCustomTypeSchema>(); // The original type should be the first type in the schema
+        generate_full_schema_from_single_type::<BasicSample, NoCustomTypeExtension>(); // The original type should be the first type in the schema
 
-    assert!(matches!(root_type_ref, SchemaLocalTypeRef::SchemaLocal(0)));
-    assert_eq!(schema.custom_types.len(), 2);
-    assert_eq!(schema.naming.len(), 2);
+    assert!(matches!(root_type_ref, LocalTypeIndex::SchemaLocalIndex(0)));
+    assert_eq!(schema.type_kinds.len(), 2);
+    assert_eq!(schema.type_naming.len(), 2);
 
     // Test Root Type
 
-    let type_data = schema.resolve(SchemaLocalTypeRef::SchemaLocal(0)).unwrap();
+    let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
     assert_eq!(type_data.naming.type_name, "BasicSample");
     assert!(
         matches!(&type_data.naming.child_names, ChildNames::FieldNames(field_names) if matches!(field_names[..], [
@@ -88,33 +91,33 @@ fn create_basic_sample_schema_works_correctly() {
         ]))
     );
     assert!(
-        matches!(type_data.schema.into_owned(), TypeSchema::Tuple { field_types } if matches!(field_types[..], [
-            SchemaLocalTypeRef::WellKnown(well_known_basic_schemas::UNIT_INDEX),
-            SchemaLocalTypeRef::SchemaLocal(1),
+        matches!(type_data.kind.into_owned(), TypeKind::Tuple { field_types } if matches!(field_types[..], [
+            LocalTypeIndex::WellKnown(well_known_basic_types::UNIT_ID),
+            LocalTypeIndex::SchemaLocalIndex(1),
         ]))
     );
 
     // Test Further Types
 
-    let type_data = schema.resolve(SchemaLocalTypeRef::SchemaLocal(1)).unwrap();
+    let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(1)).unwrap();
     assert_eq!(type_data.naming.type_name, "UnitStruct");
     assert!(matches!(type_data.naming.child_names, ChildNames::None));
-    assert!(matches!(type_data.schema.into_owned(), TypeSchema::Unit));
+    assert!(matches!(type_data.kind.into_owned(), TypeKind::Unit));
 }
 
 #[test]
 fn create_advanced_sample_schema_works_correctly() {
     let (type_ref, schema) = generate_full_schema_from_single_type::<
         AdvancedSample<UnitStruct, u128>,
-        NoCustomTypeSchema,
+        NoCustomTypeExtension,
     >();
 
     // The original type should be the first type in the schema
-    assert!(matches!(type_ref, SchemaLocalTypeRef::SchemaLocal(0)));
+    assert!(matches!(type_ref, LocalTypeIndex::SchemaLocalIndex(0)));
 
     // We then check each type in turn is what we expect
 
-    let type_data = schema.resolve(SchemaLocalTypeRef::SchemaLocal(0)).unwrap();
+    let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
     assert_eq!(type_data.naming.type_name, "AdvancedSample");
     assert!(
         matches!(&type_data.naming.child_names, ChildNames::FieldNames(field_names) if matches!(field_names[..], [
@@ -131,30 +134,30 @@ fn create_advanced_sample_schema_works_correctly() {
             Cow::Borrowed("k"),
         ]))
     );
-    let TypeSchema::Tuple { field_types } = type_data.schema.into_owned() else {
+    let TypeKind::Tuple { field_types } = type_data.kind.into_owned() else {
         panic!("Type was not a Tuple");
     };
     assert!(matches!(
         field_types[..],
         [
-            SchemaLocalTypeRef::WellKnown(well_known_basic_schemas::UNIT_INDEX),
-            SchemaLocalTypeRef::WellKnown(well_known_basic_schemas::U32_INDEX),
-            SchemaLocalTypeRef::SchemaLocal(1), // Registers (u8, Vec<T>) which also registers SchemaLocal(2) as Vec<T>
-            SchemaLocalTypeRef::WellKnown(well_known_basic_schemas::STRING_INDEX),
-            SchemaLocalTypeRef::WellKnown(well_known_basic_schemas::U128_INDEX),
-            SchemaLocalTypeRef::WellKnown(well_known_basic_schemas::U128_INDEX), // S resolves to U128
-            SchemaLocalTypeRef::SchemaLocal(3), // T resolves to UnitStruct
-            SchemaLocalTypeRef::WellKnown(well_known_basic_schemas::BYTES_INDEX),
-            SchemaLocalTypeRef::SchemaLocal(4), // Vec<S> = Vec<u128>, a non-well-known type
-            SchemaLocalTypeRef::SchemaLocal(3), // T resolves to UnitStruct - at the same schema index as before
-            SchemaLocalTypeRef::SchemaLocal(5), // HashMap<[u8; 3], IndexMap<i64, BTreeSet<i32>>>
+            LocalTypeIndex::WellKnown(well_known_basic_types::UNIT_ID),
+            LocalTypeIndex::WellKnown(well_known_basic_types::U32_ID),
+            LocalTypeIndex::SchemaLocalIndex(1), // Registers (u8, Vec<T>) which also registers SchemaLocal(2) as Vec<T>
+            LocalTypeIndex::WellKnown(well_known_basic_types::STRING_ID),
+            LocalTypeIndex::WellKnown(well_known_basic_types::U128_ID),
+            LocalTypeIndex::WellKnown(well_known_basic_types::U128_ID), // S resolves to U128
+            LocalTypeIndex::SchemaLocalIndex(3),                        // T resolves to UnitStruct
+            LocalTypeIndex::WellKnown(well_known_basic_types::BYTES_ID),
+            LocalTypeIndex::SchemaLocalIndex(4), // Vec<S> = Vec<u128>, a non-well-known type
+            LocalTypeIndex::SchemaLocalIndex(3), // T resolves to UnitStruct - at the same schema index as before
+            LocalTypeIndex::SchemaLocalIndex(5), // HashMap<[u8; 3], IndexMap<i64, BTreeSet<i32>>>
         ]
     ));
 }
 
 #[test]
 fn creating_schema_from_multiple_types_works_correctly() {
-    let mut aggregator = SchemaAggregator::<NoCustomTypeSchema>::new();
+    let mut aggregator = TypeAggregator::<NoCustomTypeKind>::new();
     let unit_struct_type_ref = aggregator.add_child_type_and_descendents::<UnitStruct>();
     let advanced_sample_type_ref =
         aggregator.add_child_type_and_descendents::<AdvancedSample<UnitStruct, u128>>();
@@ -164,26 +167,26 @@ fn creating_schema_from_multiple_types_works_correctly() {
     // Check when adding a type that's already known, we return the existing index
     assert!(matches!(
         unit_struct_type_ref,
-        SchemaLocalTypeRef::SchemaLocal(0)
+        LocalTypeIndex::SchemaLocalIndex(0)
     ));
     assert!(matches!(
         advanced_sample_type_ref,
-        SchemaLocalTypeRef::SchemaLocal(1)
+        LocalTypeIndex::SchemaLocalIndex(1)
     ));
     assert!(matches!(
         i64_type_ref,
-        SchemaLocalTypeRef::WellKnown(well_known_basic_schemas::I64_INDEX)
+        LocalTypeIndex::WellKnown(well_known_basic_types::I64_ID)
     ));
     assert!(matches!(
         unit_struct_type_ref_2,
-        SchemaLocalTypeRef::SchemaLocal(0)
+        LocalTypeIndex::SchemaLocalIndex(0)
     )); // Repeats the first one
 
     let schema = generate_full_schema(aggregator);
 
     // Check that the AdvancedSample references UnitStruct at the correct index
     let type_data = schema.resolve(advanced_sample_type_ref).unwrap();
-    let TypeSchema::Tuple { field_types } = type_data.schema.into_owned() else {
+    let TypeKind::Tuple { field_types } = type_data.kind.into_owned() else {
         panic!("Type was not a Tuple");
     };
     assert_eq!(field_types[6], unit_struct_type_ref); // T = UnitStruct is the 7th field in AdvancedSample<UnitStruct, u128>
@@ -193,11 +196,11 @@ fn creating_schema_from_multiple_types_works_correctly() {
 fn create_recursive_schema_works_correctly() {
     // Most of this test is checking that such recursive schemas can: (A) happily compile and (B) don't panic when a schema is generated
     let (type_ref, schema) =
-        generate_full_schema_from_single_type::<IndirectRecursive1, NoCustomTypeSchema>();
+        generate_full_schema_from_single_type::<IndirectRecursive1, NoCustomTypeExtension>();
 
     // The original type should be the first type in the schema
-    assert!(matches!(type_ref, SchemaLocalTypeRef::SchemaLocal(0)));
+    assert!(matches!(type_ref, LocalTypeIndex::SchemaLocalIndex(0)));
 
-    let type_data = schema.resolve(SchemaLocalTypeRef::SchemaLocal(0)).unwrap();
+    let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
     assert_eq!(type_data.naming.type_name, "IndirectRecursive1");
 }

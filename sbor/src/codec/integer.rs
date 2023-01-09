@@ -154,17 +154,17 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    well_known_basic_schema!(u8, U8_INDEX);
-    well_known_basic_schema!(u16, U16_INDEX);
-    well_known_basic_schema!(u32, U32_INDEX);
-    well_known_basic_schema!(u64, U64_INDEX);
-    well_known_basic_schema!(u128, U128_INDEX);
-    well_known_basic_schema!(i8, I8_INDEX);
-    well_known_basic_schema!(i16, I16_INDEX);
-    well_known_basic_schema!(i32, I32_INDEX);
-    well_known_basic_schema!(i64, I64_INDEX);
-    well_known_basic_schema!(i128, I128_INDEX);
+    well_known_basic_type!(u8, U8_ID);
+    well_known_basic_type!(u16, U16_ID);
+    well_known_basic_type!(u32, U32_ID);
+    well_known_basic_type!(u64, U64_ID);
+    well_known_basic_type!(u128, U128_ID);
+    well_known_basic_type!(i8, I8_ID);
+    well_known_basic_type!(i16, I16_ID);
+    well_known_basic_type!(i32, I32_ID);
+    well_known_basic_type!(i64, I64_ID);
+    well_known_basic_type!(i128, I128_ID);
 
-    well_known_basic_schema!(usize, U64_INDEX);
-    well_known_basic_schema!(isize, I64_INDEX);
+    well_known_basic_type!(usize, U64_ID);
+    well_known_basic_type!(isize, I64_ID);
 }

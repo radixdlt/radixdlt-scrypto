@@ -97,39 +97,37 @@ pub use schema::*;
 #[cfg(feature = "schema")]
 mod schema {
     use super::*;
+    use crate::rust::collections::IndexSet;
 
     #[derive(Debug, Clone, PartialEq, Eq)]
-    pub enum NoCustomTypeSchema {}
+    pub enum NoCustomTypeKind {}
 
-    impl CustomTypeSchema for NoCustomTypeSchema {
+    impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
         type CustomTypeId = NoCustomTypeId;
+
+        type CustomTypeExtension = NoCustomTypeExtension;
     }
 
-    pub enum NoCustomWellKnownTypes {}
+    pub enum NoCustomTypeExtension {}
 
-    impl CustomWellKnownType for NoCustomWellKnownTypes {
-        type CustomTypeSchema = NoCustomTypeSchema;
+    impl CustomTypeExtension for NoCustomTypeExtension {
+        type CustomTypeId = NoCustomTypeId;
+        type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
 
-        fn from_well_known_index(
-            _well_known_index: u8,
-        ) -> Option<LocalTypeData<Self::CustomTypeSchema, SchemaLocalTypeRef>> {
+        fn linearize_type_kind(
+            _: Self::CustomTypeKind<GlobalTypeId>,
+            _: &IndexSet<TypeHash>,
+        ) -> Self::CustomTypeKind<LocalTypeIndex> {
+            unreachable!("No custom type kinds exist")
+        }
+
+        fn resolve_custom_well_known_type(
+            _: u8,
+        ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
             None
         }
     }
 
-    impl CompleteCustomTypeSchema for NoCustomTypeSchema {
-        type WellKnownTypes = NoCustomWellKnownTypes;
-    }
-
-    impl LinearizableCustomTypeSchema for NoCustomTypeSchema {
-        type Linearized = NoCustomTypeSchema;
-
-        fn linearize(self, _schemas: &indexmap::IndexSet<ComplexTypeHash>) -> Self::Linearized {
-            self
-        }
-    }
-
-    pub type BasicTypeSchema<L> = TypeSchema<NoCustomTypeId, NoCustomTypeSchema, L>;
-    pub type BasicLocalTypeSchema = BasicTypeSchema<SchemaLocalTypeRef>;
-    pub type BasicFullTypeSchema = FullTypeSchema<NoCustomTypeSchema>;
+    pub type BasicTypeKind<L> = TypeKind<NoCustomTypeId, NoCustomTypeKind, L>;
+    pub type BasicSchema = Schema<NoCustomTypeExtension>;
 }

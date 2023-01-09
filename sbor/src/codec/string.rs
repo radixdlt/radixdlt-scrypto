@@ -48,6 +48,6 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    well_known_basic_schema!(String, STRING_INDEX);
-    well_known_basic_schema!(str, STRING_INDEX);
+    well_known_basic_type!(String, STRING_ID);
+    well_known_basic_type!(str, STRING_ID);
 }

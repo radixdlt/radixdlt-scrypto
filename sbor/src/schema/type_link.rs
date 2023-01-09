@@ -1,45 +1,37 @@
-use super::*;
 use sbor::*;
 
+/// Marker trait for a link between [`TypeKind`]s:
+/// - [`GlobalTypeId`]: A global identifier for a type (a well known id, or type hash)
+/// - [`LocalTypeIndex`]: A link in the context of a schema (a well known id, or a local index)
+pub trait SchemaTypeLink: Clone + PartialEq + Eq {}
+
+/// This is a global identifier for a type.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum GlobalTypeRef {
+pub enum GlobalTypeId {
     /// This takes a well_known type index.
-    /// Would use SborTypeId<X> here, but this needs to be usable from a const context
-    /// so we're blocked on https://github.com/rust-lang/rfcs/pull/2632
+    ///
+    /// This wraps a `[u8; 1]` because it needs to be able to be turned into a `[u8]` in a const context.
     WellKnown([u8; 1]),
-    /// For non-simple types
-    Complex(ComplexTypeHash),
+    /// The global type id for non-simple types
+    Custom(TypeHash),
 }
-impl TypeLink for GlobalTypeRef {}
+impl SchemaTypeLink for GlobalTypeId {}
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum SchemaLocalTypeRef {
-    /// This takes a well_known type index
-    WellKnown(u8),
-    /// For non-simple types
-    SchemaLocal(usize),
-}
-impl TypeLink for SchemaLocalTypeRef {}
+pub type TypeHash = [u8; 20];
 
-pub type ComplexTypeHash = [u8; 20];
-
-impl GlobalTypeRef {
-    pub const fn complex(name: &str, dependencies: &[GlobalTypeRef]) -> Self {
+impl GlobalTypeId {
+    pub const fn complex(name: &str, dependencies: &[GlobalTypeId]) -> Self {
         generate_type_ref(&[name], &[], dependencies)
     }
 
-    pub const fn complex_with_code(
-        name: &str,
-        dependencies: &[GlobalTypeRef],
-        code: &[u8],
-    ) -> Self {
+    pub const fn complex_with_code(name: &str, dependencies: &[GlobalTypeId], code: &[u8]) -> Self {
         generate_type_ref(&[name], &[code], dependencies)
     }
 
     pub const fn enum_variant(
         name: &str,
         variant_name: &str,
-        dependencies: &[GlobalTypeRef],
+        dependencies: &[GlobalTypeId],
     ) -> Self {
         generate_type_ref(&[name, variant_name], &[], dependencies)
     }
@@ -47,13 +39,13 @@ impl GlobalTypeRef {
     pub const fn enum_variant_with_code(
         name: &str,
         variant_name: &str,
-        dependencies: &[GlobalTypeRef],
+        dependencies: &[GlobalTypeId],
         code: &[u8],
     ) -> Self {
         generate_type_ref(&[name, variant_name], &[code], dependencies)
     }
 
-    pub const fn complex_sized(name: &str, dependencies: &[GlobalTypeRef], size: usize) -> Self {
+    pub const fn complex_sized(name: &str, dependencies: &[GlobalTypeId], size: usize) -> Self {
         generate_type_ref(&[name], &[&size.to_le_bytes()], dependencies)
     }
 
@@ -61,17 +53,10 @@ impl GlobalTypeRef {
         Self::WellKnown([type_id])
     }
 
-    pub const fn is_complex(&self) -> bool {
-        match self {
-            GlobalTypeRef::WellKnown(_) => false,
-            GlobalTypeRef::Complex(_) => true,
-        }
-    }
-
     pub const fn as_slice(&self) -> &[u8] {
         match &self {
-            GlobalTypeRef::WellKnown(x) => x,
-            GlobalTypeRef::Complex(hash) => hash,
+            GlobalTypeId::WellKnown(x) => x,
+            GlobalTypeId::Custom(hash) => hash,
         }
     }
 }
@@ -79,8 +64,8 @@ impl GlobalTypeRef {
 const fn generate_type_ref(
     names: &[&str],
     type_data: &[&[u8]],
-    dependencies: &[GlobalTypeRef],
-) -> GlobalTypeRef {
+    dependencies: &[GlobalTypeId],
+) -> GlobalTypeId {
     let buffer = const_sha1::ConstBuffer::new();
 
     // Const looping isn't allowed - but we can use recursion instead
@@ -88,7 +73,7 @@ const fn generate_type_ref(
     let buffer = capture_type_data(buffer, 0, type_data);
     let buffer = capture_dependent_type_ids(buffer, 0, dependencies);
 
-    GlobalTypeRef::Complex(const_sha1::sha1(&buffer).bytes())
+    GlobalTypeId::Custom(const_sha1::sha1(&buffer).bytes())
 }
 
 const fn capture_names(
@@ -116,7 +101,7 @@ const fn capture_type_data(
 const fn capture_dependent_type_ids(
     buffer: const_sha1::ConstBuffer,
     next: usize,
-    dependencies: &[GlobalTypeRef],
+    dependencies: &[GlobalTypeId],
 ) -> const_sha1::ConstBuffer {
     if next == dependencies.len() {
         return buffer;
@@ -127,3 +112,13 @@ const fn capture_dependent_type_ids(
         dependencies,
     )
 }
+
+/// This is the [`SchemaTypeLink`] used in a linearized [`Schema`] to link [`TypeKind`]s.
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Encode, Decode, TypeId)]
+pub enum LocalTypeIndex {
+    /// This takes a well_known type index
+    WellKnown(u8),
+    /// For non-simple types
+    SchemaLocalIndex(usize),
+}
+impl SchemaTypeLink for LocalTypeIndex {}

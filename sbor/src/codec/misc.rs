@@ -117,21 +117,23 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    use_same_generic_schema!(T, &T, T);
+    wrapped_generic_describe!(T, &T, T);
 
-    impl<'a, C: CustomTypeSchema, B: ?Sized + 'a + ToOwned + Schema<C>> Schema<C> for Cow<'a, B> {
-        const SCHEMA_TYPE_REF: GlobalTypeRef = <B>::SCHEMA_TYPE_REF;
+    impl<'a, C: CustomTypeKind<GlobalTypeId>, B: ?Sized + 'a + ToOwned + NewDescribe<C>>
+        NewDescribe<C> for Cow<'a, B>
+    {
+        const SCHEMA_TYPE_REF: GlobalTypeId = <B>::SCHEMA_TYPE_REF;
 
-        fn get_local_type_data() -> Option<LocalTypeData<C, GlobalTypeRef>> {
+        fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
             <B>::get_local_type_data()
         }
 
-        fn add_all_dependencies(aggregator: &mut SchemaAggregator<C>) {
+        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
             <B>::add_all_dependencies(aggregator)
         }
     }
 
-    use_same_generic_schema!(T, Box<T>, T);
-    use_same_generic_schema!(T, Rc<T>, T);
-    use_same_generic_schema!(T, RefCell<T>, T);
+    wrapped_generic_describe!(T, Box<T>, T);
+    wrapped_generic_describe!(T, Rc<T>, T);
+    wrapped_generic_describe!(T, RefCell<T>, T);
 }

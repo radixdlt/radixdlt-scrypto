@@ -29,4 +29,4 @@ impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for () {
 }
 
 #[cfg(feature = "schema")]
-well_known_basic_schema!((), UNIT_INDEX);
+well_known_basic_type!((), UNIT_ID);
