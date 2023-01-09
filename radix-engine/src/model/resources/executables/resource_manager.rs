@@ -12,9 +12,8 @@ use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeFunction, NativeMethod, NonFungibleStoreId, NonFungibleStoreOffset,
-    RENodeId, ResourceManagerFunction, ResourceManagerMethod, ResourceManagerOffset,
-    SubstateOffset,
+    GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
+    ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
@@ -53,9 +52,8 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBucketBurnInvocat
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Bucket(self.bucket.0));
-        let actor = ResolvedActor::function(NativeFunction::ResourceManager(
-            ResourceManagerFunction::BurnBucket,
-        ));
+        let actor =
+            ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::BurnBucket));
         Ok((actor, call_frame_update, self))
     }
 }
@@ -82,9 +80,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateInvocation 
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let call_frame_update = CallFrameUpdate::empty();
-        let actor = ResolvedActor::function(NativeFunction::ResourceManager(
-            ResourceManagerFunction::Create,
-        ));
+        let actor = ResolvedActor::function(NativeFn::ResourceManager(ResourceManagerFn::Create));
         Ok((actor, call_frame_update, self))
     }
 }
@@ -230,93 +226,75 @@ fn build_substates(
 
     let mut access_rules = AccessRules::new();
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-            MetadataMethod::Set,
-        ))),
+        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
         update_metadata_access_rule,
         update_metadata_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-            MetadataMethod::Get,
-        ))),
+        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::Mint,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Mint)),
         mint_access_rule,
         mint_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::Burn,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::Burn)),
         burn_access_rule,
         burn_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::UpdateNonFungibleData,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::UpdateNonFungibleData,
+        )),
         update_non_fungible_data_access_rule,
         update_non_fungible_data_mutability,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::CreateBucket,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateBucket)),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::GetResourceType,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::GetResourceType,
+        )),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::GetTotalSupply,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::GetTotalSupply)),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::CreateVault,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::CreateVault)),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::NonFungibleExists,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::NonFungibleExists,
+        )),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::GetNonFungible,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible)),
         AllowAll,
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::UpdateVaultAuth,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::UpdateVaultAuth,
+        )),
         AllowAll, // Access verification occurs within method
         DenyAll,
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::ResourceManager(
-            ResourceManagerMethod::LockAuth,
-        ))),
+        AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::LockAuth)),
         AllowAll, // Access verification occurs within method
         DenyAll,
     );
@@ -347,67 +325,53 @@ fn build_substates(
         recall_mutability,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::Take)),
         "withdraw".to_string(),
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-            VaultMethod::TakeNonFungibles,
-        ))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::TakeNonFungibles)),
         "withdraw".to_string(),
         DenyAll,
     );
     vault_access_rules.set_group_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::LockFee)),
         "withdraw".to_string(),
         DenyAll,
     );
 
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put)),
         deposit_access_rule,
         deposit_mutability,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-            VaultMethod::GetAmount,
-        ))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::GetAmount)),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-            VaultMethod::GetResourceAddress,
-        ))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::GetResourceAddress)),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-            VaultMethod::GetNonFungibleIds,
-        ))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::GetNonFungibleIds)),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-            VaultMethod::CreateProof,
-        ))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::CreateProof)),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-            VaultMethod::CreateProofByAmount,
-        ))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::CreateProofByAmount)),
         AllowAll,
         DenyAll,
     );
     vault_access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-            VaultMethod::CreateProofByIds,
-        ))),
+        AccessRuleKey::Native(NativeFn::Vault(VaultFn::CreateProofByIds)),
         AllowAll,
         DenyAll,
     );
@@ -493,7 +457,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBurnInvocation {
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::Burn),
+            NativeFn::ResourceManager(ResourceManagerFn::Burn),
             resolved_receiver,
         );
         let executor = ResourceManagerBurnExecutable(resolved_receiver.receiver, self.bucket);
@@ -578,7 +542,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateVaultAuthIn
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateVaultAuth),
+            NativeFn::ResourceManager(ResourceManagerFn::UpdateVaultAuth),
             resolved_receiver,
         );
         let executor = ResourceManagerUpdateVaultAuthExecutable(
@@ -615,9 +579,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
 
             let access_rule = match self.1 {
                 Deposit => {
-                    let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                        VaultMethod::Put,
-                    )));
+                    let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -636,8 +598,7 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
 
         match self.1 {
             VaultMethodAuthKey::Deposit => {
-                let key =
-                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
+                let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
                 substate.access_rules_chain[0].set_method_access_rule(key, self.2);
             }
             VaultMethodAuthKey::Withdraw => {
@@ -668,7 +629,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerSetVaultAuthMutab
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::LockAuth),
+            NativeFn::ResourceManager(ResourceManagerFn::LockAuth),
             resolved_receiver,
         );
         let executor = ResourceManagerLockVaultAuthExecutable(
@@ -706,9 +667,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
 
             let access_rule = match self.1 {
                 Deposit => {
-                    let key = AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(
-                        VaultMethod::Put,
-                    )));
+                    let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
                     substate.access_rules_chain[0].get_mutability(&key)
                 }
                 Withdraw => substate.access_rules_chain[0].get_group_mutability("withdraw"),
@@ -727,8 +686,7 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
 
         match self.1 {
             Deposit => {
-                let key =
-                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put)));
+                let key = AccessRuleKey::Native(NativeFn::Vault(VaultFn::Put));
                 substate.access_rules_chain[0].set_mutability(key, self.2);
             }
             Withdraw => {
@@ -759,7 +717,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateVaultInvoca
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateVault),
+            NativeFn::ResourceManager(ResourceManagerFn::CreateVault),
             resolved_receiver,
         );
         let executor = ResourceManagerCreateVaultExecutable(resolved_receiver.receiver);
@@ -811,7 +769,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateBucketInvoc
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::CreateBucket),
+            NativeFn::ResourceManager(ResourceManagerFn::CreateBucket),
             resolved_receiver,
         );
         let executor = ResourceManagerCreateBucketExecutable(resolved_receiver.receiver);
@@ -863,7 +821,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintInvocation {
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::Mint),
+            NativeFn::ResourceManager(ResourceManagerFn::Mint),
             resolved_receiver,
         );
         let executor = ResourceManagerMintExecutable(resolved_receiver.receiver, self.mint_params);
@@ -957,7 +915,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetResourceTypeIn
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::GetResourceType),
+            NativeFn::ResourceManager(ResourceManagerFn::GetResourceType),
             resolved_receiver,
         );
         let executor = ResourceManagerGetResourceTypeExecutable(resolved_receiver.receiver);
@@ -1001,7 +959,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetTotalSupplyInv
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::GetTotalSupply),
+            NativeFn::ResourceManager(ResourceManagerFn::GetTotalSupply),
             resolved_receiver,
         );
         let executor = ResourceManagerGetTotalSupplyExecutable(resolved_receiver.receiver);
@@ -1041,7 +999,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateNonFungible
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::UpdateNonFungibleData),
+            NativeFn::ResourceManager(ResourceManagerFn::UpdateNonFungibleData),
             resolved_receiver,
         );
         let executor = ResourceManagerUpdateNonFungibleDataExecutable(
@@ -1116,7 +1074,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerNonFungibleExists
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::NonFungibleExists),
+            NativeFn::ResourceManager(ResourceManagerFn::NonFungibleExists),
             resolved_receiver,
         );
         let executor =
@@ -1174,7 +1132,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetNonFungibleInv
             api,
         )?;
         let actor = ResolvedActor::method(
-            NativeMethod::ResourceManager(ResourceManagerMethod::GetNonFungible),
+            NativeFn::ResourceManager(ResourceManagerFn::GetNonFungible),
             resolved_receiver,
         );
         let executor = ResourceManagerGetNonFungibleExecutable(resolved_receiver.receiver, self.id);

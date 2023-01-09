@@ -3,7 +3,7 @@ use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
 use radix_engine_interface::api::types::{
-    BucketId, GlobalAddress, NativeFunction, ProofId, RENodeId, TransactionProcessorFunction,
+    BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
 use radix_engine_interface::data::{IndexedScryptoValue, ValueReplacingError};
 use radix_engine_interface::model::*;
@@ -211,9 +211,8 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
         )));
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
 
-        let actor = ResolvedActor::function(NativeFunction::TransactionProcessor(
-            TransactionProcessorFunction::Run,
-        ));
+        let actor =
+            ResolvedActor::function(NativeFn::TransactionProcessor(TransactionProcessorFn::Run));
 
         Ok((actor, call_frame_update, self))
     }
