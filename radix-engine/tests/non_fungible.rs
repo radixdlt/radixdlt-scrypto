@@ -61,9 +61,9 @@ fn can_burn_non_fungible() {
         .expect_commit()
         .entity_changes
         .new_resource_addresses[0];
-    let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleId::U32(0));
+    let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleId::Number(0));
     let mut ids = BTreeSet::new();
-    ids.insert(NonFungibleId::U32(0));
+    ids.insert(NonFungibleId::Number(0));
 
     // Act
     let manifest = ManifestBuilder::new()

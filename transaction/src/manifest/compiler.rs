@@ -147,7 +147,7 @@ mod tests {
                     bucket_id: ManifestBucket(513)
                 },
                 BasicInstruction::TakeFromWorktopByIds {
-                    ids: BTreeSet::from([NonFungibleId::U32(1)]),
+                    ids: BTreeSet::from([NonFungibleId::Number(1)]),
                     resource_address: bech32_decoder
                         .validate_and_decode_resource_address(
                             "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"

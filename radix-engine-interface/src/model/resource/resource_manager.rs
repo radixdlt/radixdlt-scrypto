@@ -41,7 +41,7 @@ pub enum ResourceMethodAuthKey {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateNonFungibleInvocation {
-    pub id_type: NonFungibleIdType,
+    pub id_type: NonFungibleIdTypeId,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
@@ -85,7 +85,7 @@ impl Into<SerializedInvocation> for ResourceManagerCreateFungibleInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    pub id_type: NonFungibleIdType,
+    pub id_type: NonFungibleIdTypeId,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,

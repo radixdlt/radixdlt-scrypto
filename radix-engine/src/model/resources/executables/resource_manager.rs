@@ -32,7 +32,7 @@ pub enum ResourceManagerError {
     NonFungibleNotFound(NonFungibleAddress),
     NotNonFungible,
     MismatchingBucketResource,
-    NonFungibleIdTypeDoesNotMatch(NonFungibleIdType, NonFungibleIdType),
+    NonFungibleIdTypeDoesNotMatch(NonFungibleIdTypeId, NonFungibleIdTypeId),
     ResourceTypeDoesNotMatch,
 }
 
@@ -66,7 +66,7 @@ impl Executor for ResourceManagerBucketBurnInvocation {
 
 fn build_non_fungible_resource_manager_substate_with_initial_supply<Y>(
     resource_address: ResourceAddress,
-    id_type: NonFungibleIdType,
+    id_type: NonFungibleIdTypeId,
     entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
     api: &mut Y,
 ) -> Result<(ResourceManagerSubstate, Bucket), RuntimeError>

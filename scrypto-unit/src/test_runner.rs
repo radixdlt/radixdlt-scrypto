@@ -24,7 +24,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
     AccessRule, AccessRules, EpochManagerInvocation, FromPublicKey, NativeInvocation,
-    NonFungibleAddress, NonFungibleIdType,
+    NonFungibleAddress, NonFungibleIdTypeId,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::node::NetworkDefinition;
@@ -748,14 +748,14 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleId::U32(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::U32(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::U32(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::Number(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::Number(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::Number(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_non_fungible_resource(
-                NonFungibleIdType::U32,
+                NonFungibleIdTypeId::Number,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),

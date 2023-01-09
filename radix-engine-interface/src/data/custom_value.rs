@@ -264,7 +264,7 @@ mod tests {
             Own::KeyValueStore([5u8; 36]),
             NonFungibleAddress {
                 resource_address: ResourceAddress::Normal([6u8; 26]),
-                non_fungible_id: NonFungibleId::U32(7),
+                non_fungible_id: NonFungibleId::Number(7),
             },
             Blob(Hash([8u8; 32])),
         );
@@ -278,8 +278,8 @@ mod tests {
                 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 148, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
                 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 162, 0, 6, 6, 6,
                 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 7, 0, 0, 0,
-                161, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
-                8, 8, 8, 8, 8, 8
+                0, 0, 0, 0, 161, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+                8, 8, 8, 8, 8, 8, 8, 8, 8, 8
             ]
         );
         assert_eq!(
@@ -304,7 +304,7 @@ mod tests {
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::NonFungibleAddress(NonFungibleAddress {
                             resource_address: ResourceAddress::Normal([6u8; 26]),
-                            non_fungible_id: NonFungibleId::U32(7),
+                            non_fungible_id: NonFungibleId::Number(7),
                         }),
                     },
                     ScryptoValue::Custom {
@@ -355,7 +355,7 @@ mod tests {
             EddsaEd25519Signature([4u8; 64]),
             Decimal::ONE,
             PreciseDecimal::ONE,
-            NonFungibleId::U32(1),
+            NonFungibleId::Number(1),
             NonFungibleId::Bytes(vec![2, 3]),
         );
         let bytes = scrypto_encode(&values).unwrap();
@@ -374,8 +374,8 @@ mod tests {
                 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 182, 0,
                 0, 0, 0, 0, 0, 0, 0, 1, 31, 106, 191, 100, 237, 56, 110, 237, 151, 167, 218, 244,
                 249, 63, 233, 3, 79, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 183, 0, 1, 0, 0, 0, 183, 3,
-                2, 2, 3
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 183, 0, 1, 0, 0, 0, 0, 0, 0,
+                0, 183, 2, 2, 2, 3
             ]
         );
         assert_eq!(
@@ -412,7 +412,7 @@ mod tests {
                         value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ONE),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleId(NonFungibleId::U32(1)),
+                        value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Number(1)),
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Bytes(vec![2, 3])),

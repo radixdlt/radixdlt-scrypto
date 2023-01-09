@@ -197,14 +197,14 @@ pub enum BasicInstruction {
     },
 
     CreateNonFungibleResource {
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
     CreateNonFungibleResourceWithOwner {
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleAddress,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,

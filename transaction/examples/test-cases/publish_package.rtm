@@ -24,7 +24,7 @@ PUBLISH_PACKAGE
                                 "Require", 
                                 Enum(
                                     "StaticNonFungible", 
-                                    NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
+                                    NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u64)
                                 )
                             )
                         )
@@ -49,7 +49,7 @@ PUBLISH_PACKAGE
                                 "Require", 
                                 Enum(
                                     "StaticNonFungible", 
-                                    NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
+                                    NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u64)
                                 )
                             )
                         )
@@ -74,7 +74,7 @@ PUBLISH_PACKAGE
                                 "Require", 
                                 Enum(
                                     "StaticNonFungible", 
-                                    NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
+                                    NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u64)
                                 )
                             )
                         )
@@ -114,7 +114,7 @@ PUBLISH_PACKAGE
                             "Require", 
                             Enum(
                                 "StaticNonFungible", 
-                                NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
+                                NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u64)
                             )
                         )
                     )
@@ -136,7 +136,7 @@ PUBLISH_PACKAGE
                             "Require", 
                             Enum(
                                 "StaticNonFungible", 
-                                NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
+                                NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u64)
                             )
                         )
                     )
@@ -158,7 +158,7 @@ PUBLISH_PACKAGE
                             "Require", 
                             Enum(
                                 "StaticNonFungible", 
-                                NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
+                                NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u64)
                             )
                         )
                     )
@@ -180,7 +180,7 @@ PUBLISH_PACKAGE
                             "Require", 
                             Enum(
                                 "StaticNonFungible", 
-                                NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
+                                NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u64)
                             )
                         )
                     )

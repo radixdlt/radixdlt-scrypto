@@ -817,7 +817,7 @@ mod test {
         let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleId::U64(12))
+        assert_eq!(parsed_arg, NonFungibleId::Number(12))
     }
 
     #[test]
