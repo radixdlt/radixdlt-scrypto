@@ -324,6 +324,27 @@ impl Into<SerializedInvocation> for ResourceManagerMintNonFungibleInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(TypeId, Encode, Decode)]
+pub struct ResourceManagerMintUuidNonFungibleInvocation {
+    pub receiver: ResourceAddress,
+    pub entries: Vec<(Vec<u8>, Vec<u8>)>,
+}
+
+impl Invocation for ResourceManagerMintUuidNonFungibleInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<SerializedInvocation> for ResourceManagerMintUuidNonFungibleInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::MintUuidNonFungible(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
 pub struct ResourceManagerMintFungibleInvocation {
     pub receiver: ResourceAddress,
     pub amount: Decimal,

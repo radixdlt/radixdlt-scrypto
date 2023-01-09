@@ -298,6 +298,7 @@ pub enum ResourceManagerFn {
     CreateUuidNonFungibleWithInitialSupply,
     CreateFungibleWithInitialSupply,
     MintNonFungible,
+    MintUuidNonFungible,
     MintFungible,
     Burn,
     UpdateVaultAuth,

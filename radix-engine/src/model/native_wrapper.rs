@@ -259,6 +259,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ResourceInvocation::MintUuidNonFungible(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             ResourceInvocation::MintFungible(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

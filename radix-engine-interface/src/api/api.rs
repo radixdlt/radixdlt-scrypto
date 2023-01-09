@@ -94,6 +94,7 @@ pub trait InvokableModel<E>:
     + Invokable<ResourceManagerCreateVaultInvocation, E>
     + Invokable<ResourceManagerCreateBucketInvocation, E>
     + Invokable<ResourceManagerMintNonFungibleInvocation, E>
+    + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>
     + Invokable<ResourceManagerMintFungibleInvocation, E>
     + Invokable<ResourceManagerGetResourceTypeInvocation, E>
     + Invokable<ResourceManagerGetTotalSupplyInvocation, E>
