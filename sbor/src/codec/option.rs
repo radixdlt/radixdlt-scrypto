@@ -1,6 +1,4 @@
 use crate::constants::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::vec;
 use crate::type_id::*;
 use crate::*;
 
@@ -55,10 +53,12 @@ impl<C: CustomTypeKind<GlobalTypeId>, T: NewDescribe<C>> NewDescribe<C> for Opti
     const SCHEMA_TYPE_REF: GlobalTypeId = GlobalTypeId::complex("Option", &[T::SCHEMA_TYPE_REF]);
 
     fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        #[allow(unused_imports)]
+        use crate::rust::borrow::ToOwned;
         Some(TypeData::named_enum(
             "Option",
             crate::rust::collections::btree_map::btreemap![
-                "Some".to_owned() => TypeData::named_tuple("Some", vec![T::SCHEMA_TYPE_REF]),
+                "Some".to_owned() => TypeData::named_tuple("Some", crate::rust::vec![T::SCHEMA_TYPE_REF]),
                 "None".to_owned() => TypeData::named_unit("None"),
             ],
         ))
