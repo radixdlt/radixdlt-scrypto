@@ -258,6 +258,19 @@ impl<X: CustomTypeId, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for SborValue
     }
 }
 
+#[cfg(feature = "schema")]
+pub use schema::*;
+
+#[cfg(feature = "schema")]
+mod schema {
+    use super::*;
+    use crate::*;
+
+    impl<X: CustomTypeId, Y, C: CustomTypeKind<GlobalTypeId>> Describe<C> for SborValue<X, Y> {
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(well_known_basic_types::ANY_ID);
+    }
+}
+
 pub fn traverse_any<X: CustomTypeId, Y, V: CustomValueVisitor<Y, Err = E>, E>(
     path: &mut SborPathBuf,
     value: &SborValue<X, Y>,

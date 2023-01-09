@@ -99,7 +99,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for NonFung
     }
 }
 
-impl scrypto_abi::Describe for NonFungibleAddress {
+impl scrypto_abi::LegacyDescribe for NonFungibleAddress {
     fn describe() -> scrypto_abi::Type {
         Type::NonFungibleAddress
     }

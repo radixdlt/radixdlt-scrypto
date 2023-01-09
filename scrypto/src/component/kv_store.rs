@@ -144,8 +144,10 @@ impl<
     }
 }
 
-impl<K: ScryptoEncode + ScryptoDecode + Describe, V: ScryptoEncode + ScryptoDecode + Describe>
-    scrypto_abi::Describe for KeyValueStore<K, V>
+impl<
+        K: ScryptoEncode + ScryptoDecode + LegacyDescribe,
+        V: ScryptoEncode + ScryptoDecode + LegacyDescribe,
+    > LegacyDescribe for KeyValueStore<K, V>
 {
     fn describe() -> scrypto_abi::Type {
         Type::KeyValueStore {

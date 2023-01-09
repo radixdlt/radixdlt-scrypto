@@ -21,9 +21,8 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
         generics,
         ..
     } = parse2(input)?;
-    let custom_type_id = custom_type_id(&attrs);
     let (impl_generics, ty_generics, where_clause, custom_type_id_generic, encoder_generic) =
-        build_encode_generics(&generics, custom_type_id)?;
+        build_encode_generics(&generics, &attrs)?;
 
     let output = match data {
         Data::Struct(s) => match s.fields {

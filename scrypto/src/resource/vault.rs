@@ -54,7 +54,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Vault {
     }
 }
 
-impl scrypto_abi::Describe for Vault {
+impl scrypto_abi::LegacyDescribe for Vault {
     fn describe() -> scrypto_abi::Type {
         Type::Vault
     }

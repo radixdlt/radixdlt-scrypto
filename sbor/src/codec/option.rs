@@ -47,3 +47,24 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option<T>
         }
     }
 }
+
+#[cfg(feature = "schema")]
+impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Option", &[T::TYPE_ID]);
+
+    fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        #[allow(unused_imports)]
+        use crate::rust::borrow::ToOwned;
+        Some(TypeData::named_enum(
+            "Option",
+            crate::rust::collections::btree_map::btreemap![
+                "Some".to_owned() => TypeData::named_tuple("Some", crate::rust::vec![T::TYPE_ID]),
+                "None".to_owned() => TypeData::named_unit("None"),
+            ],
+        ))
+    }
+
+    fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+        aggregator.add_child_type_and_descendents::<T>();
+    }
+}

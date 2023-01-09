@@ -284,7 +284,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for NonFung
     }
 }
 
-impl scrypto_abi::Describe for NonFungibleId {
+impl scrypto_abi::LegacyDescribe for NonFungibleId {
     fn describe() -> scrypto_abi::Type {
         Type::NonFungibleId
     }

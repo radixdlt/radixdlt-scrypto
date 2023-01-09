@@ -305,7 +305,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Compone
     }
 }
 
-impl scrypto_abi::Describe for Component {
+impl scrypto_abi::LegacyDescribe for Component {
     fn describe() -> scrypto_abi::Type {
         Type::Component
     }

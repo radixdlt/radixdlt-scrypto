@@ -1,4 +1,5 @@
 mod decode;
+mod describe;
 mod encode;
 mod type_id;
 mod utils;
@@ -25,6 +26,14 @@ pub fn encode(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Decode, attributes(sbor))]
 pub fn decode(input: TokenStream) -> TokenStream {
     decode::handle_decode(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derive code that describes the SBOR type.
+#[proc_macro_derive(Describe, attributes(sbor))]
+pub fn describe(input: TokenStream) -> TokenStream {
+    describe::handle_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

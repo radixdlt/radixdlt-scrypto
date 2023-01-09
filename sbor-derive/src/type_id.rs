@@ -21,9 +21,8 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
         generics,
         ..
     } = parse2(input)?;
-    let custom_type_id = custom_type_id(&attrs);
     let (impl_generics, ty_generics, where_clause, sbor_cti) =
-        build_custom_type_id_generic(&generics, custom_type_id)?;
+        build_custom_type_id_generic(&generics, &attrs)?;
 
     let output = match data {
         Data::Struct(_) => quote! {
