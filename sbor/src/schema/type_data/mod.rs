@@ -1,4 +1,6 @@
 use crate::rust::collections::BTreeMap;
+use crate::rust::string::String;
+use crate::rust::vec::Vec;
 use crate::*;
 
 mod type_kind;
@@ -74,7 +76,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + TypeId<C::CustomTypeId>> TypeData
             .into_iter()
             .map(|(k, variant_type_data)| {
                 let variant_fields_schema = match variant_type_data.kind {
-                    TypeKind::Unit => vec![],
+                    TypeKind::Unit => crate::rust::vec![],
                     TypeKind::Tuple { field_types } => field_types,
                     _ => panic!("Only Unit and Tuple are allowed in Enum variant TypeData"),
                 };

@@ -225,7 +225,7 @@ mod tests {
                     fn immutable_data_schema() -> ::scrypto::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::scrypto::abi::Describe;
+                        use ::scrypto::abi::LegacyDescribe;
                         ::scrypto::abi::Type::Struct {
                             name: "MyStruct".to_owned(),
                             fields: ::scrypto::abi::Fields::Named {
@@ -236,7 +236,7 @@ mod tests {
                     fn mutable_data_schema() -> ::scrypto::abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use ::scrypto::abi::Describe;
+                        use ::scrypto::abi::LegacyDescribe;
                         ::scrypto::abi::Type::Struct {
                             name: "MyStruct".to_owned(),
                             fields: ::scrypto::abi::Fields::Named {
