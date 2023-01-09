@@ -137,11 +137,11 @@ pub enum Fields {
 }
 
 /// A data structure that can be described using SBOR types.
-pub trait Describe {
+pub trait LegacyDescribe {
     fn describe() -> Type;
 }
 
-impl Describe for () {
+impl LegacyDescribe for () {
     fn describe() -> Type {
         Type::Unit
     }
@@ -149,7 +149,7 @@ impl Describe for () {
 
 macro_rules! describe_basic_type {
     ($type:ident, $type_id:expr) => {
-        impl Describe for $type {
+        impl LegacyDescribe for $type {
             fn describe() -> Type {
                 $type_id
             }
@@ -175,7 +175,7 @@ describe_basic_type!(usize, Type::U64);
 describe_basic_type!(str, Type::String);
 describe_basic_type!(String, Type::String);
 
-impl<T: Describe> Describe for Option<T> {
+impl<T: LegacyDescribe> LegacyDescribe for Option<T> {
     fn describe() -> Type {
         let ty = T::describe();
         Type::Option {
@@ -184,7 +184,7 @@ impl<T: Describe> Describe for Option<T> {
     }
 }
 
-impl<T: Describe, const N: usize> Describe for [T; N] {
+impl<T: LegacyDescribe, const N: usize> LegacyDescribe for [T; N] {
     fn describe() -> Type {
         let ty = T::describe();
         Type::Array {
@@ -196,7 +196,7 @@ impl<T: Describe, const N: usize> Describe for [T; N] {
 
 macro_rules! describe_tuple {
     ($($name:ident)+) => {
-        impl<$($name: Describe),+> Describe for ($($name,)+) {
+        impl<$($name: LegacyDescribe),+> LegacyDescribe for ($($name,)+) {
             fn describe() -> Type {
                 Type::Tuple { element_types: vec![ $($name::describe(),)* ] }
             }
@@ -214,7 +214,7 @@ describe_tuple! { A B C D E F G H }
 describe_tuple! { A B C D E F G H I }
 describe_tuple! { A B C D E F G H I J }
 
-impl<T: Describe, E: Describe> Describe for Result<T, E> {
+impl<T: LegacyDescribe, E: LegacyDescribe> LegacyDescribe for Result<T, E> {
     fn describe() -> Type {
         let t = T::describe();
         let e = E::describe();
@@ -225,7 +225,7 @@ impl<T: Describe, E: Describe> Describe for Result<T, E> {
     }
 }
 
-impl<T: Describe> Describe for Vec<T> {
+impl<T: LegacyDescribe> LegacyDescribe for Vec<T> {
     fn describe() -> Type {
         let ty = T::describe();
         Type::Vec {
@@ -234,7 +234,7 @@ impl<T: Describe> Describe for Vec<T> {
     }
 }
 
-impl<T: Describe> Describe for BTreeSet<T> {
+impl<T: LegacyDescribe> LegacyDescribe for BTreeSet<T> {
     fn describe() -> Type {
         let ty = T::describe();
         Type::TreeSet {
@@ -243,7 +243,7 @@ impl<T: Describe> Describe for BTreeSet<T> {
     }
 }
 
-impl<K: Describe, V: Describe> Describe for BTreeMap<K, V> {
+impl<K: LegacyDescribe, V: LegacyDescribe> LegacyDescribe for BTreeMap<K, V> {
     fn describe() -> Type {
         let k = K::describe();
         let v = V::describe();
@@ -254,7 +254,7 @@ impl<K: Describe, V: Describe> Describe for BTreeMap<K, V> {
     }
 }
 
-impl<T: Describe> Describe for HashSet<T> {
+impl<T: LegacyDescribe> LegacyDescribe for HashSet<T> {
     fn describe() -> Type {
         let ty = T::describe();
         Type::HashSet {
@@ -263,7 +263,7 @@ impl<T: Describe> Describe for HashSet<T> {
     }
 }
 
-impl<K: Describe, V: Describe> Describe for HashMap<K, V> {
+impl<K: LegacyDescribe, V: LegacyDescribe> LegacyDescribe for HashMap<K, V> {
     fn describe() -> Type {
         let k = K::describe();
         let v = V::describe();

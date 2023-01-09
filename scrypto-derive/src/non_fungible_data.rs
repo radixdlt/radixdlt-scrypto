@@ -104,7 +104,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                         fn immutable_data_schema() -> ::scrypto::abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use ::scrypto::abi::Describe;
+                            use ::scrypto::abi::LegacyDescribe;
 
                             ::scrypto::abi::Type::Struct {
                                 name: #ident_str.to_owned(),
@@ -117,7 +117,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                         fn mutable_data_schema() -> ::scrypto::abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use ::scrypto::abi::Describe;
+                            use ::scrypto::abi::LegacyDescribe;
 
                             ::scrypto::abi::Type::Struct {
                                 name: #ident_str.to_owned(),

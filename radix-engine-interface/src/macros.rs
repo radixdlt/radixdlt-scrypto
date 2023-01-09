@@ -104,7 +104,7 @@ macro_rules! scrypto_type {
             }
         }
 
-        impl scrypto_abi::Describe for $t {
+        impl scrypto_abi::LegacyDescribe for $t {
             fn describe() -> scrypto_abi::Type {
                 $schema_type
             }
@@ -150,7 +150,7 @@ macro_rules! scrypto_type {
             }
         }
 
-        impl scrypto_abi::Describe for $t {
+        impl scrypto_abi::LegacyDescribe for $t {
             fn describe() -> scrypto_abi::Type {
                 $schema_type
             }

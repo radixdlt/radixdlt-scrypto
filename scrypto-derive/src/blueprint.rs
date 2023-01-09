@@ -92,7 +92,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         quote! {
             #[no_mangle]
             pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
-                use ::scrypto::abi::{BlueprintAbi, Describe, Fn, Type};
+                use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                 use ::sbor::rust::borrow::ToOwned;
                 use ::sbor::rust::vec;
                 use ::sbor::rust::vec::Vec;

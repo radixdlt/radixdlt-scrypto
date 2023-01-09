@@ -189,8 +189,10 @@ impl<
     }
 }
 
-impl<K: ScryptoEncode + ScryptoDecode + Describe, V: ScryptoEncode + ScryptoDecode + Describe>
-    Describe for KeyValueStore<K, V>
+impl<
+        K: ScryptoEncode + ScryptoDecode + LegacyDescribe,
+        V: ScryptoEncode + ScryptoDecode + LegacyDescribe,
+    > LegacyDescribe for KeyValueStore<K, V>
 {
     fn describe() -> Type {
         Type::KeyValueStore {
