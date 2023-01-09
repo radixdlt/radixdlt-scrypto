@@ -1,7 +1,7 @@
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::model::*;
-use std::fmt::Debug;
+use sbor::rust::fmt::Debug;
 
 /// Represents a resource manager.
 #[derive(Debug)]

@@ -2,8 +2,8 @@ use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::data::{ScryptoDecode, ScryptoTypeId};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use sbor::rust::fmt::Debug;
 use sbor::rust::collections::BTreeSet;
+use sbor::rust::fmt::Debug;
 
 pub trait SysBucket {
     fn sys_new<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
