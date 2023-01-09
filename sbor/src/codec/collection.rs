@@ -262,8 +262,8 @@ mod schema {
 
     wrapped_generic_vec_describe!(T, Vec<T>, [T]);
 
-    impl<C: CustomTypeKind<GlobalTypeId>, T: NewDescribe<C> + TypeId<C::CustomTypeId>>
-        NewDescribe<C> for BTreeSet<T>
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C> + TypeId<C::CustomTypeId>>
+        Describe<C> for BTreeSet<T>
     {
         const SCHEMA_TYPE_REF: GlobalTypeId = GlobalTypeId::complex("Set", &[T::SCHEMA_TYPE_REF]);
 
@@ -287,7 +287,7 @@ mod schema {
     #[cfg(feature = "indexmap")]
     wrapped_generic_vec_describe!(T, IndexSet<T>, BTreeSet<T>);
 
-    impl<C: CustomTypeKind<GlobalTypeId>, K: NewDescribe<C>, V: NewDescribe<C>> NewDescribe<C>
+    impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
         for BTreeMap<K, V>
     {
         const SCHEMA_TYPE_REF: GlobalTypeId =

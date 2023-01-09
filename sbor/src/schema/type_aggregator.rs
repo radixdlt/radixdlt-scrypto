@@ -2,7 +2,7 @@ use super::*;
 use sbor::rust::collections::*;
 
 pub fn generate_full_schema_from_single_type<
-    T: NewDescribe<E::CustomTypeKind<GlobalTypeId>>,
+    T: Describe<E::CustomTypeKind<GlobalTypeId>>,
     E: CustomTypeExtension,
 >() -> (LocalTypeIndex, Schema<E>) {
     let mut aggregator = TypeAggregator::new();
@@ -120,7 +120,7 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     }
 
     /// Adds the dependent type (and its dependencies) to the `TypeAggregator`.
-    pub fn add_child_type_and_descendents<T: NewDescribe<C>>(&mut self) -> LocalTypeIndex {
+    pub fn add_child_type_and_descendents<T: Describe<C>>(&mut self) -> LocalTypeIndex {
         let schema_type_index =
             self.add_child_type(T::SCHEMA_TYPE_REF, || T::get_local_type_data());
         self.add_schema_descendents::<T>();
@@ -173,7 +173,7 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     /// [`add_child_type`]: #method.add_child_type
     /// [`add_schema_descendents`]: #method.add_schema_descendents
     /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
-    pub fn add_schema_descendents<T: NewDescribe<C>>(&mut self) -> bool {
+    pub fn add_schema_descendents<T: Describe<C>>(&mut self) -> bool {
         let GlobalTypeId::Custom(complex_type_hash) = T::SCHEMA_TYPE_REF else {
             return false;
         };

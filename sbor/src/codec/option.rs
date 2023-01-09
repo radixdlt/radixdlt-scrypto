@@ -49,7 +49,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option<T>
 }
 
 #[cfg(feature = "schema")]
-impl<C: CustomTypeKind<GlobalTypeId>, T: NewDescribe<C>> NewDescribe<C> for Option<T> {
+impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> {
     const SCHEMA_TYPE_REF: GlobalTypeId = GlobalTypeId::complex("Option", &[T::SCHEMA_TYPE_REF]);
 
     fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {

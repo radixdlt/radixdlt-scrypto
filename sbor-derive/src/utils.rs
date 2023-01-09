@@ -303,7 +303,7 @@ pub fn build_schema_generics<'a>(
         };
         type_param
             .bounds
-            .push(parse_quote!(::sbor::NewDescribe<#custom_type_schema_generic>));
+            .push(parse_quote!(::sbor::Describe<#custom_type_schema_generic>));
 
         if generic_type_names_needing_type_id_bound.contains(&type_param.ident.to_string()) {
             type_param

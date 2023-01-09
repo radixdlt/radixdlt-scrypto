@@ -48,7 +48,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                     })
                     .collect();
                 quote! {
-                    impl #impl_generics ::sbor::NewDescribe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
                         const SCHEMA_TYPE_REF: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
@@ -69,7 +69,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                             Some(::sbor::TypeData::named_fields_tuple(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
-                                    #((#field_names, <#field_types as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF),)*
+                                    #((#field_names, <#field_types as ::sbor::Describe<C>>::SCHEMA_TYPE_REF),)*
                                 ],
                             ))
                         }
@@ -87,7 +87,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                 let unique_field_types: Vec<_> = get_unique_types(&field_types);
 
                 quote! {
-                    impl #impl_generics ::sbor::NewDescribe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
                         const SCHEMA_TYPE_REF: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
@@ -108,7 +108,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                             Some(::sbor::TypeData::named_tuple(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
-                                    #(<#field_types as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF,)*
+                                    #(<#field_types as ::sbor::Describe<C>>::SCHEMA_TYPE_REF,)*
                                 ],
                             ))
                         }
@@ -121,7 +121,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl #impl_generics ::sbor::NewDescribe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
                         const SCHEMA_TYPE_REF: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
                             stringify!(#ident),
                             &[#(#generic_type_idents::SCHEMA_TYPE_REF,)*],
@@ -164,7 +164,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                                     ::sbor::TypeData::named_fields_tuple(
                                         #variant_name,
                                         ::sbor::rust::vec![
-                                            #((#field_names, <#field_types as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF),)*
+                                            #((#field_names, <#field_types as ::sbor::Describe<C>>::SCHEMA_TYPE_REF),)*
                                         ],
                                     )
                                 }
@@ -179,7 +179,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
                                     ::sbor::TypeData::named_tuple(
                                         #variant_name,
                                         ::sbor::rust::vec![
-                                            #(<#field_types as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF,)*
+                                            #(<#field_types as ::sbor::Describe<C>>::SCHEMA_TYPE_REF,)*
                                         ],
                                     )
                                 }
@@ -197,7 +197,7 @@ pub fn handle_schema(input: TokenStream) -> Result<TokenStream> {
             let unique_field_types: Vec<_> = get_unique_types(&all_field_types);
 
             quote! {
-                impl #impl_generics ::sbor::NewDescribe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
                     const SCHEMA_TYPE_REF: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
                         stringify!(#ident),
                         &[#(#generic_type_idents::SCHEMA_TYPE_REF,)*],
@@ -251,7 +251,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::NewDescribe<C> for Test {
+                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test {
                     const SCHEMA_TYPE_REF: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
                         stringify!(Test),
                         &[],
@@ -262,9 +262,9 @@ mod tests {
                         Some(::sbor::TypeData::named_fields_tuple(
                             stringify!(Test),
                             ::sbor::rust::vec![
-                                ("a", <u32 as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF),
-                                ("b", <Vec<u8> as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF),
-                                ("c", <u32 as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF),
+                                ("a", <u32 as ::sbor::Describe<C>>::SCHEMA_TYPE_REF),
+                                ("b", <Vec<u8> as ::sbor::Describe<C>>::SCHEMA_TYPE_REF),
+                                ("c", <u32 as ::sbor::Describe<C>>::SCHEMA_TYPE_REF),
                             ],
                         ))
                     }
@@ -286,7 +286,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::NewDescribe<C> for Test {
+                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test {
                     const SCHEMA_TYPE_REF: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
                         stringify!(Test),
                         &[],
@@ -297,9 +297,9 @@ mod tests {
                         Some(::sbor::TypeData::named_tuple(
                             stringify!(Test),
                             ::sbor::rust::vec![
-                                <u32 as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF,
-                                <Vec<u8> as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF,
-                                <u32 as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF,
+                                <u32 as ::sbor::Describe<C>>::SCHEMA_TYPE_REF,
+                                <Vec<u8> as ::sbor::Describe<C>>::SCHEMA_TYPE_REF,
+                                <u32 as ::sbor::Describe<C>>::SCHEMA_TYPE_REF,
                             ],
                         ))
                     }
@@ -321,7 +321,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::NewDescribe<C> for Test {
+                impl <C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test {
                     const SCHEMA_TYPE_REF: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
                         stringify!(Test),
                         &[],
@@ -345,7 +345,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl <T: SomeTrait + ::sbor::NewDescribe<C>, T2: ::sbor::NewDescribe<C> + ::sbor::TypeId<C::CustomTypeId>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::NewDescribe<C> for Test<T, T2> {
+                impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::TypeId<C::CustomTypeId>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId>> ::sbor::Describe<C> for Test<T, T2> {
                     const SCHEMA_TYPE_REF: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::complex_with_code(
                         stringify!(Test),
                         &[T::SCHEMA_TYPE_REF, T2::SCHEMA_TYPE_REF,],
@@ -361,14 +361,14 @@ mod tests {
                                 "B".to_owned() => ::sbor::TypeData::named_tuple(
                                     "B",
                                     ::sbor::rust::vec![
-                                        <T as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF,
-                                        <Vec<T2> as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF,
+                                        <T as ::sbor::Describe<C>>::SCHEMA_TYPE_REF,
+                                        <Vec<T2> as ::sbor::Describe<C>>::SCHEMA_TYPE_REF,
                                     ],
                                 ),
                                 "C".to_owned() => ::sbor::TypeData::named_fields_tuple(
                                     "C",
                                     ::sbor::rust::vec![
-                                        ("x", <[u8; 5] as ::sbor::NewDescribe<C>>::SCHEMA_TYPE_REF),
+                                        ("x", <[u8; 5] as ::sbor::Describe<C>>::SCHEMA_TYPE_REF),
                                     ],
                                 ),
                             ],

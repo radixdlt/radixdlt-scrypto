@@ -63,7 +63,7 @@ mod schema {
     use super::*;
     macro_rules! describe_tuple {
         ($n:tt $($idx:tt $name:ident)+) => {
-            impl<C: CustomTypeKind<GlobalTypeId>, $($name: NewDescribe<C>),+> NewDescribe<C> for ($($name,)+) {
+            impl<C: CustomTypeKind<GlobalTypeId>, $($name: Describe<C>),+> Describe<C> for ($($name,)+) {
                 const SCHEMA_TYPE_REF: GlobalTypeId = GlobalTypeId::complex("Tuple", &[$($name::SCHEMA_TYPE_REF, )+]);
 
                 fn get_local_type_data() -> Option<TypeData<C, GlobalTypeId>> {

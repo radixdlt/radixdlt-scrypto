@@ -5,7 +5,7 @@ use crate::*;
 /// Each unique interpretation/validation of a type should have its own distinct type in the schema.
 /// Uniqueness of a type in the schema is defined by its `GlobalTypeId`.
 #[allow(unused_variables)]
-pub trait NewDescribe<C: CustomTypeKind<GlobalTypeId>> {
+pub trait Describe<C: CustomTypeKind<GlobalTypeId>> {
     /// The `TYPE_REF` should denote a unique identifier for this type (once turned into a payload)
     ///
     /// In particular, it should capture the uniqueness of anything relevant to the codec/payload, for example:
@@ -18,7 +18,7 @@ pub trait NewDescribe<C: CustomTypeKind<GlobalTypeId>> {
     ///
     /// If needing to generate a new type id, this can be generated via something like:
     /// ```
-    /// impl NewDescribe<C: CustomTypeSchema, T1: NewDescribe<C>> for MyType<T1> {
+    /// impl Describe<C: CustomTypeSchema, T1: Describe<C>> for MyType<T1> {
     ///     const SCHEMA_TYPE_REF: GlobalTypeId = GlobalTypeId::complex(stringify!(MyType), &[T1::SCHEMA_TYPE_REF]);
     /// #   fn get_local_type_data() { todo!() }
     /// }

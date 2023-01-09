@@ -80,8 +80,8 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    impl<C: CustomTypeKind<GlobalTypeId>, T: NewDescribe<C> + TypeId<C::CustomTypeId>>
-        NewDescribe<C> for [T]
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C> + TypeId<C::CustomTypeId>>
+        Describe<C> for [T]
     {
         const SCHEMA_TYPE_REF: GlobalTypeId = if T::IS_U8 {
             GlobalTypeId::well_known(well_known_basic_types::BYTES_ID)
@@ -112,9 +112,9 @@ mod schema {
     #[cfg(feature = "schema")]
     impl<
             C: CustomTypeKind<GlobalTypeId>,
-            T: NewDescribe<C> + TypeId<C::CustomTypeId>,
+            T: Describe<C> + TypeId<C::CustomTypeId>,
             const N: usize,
-        > NewDescribe<C> for [T; N]
+        > Describe<C> for [T; N]
     {
         const SCHEMA_TYPE_REF: GlobalTypeId =
             GlobalTypeId::complex_sized("Array", &[T::SCHEMA_TYPE_REF], N);

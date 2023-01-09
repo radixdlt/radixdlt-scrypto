@@ -53,7 +53,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode<X,
 }
 
 #[cfg(feature = "schema")]
-impl<C: CustomTypeKind<GlobalTypeId>, T: NewDescribe<C>, E: NewDescribe<C>> NewDescribe<C>
+impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, E: Describe<C>> Describe<C>
     for Result<T, E>
 {
     const SCHEMA_TYPE_REF: GlobalTypeId =
