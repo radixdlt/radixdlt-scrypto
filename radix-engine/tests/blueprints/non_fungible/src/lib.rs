@@ -312,14 +312,10 @@ blueprint! {
             // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_non_fungible::<u128>()
                 .metadata("name", "Katz's Sandwiches")
-                .initial_supply([(
-                    // adding random non-fungible id with type UUID
-                    0u128, //ScryptoNonFungibleId::random(),
-                    Sandwich {
-                        name: "Zero".to_owned(),
-                        available: true,
-                    },
-                )])
+                .initial_supply_uuid([Sandwich {
+                    name: "Zero".to_owned(),
+                    available: true,
+                }])
         }
     }
 }

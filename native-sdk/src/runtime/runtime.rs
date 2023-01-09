@@ -21,9 +21,9 @@ impl Runtime {
 
     /// Generates a UUID.
     pub fn generate_uuid<Y, E>(api: &mut Y) -> Result<u128, E>
-        where
-            Y: EngineApi<E> + Invokable<TransactionRuntimeGenerateUuidInvocation, E>,
-            E: Debug + ScryptoTypeId + ScryptoDecode,
+    where
+        Y: EngineApi<E> + Invokable<TransactionRuntimeGenerateUuidInvocation, E>,
+        E: Debug + ScryptoTypeId + ScryptoDecode,
     {
         let visible_node_ids = api.sys_get_visible_nodes().unwrap();
         let node_id = visible_node_ids
@@ -31,9 +31,8 @@ impl Runtime {
             .find(|n| matches!(n, RENodeId::TransactionRuntime(..)))
             .expect("TransactionHash does not exist");
 
-        api
-            .invoke(TransactionRuntimeGenerateUuidInvocation {
-                receiver: node_id.into(),
-            })
+        api.invoke(TransactionRuntimeGenerateUuidInvocation {
+            receiver: node_id.into(),
+        })
     }
 }

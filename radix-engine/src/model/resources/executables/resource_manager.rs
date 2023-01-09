@@ -510,7 +510,11 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
 
         // TODO: Do this check in a better way (e.g. via type check)
         if self.id_type == NonFungibleIdTypeId::UUID {
-            return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::InvalidNonFungibleIdTypeId)));
+            return Err(RuntimeError::ApplicationError(
+                ApplicationError::ResourceManagerError(
+                    ResourceManagerError::InvalidNonFungibleIdTypeId,
+                ),
+            ));
         }
 
         let (resource_manager_substate, bucket) =
@@ -558,7 +562,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W>
-for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation
+    for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation
 {
     type Exec = Self;
 
@@ -581,8 +585,8 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
         self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
