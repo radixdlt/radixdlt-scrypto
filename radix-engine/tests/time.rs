@@ -48,6 +48,11 @@ fn setting_multiple_time_succeed() {
         test_runner.set_current_time(time_in_ms);
 
         // Assert
-        assert_eq!(test_runner.get_current_time(TimePrecision::Minute).seconds_since_unix_epoch, time_rounded_to_minutes);
+        assert_eq!(
+            test_runner
+                .get_current_time(TimePrecision::Minute)
+                .seconds_since_unix_epoch,
+            time_rounded_to_minutes
+        );
     }
 }
