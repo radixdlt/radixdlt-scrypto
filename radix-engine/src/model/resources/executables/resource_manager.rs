@@ -10,7 +10,8 @@ use crate::model::{NonFungibleStore, ResourceManagerSubstate};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::api::InvokableModel;
+use native_sdk::runtime::Runtime;
+use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
@@ -34,6 +35,7 @@ pub enum ResourceManagerError {
     MismatchingBucketResource,
     NonFungibleIdTypeDoesNotMatch(NonFungibleIdTypeId, NonFungibleIdTypeId),
     ResourceTypeDoesNotMatch,
+    InvalidNonFungibleIdTypeId,
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBucketBurnInvocation {
@@ -506,11 +508,96 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
         let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
         let resource_address: ResourceAddress = global_node_id.into();
 
+        // TODO: Do this check in a better way (e.g. via type check)
+        if self.id_type == NonFungibleIdTypeId::UUID {
+            return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::InvalidNonFungibleIdTypeId)));
+        }
+
         let (resource_manager_substate, bucket) =
             build_non_fungible_resource_manager_substate_with_initial_supply(
                 resource_address,
                 self.id_type,
                 self.entries,
+                api,
+            )?;
+        let (substate, vault_substate) = build_substates(self.access_rules);
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
+        };
+
+        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+        api.create_node(
+            underlying_node_id,
+            RENode::ResourceManager(
+                resource_manager_substate,
+                metadata_substate,
+                substate,
+                vault_substate,
+            ),
+        )?;
+
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        )?;
+
+        let mut nodes_to_move = vec![];
+        nodes_to_move.push(RENodeId::Bucket(bucket.0));
+
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(resource_address)));
+
+        Ok((
+            (resource_address, bucket),
+            CallFrameUpdate {
+                nodes_to_move,
+                node_refs_to_copy,
+            },
+        ))
+    }
+}
+
+impl<W: WasmEngine> ExecutableInvocation<W>
+for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation
+{
+    type Exec = Self;
+
+    fn resolve<D: ResolverApi<W>>(
+        self,
+        _api: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let call_frame_update = CallFrameUpdate::empty();
+        let actor = ResolvedActor::function(NativeFn::ResourceManager(
+            ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply,
+        ));
+        Ok((actor, call_frame_update, self))
+    }
+}
+
+impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    type Output = (ResourceAddress, Bucket);
+
+    fn execute<Y>(
+        self,
+        api: &mut Y,
+    ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    {
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        let mut entries = BTreeMap::new();
+        for entry in self.entries {
+            let uuid = Runtime::generate_uuid(api)?;
+            entries.insert(NonFungibleId::UUID(uuid), entry);
+        }
+
+        let (resource_manager_substate, bucket) =
+            build_non_fungible_resource_manager_substate_with_initial_supply(
+                resource_address,
+                NonFungibleIdTypeId::UUID,
+                entries,
                 api,
             )?;
         let (substate, vault_substate) = build_substates(self.access_rules);

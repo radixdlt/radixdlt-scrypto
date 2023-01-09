@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
@@ -105,6 +106,31 @@ impl Into<SerializedInvocation> for ResourceManagerCreateNonFungibleWithInitialS
             self,
         ))
         .into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,
+}
+
+impl Invocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    type Output = (ResourceAddress, Bucket);
+}
+
+impl SerializableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    type ScryptoOutput = (ResourceAddress, Bucket);
+}
+
+impl Into<SerializedInvocation> for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(
+            self,
+        ))
+            .into()
     }
 }
 

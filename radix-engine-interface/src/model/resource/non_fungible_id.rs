@@ -15,13 +15,8 @@ use crate::abi::*;
 use crate::data::*;
 use crate::Describe;
 
-/// Represents a key for a non-fungible resource
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum NonFungibleId {
-    Number(u64),
-    UUID(u128),
-    Bytes(Vec<u8>),
-    String(String),
+pub trait NonFungibleIdType: Into<NonFungibleId> {
+    fn id() -> NonFungibleIdTypeId;
 }
 
 impl From<u64> for NonFungibleId {
@@ -48,8 +43,13 @@ impl NonFungibleIdType for u128 {
     }
 }
 
-pub trait NonFungibleIdType: Into<NonFungibleId> {
-    fn id() -> NonFungibleIdTypeId;
+/// Represents a key for a non-fungible resource
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum NonFungibleId {
+    Number(u64),
+    UUID(u128),
+    Bytes(Vec<u8>),
+    String(String),
 }
 
 /// Represents type of non-fungible id

@@ -295,6 +295,7 @@ pub enum ResourceManagerFn {
     CreateNonFungible,
     CreateFungible,
     CreateNonFungibleWithInitialSupply,
+    CreateUuidNonFungibleWithInitialSupply,
     CreateFungibleWithInitialSupply,
     MintNonFungible,
     MintFungible,
