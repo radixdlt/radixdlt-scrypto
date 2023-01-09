@@ -12,8 +12,8 @@ pub enum GlobalTypeId {
     ///
     /// This wraps a `[u8; 1]` because it needs to be able to be turned into a `[u8]` in a const context.
     WellKnown([u8; 1]),
-    /// The global type id for non-simple types
-    Custom(TypeHash),
+    /// The global type hash of a type - used for types which aren't well known.
+    Novel(TypeHash),
 }
 impl SchemaTypeLink for GlobalTypeId {}
 
@@ -56,7 +56,7 @@ impl GlobalTypeId {
     pub const fn as_slice(&self) -> &[u8] {
         match &self {
             GlobalTypeId::WellKnown(x) => x,
-            GlobalTypeId::Custom(hash) => hash,
+            GlobalTypeId::Novel(hash) => hash,
         }
     }
 }
@@ -73,7 +73,7 @@ const fn generate_type_ref(
     let buffer = capture_type_data(buffer, 0, type_data);
     let buffer = capture_dependent_type_ids(buffer, 0, dependencies);
 
-    GlobalTypeId::Custom(const_sha1::sha1(&buffer).bytes())
+    GlobalTypeId::Novel(const_sha1::sha1(&buffer).bytes())
 }
 
 const fn capture_names(

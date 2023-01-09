@@ -2,11 +2,11 @@ use crate::rust::collections::BTreeMap;
 use crate::*;
 
 mod type_kind;
-mod type_naming;
+mod type_metadata;
 mod type_validation;
 
 pub use type_kind::*;
-pub use type_naming::*;
+pub use type_metadata::*;
 pub use type_validation::*;
 
 /// Combines all data about a Type:

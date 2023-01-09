@@ -18,18 +18,17 @@ pub fn generate_full_schema<C: CustomTypeKind<GlobalTypeId>>(
     let mapped = aggregator
         .types
         .into_iter()
-        .map(|(_, type_data)| {
-            // Map the TypeData<SchemaTypeId> into TypeData<usize>
+        .map(|(type_hash, type_data)| {
             (
                 linearize::<C::CustomTypeExtension>(type_data.kind, &schema_lookup),
-                type_data.metadata,
+                type_data.metadata.with_type_hash(type_hash),
             )
         })
         .unzip();
 
     Schema {
         type_kinds: mapped.0,
-        type_naming: mapped.1,
+        type_metadata: mapped.1,
     }
 }
 
@@ -89,7 +88,7 @@ pub fn resolve_local_type_ref(
 ) -> LocalTypeIndex {
     match type_ref {
         GlobalTypeId::WellKnown([well_known_index]) => LocalTypeIndex::WellKnown(*well_known_index),
-        GlobalTypeId::Custom(type_hash) => {
+        GlobalTypeId::Novel(type_hash) => {
             LocalTypeIndex::SchemaLocalIndex(resolve_index(schemas, type_hash))
         }
     }
@@ -144,7 +143,7 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
             GlobalTypeId::WellKnown([well_known_type_index]) => {
                 return LocalTypeIndex::WellKnown(well_known_type_index);
             }
-            GlobalTypeId::Custom(complex_type_hash) => complex_type_hash,
+            GlobalTypeId::Novel(complex_type_hash) => complex_type_hash,
         };
 
         if let Some(index) = self.types.get_index_of(&complex_type_hash) {
@@ -172,7 +171,7 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     /// [`add_schema_descendents`]: #method.add_schema_descendents
     /// [`add_schema_and_descendents`]: #method.add_schema_and_descendents
     pub fn add_schema_descendents<T: Describe<C>>(&mut self) -> bool {
-        let GlobalTypeId::Custom(complex_type_hash) = T::SCHEMA_TYPE_REF else {
+        let GlobalTypeId::Novel(complex_type_hash) = T::SCHEMA_TYPE_REF else {
             return false;
         };
 

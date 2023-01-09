@@ -63,10 +63,11 @@ fn create_unit_struct_schema_works_correctly() {
         generate_full_schema_from_single_type::<UnitStruct, NoCustomTypeExtension>(); // The original type should be the first type in the schema
     assert!(matches!(type_ref, LocalTypeIndex::SchemaLocalIndex(0)));
     assert_eq!(schema.type_kinds.len(), 1);
-    assert_eq!(schema.type_naming.len(), 1);
-    assert_eq!(schema.type_naming[0].type_name, "UnitStruct");
+    assert_eq!(schema.type_metadata.len(), 1);
+    assert_eq!(GlobalTypeId::Novel(schema.type_metadata[0].type_hash), <UnitStruct as Describe<NoCustomTypeKind>>::SCHEMA_TYPE_REF);
+    assert_eq!(schema.type_metadata[0].type_metadata.type_name, "UnitStruct");
     assert!(matches!(
-        &schema.type_naming[0].child_names,
+        &schema.type_metadata[0].type_metadata.child_names,
         ChildNames::None
     ));
 }
@@ -78,14 +79,14 @@ fn create_basic_sample_schema_works_correctly() {
 
     assert!(matches!(root_type_ref, LocalTypeIndex::SchemaLocalIndex(0)));
     assert_eq!(schema.type_kinds.len(), 2);
-    assert_eq!(schema.type_naming.len(), 2);
+    assert_eq!(schema.type_metadata.len(), 2);
 
     // Test Root Type
 
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
-    assert_eq!(type_data.naming.type_name, "BasicSample");
+    assert_eq!(type_data.metadata.type_name, "BasicSample");
     assert!(
-        matches!(&type_data.naming.child_names, ChildNames::FieldNames(field_names) if matches!(field_names[..], [
+        matches!(&type_data.metadata.child_names, ChildNames::FieldNames(field_names) if matches!(field_names[..], [
             Cow::Borrowed("a"),
             Cow::Borrowed("b"),
         ]))
@@ -100,8 +101,8 @@ fn create_basic_sample_schema_works_correctly() {
     // Test Further Types
 
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(1)).unwrap();
-    assert_eq!(type_data.naming.type_name, "UnitStruct");
-    assert!(matches!(type_data.naming.child_names, ChildNames::None));
+    assert_eq!(type_data.metadata.type_name, "UnitStruct");
+    assert!(matches!(type_data.metadata.child_names, ChildNames::None));
     assert!(matches!(type_data.kind.into_owned(), TypeKind::Unit));
 }
 
@@ -118,9 +119,9 @@ fn create_advanced_sample_schema_works_correctly() {
     // We then check each type in turn is what we expect
 
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
-    assert_eq!(type_data.naming.type_name, "AdvancedSample");
+    assert_eq!(type_data.metadata.type_name, "AdvancedSample");
     assert!(
-        matches!(&type_data.naming.child_names, ChildNames::FieldNames(field_names) if matches!(field_names[..], [
+        matches!(&type_data.metadata.child_names, ChildNames::FieldNames(field_names) if matches!(field_names[..], [
             Cow::Borrowed("a"),
             Cow::Borrowed("b"),
             Cow::Borrowed("c"),
@@ -202,5 +203,5 @@ fn create_recursive_schema_works_correctly() {
     assert!(matches!(type_ref, LocalTypeIndex::SchemaLocalIndex(0)));
 
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(0)).unwrap();
-    assert_eq!(type_data.naming.type_name, "IndirectRecursive1");
+    assert_eq!(type_data.metadata.type_name, "IndirectRecursive1");
 }

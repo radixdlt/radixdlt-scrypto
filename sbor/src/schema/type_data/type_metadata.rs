@@ -1,7 +1,15 @@
+use crate::TypeHash;
 use crate::rust::borrow::Cow;
 use crate::rust::collections::BTreeMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+
+/// This is the struct used in the Schema
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NovelTypeMetadata {
+    pub type_hash: TypeHash,
+    pub type_metadata: TypeMetadata,
+}
 
 /// This enables the type to be represented as eg JSON
 /// Also used to facilitate type reconstruction
@@ -12,6 +20,13 @@ pub struct TypeMetadata {
 }
 
 impl TypeMetadata {
+    pub fn with_type_hash(self, type_hash: TypeHash) -> NovelTypeMetadata {
+        NovelTypeMetadata {
+            type_hash,
+            type_metadata: self,
+        }
+    }
+
     pub fn named_no_child_names(name: &'static str) -> Self {
         Self {
             type_name: Cow::Borrowed(name),
