@@ -523,7 +523,6 @@ impl From<BuildArgsError> for BuildCallWithAbiError {
 #[cfg(test)]
 mod test {
     use super::*;
-    use radix_engine::engine::{IdAllocator, IdSpace};
     use radix_engine_interface::abi::Type;
     use serial_test::serial;
     use transaction::builder::ManifestBuilder;
@@ -674,11 +673,7 @@ mod test {
     #[test]
     pub fn parsing_of_component_address_succeeds() {
         // Arrange
-        let mock_tx_hash = Hash([0; 32]);
-        let mut id_allocator = IdAllocator::new(IdSpace::Application, mock_tx_hash);
-        let component_address = id_allocator
-            .new_component_address()
-            .expect("Failed to allocate a component address");
+        let component_address = ComponentAddress::Account([1u8; 26]);
 
         let arg =
             Bech32Encoder::for_simulator().encode_component_address_to_string(&component_address);
@@ -694,11 +689,7 @@ mod test {
     #[test]
     pub fn parsing_of_package_address_succeeds() {
         // Arrange
-        let mock_tx_hash = Hash([0; 32]);
-        let mut id_allocator = IdAllocator::new(IdSpace::Application, mock_tx_hash);
-        let package_address = id_allocator
-            .new_package_address()
-            .expect("Failed to allocate a package address");
+        let package_address = PackageAddress::Normal([1u8; 26]);
 
         let arg = Bech32Encoder::for_simulator().encode_package_address_to_string(&package_address);
         let arg_type = Type::PackageAddress;
@@ -713,11 +704,7 @@ mod test {
     #[test]
     pub fn parsing_of_resource_address_succeeds() {
         // Arrange
-        let mock_tx_hash = Hash([0; 32]);
-        let mut id_allocator = IdAllocator::new(IdSpace::Application, mock_tx_hash);
-        let resource_address = id_allocator
-            .new_resource_address()
-            .expect("Failed to allocate a resource address");
+        let resource_address = ResourceAddress::Normal([1u8; 26]);
 
         let arg =
             Bech32Encoder::for_simulator().encode_resource_address_to_string(&resource_address);

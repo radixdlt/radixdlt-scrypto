@@ -42,7 +42,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
                 })?
         };
 
-        let rtn = if !match_schema_with_value(&self.rtn_type, &output.dom) {
+        let rtn = if !match_schema_with_value(&self.rtn_type, output.as_value()) {
             Err(RuntimeError::KernelError(
                 KernelError::InvalidScryptoFnOutput,
             ))
@@ -53,7 +53,11 @@ impl<I: WasmInstance> Executor for ScryptoExecutorToParsed<I> {
                     .into_iter()
                     .map(|a| RENodeId::Global(a))
                     .collect(),
-                nodes_to_move: output.owned_node_ids().into_iter().collect(),
+                nodes_to_move: output
+                    .owned_node_ids()
+                    .map_err(|e| RuntimeError::KernelError(KernelError::ReadOwnedNodesError(e)))?
+                    .into_iter()
+                    .collect(),
             };
             Ok((output, update))
         };
@@ -89,7 +93,7 @@ impl<I: WasmInstance> Executor for ScryptoExecutor<I> {
             rtn_type: self.rtn_type,
         }
         .execute(api)
-        .map(|(indexed, update)| (indexed.raw, update))
+        .map(|(indexed, update)| (indexed.into_vec(), update))
     }
 }
 

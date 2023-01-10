@@ -271,7 +271,7 @@ mod schema {
     }
 }
 
-pub fn traverse_any<X: CustomValueKind, Y, V: CustomValueVisitor<Y, Err = E>, E>(
+pub fn traverse_any<X: CustomValueKind, Y, V: ValueVisitor<X, Y, Err = E>, E>(
     path: &mut SborPathBuf,
     value: &Value<X, Y>,
     visitor: &mut V,
@@ -305,7 +305,11 @@ pub fn traverse_any<X: CustomValueKind, Y, V: CustomValueVisitor<Y, Err = E>, E>
                 path.pop();
             }
         }
-        Value::Array { elements, .. } => {
+        Value::Array {
+            element_value_kind,
+            elements,
+        } => {
+            visitor.visit_array(path, element_value_kind, elements)?;
             for (i, e) in elements.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, e, visitor)?;
@@ -321,8 +325,15 @@ pub fn traverse_any<X: CustomValueKind, Y, V: CustomValueVisitor<Y, Err = E>, E>
     Ok(())
 }
 
-pub trait CustomValueVisitor<Y> {
+pub trait ValueVisitor<X: CustomValueKind, Y> {
     type Err;
+
+    fn visit_array(
+        &mut self,
+        path: &mut SborPathBuf,
+        element_value_kind: &ValueKind<X>,
+        elements: &[Value<X, Y>],
+    ) -> Result<(), Self::Err>;
 
     fn visit(&mut self, path: &mut SborPathBuf, value: &Y) -> Result<(), Self::Err>;
 }

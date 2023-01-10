@@ -3,7 +3,7 @@ use crate::engine::{AuthError, ExecutionMode, LockFlags, ResolvedActor};
 use radix_engine_interface::api::types::{
     GlobalAddress, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, SubstateOffset,
 };
-use radix_engine_interface::data::ScryptoValueDecodeError;
+use radix_engine_interface::data::ReadOwnedNodesError;
 use sbor::*;
 
 use crate::model::*;
@@ -87,9 +87,9 @@ pub enum KernelError {
     IdAllocationError(IdAllocationError),
 
     // SBOR decoding
-    InvalidScryptoValue(ScryptoValueDecodeError),
-    InvalidSborValue(DecodeError),
-    InvalidSborValueOnEncode(EncodeError),
+    SborDecodeError(DecodeError),
+    SborEncodeError(EncodeError),
+    ReadOwnedNodesError(ReadOwnedNodesError), // semantic error
 
     // RENode
     StoredNodeRemoved(RENodeId),

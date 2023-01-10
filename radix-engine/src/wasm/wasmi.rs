@@ -148,7 +148,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
             return Err(WasmError::MemoryAccessError);
         }
 
-        IndexedScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
+        IndexedScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::SborDecodeError)
     }
 }
 

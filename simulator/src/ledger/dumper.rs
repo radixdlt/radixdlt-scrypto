@@ -141,20 +141,22 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             // Find all vaults owned by the component, assuming a tree structure.
             let mut vaults_found: HashSet<VaultId> = state_data
-                .owned_nodes
+                .owned_node_ids()
+                .unwrap()
                 .iter()
                 .cloned()
-                .filter_map(|o| match o {
-                    Own::Vault(vault_id) => Some(vault_id),
+                .filter_map(|node_id| match node_id {
+                    RENodeId::Vault(vault_id) => Some(vault_id),
                     _ => None,
                 })
                 .collect();
             let mut queue: VecDeque<KeyValueStoreId> = state_data
-                .owned_nodes
+                .owned_node_ids()
+                .unwrap()
                 .iter()
                 .cloned()
-                .filter_map(|o| match o {
-                    Own::KeyValueStore(kv_store_id) => Some(kv_store_id),
+                .filter_map(|node_id| match node_id {
+                    RENodeId::KeyValueStore(kv_store_id) => Some(kv_store_id),
                     _ => None,
                 })
                 .collect();
@@ -204,12 +206,12 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
                 key.display(value_display_context),
                 value.display(value_display_context)
             );
-            for ownership in value.owned_nodes {
-                match ownership {
-                    Own::Vault(vault_id) => {
+            for owned_node in value.owned_node_ids().unwrap() {
+                match owned_node {
+                    RENodeId::Vault(vault_id) => {
                         owned_vaults.push(vault_id);
                     }
-                    Own::KeyValueStore(kv_store_id) => {
+                    RENodeId::KeyValueStore(kv_store_id) => {
                         owned_kv_stores.push(kv_store_id);
                     }
                     _ => {}

@@ -17,21 +17,21 @@ use crate::validation::*;
 pub enum DecompileError {
     InvalidAddress(AddressError),
     InvalidArguments,
-    InvalidScryptoValue(ScryptoValueDecodeError),
-    InvalidSborValue(EncodeError),
+    EncodeError(EncodeError),
+    DecodeError(DecodeError),
     IdAllocationError(ManifestIdAllocationError),
     FormattingError(fmt::Error),
 }
 
-impl From<ScryptoValueDecodeError> for DecompileError {
-    fn from(error: ScryptoValueDecodeError) -> Self {
-        Self::InvalidScryptoValue(error)
+impl From<EncodeError> for DecompileError {
+    fn from(error: EncodeError) -> Self {
+        Self::EncodeError(error)
     }
 }
 
-impl From<EncodeError> for DecompileError {
-    fn from(error: EncodeError) -> Self {
-        Self::InvalidSborValue(error)
+impl From<DecodeError> for DecompileError {
+    fn from(error: DecodeError) -> Self {
+        Self::DecodeError(error)
     }
 }
 
@@ -544,9 +544,7 @@ pub fn format_typed_value<F: fmt::Write, T: ScryptoEncode>(
     context: &mut DecompilationContext,
     value: &T,
 ) -> Result<(), DecompileError> {
-    let bytes = scrypto_encode(value).map_err(DecompileError::InvalidSborValue)?;
-    let value =
-        IndexedScryptoValue::from_slice(&bytes).map_err(DecompileError::InvalidScryptoValue)?;
+    let value = IndexedScryptoValue::from_typed(value);
     f.write_char(' ')?;
     write!(f, "{}", &value.display(context.for_value_display()))?;
     Ok(())
@@ -599,7 +597,7 @@ pub fn format_args<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     let value =
         IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
-    if let Value::Tuple { fields } = value.dom {
+    if let Value::Tuple { fields } = value.as_value() {
         for field in fields {
             let bytes = scrypto_encode(&field)?;
             let arg = IndexedScryptoValue::from_slice(&bytes)
@@ -616,15 +614,15 @@ pub fn format_args<F: fmt::Write>(
 
 fn transform_non_fungible_mint_params(
     mint_params: &BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
-) -> Result<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>, ScryptoValueDecodeError> {
+) -> Result<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>, DecodeError> {
     let mut mint_params_scrypto_value =
         BTreeMap::<NonFungibleId, (ScryptoValue, ScryptoValue)>::new();
     for (id, (immutable_data, mutable_data)) in mint_params.into_iter() {
         mint_params_scrypto_value.insert(
             id.clone(),
             (
-                scrypto_decode(&immutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
-                scrypto_decode(&mutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
+                scrypto_decode(&immutable_data)?,
+                scrypto_decode(&mutable_data)?,
             ),
         );
     }

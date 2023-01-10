@@ -261,17 +261,17 @@ impl RuntimeSubstate {
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::ComponentState(substate)
             }
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)
             }
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::NonFungible(substate)
             }
             offset => {
@@ -995,7 +995,9 @@ impl<'a> SubstateRef<'a> {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
                 (
                     scrypto_value.global_references(),
-                    scrypto_value.owned_node_ids(),
+                    scrypto_value
+                        .owned_node_ids()
+                        .expect("No duplicates expected"),
                 )
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
@@ -1006,7 +1008,9 @@ impl<'a> SubstateRef<'a> {
                 if let Some(scrypto_value) = maybe_scrypto_value {
                     (
                         scrypto_value.global_references(),
-                        scrypto_value.owned_node_ids(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
                     )
                 } else {
                     (HashSet::new(), HashSet::new())
@@ -1020,7 +1024,9 @@ impl<'a> SubstateRef<'a> {
                 if let Some(scrypto_value) = maybe_scrypto_value {
                     (
                         scrypto_value.global_references(),
-                        scrypto_value.owned_node_ids(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
                     )
                 } else {
                     (HashSet::new(), HashSet::new())

@@ -7,7 +7,7 @@ use radix_engine_interface::crypto::{
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomValue, ScryptoDecode,
-    ScryptoValue, ScryptoValueDecodeError, ScryptoValueKind,
+    ScryptoValue, ScryptoValueKind,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
@@ -65,7 +65,6 @@ pub enum GeneratorError {
     IdValidationError(ManifestIdValidationError),
     ArgumentEncodingError(EncodeError),
     ArgumentDecodingError(DecodeError),
-    ArgumentIndexingError(ScryptoValueDecodeError),
     InvalidEntityAddress(String),
     InvalidLength {
         value_type: ast::Type,
@@ -342,19 +341,16 @@ pub fn generate_instruction(
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
 
-            let args_encoded =
-                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
-            let args_indexed = IndexedScryptoValue::from_value(args.clone())
-                .map_err(GeneratorError::ArgumentIndexingError)?;
+            let indexed_args = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&args_indexed)
+                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallFunction {
                 package_address,
                 blueprint_name,
                 function_name,
-                args: args_encoded,
+                args: indexed_args.to_vec(),
             }
         }
         ast::Instruction::CallMethod {
@@ -366,18 +362,15 @@ pub fn generate_instruction(
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
 
-            let args_encoded =
-                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
-            let args_indexed = IndexedScryptoValue::from_value(args.clone())
-                .map_err(GeneratorError::ArgumentIndexingError)?;
+            let indexed_args = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&args_indexed)
+                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallMethod {
                 component_address,
                 method_name,
-                args: args_encoded,
+                args: indexed_args.into_vec(),
             }
         }
         ast::Instruction::PublishPackage {
