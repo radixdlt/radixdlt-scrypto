@@ -36,7 +36,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -59,7 +59,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5, windows-latest]
+        os: [k8s-linux-runner, windows-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -79,7 +79,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5, windows-latest]
+        os: [k8s-linux-runner, windows-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -99,7 +99,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5, windows-latest]
+        os: [k8s-linux-runner, windows-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -122,7 +122,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5, windows-latest]
+        os: [k8s-linux-runner, windows-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -139,7 +139,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5, windows-latest]
+        os: [k8s-linux-runner, windows-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -170,7 +170,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -196,7 +196,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -216,7 +216,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -236,7 +236,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -270,7 +270,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [radixdlt-org-nm2gn-f6qq5, windows-latest]
+        os: [k8s-linux-runner, windows-latest]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
