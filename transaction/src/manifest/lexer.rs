@@ -62,7 +62,6 @@ pub enum TokenKind {
 
     /* RE global address types */
     PackageAddress,
-    SystemAddress,
     ComponentAddress,
     ResourceAddress,
 
@@ -413,7 +412,6 @@ impl Lexer {
             "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "SystemAddress" => Ok(TokenKind::SystemAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 

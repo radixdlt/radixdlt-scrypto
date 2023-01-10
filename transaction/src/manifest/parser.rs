@@ -294,7 +294,6 @@ impl Parser {
 
             /* Global address */
             TokenKind::PackageAddress |
-            TokenKind::SystemAddress |
             TokenKind::ComponentAddress |
             TokenKind::ResourceAddress |
             /* RE types */
@@ -372,7 +371,6 @@ impl Parser {
         match token.kind {
             // RE interpreted types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
-            TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
                 Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
             }
@@ -502,7 +500,6 @@ impl Parser {
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::SystemAddress => Ok(Type::SystemAddress),
             TokenKind::Own => Ok(Type::Own),
 
             // TX interpreted types

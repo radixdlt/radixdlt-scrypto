@@ -12,7 +12,6 @@ pub enum ScryptoCustomTypeKind<L: SchemaTypeLink> {
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    SystemAddress,
 
     // Other Engine types
     Own,
@@ -61,7 +60,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::PackageAddress => ScryptoCustomTypeKind::PackageAddress,
             ScryptoCustomTypeKind::ComponentAddress => ScryptoCustomTypeKind::ComponentAddress,
             ScryptoCustomTypeKind::ResourceAddress => ScryptoCustomTypeKind::ResourceAddress,
-            ScryptoCustomTypeKind::SystemAddress => ScryptoCustomTypeKind::SystemAddress,
             ScryptoCustomTypeKind::KeyValueStore {
                 key_type,
                 value_type,
@@ -101,7 +99,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             PACKAGE_ADDRESS_ID => ("PackageAddress", ScryptoCustomTypeKind::PackageAddress),
             COMPONENT_ADDRESS_ID => ("ComponentAddress", ScryptoCustomTypeKind::ComponentAddress),
             RESOURCE_ADDRESS_ID => ("ResourceAddress", ScryptoCustomTypeKind::ResourceAddress),
-            SYSTEM_ADDRESS_ID => ("SystemAddress", ScryptoCustomTypeKind::SystemAddress),
 
             OWN_ID => ("Own", ScryptoCustomTypeKind::Own),
 
@@ -148,7 +145,6 @@ mod well_known_scrypto_types {
     pub const PACKAGE_ADDRESS_ID: u8 = VALUE_KIND_PACKAGE_ADDRESS;
     pub const COMPONENT_ADDRESS_ID: u8 = VALUE_KIND_COMPONENT_ADDRESS;
     pub const RESOURCE_ADDRESS_ID: u8 = VALUE_KIND_RESOURCE_ADDRESS;
-    pub const SYSTEM_ADDRESS_ID: u8 = VALUE_KIND_SYSTEM_ADDRESS;
 
     pub const OWN_ID: u8 = VALUE_KIND_OWN;
     // We skip KeyValueStore because it has generic parameters

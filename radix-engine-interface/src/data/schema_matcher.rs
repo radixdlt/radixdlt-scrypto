@@ -38,7 +38,6 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         Type::PackageAddress => Some(ValueKind::Custom(ScryptoCustomValueKind::PackageAddress)),
         Type::ComponentAddress => Some(ValueKind::Custom(ScryptoCustomValueKind::ComponentAddress)),
         Type::ResourceAddress => Some(ValueKind::Custom(ScryptoCustomValueKind::ResourceAddress)),
-        Type::SystemAddress => Some(ValueKind::Custom(ScryptoCustomValueKind::SystemAddress)),
 
         Type::Own
         | Type::Bucket
@@ -294,13 +293,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         Type::ResourceAddress => {
             if let Value::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::ResourceAddress(_))
-            } else {
-                false
-            }
-        }
-        Type::SystemAddress => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::SystemAddress(_))
             } else {
                 false
             }

@@ -375,18 +375,6 @@ pub fn serialize_custom_value<S: Serializer>(
                 &string_address,
             )
         }
-        ScryptoCustomValue::SystemAddress(value) => {
-            let string_address =
-                format!("{}", value.display(context.display_context.bech32_encoder));
-            serialize_value(
-                // The fact it's an address is obvious, so favour simplicity over verbosity
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ScryptoCustomValueKind::SystemAddress,
-                &string_address,
-            )
-        }
         ScryptoCustomValue::Own(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
@@ -934,7 +922,7 @@ mod tests {
                         { "type": "PackageAddress", "value": account_package_address },
                         { "type": "ComponentAddress", "value": faucet_address },
                         { "type": "ResourceAddress", "value": radix_token_address },
-                        { "type": "SystemAddress", "value": epoch_manager_address },
+                        { "type": "ComponentAddress", "value": epoch_manager_address },
                         { "type": "Own", "value": "Vault([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])" },
                         { "type": "Bucket", "value": "Hello" },
                         { "type": "Bucket", "value": 10 },

@@ -904,7 +904,7 @@ where
                 RENode::Global(GlobalAddressSubstate::Resource(..)),
             ) => {}
             (
-                RENodeId::Global(GlobalAddress::System(..)),
+                RENodeId::Global(GlobalAddress::Component(..)),
                 RENode::Global(GlobalAddressSubstate::EpochManager(..)),
             ) => {}
             (

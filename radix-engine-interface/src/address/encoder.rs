@@ -49,23 +49,6 @@ impl Bech32Encoder {
         }
     }
 
-    /// Encodes a system address in Bech32 and returns a String or panics on failure.
-    pub fn encode_system_address_to_string(&self, system_address: &SystemAddress) -> String {
-        let mut buf = String::new();
-        self.encode_system_address_to_fmt(&mut buf, system_address)
-            .expect("Failed to encode system address as Bech32");
-        buf
-    }
-
-    /// Encodes a system address in Bech32 to the given fmt, or returns an `AddressError` on failure.
-    pub fn encode_system_address_to_fmt<F: fmt::Write>(
-        &self,
-        fmt: &mut F,
-        system_address: &SystemAddress,
-    ) -> Result<(), AddressError> {
-        panic!();
-    }
-
     /// Encodes a component address in Bech32 and returns a String or panics on failure.
     pub fn encode_component_address_to_string(
         &self,

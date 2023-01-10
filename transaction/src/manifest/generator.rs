@@ -38,7 +38,6 @@ pub enum GeneratorError {
         actual: ast::Value,
     },
     InvalidPackageAddress(String),
-    InvalidSystemAddress(String),
     InvalidComponentAddress(String),
     InvalidResourceAddress(String),
     InvalidDecimal(String),
@@ -674,21 +673,6 @@ fn generate_package_address(
     }
 }
 
-fn generate_system_address(
-    value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
-) -> Result<SystemAddress, GeneratorError> {
-    match value {
-        ast::Value::SystemAddress(inner) => match &**inner {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_system_address(s)
-                .map_err(|_| GeneratorError::InvalidSystemAddress(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::SystemAddress),
-    }
-}
-
 fn generate_component_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
@@ -754,19 +738,11 @@ fn generate_entity_address(
                 .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
             v => return invalid_type!(v, ast::Type::String),
         },
-        ast::Value::SystemAddress(value) => match value.borrow() {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_system_address(s)
-                .map(|a| GlobalAddress::System(a))
-                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
-            v => return invalid_type!(v, ast::Type::String),
-        },
         v => invalid_type!(
             v,
             ast::Type::PackageAddress,
             ast::Type::ResourceAddress,
-            ast::Type::ComponentAddress,
-            ast::Type::SystemAddress
+            ast::Type::ComponentAddress
         ),
     }
 }
@@ -1215,11 +1191,6 @@ pub fn generate_value(
         ast::Value::PackageAddress(_) => {
             generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
                 value: ScryptoCustomValue::PackageAddress(v),
-            })
-        }
-        ast::Value::SystemAddress(_) => {
-            generate_system_address(value, bech32_decoder).map(|v| Value::Custom {
-                value: ScryptoCustomValue::SystemAddress(v),
             })
         }
         ast::Value::ComponentAddress(_) => {

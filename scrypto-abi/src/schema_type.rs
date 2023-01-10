@@ -77,7 +77,6 @@ pub enum Type {
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    SystemAddress,
     Own, /* generic, either bucket, proof, vault, component or kv store. TODO: do we really need this? */
     Bucket,
     Proof,
