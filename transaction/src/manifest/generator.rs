@@ -1,11 +1,10 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{
-    BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId,
-};
+use radix_engine_interface::api::types::GlobalAddress;
 use radix_engine_interface::crypto::{
-    Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
-    EddsaEd25519Signature, Hash,
+    EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
+    Hash,
 };
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::{
     scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
     ScryptoDecode, ScryptoSborTypeId, ScryptoValue, ScryptoValueDecodeError,
@@ -13,8 +12,6 @@ use radix_engine_interface::data::{
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
-
-use radix_engine_interface::core::Expression;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
@@ -61,7 +58,7 @@ pub enum GeneratorError {
     InvalidBytesHex(String),
     SborEncodeError(EncodeError),
     NameResolverError(NameResolverError),
-    IdValidationError(IdValidationError),
+    IdValidationError(ManifestIdValidationError),
     ArgumentEncodingError(EncodeError),
     ArgumentDecodingError(DecodeError),
     ArgumentIndexingError(ScryptoValueDecodeError),
@@ -81,8 +78,8 @@ pub enum NameResolverError {
 }
 
 pub struct NameResolver {
-    named_buckets: BTreeMap<String, BucketId>,
-    named_proofs: BTreeMap<String, ProofId>,
+    named_buckets: BTreeMap<String, ManifestBucket>,
+    named_proofs: BTreeMap<String, ManifestProof>,
 }
 
 impl NameResolver {
@@ -96,7 +93,7 @@ impl NameResolver {
     pub fn insert_bucket(
         &mut self,
         name: String,
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     ) -> Result<(), NameResolverError> {
         if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
@@ -109,7 +106,7 @@ impl NameResolver {
     pub fn insert_proof(
         &mut self,
         name: String,
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     ) -> Result<(), NameResolverError> {
         if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
@@ -119,14 +116,14 @@ impl NameResolver {
         }
     }
 
-    pub fn resolve_bucket(&mut self, name: &str) -> Result<BucketId, NameResolverError> {
+    pub fn resolve_bucket(&mut self, name: &str) -> Result<ManifestBucket, NameResolverError> {
         match self.named_buckets.get(name).cloned() {
             Some(bucket_id) => Ok(bucket_id),
             None => Err(NameResolverError::UndefinedBucket(name.into())),
         }
     }
 
-    pub fn resolve_proof(&mut self, name: &str) -> Result<ProofId, NameResolverError> {
+    pub fn resolve_proof(&mut self, name: &str) -> Result<ManifestProof, NameResolverError> {
         match self.named_proofs.get(name).cloned() {
             Some(proof_id) => Ok(proof_id),
             None => Err(NameResolverError::UndefinedProof(name.into())),
@@ -139,7 +136,7 @@ pub fn generate_manifest(
     bech32_decoder: &Bech32Decoder,
     blobs: BTreeMap<Hash, Vec<u8>>,
 ) -> Result<TransactionManifest, GeneratorError> {
-    let mut id_validator = IdValidator::new();
+    let mut id_validator = ManifestIdValidator::new();
     let mut name_resolver = NameResolver::new();
     let mut output = Vec::new();
 
@@ -161,7 +158,7 @@ pub fn generate_manifest(
 
 pub fn generate_instruction(
     instruction: &ast::Instruction,
-    id_validator: &mut IdValidator,
+    id_validator: &mut ManifestIdValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
@@ -213,7 +210,7 @@ pub fn generate_instruction(
         ast::Instruction::ReturnToWorktop { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
-                .drop_bucket(bucket_id)
+                .drop_bucket(&bucket_id)
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::ReturnToWorktop { bucket_id }
         }
@@ -247,7 +244,7 @@ pub fn generate_instruction(
         ast::Instruction::PushToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
-                .drop_proof(proof_id)
+                .drop_proof(&proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::PushToAuthZone { proof_id }
         }
@@ -302,7 +299,7 @@ pub fn generate_instruction(
         ast::Instruction::CreateProofFromBucket { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id))
+                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
@@ -311,7 +308,7 @@ pub fn generate_instruction(
         ast::Instruction::CloneProof { proof, new_proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             let proof_id2 = id_validator
-                .clone_proof(proof_id)
+                .clone_proof(&proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id2)?;
 
@@ -320,7 +317,7 @@ pub fn generate_instruction(
         ast::Instruction::DropProof { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
-                .drop_proof(proof_id)
+                .drop_proof(&proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::DropProof { proof_id }
         }
@@ -404,7 +401,7 @@ pub fn generate_instruction(
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
-                .drop_bucket(bucket_id)
+                .drop_bucket(&bucket_id)
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::BurnResource { bucket_id }
         }
@@ -792,40 +789,22 @@ fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
     }
 }
 
-fn generate_component_id(value: &ast::Value) -> Result<ComponentId, GeneratorError> {
+fn generate_ownership(value: &ast::Value) -> Result<Own, GeneratorError> {
     match value {
-        ast::Value::Component(inner) => match &**inner {
-            ast::Value::String(s) => hex::decode(s)
-                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                .and_then(|x| {
-                    x.try_into()
-                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                }),
+        ast::Value::Own(inner) => match &**inner {
+            ast::Value::String(_) => {
+                todo!()
+            }
             v => invalid_type!(v, ast::Type::String),
         },
-        v => invalid_type!(v, ast::Type::Component),
-    }
-}
-
-fn generate_key_value_store_id(value: &ast::Value) -> Result<KeyValueStoreId, GeneratorError> {
-    match value {
-        ast::Value::KeyValueStore(inner) => match &**inner {
-            ast::Value::String(s) => hex::decode(s)
-                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                .and_then(|x| {
-                    x.try_into()
-                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                }),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::KeyValueStore),
+        v => invalid_type!(v, ast::Type::Own),
     }
 }
 
 fn declare_bucket(
     value: &ast::Value,
     resolver: &mut NameResolver,
-    bucket_id: BucketId,
+    bucket_id: ManifestBucket,
 ) -> Result<(), GeneratorError> {
     match value {
         ast::Value::Bucket(inner) => match &**inner {
@@ -841,10 +820,10 @@ fn declare_bucket(
 fn generate_bucket(
     value: &ast::Value,
     resolver: &mut NameResolver,
-) -> Result<BucketId, GeneratorError> {
+) -> Result<ManifestBucket, GeneratorError> {
     match value {
         ast::Value::Bucket(inner) => match &**inner {
-            ast::Value::U32(n) => Ok(*n),
+            ast::Value::U32(n) => Ok(ManifestBucket(*n)),
             ast::Value::String(s) => resolver
                 .resolve_bucket(&s)
                 .map_err(GeneratorError::NameResolverError),
@@ -857,7 +836,7 @@ fn generate_bucket(
 fn declare_proof(
     value: &ast::Value,
     resolver: &mut NameResolver,
-    proof_id: ProofId,
+    proof_id: ManifestProof,
 ) -> Result<(), GeneratorError> {
     match value {
         ast::Value::Proof(inner) => match &**inner {
@@ -873,28 +852,16 @@ fn declare_proof(
 fn generate_proof(
     value: &ast::Value,
     resolver: &mut NameResolver,
-) -> Result<ProofId, GeneratorError> {
+) -> Result<ManifestProof, GeneratorError> {
     match value {
         ast::Value::Proof(inner) => match &**inner {
-            ast::Value::U32(n) => Ok(*n),
+            ast::Value::U32(n) => Ok(ManifestProof(*n)),
             ast::Value::String(s) => resolver
                 .resolve_proof(&s)
                 .map_err(GeneratorError::NameResolverError),
             v => invalid_type!(v, ast::Type::U32, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::Proof),
-    }
-}
-
-fn generate_vault(value: &ast::Value) -> Result<Vault, GeneratorError> {
-    match value {
-        ast::Value::Vault(inner) => match &**inner {
-            ast::Value::String(s) => {
-                Vault::from_str(s).map_err(|_| GeneratorError::InvalidVault(s.into()))
-            }
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::Vault),
     }
 }
 
@@ -941,12 +908,14 @@ fn generate_non_fungible_address(
     }
 }
 
-fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError> {
+fn generate_expression(value: &ast::Value) -> Result<ManifestExpression, GeneratorError> {
     match value {
         ast::Value::Expression(inner) => match &**inner {
-            ast::Value::String(s) => {
-                Expression::from_str(s).map_err(|_| GeneratorError::InvalidExpression(s.into()))
-            }
+            ast::Value::String(s) => match s.as_str() {
+                "ENTIRE_WORKTOP" => Ok(ManifestExpression::EntireWorktop),
+                "ENTIRE_AUTH_ZONE" => Ok(ManifestExpression::EntireAuthZone),
+                _ => Err(GeneratorError::InvalidExpression(s.into())),
+            },
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::Expression),
@@ -1244,35 +1213,27 @@ pub fn generate_value(
             })
         }
 
-        ast::Value::Component(_) => generate_component_id(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Component(v),
-        }),
-        ast::Value::KeyValueStore(_) => {
-            generate_key_value_store_id(value).map(|v| SborValue::Custom {
-                value: ScryptoCustomValue::KeyValueStore(v),
-            })
-        }
-        ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Bucket(v),
-        }),
-        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Proof(v),
-        }),
-        ast::Value::Vault(_) => generate_vault(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Vault(v.0),
-        }),
-
-        ast::Value::Expression(_) => generate_expression(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Expression(v),
-        }),
-        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Blob(v),
+        ast::Value::Own(_) => generate_ownership(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Own(v),
         }),
         ast::Value::NonFungibleAddress(_, _) => {
             generate_non_fungible_address(value, bech32_decoder).map(|v| SborValue::Custom {
                 value: ScryptoCustomValue::NonFungibleAddress(v),
             })
         }
+        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Blob(v),
+        }),
+
+        ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Bucket(v),
+        }),
+        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Proof(v),
+        }),
+        ast::Value::Expression(_) => generate_expression(value).map(|v| SborValue::Custom {
+            value: ScryptoCustomValue::Expression(v),
+        }),
 
         ast::Value::Hash(_) => generate_hash(value).map(|v| SborValue::Custom {
             value: ScryptoCustomValue::Hash(v),
@@ -1352,27 +1313,25 @@ fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
         ast::Type::Array => SborTypeId::Array,
         ast::Type::Tuple => SborTypeId::Tuple,
 
-        // Globals
+        // RE global address types
         ast::Type::PackageAddress => SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress),
         ast::Type::ComponentAddress => SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress),
         ast::Type::ResourceAddress => SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress),
         ast::Type::SystemAddress => SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress),
 
-        // RE Nodes
-        ast::Type::Component => SborTypeId::Custom(ScryptoCustomTypeId::Component),
-        ast::Type::KeyValueStore => SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore),
-        ast::Type::Bucket => SborTypeId::Custom(ScryptoCustomTypeId::Bucket),
-        ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
-        ast::Type::Vault => SborTypeId::Custom(ScryptoCustomTypeId::Vault),
-
-        // Other interpreted types
-        ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),
-        ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),
+        // RE interpreted types
+        ast::Type::Own => SborTypeId::Custom(ScryptoCustomTypeId::Own),
         ast::Type::NonFungibleAddress => {
             SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress)
         }
+        ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),
 
-        // Uninterpreted=> SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
+        // Tx interpreted types
+        ast::Type::Bucket => SborTypeId::Custom(ScryptoCustomTypeId::Bucket),
+        ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
+        ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),
+
+        // Uninterpreted
         ast::Type::Hash => SborTypeId::Custom(ScryptoCustomTypeId::Hash),
         ast::Type::EcdsaSecp256k1PublicKey => {
             SborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey)
@@ -1400,7 +1359,7 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::args;
-    use radix_engine_interface::core::NetworkDefinition;
+    use radix_engine_interface::node::NetworkDefinition;
     use radix_engine_interface::pdec;
 
     #[macro_export]
@@ -1427,7 +1386,7 @@ mod tests {
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
-            let mut id_validator = IdValidator::new();
+            let mut id_validator = ManifestIdValidator::new();
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_instruction(
@@ -1481,10 +1440,10 @@ mod tests {
             SborValue::Tuple {
                 fields: vec![
                     SborValue::Custom {
-                        value: ScryptoCustomValue::Bucket(1)
+                        value: ScryptoCustomValue::Bucket(ManifestBucket(1))
                     },
                     SborValue::Custom {
-                        value: ScryptoCustomValue::Proof(2)
+                        value: ScryptoCustomValue::Proof(ManifestProof(2))
                     },
                     SborValue::String {
                         value: "bar".into()
@@ -1493,11 +1452,11 @@ mod tests {
             }
         );
         generate_value_ok!(
-            r#"Tuple(Decimal("1.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
+            r#"Tuple(Decimal("1"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
             SborValue::Tuple {
                 fields: vec![
                     SborValue::Custom {
-                        value: ScryptoCustomValue::Decimal(Decimal::from_str("1.0").unwrap())
+                        value: ScryptoCustomValue::Decimal(Decimal::from_str("1").unwrap())
                     },
                     SborValue::Custom {
                         value: ScryptoCustomValue::Hash(
@@ -1530,7 +1489,7 @@ mod tests {
         generate_value_ok!(
             r#"Expression("ENTIRE_WORKTOP")"#,
             SborValue::Custom {
-                value: ScryptoCustomValue::Expression(Expression("ENTIRE_WORKTOP".to_owned()))
+                value: ScryptoCustomValue::Expression(ManifestExpression::EntireWorktop)
             }
         );
     }
@@ -1570,7 +1529,7 @@ mod tests {
         let owner_badge = NonFungibleAddress::new(resource, NonFungibleId::U32(1));
 
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             BasicInstruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
@@ -1583,7 +1542,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             BasicInstruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,

@@ -9,12 +9,13 @@ use radix_engine_interface::api::types::{
     GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
 };
 use radix_engine_interface::crypto::hash;
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 use transaction::model::{BasicInstruction, Instruction, SystemTransaction};
-use transaction::validation::{IdAllocator, IdSpace};
+use transaction::validation::ManifestIdAllocator;
 
 const XRD_SYMBOL: &str = "XRD";
 const XRD_NAME: &str = "Radix";
@@ -40,9 +41,8 @@ pub fn create_genesis(
     initial_epoch: u64,
     rounds_per_epoch: u64,
 ) -> SystemTransaction {
-    let mocked_hash = hash([0u8; 1]);
     let mut blobs = Vec::new();
-    let mut id_allocator = IdAllocator::new(IdSpace::Transaction, mocked_hash);
+    let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
 
     {
@@ -147,7 +147,7 @@ pub fn create_genesis(
     );
 
     {
-        let bucket = Bucket(id_allocator.new_bucket_id().unwrap());
+        let bucket = id_allocator.new_bucket_id().unwrap();
         instructions.push(Instruction::Basic(BasicInstruction::CallFunction {
             package_address: FAUCET_PACKAGE,
             blueprint_name: FAUCET_BLUEPRINT.to_string(),
@@ -310,9 +310,11 @@ mod tests {
             &substate_store,
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::default(),
+            &ExecutionConfig::debug(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
+        #[cfg(not(feature = "alloc"))]
+        println!("{:?}", transaction_receipt);
 
         let genesis_receipt = genesis_result(&transaction_receipt);
 

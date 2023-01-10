@@ -12,7 +12,6 @@ use radix_engine_constants::{
 use radix_engine_interface::api::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
-use transaction::validation::{IdAllocator, IdSpace};
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,

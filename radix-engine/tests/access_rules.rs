@@ -2,7 +2,6 @@ use radix_engine::engine::{ApplicationError, AuthError, ModuleError, RuntimeErro
 use radix_engine::model::AccessRulesChainError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::{data::*, rule};
 use scrypto::component::ComponentAccessRules;
@@ -373,7 +372,7 @@ impl MutableAccessRulesTestRunner {
         let mut test_runner = TestRunner::new(true);
         let package_address = test_runner.compile_and_publish("./tests/blueprints/access_rules");
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .call_function(
                 package_address,
                 Self::BLUEPRINT_NAME,
@@ -472,7 +471,7 @@ impl MutableAccessRulesTestRunner {
     }
 
     pub fn manifest_builder() -> ManifestBuilder {
-        ManifestBuilder::new(&NetworkDefinition::simulator())
+        ManifestBuilder::new()
     }
 
     pub fn execute_manifest(&mut self, manifest: TransactionManifest) -> TransactionReceipt {

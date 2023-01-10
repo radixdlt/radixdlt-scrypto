@@ -6,8 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::api::types::*;
-use crate::core::Expression;
-use crate::crypto::Blob;
+use crate::data::types::*;
 use crate::data::*;
 use utils::ContextualDisplay;
 
@@ -20,8 +19,8 @@ pub enum ScryptoValueDecodeError {
 }
 
 pub enum ValueReplacingError {
-    ProofIdNotFound(ProofId),
-    BucketIdNotFound(BucketId),
+    ProofIdNotFound(ManifestProof),
+    BucketIdNotFound(ManifestBucket),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -35,17 +34,15 @@ pub struct IndexedScryptoValue {
     pub package_addresses: HashSet<PackageAddress>,
     pub system_addresses: HashSet<SystemAddress>,
 
-    // RE nodes and refs
-    pub bucket_ids: HashMap<BucketId, SborPath>,
-    pub proof_ids: HashMap<ProofId, SborPath>,
-    pub vault_ids: HashSet<VaultId>,
-    pub kv_store_ids: HashSet<KeyValueStoreId>,
-    pub component_ids: HashSet<ComponentId>,
-
-    // Other interpreted
-    pub expressions: Vec<(Expression, SborPath)>,
-    pub blobs: Vec<(Blob, SborPath)>,
+    // RE interpreted
+    pub owned_nodes: HashSet<Own>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
+    pub blobs: Vec<(Blob, SborPath)>,
+
+    // TX interpreted
+    pub buckets: HashMap<ManifestBucket, SborPath>,
+    pub proofs: HashMap<ManifestProof, SborPath>,
+    pub expressions: Vec<(ManifestExpression, SborPath)>,
 }
 
 impl IndexedScryptoValue {
@@ -79,35 +76,43 @@ impl IndexedScryptoValue {
             resource_addresses: visitor.resource_addresses,
             package_addresses: visitor.package_addresses,
             system_addresses: visitor.system_addresses,
-            bucket_ids: visitor.buckets,
-            proof_ids: visitor.proofs,
-            vault_ids: visitor.vaults,
-            kv_store_ids: visitor.kv_stores,
-            component_ids: visitor.components,
-            expressions: visitor.expressions,
-            blobs: visitor.blobs,
+
+            owned_nodes: visitor.owned_nodes,
             non_fungible_addresses: visitor.non_fungible_addresses,
+            blobs: visitor.blobs,
+
+            buckets: visitor.buckets,
+            proofs: visitor.proofs,
+            expressions: visitor.expressions,
         })
     }
 
-    pub fn node_ids(&self) -> HashSet<RENodeId> {
+    pub fn owned_node_ids(&self) -> HashSet<RENodeId> {
         let mut node_ids = HashSet::new();
-        for vault_id in &self.vault_ids {
-            node_ids.insert(RENodeId::Vault(*vault_id));
-        }
-        for kv_store_id in &self.kv_store_ids {
-            node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
-        }
-        for component_id in &self.component_ids {
-            node_ids.insert(RENodeId::Component(*component_id));
-        }
-        for (bucket_id, _) in &self.bucket_ids {
-            node_ids.insert(RENodeId::Bucket(*bucket_id));
-        }
-        for (proof_id, _) in &self.proof_ids {
-            node_ids.insert(RENodeId::Proof(*proof_id));
+        for ownership in &self.owned_nodes {
+            match ownership {
+                Own::Bucket(bucket_id) => {
+                    node_ids.insert(RENodeId::Bucket(*bucket_id));
+                }
+                Own::Proof(proof_id) => {
+                    node_ids.insert(RENodeId::Proof(*proof_id));
+                }
+                Own::Vault(vault_id) => {
+                    node_ids.insert(RENodeId::Vault(*vault_id));
+                }
+                Own::Component(component_id) => {
+                    node_ids.insert(RENodeId::Component(*component_id));
+                }
+                Own::KeyValueStore(kv_store_id) => {
+                    node_ids.insert(RENodeId::KeyValueStore(*kv_store_id));
+                }
+            }
         }
         node_ids
+    }
+
+    pub fn owned_node_count(&self) -> usize {
+        self.owned_nodes.len()
     }
 
     pub fn global_references(&self) -> HashSet<GlobalAddress> {
@@ -118,69 +123,102 @@ impl IndexedScryptoValue {
         for resource_address in &self.resource_addresses {
             node_ids.insert(GlobalAddress::Resource(*resource_address));
         }
-        for non_fungible_address in &self.non_fungible_addresses {
-            node_ids.insert(GlobalAddress::Resource(
-                non_fungible_address.resource_address(),
-            ));
-        }
         for package_address in &self.package_addresses {
             node_ids.insert(GlobalAddress::Package(*package_address));
         }
         for system_address in &self.system_addresses {
             node_ids.insert(GlobalAddress::System(*system_address));
         }
+
+        // Extract resource address from non-fungible address
+        for non_fungible_address in &self.non_fungible_addresses {
+            node_ids.insert(GlobalAddress::Resource(
+                non_fungible_address.resource_address(),
+            ));
+        }
         node_ids
     }
 
-    pub fn replace_ids(
+    pub fn replace_manifest_buckets_and_proofs(
         &mut self,
-        proof_replacements: &mut HashMap<ProofId, ProofId>,
-        bucket_replacements: &mut HashMap<BucketId, BucketId>,
+        proof_replacements: &mut HashMap<ManifestProof, ProofId>,
+        bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
     ) -> Result<(), ValueReplacingError> {
-        let mut new_proof_ids = HashMap::new();
-        for (proof_id, path) in self.proof_ids.drain() {
+        for (proof_id, path) in self.proofs.drain() {
             let next_id = proof_replacements
                 .remove(&proof_id)
                 .ok_or(ValueReplacingError::ProofIdNotFound(proof_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
-                *value = ScryptoCustomValue::Proof(next_id);
+                *value = ScryptoCustomValue::Own(Own::Proof(next_id));
+                self.owned_nodes.insert(Own::Proof(next_id));
             } else {
                 panic!("Should be a custom value");
             }
-
-            new_proof_ids.insert(next_id, path);
         }
-        self.proof_ids = new_proof_ids;
 
-        let mut new_bucket_ids = HashMap::new();
-        for (bucket_id, path) in self.bucket_ids.drain() {
+        for (bucket_id, path) in self.buckets.drain() {
             let next_id = bucket_replacements
                 .remove(&bucket_id)
                 .ok_or(ValueReplacingError::BucketIdNotFound(bucket_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let SborValue::Custom { value } = value {
-                *value = ScryptoCustomValue::Bucket(next_id);
+                *value = ScryptoCustomValue::Own(Own::Bucket(next_id));
+                self.owned_nodes.insert(Own::Bucket(next_id));
             } else {
                 panic!("Should be a custom value");
             }
-
-            new_bucket_ids.insert(next_id, path);
         }
-        self.bucket_ids = new_bucket_ids;
+
+        replace_array_element_type_id(&mut self.dom);
 
         self.raw = scrypto_encode(&self.dom)
             .expect("Previously encodable raw value is no longer encodable after replacement");
 
         Ok(())
     }
+}
 
-    pub fn value_count(&self) -> usize {
-        self.bucket_ids.len()
-            + self.proof_ids.len()
-            + self.vault_ids.len()
-            + self.component_ids.len()
-            + self.kv_store_ids.len()
+pub fn replace_array_element_type_id(value: &mut ScryptoValue) {
+    match value {
+        // primitive types
+        SborValue::Unit
+        | SborValue::Bool { .. }
+        | SborValue::I8 { .. }
+        | SborValue::I16 { .. }
+        | SborValue::I32 { .. }
+        | SborValue::I64 { .. }
+        | SborValue::I128 { .. }
+        | SborValue::U8 { .. }
+        | SborValue::U16 { .. }
+        | SborValue::U32 { .. }
+        | SborValue::U64 { .. }
+        | SborValue::U128 { .. }
+        | SborValue::String { .. } => {}
+        SborValue::Tuple { fields } | SborValue::Enum { fields, .. } => {
+            for e in fields {
+                replace_array_element_type_id(e);
+            }
+        }
+        SborValue::Array {
+            elements,
+            element_type_id,
+        } => {
+            match element_type_id {
+                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Bucket) => {
+                    *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+                }
+                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Proof) => {
+                    *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+                }
+                _ => {}
+            }
+
+            for e in elements {
+                replace_array_element_type_id(e);
+            }
+        }
+        SborValue::Custom { .. } => {}
     }
 }
 
@@ -209,21 +247,21 @@ pub struct ScryptoCustomValueVisitor {
     pub resource_addresses: HashSet<ResourceAddress>,
     pub package_addresses: HashSet<PackageAddress>,
     pub system_addresses: HashSet<SystemAddress>,
-    // RE nodes
-    pub buckets: HashMap<BucketId, SborPath>,
-    pub proofs: HashMap<ProofId, SborPath>,
-    pub vaults: HashSet<VaultId>,
-    pub kv_stores: HashSet<KeyValueStoreId>,
-    pub components: HashSet<ComponentId>,
-    // Other interpreted
-    pub expressions: Vec<(Expression, SborPath)>,
-    pub blobs: Vec<(Blob, SborPath)>,
+    // RE interpreted
+    pub owned_nodes: HashSet<Own>,
     pub non_fungible_addresses: HashSet<NonFungibleAddress>,
+    pub blobs: Vec<(Blob, SborPath)>,
+    // TX interpreted
+    pub buckets: HashMap<ManifestBucket, SborPath>,
+    pub proofs: HashMap<ManifestProof, SborPath>,
+    pub expressions: Vec<(ManifestExpression, SborPath)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
 pub enum ValueIndexingError {
     DuplicateOwnership,
+    DuplicateManifestBucket,
+    DuplicateManifestProof,
 }
 
 impl ScryptoCustomValueVisitor {
@@ -233,14 +271,14 @@ impl ScryptoCustomValueVisitor {
             resource_addresses: HashSet::new(),
             package_addresses: HashSet::new(),
             system_addresses: HashSet::new(),
+
+            owned_nodes: HashSet::new(),
+            non_fungible_addresses: HashSet::new(),
+            blobs: Vec::new(),
+
             buckets: HashMap::new(),
             proofs: HashMap::new(),
-            vaults: HashSet::new(),
-            kv_stores: HashSet::new(),
-            components: HashSet::new(),
             expressions: Vec::new(),
-            blobs: Vec::new(),
-            non_fungible_addresses: HashSet::new(),
         }
     }
 }
@@ -268,24 +306,27 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
                 self.system_addresses.insert(value.clone());
             }
 
-            // RE nodes & references
-            ScryptoCustomValue::Component(value) => {
-                if !self.components.insert(value.clone()) {
+            // RE interpreted
+            ScryptoCustomValue::Own(value) => {
+                if !self.owned_nodes.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
             }
-            ScryptoCustomValue::KeyValueStore(value) => {
-                if !self.kv_stores.insert(value.clone()) {
-                    return Err(ValueIndexingError::DuplicateOwnership);
-                }
+            ScryptoCustomValue::NonFungibleAddress(value) => {
+                self.non_fungible_addresses.insert(value.clone());
             }
+            ScryptoCustomValue::Blob(value) => {
+                self.blobs.push((value.clone(), path.clone().into()));
+            }
+
+            // TX interpreted
             ScryptoCustomValue::Bucket(value) => {
                 if self
                     .buckets
                     .insert(value.clone(), path.clone().into())
                     .is_some()
                 {
-                    return Err(ValueIndexingError::DuplicateOwnership);
+                    return Err(ValueIndexingError::DuplicateManifestBucket);
                 }
             }
             ScryptoCustomValue::Proof(value) => {
@@ -294,24 +335,11 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
                     .insert(value.clone(), path.clone().into())
                     .is_some()
                 {
-                    return Err(ValueIndexingError::DuplicateOwnership);
+                    return Err(ValueIndexingError::DuplicateManifestProof);
                 }
             }
-            ScryptoCustomValue::Vault(value) => {
-                if !self.vaults.insert(value.clone()) {
-                    return Err(ValueIndexingError::DuplicateOwnership);
-                }
-            }
-
-            // Other interpreted
             ScryptoCustomValue::Expression(value) => {
                 self.expressions.push((value.clone(), path.clone().into()));
-            }
-            ScryptoCustomValue::Blob(value) => {
-                self.blobs.push((value.clone(), path.clone().into()));
-            }
-            ScryptoCustomValue::NonFungibleAddress(value) => {
-                self.non_fungible_addresses.insert(value.clone());
             }
 
             // Uninterpreted
@@ -337,11 +365,11 @@ mod tests {
 
     #[test]
     fn should_reject_duplicate_ids() {
-        let buckets = scrypto_encode(&vec![Bucket(0), Bucket(0)]).unwrap();
+        let buckets = scrypto_encode(&vec![ManifestBucket(0), ManifestBucket(0)]).unwrap();
         assert_eq!(
             IndexedScryptoValue::from_slice(&buckets),
             Err(ScryptoValueDecodeError::ValueIndexingError(
-                ValueIndexingError::DuplicateOwnership
+                ValueIndexingError::DuplicateManifestBucket
             ))
         );
     }

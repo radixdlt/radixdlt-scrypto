@@ -1,5 +1,6 @@
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::*;
+use radix_engine_interface::data::types::{Blob, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::scrypto;
 use sbor::rust::collections::BTreeMap;
@@ -28,7 +29,7 @@ pub enum BasicInstruction {
 
     /// Returns a bucket of resource to worktop.
     ReturnToWorktop {
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     },
 
     /// Asserts worktop contains resource.
@@ -53,7 +54,7 @@ pub enum BasicInstruction {
 
     /// Adds a proof to the auth zone.
     PushToAuthZone {
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     },
 
     /// Drops all proofs in the auth zone
@@ -79,17 +80,17 @@ pub enum BasicInstruction {
 
     /// Creates a proof from a bucket.
     CreateProofFromBucket {
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     },
 
     /// Clones a proof.
     CloneProof {
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     },
 
     /// Drops a proof.
     DropProof {
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     },
 
     /// Drops all of the proofs in the transaction.
@@ -131,7 +132,7 @@ pub enum BasicInstruction {
     },
 
     BurnResource {
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     },
 
     RecallResource {

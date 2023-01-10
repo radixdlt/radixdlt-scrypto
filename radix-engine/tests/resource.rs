@@ -1,7 +1,6 @@
 use radix_engine::engine::{ApplicationError, RuntimeError};
 use radix_engine::model::ResourceManagerError;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
@@ -15,7 +14,7 @@ fn test_set_mintable_with_self_resource_address() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -41,7 +40,7 @@ fn test_resource_manager() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "ResourceTest", "create_fungible", args!())
         .call_function(package_address, "ResourceTest", "query", args!())
@@ -55,7 +54,7 @@ fn test_resource_manager() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -75,7 +74,7 @@ fn mint_with_bad_granularity_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -86,7 +85,7 @@ fn mint_with_bad_granularity_should_fail() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -115,7 +114,7 @@ fn mint_too_much_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/resource");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -126,7 +125,7 @@ fn mint_too_much_should_fail() {
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(

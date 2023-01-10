@@ -5,13 +5,18 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::data::ScryptoValueDecodeError;
 use sbor::*;
-use transaction::errors::*;
 
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmError;
 
 use super::TrackError;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(TypeId, Encode, Decode)]
+pub enum IdAllocationError {
+    OutOfID,
+}
 
 /// Represents an error which causes a tranasction to be rejected.
 #[derive(Debug, Clone, PartialEq, Eq)]

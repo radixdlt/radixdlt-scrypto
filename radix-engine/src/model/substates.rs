@@ -54,6 +54,22 @@ impl PersistedSubstate {
             panic!("Not a package royalty accumulator");
         }
     }
+
+    pub fn global(&self) -> &GlobalAddressSubstate {
+        if let PersistedSubstate::Global(state) = self {
+            state
+        } else {
+            panic!("Not a global address substate");
+        }
+    }
+
+    pub fn resource_manager(&self) -> &ResourceManagerSubstate {
+        if let PersistedSubstate::ResourceManager(state) = self {
+            state
+        } else {
+            panic!("Not a resource manager substate");
+        }
+    }
 }
 
 impl Into<VaultSubstate> for PersistedSubstate {
@@ -1016,7 +1032,10 @@ impl<'a> SubstateRef<'a> {
             }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
-                (scrypto_value.global_references(), scrypto_value.node_ids())
+                (
+                    scrypto_value.global_references(),
+                    scrypto_value.owned_node_ids(),
+                )
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 let maybe_scrypto_value = substate
@@ -1024,7 +1043,10 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|raw| IndexedScryptoValue::from_slice(raw).unwrap());
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                    (
+                        scrypto_value.global_references(),
+                        scrypto_value.owned_node_ids(),
+                    )
                 } else {
                     (HashSet::new(), HashSet::new())
                 }
@@ -1035,7 +1057,10 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                    (
+                        scrypto_value.global_references(),
+                        scrypto_value.owned_node_ids(),
+                    )
                 } else {
                     (HashSet::new(), HashSet::new())
                 }

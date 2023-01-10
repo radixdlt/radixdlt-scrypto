@@ -2,7 +2,6 @@ use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
 use radix_engine::model::Validator;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use scrypto_unit::*;
@@ -17,7 +16,7 @@ fn get_epoch_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "EpochManagerTest", "get_epoch", args![])
         .build();
@@ -36,7 +35,7 @@ fn next_round_without_supervisor_auth_fails() {
 
     // Act
     let round = 9876u64;
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -133,7 +132,7 @@ fn register_validator_with_auth_succeeds() {
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .register_validator(validator_address)
         .build();
@@ -161,7 +160,7 @@ fn register_validator_without_auth_fails() {
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .register_validator(validator_address)
         .build();
@@ -188,7 +187,7 @@ fn unregister_validator_with_auth_succeeds() {
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -216,7 +215,7 @@ fn unregister_validator_without_auth_fails() {
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -236,7 +235,7 @@ fn registered_validator_becomes_part_of_validator_on_epoch_change() {
     let genesis = create_genesis(BTreeSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (pub_key, validator_address) = test_runner.new_validator();
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .register_validator(validator_address)
         .build();
@@ -286,7 +285,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();

@@ -1,7 +1,6 @@
 use radix_engine::engine::{ExecutionMode, KernelError, ResolvedActor, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::core::NetworkDefinition;
 use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -13,7 +12,7 @@ fn dangling_component_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "dangling_component", args!())
         .build();
@@ -42,7 +41,7 @@ fn dangling_bucket_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "dangling_bucket", args!())
         .build();
@@ -71,7 +70,7 @@ fn dangling_vault_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "dangling_vault", args!())
         .build();
@@ -100,7 +99,7 @@ fn dangling_worktop_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "get_bucket", args!())
         .build();
@@ -122,7 +121,7 @@ fn dangling_kv_store_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Leaks", "dangling_kv_store", args!())
         .build();
@@ -151,7 +150,7 @@ fn dangling_bucket_with_proof_should_fail() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/leaks");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
