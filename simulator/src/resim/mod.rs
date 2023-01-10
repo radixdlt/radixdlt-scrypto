@@ -267,7 +267,7 @@ pub fn process_receipt(receipt: TransactionReceipt) -> Result<Option<Transaction
                         entity_changes: commit.entity_changes,
                         resource_changes: commit.resource_changes,
                         application_logs: commit.application_logs,
-                        next_validator_set: commit.next_validator_set,
+                        next_epoch: commit.next_epoch,
                     }),
                 })),
             }

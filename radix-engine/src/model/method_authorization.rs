@@ -4,21 +4,21 @@ use radix_engine_interface::scrypto;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Categorize, Encode, Decode)]
 pub enum MethodAuthorizationError {
     NotAuthorized,
     UnsupportedMethod,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum HardDecimal {
     Amount(Decimal),
     InvalidSchemaPath,
     DisallowdValueType,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Categorize, Encode, Decode)]
 pub enum HardCount {
     Count(u8),
     InvalidSchemaPath,
@@ -26,7 +26,7 @@ pub enum HardCount {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleAddress),
     Resource(ResourceAddress),
@@ -35,7 +35,7 @@ pub enum HardResourceOrNonFungible {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum HardProofRuleResourceList {
     List(Vec<HardResourceOrNonFungible>),
     InvalidSchemaPath,
@@ -43,7 +43,7 @@ pub enum HardProofRuleResourceList {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum HardProofRule {
     Require(HardResourceOrNonFungible),
     AmountOf(HardDecimal, HardResourceOrNonFungible),
@@ -53,7 +53,7 @@ pub enum HardProofRule {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum HardAuthRule {
     ProofRule(HardProofRule),
     AnyOf(Vec<HardAuthRule>),
@@ -62,7 +62,7 @@ pub enum HardAuthRule {
 
 /// Authorization of a method call
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum MethodAuthorization {
     Protected(HardAuthRule),
     AllowAll,

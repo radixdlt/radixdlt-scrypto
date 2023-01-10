@@ -9,12 +9,12 @@ use crate::wasm::*;
 use core::fmt::Debug;
 use radix_engine_interface::api::api::{BlobApi, InvokableModel};
 use radix_engine_interface::api::types::SubstateOffset;
-use radix_engine_interface::api::types::{NativeFunction, PackageFunction, PackageId, RENodeId};
+use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
 use radix_engine_interface::model::*;
 
 pub struct Package;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidAbi(DecodeError),
@@ -47,7 +47,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut call_frame_update = CallFrameUpdate::empty();
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        let actor = ResolvedActor::function(NativeFunction::Package(PackageFunction::Publish));
+        let actor = ResolvedActor::function(NativeFn::Package(PackageFn::Publish));
         Ok((actor, call_frame_update, self))
     }
 }
@@ -138,7 +138,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocatio
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::Package(PackageMethod::SetRoyaltyConfig),
+            NativeFn::Package(PackageFn::SetRoyaltyConfig),
             resolved_receiver,
         );
         let executor = PackageSetRoyaltyConfigExecutable {
@@ -183,7 +183,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, api)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::Package(PackageMethod::ClaimRoyalty),
+            NativeFn::Package(PackageFn::ClaimRoyalty),
             resolved_receiver,
         );
         let executor = PackageClaimRoyaltyExecutable {

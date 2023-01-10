@@ -7,7 +7,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 use crate::abi::*;
 use crate::address::*;
 use crate::crypto::{hash, PublicKey};
-use crate::data::ScryptoCustomTypeId;
+use crate::data::ScryptoCustomValueKind;
 use crate::scrypto_type;
 
 /// An instance of a blueprint, which lives in the ledger state.
@@ -87,7 +87,7 @@ impl ComponentAddress {
 
 scrypto_type!(
     ComponentAddress,
-    ScryptoCustomTypeId::ComponentAddress,
+    ScryptoCustomValueKind::ComponentAddress,
     Type::ComponentAddress,
     27
 );

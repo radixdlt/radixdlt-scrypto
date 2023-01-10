@@ -1,14 +1,15 @@
+mod categorize;
 mod decode;
+mod describe;
 mod encode;
-mod type_id;
 mod utils;
 
 use proc_macro::TokenStream;
 
-/// Derive code that returns the type ID.
-#[proc_macro_derive(TypeId, attributes(sbor))]
-pub fn type_id(input: TokenStream) -> TokenStream {
-    type_id::handle_type_id(proc_macro2::TokenStream::from(input))
+/// Derive code that returns the value kind.
+#[proc_macro_derive(Categorize, attributes(sbor))]
+pub fn categorize(input: TokenStream) -> TokenStream {
+    categorize::handle_categorize(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
@@ -25,6 +26,14 @@ pub fn encode(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Decode, attributes(sbor))]
 pub fn decode(input: TokenStream) -> TokenStream {
     decode::handle_decode(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derive code that describes the SBOR type.
+#[proc_macro_derive(Describe, attributes(sbor))]
+pub fn describe(input: TokenStream) -> TokenStream {
+    describe::handle_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

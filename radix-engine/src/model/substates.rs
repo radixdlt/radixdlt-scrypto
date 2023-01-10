@@ -8,7 +8,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
@@ -1193,6 +1193,13 @@ impl<'a> SubstateRefMut<'a> {
         match self {
             SubstateRefMut::EpochManager(value) => *value,
             _ => panic!("Not epoch manager"),
+        }
+    }
+
+    pub fn validator_set(&mut self) -> &mut ValidatorSetSubstate {
+        match self {
+            SubstateRefMut::ValidatorSet(value) => *value,
+            _ => panic!("Not a validator set"),
         }
     }
 

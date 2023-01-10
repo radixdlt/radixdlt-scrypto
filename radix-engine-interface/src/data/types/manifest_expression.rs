@@ -68,4 +68,4 @@ impl ManifestExpression {
     }
 }
 
-scrypto_type!(ManifestExpression, ScryptoCustomTypeId::Expression, 1);
+scrypto_type!(ManifestExpression, ScryptoCustomValueKind::Expression, 1);

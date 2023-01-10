@@ -85,20 +85,20 @@ pub fn format_scrypto_value<F: fmt::Write>(
 ) -> fmt::Result {
     match value {
         // primitive types
-        SborValue::Unit => write!(f, "()")?,
-        SborValue::Bool { value } => write!(f, "{}", value)?,
-        SborValue::I8 { value } => write!(f, "{}i8", value)?,
-        SborValue::I16 { value } => write!(f, "{}i16", value)?,
-        SborValue::I32 { value } => write!(f, "{}i32", value)?,
-        SborValue::I64 { value } => write!(f, "{}i64", value)?,
-        SborValue::I128 { value } => write!(f, "{}i128", value)?,
-        SborValue::U8 { value } => write!(f, "{}u8", value)?,
-        SborValue::U16 { value } => write!(f, "{}u16", value)?,
-        SborValue::U32 { value } => write!(f, "{}u32", value)?,
-        SborValue::U64 { value } => write!(f, "{}u64", value)?,
-        SborValue::U128 { value } => write!(f, "{}u128", value)?,
-        SborValue::String { value } => write!(f, "\"{}\"", value)?,
-        SborValue::Tuple { fields } => {
+        Value::Unit => write!(f, "()")?,
+        Value::Bool { value } => write!(f, "{}", value)?,
+        Value::I8 { value } => write!(f, "{}i8", value)?,
+        Value::I16 { value } => write!(f, "{}i16", value)?,
+        Value::I32 { value } => write!(f, "{}i32", value)?,
+        Value::I64 { value } => write!(f, "{}i64", value)?,
+        Value::I128 { value } => write!(f, "{}i128", value)?,
+        Value::U8 { value } => write!(f, "{}u8", value)?,
+        Value::U16 { value } => write!(f, "{}u16", value)?,
+        Value::U32 { value } => write!(f, "{}u32", value)?,
+        Value::U64 { value } => write!(f, "{}u64", value)?,
+        Value::U128 { value } => write!(f, "{}u128", value)?,
+        Value::String { value } => write!(f, "\"{}\"", value)?,
+        Value::Tuple { fields } => {
             if fields.len() == 2 {
                 if let (
                     ScryptoValue::Custom {
@@ -138,7 +138,7 @@ pub fn format_scrypto_value<F: fmt::Write>(
             format_elements(f, fields, context)?;
             f.write_str(")")?;
         }
-        SborValue::Enum {
+        Value::Enum {
             discriminator,
             fields,
         } => {
@@ -161,15 +161,15 @@ pub fn format_scrypto_value<F: fmt::Write>(
                 }
             }
         }
-        SborValue::Array {
-            element_type_id,
+        Value::Array {
+            element_value_kind,
             elements,
-        } => match element_type_id {
-            SborTypeId::U8 => {
+        } => match element_value_kind {
+            ValueKind::U8 => {
                 let vec: Vec<u8> = elements
                     .iter()
                     .map(|e| match e {
-                        SborValue::U8 { value } => Ok(*value),
+                        Value::U8 { value } => Ok(*value),
                         _ => Err(fmt::Error),
                     })
                     .collect::<Result<_, _>>()?;
@@ -179,14 +179,14 @@ pub fn format_scrypto_value<F: fmt::Write>(
             }
             _ => {
                 f.write_str("Array<")?;
-                format_type_id(f, element_type_id)?;
+                format_value_kind(f, element_value_kind)?;
                 f.write_str(">(")?;
                 format_elements(f, elements, context)?;
                 f.write_str(")")?;
             }
         },
         // custom types
-        SborValue::Custom { value } => {
+        Value::Custom { value } => {
             format_custom_value(f, value, context)?;
         }
     };
@@ -206,55 +206,59 @@ pub fn format_tuple<F: fmt::Write>(
     Ok(())
 }
 
-pub fn format_type_id<F: fmt::Write>(f: &mut F, type_id: &ScryptoSborTypeId) -> fmt::Result {
-    match type_id {
-        SborTypeId::Unit => f.write_str("Unit"),
-        SborTypeId::Bool => f.write_str("Bool"),
-        SborTypeId::I8 => f.write_str("I8"),
-        SborTypeId::I16 => f.write_str("I16"),
-        SborTypeId::I32 => f.write_str("I32"),
-        SborTypeId::I64 => f.write_str("I64"),
-        SborTypeId::I128 => f.write_str("I128"),
-        SborTypeId::U8 => f.write_str("U8"),
-        SborTypeId::U16 => f.write_str("U16"),
-        SborTypeId::U32 => f.write_str("U32"),
-        SborTypeId::U64 => f.write_str("U64"),
-        SborTypeId::U128 => f.write_str("U128"),
-        SborTypeId::String => f.write_str("String"),
-        SborTypeId::Enum => f.write_str("Enum"),
-        SborTypeId::Array => f.write_str("Array"),
-        SborTypeId::Tuple => f.write_str("Tuple"),
-        SborTypeId::Custom(type_id) => match type_id {
-            ScryptoCustomTypeId::PackageAddress => f.write_str("PackageAddress"),
-            ScryptoCustomTypeId::ComponentAddress => f.write_str("ComponentAddress"),
-            ScryptoCustomTypeId::ResourceAddress => f.write_str("ResourceAddress"),
-            ScryptoCustomTypeId::SystemAddress => f.write_str("SystemAddress"),
-            ScryptoCustomTypeId::Own => f.write_str("Own"),
-            ScryptoCustomTypeId::Bucket => f.write_str("Bucket"),
-            ScryptoCustomTypeId::Proof => f.write_str("Proof"),
-            ScryptoCustomTypeId::Expression => f.write_str("Expression"),
-            ScryptoCustomTypeId::Blob => f.write_str("Blob"),
-            ScryptoCustomTypeId::Hash => f.write_str("Hash"),
-            ScryptoCustomTypeId::EcdsaSecp256k1PublicKey => f.write_str("EcdsaSecp256k1PublicKey"),
-            ScryptoCustomTypeId::EcdsaSecp256k1Signature => f.write_str("EcdsaSecp256k1Signature"),
-            ScryptoCustomTypeId::EddsaEd25519PublicKey => f.write_str("EddsaEd25519PublicKey"),
-            ScryptoCustomTypeId::EddsaEd25519Signature => f.write_str("EddsaEd25519Signature"),
-            ScryptoCustomTypeId::Decimal => f.write_str("Decimal"),
-            ScryptoCustomTypeId::PreciseDecimal => f.write_str("PreciseDecimal"),
-            ScryptoCustomTypeId::NonFungibleId => f.write_str("NonFungibleId"),
+pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind) -> fmt::Result {
+    match value_kind {
+        ValueKind::Unit => f.write_str("Unit"),
+        ValueKind::Bool => f.write_str("Bool"),
+        ValueKind::I8 => f.write_str("I8"),
+        ValueKind::I16 => f.write_str("I16"),
+        ValueKind::I32 => f.write_str("I32"),
+        ValueKind::I64 => f.write_str("I64"),
+        ValueKind::I128 => f.write_str("I128"),
+        ValueKind::U8 => f.write_str("U8"),
+        ValueKind::U16 => f.write_str("U16"),
+        ValueKind::U32 => f.write_str("U32"),
+        ValueKind::U64 => f.write_str("U64"),
+        ValueKind::U128 => f.write_str("U128"),
+        ValueKind::String => f.write_str("String"),
+        ValueKind::Enum => f.write_str("Enum"),
+        ValueKind::Array => f.write_str("Array"),
+        ValueKind::Tuple => f.write_str("Tuple"),
+        ValueKind::Custom(value_kind) => match value_kind {
+            ScryptoCustomValueKind::PackageAddress => f.write_str("PackageAddress"),
+            ScryptoCustomValueKind::ComponentAddress => f.write_str("ComponentAddress"),
+            ScryptoCustomValueKind::ResourceAddress => f.write_str("ResourceAddress"),
+            ScryptoCustomValueKind::SystemAddress => f.write_str("SystemAddress"),
+            ScryptoCustomValueKind::Own => f.write_str("Own"),
+            ScryptoCustomValueKind::Bucket => f.write_str("Bucket"),
+            ScryptoCustomValueKind::Proof => f.write_str("Proof"),
+            ScryptoCustomValueKind::Expression => f.write_str("Expression"),
+            ScryptoCustomValueKind::Blob => f.write_str("Blob"),
+            ScryptoCustomValueKind::Hash => f.write_str("Hash"),
+            ScryptoCustomValueKind::EcdsaSecp256k1PublicKey => {
+                f.write_str("EcdsaSecp256k1PublicKey")
+            }
+            ScryptoCustomValueKind::EcdsaSecp256k1Signature => {
+                f.write_str("EcdsaSecp256k1Signature")
+            }
+            ScryptoCustomValueKind::EddsaEd25519PublicKey => f.write_str("EddsaEd25519PublicKey"),
+            ScryptoCustomValueKind::EddsaEd25519Signature => f.write_str("EddsaEd25519Signature"),
+            ScryptoCustomValueKind::Decimal => f.write_str("Decimal"),
+            ScryptoCustomValueKind::PreciseDecimal => f.write_str("PreciseDecimal"),
+            ScryptoCustomValueKind::NonFungibleId => f.write_str("NonFungibleId"),
         },
     }
 }
 
-pub fn display_type_id(type_id: &ScryptoSborTypeId) -> DisplayableScryptoSborTypeId {
-    DisplayableScryptoSborTypeId(type_id)
+pub fn display_value_kind(value_kind: &ScryptoValueKind) -> DisplayableScryptoValueKind {
+    DisplayableScryptoValueKind(value_kind)
 }
 
-pub struct DisplayableScryptoSborTypeId<'a>(&'a ScryptoSborTypeId);
+pub struct DisplayableScryptoValueKind<'a>(&'a ScryptoValueKind);
 
-impl<'a> fmt::Display for DisplayableScryptoSborTypeId<'a> {
+impl<'a> fmt::Display for DisplayableScryptoValueKind<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        format_type_id(f, &self.0)
+        format_value_kind(f, &self.0)
     }
 }
 

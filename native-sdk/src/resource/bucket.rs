@@ -1,17 +1,20 @@
 use radix_engine_interface::api::api::Invokable;
-use radix_engine_interface::data::{ScryptoDecode, ScryptoTypeId};
+use radix_engine_interface::data::{ScryptoCategorize, ScryptoDecode};
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
 pub trait SysBucket {
-    fn sys_new<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+    fn sys_new<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         receiver: ResourceAddress,
         sys_calls: &mut Y,
     ) -> Result<Bucket, E>
     where
         Y: Invokable<ResourceManagerCreateBucketInvocation, E>;
 
-    fn sys_burn<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(self, env: &mut Y) -> Result<(), E>
+    fn sys_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
+        self,
+        env: &mut Y,
+    ) -> Result<(), E>
     where
         Y: Invokable<ResourceManagerBurnInvocation, E>
             + Invokable<BucketGetResourceAddressInvocation, E>;
@@ -19,9 +22,9 @@ pub trait SysBucket {
     fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: Invokable<BucketGetResourceAddressInvocation, E>,
-        E: Debug + ScryptoTypeId + ScryptoDecode;
+        E: Debug + ScryptoCategorize + ScryptoDecode;
 
-    fn sys_create_proof<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+    fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         sys_calls: &mut Y,
     ) -> Result<Proof, E>
@@ -30,7 +33,7 @@ pub trait SysBucket {
 }
 
 impl SysBucket for Bucket {
-    fn sys_new<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+    fn sys_new<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         receiver: ResourceAddress,
         sys_calls: &mut Y,
     ) -> Result<Bucket, E>
@@ -40,7 +43,7 @@ impl SysBucket for Bucket {
         sys_calls.invoke(ResourceManagerCreateBucketInvocation { receiver })
     }
 
-    fn sys_burn<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(self, env: &mut Y) -> Result<(), E>
+    fn sys_burn<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(self, env: &mut Y) -> Result<(), E>
     where
         Y: Invokable<ResourceManagerBurnInvocation, E>
             + Invokable<BucketGetResourceAddressInvocation, E>,
@@ -55,12 +58,12 @@ impl SysBucket for Bucket {
     fn sys_resource_address<Y, E>(&self, env: &mut Y) -> Result<ResourceAddress, E>
     where
         Y: Invokable<BucketGetResourceAddressInvocation, E>,
-        E: Debug + ScryptoTypeId + ScryptoDecode,
+        E: Debug + ScryptoCategorize + ScryptoDecode,
     {
         env.invoke(BucketGetResourceAddressInvocation { receiver: self.0 })
     }
 
-    fn sys_create_proof<Y, E: Debug + ScryptoTypeId + ScryptoDecode>(
+    fn sys_create_proof<Y, E: Debug + ScryptoCategorize + ScryptoDecode>(
         &self,
         sys_calls: &mut Y,
     ) -> Result<Proof, E>

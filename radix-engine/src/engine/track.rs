@@ -27,7 +27,7 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::types::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum LockState {
     Read(usize),
     Write,
@@ -73,7 +73,7 @@ pub struct Track<'s, R: FeeReserve> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
@@ -583,7 +583,7 @@ impl<'s> FinalizingTrack<'s> {
         // Commit/rollback application state changes
         let mut to_persist = HashMap::new();
         let mut application_logs = Vec::new();
-        let mut next_validator_set = None;
+        let mut next_epoch = None;
         let new_global_addresses = if is_success {
             for (id, loaded) in self.loaded_substates {
                 let old_version = match &loaded.metastate {
@@ -604,9 +604,10 @@ impl<'s> FinalizingTrack<'s> {
                                 state: ExistingMetaState::Updated(..),
                                 ..
                             } => {
-                                let validator_set =
-                                    loaded.substate.validator_set().validator_set.clone();
-                                next_validator_set = Some(validator_set);
+                                let validator_set = loaded.substate.validator_set();
+                                let epoch = validator_set.epoch;
+                                let validator_set = validator_set.validator_set.clone();
+                                next_epoch = Some((validator_set, epoch));
                             }
                             _ => {}
                         }
@@ -764,7 +765,7 @@ impl<'s> FinalizingTrack<'s> {
             entity_changes: EntityChanges::new(new_global_addresses),
             resource_changes: execution_trace_receipt.resource_changes,
             application_logs,
-            next_validator_set,
+            next_epoch,
         })
     }
 

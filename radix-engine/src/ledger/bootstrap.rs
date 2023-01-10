@@ -33,9 +33,14 @@ pub struct GenesisReceipt {
     pub epoch_manager: SystemAddress,
     pub clock: SystemAddress,
     pub eddsa_ed25519_token: ResourceAddress,
+    pub package_token: ResourceAddress,
 }
 
-pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTransaction {
+pub fn create_genesis(
+    validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    initial_epoch: u64,
+    rounds_per_epoch: u64,
+) -> SystemTransaction {
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
 
@@ -115,6 +120,21 @@ pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTran
         }
     };
 
+    let create_package_token = {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let initial_supply = None;
+
+        // TODO: Create token at a specific address
+        BasicInstruction::CreateNonFungibleResource {
+            id_type: NonFungibleIdType::Bytes,
+            metadata,
+            access_rules,
+            initial_supply,
+        }
+    };
+
     let mut blobs = Vec::new();
     let mut id_allocator = ManifestIdAllocator::new();
     let create_faucet_package = {
@@ -165,7 +185,11 @@ pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTran
     };
 
     let create_epoch_manager = NativeInvocation::EpochManager(EpochManagerInvocation::Create(
-        EpochManagerCreateInvocation { validator_set },
+        EpochManagerCreateInvocation {
+            validator_set,
+            initial_epoch,
+            rounds_per_epoch,
+        },
     ));
 
     let create_clock = NativeInvocation::Clock(ClockInvocation::Create(ClockCreateInvocation {}));
@@ -176,6 +200,7 @@ pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTran
             create_ecdsa_secp256k1_token.into(),
             create_eddsa_ed25519_token.into(),
             create_system_token.into(),
+            create_package_token.into(),
             create_faucet_package.into(),
             create_account_package.into(),
             take_xrd.into(),
@@ -189,15 +214,16 @@ pub fn create_genesis(validator_set: Vec<EcdsaSecp256k1PublicKey>) -> SystemTran
 }
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
-    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(0);
-    let (ecdsa_secp256k1_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(1);
-    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(2);
-    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(3);
-    let faucet_package: PackageAddress = receipt.output(4);
-    let account_package: PackageAddress = receipt.output(5);
-    let faucet_component: ComponentAddress = receipt.output(7);
-    let epoch_manager: SystemAddress = receipt.output(8);
-    let clock: SystemAddress = receipt.output(9);
+    let xrd_token: ResourceAddress = receipt.output(0);
+    let ecdsa_secp256k1_token: ResourceAddress = receipt.output(1);
+    let eddsa_ed25519_token: ResourceAddress = receipt.output(2);
+    let system_token: ResourceAddress = receipt.output(3);
+    let package_token: ResourceAddress = receipt.output(3);
+    let faucet_package: PackageAddress = receipt.output(5);
+    let account_package: PackageAddress = receipt.output(6);
+    let faucet_component: ComponentAddress = receipt.output(8);
+    let epoch_manager: SystemAddress = receipt.output(9);
+    let clock: SystemAddress = receipt.output(10);
 
     GenesisReceipt {
         faucet_package,
@@ -209,6 +235,7 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
         epoch_manager,
         clock,
         eddsa_ed25519_token,
+        package_token,
     }
 }
 
@@ -220,13 +247,21 @@ where
     S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
-    bootstrap_with_validator_set(substate_store, scrypto_interpreter, Vec::new())
+    bootstrap_with_validator_set(
+        substate_store,
+        scrypto_interpreter,
+        HashSet::new(),
+        1u64,
+        1u64,
+    )
 }
 
 pub fn bootstrap_with_validator_set<S, W>(
     substate_store: &mut S,
     scrypto_interpreter: &ScryptoInterpreter<W>,
-    validator_set: Vec<EcdsaSecp256k1PublicKey>,
+    validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    initial_epoch: u64,
+    rounds_per_epoch: u64,
 ) -> Option<TransactionReceipt>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
@@ -239,7 +274,7 @@ where
         ))
         .is_none()
     {
-        let genesis_transaction = create_genesis(validator_set);
+        let genesis_transaction = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
 
         let transaction_receipt = execute_transaction(
             substate_store,
@@ -269,8 +304,9 @@ mod tests {
     fn bootstrap_receipt_should_match_constants() {
         let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
         let substate_store = TypedInMemorySubstateStore::new();
-        let initial_validator_set = vec![EcdsaSecp256k1PublicKey([0; 33])];
-        let genesis_transaction = create_genesis(initial_validator_set.clone());
+        let mut initial_validator_set = HashSet::new();
+        initial_validator_set.insert(EcdsaSecp256k1PublicKey([0; 33]));
+        let genesis_transaction = create_genesis(initial_validator_set.clone(), 1u64, 1u64);
 
         let transaction_receipt = execute_transaction(
             &substate_store,
@@ -285,10 +321,10 @@ mod tests {
         let validator_set = transaction_receipt
             .result
             .expect_commit()
-            .next_validator_set
+            .next_epoch
             .as_ref()
             .expect("Should contain validator set");
-        assert_eq!(validator_set, &initial_validator_set);
+        assert_eq!(validator_set, &(initial_validator_set, 1u64));
 
         let genesis_receipt = genesis_result(&transaction_receipt);
 
@@ -301,5 +337,6 @@ mod tests {
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
         assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
+        assert_eq!(genesis_receipt.package_token, PACKAGE_TOKEN);
     }
 }

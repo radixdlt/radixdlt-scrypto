@@ -5,8 +5,8 @@ pub use radix_engine_interface::constants::*;
 pub use radix_engine_interface::crypto::*;
 pub use radix_engine_interface::data::types::*;
 pub use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoDecode, ScryptoEncode,
-    ScryptoTypeId,
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCategorize, ScryptoDecode,
+    ScryptoEncode,
 };
 pub use radix_engine_interface::dec;
 pub use radix_engine_interface::math::{BnumI256, Decimal, RoundingMode};
@@ -29,4 +29,4 @@ pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
-pub use sbor::{Decode, DecodeError, Encode, SborPath, SborPathBuf, SborTypeId, SborValue, TypeId};
+pub use sbor::{Categorize, Decode, DecodeError, Encode, SborPath, SborPathBuf, Value, ValueKind};

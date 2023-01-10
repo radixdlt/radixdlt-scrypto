@@ -6,13 +6,13 @@ use crate::model::{BucketSubstate, Resource, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
-    GlobalAddress, NativeMethod, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopMethod,
+    GlobalAddress, NativeFn, RENodeId, ResourceManagerOffset, SubstateOffset, WorktopFn,
     WorktopOffset,
 };
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum WorktopError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
@@ -37,7 +37,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopPutInvocation {
             .nodes_to_move
             .push(RENodeId::Bucket(self.bucket.0));
         let actor = ResolvedActor::method(
-            NativeMethod::Worktop(WorktopMethod::Put),
+            NativeFn::Worktop(WorktopFn::Put),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -85,7 +85,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAmountInvocation {
                 self.resource_address,
             )));
         let actor = ResolvedActor::method(
-            NativeMethod::Worktop(WorktopMethod::TakeAmount),
+            NativeFn::Worktop(WorktopFn::TakeAmount),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -160,7 +160,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAllInvocation {
                 self.resource_address,
             )));
         let actor = ResolvedActor::method(
-            NativeMethod::Worktop(WorktopMethod::TakeAll),
+            NativeFn::Worktop(WorktopFn::TakeAll),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -234,7 +234,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeNonFungiblesInvocatio
                 self.resource_address,
             )));
         let actor = ResolvedActor::method(
-            NativeMethod::Worktop(WorktopMethod::TakeNonFungibles),
+            NativeFn::Worktop(WorktopFn::TakeNonFungibles),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -310,7 +310,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsInvocation 
                 self.resource_address,
             )));
         let actor = ResolvedActor::method(
-            NativeMethod::Worktop(WorktopMethod::AssertContains),
+            NativeFn::Worktop(WorktopFn::AssertContains),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -355,7 +355,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsAmountInvoc
                 self.resource_address,
             )));
         let actor = ResolvedActor::method(
-            NativeMethod::Worktop(WorktopMethod::AssertContainsAmount),
+            NativeFn::Worktop(WorktopFn::AssertContainsAmount),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -400,7 +400,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsNonFungible
                 self.resource_address,
             )));
         let actor = ResolvedActor::method(
-            NativeMethod::Worktop(WorktopMethod::AssertContainsNonFungibles),
+            NativeFn::Worktop(WorktopFn::AssertContainsNonFungibles),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -448,7 +448,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopDrainInvocation {
         let receiver = RENodeId::Worktop;
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Worktop(WorktopMethod::Drain),
+            NativeFn::Worktop(WorktopFn::Drain),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))

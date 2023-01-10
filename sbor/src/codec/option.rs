@@ -1,11 +1,11 @@
 use crate::constants::*;
-use crate::type_id::*;
+use crate::value_kind::*;
 use crate::*;
 
-impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for Option<T> {
+impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for Option<T> {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -25,13 +25,13 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for Option<T>
     }
 }
 
-impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option<T> {
+impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option<T> {
     #[inline]
-    fn decode_body_with_type_id(
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<X>,
+        value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let discriminator = decoder.read_discriminator()?;
 
         match discriminator.as_ref() {
@@ -45,5 +45,26 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option<T>
             }
             _ => Err(DecodeError::UnknownDiscriminator(discriminator)),
         }
+    }
+}
+
+#[cfg(feature = "schema")]
+impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Option", &[T::TYPE_ID]);
+
+    fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        #[allow(unused_imports)]
+        use crate::rust::borrow::ToOwned;
+        Some(TypeData::named_enum(
+            "Option",
+            crate::rust::collections::btree_map::btreemap![
+                "Some".to_owned() => TypeData::named_tuple("Some", crate::rust::vec![T::TYPE_ID]),
+                "None".to_owned() => TypeData::named_unit("None"),
+            ],
+        ))
+    }
+
+    fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+        aggregator.add_child_type_and_descendents::<T>();
     }
 }

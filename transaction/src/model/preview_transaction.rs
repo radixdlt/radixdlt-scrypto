@@ -5,7 +5,7 @@ use sbor::*;
 
 use crate::model::TransactionIntent;
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct PreviewFlags {
     pub unlimited_loan: bool,
     pub assume_all_signature_proofs: bool,
@@ -14,7 +14,7 @@ pub struct PreviewFlags {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct PreviewIntent {
     pub intent: TransactionIntent,
     pub signer_public_keys: Vec<PublicKey>,

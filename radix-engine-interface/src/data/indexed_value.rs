@@ -14,14 +14,14 @@ use utils::ContextualDisplay;
 
 /// Represents an error when reading the owned node ids from a value.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ReadOwnedNodesError {
     DuplicateOwn,
 }
 
 /// Represents an error when replacing manifest values.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ReplaceManifestValuesError {
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
@@ -47,7 +47,7 @@ pub struct IndexedScryptoValue {
     buckets: Vec<(ManifestBucket, SborPath)>,
     proofs: Vec<(ManifestProof, SborPath)>,
     expressions: Vec<(ManifestExpression, SborPath)>,
-    arrays: Vec<(ScryptoSborTypeId, SborPath)>,
+    arrays: Vec<(ScryptoValueKind, SborPath)>,
 }
 
 impl IndexedScryptoValue {
@@ -177,33 +177,33 @@ impl IndexedScryptoValue {
         // * Vec<ManifestProof> ==> Vec<Own>
         // * Vec<Expression> ==> Vec<Vec<Own>>
         let mut retained_arrays = Vec::new();
-        for (element_type_id, path) in self.arrays.drain(..) {
-            match element_type_id {
-                SborTypeId::Custom(ScryptoCustomTypeId::Bucket)
-                | SborTypeId::Custom(ScryptoCustomTypeId::Proof) => {
+        for (element_value_kind, path) in self.arrays.drain(..) {
+            match element_value_kind {
+                ValueKind::Custom(ScryptoCustomValueKind::Bucket)
+                | ValueKind::Custom(ScryptoCustomValueKind::Proof) => {
                     let value = path.get_from_value_mut(&mut self.value).unwrap();
-                    if let SborValue::Array {
-                        element_type_id, ..
+                    if let Value::Array {
+                        element_value_kind, ..
                     } = value
                     {
-                        *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+                        *element_value_kind = ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
                     } else {
                         panic!("Should be an array");
                     }
                 }
-                SborTypeId::Custom(ScryptoCustomTypeId::Expression) => {
+                ValueKind::Custom(ScryptoCustomValueKind::Expression) => {
                     let value = path.get_from_value_mut(&mut self.value).unwrap();
-                    if let SborValue::Array {
-                        element_type_id, ..
+                    if let Value::Array {
+                        element_value_kind, ..
                     } = value
                     {
-                        *element_type_id = ScryptoSborTypeId::Array;
+                        *element_value_kind = ScryptoValueKind::Array;
                     } else {
                         panic!("Should be an array");
                     }
                 }
-                element_type_id => {
-                    retained_arrays.push((element_type_id, path));
+                element_value_kind => {
+                    retained_arrays.push((element_value_kind, path));
                 }
             }
         }
@@ -243,7 +243,7 @@ impl IndexedScryptoValue {
             let replacement = expression_replacements.pop().unwrap();
 
             let value = path.get_from_value_mut(&mut self.value).unwrap();
-            let element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+            let element_value_kind = ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
             let elements = replacement
                 .iter()
                 .map(|r| ScryptoValue::Custom {
@@ -251,12 +251,12 @@ impl IndexedScryptoValue {
                 })
                 .collect();
             *value = ScryptoValue::Array {
-                element_type_id,
+                element_value_kind,
                 elements,
             };
 
             // new array
-            self.arrays.push((element_type_id, path.clone()));
+            self.arrays.push((element_value_kind, path.clone()));
 
             // new owns
             replacement.into_iter().enumerate().for_each(|(i, o)| {
@@ -306,10 +306,10 @@ pub struct ScryptoValueVisitor {
     pub buckets: Vec<(ManifestBucket, SborPath)>,
     pub proofs: Vec<(ManifestProof, SborPath)>,
     pub expressions: Vec<(ManifestExpression, SborPath)>,
-    pub arrays: Vec<(ScryptoSborTypeId, SborPath)>,
+    pub arrays: Vec<(ScryptoValueKind, SborPath)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum ValueIndexingError {
     DuplicateOwnership,
     DuplicateManifestBucket,
@@ -335,17 +335,17 @@ impl ScryptoValueVisitor {
     }
 }
 
-impl ValueVisitor<ScryptoCustomTypeId, ScryptoCustomValue> for ScryptoValueVisitor {
+impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVisitor {
     type Err = Infallible;
 
     fn visit_array(
         &mut self,
         path: &mut SborPathBuf,
-        element_type_id: &ScryptoSborTypeId,
+        element_value_kind: &ScryptoValueKind,
         _elements: &[ScryptoValue],
     ) -> Result<(), Self::Err> {
         self.arrays
-            .push((element_type_id.clone(), path.clone().into()));
+            .push((element_value_kind.clone(), path.clone().into()));
         Ok(())
     }
 

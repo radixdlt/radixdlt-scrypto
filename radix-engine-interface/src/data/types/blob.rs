@@ -58,7 +58,7 @@ impl Blob {
     }
 }
 
-scrypto_type!(Blob, ScryptoCustomTypeId::Blob, Type::Blob, 32);
+scrypto_type!(Blob, ScryptoCustomValueKind::Blob, Type::Blob, 32);
 
 //======
 // text

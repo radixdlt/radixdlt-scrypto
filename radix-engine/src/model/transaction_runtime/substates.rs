@@ -1,7 +1,7 @@
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct TransactionRuntimeSubstate {
     pub hash: Hash,
     pub next_id: u32,
