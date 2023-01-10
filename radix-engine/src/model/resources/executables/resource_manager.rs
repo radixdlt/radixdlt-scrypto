@@ -207,6 +207,13 @@ fn build_substates(
         DenyAll,
     );
     access_rules.set_group_and_mutability(
+        AccessRuleKey::Native(NativeFn::ResourceManager(
+            ResourceManagerFn::MintUuidNonFungible,
+        )),
+        "mint".to_string(),
+        DenyAll,
+    );
+    access_rules.set_group_and_mutability(
         AccessRuleKey::Native(NativeFn::ResourceManager(ResourceManagerFn::MintFungible)),
         "mint".to_string(),
         DenyAll,

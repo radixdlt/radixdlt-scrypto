@@ -61,9 +61,11 @@ fn can_burn_non_fungible() {
         .expect_commit()
         .entity_changes
         .new_resource_addresses[0];
-    let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleId::Number(0));
-    let mut ids = BTreeSet::new();
-    ids.insert(NonFungibleId::Number(0));
+    let vault_id = test_runner.get_component_vaults(account, resource_address)[0];
+    let ids = test_runner.inspect_nft_vault(vault_id).unwrap();
+    let first_id = ids.into_iter().next().unwrap();
+
+    let non_fungible_address = NonFungibleAddress::new(resource_address, first_id);
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -350,7 +352,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
 }
 
 #[test]
-fn create_non_fungible_with_default_id_type() {
+fn create_uuid_non_fungible() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -362,7 +364,38 @@ fn create_non_fungible_with_default_id_type() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_with_default_non_fungible_id_type",
+            "create_uuid_non_fungible",
+            args!(),
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(
+        manifest,
+        vec![NonFungibleAddress::from_public_key(&public_key)],
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+fn can_mint_uuid_non_fungible() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_uuid_non_fungible_and_mint",
             args!(),
         )
         .call_method(

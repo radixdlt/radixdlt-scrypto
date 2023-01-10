@@ -14,28 +14,19 @@ blueprint! {
             ResourceBuilder::new_non_fungible::<u128>()
                 .metadata("name", "Cars!")
                 .metadata("description", "Fast Cars")
-                .initial_supply(vec![
-                    (
-                        0u128,
-                        Car {
-                            manufacturer: "Ford".to_string(),
-                            name: "Raptor".to_string(),
-                        },
-                    ),
-                    (
-                        1u128,
-                        Car {
-                            manufacturer: "Toyota".to_string(),
-                            name: "Camry".to_string(),
-                        },
-                    ),
-                    (
-                        2u128,
-                        Car {
-                            manufacturer: "Nissan".to_string(),
-                            name: "Altima".to_string(),
-                        },
-                    ),
+                .initial_supply_uuid(vec![
+                    Car {
+                        manufacturer: "Ford".to_string(),
+                        name: "Raptor".to_string(),
+                    },
+                    Car {
+                        manufacturer: "Toyota".to_string(),
+                        name: "Camry".to_string(),
+                    },
+                    Car {
+                        manufacturer: "Nissan".to_string(),
+                        name: "Altima".to_string(),
+                    },
                 ])
         }
     }

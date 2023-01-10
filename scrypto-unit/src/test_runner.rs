@@ -298,6 +298,23 @@ impl TestRunner {
         vault_finder.to_vaults()
     }
 
+    pub fn inspect_nft_vault(
+        &mut self,
+        vault_id: VaultId,
+    ) -> Option<BTreeSet<NonFungibleId>> {
+        self.substate_store
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
+            .map(|output| {
+                output
+                    .substate
+                    .vault()
+                    .0.ids().clone()
+            })
+    }
+
     pub fn get_component_resources(
         &mut self,
         component_address: ComponentAddress,

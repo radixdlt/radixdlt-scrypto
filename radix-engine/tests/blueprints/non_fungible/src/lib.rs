@@ -65,24 +65,18 @@ blueprint! {
         }
 
         pub fn create_burnable_non_fungible() -> Bucket {
-            ResourceBuilder::new_non_fungible::<u64>()
+            ResourceBuilder::new_non_fungible::<u128>()
                 .metadata("name", "Katz's Sandwiches")
                 .burnable(rule!(allow_all), rule!(deny_all))
-                .initial_supply([
-                    (
-                        0u64,
-                        Sandwich {
-                            name: "Zero".to_owned(),
-                            available: true,
-                        },
-                    ),
-                    (
-                        1u64,
-                        Sandwich {
-                            name: "One".to_owned(),
-                            available: true,
-                        },
-                    ),
+                .initial_supply_uuid([
+                    Sandwich {
+                        name: "Zero".to_owned(),
+                        available: true,
+                    },
+                    Sandwich {
+                        name: "One".to_owned(),
+                        available: true,
+                    },
                 ])
         }
 
@@ -308,7 +302,7 @@ blueprint! {
             bucket
         }
 
-        pub fn create_with_default_non_fungible_id_type() -> Bucket {
+        pub fn create_uuid_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_non_fungible::<u128>()
                 .metadata("name", "Katz's Sandwiches")
@@ -316,6 +310,21 @@ blueprint! {
                     name: "Zero".to_owned(),
                     available: true,
                 }])
+        }
+
+        pub fn create_uuid_non_fungible_and_mint() -> Bucket {
+            // creating non-fungible id with id type set to default (UUID)
+            let resource_address = ResourceBuilder::new_non_fungible::<u128>()
+                .mintable(rule!(allow_all), rule!(deny_all))
+                .metadata("name", "Katz's Sandwiches")
+                .no_initial_supply();
+
+            borrow_resource_manager!(resource_address).mint_uuid_non_fungible(
+                Sandwich {
+                    name: "Test".to_owned(),
+                    available: false,
+                },
+            )
         }
     }
 }
