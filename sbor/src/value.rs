@@ -17,7 +17,6 @@ use crate::value_kind::*;
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value<X: CustomValueKind, Y> {
-    Unit,
     Bool {
         value: bool,
     },
@@ -74,7 +73,6 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
-            Value::Unit => encoder.write_value_kind(ValueKind::Unit),
             Value::Bool { .. } => encoder.write_value_kind(ValueKind::Bool),
             Value::I8 { .. } => encoder.write_value_kind(ValueKind::I8),
             Value::I16 { .. } => encoder.write_value_kind(ValueKind::I16),
@@ -97,9 +95,6 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
-            Value::Unit => {
-                (()).encode_body(encoder)?;
-            }
             Value::Bool { value } => {
                 value.encode_body(encoder)?;
             }
@@ -179,10 +174,6 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for Value<
     ) -> Result<Self, DecodeError> {
         match value_kind {
             // primitive types
-            ValueKind::Unit => {
-                <()>::decode_body_with_value_kind(decoder, value_kind)?;
-                Ok(Value::Unit)
-            }
             ValueKind::Bool => Ok(Value::Bool {
                 value: <bool>::decode_body_with_value_kind(decoder, value_kind)?,
             }),
@@ -278,8 +269,7 @@ pub fn traverse_any<X: CustomValueKind, Y, V: ValueVisitor<X, Y, Err = E>, E>(
 ) -> Result<(), E> {
     match value {
         // primitive types
-        Value::Unit
-        | Value::Bool { .. }
+        Value::Bool { .. }
         | Value::I8 { .. }
         | Value::I16 { .. }
         | Value::I32 { .. }
@@ -436,7 +426,6 @@ mod tests {
         assert_eq!(
             BasicValue::Tuple {
                 fields: vec![
-                    BasicValue::Unit,
                     BasicValue::Bool { value: true },
                     BasicValue::I8 { value: 1 },
                     BasicValue::I16 { value: 2 },

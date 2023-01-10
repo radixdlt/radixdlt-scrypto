@@ -115,7 +115,10 @@ fn test_simple_abi() {
               },
               "mutability": "Mutable",
               "output": {
-                "type": "Unit"
+                "fields": {
+                  "type": "Unit"
+                },
+                "type": "Tuple"
               }
             },
             {

@@ -22,8 +22,6 @@ pub enum DecodeError {
 
     UnknownDiscriminator(String),
 
-    InvalidUnit(u8),
-
     InvalidBool(u8),
 
     InvalidUtf8,

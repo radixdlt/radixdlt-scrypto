@@ -13,7 +13,6 @@ use sbor::*;
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
 pub enum Type {
-    Unit,
     Bool,
     I8,
     I16,
@@ -132,12 +131,6 @@ pub trait LegacyDescribe {
     fn describe() -> Type;
 }
 
-impl LegacyDescribe for () {
-    fn describe() -> Type {
-        Type::Unit
-    }
-}
-
 macro_rules! describe_basic_type {
     ($type_name:ident, $type:expr) => {
         impl LegacyDescribe for $type_name {
@@ -186,8 +179,8 @@ impl<T: LegacyDescribe, const N: usize> LegacyDescribe for [T; N] {
 }
 
 macro_rules! describe_tuple {
-    ($($name:ident)+) => {
-        impl<$($name: LegacyDescribe),+> LegacyDescribe for ($($name,)+) {
+    ($($name:ident)*) => {
+        impl<$($name: LegacyDescribe),*> LegacyDescribe for ($($name,)*) {
             fn describe() -> Type {
                 Type::Tuple { element_types: vec![ $($name::describe(),)* ] }
             }
@@ -195,6 +188,8 @@ macro_rules! describe_tuple {
     };
 }
 
+describe_tuple! {} // Unit
+describe_tuple! { A }
 describe_tuple! { A B }
 describe_tuple! { A B C }
 describe_tuple! { A B C D }

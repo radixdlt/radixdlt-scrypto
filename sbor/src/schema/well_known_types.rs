@@ -10,7 +10,7 @@ pub mod well_known_basic_types {
     // These ids must be usable in a const context
     pub const ANY_ID: u8 = 0x40;
 
-    pub const UNIT_ID: u8 = VALUE_KIND_UNIT;
+    pub const UNIT_ID: u8 = 0x00;
     pub const BOOL_ID: u8 = VALUE_KIND_BOOL;
 
     pub const I8_ID: u8 = VALUE_KIND_I8;
@@ -36,7 +36,12 @@ pub fn resolve_well_known_type<E: CustomTypeExtension>(
     let type_data = match well_known_index {
         ANY_ID => TypeData::named_no_child_names("Any", TypeKind::Any),
 
-        UNIT_ID => TypeData::named_no_child_names("-", TypeKind::Unit),
+        UNIT_ID => TypeData::named_no_child_names(
+            "-",
+            TypeKind::Tuple {
+                field_types: sbor::rust::vec::Vec::new(),
+            },
+        ),
         BOOL_ID => TypeData::named_no_child_names("Bool", TypeKind::Bool),
 
         I8_ID => TypeData::named_no_child_names("I8", TypeKind::I8),

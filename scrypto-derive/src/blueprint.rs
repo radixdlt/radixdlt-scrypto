@@ -353,7 +353,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                     };
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
-                            ::scrypto::abi::Type::Unit
+                            ::scrypto::abi::Type::Tuple { element_types: ::sbor::rust::vec![] }
                         },
                         ReturnType::Type(_, t) => {
                             let ty = replace_self_with(t, &bp_ident.to_string());

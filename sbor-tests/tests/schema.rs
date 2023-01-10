@@ -109,7 +109,7 @@ fn create_basic_sample_schema_works_correctly() {
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(1)).unwrap();
     assert_eq!(type_data.metadata.type_name, "UnitStruct");
     assert!(matches!(type_data.metadata.child_names, ChildNames::None));
-    assert!(matches!(type_data.kind.into_owned(), TypeKind::Unit));
+    assert!(matches!(type_data.kind.into_owned(), TypeKind::Tuple { field_types } if matches!(field_types[..], [])));
 }
 
 #[test]

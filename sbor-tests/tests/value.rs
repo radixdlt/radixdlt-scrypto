@@ -43,7 +43,8 @@ fn test_encode_as_json() {
         json!({
             "fields": [
                 {
-                    "type": "Unit"
+                    "fields": [],
+                    "type": "Tuple"
                 },
                 {
                     "type": "U32",

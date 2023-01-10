@@ -12,6 +12,7 @@ use radix_engine_interface::data::{
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
+use sbor::rust::vec;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
@@ -1107,7 +1108,6 @@ pub fn generate_value(
         // ==============
         // Basic types
         // ==============
-        ast::Value::Unit => Ok(Value::Unit),
         ast::Value::Bool(value) => Ok(Value::Bool { value: *value }),
         ast::Value::I8(value) => Ok(Value::I8 { value: *value }),
         ast::Value::I16(value) => Ok(Value::I16 { value: *value }),
@@ -1373,7 +1373,7 @@ mod tests {
 
     #[test]
     fn test_value() {
-        generate_value_ok!(r#"()"#, Value::Unit);
+        generate_value_ok!(r#"()"#, Value::Tuple { fields: vec![] });
         generate_value_ok!(r#"true"#, Value::Bool { value: true });
         generate_value_ok!(r#"false"#, Value::Bool { value: false });
         generate_value_ok!(r#"1i8"#, Value::I8 { value: 1 });
