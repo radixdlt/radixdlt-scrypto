@@ -1,7 +1,10 @@
-/// Defines the custom type ID scrypto uses.
-mod custom_type_id;
+#[cfg(feature = "schema")]
+/// Defines the custom Scrypto schema types.
+mod custom_schema;
 /// Defines the model of Scrypto custom values.
 mod custom_value;
+/// Defines the custom value kind model that scrypto uses.
+mod custom_value_kind;
 /// Indexed Scrypto value.
 mod indexed_value;
 /// Matches a Scrypto schema type with a Scrypto value.
@@ -17,12 +20,14 @@ mod value_formatter;
 mod value_serializer;
 
 pub use crate::args;
-pub use custom_type_id::*;
+#[cfg(feature = "schema")]
+pub use custom_schema::*;
 pub use custom_value::*;
+pub use custom_value_kind::*;
 pub use indexed_value::*;
 use sbor::rust::vec::Vec;
 use sbor::{
-    Decode, DecodeError, Decoder, Encode, EncodeError, Encoder, SborTypeId, SborValue, TypeId,
+    Categorize, Decode, DecodeError, Decoder, Encode, EncodeError, Encoder, Value, ValueKind,
     VecDecoder, VecEncoder,
 };
 pub use schema_matcher::*;
@@ -33,10 +38,10 @@ pub use value_serializer::*;
 
 pub const MAX_SCRYPTO_SBOR_DEPTH: u8 = 64;
 
-pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
-pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomTypeId, MAX_SCRYPTO_SBOR_DEPTH>;
-pub type ScryptoSborTypeId = SborTypeId<ScryptoCustomTypeId>;
-pub type ScryptoValue = SborValue<ScryptoCustomTypeId, ScryptoCustomValue>;
+pub type ScryptoEncoder<'a> = VecEncoder<'a, ScryptoCustomValueKind, MAX_SCRYPTO_SBOR_DEPTH>;
+pub type ScryptoDecoder<'a> = VecDecoder<'a, ScryptoCustomValueKind, MAX_SCRYPTO_SBOR_DEPTH>;
+pub type ScryptoValueKind = ValueKind<ScryptoCustomValueKind>;
+pub type ScryptoValue = Value<ScryptoCustomValueKind, ScryptoCustomValue>;
 
 // 0x5c for [5c]rypto - (91 in decimal)
 pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
@@ -47,19 +52,19 @@ pub const SCRYPTO_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5c;
 // via blanket impls, they can only be used for parameters, but cannot be used for implementations.
 //
 // Implementations should instead implement the underlying traits:
-// * TypeId<ScryptoCustomTypeId>
-// * Encode<ScryptoCustomTypeId, E> (impl over all E: Encoder<ScryptoCustomTypeId>)
-// * Decode<ScryptoCustomTypeId, D> (impl over all D: Decoder<ScryptoCustomTypeId>)
+// * Categorize<ScryptoCustomValueKind>
+// * Encode<ScryptoCustomValueKind, E> (impl over all E: Encoder<ScryptoCustomValueKind>)
+// * Decode<ScryptoCustomValueKind, D> (impl over all D: Decoder<ScryptoCustomValueKind>)
 //
 // TODO: Change these to be Trait aliases once stable in rust: https://github.com/rust-lang/rust/issues/41517
-pub trait ScryptoTypeId: TypeId<ScryptoCustomTypeId> {}
-impl<T: TypeId<ScryptoCustomTypeId> + ?Sized> ScryptoTypeId for T {}
+pub trait ScryptoCategorize: Categorize<ScryptoCustomValueKind> {}
+impl<T: Categorize<ScryptoCustomValueKind> + ?Sized> ScryptoCategorize for T {}
 
-pub trait ScryptoDecode: for<'a> Decode<ScryptoCustomTypeId, ScryptoDecoder<'a>> {}
-impl<T: for<'a> Decode<ScryptoCustomTypeId, ScryptoDecoder<'a>>> ScryptoDecode for T {}
+pub trait ScryptoDecode: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>> {}
+impl<T: for<'a> Decode<ScryptoCustomValueKind, ScryptoDecoder<'a>>> ScryptoDecode for T {}
 
-pub trait ScryptoEncode: for<'a> Encode<ScryptoCustomTypeId, ScryptoEncoder<'a>> {}
-impl<T: for<'a> Encode<ScryptoCustomTypeId, ScryptoEncoder<'a>> + ?Sized> ScryptoEncode for T {}
+pub trait ScryptoEncode: for<'a> Encode<ScryptoCustomValueKind, ScryptoEncoder<'a>> {}
+impl<T: for<'a> Encode<ScryptoCustomValueKind, ScryptoEncoder<'a>> + ?Sized> ScryptoEncode for T {}
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: ScryptoEncode + ?Sized>(value: &T) -> Result<Vec<u8>, EncodeError> {
@@ -89,7 +94,7 @@ macro_rules! args {
         let mut buf = ::sbor::rust::vec::Vec::new();
         let mut encoder = radix_engine_interface::data::ScryptoEncoder::new(&mut buf);
         encoder.write_payload_prefix(radix_engine_interface::data::SCRYPTO_SBOR_V1_PAYLOAD_PREFIX).unwrap();
-        encoder.write_type_id(radix_engine_interface::data::ScryptoSborTypeId::Tuple).unwrap();
+        encoder.write_value_kind(radix_engine_interface::data::ScryptoValueKind::Tuple).unwrap();
         // Hack: stringify to skip ownership move semantics
         encoder.write_size(radix_engine_interface::count!($(stringify!($args)),*)).unwrap();
         $(
@@ -119,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_args() {
-        #[scrypto(Encode, Decode, TypeId)]
+        #[scrypto(Encode, Decode, Categorize)]
         struct A {
             a: u32,
             b: String,
@@ -359,12 +364,12 @@ mod tests {
     }
 
     fn encode_ignore_depth<
-        V: for<'a> Encode<ScryptoCustomTypeId, VecEncoder<'a, ScryptoCustomTypeId, 255>>,
+        V: for<'a> Encode<ScryptoCustomValueKind, VecEncoder<'a, ScryptoCustomValueKind, 255>>,
     >(
         value: &V,
     ) -> Vec<u8> {
         let mut buf = Vec::new();
-        let encoder = VecEncoder::<ScryptoCustomTypeId, 255>::new(&mut buf);
+        let encoder = VecEncoder::<ScryptoCustomValueKind, 255>::new(&mut buf);
         encoder
             .encode_payload(value, SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
             .unwrap();
@@ -373,11 +378,11 @@ mod tests {
 
     fn decode_ignore_depth<
         'a,
-        T: Decode<ScryptoCustomTypeId, VecDecoder<'a, ScryptoCustomTypeId, 255>>,
+        T: Decode<ScryptoCustomValueKind, VecDecoder<'a, ScryptoCustomValueKind, 255>>,
     >(
         payload: &'a [u8],
     ) -> T {
-        let decoder = VecDecoder::<ScryptoCustomTypeId, 255>::new(payload);
+        let decoder = VecDecoder::<ScryptoCustomValueKind, 255>::new(payload);
         decoder
             .decode_payload(SCRYPTO_SBOR_V1_PAYLOAD_PREFIX)
             .unwrap()
@@ -385,13 +390,13 @@ mod tests {
 
     fn build_value_of_vec_of_depth(depth: u8) -> ScryptoValue {
         let mut value = ScryptoValue::Array {
-            element_type_id: SborTypeId::Array,
+            element_value_kind: ValueKind::Array,
             elements: vec![],
         };
         let loop_count = depth - 1;
         for _ in 0..loop_count {
             value = ScryptoValue::Array {
-                element_type_id: SborTypeId::Array,
+                element_value_kind: ValueKind::Array,
                 elements: vec![value],
             };
         }
@@ -409,7 +414,7 @@ mod tests {
         value
     }
 
-    #[scrypto(TypeId, Encode, Decode)]
+    #[scrypto(Categorize, Encode, Decode)]
     #[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
     struct NestedType {
         inner: Box<Rc<Option<RefCell<NestedType>>>>,

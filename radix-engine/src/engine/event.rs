@@ -2,7 +2,7 @@ use crate::model::SysCallTrace;
 use crate::types::*;
 
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum TrackedEvent {
     SysCallTrace(SysCallTrace),
 }

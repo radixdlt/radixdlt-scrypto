@@ -19,8 +19,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
     where
         Self: Sized,
     {
-        let actor =
-            ResolvedActor::function(NativeFunction::Component(ComponentFunction::Globalize));
+        let actor = ResolvedActor::function(NativeFn::Component(ComponentFn::Globalize));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
 
         Ok((actor, call_frame_update, self))
@@ -79,8 +78,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvoc
     where
         Self: Sized,
     {
-        let actor =
-            ResolvedActor::function(NativeFunction::Component(ComponentFunction::Globalize));
+        let actor = ResolvedActor::function(NativeFn::Component(ComponentFn::Globalize));
         let call_frame_update = CallFrameUpdate::move_node(RENodeId::Component(self.component_id));
 
         Ok((actor, call_frame_update, self))
@@ -120,30 +118,22 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
         let mut access_rules =
             AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Get,
-            ))),
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
             AccessRule::AllowAll,
             rule!(require(self.owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
-                ComponentMethod::SetRoyaltyConfig,
-            ))),
+            AccessRuleKey::Native(NativeFn::Component(ComponentFn::SetRoyaltyConfig)),
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
         access_rules.set_access_rule_and_mutability(
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
-                ComponentMethod::ClaimRoyalty,
-            ))),
+            AccessRuleKey::Native(NativeFn::Component(ComponentFn::ClaimRoyalty)),
             rule!(require(self.owner_badge.clone())),
             rule!(require(self.owner_badge.clone())),
         );
@@ -180,7 +170,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocat
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::Component(ComponentMethod::SetRoyaltyConfig),
+            NativeFn::Component(ComponentFn::SetRoyaltyConfig),
             resolved_receiver,
         );
         let executor = Self {
@@ -225,7 +215,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation 
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeMethod::Component(ComponentMethod::ClaimRoyalty),
+            NativeFn::Component(ComponentFn::ClaimRoyalty),
             resolved_receiver,
         );
         let executor = Self {

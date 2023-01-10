@@ -5,10 +5,10 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ResourceManagerSubstate {
-    pub resource_type: ResourceType,
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
+    pub resource_type: ResourceType,
     pub total_supply: Decimal,
     pub nf_store_id: Option<NonFungibleStoreId>,
 }
@@ -18,18 +18,19 @@ impl ResourceManagerSubstate {
         resource_type: ResourceType,
         nf_store_id: Option<NonFungibleStoreId>,
         resource_address: ResourceAddress,
-    ) -> Result<ResourceManagerSubstate, InvokeError<ResourceManagerError>> {
-        let resource_manager = ResourceManagerSubstate {
+    ) -> ResourceManagerSubstate {
+        Self {
             resource_type,
             total_supply: 0.into(),
             nf_store_id,
             resource_address,
-        };
-
-        Ok(resource_manager)
+        }
     }
 
-    pub fn check_amount(&self, amount: Decimal) -> Result<(), InvokeError<ResourceManagerError>> {
+    pub fn check_fungible_amount(
+        &self,
+        amount: Decimal,
+    ) -> Result<(), InvokeError<ResourceManagerError>> {
         let divisibility = self.resource_type.divisibility();
 
         if amount.is_negative()
@@ -49,27 +50,14 @@ impl ResourceManagerSubstate {
         self.total_supply -= amount;
     }
 
-    pub fn mint(
-        &mut self,
-        mint_params: MintParams,
-        self_address: ResourceAddress,
-    ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
-    {
-        match mint_params {
-            MintParams::Fungible { amount } => self.mint_fungible(amount, self_address),
-            MintParams::NonFungible { entries } => self.mint_non_fungibles(entries, self_address),
-        }
-    }
-
     pub fn mint_fungible(
         &mut self,
         amount: Decimal,
         self_address: ResourceAddress,
-    ) -> Result<(Resource, BTreeMap<NonFungibleId, NonFungible>), InvokeError<ResourceManagerError>>
-    {
+    ) -> Result<Resource, InvokeError<ResourceManagerError>> {
         if let ResourceType::Fungible { divisibility } = self.resource_type {
             // check amount
-            self.check_amount(amount)?;
+            self.check_fungible_amount(amount)?;
 
             // Practically impossible to overflow the Decimal type with this limit in place.
             if amount > dec!("1000000000000000000") {
@@ -80,10 +68,7 @@ impl ResourceManagerSubstate {
 
             self.total_supply += amount;
 
-            Ok((
-                Resource::new_fungible(self_address, divisibility, amount),
-                BTreeMap::new(),
-            ))
+            Ok(Resource::new_fungible(self_address, divisibility, amount))
         } else {
             Err(InvokeError::Error(
                 ResourceManagerError::ResourceTypeDoesNotMatch,
@@ -109,8 +94,6 @@ impl ResourceManagerSubstate {
 
         // check amount
         let amount: Decimal = entries.len().into();
-        self.check_amount(amount)?;
-
         self.total_supply += amount;
 
         // Allocate non-fungibles

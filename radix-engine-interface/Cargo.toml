@@ -39,6 +39,7 @@ harness = false
 default = ["std"]
 std = ["hex/std", "sbor/std", "scrypto-abi/std", "radix-engine-derive/std", "strum/std", "utils/std", "serde_json/std"]
 alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "radix-engine-derive/alloc", "utils/alloc", "serde_json/alloc"]
+schema = ["sbor/schema"]
 
 # Turn on this feature to enable tracing.
 trace = ["radix-engine-derive/trace"]

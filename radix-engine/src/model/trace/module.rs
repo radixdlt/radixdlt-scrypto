@@ -4,15 +4,14 @@ use crate::model::*;
 use crate::types::*;
 use indexmap::IndexMap;
 use radix_engine_interface::api::types::{
-    BucketOffset, ComponentId, NativeMethod, RENodeId, SubstateId, SubstateOffset, VaultId,
-    VaultMethod, VaultOffset,
+    BucketOffset, ComponentId, RENodeId, SubstateId, SubstateOffset, VaultFn, VaultId, VaultOffset,
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub component_id: ComponentId, // TODO: support non component actor
@@ -34,7 +33,7 @@ pub enum VaultOp {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ExecutionTraceError {
     CallFrameError(CallFrameError),
 }
@@ -56,7 +55,7 @@ pub struct ExecutionTraceModule {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ProofSnapshot {
     pub resource_address: ResourceAddress,
     pub resource_type: ResourceType,
@@ -65,7 +64,7 @@ pub struct ProofSnapshot {
 }
 
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct TracedSysCallData {
     pub buckets: HashMap<BucketId, Resource>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
@@ -85,7 +84,7 @@ impl TracedSysCallData {
 }
 
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct SysCallTrace {
     pub origin: SysCallTraceOrigin,
     pub sys_call_depth: usize,
@@ -98,12 +97,11 @@ pub struct SysCallTrace {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum SysCallTraceOrigin {
     ScryptoFunction(ScryptoFnIdentifier),
     ScryptoMethod(ScryptoFnIdentifier),
-    NativeFunction(NativeFunction),
-    NativeMethod(NativeMethod),
+    NativeFn(NativeFn),
     CreateNode,
     DropNode,
     /// Anything else that isn't traced on its own, but the trace exists for its children
@@ -148,12 +146,7 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
                         SysCallTraceOrigin::ScryptoFunction(scrypto_fn.clone())
                     }
                 }
-                FnIdentifier::Native(NativeFn::Method(native_method)) => {
-                    SysCallTraceOrigin::NativeMethod(native_method.clone())
-                }
-                FnIdentifier::Native(NativeFn::Function(native_function)) => {
-                    SysCallTraceOrigin::NativeFunction(native_function.clone())
-                }
+                FnIdentifier::Native(native_fn) => SysCallTraceOrigin::NativeFn(native_fn.clone()),
             };
 
             let instruction_index = Self::get_instruction_index(call_frame, heap);
@@ -167,8 +160,7 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
 
         match &actor {
             ResolvedActor {
-                identifier:
-                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Put))),
+                identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::Put)),
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(vault_id),
@@ -176,8 +168,7 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
                     }),
             } => Self::handle_vault_put(update, heap, track, &call_frame.actor, vault_id),
             ResolvedActor {
-                identifier:
-                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::LockFee))),
+                identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::LockFee)),
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(vault_id),
@@ -200,8 +191,7 @@ impl<R: FeeReserve> BaseModule<R> for ExecutionTraceModule {
     ) -> Result<(), ModuleError> {
         match &call_frame.actor {
             ResolvedActor {
-                identifier:
-                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(VaultMethod::Take))),
+                identifier: FnIdentifier::Native(NativeFn::Vault(VaultFn::Take)),
                 receiver:
                     Some(ResolvedReceiver {
                         receiver: RENodeId::Vault(vault_id),

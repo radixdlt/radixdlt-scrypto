@@ -7,12 +7,12 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::{EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::api::types::{
-    AccessRulesChainMethod, GlobalAddress, NativeMethod, PackageOffset, RENodeId, SubstateOffset,
+    AccessRulesChainFn, GlobalAddress, NativeFn, PackageOffset, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum AccessRulesChainError {
     BlueprintFunctionNotFound(String),
     InvalidIndex(u32),
@@ -39,7 +39,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocat
         self.receiver = resolved_receiver.receiver;
 
         let actor = ResolvedActor::method(
-            NativeMethod::AccessRulesChain(AccessRulesChainMethod::AddAccessCheck),
+            NativeFn::AccessRulesChain(AccessRulesChainFn::AddAccessCheck),
             resolved_receiver,
         );
 
@@ -127,7 +127,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleIn
         self.receiver = resolved_receiver.receiver;
 
         let actor = ResolvedActor::method(
-            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetMethodAccessRule),
+            NativeFn::AccessRulesChain(AccessRulesChainFn::SetMethodAccessRule),
             resolved_receiver,
         );
 
@@ -147,21 +147,19 @@ impl Executor for AccessRulesSetMethodAccessRuleInvocation {
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::GetLength,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupAccessRule,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupMutability,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodAccessRule,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodMutability,
-            ))),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(AccessRulesChainFn::GetLength)),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetGroupAccessRule,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetGroupMutability,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetMethodAccessRule,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetMethodMutability,
+            )),
         ]
         .iter()
         .any(|x| self.key == *x)
@@ -244,7 +242,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInv
         self.receiver = resolved_receiver.receiver;
 
         let actor = ResolvedActor::method(
-            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetGroupAccessRule),
+            NativeFn::AccessRulesChain(AccessRulesChainFn::SetGroupAccessRule),
             resolved_receiver,
         );
 
@@ -333,7 +331,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityIn
         self.receiver = resolved_receiver.receiver;
 
         let actor = ResolvedActor::method(
-            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetMethodMutability),
+            NativeFn::AccessRulesChain(AccessRulesChainFn::SetMethodMutability),
             resolved_receiver,
         );
 
@@ -353,21 +351,19 @@ impl Executor for AccessRulesSetMethodMutabilityInvocation {
     {
         // TODO: Should this invariant be enforced in a more static/structural way?
         if [
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::GetLength,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupAccessRule,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetGroupMutability,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodAccessRule,
-            ))),
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::AccessRulesChain(
-                AccessRulesChainMethod::SetMethodMutability,
-            ))),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(AccessRulesChainFn::GetLength)),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetGroupAccessRule,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetGroupMutability,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetMethodAccessRule,
+            )),
+            AccessRuleKey::Native(NativeFn::AccessRulesChain(
+                AccessRulesChainFn::SetMethodMutability,
+            )),
         ]
         .iter()
         .any(|x| self.key == *x)
@@ -450,7 +446,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInv
         self.receiver = resolved_receiver.receiver;
 
         let actor = ResolvedActor::method(
-            NativeMethod::AccessRulesChain(AccessRulesChainMethod::SetGroupMutability),
+            NativeFn::AccessRulesChain(AccessRulesChainFn::SetGroupMutability),
             resolved_receiver,
         );
 
@@ -539,7 +535,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
         self.receiver = resolved_receiver.receiver;
 
         let actor = ResolvedActor::method(
-            NativeMethod::AccessRulesChain(AccessRulesChainMethod::GetLength),
+            NativeFn::AccessRulesChain(AccessRulesChainFn::GetLength),
             resolved_receiver,
         );
 

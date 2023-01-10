@@ -35,10 +35,10 @@ impl AuthVerification {
         check: P,
     ) -> bool
     where
-        P: Fn(&AuthZone) -> bool,
+        P: Fn(&AuthZone, usize) -> bool,
     {
-        for auth_zone in auth_zones.auth_zones.iter().rev() {
-            if check(auth_zone) {
+        for (rev_index, auth_zone) in auth_zones.auth_zones.iter().rev().enumerate() {
+            if check(auth_zone, rev_index) {
                 return true;
             }
 
@@ -59,7 +59,7 @@ impl AuthVerification {
         amount: Decimal,
         auth_zone: &AuthZoneStackSubstate,
     ) -> bool {
-        Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone| {
+        Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone, _| {
             // FIXME: Need to check the composite max amount rather than just each proof individually
             auth_zone
                 .proofs
@@ -73,32 +73,46 @@ impl AuthVerification {
         resource_rule: &HardResourceOrNonFungible,
         auth_zone: &AuthZoneStackSubstate,
     ) -> bool {
-        Self::check_auth_zones(barrier_crossings_allowed, auth_zone, |auth_zone| {
-            if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule {
+        Self::check_auth_zones(
+            barrier_crossings_allowed,
+            auth_zone,
+            |auth_zone, rev_index| {
+                if let HardResourceOrNonFungible::NonFungible(non_fungible_address) = resource_rule
+                {
+                    if rev_index == 0 {
+                        if auth_zone
+                            .virtual_non_fungibles_non_extending
+                            .contains(&non_fungible_address)
+                        {
+                            return true;
+                        }
+                    }
+
+                    if auth_zone
+                        .virtual_non_fungibles
+                        .contains(&non_fungible_address)
+                    {
+                        return true;
+                    }
+                    if auth_zone
+                        .virtual_resources
+                        .contains(&non_fungible_address.resource_address())
+                    {
+                        return true;
+                    }
+                }
+
                 if auth_zone
-                    .virtual_non_fungibles
-                    .contains(&non_fungible_address)
+                    .proofs
+                    .iter()
+                    .any(|p| Self::proof_matches(resource_rule, p))
                 {
                     return true;
                 }
-                if auth_zone
-                    .virtual_resources
-                    .contains(&non_fungible_address.resource_address())
-                {
-                    return true;
-                }
-            }
 
-            if auth_zone
-                .proofs
-                .iter()
-                .any(|p| Self::proof_matches(resource_rule, p))
-            {
-                return true;
-            }
-
-            false
-        })
+                false
+            },
+        )
     }
 
     pub fn verify_proof_rule(
@@ -242,8 +256,13 @@ impl AuthZoneStackSubstate {
         Ok(())
     }
 
-    pub fn new_frame(&mut self, barrier: bool) {
-        let auth_zone = AuthZone::empty(barrier);
+    pub fn new_frame(
+        &mut self,
+        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleAddress>,
+        barrier: bool,
+    ) {
+        let auth_zone =
+            AuthZone::new_with_virtual_non_fungibles(virtual_non_fungibles_non_extending, barrier);
         self.auth_zones.push(auth_zone);
     }
 
@@ -274,15 +293,20 @@ pub struct AuthZone {
     // Virtualized resources, note that one cannot create proofs with virtual resources but only be used for AuthZone checks
     virtual_resources: BTreeSet<ResourceAddress>,
     virtual_non_fungibles: BTreeSet<NonFungibleAddress>,
+    virtual_non_fungibles_non_extending: BTreeSet<NonFungibleAddress>,
     barrier: bool,
 }
 
 impl AuthZone {
-    fn empty(barrier: bool) -> Self {
+    fn new_with_virtual_non_fungibles(
+        virtual_non_fungibles_non_extending: BTreeSet<NonFungibleAddress>,
+        barrier: bool,
+    ) -> Self {
         Self {
             proofs: vec![],
             virtual_resources: BTreeSet::new(),
             virtual_non_fungibles: BTreeSet::new(),
+            virtual_non_fungibles_non_extending,
             barrier,
         }
     }
@@ -297,6 +321,7 @@ impl AuthZone {
             proofs,
             virtual_resources,
             virtual_non_fungibles,
+            virtual_non_fungibles_non_extending: BTreeSet::new(),
             barrier,
         }
     }

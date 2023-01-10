@@ -1,7 +1,6 @@
 use radix_engine::engine::*;
 use radix_engine::model::*;
 use radix_engine::types::*;
-use radix_engine_interface::api::types::NativeMethod;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
@@ -219,7 +218,7 @@ fn test_instruction_traces() {
 
         let worktop_put_trace = traces.get(1).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::Put)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
             worktop_put_trace.origin
         );
         assert!(worktop_put_trace.output.is_empty());
@@ -242,7 +241,7 @@ fn test_instruction_traces() {
 
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::TakeAll)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::TakeAll)),
             trace.origin
         );
 
@@ -261,7 +260,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Bucket(BucketMethod::CreateProof)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Bucket(BucketFn::CreateProof)),
             trace.origin
         );
 
@@ -302,7 +301,7 @@ fn test_instruction_traces() {
         assert_eq!(1, traces.len());
         let trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::Put)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Put)),
             trace.origin
         );
         assert!(trace.output.is_empty());
@@ -322,7 +321,7 @@ fn test_instruction_traces() {
 
         let take_trace = traces.get(0).unwrap();
         assert_eq!(
-            SysCallTraceOrigin::NativeMethod(NativeMethod::Worktop(WorktopMethod::Drain)),
+            SysCallTraceOrigin::NativeFn(NativeFn::Worktop(WorktopFn::Drain)),
             take_trace.origin
         );
 

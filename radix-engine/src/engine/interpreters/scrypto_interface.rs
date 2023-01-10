@@ -9,8 +9,7 @@ use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{
-    ComponentMethod, LockHandle, NativeFn, NativeMethod, RENodeId, RENodeType, ScryptoRENode,
-    SubstateOffset,
+    ComponentFn, LockHandle, NativeFn, RENodeId, RENodeType, ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
 use radix_engine_interface::model::{
@@ -47,16 +46,12 @@ where
                 let mut access_rules =
                     AccessRules::new().default(AccessRule::AllowAll, AccessRule::AllowAll);
                 access_rules.set_group_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
-                        ComponentMethod::ClaimRoyalty,
-                    ))),
+                    AccessRuleKey::Native(NativeFn::Component(ComponentFn::ClaimRoyalty)),
                     "royalty".to_string(),
                     AccessRule::DenyAll,
                 );
                 access_rules.set_group_and_mutability(
-                    AccessRuleKey::Native(NativeFn::Method(NativeMethod::Component(
-                        ComponentMethod::SetRoyaltyConfig,
-                    ))),
+                    AccessRuleKey::Native(NativeFn::Component(ComponentFn::SetRoyaltyConfig)),
                     "royalty".to_string(),
                     AccessRule::DenyAll,
                 );

@@ -51,4 +51,4 @@ impl ManifestBucket {
     }
 }
 
-scrypto_type!(ManifestBucket, ScryptoCustomTypeId::Bucket, 4);
+scrypto_type!(ManifestBucket, ScryptoCustomValueKind::Bucket, 4);

@@ -51,4 +51,4 @@ impl ManifestProof {
     }
 }
 
-scrypto_type!(ManifestProof, ScryptoCustomTypeId::Proof, 4);
+scrypto_type!(ManifestProof, ScryptoCustomValueKind::Proof, 4);
