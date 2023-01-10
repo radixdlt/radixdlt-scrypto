@@ -99,9 +99,9 @@ pub const VALUE_KIND_U64: u8 = 0x0a;
 pub const VALUE_KIND_U128: u8 = 0x0b;
 pub const VALUE_KIND_STRING: u8 = 0x0c;
 // composite types
-pub const VALUE_KIND_TUPLE: u8 = 0x21; // Any "product type" - Tuples and Structs (T1, T2, T3)
-pub const VALUE_KIND_ENUM: u8 = 0x11;
 pub const VALUE_KIND_ARRAY: u8 = 0x20; // [T; N]
+pub const VALUE_KIND_TUPLE: u8 = 0x21; // Any "product type" - Tuples and Structs (T1, T2, T3)
+pub const VALUE_KIND_ENUM: u8 = 0x22;
 
 /// The `Categorize` trait marks a rust type as having a fixed value kind for SBOR encoding/decoding.
 ///

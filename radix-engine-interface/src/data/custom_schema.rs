@@ -104,10 +104,6 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             SYSTEM_ADDRESS_ID => ("SystemAddress", ScryptoCustomTypeKind::SystemAddress),
 
             OWN_ID => ("Own", ScryptoCustomTypeKind::Own),
-            NON_FUNGIBLE_ADDRESS_ID => (
-                "NonFungibleAddress",
-                ScryptoCustomTypeKind::NonFungibleAddress,
-            ),
 
             BLOB_ID => ("Blob", ScryptoCustomTypeKind::Blob),
             BUCKET_ID => ("Bucket", ScryptoCustomTypeKind::Bucket),
@@ -155,7 +151,6 @@ mod well_known_scrypto_types {
     pub const SYSTEM_ADDRESS_ID: u8 = VALUE_KIND_SYSTEM_ADDRESS;
 
     pub const OWN_ID: u8 = VALUE_KIND_OWN;
-    pub const NON_FUNGIBLE_ADDRESS_ID: u8 = VALUE_KIND_NON_FUNGIBLE_ADDRESS;
     // We skip KeyValueStore because it has generic parameters
 
     pub const BLOB_ID: u8 = VALUE_KIND_BLOB;
