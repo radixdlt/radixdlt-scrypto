@@ -1,15 +1,13 @@
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::{
-    ActorApi, BlobApi, EngineApi, Invocation, Invokable, InvokableModel,
+    ActorApi, EngineApi, Invocation, Invokable, InvokableModel,
 };
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
     RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset, VaultId,
     WorktopOffset,
 };
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
-
 use radix_engine_interface::rule;
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
@@ -47,8 +45,6 @@ pub struct Kernel<
     /// Store
     track: &'g mut Track<'s, R>,
 
-    /// Blobs attached to the transaction
-    blobs: &'g HashMap<Hash, &'g [u8]>,
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
     /// Interpreter capable of running scrypto programs
@@ -66,14 +62,12 @@ where
     pub fn new(
         auth_zone_params: AuthZoneParams,
         id_allocator: &'g mut IdAllocator,
-        blobs: &'g HashMap<Hash, &'g [u8]>,
         track: &'g mut Track<'s, R>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut M,
     ) -> Self {
         let mut kernel = Self {
             execution_mode: ExecutionMode::Kernel,
-            blobs,
             heap: Heap::new(),
             track,
             scrypto_interpreter,
@@ -615,8 +609,7 @@ pub trait Executor {
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
-            + ActorApi<RuntimeError>
-            + BlobApi<RuntimeError>;
+            + ActorApi<RuntimeError>;
 }
 
 pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
@@ -642,7 +635,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    invocation: &invocation,
+                    fn_identifier: invocation.fn_identifier(),
                     input_size: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
                 },
@@ -1250,41 +1243,6 @@ where
                 .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref_mut)
-    }
-}
-
-impl<'g, 's, W, R, M> BlobApi<RuntimeError> for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
-{
-    fn get_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
-        self.module
-            .pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::ReadBlob { blob_hash },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        let blob = self
-            .blobs
-            .get(blob_hash)
-            .ok_or(KernelError::BlobNotFound(blob_hash.clone()))
-            .map_err(RuntimeError::KernelError)?;
-
-        self.module
-            .post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::ReadBlob { blob: &blob },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(blob)
     }
 }
 

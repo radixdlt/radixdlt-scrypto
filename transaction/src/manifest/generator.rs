@@ -930,7 +930,7 @@ fn generate_expression(value: &ast::Value) -> Result<ManifestExpression, Generat
 fn generate_blob(
     value: &ast::Value,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Blob, GeneratorError> {
+) -> Result<ManifestBlobRef, GeneratorError> {
     match value {
         ast::Value::Blob(inner) => match &**inner {
             ast::Value::String(s) => {
@@ -938,7 +938,7 @@ fn generate_blob(
                 blobs
                     .get(&hash)
                     .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
-                Ok(Blob(hash))
+                Ok(ManifestBlobRef(hash))
             }
             v => invalid_type!(v, ast::Type::String),
         },
@@ -1528,12 +1528,12 @@ mod tests {
         generate_instruction_ok!(
             r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Tuple(Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"), Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"));"#,
             BasicInstruction::PublishPackage {
-                code: Blob(
+                code: ManifestBlobRef(
                     "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
                         .parse()
                         .unwrap()
                 ),
-                abi: Blob(
+                abi: ManifestBlobRef(
                     "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
                         .parse()
                         .unwrap()
@@ -1548,12 +1548,12 @@ mod tests {
         generate_instruction_ok!(
             r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32);"#,
             BasicInstruction::PublishPackageWithOwner {
-                code: Blob(
+                code: ManifestBlobRef(
                     "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
                         .parse()
                         .unwrap()
                 ),
-                abi: Blob(
+                abi: ManifestBlobRef(
                     "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
                         .parse()
                         .unwrap()

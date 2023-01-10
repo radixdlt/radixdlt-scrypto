@@ -294,7 +294,7 @@ pub fn format_custom_value<F: fmt::Write>(
     context: &ValueFormattingContext,
 ) -> fmt::Result {
     match value {
-        // Global address types
+        // RE interpreted
         ScryptoCustomValue::PackageAddress(value) => {
             f.write_str("PackageAddress(\"")?;
             value
@@ -323,12 +323,8 @@ pub fn format_custom_value<F: fmt::Write>(
                 .expect("Failed to format address");
             f.write_str("\")")?;
         }
-        // RE interpreted
         ScryptoCustomValue::Own(value) => {
             write!(f, "Own(\"{:?}\")", value)?; // TODO: fix syntax
-        }
-        ScryptoCustomValue::Blob(value) => {
-            write!(f, "Blob(\"{}\")", value)?;
         }
         // TX interpreted
         ScryptoCustomValue::Bucket(value) => {
@@ -354,6 +350,9 @@ pub fn format_custom_value<F: fmt::Write>(
                     types::ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
                 }
             )?;
+        }
+        ScryptoCustomValue::Blob(value) => {
+            write!(f, "Blob(\"{}\")", hex::encode(&value.0 .0))?;
         }
         // Uninterpreted
         ScryptoCustomValue::Hash(value) => {

@@ -33,20 +33,18 @@ pub struct IndexedScryptoValue {
     raw: Vec<u8>,
     value: ScryptoValue,
 
-    // Global addresses
+    // RE interpreted
     component_addresses: HashSet<ComponentAddress>,
     resource_addresses: HashSet<ResourceAddress>,
     package_addresses: HashSet<PackageAddress>,
     system_addresses: HashSet<SystemAddress>,
-
-    // RE interpreted
     owned_nodes: Vec<(Own, SborPath)>,
-    blobs: Vec<(Blob, SborPath)>,
 
     // TX interpreted
     buckets: Vec<(ManifestBucket, SborPath)>,
     proofs: Vec<(ManifestProof, SborPath)>,
     expressions: Vec<(ManifestExpression, SborPath)>,
+    blobs: Vec<(ManifestBlobRef, SborPath)>,
     arrays: Vec<(ScryptoValueKind, SborPath)>,
 }
 
@@ -162,6 +160,7 @@ impl IndexedScryptoValue {
         node_ids
     }
 
+    // TODO: replace blobs with Vec<u8> so `Blob` can be used in argument list.
     pub fn replace_manifest_values(
         mut self,
         proof_replacements: &mut HashMap<ManifestProof, ProofId>,
@@ -294,18 +293,17 @@ impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for IndexedScryptoValue {
 
 /// A visitor the indexes scrypto custom values.
 pub struct ScryptoValueVisitor {
-    // Global addresses
+    // RE interpreted
     pub component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
     pub package_addresses: HashSet<PackageAddress>,
     pub system_addresses: HashSet<SystemAddress>,
-    // RE interpreted
     pub owned_nodes: Vec<(Own, SborPath)>,
-    pub blobs: Vec<(Blob, SborPath)>,
     // TX interpreted
     pub buckets: Vec<(ManifestBucket, SborPath)>,
     pub proofs: Vec<(ManifestProof, SborPath)>,
     pub expressions: Vec<(ManifestExpression, SborPath)>,
+    pub blobs: Vec<(ManifestBlobRef, SborPath)>,
     pub arrays: Vec<(ScryptoValueKind, SborPath)>,
 }
 
@@ -355,7 +353,7 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
         value: &ScryptoCustomValue,
     ) -> Result<(), Self::Err> {
         match value {
-            // Global addresses
+            // RE interpreted
             ScryptoCustomValue::PackageAddress(value) => {
                 self.package_addresses.insert(value.clone());
             }
@@ -368,13 +366,8 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             ScryptoCustomValue::SystemAddress(value) => {
                 self.system_addresses.insert(value.clone());
             }
-
-            // RE interpreted
             ScryptoCustomValue::Own(value) => {
                 self.owned_nodes.push((value.clone(), path.clone().into()));
-            }
-            ScryptoCustomValue::Blob(value) => {
-                self.blobs.push((value.clone(), path.clone().into()));
             }
 
             // TX interpreted
@@ -386,6 +379,9 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             }
             ScryptoCustomValue::Expression(value) => {
                 self.expressions.push((value.clone(), path.clone().into()));
+            }
+            ScryptoCustomValue::Blob(value) => {
+                self.blobs.push((value.clone(), path.clone().into()));
             }
 
             // Uninterpreted

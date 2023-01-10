@@ -46,7 +46,6 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         | Type::Vault
         | Type::Component
         | Type::KeyValueStore { .. } => Some(ValueKind::Custom(ScryptoCustomValueKind::Own)),
-        Type::Blob => Some(ValueKind::Custom(ScryptoCustomValueKind::Blob)),
 
         Type::Hash => Some(ValueKind::Custom(ScryptoCustomValueKind::Hash)),
         Type::EcdsaSecp256k1PublicKey => Some(ValueKind::Custom(
@@ -345,13 +344,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         Type::KeyValueStore { .. } => {
             if let Value::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Own(Own::KeyValueStore(_)))
-            } else {
-                false
-            }
-        }
-        Type::Blob => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Blob(_))
             } else {
                 false
             }

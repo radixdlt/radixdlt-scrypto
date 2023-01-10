@@ -235,20 +235,18 @@ pub enum Type {
     // Custom Types
     // ==============
 
-    // RE global address types
+    // RE interpreted types
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
     SystemAddress,
-
-    // RE interpreted types
     Own,
-    Blob,
 
     // TX interpreted types
     Bucket,
     Proof,
     Expression,
+    Blob,
 
     // Uninterpreted,
     Hash,
@@ -285,7 +283,7 @@ impl Type {
             Type::Bytes => ScryptoValueKind::Array,
             Type::NonFungibleAddress => ScryptoValueKind::Tuple,
 
-            // RE global address types
+            // RE interpreted types
             Type::PackageAddress => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::PackageAddress)
             }
@@ -296,15 +294,13 @@ impl Type {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::ResourceAddress)
             }
             Type::SystemAddress => ScryptoValueKind::Custom(ScryptoCustomValueKind::SystemAddress),
-
-            // RE interpreted types
             Type::Own => ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
-            Type::Blob => ScryptoValueKind::Custom(ScryptoCustomValueKind::Blob),
 
             // Tx interpreted types
             Type::Bucket => ScryptoValueKind::Custom(ScryptoCustomValueKind::Bucket),
             Type::Proof => ScryptoValueKind::Custom(ScryptoCustomValueKind::Proof),
             Type::Expression => ScryptoValueKind::Custom(ScryptoCustomValueKind::Expression),
+            Type::Blob => ScryptoValueKind::Custom(ScryptoCustomValueKind::Blob),
 
             // Uninterpreted
             Type::Hash => ScryptoValueKind::Custom(ScryptoCustomValueKind::Hash),
@@ -366,20 +362,18 @@ pub enum Value {
     // Custom Types
     // ==============
 
-    // Globals
+    // RE interpreted types
     PackageAddress(Box<Value>),
     ComponentAddress(Box<Value>),
     ResourceAddress(Box<Value>),
     SystemAddress(Box<Value>),
-
-    // RE interpreted types
     Own(Box<Value>),
-    Blob(Box<Value>),
 
     // TX interpreted types
     Bucket(Box<Value>),
     Proof(Box<Value>),
     Expression(Box<Value>),
+    Blob(Box<Value>),
 
     // Uninterpreted,
     Hash(Box<Value>),
@@ -429,7 +423,7 @@ impl Value {
             // Custom Types
             // ==============
 
-            // Global address types
+            // RE interpreted
             Value::PackageAddress(_) => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::PackageAddress)
             }
@@ -442,15 +436,13 @@ impl Value {
             Value::SystemAddress(_) => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::SystemAddress)
             }
-
-            // RE interpreted
             Value::Own(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
-            Value::Blob(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Blob),
 
             // TX interpreted
             Value::Bucket(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Bucket),
             Value::Proof(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Proof),
             Value::Expression(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Expression),
+            Value::Blob(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Blob),
 
             // Uninterpreted,
             Value::Hash(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Hash),
