@@ -430,6 +430,7 @@ mod tests {
         }
     }
 
+    #[derive(Clone)]
     struct TestNodeData {
         parent_id: usize,
         updates: Vec<(usize, usize)>,
@@ -451,67 +452,67 @@ mod tests {
             .map(|version| build_dummy_output_value(version))
             .collect();
 
-        let node_test_data = vec![
+        let node_test_data = [
             TestNodeData {
                 // child_node[1]
                 parent_id: 0, // root
-                updates: vec![
+                updates: [
                     (0, 1), // manager.get_store(child_node[1]).get_substate(substate_ids[0]) == output_values[1]
-                ],
+                ]
+                .to_vec(),
             },
             TestNodeData {
                 // child_node[2]
                 parent_id: 1,
-                updates: vec![(0, 2), (2, 0)],
+                updates: [(0, 2), (2, 0)].to_vec(),
             },
             TestNodeData {
                 // child_node[3]
                 parent_id: 2,
-                updates: vec![(3, 1), (4, 3), (0, 3)],
+                updates: [(3, 1), (4, 3), (0, 3)].to_vec(),
             },
             TestNodeData {
                 // child_node[4]
                 parent_id: 3,
-                updates: vec![(0, 4), (1, 3), (2, 2), (3, 1), (4, 0)],
+                updates: [(0, 4), (1, 3), (2, 2), (3, 1), (4, 0)].to_vec(),
             },
             TestNodeData {
                 // child_node[5]
                 parent_id: 4,
-                updates: vec![(2, 1), (0, 3)],
+                updates: [(2, 1), (0, 3)].to_vec(),
             },
             TestNodeData {
                 // child_node[6]
                 parent_id: 5,
-                updates: vec![(2, 2), (3, 4)],
+                updates: [(2, 2), (3, 4)].to_vec(),
             },
             TestNodeData {
                 // child_node[7]
                 parent_id: 0, // root
-                updates: vec![(2, 2)],
+                updates: [(2, 2)].to_vec(),
             },
             TestNodeData {
                 // child_node[8]
                 parent_id: 7,
-                updates: vec![(2, 1)],
+                updates: [(2, 1)].to_vec(),
             },
             TestNodeData {
                 // child_node[9]
                 parent_id: 6,
-                updates: vec![(2, 3), (4, 4)],
+                updates: [(2, 3), (4, 4)].to_vec(),
             },
             TestNodeData {
                 // child_node[10]
                 parent_id: 9,
-                updates: vec![(2, 0)],
+                updates: [(2, 0)].to_vec(),
             },
-        ];
+        ]
+        .to_vec();
 
         let mut expected_total_weight = 0;
-        let mut child_node = vec![StagedSubstateStoreKey::RootStoreKey];
-        let mut expected_node_states = Vec::new();
-        expected_node_states.push(BTreeMap::new());
-        let mut expected_weights = Vec::new();
-        expected_weights.push(0);
+        let mut child_node = [StagedSubstateStoreKey::RootStoreKey].to_vec();
+        let mut expected_node_states = [BTreeMap::new()].to_vec();
+        let mut expected_weights = [0].to_vec();
         for node_data in node_test_data.iter() {
             let up_substates: BTreeMap<SubstateId, OutputValue> = node_data
                 .updates
