@@ -302,6 +302,46 @@ blueprint! {
             bucket
         }
 
+        pub fn create_string_non_fungible() -> Bucket {
+            // creating non-fungible id with id type set to default (UUID)
+            ResourceBuilder::new_non_fungible::<String>().initial_supply([
+                (
+                    "1".to_string(),
+                    Sandwich {
+                        name: "One".to_owned(),
+                        available: true,
+                    },
+                ),
+                (
+                    "2".to_string(),
+                    Sandwich {
+                        name: "Two".to_owned(),
+                        available: true,
+                    },
+                ),
+            ])
+        }
+
+        pub fn create_bytes_non_fungible() -> Bucket {
+            // creating non-fungible id with id type set to default (UUID)
+            ResourceBuilder::new_non_fungible::<Vec<u8>>().initial_supply([
+                (
+                    1u32.to_le_bytes().to_vec(),
+                    Sandwich {
+                        name: "One".to_owned(),
+                        available: true,
+                    },
+                ),
+                (
+                    2u32.to_le_bytes().to_vec(),
+                    Sandwich {
+                        name: "Two".to_owned(),
+                        available: true,
+                    },
+                ),
+            ])
+        }
+
         pub fn create_uuid_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
             ResourceBuilder::new_non_fungible::<u128>().initial_supply_uuid([Sandwich {
