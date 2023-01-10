@@ -1,4 +1,7 @@
-use radix_engine_interface::api::types::{AuthZoneStackId, BucketId, ComponentId, FeeReserveId, KeyValueStoreId, NonFungibleStoreId, PackageId, ProofId, ResourceManagerId, TransactionRuntimeId, ValidatorId, VaultId};
+use radix_engine_interface::api::types::{
+    AuthZoneStackId, BucketId, ComponentId, FeeReserveId, KeyValueStoreId, NonFungibleStoreId,
+    PackageId, ProofId, ResourceManagerId, TransactionRuntimeId, ValidatorId, VaultId,
+};
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
 use sbor::rust::ops::Range;
