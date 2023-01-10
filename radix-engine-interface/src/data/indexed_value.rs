@@ -160,6 +160,7 @@ impl IndexedScryptoValue {
         node_ids
     }
 
+    // TODO: replace blobs with Vec<u8> so `Blob` can be used in argument list.
     pub fn replace_manifest_values(
         mut self,
         proof_replacements: &mut HashMap<ManifestProof, ProofId>,

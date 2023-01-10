@@ -3,8 +3,10 @@ use crate::api::types::RENodeId;
 use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
+use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]

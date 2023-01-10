@@ -1,8 +1,8 @@
+use super::types::*;
 use crate::model::*;
 use sbor::rust::fmt::Debug;
+use sbor::rust::format;
 use sbor::rust::vec::Vec;
-
-use super::types::*;
 
 pub trait Invocation: Debug {
     type Output: Debug;
