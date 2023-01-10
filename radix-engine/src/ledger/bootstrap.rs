@@ -214,11 +214,11 @@ pub fn create_genesis(
 }
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
-    let xrd_token: ResourceAddress = receipt.output(0);
+    let (xrd_token, _): (ResourceAddress, Own) = receipt.output(0);
     let ecdsa_secp256k1_token: ResourceAddress = receipt.output(1);
     let eddsa_ed25519_token: ResourceAddress = receipt.output(2);
     let system_token: ResourceAddress = receipt.output(3);
-    let package_token: ResourceAddress = receipt.output(3);
+    let package_token: ResourceAddress = receipt.output(4);
     let faucet_package: PackageAddress = receipt.output(5);
     let account_package: PackageAddress = receipt.output(6);
     let faucet_component: ComponentAddress = receipt.output(8);
