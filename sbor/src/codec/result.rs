@@ -1,13 +1,13 @@
 use crate::constants::*;
-use crate::type_id::*;
+use crate::value_kind::*;
 use crate::*;
 
-impl<X: CustomTypeId, Enc: Encoder<X>, T: Encode<X, Enc>, E: Encode<X, Enc>> Encode<X, Enc>
+impl<X: CustomValueKind, Enc: Encoder<X>, T: Encode<X, Enc>, E: Encode<X, Enc>> Encode<X, Enc>
     for Result<T, E>
 {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Enc) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut Enc) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -28,15 +28,15 @@ impl<X: CustomTypeId, Enc: Encoder<X>, T: Encode<X, Enc>, E: Encode<X, Enc>> Enc
     }
 }
 
-impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode<X, D>
+impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode<X, D>
     for Result<T, E>
 {
     #[inline]
-    fn decode_body_with_type_id(
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<X>,
+        value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let discriminator = decoder.read_discriminator()?;
         match discriminator.as_ref() {
             RESULT_VARIANT_OK => {

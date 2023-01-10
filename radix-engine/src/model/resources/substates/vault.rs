@@ -7,7 +7,7 @@ use crate::types::*;
 use sbor::rust::ops::Deref;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct VaultSubstate(pub Resource);
 
 impl VaultSubstate {

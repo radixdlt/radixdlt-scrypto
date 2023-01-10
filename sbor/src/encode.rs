@@ -1,10 +1,10 @@
 use crate::encoder::*;
-use crate::type_id::*;
+use crate::value_kind::*;
 
 /// A data structure that can be serialized into a byte array using SBOR.
-pub trait Encode<X: CustomTypeId, E: Encoder<X>> {
-    /// Encodes the SBOR type id of the type to the encoder
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError>;
+pub trait Encode<X: CustomValueKind, E: Encoder<X>> {
+    /// Encodes the SBOR value's kind to the encoder
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError>;
 
     /// Encodes the SBOR body of the type to the encoder.
     ///

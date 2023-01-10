@@ -3,7 +3,7 @@ use crate::Describe;
 use sbor::*;
 
 /// Represents the type of a resource.
-#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Categorize, Encode, Decode, Describe, Eq, PartialEq)]
 pub enum ResourceType {
     /// Represents a fungible resource
     Fungible { divisibility: u8 },

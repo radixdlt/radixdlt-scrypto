@@ -17,14 +17,14 @@ pub use type_validation::*;
 /// * `metadata` - The type's [`TypeMetadata`] including the name of the type and any of its fields or variants.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeData<C: CustomTypeKind<L>, L: SchemaTypeLink> {
-    pub kind: TypeKind<C::CustomTypeId, C, L>,
+    pub kind: TypeKind<C::CustomValueKind, C, L>,
     pub metadata: TypeMetadata,
     pub validation:
         TypeValidation<<C::CustomTypeExtension as CustomTypeExtension>::CustomTypeValidation>,
 }
 
-impl<C: CustomTypeKind<L>, L: SchemaTypeLink + TypeId<C::CustomTypeId>> TypeData<C, L> {
-    pub fn new(metadata: TypeMetadata, kind: TypeKind<C::CustomTypeId, C, L>) -> Self {
+impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> TypeData<C, L> {
+    pub fn new(metadata: TypeMetadata, kind: TypeKind<C::CustomValueKind, C, L>) -> Self {
         Self {
             kind,
             metadata,
@@ -47,7 +47,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + TypeId<C::CustomTypeId>> TypeData
 
     pub fn named_no_child_names(
         name: &'static str,
-        schema: TypeKind<C::CustomTypeId, C, L>,
+        schema: TypeKind<C::CustomValueKind, C, L>,
     ) -> Self {
         Self::new(TypeMetadata::named_no_child_names(name), schema)
     }

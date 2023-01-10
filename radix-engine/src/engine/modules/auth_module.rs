@@ -9,7 +9,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum AuthError {
     VisibilityError(RENodeId),
     Unauthorized {

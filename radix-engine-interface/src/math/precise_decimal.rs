@@ -458,7 +458,7 @@ impl PreciseDecimal {
 
 scrypto_type!(
     PreciseDecimal,
-    ScryptoCustomTypeId::PreciseDecimal,
+    ScryptoCustomValueKind::PreciseDecimal,
     Type::PreciseDecimal,
     PreciseDecimal::BITS / 8
 );
@@ -1092,8 +1092,8 @@ mod tests {
     fn test_encode_decimal_type_precise_decimal() {
         let mut bytes = Vec::with_capacity(512);
         let mut enc = ScryptoEncoder::new(&mut bytes);
-        pdec!("1").encode_type_id(&mut enc).unwrap();
-        assert_eq!(bytes, vec![PreciseDecimal::type_id().as_u8()]);
+        pdec!("1").encode_value_kind(&mut enc).unwrap();
+        assert_eq!(bytes, vec![PreciseDecimal::value_kind().as_u8()]);
     }
 
     #[test]
@@ -1101,11 +1101,11 @@ mod tests {
         let pdec = pdec!("0");
         let mut bytes = Vec::with_capacity(512);
         let mut enc = ScryptoEncoder::new(&mut bytes);
-        pdec.encode_type_id(&mut enc).unwrap();
+        pdec.encode_value_kind(&mut enc).unwrap();
         pdec.encode_body(&mut enc).unwrap();
         assert_eq!(bytes, {
             let mut a = [0; 65];
-            a[0] = PreciseDecimal::type_id().as_u8();
+            a[0] = PreciseDecimal::value_kind().as_u8();
             a
         });
     }
@@ -1114,10 +1114,10 @@ mod tests {
     fn test_decode_decimal_type_precise_decimal() {
         let mut bytes = Vec::with_capacity(512);
         let mut enc = ScryptoEncoder::new(&mut bytes);
-        pdec!("1").encode_type_id(&mut enc).unwrap();
+        pdec!("1").encode_value_kind(&mut enc).unwrap();
         let mut decoder = ScryptoDecoder::new(&bytes);
-        let typ = decoder.read_type_id().unwrap();
-        assert_eq!(typ, PreciseDecimal::type_id());
+        let typ = decoder.read_value_kind().unwrap();
+        assert_eq!(typ, PreciseDecimal::value_kind());
     }
 
     #[test]
@@ -1125,7 +1125,7 @@ mod tests {
         let pdec = pdec!("1.23456789");
         let mut bytes = Vec::with_capacity(512);
         let mut enc = ScryptoEncoder::new(&mut bytes);
-        pdec.encode_type_id(&mut enc).unwrap();
+        pdec.encode_value_kind(&mut enc).unwrap();
         pdec.encode_body(&mut enc).unwrap();
         let mut decoder = ScryptoDecoder::new(&bytes);
         let val = decoder.decode::<PreciseDecimal>().unwrap();

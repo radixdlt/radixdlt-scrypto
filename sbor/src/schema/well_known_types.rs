@@ -2,7 +2,7 @@ use super::*;
 
 use well_known_basic_types::*;
 
-pub const CUSTOM_WELL_KNOWN_TYPE_START: u8 = 0x80;
+pub const CUSTOM_WELL_KNOWN_VALUE_KIND_START: u8 = 0x80;
 
 pub mod well_known_basic_types {
     use sbor::*;
@@ -10,22 +10,22 @@ pub mod well_known_basic_types {
     // These ids must be usable in a const context
     pub const ANY_ID: u8 = 0x40;
 
-    pub const UNIT_ID: u8 = TYPE_UNIT;
-    pub const BOOL_ID: u8 = TYPE_BOOL;
+    pub const UNIT_ID: u8 = VALUE_KIND_UNIT;
+    pub const BOOL_ID: u8 = VALUE_KIND_BOOL;
 
-    pub const I8_ID: u8 = TYPE_I8;
-    pub const I16_ID: u8 = TYPE_I16;
-    pub const I32_ID: u8 = TYPE_I32;
-    pub const I64_ID: u8 = TYPE_I64;
-    pub const I128_ID: u8 = TYPE_I128;
+    pub const I8_ID: u8 = VALUE_KIND_I8;
+    pub const I16_ID: u8 = VALUE_KIND_I16;
+    pub const I32_ID: u8 = VALUE_KIND_I32;
+    pub const I64_ID: u8 = VALUE_KIND_I64;
+    pub const I128_ID: u8 = VALUE_KIND_I128;
 
-    pub const U8_ID: u8 = TYPE_U8;
-    pub const U16_ID: u8 = TYPE_U16;
-    pub const U32_ID: u8 = TYPE_U32;
-    pub const U64_ID: u8 = TYPE_U64;
-    pub const U128_ID: u8 = TYPE_U128;
+    pub const U8_ID: u8 = VALUE_KIND_U8;
+    pub const U16_ID: u8 = VALUE_KIND_U16;
+    pub const U32_ID: u8 = VALUE_KIND_U32;
+    pub const U64_ID: u8 = VALUE_KIND_U64;
+    pub const U128_ID: u8 = VALUE_KIND_U128;
 
-    pub const STRING_ID: u8 = TYPE_STRING;
+    pub const STRING_ID: u8 = VALUE_KIND_STRING;
 
     pub const BYTES_ID: u8 = 0x41;
 }
@@ -59,7 +59,7 @@ pub fn resolve_well_known_type<E: CustomTypeExtension>(
                 element_type: LocalTypeIndex::WellKnown(U8_ID),
             },
         ),
-        index if index >= CUSTOM_WELL_KNOWN_TYPE_START => {
+        index if index >= CUSTOM_WELL_KNOWN_VALUE_KIND_START => {
             return E::resolve_custom_well_known_type(index)
         }
         _ => return None,

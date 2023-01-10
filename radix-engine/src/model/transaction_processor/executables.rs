@@ -18,7 +18,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
@@ -26,7 +26,7 @@ pub struct TransactionProcessorRunInvocation<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
         valid_from: u64,

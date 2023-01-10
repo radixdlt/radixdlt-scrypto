@@ -14,7 +14,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum VaultError {
     InvalidRequestData(DecodeError),
     ResourceOperationError(ResourceOperationError),

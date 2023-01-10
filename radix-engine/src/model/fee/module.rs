@@ -4,7 +4,7 @@ use crate::model::Resource;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum CostingError {
     FeeReserveError(FeeReserveError),
     MaxCallDepthLimitReached,

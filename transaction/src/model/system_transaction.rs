@@ -7,7 +7,7 @@ use sbor::*;
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
     pub blobs: Vec<Vec<u8>>,
