@@ -1,6 +1,39 @@
 use crate::value_kind::*;
 use crate::*;
 
+macro_rules! categorize_tuple {
+    ($n:tt$( $idx:tt $name:ident)*) => {
+        impl<X: CustomValueKind$(, $name)*> Categorize<X> for ($($name,)*) {
+            #[inline]
+            fn value_kind() -> ValueKind<X> {
+                ValueKind::Tuple
+            }
+        }
+    };
+}
+
+categorize_tuple! { 0 } // Unit
+categorize_tuple! { 1 0 A }
+categorize_tuple! { 2 0 A 1 B }
+categorize_tuple! { 3 0 A 1 B 2 C }
+categorize_tuple! { 4 0 A 1 B 2 C 3 D }
+categorize_tuple! { 5 0 A 1 B 2 C 3 D 4 E }
+categorize_tuple! { 6 0 A 1 B 2 C 3 D 4 E 5 F }
+categorize_tuple! { 7 0 A 1 B 2 C 3 D 4 E 5 F 6 G }
+categorize_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
+categorize_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
+categorize_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
+categorize_tuple! { 11 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K  }
+categorize_tuple! { 12 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K 11 L   }
+categorize_tuple! { 13 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K 11 L 12 M  }
+categorize_tuple! { 14 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K 11 L 12 M 13 N  }
+categorize_tuple! { 15 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K 11 L 12 M 13 N 14 O  }
+categorize_tuple! { 16 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K 11 L 12 M 13 N 14 O 15 P  }
+categorize_tuple! { 17 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K 11 L 12 M 13 N 14 O 15 P 16 Q   }
+categorize_tuple! { 18 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K 11 L 12 M 13 N 14 O 15 P 16 Q 17 R  }
+categorize_tuple! { 19 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K 11 L 12 M 13 N 14 O 15 P 16 Q 17 R 18 S  }
+categorize_tuple! { 20 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J 10 K 11 L 12 M 13 N 14 O 15 P 16 Q 17 R 18 S 19 T  }
+
 macro_rules! encode_tuple {
     ($n:tt$( $idx:tt $name:ident)*) => {
         impl<X: CustomValueKind, E: Encoder<X>$(, $name: Encode<X, E>)*> Encode<X, E> for ($($name,)*) {
@@ -102,7 +135,7 @@ mod schema {
         };
     }
 
-    well_known_basic_type!((), UNIT_ID);
+    describe_basic_well_known_type!((), UNIT_ID);
     describe_tuple! { 1 0 T0 }
     describe_tuple! { 2 0 T0 1 T1 }
     describe_tuple! { 3 0 T0 1 T1 2 T2 }

@@ -6,6 +6,43 @@ use crate::rust::rc::Rc;
 use crate::value_kind::*;
 use crate::*;
 
+impl<'a, X: CustomValueKind, T: ?Sized + Categorize<X>> Categorize<X> for &T {
+    #[inline]
+    fn value_kind() -> ValueKind<X> {
+        T::value_kind()
+    }
+}
+
+impl<'a, X: CustomValueKind, B: ?Sized + 'a + ToOwned + Categorize<X>> Categorize<X>
+    for Cow<'a, B>
+{
+    #[inline]
+    fn value_kind() -> ValueKind<X> {
+        B::value_kind()
+    }
+}
+
+impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for Box<T> {
+    #[inline]
+    fn value_kind() -> ValueKind<X> {
+        T::value_kind()
+    }
+}
+
+impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for Rc<T> {
+    #[inline]
+    fn value_kind() -> ValueKind<X> {
+        T::value_kind()
+    }
+}
+
+impl<X: CustomValueKind, T: Categorize<X>> Categorize<X> for RefCell<T> {
+    #[inline]
+    fn value_kind() -> ValueKind<X> {
+        T::value_kind()
+    }
+}
+
 impl<'a, X: CustomValueKind, E: Encoder<X>, T: ?Sized + Encode<X, E>> Encode<X, E> for &T {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
