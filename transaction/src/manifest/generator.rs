@@ -468,6 +468,13 @@ pub fn generate_instruction(
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             entries: generate_non_fungible_mint_params(entries, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::MintUuidNonFungible {
+            resource_address,
+            entries,
+        } => BasicInstruction::MintUuidNonFungible {
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            entries: generate_uuid_non_fungible_mint_params(entries, resolver, bech32_decoder, blobs)?,
+        },
 
         ast::Instruction::CreateFungibleResource {
             divisibility,
@@ -1070,6 +1077,60 @@ fn generate_non_fungible_mint_params(
                             }
                         };
                         mint_params.insert(non_fungible_id, non_fungible_data);
+                    }
+                    v => invalid_type!(v, ast::Type::Tuple)?,
+                }
+            }
+
+            Ok(mint_params)
+        }
+        v => invalid_type!(v, ast::Type::Array)?,
+    }
+}
+
+fn generate_uuid_non_fungible_mint_params(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<Vec<(Vec<u8>, Vec<u8>)>, GeneratorError> {
+    match value {
+        ast::Value::Array(kind, elements) => {
+            if kind != &ast::Type::Tuple {
+                return Err(GeneratorError::InvalidType {
+                    expected_type: ast::Type::Tuple,
+                    actual: kind.clone(),
+                });
+            };
+
+            let mut mint_params = Vec::new();
+            for element in elements.into_iter() {
+                match element {
+                    ast::Value::Tuple(values) => {
+                        if values.len() != 2 {
+                            return Err(GeneratorError::InvalidLength {
+                                value_type: ast::Type::Tuple,
+                                expected_length: 2,
+                                actual: values.len(),
+                            });
+                        }
+
+                        let immutable_data = scrypto_encode(&generate_args_from_tuple(
+                            &values[0],
+                            resolver,
+                            bech32_decoder,
+                            blobs,
+                        )?)
+                            .map_err(GeneratorError::ArgumentEncodingError)?;
+                        let mutable_data = scrypto_encode(&generate_args_from_tuple(
+                            &values[1],
+                            resolver,
+                            bech32_decoder,
+                            blobs,
+                        )?)
+                            .map_err(GeneratorError::ArgumentEncodingError)?;
+
+                        mint_params.push((immutable_data, mutable_data));
                     }
                     v => invalid_type!(v, ast::Type::Tuple)?,
                 }
@@ -1781,6 +1842,37 @@ mod tests {
                         args!(12u8, 19u128)
                     )
                 )])
+            },
+        );
+    }
+
+    #[test]
+    fn test_mint_uuid_non_fungible_instruction() {
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+        let resource = bech32_decoder
+            .validate_and_decode_resource_address(
+                "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
+            )
+            .unwrap();
+        generate_instruction_ok!(
+            r#"
+            MINT_UUID_NON_FUNGIBLE
+                ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")
+                Array<Tuple>(
+                    Tuple(
+                        Tuple("Hello World", Decimal("12")),
+                        Tuple(12u8, 19u128)
+                    )
+                );
+            "#,
+            BasicInstruction::MintUuidNonFungible {
+                resource_address: resource,
+                entries: Vec::from([
+                    (
+                        args!(String::from("Hello World"), Decimal::from("12")),
+                        args!(12u8, 19u128)
+                    )
+                ])
             },
         );
     }

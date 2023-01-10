@@ -610,6 +610,26 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn mint_uuid_non_fungible<T, V>(
+        &mut self,
+        resource_address: ResourceAddress,
+        entries: T,
+    ) -> &mut Self
+        where
+            T: IntoIterator<Item = V>,
+            V: NonFungibleData,
+    {
+        let entries = entries
+            .into_iter()
+            .map(|e| (e.immutable_data().unwrap(), e.mutable_data().unwrap()))
+            .collect();
+        self.add_instruction(BasicInstruction::MintUuidNonFungible {
+            resource_address,
+            entries,
+        });
+        self
+    }
+
     pub fn recall(&mut self, vault_id: VaultId, amount: Decimal) -> &mut Self {
         self.add_instruction(BasicInstruction::RecallResource { vault_id, amount });
         self

@@ -182,6 +182,11 @@ pub enum BasicInstruction {
         entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
     },
 
+    MintUuidNonFungible {
+        resource_address: ResourceAddress,
+        entries: Vec<(Vec<u8>, Vec<u8>)>,
+    },
+
     CreateFungibleResource {
         divisibility: u8,
         metadata: BTreeMap<String, String>,
