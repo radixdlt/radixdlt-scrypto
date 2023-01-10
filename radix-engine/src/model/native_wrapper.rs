@@ -211,7 +211,19 @@ where
             }
         },
         NativeInvocation::ResourceManager(resman_method) => match resman_method {
-            ResourceInvocation::Create(invocation) => {
+            ResourceInvocation::CreateNonFungible(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ResourceInvocation::CreateFungible(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ResourceInvocation::CreateNonFungibleWithInitialSupply(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ResourceInvocation::CreateFungibleWithInitialSupply(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -239,7 +251,11 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            ResourceInvocation::Mint(invocation) => {
+            ResourceInvocation::MintNonFungible(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ResourceInvocation::MintFungible(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

@@ -143,13 +143,17 @@ impl FeeTable {
                 ProofFn::Clone => self.fixed_low,
             },
             NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerFn::Create => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateNonFungible => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateFungible => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::BurnBucket => self.fixed_low,
                 ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
                 ResourceManagerFn::LockAuth => self.fixed_medium,
                 ResourceManagerFn::CreateVault => self.fixed_medium,
                 ResourceManagerFn::CreateBucket => self.fixed_medium,
-                ResourceManagerFn::Mint => self.fixed_high,
+                ResourceManagerFn::MintNonFungible => self.fixed_high,
+                ResourceManagerFn::MintFungible => self.fixed_high,
                 ResourceManagerFn::GetResourceType => self.fixed_low,
                 ResourceManagerFn::GetTotalSupply => self.fixed_low,
                 ResourceManagerFn::UpdateNonFungibleData => self.fixed_medium,

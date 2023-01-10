@@ -475,20 +475,27 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     access_rules,
                     initial_supply,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerCreateInvocation {
-                        resource_type: ResourceType::Fungible {
+                    if let Some(amount) = initial_supply {
+                        let rtn =
+                            api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                divisibility: *divisibility,
+                                metadata: metadata.clone(),
+                                access_rules: access_rules.clone(),
+                                initial_supply: *amount,
+                            })?;
+
+                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    } else {
+                        let rtn = api.invoke(ResourceManagerCreateFungibleInvocation {
                             divisibility: *divisibility,
-                        },
-                        metadata: metadata.clone(),
-                        access_rules: access_rules.clone(),
-                        mint_params: initial_supply.map(|amount| MintParams::Fungible { amount }),
-                    })?;
+                            metadata: metadata.clone(),
+                            access_rules: access_rules.clone(),
+                        })?;
 
-                    if let (_, Some(bucket)) = &rtn {
-                        Worktop::sys_put(Bucket(bucket.0), api)?;
+                        InstructionOutput::Native(Box::new(rtn))
                     }
-
-                    InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::Basic(BasicInstruction::CreateFungibleResourceWithOwner {
                     divisibility,
@@ -496,19 +503,27 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     owner_badge,
                     initial_supply,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerCreateInvocation {
-                        resource_type: ResourceType::Fungible {
-                            divisibility: *divisibility,
-                        },
-                        metadata: metadata.clone(),
-                        access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                        mint_params: initial_supply.map(|amount| MintParams::Fungible { amount }),
-                    })?;
-                    if let (_, Some(bucket)) = &rtn {
-                        Worktop::sys_put(Bucket(bucket.0), api)?;
-                    }
+                    if let Some(amount) = initial_supply {
+                        let rtn =
+                            api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                divisibility: *divisibility,
+                                metadata: metadata.clone(),
+                                access_rules: resource_access_rules_from_owner_badge(owner_badge),
+                                initial_supply: *amount,
+                            })?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    } else {
+                        let rtn = api.invoke(ResourceManagerCreateFungibleInvocation {
+                            divisibility: *divisibility,
+                            metadata: metadata.clone(),
+                            access_rules: resource_access_rules_from_owner_badge(owner_badge),
+                        })?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    }
                 }
                 Instruction::Basic(BasicInstruction::CreateNonFungibleResource {
                     id_type,
@@ -516,19 +531,28 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     access_rules,
                     initial_supply,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerCreateInvocation {
-                        resource_type: ResourceType::NonFungible { id_type: *id_type },
-                        metadata: metadata.clone(),
-                        access_rules: access_rules.clone(),
-                        mint_params: initial_supply
-                            .as_ref()
-                            .map(|e| MintParams::NonFungible { entries: e.clone() }),
-                    })?;
-                    if let (_, Some(bucket)) = &rtn {
-                        Worktop::sys_put(Bucket(bucket.0), api)?;
-                    }
+                    if let Some(ids) = initial_supply {
+                        let rtn = api.invoke(
+                            ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                                id_type: *id_type,
+                                metadata: metadata.clone(),
+                                access_rules: access_rules.clone(),
+                                entries: ids.clone(),
+                            },
+                        )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    } else {
+                        let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            id_type: *id_type,
+                            metadata: metadata.clone(),
+                            access_rules: access_rules.clone(),
+                        })?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    }
                 }
                 Instruction::Basic(BasicInstruction::CreateNonFungibleResourceWithOwner {
                     id_type,
@@ -536,19 +560,28 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     owner_badge,
                     initial_supply,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerCreateInvocation {
-                        resource_type: ResourceType::NonFungible { id_type: *id_type },
-                        metadata: metadata.clone(),
-                        access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                        mint_params: initial_supply
-                            .as_ref()
-                            .map(|e| MintParams::NonFungible { entries: e.clone() }),
-                    })?;
-                    if let (_, Some(bucket)) = &rtn {
-                        Worktop::sys_put(Bucket(bucket.0), api)?;
-                    }
+                    if let Some(ids) = initial_supply {
+                        let rtn = api.invoke(
+                            ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                                id_type: *id_type,
+                                metadata: metadata.clone(),
+                                access_rules: resource_access_rules_from_owner_badge(owner_badge),
+                                entries: ids.clone(),
+                            },
+                        )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    } else {
+                        let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            id_type: *id_type,
+                            metadata: metadata.clone(),
+                            access_rules: resource_access_rules_from_owner_badge(owner_badge),
+                        })?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    }
                 }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     let bucket = processor.take_bucket(bucket_id)?;
@@ -559,11 +592,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                     amount,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerMintInvocation {
+                    let rtn = api.invoke(ResourceManagerMintFungibleInvocation {
                         receiver: resource_address.clone(),
-                        mint_params: MintParams::Fungible {
-                            amount: amount.clone(),
-                        },
+                        amount: amount.clone(),
                     })?;
 
                     Worktop::sys_put(Bucket(rtn.0), api)?;
@@ -574,11 +605,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                     entries,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerMintInvocation {
+                    let rtn = api.invoke(ResourceManagerMintNonFungibleInvocation {
                         receiver: resource_address.clone(),
-                        mint_params: MintParams::NonFungible {
-                            entries: entries.clone(),
-                        },
+                        entries: entries.clone(),
                     })?;
                     Worktop::sys_put(Bucket(rtn.0), api)?;
 
