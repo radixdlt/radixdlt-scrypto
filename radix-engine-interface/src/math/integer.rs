@@ -336,7 +336,7 @@ macro_rules! sbor_codec {
             }
         }
 
-        impl Describe for $t {
+        impl LegacyDescribe for $t {
             fn describe() -> Type {
                 Type::$t_model
             }

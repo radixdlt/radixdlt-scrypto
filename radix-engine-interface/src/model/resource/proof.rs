@@ -179,7 +179,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Proof {
     }
 }
 
-impl scrypto_abi::Describe for Proof {
+impl scrypto_abi::LegacyDescribe for Proof {
     fn describe() -> scrypto_abi::Type {
         Type::Proof
     }

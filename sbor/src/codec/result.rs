@@ -51,3 +51,25 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode<X,
         }
     }
 }
+
+#[cfg(feature = "schema")]
+impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, E: Describe<C>> Describe<C> for Result<T, E> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Result", &[T::TYPE_ID, E::TYPE_ID]);
+
+    fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        #[allow(unused_imports)]
+        use crate::rust::borrow::ToOwned;
+        Some(TypeData::named_enum(
+            "Result",
+            crate::rust::collections::btree_map::btreemap![
+                "Ok".to_owned() => TypeData::named_tuple("Ok", crate::rust::vec![T::TYPE_ID]),
+                "Err".to_owned() => TypeData::named_tuple("Err", crate::rust::vec![E::TYPE_ID]),
+            ],
+        ))
+    }
+
+    fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+        aggregator.add_child_type_and_descendents::<T>();
+        aggregator.add_child_type_and_descendents::<E>();
+    }
+}

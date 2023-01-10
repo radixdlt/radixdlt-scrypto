@@ -1,6 +1,6 @@
-pub const RADIX_ENGINE_FUNCTION_INDEX: usize = 0;
+pub const RADIX_ENGINE_FUNCTION_ID: usize = 0;
 pub const RADIX_ENGINE_FUNCTION_NAME: &str = "radix_engine";
-pub const CONSUME_COST_UNITS_FUNCTION_INDEX: usize = 1;
+pub const CONSUME_COST_UNITS_FUNCTION_ID: usize = 1;
 pub const CONSUME_COST_UNITS_FUNCTION_NAME: &str = "gas";
 
 pub const MODULE_ENV_NAME: &str = "env";

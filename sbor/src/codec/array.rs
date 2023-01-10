@@ -72,3 +72,73 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, const N: usize
         Ok(res)
     }
 }
+
+#[cfg(feature = "schema")]
+pub use schema::*;
+
+#[cfg(feature = "schema")]
+mod schema {
+    use super::*;
+
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for [T] {
+        const TYPE_ID: GlobalTypeId = match T::TYPE_ID {
+            GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => {
+                GlobalTypeId::well_known(well_known_basic_types::BYTES_ID)
+            }
+            _ => GlobalTypeId::novel("Array", &[T::TYPE_ID]),
+        };
+
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            match T::TYPE_ID {
+                GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => None,
+                _ => Some(TypeData::new(
+                    TypeMetadata::named_no_child_names("Array"),
+                    TypeKind::Array {
+                        element_type: T::TYPE_ID,
+                    },
+                )),
+            }
+        }
+
+        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+            aggregator.add_child_type_and_descendents::<T>();
+        }
+    }
+
+    #[cfg(feature = "schema")]
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, const N: usize> Describe<C> for [T; N] {
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::novel_validated(
+            "Array",
+            &[T::TYPE_ID],
+            &[("min", &N.to_le_bytes()), ("max", &N.to_le_bytes())],
+        );
+
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            let size = N
+                .try_into()
+                .expect("The array length is too large for a u32 for the SBOR schema");
+            let type_name = match T::TYPE_ID {
+                GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => "Bytes",
+                _ => "Array",
+            };
+            Some(
+                TypeData::new(
+                    TypeMetadata::named_no_child_names(type_name),
+                    TypeKind::Array {
+                        element_type: T::TYPE_ID,
+                    },
+                )
+                .with_validation(TypeValidation::Array {
+                    length_validation: LengthValidation {
+                        min: Some(size),
+                        max: Some(size),
+                    },
+                }),
+            )
+        }
+
+        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+            aggregator.add_child_type_and_descendents::<T>();
+        }
+    }
+}

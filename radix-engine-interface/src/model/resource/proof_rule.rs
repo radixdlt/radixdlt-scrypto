@@ -10,7 +10,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto_abi::{Describe, Fields, Type, Variant};
+use scrypto_abi::{Fields, LegacyDescribe, Type, Variant};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[scrypto(TypeId, Encode, Decode, Describe)]
@@ -178,7 +178,7 @@ pub enum AccessRuleNode {
 }
 
 // FIXME: describe types with cycles
-impl Describe for AccessRuleNode {
+impl LegacyDescribe for AccessRuleNode {
     fn describe() -> Type {
         Type::Enum {
             name: "AccessRuleNode".to_owned(),

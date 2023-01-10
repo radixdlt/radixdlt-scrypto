@@ -87,31 +87,114 @@ pub mod collections {
     #[cfg(feature = "alloc")]
     extern crate alloc;
 
-    #[cfg(feature = "alloc")]
-    pub use alloc::collections::btree_map;
-    #[cfg(feature = "alloc")]
-    pub use alloc::collections::btree_set;
+    pub mod btree_map {
+        #[cfg(feature = "alloc")]
+        extern crate alloc;
+        #[cfg(feature = "alloc")]
+        pub use alloc::collections::btree_map::*;
+        #[cfg(not(feature = "alloc"))]
+        pub use std::collections::btree_map::*;
+
+        #[macro_export]
+        macro_rules! btreemap {
+            ( $($key:expr => $value:expr),* ) => ({
+                let mut temp = ::sbor::rust::collections::BTreeMap::new();
+                $(
+                    temp.insert($key, $value);
+                )*
+                temp
+            });
+            ( $($key:expr => $value:expr,)* ) => (
+                btreemap!{$($key => $value),*}
+            );
+        }
+
+        pub use btreemap;
+    }
+
+    pub mod btree_set {
+        #[cfg(feature = "alloc")]
+        extern crate alloc;
+        #[cfg(feature = "alloc")]
+        pub use alloc::collections::btree_set::*;
+        #[cfg(not(feature = "alloc"))]
+        pub use std::collections::btree_set::*;
+
+        #[macro_export]
+        macro_rules! btreeset {
+            ( $($value:expr),* ) => ({
+                let mut temp = ::sbor::rust::collections::BTreeSet::new();
+                $(
+                    temp.insert($value);
+                )*
+                temp
+            });
+            ( $($value:expr,)* ) => (
+                btreeset!{$($value),*}
+            );
+        }
+
+        pub use btreeset;
+    }
+
+    pub mod hash_map {
+        #[cfg(feature = "alloc")]
+        pub use hashbrown::hash_map::*;
+        #[cfg(not(feature = "alloc"))]
+        pub use std::collections::hash_map::*;
+
+        #[macro_export]
+        macro_rules! hashmap {
+            ( $($key:expr => $value:expr),* ) => ({
+                let mut temp = ::sbor::rust::collections::HashMap::new();
+                $(
+                    temp.insert($key, $value);
+                )*
+                temp
+            });
+            ( $($key:expr => $value:expr,)* ) => (
+                hashmap!{$($key => $value),*}
+            );
+        }
+
+        pub use hashmap;
+    }
+
+    pub mod hash_set {
+        #[cfg(feature = "alloc")]
+        pub use hashbrown::hash_set::*;
+        #[cfg(not(feature = "alloc"))]
+        pub use std::collections::hash_set::*;
+
+        #[macro_export]
+        macro_rules! hashset {
+            ( $($key:expr),* ) => ({
+                let mut temp = ::sbor::rust::collections::HashSet::new();
+                $(
+                    temp.insert($key);
+                )*
+                temp
+            });
+            ( $($key:expr,)* ) => (
+                hashset!{$($key),*}
+            );
+        }
+
+        pub use hashset;
+    }
+
+    #[cfg(feature = "indexmap")]
+    pub use indexmap;
+
     #[cfg(feature = "alloc")]
     pub use alloc::collections::BTreeMap;
     #[cfg(feature = "alloc")]
     pub use alloc::collections::BTreeSet;
     #[cfg(feature = "alloc")]
-    pub use hashbrown::hash_map;
-    #[cfg(feature = "alloc")]
-    pub use hashbrown::hash_set;
-    #[cfg(feature = "alloc")]
     pub use hashbrown::HashMap;
     #[cfg(feature = "alloc")]
     pub use hashbrown::HashSet;
 
-    #[cfg(not(feature = "alloc"))]
-    pub use std::collections::btree_map;
-    #[cfg(not(feature = "alloc"))]
-    pub use std::collections::btree_set;
-    #[cfg(not(feature = "alloc"))]
-    pub use std::collections::hash_map;
-    #[cfg(not(feature = "alloc"))]
-    pub use std::collections::hash_set;
     #[cfg(not(feature = "alloc"))]
     pub use std::collections::BTreeMap;
     #[cfg(not(feature = "alloc"))]

@@ -1,3 +1,6 @@
+#[cfg(feature = "schema")]
+/// Defines the custom Scrypto schema types.
+mod custom_schema;
 /// Defines the custom type ID scrypto uses.
 mod custom_type_id;
 /// Defines the model of Scrypto custom values.
@@ -17,6 +20,8 @@ mod value_formatter;
 mod value_serializer;
 
 pub use crate::args;
+#[cfg(feature = "schema")]
+pub use custom_schema::*;
 pub use custom_type_id::*;
 pub use custom_value::*;
 pub use indexed_value::*;

@@ -124,7 +124,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Own {
     }
 }
 
-impl scrypto_abi::Describe for Own {
+impl scrypto_abi::LegacyDescribe for Own {
     fn describe() -> scrypto_abi::Type {
         Type::Own
     }

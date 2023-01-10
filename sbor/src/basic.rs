@@ -90,3 +90,50 @@ impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for NoCustomValue {
         panic!("No custom value")
     }
 }
+
+#[cfg(feature = "schema")]
+pub use schema::*;
+
+#[cfg(feature = "schema")]
+mod schema {
+    use super::*;
+    use crate::rust::collections::IndexSet;
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum NoCustomTypeKind {}
+
+    impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
+        type CustomTypeId = NoCustomTypeId;
+
+        type CustomTypeExtension = NoCustomTypeExtension;
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum NoCustomTypeValidation {}
+
+    impl CustomTypeValidation for NoCustomTypeValidation {}
+
+    pub enum NoCustomTypeExtension {}
+
+    impl CustomTypeExtension for NoCustomTypeExtension {
+        type CustomTypeId = NoCustomTypeId;
+        type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
+        type CustomTypeValidation = NoCustomTypeValidation;
+
+        fn linearize_type_kind(
+            _: Self::CustomTypeKind<GlobalTypeId>,
+            _: &IndexSet<TypeHash>,
+        ) -> Self::CustomTypeKind<LocalTypeIndex> {
+            unreachable!("No custom type kinds exist")
+        }
+
+        fn resolve_custom_well_known_type(
+            _: u8,
+        ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
+            None
+        }
+    }
+
+    pub type BasicTypeKind<L> = TypeKind<NoCustomTypeId, NoCustomTypeKind, L>;
+    pub type BasicSchema = Schema<NoCustomTypeExtension>;
+}

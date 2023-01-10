@@ -252,3 +252,57 @@ impl<X: CustomTypeId, D: Decoder<X>, K: Decode<X, D> + Hash + Eq, V: Decode<X, D
         Ok(elements.into_iter().collect())
     }
 }
+
+#[cfg(feature = "schema")]
+pub use schema::*;
+
+#[cfg(feature = "schema")]
+mod schema {
+    use super::*;
+
+    wrapped_generic_describe!(T, Vec<T>, [T]);
+
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for BTreeSet<T> {
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Set", &[T::TYPE_ID]);
+
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            Some(TypeData::new(
+                TypeMetadata::named_no_child_names("Set"),
+                TypeKind::Array {
+                    element_type: T::TYPE_ID,
+                },
+            ))
+        }
+
+        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+            aggregator.add_child_type_and_descendents::<T>();
+        }
+    }
+
+    wrapped_generic_describe!(T, HashSet<T>, BTreeSet<T>);
+    #[cfg(feature = "indexmap")]
+    wrapped_generic_describe!(T, IndexSet<T>, BTreeSet<T>);
+
+    impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
+        for BTreeMap<K, V>
+    {
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Map", &[K::TYPE_ID, V::TYPE_ID]);
+
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            Some(TypeData::new(
+                TypeMetadata::named_no_child_names("Map"),
+                TypeKind::Array {
+                    element_type: <(K, V)>::TYPE_ID,
+                },
+            ))
+        }
+
+        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+            aggregator.add_child_type_and_descendents::<(K, V)>();
+        }
+    }
+
+    wrapped_double_generic_describe!(K, V, HashMap<K, V>, BTreeMap<K, V>);
+    #[cfg(feature = "indexmap")]
+    wrapped_double_generic_describe!(K, V, IndexMap<K, V>, BTreeMap<K, V>);
+}

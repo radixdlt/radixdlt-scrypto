@@ -201,7 +201,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Bucket 
     }
 }
 
-impl scrypto_abi::Describe for Bucket {
+impl scrypto_abi::LegacyDescribe for Bucket {
     fn describe() -> scrypto_abi::Type {
         Type::Bucket
     }

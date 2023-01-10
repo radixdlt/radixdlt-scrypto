@@ -14,9 +14,9 @@ pub const TYPE_PROOF: u8 = 0x93;
 pub const TYPE_EXPRESSION: u8 = 0xa0;
 
 pub const TYPE_HASH: u8 = 0xb0;
-pub const TYPE_ECDSA_SECP256K1_PUBIC_KEY: u8 = 0xb1;
+pub const TYPE_ECDSA_SECP256K1_PUBLIC_KEY: u8 = 0xb1;
 pub const TYPE_ECDSA_SECP256K1_SIGNATURE: u8 = 0xb2;
-pub const TYPE_EDDSA_ED25519_PUBIC_KEY: u8 = 0xb3;
+pub const TYPE_EDDSA_ED25519_PUBLIC_KEY: u8 = 0xb3;
 pub const TYPE_EDDSA_ED25519_SIGNATURE: u8 = 0xb4;
 pub const TYPE_DECIMAL: u8 = 0xb5;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0xb6;
@@ -76,9 +76,9 @@ impl CustomTypeId for ScryptoCustomTypeId {
             Self::Blob => TYPE_BLOB,
             Self::NonFungibleAddress => TYPE_NON_FUNGIBLE_ADDRESS,
             Self::Hash => TYPE_HASH,
-            Self::EcdsaSecp256k1PublicKey => TYPE_ECDSA_SECP256K1_PUBIC_KEY,
+            Self::EcdsaSecp256k1PublicKey => TYPE_ECDSA_SECP256K1_PUBLIC_KEY,
             Self::EcdsaSecp256k1Signature => TYPE_ECDSA_SECP256K1_SIGNATURE,
-            Self::EddsaEd25519PublicKey => TYPE_EDDSA_ED25519_PUBIC_KEY,
+            Self::EddsaEd25519PublicKey => TYPE_EDDSA_ED25519_PUBLIC_KEY,
             Self::EddsaEd25519Signature => TYPE_EDDSA_ED25519_SIGNATURE,
             Self::Decimal => TYPE_DECIMAL,
             Self::PreciseDecimal => TYPE_PRECISE_DECIMAL,
@@ -99,9 +99,9 @@ impl CustomTypeId for ScryptoCustomTypeId {
             TYPE_BLOB => Some(ScryptoCustomTypeId::Blob),
             TYPE_NON_FUNGIBLE_ADDRESS => Some(ScryptoCustomTypeId::NonFungibleAddress),
             TYPE_HASH => Some(ScryptoCustomTypeId::Hash),
-            TYPE_ECDSA_SECP256K1_PUBIC_KEY => Some(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey),
+            TYPE_ECDSA_SECP256K1_PUBLIC_KEY => Some(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey),
             TYPE_ECDSA_SECP256K1_SIGNATURE => Some(ScryptoCustomTypeId::EcdsaSecp256k1Signature),
-            TYPE_EDDSA_ED25519_PUBIC_KEY => Some(ScryptoCustomTypeId::EddsaEd25519PublicKey),
+            TYPE_EDDSA_ED25519_PUBLIC_KEY => Some(ScryptoCustomTypeId::EddsaEd25519PublicKey),
             TYPE_EDDSA_ED25519_SIGNATURE => Some(ScryptoCustomTypeId::EddsaEd25519Signature),
             TYPE_DECIMAL => Some(ScryptoCustomTypeId::Decimal),
             TYPE_PRECISE_DECIMAL => Some(ScryptoCustomTypeId::PreciseDecimal),

@@ -109,3 +109,31 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for RefCell<T
         Ok(RefCell::new(T::decode_body_with_type_id(decoder, type_id)?))
     }
 }
+
+#[cfg(feature = "schema")]
+pub use schema::*;
+
+#[cfg(feature = "schema")]
+mod schema {
+    use super::*;
+
+    wrapped_generic_describe!(T, &T, T);
+
+    impl<'a, C: CustomTypeKind<GlobalTypeId>, B: ?Sized + 'a + ToOwned + Describe<C>> Describe<C>
+        for Cow<'a, B>
+    {
+        const TYPE_ID: GlobalTypeId = <B>::TYPE_ID;
+
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            <B>::type_data()
+        }
+
+        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+            <B>::add_all_dependencies(aggregator)
+        }
+    }
+
+    wrapped_generic_describe!(T, Box<T>, T);
+    wrapped_generic_describe!(T, Rc<T>, T);
+    wrapped_generic_describe!(T, RefCell<T>, T);
+}
