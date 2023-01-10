@@ -19,6 +19,10 @@ pub struct PackagePublishInvocation {
 
 impl Invocation for PackagePublishInvocation {
     type Output = PackageAddress;
+
+    fn fn_identifier(&self) -> String {
+        "Package(Publish)".to_owned()
+    }
 }
 
 impl SerializableInvocation for PackagePublishInvocation {

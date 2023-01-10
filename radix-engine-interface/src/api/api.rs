@@ -6,6 +6,11 @@ use super::types::*;
 
 pub trait Invocation: Debug {
     type Output: Debug;
+
+    // TODO: temp to unblock large payload display; fix as part of the universal invocation refactor.
+    fn fn_identifier(&self) -> String {
+        format!("{:?}", self)
+    }
 }
 
 pub trait Invokable<I: Invocation, E> {

@@ -624,7 +624,7 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    invocation: &invocation,
+                    fn_identifier: invocation.fn_identifier(),
                     input_size: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
                 },

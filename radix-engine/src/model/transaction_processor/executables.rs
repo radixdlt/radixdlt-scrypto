@@ -67,6 +67,10 @@ impl InstructionOutput {
 
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
+
+    fn fn_identifier(&self) -> String {
+        "TransactionProcessor(Run)".to_owned()
+    }
 }
 
 fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdate) {
