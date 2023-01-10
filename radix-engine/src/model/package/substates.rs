@@ -1,4 +1,3 @@
-use crate::model::Resource;
 use crate::types::*;
 use sbor::rust::fmt::{Debug, Formatter};
 
@@ -36,5 +35,5 @@ impl PackageInfoSubstate {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct PackageRoyaltyAccumulatorSubstate {
-    pub royalty: Resource, // TODO: wrap with a vault?
+    pub royalty: Own,
 }

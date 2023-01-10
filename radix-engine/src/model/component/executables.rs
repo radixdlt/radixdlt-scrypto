@@ -3,7 +3,7 @@ use crate::engine::{
     CallFrameUpdate, ExecutableInvocation, LockFlags, ResolvedActor, ResolverApi, RuntimeError,
     SystemApi,
 };
-use crate::model::{BucketSubstate, GlobalAddressSubstate};
+use crate::model::GlobalAddressSubstate;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
@@ -185,19 +185,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocat
 impl Executor for ComponentSetRoyaltyConfigInvocation {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Component(ComponentOffset::RoyaltyConfig);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
+        let mut substate_mut = api.get_ref_mut(handle)?;
         substate_mut.component_royalty_config().royalty_config = self.royalty_config;
 
-        system_api.drop_lock(handle)?;
+        api.drop_lock(handle)?;
 
         Ok(((), CallFrameUpdate::empty()))
     }
@@ -229,32 +229,32 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation 
 impl Executor for ComponentClaimRoyaltyInvocation {
     type Output = Bucket;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         // TODO: auth check
         let node_id = self.receiver;
         let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
-        let handle = system_api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+        let handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
 
-        let mut substate_mut = system_api.get_ref_mut(handle)?;
-        let resource = substate_mut
-            .component_royalty_accumulator()
-            .royalty
-            .take_all();
+        let mut substate_mut = api.get_ref_mut(handle)?;
+        let royalty_vault = substate_mut.component_royalty_accumulator().royalty.clone();
 
-        let bucket_node_id = system_api.allocate_node_id(RENodeType::Bucket)?;
-        system_api.create_node(
-            bucket_node_id,
-            RENode::Bucket(BucketSubstate::new(resource)),
-        )?;
-        let bucket_id = bucket_node_id.into();
+        let amount = api.invoke(VaultGetAmountInvocation {
+            receiver: royalty_vault.vault_id(),
+        })?;
 
-        system_api.drop_lock(handle)?;
+        let bucket = api.invoke(VaultTakeInvocation {
+            receiver: royalty_vault.vault_id(),
+            amount,
+        })?;
+        let bucket_id = bucket.0;
+
+        api.drop_lock(handle)?;
 
         Ok((
-            Bucket(bucket_id),
+            bucket,
             CallFrameUpdate::move_node(RENodeId::Bucket(bucket_id)),
         ))
     }

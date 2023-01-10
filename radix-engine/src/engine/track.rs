@@ -697,38 +697,54 @@ impl<'s> FinalizingTrack<'s> {
                         node_id.clone(),
                         SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
                     );
-
-                    let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-                    let mut runtime_substate = substate.to_runtime();
-                    runtime_substate
-                        .to_ref_mut()
+                    let accumulator_substate = to_persist.get(&substate_id).unwrap();
+                    let royalty_vault_id = accumulator_substate
+                        .0
                         .package_royalty_accumulator()
                         .royalty
+                        .vault_id();
+                    let royalty_vault_substate = to_persist
+                        .get_mut(&SubstateId(
+                            RENodeId::Vault(royalty_vault_id),
+                            SubstateOffset::Vault(VaultOffset::Vault),
+                        ))
+                        .unwrap();
+                    royalty_vault_substate
+                        .0
+                        .vault_mut()
+                        .0
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),
                         )
                         .unwrap();
-                    to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
                 }
                 RoyaltyReceiver::Component(_, node_id) => {
                     let substate_id = SubstateId(
                         node_id.clone(),
                         SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
                     );
-
-                    let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-                    let mut runtime_substate = substate.to_runtime();
-                    runtime_substate
-                        .to_ref_mut()
+                    let accumulator_substate = to_persist.get(&substate_id).unwrap();
+                    let royalty_vault_id = accumulator_substate
+                        .0
                         .component_royalty_accumulator()
                         .royalty
+                        .vault_id();
+                    let royalty_vault_substate = to_persist
+                        .get_mut(&SubstateId(
+                            RENodeId::Vault(royalty_vault_id),
+                            SubstateOffset::Vault(VaultOffset::Vault),
+                        ))
+                        .unwrap();
+                    royalty_vault_substate
+                        .0
+                        .vault_mut()
+                        .0
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),
                         )
                         .unwrap();
-                    to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
                 }
             }
         }
