@@ -238,6 +238,12 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
+            TokenKind::RegisterValidator => Instruction::RegisterValidator {
+                validator: self.parse_value()?,
+            },
+            TokenKind::UnregisterValidator => Instruction::UnregisterValidator {
+                validator: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }
@@ -364,7 +370,7 @@ impl Parser {
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            // RE global address types
+            // RE interpreted types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
             TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
@@ -373,15 +379,13 @@ impl Parser {
             TokenKind::ResourceAddress => {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
-
-            // RE interpreted types
             TokenKind::Own => Ok(Value::Own(self.parse_values_one()?.into())),
-            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
 
             // TX interpreted types
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
+            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
@@ -494,20 +498,18 @@ impl Parser {
             TokenKind::Bytes => Ok(Type::Bytes),
             TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
 
-            // RE global address types
+            // RE interpreted types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
             TokenKind::SystemAddress => Ok(Type::SystemAddress),
-
-            // RE interpreted types
             TokenKind::Own => Ok(Type::Own),
-            TokenKind::Blob => Ok(Type::Blob),
 
             // TX interpreted types
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
             TokenKind::Expression => Ok(Type::Expression),
+            TokenKind::Blob => Ok(Type::Blob),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Type::Hash),
@@ -528,6 +530,7 @@ impl Parser {
 mod tests {
     use super::*;
     use crate::manifest::lexer::{tokenize, Span};
+    use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
     #[macro_export]
     macro_rules! parse_instruction_ok {
@@ -1105,6 +1108,30 @@ mod tests {
                         ])
                     ])]
                 )
+            }
+        );
+    }
+
+    #[test]
+    fn test_register_validator_instruction() {
+        parse_instruction_ok!(
+            r#"REGISTER_VALIDATOR EcdsaSecp256k1PublicKey("000000000000000000000000000000000000000000000000000000000000000000");"#,
+            Instruction::RegisterValidator {
+                validator: Value::EcdsaSecp256k1PublicKey(Box::new(Value::String(hex::encode(
+                    [0u8; EcdsaSecp256k1PublicKey::LENGTH]
+                ))))
+            }
+        );
+    }
+
+    #[test]
+    fn test_unregister_validator_instruction() {
+        parse_instruction_ok!(
+            r#"UNREGISTER_VALIDATOR EcdsaSecp256k1PublicKey("000000000000000000000000000000000000000000000000000000000000000000");"#,
+            Instruction::UnregisterValidator {
+                validator: Value::EcdsaSecp256k1PublicKey(Box::new(Value::String(hex::encode(
+                    [0u8; EcdsaSecp256k1PublicKey::LENGTH]
+                ))))
             }
         );
     }
