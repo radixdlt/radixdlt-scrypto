@@ -993,14 +993,20 @@ where
     ) -> Result<T, GeneratorError>,
 {
     let value = match value {
-        ast::Value::Enum(variant, fields) if variant == "None" && fields.len() == 0 => {
-            return Ok(None);
-        }
         ast::Value::None => {
             return Ok(None);
         }
+        ast::Value::Enum(variant, fields)
+            if *variant == OPTION_VARIANT_NONE && fields.len() == 0 =>
+        {
+            return Ok(None);
+        }
         ast::Value::Some(value) => &**value,
-        ast::Value::Enum(variant, fields) if variant == "Some" && fields.len() == 1 => &fields[0],
+        ast::Value::Enum(variant, fields)
+            if *variant == OPTION_VARIANT_SOME && fields.len() == 1 =>
+        {
+            &fields[0]
+        }
         v => invalid_type!(v, ast::Type::Enum)?,
     };
     Ok(Some(generator(value, resolver, bech32_decoder, blobs)?))
@@ -1146,7 +1152,7 @@ pub fn generate_value(
         // Aliases
         // ==============
         ast::Value::Some(value) => Ok(Value::Enum {
-            discriminator: "Some".to_owned(),
+            discriminator: OPTION_VARIANT_SOME,
             fields: vec![generate_value(
                 value,
                 None,
@@ -1156,11 +1162,11 @@ pub fn generate_value(
             )?],
         }),
         ast::Value::None => Ok(Value::Enum {
-            discriminator: "None".to_owned(),
+            discriminator: OPTION_VARIANT_NONE,
             fields: vec![],
         }),
         ast::Value::Ok(value) => Ok(Value::Enum {
-            discriminator: "Ok".to_owned(),
+            discriminator: RESULT_VARIANT_OK,
             fields: vec![generate_value(
                 value,
                 None,
@@ -1170,7 +1176,7 @@ pub fn generate_value(
             )?],
         }),
         ast::Value::Err(value) => Ok(Value::Enum {
-            discriminator: "Err".to_owned(),
+            discriminator: RESULT_VARIANT_ERR,
             fields: vec![generate_value(
                 value,
                 None,
@@ -1416,18 +1422,18 @@ mod tests {
         );
         generate_value_ok!(r#"Tuple()"#, Value::Tuple { fields: vec![] });
         generate_value_ok!(
-            r#"Enum("Variant", "abc")"#,
+            r#"Enum(0u8, "abc")"#,
             Value::Enum {
-                discriminator: "Variant".to_string(),
+                discriminator: 0,
                 fields: vec![Value::String {
                     value: "abc".to_owned()
                 }]
             }
         );
         generate_value_ok!(
-            r#"Enum("Variant")"#,
+            r#"Enum(1u8)"#,
             Value::Enum {
-                discriminator: "Variant".to_string(),
+                discriminator: 1,
                 fields: vec![]
             }
         );
@@ -1515,7 +1521,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Tuple(Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"), Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"));"#,
+            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Tuple(Array<Tuple>(), Array<Tuple>(), Enum(1u8), Array<Tuple>(), Array<Tuple>(), Enum(1u8));"#,
             BasicInstruction::PublishPackage {
                 code: Blob(
                     "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
@@ -1554,7 +1560,7 @@ mod tests {
         );
 
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("500"));"#,
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum(4u8), Tuple(Enum(0u8), Enum(1u8))), Tuple(Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))) Some(Decimal("500"));"#,
             BasicInstruction::CreateFungibleResource {
                 divisibility: 18,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1572,7 +1578,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum(4u8), Tuple(Enum(0u8), Enum(1u8))), Tuple(Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))) None;"#,
             BasicInstruction::CreateFungibleResource {
                 divisibility: 18,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1611,9 +1617,9 @@ mod tests {
         generate_instruction_ok!(
             r#"
             CREATE_NON_FUNGIBLE_RESOURCE 
-                Enum("U32") 
+                Enum(1u8) 
                 Array<Tuple>(Tuple("name", "Token")) 
-                Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) 
+                Array<Tuple>(Tuple(Enum(4u8), Tuple(Enum(0u8), Enum(1u8))), Tuple(Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))) 
                 Some(
                     Array<Tuple>(
                         Tuple(
@@ -1649,7 +1655,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum(1u8) Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum(4u8), Tuple(Enum(0u8), Enum(1u8))), Tuple(Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))) None;"#,
             BasicInstruction::CreateNonFungibleResource {
                 id_type: NonFungibleIdType::U32,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1670,7 +1676,7 @@ mod tests {
         generate_instruction_ok!(
             r#"
             CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER 
-                Enum("U32") 
+                Enum(1u8) 
                 Array<Tuple>(Tuple("name", "Token")) 
                 NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) 
                 Some(
@@ -1699,7 +1705,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("U32") Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum(1u8) Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
             BasicInstruction::CreateNonFungibleResourceWithOwner {
                 id_type: NonFungibleIdType::U32,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),

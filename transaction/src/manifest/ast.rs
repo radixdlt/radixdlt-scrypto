@@ -336,7 +336,7 @@ pub enum Value {
     U128(u128),
     String(String),
 
-    Enum(String, Vec<Value>),
+    Enum(u8, Vec<Value>),
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
 

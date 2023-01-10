@@ -8,7 +8,7 @@ pub enum ParserError {
     InvalidNumberOfValues { actual: usize, expected: usize },
     InvalidNumberOfTypes { actual: usize, expected: usize },
     InvalidHex(String),
-    MissingEnumName,
+    MissingEnumDiscriminator,
 }
 
 pub struct Parser {
@@ -313,16 +313,16 @@ impl Parser {
 
     pub fn parse_enum(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Enum);
-        let mut name_and_fields =
+        let mut discriminator_and_fields =
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        let name = match name_and_fields.get(0) {
-            Some(Value::String(name)) => name.clone(),
+        let discriminator = match discriminator_and_fields.get(0) {
+            Some(Value::U8(discriminator)) => discriminator.clone(),
             _ => {
-                return Err(ParserError::MissingEnumName);
+                return Err(ParserError::MissingEnumDiscriminator);
             }
         };
-        name_and_fields.remove(0);
-        Ok(Value::Enum(name, name_and_fields))
+        discriminator_and_fields.remove(0);
+        Ok(Value::Enum(discriminator, discriminator_and_fields))
     }
 
     pub fn parse_array(&mut self) -> Result<Value, ParserError> {
@@ -583,16 +583,10 @@ mod tests {
     #[test]
     fn test_enum() {
         parse_value_ok!(
-            r#"Enum("Variant", "Hello", 123u8)"#,
-            Value::Enum(
-                "Variant".to_string(),
-                vec![Value::String("Hello".into()), Value::U8(123)],
-            )
+            r#"Enum(0u8, "Hello", 123u8)"#,
+            Value::Enum(0, vec![Value::String("Hello".into()), Value::U8(123)],)
         );
-        parse_value_ok!(
-            r#"Enum("Variant")"#,
-            Value::Enum("Variant".to_string(), Vec::new())
-        );
+        parse_value_ok!(r#"Enum(0u8)"#, Value::Enum(0, Vec::new()));
     }
 
     #[test]
@@ -734,7 +728,7 @@ mod tests {
         );
 
         parse_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Array<Tuple>(Tuple(Enum("SetMetadata"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("GetMetadata"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("SetRoyaltyConfig"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("ClaimRoyalty"), Tuple(Enum("DenyAll"), Enum("DenyAll"))));"#,
+            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Array<Tuple>(Tuple(Enum(0u8), Tuple(Enum(1u8), Enum(1u8))), Tuple(Enum(1u8), Tuple(Enum(0u8), Enum(1u8))), Tuple(Enum(0u8), Tuple(Enum(1u8), Enum(1u8))), Tuple(Enum(1u8), Tuple(Enum(1u8), Enum(1u8))));"#,
             Instruction::PublishPackage {
                 code: Value::Blob(Box::new(Value::String(
                     "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618".into()
@@ -748,31 +742,31 @@ mod tests {
                     Type::Tuple,
                     vec![
                         Value::Tuple(vec![
-                            Value::Enum("SetMetadata".into(), Vec::new()),
+                            Value::Enum(0, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(1, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                         Value::Tuple(vec![
-                            Value::Enum("GetMetadata".into(), Vec::new()),
+                            Value::Enum(1, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(0, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                         Value::Tuple(vec![
-                            Value::Enum("SetRoyaltyConfig".into(), Vec::new()),
+                            Value::Enum(0, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(1, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                         Value::Tuple(vec![
-                            Value::Enum("ClaimRoyalty".into(), Vec::new()),
+                            Value::Enum(1, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(1, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                     ]
@@ -798,7 +792,7 @@ mod tests {
         );
 
         parse_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("500"));"#,
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum(4u8), Tuple(Enum(0u8), Enum(1u8))), Tuple(Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))) Some(Decimal("500"));"#,
             Instruction::CreateFungibleResource {
                 divisibility: Value::U8(18),
                 metadata: Value::Array(
@@ -812,17 +806,17 @@ mod tests {
                     Type::Tuple,
                     vec![
                         Value::Tuple(vec![
-                            Value::Enum("Withdraw".into(), Vec::new()),
+                            Value::Enum(4, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(0, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                         Value::Tuple(vec![
-                            Value::Enum("Deposit".into(), Vec::new()),
+                            Value::Enum(5, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(0, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                     ]
@@ -833,7 +827,7 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum(4u8), Tuple(Enum(0u8), Enum(1u8))), Tuple(Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))) None;"#,
             Instruction::CreateFungibleResource {
                 divisibility: Value::U8(18),
                 metadata: Value::Array(
@@ -847,17 +841,17 @@ mod tests {
                     Type::Tuple,
                     vec![
                         Value::Tuple(vec![
-                            Value::Enum("Withdraw".into(), Vec::new()),
+                            Value::Enum(4, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(0, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                         Value::Tuple(vec![
-                            Value::Enum("Deposit".into(), Vec::new()),
+                            Value::Enum(5, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(0, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                     ]
@@ -911,9 +905,9 @@ mod tests {
         parse_instruction_ok!(
             r#"
             CREATE_NON_FUNGIBLE_RESOURCE 
-                Enum("U32") 
+                Enum(0u8) 
                 Array<Tuple>(Tuple("name", "Token")) 
-                Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) 
+                Array<Tuple>(Tuple(Enum(4u8), Tuple(Enum(0u8), Enum(1u8))), Tuple(Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))) 
                 Some(
                     Array<Tuple>(
                         Tuple(
@@ -927,7 +921,7 @@ mod tests {
                 );
             "#,
             Instruction::CreateNonFungibleResource {
-                id_type: Value::Enum("U32".into(), Vec::new()),
+                id_type: Value::Enum(0, Vec::new()),
                 metadata: Value::Array(
                     Type::Tuple,
                     vec![Value::Tuple(vec![
@@ -939,17 +933,17 @@ mod tests {
                     Type::Tuple,
                     vec![
                         Value::Tuple(vec![
-                            Value::Enum("Withdraw".into(), Vec::new()),
+                            Value::Enum(4, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(0, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                         Value::Tuple(vec![
-                            Value::Enum("Deposit".into(), Vec::new()),
+                            Value::Enum(5, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(0, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                     ]
@@ -970,9 +964,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum(0u8) Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum(4u8), Tuple(Enum(0u8), Enum(1u8))), Tuple(Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))) None;"#,
             Instruction::CreateNonFungibleResource {
-                id_type: Value::Enum("U32".into(), Vec::new()),
+                id_type: Value::Enum(0, Vec::new()),
                 metadata: Value::Array(
                     Type::Tuple,
                     vec![Value::Tuple(vec![
@@ -984,17 +978,17 @@ mod tests {
                     Type::Tuple,
                     vec![
                         Value::Tuple(vec![
-                            Value::Enum("Withdraw".into(), Vec::new()),
+                            Value::Enum(4, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(0, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                         Value::Tuple(vec![
-                            Value::Enum("Deposit".into(), Vec::new()),
+                            Value::Enum(5, Vec::new()),
                             Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
+                                Value::Enum(0, Vec::new()),
+                                Value::Enum(1, Vec::new()),
                             ])
                         ]),
                     ]
@@ -1005,7 +999,7 @@ mod tests {
         parse_instruction_ok!(
             r#"
             CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER 
-                Enum("U32") 
+                Enum(0u8) 
                 Array<Tuple>(Tuple("name", "Token")) 
                 NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) 
                 Some(
@@ -1021,7 +1015,7 @@ mod tests {
                 );
             "#,
             Instruction::CreateNonFungibleResourceWithOwner {
-                id_type: Value::Enum("U32".into(), Vec::new()),
+                id_type: Value::Enum(0, Vec::new()),
                 metadata: Value::Array(
                     Type::Tuple,
                     vec![Value::Tuple(vec![
@@ -1051,9 +1045,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("U32") Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum(0u8) Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
             Instruction::CreateNonFungibleResourceWithOwner {
-                id_type: Value::Enum("U32".into(), Vec::new()),
+                id_type: Value::Enum(0, Vec::new()),
                 metadata: Value::Array(
                     Type::Tuple,
                     vec![Value::Tuple(vec![
