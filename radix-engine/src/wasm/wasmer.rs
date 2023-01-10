@@ -142,7 +142,7 @@ pub fn read_value(instance: &Instance, ptr: usize) -> Result<IndexedScryptoValue
                 temp.set_len(n);
             }
 
-            return IndexedScryptoValue::from_slice(&temp).map_err(WasmError::InvalidScryptoValue);
+            return IndexedScryptoValue::from_slice(&temp).map_err(WasmError::SborDecodeError);
         }
     }
 

@@ -8,7 +8,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum BasicInstruction {
     /// Takes resource from worktop.
     TakeFromWorktop {
@@ -224,7 +224,7 @@ pub enum BasicInstruction {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum Instruction {
     Basic(BasicInstruction),
     System(NativeInvocation),

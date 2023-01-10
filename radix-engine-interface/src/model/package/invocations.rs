@@ -9,7 +9,7 @@ use sbor::rust::string::String;
 use sbor::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct PackagePublishInvocation {
     pub code: Blob,
     pub abi: Blob,
@@ -33,7 +33,7 @@ impl Into<SerializedInvocation> for PackagePublishInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
@@ -54,14 +54,14 @@ impl Into<SerializedInvocation> for PackageSetRoyaltyConfigInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct PackageClaimRoyaltyInvocation {
     pub receiver: PackageAddress,
 }
@@ -81,7 +81,7 @@ impl Into<SerializedInvocation> for PackageClaimRoyaltyInvocation {
 }
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct PackageClaimRoyaltyExecutable {
     pub receiver: RENodeId,
 }

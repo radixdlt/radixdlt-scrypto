@@ -17,7 +17,7 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
 }

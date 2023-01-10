@@ -11,7 +11,7 @@ use sbor::*;
     serde(tag = "type", content = "public_key")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum PublicKey {
     EcdsaSecp256k1(EcdsaSecp256k1PublicKey),
     EddsaEd25519(EddsaEd25519PublicKey),
@@ -24,7 +24,7 @@ pub enum PublicKey {
     serde(tag = "type", content = "signature")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum Signature {
     EcdsaSecp256k1(EcdsaSecp256k1Signature),
     EddsaEd25519(EddsaEd25519Signature),
@@ -37,7 +37,7 @@ pub enum Signature {
     serde(tag = "type")
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum SignatureWithPublicKey {
     EcdsaSecp256k1 {
         signature: EcdsaSecp256k1Signature,

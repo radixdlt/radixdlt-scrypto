@@ -1,5 +1,4 @@
 use radix_engine_interface::data::types::*;
-use radix_engine_interface::data::ScryptoValueDecodeError;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,7 +27,7 @@ impl From<EncodeError> for SignatureValidationError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum ManifestIdAllocationError {
     OutOfID,
 }
@@ -43,7 +42,7 @@ pub enum ManifestIdValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallDataValidationError {
-    InvalidScryptoValue(ScryptoValueDecodeError),
+    DecodeError(DecodeError),
     IdValidationError(ManifestIdValidationError),
     OwnNotAllowed,
 }

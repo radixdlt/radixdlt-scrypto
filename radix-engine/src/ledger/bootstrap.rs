@@ -41,9 +41,120 @@ pub fn create_genesis(
     initial_epoch: u64,
     rounds_per_epoch: u64,
 ) -> SystemTransaction {
+    // NOTES
+    // * Create resources before packages to avoid circular dependencies.
+
     let mut blobs = Vec::new();
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
+
+    // XRD
+    {
+        let mut metadata = BTreeMap::new();
+        metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
+        metadata.insert("name".to_owned(), XRD_NAME.to_owned());
+        metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
+        metadata.insert("url".to_owned(), XRD_URL.to_owned());
+
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
+        let initial_supply: Option<Decimal> = Some(XRD_MAX_SUPPLY.into());
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateFungibleResource {
+                divisibility: 18,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    }
+
+    // ECDSA
+    {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
+        let initial_supply = None;
+
+        // TODO: Create token at a specific address
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    }
+
+    // TODO: Perhaps combine with ecdsa token?
+    // EDDSA
+    {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
+        let initial_supply = None;
+
+        // TODO: Create token at a specific address
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    }
+
+    // TODO: Perhaps combine with ecdsa token?
+    // System Token
+    {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
+        let initial_supply = None;
+        // TODO: Create token at a specific address
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    }
+
+    // Package Token
+    {
+        let metadata: BTreeMap<String, String> = BTreeMap::new();
+        let mut access_rules = BTreeMap::new();
+        access_rules.insert(
+            ResourceMethodAuthKey::Withdraw,
+            (rule!(allow_all), rule!(deny_all)),
+        );
+        let initial_supply = None;
+        // TODO: Create token at a specific address
+        instructions.push(Instruction::Basic(
+            BasicInstruction::CreateNonFungibleResource {
+                id_type: NonFungibleIdType::Bytes,
+                metadata,
+                access_rules,
+                initial_supply,
+            },
+        ));
+    }
 
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
@@ -75,70 +186,6 @@ pub fn create_genesis(
         blobs.push(account_abi);
     }
 
-    {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-
-        // TODO: Create token at a specific address
-        instructions.push(Instruction::Basic(
-            BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
-                metadata,
-                access_rules,
-                initial_supply: None,
-            },
-        ));
-    }
-
-    // TODO: Perhaps combine with ecdsa token?
-    {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-        let initial_supply = None;
-
-        // TODO: Create token at a specific address
-        instructions.push(Instruction::Basic(
-            BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
-                metadata,
-                access_rules,
-                initial_supply,
-            },
-        ));
-    }
-
-    {
-        let mut metadata = BTreeMap::new();
-        metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
-        metadata.insert("name".to_owned(), XRD_NAME.to_owned());
-        metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
-        metadata.insert("url".to_owned(), XRD_URL.to_owned());
-
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-
-        let initial_supply: Option<Decimal> = Some(XRD_MAX_SUPPLY.into());
-        instructions.push(Instruction::Basic(
-            BasicInstruction::CreateFungibleResource {
-                divisibility: 18,
-                metadata,
-                access_rules,
-                initial_supply,
-            },
-        ));
-    }
-
     instructions.push(
         BasicInstruction::TakeFromWorktop {
             resource_address: RADIX_TOKEN,
@@ -160,42 +207,6 @@ pub fn create_genesis(
         ClockInvocation::Create(ClockCreateInvocation {}),
     )));
 
-    // EDDSA ED25519 Token
-    {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let initial_supply = None;
-
-        // TODO: Create token at a specific address
-        instructions.push(Instruction::Basic(
-            BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
-                metadata,
-                access_rules,
-                initial_supply,
-            },
-        ));
-    };
-
-    // Package Token
-    {
-        let metadata: BTreeMap<String, String> = BTreeMap::new();
-        let mut access_rules = BTreeMap::new();
-        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
-        let initial_supply = None;
-
-        // TODO: Create token at a specific address
-        instructions.push(Instruction::Basic(
-            BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
-                metadata,
-                access_rules,
-                initial_supply,
-            },
-        ));
-    }
-
     instructions.push(Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
             validator_set: validator_set.clone(),
@@ -212,15 +223,15 @@ pub fn create_genesis(
 }
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
-    let faucet_package: PackageAddress = receipt.output(0);
-    let account_package: PackageAddress = receipt.output(1);
-    let (ecdsa_secp256k1_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(2);
-    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(3);
-    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(4);
-    let faucet_component: ComponentAddress = receipt.output(6);
-    let clock: SystemAddress = receipt.output(7);
-    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(8);
-    let (package_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(9);
+    let (xrd_token, _): (ResourceAddress, Own) = receipt.output(0);
+    let ecdsa_secp256k1_token: ResourceAddress = receipt.output(1);
+    let eddsa_ed25519_token: ResourceAddress = receipt.output(2);
+    let system_token: ResourceAddress = receipt.output(3);
+    let package_token: ResourceAddress = receipt.output(4);
+    let faucet_package: PackageAddress = receipt.output(5);
+    let account_package: PackageAddress = receipt.output(6);
+    let faucet_component: ComponentAddress = receipt.output(8);
+    let clock: SystemAddress = receipt.output(9);
     let epoch_manager: SystemAddress = receipt.output(10);
 
     GenesisReceipt {
@@ -310,7 +321,7 @@ mod tests {
             &substate_store,
             &scrypto_interpreter,
             &FeeReserveConfig::default(),
-            &ExecutionConfig::debug(),
+            &ExecutionConfig::default(),
             &genesis_transaction.get_executable(vec![AuthAddresses::system_role()]),
         );
         #[cfg(not(feature = "alloc"))]
@@ -318,15 +329,15 @@ mod tests {
 
         let genesis_receipt = genesis_result(&transaction_receipt);
 
-        assert_eq!(genesis_receipt.faucet_package, FAUCET_PACKAGE);
-        assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
-        assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
-        assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
         assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
-        assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
-        assert_eq!(genesis_receipt.clock, CLOCK);
+        assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
         assert_eq!(genesis_receipt.package_token, PACKAGE_TOKEN);
+        assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);
+        assert_eq!(genesis_receipt.faucet_package, FAUCET_PACKAGE);
+        assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
+        assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
+        assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
     }
 }

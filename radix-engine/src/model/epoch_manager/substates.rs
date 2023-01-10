@@ -1,7 +1,7 @@
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerSubstate {
     pub address: SystemAddress, // TODO: Does it make sense for this to be stored here?
     pub epoch: u64,
@@ -10,21 +10,21 @@ pub struct EpochManagerSubstate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct Validator {
     pub address: SystemAddress,
     pub key: EcdsaSecp256k1PublicKey,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ValidatorSetSubstate {
     pub validator_set: BTreeSet<Validator>,
     pub epoch: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ValidatorSubstate {
     pub manager: SystemAddress,
     pub address: SystemAddress,

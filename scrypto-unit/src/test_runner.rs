@@ -19,16 +19,17 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, AccessRules, EpochManagerInvocation, FromPublicKey, NativeInvocation,
-    NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
+    NativeInvocation, NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
@@ -252,35 +253,49 @@ impl TestRunner {
     ) -> Option<Decimal> {
         let node_id = self.deref_component(component_address)?;
 
-        self.substate_store
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
-            ))
-            .map(|output| {
-                output
-                    .substate
-                    .component_royalty_accumulator()
-                    .royalty
-                    .amount()
-            })
+        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
+        )) {
+            let royalty_vault: Own = output
+                .substate
+                .component_royalty_accumulator()
+                .royalty
+                .clone();
+
+            self.substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(royalty_vault.vault_id()),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ))
+                .map(|output| output.substate.vault().0.amount())
+        } else {
+            None
+        }
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let node_id = self.deref_package(package_address)?;
 
-        self.substate_store
-            .get_substate(&SubstateId(
-                node_id,
-                SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
-            ))
-            .map(|output| {
-                output
-                    .substate
-                    .package_royalty_accumulator()
-                    .royalty
-                    .amount()
-            })
+        if let Some(output) = self.substate_store.get_substate(&SubstateId(
+            node_id,
+            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
+        )) {
+            let royalty_vault: Own = output
+                .substate
+                .package_royalty_accumulator()
+                .royalty
+                .clone();
+
+            self.substate_store
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(royalty_vault.vault_id()),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ))
+                .map(|output| output.substate.vault().0.amount())
+        } else {
+            None
+        }
     }
 
     pub fn get_component_vaults(
@@ -918,6 +933,48 @@ impl TestRunner {
         let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
             EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
                 receiver: EPOCH_MANAGER,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        receipt.output(0)
+    }
+
+    pub fn set_current_time(&mut self, current_time_ms: i64) {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+                current_time_ms,
+                receiver: CLOCK,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        receipt.output(0)
+    }
+
+    pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
+                precision,
+                receiver: CLOCK,
             }),
         ))];
         let blobs = vec![];

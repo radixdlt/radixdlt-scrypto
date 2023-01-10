@@ -89,53 +89,53 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
 ) -> Result<S::Ok, S::Error> {
     match value {
         // primitive types
-        SborValue::Unit => serialize_value(
+        Value::Unit => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::Unit,
+            ValueKind::Unit,
             &(),
         ),
-        SborValue::Bool { value } => serialize_value(
+        Value::Bool { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::Bool,
+            ValueKind::Bool,
             value,
         ),
-        SborValue::I8 { value } => serialize_value(
+        Value::I8 { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::I8,
+            ValueKind::I8,
             value,
         ),
-        SborValue::I16 { value } => serialize_value(
+        Value::I16 { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::I16,
+            ValueKind::I16,
             value,
         ),
-        SborValue::I32 { value } => serialize_value(
+        Value::I32 { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::I32,
+            ValueKind::I32,
             value,
         ),
-        SborValue::I64 { value } => {
+        Value::I64 { value } => {
             // Javascript only safely decodes JSON integers up to 2^53
             // So to be safe, we encode I64s as strings
             serialize_value(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                SborTypeId::I64,
+                ValueKind::I64,
                 &value.to_string(),
             )
         }
-        SborValue::I128 { value } => {
+        Value::I128 { value } => {
             // Javascript only safely decodes JSON integers up to 2^53
             // So to be safe, we encode I128 as strings
             // Moreover, I128 isn't supported by the JSON serializer
@@ -143,43 +143,43 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                SborTypeId::I128,
+                ValueKind::I128,
                 &value.to_string(),
             )
         }
-        SborValue::U8 { value } => serialize_value(
+        Value::U8 { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::U8,
+            ValueKind::U8,
             value,
         ),
-        SborValue::U16 { value } => serialize_value(
+        Value::U16 { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::U16,
+            ValueKind::U16,
             value,
         ),
-        SborValue::U32 { value } => serialize_value(
+        Value::U32 { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::U32,
+            ValueKind::U32,
             value,
         ),
-        SborValue::U64 { value } => {
+        Value::U64 { value } => {
             // Javascript only safely decodes JSON integers up to 2^53
             // So to be safe, we encode U64s as strings
             serialize_value(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                SborTypeId::U64,
+                ValueKind::U64,
                 &value.to_string(),
             )
         }
-        SborValue::U128 { value } => {
+        Value::U128 { value } => {
             // Javascript only safely decodes JSON integers up to 2^53
             // So to be safe, we encode U128 as strings
             // Moreover, U128 isn't supported by the JSON serializer
@@ -187,59 +187,59 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                SborTypeId::U128,
+                ValueKind::U128,
                 &value.to_string(),
             )
         }
-        SborValue::String { value } => serialize_value(
+        Value::String { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::String,
+            ValueKind::String,
             value,
         ),
-        SborValue::Tuple { fields } => serialize_value(
+        Value::Tuple { fields } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::Tuple,
+            ValueKind::Tuple,
             &fields.serializable(*context),
         ),
-        SborValue::Enum {
+        Value::Enum {
             discriminator,
             fields,
         } => serialize_value(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::Enum,
+            ValueKind::Enum,
             &EnumVariant {
                 discriminator,
                 fields,
             }
             .serializable(*context),
         ),
-        SborValue::Array {
-            element_type_id,
+        Value::Array {
+            element_value_kind,
             elements,
         } => serialize_value_with_element_type(
             ValueEncoding::NoType,
             serializer,
             context,
-            SborTypeId::Array,
-            *element_type_id,
+            ValueKind::Array,
+            *element_value_kind,
             &ArrayValue {
-                element_type_id,
+                element_value_kind,
                 elements,
             }
             .serializable(*context),
         ),
-        SborValue::Custom { value } => serialize_custom_value(serializer, value, context),
+        Value::Custom { value } => serialize_custom_value(serializer, value, context),
     }
 }
 
 pub struct ArrayValue<'a> {
-    element_type_id: &'a ScryptoSborTypeId,
+    element_value_kind: &'a ScryptoValueKind,
     elements: &'a [ScryptoValue],
 }
 
@@ -249,11 +249,11 @@ impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for ArrayVal
         serializer: S,
         context: &ScryptoValueFormattingContext<'a>,
     ) -> Result<S::Ok, S::Error> {
-        if *self.element_type_id == SborTypeId::U8 {
+        if *self.element_value_kind == ValueKind::U8 {
             let length = self.elements.len();
             let mut bytes_vec = Vec::with_capacity(if length <= 1024 { length } else { 1024 });
             for element in self.elements {
-                let SborValue::U8 { value: byte } = element else {
+                let Value::U8 { value: byte } = element else {
                     return Err(ser::Error::custom("An SBOR array of U8 contained a non-U8 value"));
                 };
                 bytes_vec.push(*byte);
@@ -285,8 +285,8 @@ fn serialize_hex<S: Serializer>(serializer: S, slice: &[u8]) -> Result<S::Ok, S:
     map.end()
 }
 
-fn type_id_to_string(type_id: &ScryptoSborTypeId) -> String {
-    display_type_id(type_id).to_string()
+fn value_kind_to_string(value_kind: &ScryptoValueKind) -> String {
+    display_value_kind(value_kind).to_string()
 }
 
 pub struct EnumVariant<'a> {
@@ -347,7 +347,7 @@ pub fn serialize_custom_value<S: Serializer>(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                ScryptoCustomTypeId::PackageAddress,
+                ScryptoCustomValueKind::PackageAddress,
                 &string_address,
             )
         }
@@ -359,7 +359,7 @@ pub fn serialize_custom_value<S: Serializer>(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                ScryptoCustomTypeId::ComponentAddress,
+                ScryptoCustomValueKind::ComponentAddress,
                 &string_address,
             )
         }
@@ -371,7 +371,7 @@ pub fn serialize_custom_value<S: Serializer>(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                ScryptoCustomTypeId::ResourceAddress,
+                ScryptoCustomValueKind::ResourceAddress,
                 &string_address,
             )
         }
@@ -383,7 +383,7 @@ pub fn serialize_custom_value<S: Serializer>(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                ScryptoCustomTypeId::SystemAddress,
+                ScryptoCustomValueKind::SystemAddress,
                 &string_address,
             )
         }
@@ -392,21 +392,14 @@ pub fn serialize_custom_value<S: Serializer>(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::Own,
+            ScryptoCustomValueKind::Own,
             &format!("{:?}", value), // TODO: fix syntax
-        ),
-        ScryptoCustomValue::NonFungibleAddress(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomTypeId::NonFungibleAddress,
-            &value.serializable(*context),
         ),
         ScryptoCustomValue::Blob(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::Blob,
+            ScryptoCustomValueKind::Blob,
             &format!("{}", value),
         ),
         // TX interpreted types
@@ -416,7 +409,7 @@ pub fn serialize_custom_value<S: Serializer>(
                     ValueEncoding::WithType,
                     serializer,
                     context,
-                    ScryptoCustomTypeId::Bucket,
+                    ScryptoCustomValueKind::Bucket,
                     name,
                 )
             } else {
@@ -424,7 +417,7 @@ pub fn serialize_custom_value<S: Serializer>(
                     ValueEncoding::WithType,
                     serializer,
                     context,
-                    ScryptoCustomTypeId::Bucket,
+                    ScryptoCustomValueKind::Bucket,
                     &value.0,
                 )
             }
@@ -435,7 +428,7 @@ pub fn serialize_custom_value<S: Serializer>(
                     ValueEncoding::WithType,
                     serializer,
                     context,
-                    ScryptoCustomTypeId::Proof,
+                    ScryptoCustomValueKind::Proof,
                     name,
                 )
             } else {
@@ -443,7 +436,7 @@ pub fn serialize_custom_value<S: Serializer>(
                     ValueEncoding::WithType,
                     serializer,
                     context,
-                    ScryptoCustomTypeId::Proof,
+                    ScryptoCustomValueKind::Proof,
                     &value.0,
                 )
             }
@@ -453,7 +446,7 @@ pub fn serialize_custom_value<S: Serializer>(
             ValueEncoding::NoType,
             serializer,
             context,
-            ScryptoCustomTypeId::Expression,
+            ScryptoCustomValueKind::Expression,
             &format!(
                 "{}",
                 match value {
@@ -467,35 +460,35 @@ pub fn serialize_custom_value<S: Serializer>(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::Hash,
+            ScryptoCustomValueKind::Hash,
             &format!("{}", value),
         ),
         ScryptoCustomValue::EcdsaSecp256k1PublicKey(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::EcdsaSecp256k1PublicKey,
+            ScryptoCustomValueKind::EcdsaSecp256k1PublicKey,
             &format!("{}", value),
         ),
         ScryptoCustomValue::EcdsaSecp256k1Signature(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::EcdsaSecp256k1Signature,
+            ScryptoCustomValueKind::EcdsaSecp256k1Signature,
             &format!("{}", value),
         ),
         ScryptoCustomValue::EddsaEd25519PublicKey(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::EddsaEd25519PublicKey,
+            ScryptoCustomValueKind::EddsaEd25519PublicKey,
             &format!("{}", value),
         ),
         ScryptoCustomValue::EddsaEd25519Signature(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::EddsaEd25519Signature,
+            ScryptoCustomValueKind::EddsaEd25519Signature,
             &format!("{}", value),
         ),
         ScryptoCustomValue::Decimal(value) => serialize_value(
@@ -503,7 +496,7 @@ pub fn serialize_custom_value<S: Serializer>(
             ValueEncoding::NoType,
             serializer,
             context,
-            ScryptoCustomTypeId::Decimal,
+            ScryptoCustomValueKind::Decimal,
             &format!("{}", value),
         ),
         ScryptoCustomValue::PreciseDecimal(value) => serialize_value(
@@ -511,14 +504,14 @@ pub fn serialize_custom_value<S: Serializer>(
             ValueEncoding::NoType,
             serializer,
             context,
-            ScryptoCustomTypeId::PreciseDecimal,
+            ScryptoCustomValueKind::PreciseDecimal,
             &format!("{}", value),
         ),
         ScryptoCustomValue::NonFungibleId(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
-            ScryptoCustomTypeId::NonFungibleId,
+            ScryptoCustomValueKind::NonFungibleId,
             &value.serializable(*context),
         ),
     }
@@ -553,36 +546,36 @@ impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleI
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                SborTypeId::String,
+                ValueKind::String,
                 value,
             ),
             NonFungibleId::U32(value) => serialize_value(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                SborTypeId::U32,
+                ValueKind::U32,
                 value,
             ),
             NonFungibleId::U64(value) => serialize_value(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                SborTypeId::U64,
+                ValueKind::U64,
                 &value.to_string(),
             ),
             NonFungibleId::Bytes(value) => serialize_value_with_element_type(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                SborTypeId::Array,
-                SborTypeId::U8,
+                ValueKind::Array,
+                ValueKind::U8,
                 &BytesValue { bytes: value }.serializable(*context),
             ),
             NonFungibleId::UUID(value) => serialize_value(
                 ValueEncoding::NoType,
                 serializer,
                 context,
-                SborTypeId::U128,
+                ValueKind::U128,
                 &value.to_string(),
             ),
         }
@@ -601,11 +594,11 @@ enum ValueEncoding {
     WithType,
 }
 
-fn serialize_value<S: Serializer, T: Serialize + ?Sized, TypeId: Into<ScryptoSborTypeId>>(
+fn serialize_value<S: Serializer, T: Serialize + ?Sized, K: Into<ScryptoValueKind>>(
     value_encoding_type: ValueEncoding,
     serializer: S,
     context: &ScryptoValueFormattingContext,
-    type_id: TypeId,
+    value_kind: K,
     value: &T,
 ) -> Result<S::Ok, S::Error> {
     if context.serialization_type == ScryptoValueSerializationType::Simple
@@ -614,7 +607,7 @@ fn serialize_value<S: Serializer, T: Serialize + ?Sized, TypeId: Into<ScryptoSbo
         value.serialize(serializer)
     } else {
         let mut map = serializer.serialize_map(Some(2))?;
-        map.serialize_entry("type", &type_id_to_string(&type_id.into()))?;
+        map.serialize_entry("type", &value_kind_to_string(&value_kind.into()))?;
         map.serialize_entry("value", value)?;
         map.end()
     }
@@ -623,13 +616,13 @@ fn serialize_value<S: Serializer, T: Serialize + ?Sized, TypeId: Into<ScryptoSbo
 fn serialize_value_with_element_type<
     S: Serializer,
     T: Serialize + ?Sized,
-    TypeId: Into<ScryptoSborTypeId>,
+    K: Into<ScryptoValueKind>,
 >(
     value_encoding_type: ValueEncoding,
     serializer: S,
     context: &ScryptoValueFormattingContext,
-    type_id: TypeId,
-    element_type_id: TypeId,
+    value_kind: K,
+    element_value_kind: K,
     value: &T,
 ) -> Result<S::Ok, S::Error> {
     if context.serialization_type == ScryptoValueSerializationType::Simple
@@ -638,8 +631,11 @@ fn serialize_value_with_element_type<
         value.serialize(serializer)
     } else {
         let mut map = serializer.serialize_map(Some(2))?;
-        map.serialize_entry("type", &type_id_to_string(&type_id.into()))?;
-        map.serialize_entry("element_type", &type_id_to_string(&element_type_id.into()))?;
+        map.serialize_entry("type", &value_kind_to_string(&value_kind.into()))?;
+        map.serialize_entry(
+            "element_type",
+            &value_kind_to_string(&element_value_kind.into()),
+        )?;
         map.serialize_entry("value", value)?;
         map.end()
     }
@@ -654,7 +650,7 @@ mod tests {
     use sbor::rust::collections::HashMap;
     use sbor::rust::vec;
     use serde::Serialize;
-    use serde_json::{json, to_string, to_value, Value};
+    use serde_json::{json, to_string, to_value, Value as JsonValue};
 
     use crate::{
         address::NO_NETWORK,
@@ -663,12 +659,12 @@ mod tests {
         data::{scrypto_decode, scrypto_encode, ScryptoValue},
     };
 
-    #[scrypto(TypeId, Encode, Decode)]
+    #[scrypto(Categorize, Encode, Decode)]
     pub struct Sample {
         pub a: ResourceAddress,
     }
 
-    pub fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
+    pub fn assert_json_eq<T: Serialize>(actual: T, expected: JsonValue) {
         let actual = to_value(&actual).unwrap();
         if actual != expected {
             panic!(
@@ -735,132 +731,123 @@ mod tests {
 
         let value = ScryptoValue::Tuple {
             fields: vec![
-                SborValue::Unit,
-                SborValue::Bool { value: true },
-                SborValue::U8 { value: 5 },
-                SborValue::U16 { value: 5 },
-                SborValue::U32 { value: 5 },
-                SborValue::U64 { value: u64::MAX },
-                SborValue::U128 {
+                Value::Unit,
+                Value::Bool { value: true },
+                Value::U8 { value: 5 },
+                Value::U16 { value: 5 },
+                Value::U32 { value: 5 },
+                Value::U64 { value: u64::MAX },
+                Value::U128 {
                     value: 9912313323213,
                 },
-                SborValue::I8 { value: -5 },
-                SborValue::I16 { value: -5 },
-                SborValue::I32 { value: -5 },
-                SborValue::I64 { value: -5 },
-                SborValue::I128 { value: -5 },
-                SborValue::Array {
-                    element_type_id: SborTypeId::U8,
-                    elements: vec![SborValue::U8 { value: 0x3a }, SborValue::U8 { value: 0x92 }],
+                Value::I8 { value: -5 },
+                Value::I16 { value: -5 },
+                Value::I32 { value: -5 },
+                Value::I64 { value: -5 },
+                Value::I128 { value: -5 },
+                Value::Array {
+                    element_value_kind: ValueKind::U8,
+                    elements: vec![Value::U8 { value: 0x3a }, Value::U8 { value: 0x92 }],
                 },
-                SborValue::Array {
-                    element_type_id: SborTypeId::U32,
-                    elements: vec![SborValue::U32 { value: 153 }, SborValue::U32 { value: 62 }],
+                Value::Array {
+                    element_value_kind: ValueKind::U32,
+                    elements: vec![Value::U32 { value: 153 }, Value::U32 { value: 62 }],
                 },
-                SborValue::Enum {
+                Value::Enum {
                     discriminator: "VariantUnit".to_string(),
                     fields: vec![],
                 },
-                SborValue::Enum {
+                Value::Enum {
                     discriminator: "VariantSingleValue".to_string(),
-                    fields: vec![SborValue::U32 { value: 153 }],
+                    fields: vec![Value::U32 { value: 153 }],
                 },
-                SborValue::Enum {
+                Value::Enum {
                     discriminator: "VariantMultiValues".to_string(),
-                    fields: vec![
-                        SborValue::U32 { value: 153 },
-                        SborValue::Bool { value: true },
-                    ],
+                    fields: vec![Value::U32 { value: 153 }, Value::Bool { value: true }],
                 },
-                SborValue::Tuple {
+                Value::Tuple {
                     fields: vec![
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::PackageAddress(ACCOUNT_PACKAGE),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::ComponentAddress(FAUCET_COMPONENT),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::ResourceAddress(RADIX_TOKEN),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::SystemAddress(EPOCH_MANAGER),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::Own(Own::Vault([0; 36])),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::Bucket(ManifestBucket(1)), // Will be mapped by context to "Hello"
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::Bucket(ManifestBucket(10)),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::Proof(ManifestProof(2)),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::Expression(
                                 ManifestExpression::EntireWorktop,
                             ),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::Blob(Blob(Hash([0; 32]))),
                         },
-                        SborValue::Custom {
-                            value: ScryptoCustomValue::NonFungibleAddress(NonFungibleAddress::new(
-                                RADIX_TOKEN,
-                                NonFungibleId::Bytes(vec![0u8, 2u8]),
-                            )),
-                        },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::Hash(Hash([0; 32])),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(
                                 EcdsaSecp256k1PublicKey([0; 33]),
                             ),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::EcdsaSecp256k1Signature(
                                 EcdsaSecp256k1Signature([0; 65]),
                             ),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::EddsaEd25519PublicKey(
                                 EddsaEd25519PublicKey([0; 32]),
                             ),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::EddsaEd25519Signature(
                                 EddsaEd25519Signature([0; 64]),
                             ),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::Decimal(Decimal::ONE),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::Decimal(Decimal::ONE / 100),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::NonFungibleId(NonFungibleId::String(
                                 "hello".to_string(),
                             )),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::NonFungibleId(NonFungibleId::U32(123)),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::NonFungibleId(NonFungibleId::U64(123)),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Bytes(vec![
                                 0x23, 0x45,
                             ])),
                         },
-                        SborValue::Custom {
+                        Value::Custom {
                             value: ScryptoCustomValue::NonFungibleId(NonFungibleId::UUID(371)),
                         },
                     ],
@@ -897,7 +884,6 @@ mod tests {
                 { "type": "Proof", "value": 2 },
                 "ENTIRE_WORKTOP",
                 { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                { "type": "NonFungibleAddress", "value": [radix_token_address, { "hex": "0002" }] },
                 { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
                 { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
@@ -954,7 +940,6 @@ mod tests {
                         { "type": "Proof", "value": 2 },
                         { "type": "Expression", "value": "ENTIRE_WORKTOP" },
                         { "type": "Blob", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
-                        { "type": "NonFungibleAddress", "value": [radix_token_address, { "type": "Array", "element_type": "U8", "value": { "hex": "0002" } }] },
                         { "type": "Hash", "value": "0000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "EcdsaSecp256k1PublicKey", "value": "000000000000000000000000000000000000000000000000000000000000000000" },
                         { "type": "EcdsaSecp256k1Signature", "value": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" },
@@ -990,7 +975,7 @@ mod tests {
     fn assert_simple_json_matches<'a, T: ScryptoEncode, C: Into<ValueFormattingContext<'a>>>(
         value: &T,
         context: C,
-        expected: Value,
+        expected: JsonValue,
     ) {
         let bytes = scrypto_encode(&value).unwrap();
         let scrypto_value = scrypto_decode::<ScryptoValue>(&bytes).unwrap();
@@ -1003,7 +988,7 @@ mod tests {
     fn assert_invertible_json_matches<'a, T: ScryptoEncode, C: Into<ValueFormattingContext<'a>>>(
         value: &T,
         context: C,
-        expected: Value,
+        expected: JsonValue,
     ) {
         let bytes = scrypto_encode(&value).unwrap();
         let scrypto_value = scrypto_decode::<ScryptoValue>(&bytes).unwrap();

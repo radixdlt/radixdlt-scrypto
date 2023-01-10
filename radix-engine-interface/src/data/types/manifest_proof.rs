@@ -6,7 +6,6 @@ use sbor::*;
 
 use crate::data::*;
 use crate::scrypto_type;
-use scrypto_abi::Type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ManifestProof(pub u32);
@@ -52,9 +51,4 @@ impl ManifestProof {
     }
 }
 
-scrypto_type!(
-    ManifestProof,
-    ScryptoCustomTypeId::Proof,
-    Type::ManifestProof,
-    4
-);
+scrypto_type!(ManifestProof, ScryptoCustomValueKind::Proof, 4);
