@@ -9,7 +9,7 @@ pub const VALUE_KIND_OWN: u8 = 0x90;
 pub const VALUE_KIND_BUCKET: u8 = 0xa0;
 pub const VALUE_KIND_PROOF: u8 = 0xa1;
 pub const VALUE_KIND_EXPRESSION: u8 = 0xa2;
-pub const VALUE_KIND_BLOB: u8 = 0xa3; // Reduce scope to TX only
+pub const VALUE_KIND_BLOB: u8 = 0xa3; // TODO: reduce scope to TX only
 
 pub const VALUE_KIND_HASH: u8 = 0xb0;
 pub const VALUE_KIND_ECDSA_SECP256K1_PUBLIC_KEY: u8 = 0xb1;
