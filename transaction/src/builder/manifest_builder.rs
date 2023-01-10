@@ -1,7 +1,7 @@
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::constants::*;
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
@@ -348,6 +348,16 @@ impl ManifestBuilder {
             owner_badge,
             initial_supply,
         });
+        self
+    }
+
+    pub fn register_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::RegisterValidator { validator });
+        self
+    }
+
+    pub fn unregister_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::UnregisterValidator { validator });
         self
     }
 

@@ -129,6 +129,8 @@ pub enum TokenKind {
     CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithOwner,
+    RegisterValidator,
+    UnregisterValidator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -470,6 +472,8 @@ impl Lexer {
             "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
                 Ok(TokenKind::CreateNonFungibleResourceWithOwner)
             }
+            "REGISTER_VALIDATOR" => Ok(TokenKind::RegisterValidator),
+            "UNREGISTER_VALIDATOR" => Ok(TokenKind::UnregisterValidator),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

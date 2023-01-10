@@ -238,6 +238,12 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
+            TokenKind::RegisterValidator => Instruction::RegisterValidator {
+                validator: self.parse_value()?,
+            },
+            TokenKind::UnregisterValidator => Instruction::UnregisterValidator {
+                validator: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }
@@ -528,6 +534,7 @@ impl Parser {
 mod tests {
     use super::*;
     use crate::manifest::lexer::{tokenize, Span};
+    use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
     #[macro_export]
     macro_rules! parse_instruction_ok {
@@ -1111,6 +1118,30 @@ mod tests {
                         ])
                     ])]
                 )
+            }
+        );
+    }
+
+    #[test]
+    fn test_register_validator_instruction() {
+        parse_instruction_ok!(
+            r#"REGISTER_VALIDATOR EcdsaSecp256k1PublicKey("000000000000000000000000000000000000000000000000000000000000000000");"#,
+            Instruction::RegisterValidator {
+                validator: Value::EcdsaSecp256k1PublicKey(Box::new(Value::String(hex::encode(
+                    [0u8; EcdsaSecp256k1PublicKey::LENGTH]
+                ))))
+            }
+        );
+    }
+
+    #[test]
+    fn test_unregister_validator_instruction() {
+        parse_instruction_ok!(
+            r#"UNREGISTER_VALIDATOR EcdsaSecp256k1PublicKey("000000000000000000000000000000000000000000000000000000000000000000");"#,
+            Instruction::UnregisterValidator {
+                validator: Value::EcdsaSecp256k1PublicKey(Box::new(Value::String(hex::encode(
+                    [0u8; EcdsaSecp256k1PublicKey::LENGTH]
+                ))))
             }
         );
     }
