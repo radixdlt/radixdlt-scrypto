@@ -213,24 +213,22 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 fields,
             } = value
             {
-                for variant in type_variants {
-                    if variant.name.eq(discriminator) {
-                        return match &variant.fields {
-                            Fields::Unit => fields.is_empty(),
-                            Fields::Unnamed { unnamed } => {
-                                unnamed.len() == fields.len()
-                                    && unnamed.iter().enumerate().all(|(i, e)| {
-                                        match_schema_with_value(e, fields.get(i).unwrap())
-                                    })
-                            }
-                            Fields::Named { named } => {
-                                named.len() == fields.len()
-                                    && named.iter().enumerate().all(|(i, (_, e))| {
-                                        match_schema_with_value(e, fields.get(i).unwrap())
-                                    })
-                            }
-                        };
-                    }
+                if let Some(variant) = type_variants.get(*discriminator as usize) {
+                    return match &variant.fields {
+                        Fields::Unit => fields.is_empty(),
+                        Fields::Unnamed { unnamed } => {
+                            unnamed.len() == fields.len()
+                                && unnamed.iter().enumerate().all(|(i, e)| {
+                                    match_schema_with_value(e, fields.get(i).unwrap())
+                                })
+                        }
+                        Fields::Named { named } => {
+                            named.len() == fields.len()
+                                && named.iter().enumerate().all(|(i, (_, e))| {
+                                    match_schema_with_value(e, fields.get(i).unwrap())
+                                })
+                        }
+                    };
                 }
                 false
             } else {
@@ -243,11 +241,11 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 fields,
             } = value
             {
-                match discriminator.as_str() {
+                match *discriminator {
+                    OPTION_VARIANT_NONE => fields.len() == 0,
                     OPTION_VARIANT_SOME => {
                         fields.len() == 1 && match_schema_with_value(some_type, &fields[0])
                     }
-                    OPTION_VARIANT_NONE => fields.len() == 0,
                     _ => false,
                 }
             } else {
@@ -263,7 +261,7 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 fields,
             } = value
             {
-                match discriminator.as_str() {
+                match *discriminator {
                     RESULT_VARIANT_OK => {
                         fields.len() == 1 && match_schema_with_value(okay_type, &fields[0])
                     }
