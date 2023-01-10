@@ -426,6 +426,7 @@ mod tests {
         assert_eq!(
             BasicValue::Tuple {
                 fields: vec![
+                    BasicValue::Tuple { fields: vec![] },
                     BasicValue::Bool { value: true },
                     BasicValue::I8 { value: 1 },
                     BasicValue::I16 { value: 2 },

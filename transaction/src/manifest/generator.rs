@@ -1373,7 +1373,7 @@ mod tests {
 
     #[test]
     fn test_value() {
-        generate_value_ok!(r#"()"#, Value::Tuple { fields: vec![] });
+        generate_value_ok!(r#"Tuple()"#, Value::Tuple { fields: vec![] });
         generate_value_ok!(r#"true"#, Value::Bool { value: true });
         generate_value_ok!(r#"false"#, Value::Bool { value: false });
         generate_value_ok!(r#"1i8"#, Value::I8 { value: 1 });
