@@ -15,7 +15,7 @@ CALL_METHOD
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
-    Enum("U32")
+    Enum(1u8)
     Array<Tuple>(
         Tuple("name", "MyResource"),                                        # Resource Name
         Tuple("description", "A very innovative and important resource")    # Resource Description

@@ -8,22 +8,22 @@ PUBLISH_PACKAGE
         Array<Tuple>(       # Method auth Field
             Tuple(
                 Enum(
-                    "Native", 
+                    1u8, 
                     Enum(
-                        "Package",
-                        Enum("SetRoyaltyConfig")
+                        7u8,
+                        Enum(0u8)
                     )
                 ),
                 Enum(
-                    "AccessRule", 
+                    0u8, 
                     Enum(
-                        "Protected", 
+                        2u8, 
                         Enum(
-                            "ProofRule", 
+                            0u8, 
                             Enum(
-                                "Require", 
+                                0u8, 
                                 Enum(
-                                    "StaticNonFungible", 
+                                    0u8, 
                                     NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
                                 )
                             )
@@ -33,22 +33,22 @@ PUBLISH_PACKAGE
             ), 
             Tuple(
                 Enum(
-                    "Native", 
+                    1u8, 
                     Enum(
-                        "Package",
-                        Enum("ClaimRoyalty")
+                        7u8,
+                        Enum(1u8)
                     )
                 ), 
                 Enum(
-                    "AccessRule", 
+                    0u8, 
                     Enum(
-                        "Protected", 
+                        2u8, 
                         Enum(
-                            "ProofRule", 
+                            0u8, 
                             Enum(
-                                "Require", 
+                                0u8, 
                                 Enum(
-                                    "StaticNonFungible", 
+                                    0u8, 
                                     NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
                                 )
                             )
@@ -58,22 +58,22 @@ PUBLISH_PACKAGE
             ), 
             Tuple(
                 Enum(
-                    "Native", 
+                    1u8, 
                     Enum(
-                        "Metadata",
-                        Enum("Set")
+                        6u8,
+                        Enum(0u8)
                     )
                 ), 
                 Enum(
-                    "AccessRule", 
+                    0u8, 
                     Enum(
-                        "Protected", 
+                        2u8, 
                         Enum(
-                            "ProofRule", 
+                            0u8, 
                             Enum(
-                                "Require", 
+                                0u8, 
                                 Enum(
-                                    "StaticNonFungible", 
+                                    0u8, 
                                     NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
                                 )
                             )
@@ -83,37 +83,37 @@ PUBLISH_PACKAGE
             ), 
             Tuple(
                 Enum(
-                    "Native", 
+                    1u8, 
                     Enum(
-                        "Metadata",
-                        Enum("Get")
+                        6u8,
+                        Enum(1u8)
                     )
                 ), 
                 Enum(
-                    "AccessRule", 
-                    Enum("AllowAll")
+                    0u8, 
+                    Enum(0u8)
                 )
             )
         ), 
         Array<Tuple>(),     # Grouped Auth Field
-        Enum("DenyAll"),    # Default Auth Field
+        Enum(1u8),    # Default Auth Field
         Array<Tuple>(       # Method Auth Mutability Field
             Tuple(
                 Enum(
-                    "Native", 
+                    1u8, 
                     Enum(
-                        "Package",
-                        Enum("SetRoyaltyConfig")
+                        7u8,
+                        Enum(0u8)
                     )
                 ), 
                 Enum(
-                    "Protected", 
+                    2u8, 
                     Enum(
-                        "ProofRule", 
+                        0u8, 
                         Enum(
-                            "Require", 
+                            0u8, 
                             Enum(
-                                "StaticNonFungible", 
+                                0u8, 
                                 NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
                             )
                         )
@@ -122,20 +122,20 @@ PUBLISH_PACKAGE
             ), 
             Tuple(
                 Enum(
-                    "Native", 
+                    1u8, 
                     Enum(
-                        "Package",
-                        Enum("ClaimRoyalty")
+                        7u8,
+                        Enum(1u8)
                     )
                 ), 
                 Enum(
-                    "Protected", 
+                    2u8, 
                     Enum(
-                        "ProofRule", 
+                        0u8, 
                         Enum(
-                            "Require", 
+                            0u8, 
                             Enum(
-                                "StaticNonFungible", 
+                                0u8, 
                                 NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
                             )
                         )
@@ -144,20 +144,20 @@ PUBLISH_PACKAGE
             ), 
             Tuple(
                 Enum(
-                    "Native", 
+                    1u8, 
                     Enum(
-                        "Metadata",
-                        Enum("Set")
+                        6u8,
+                        Enum(0u8)
                     )
                 ), 
                 Enum(
-                    "Protected", 
+                    2u8, 
                     Enum(
-                        "ProofRule", 
+                        0u8, 
                         Enum(
-                            "Require", 
+                            0u8, 
                             Enum(
-                                "StaticNonFungible", 
+                                0u8, 
                                 NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
                             )
                         )
@@ -166,20 +166,20 @@ PUBLISH_PACKAGE
             ), 
             Tuple(
                 Enum(
-                    "Native", 
+                    1u8, 
                     Enum(
-                        "Metadata",
-                        Enum("Get")
+                        6u8,
+                        Enum(1u8)
                     )
                 ), 
                 Enum(
-                    "Protected", 
+                    2u8, 
                     Enum(
-                        "ProofRule", 
+                        0u8, 
                         Enum(
-                            "Require", 
+                            0u8, 
                             Enum(
-                                "StaticNonFungible", 
+                                0u8, 
                                 NonFungibleAddress("resource_sim1qrr33zfakf20e4dhd0g6myq99cxd7rv9pzcfsh7c0qesumf005", 1u32)
                             )
                         )
@@ -188,5 +188,5 @@ PUBLISH_PACKAGE
             )
         ), 
         Array<Tuple>(),     # Group Auth Mutability Field
-        Enum("DenyAll")     # Default Auth Mutability Field
+        Enum(1u8)     # Default Auth Mutability Field
     );
