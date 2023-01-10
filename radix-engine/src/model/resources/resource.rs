@@ -208,7 +208,7 @@ impl Resource {
             .expect("Take all from `Resource` should not fail")
     }
 
-    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
+    pub fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), ResourceOperationError> {
         if amount.is_negative()
             || amount.0 % BnumI256::from(10i128.pow((18 - divisibility).into()))
                 != BnumI256::from(0)

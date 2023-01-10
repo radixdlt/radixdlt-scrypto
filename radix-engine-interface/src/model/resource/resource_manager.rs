@@ -40,24 +40,95 @@ pub enum ResourceMethodAuthKey {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
-pub struct ResourceManagerCreateInvocation {
-    pub resource_type: ResourceType,
+pub struct ResourceManagerCreateNonFungibleInvocation {
+    pub id_type: NonFungibleIdType,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-    pub mint_params: Option<MintParams>,
 }
 
-impl Invocation for ResourceManagerCreateInvocation {
-    type Output = (ResourceAddress, Option<Bucket>);
+impl Invocation for ResourceManagerCreateNonFungibleInvocation {
+    type Output = ResourceAddress;
 }
 
-impl SerializableInvocation for ResourceManagerCreateInvocation {
-    type ScryptoOutput = (ResourceAddress, Option<Bucket>);
+impl SerializableInvocation for ResourceManagerCreateNonFungibleInvocation {
+    type ScryptoOutput = ResourceAddress;
 }
 
-impl Into<SerializedInvocation> for ResourceManagerCreateInvocation {
+impl Into<SerializedInvocation> for ResourceManagerCreateNonFungibleInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::Create(self)).into()
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungible(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct ResourceManagerCreateFungibleInvocation {
+    pub divisibility: u8,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+}
+
+impl Invocation for ResourceManagerCreateFungibleInvocation {
+    type Output = ResourceAddress;
+}
+
+impl SerializableInvocation for ResourceManagerCreateFungibleInvocation {
+    type ScryptoOutput = ResourceAddress;
+}
+
+impl Into<SerializedInvocation> for ResourceManagerCreateFungibleInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateFungible(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+    pub id_type: NonFungibleIdType,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+}
+
+impl Invocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+    type Output = (ResourceAddress, Bucket);
+}
+
+impl SerializableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+    type ScryptoOutput = (ResourceAddress, Bucket);
+}
+
+impl Into<SerializedInvocation> for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungibleWithInitialSupply(
+            self,
+        ))
+        .into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+    pub divisibility: u8,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub initial_supply: Decimal,
+}
+
+impl Invocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+    type Output = (ResourceAddress, Bucket);
+}
+
+impl SerializableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+    type ScryptoOutput = (ResourceAddress, Bucket);
+}
+
+impl Into<SerializedInvocation> for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithInitialSupply(self))
+            .into()
     }
 }
 
@@ -205,22 +276,43 @@ impl Into<SerializedInvocation> for ResourceManagerCreateBucketInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
-pub struct ResourceManagerMintInvocation {
+pub struct ResourceManagerMintNonFungibleInvocation {
     pub receiver: ResourceAddress,
-    pub mint_params: MintParams,
+    pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
 }
 
-impl Invocation for ResourceManagerMintInvocation {
+impl Invocation for ResourceManagerMintNonFungibleInvocation {
     type Output = Bucket;
 }
 
-impl SerializableInvocation for ResourceManagerMintInvocation {
+impl SerializableInvocation for ResourceManagerMintNonFungibleInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for ResourceManagerMintInvocation {
+impl Into<SerializedInvocation> for ResourceManagerMintNonFungibleInvocation {
     fn into(self) -> SerializedInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::Mint(self)).into()
+        NativeInvocation::ResourceManager(ResourceInvocation::MintNonFungible(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct ResourceManagerMintFungibleInvocation {
+    pub receiver: ResourceAddress,
+    pub amount: Decimal,
+}
+
+impl Invocation for ResourceManagerMintFungibleInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for ResourceManagerMintFungibleInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<SerializedInvocation> for ResourceManagerMintFungibleInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::MintFungible(self)).into()
     }
 }
 

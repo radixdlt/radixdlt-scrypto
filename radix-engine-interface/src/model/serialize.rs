@@ -117,11 +117,15 @@ pub enum AuthZoneStackInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub enum ResourceInvocation {
-    Create(ResourceManagerCreateInvocation),
+    CreateNonFungible(ResourceManagerCreateNonFungibleInvocation),
+    CreateFungible(ResourceManagerCreateFungibleInvocation),
+    CreateNonFungibleWithInitialSupply(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation),
+    CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
-    Mint(ResourceManagerMintInvocation),
+    MintNonFungible(ResourceManagerMintNonFungibleInvocation),
+    MintFungible(ResourceManagerMintFungibleInvocation),
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
     UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
@@ -278,7 +282,10 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
-                ResourceInvocation::Create(..) => {}
+                ResourceInvocation::CreateNonFungible(..) => {}
+                ResourceInvocation::CreateFungible(..) => {}
+                ResourceInvocation::CreateNonFungibleWithInitialSupply(..) => {}
+                ResourceInvocation::CreateFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::BurnBucket(..) => {}
                 ResourceInvocation::Burn(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
@@ -305,7 +312,12 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-                ResourceInvocation::Mint(invocation) => {
+                ResourceInvocation::MintNonFungible(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::MintFungible(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));

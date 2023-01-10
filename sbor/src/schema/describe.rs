@@ -26,7 +26,7 @@ pub trait Describe<C: CustomTypeKind<GlobalTypeId>> {
     /// room in the schema. Any non-well known types are "Novel" and should be generated for each type.
     ///
     /// If needing to generate a novel type id, this can be generated via helper methods on [`GlobalTypeId`]:
-    /// ```
+    /// ```ignore
     /// impl Describe<C: CustomTypeSchema, T1: Describe<C>> for MyType<T1> {
     ///     const TYPE_ID: GlobalTypeId = GlobalTypeId::complex(stringify!(MyType), &[T1::TYPE_ID]);
     /// #   fn type_data() -> Option<TypeData<C, GlobalTypeId>> { todo!() }

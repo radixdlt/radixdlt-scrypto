@@ -210,14 +210,14 @@ pub fn create_genesis(
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     let faucet_package: PackageAddress = receipt.output(0);
     let account_package: PackageAddress = receipt.output(1);
-    let (ecdsa_secp256k1_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(2);
-    let (system_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(3);
-    let (xrd_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(4);
+    let ecdsa_secp256k1_token: ResourceAddress = receipt.output(2);
+    let system_token: ResourceAddress = receipt.output(3);
+    let (xrd_token, _bucket): (ResourceAddress, Bucket) = receipt.output(4);
     let faucet_component: ComponentAddress = receipt.output(6);
     let epoch_manager: SystemAddress = receipt.output(7);
     let clock: SystemAddress = receipt.output(8);
-    let (eddsa_ed25519_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(9);
-    let (package_token, _bucket): (ResourceAddress, Option<Bucket>) = receipt.output(10);
+    let eddsa_ed25519_token: ResourceAddress = receipt.output(9);
+    let package_token: ResourceAddress = receipt.output(10);
 
     GenesisReceipt {
         faucet_package,
