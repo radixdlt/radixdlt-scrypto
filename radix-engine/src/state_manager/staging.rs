@@ -114,16 +114,6 @@ pub struct StagedSubstateStoreManager<S: ReadableSubstateStore> {
     total_weight: usize,
 }
 
-pub trait StagedSubstateStoreVisitor {
-    fn remove_node(&mut self, key: &StagedSubstateStoreNodeKey);
-}
-
-pub struct StagedSubstateStoreIgnoreVisitor {}
-
-impl StagedSubstateStoreVisitor for StagedSubstateStoreIgnoreVisitor {
-    fn remove_node(&mut self, _key: &StagedSubstateStoreNodeKey) {}
-}
-
 impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
     pub fn new(root: S) -> Self {
         StagedSubstateStoreManager {
@@ -216,28 +206,33 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
         }
     }
 
-    fn remove_node<V: StagedSubstateStoreVisitor>(
+    fn remove_node<CB>(
         nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
         total_weight: &mut usize,
-        visitor: &mut V,
+        callback: &mut CB,
         node_key: &StagedSubstateStoreNodeKey,
-    ) {
+    ) where
+        CB: FnMut(&StagedSubstateStoreNodeKey),
+    {
         *total_weight -= nodes.get(*node_key).unwrap().weight();
         nodes.remove(*node_key);
-        visitor.remove_node(node_key);
+        callback(node_key);
     }
 
     /// Recursively deletes all nodes that are not in new_root_key subtree and returns the
     /// sum of weights from current root to new_root_key. Updates to ImmutableStore on this
     /// path will persist even after deleting the nodes.
-    fn delete_recursive<V: StagedSubstateStoreVisitor>(
+    fn delete_recursive<CB>(
         nodes: &mut SlotMap<StagedSubstateStoreNodeKey, StagedSubstateStoreNode>,
         total_weight: &mut usize,
         new_root_key: &StagedSubstateStoreNodeKey,
-        visitor: &mut V,
+        callback: &mut CB,
         node_key: &StagedSubstateStoreNodeKey,
         root_path_weight_sum: usize,
-    ) -> usize {
+    ) -> usize
+    where
+        CB: FnMut(&StagedSubstateStoreNodeKey),
+    {
         let root_path_weight_sum = root_path_weight_sum + nodes.get(*node_key).unwrap().weight();
         if *node_key == *new_root_key {
             return root_path_weight_sum;
@@ -251,13 +246,13 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
                 nodes,
                 total_weight,
                 new_root_key,
-                visitor,
+                callback,
                 &child_key,
                 root_path_weight_sum,
             );
         }
 
-        Self::remove_node(nodes, total_weight, visitor, node_key);
+        Self::remove_node(nodes, total_weight, callback, node_key);
 
         dead_weight
     }
@@ -279,11 +274,10 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
     /// To better understand please check:
     /// Diagram here: https://whimsical.com/persistent-staged-store-amortized-reparenting-Lyc6gRgVXVzLdqWvwVT3v4
     /// And `test_complicated_reparent` unit test
-    pub fn reparent<V: StagedSubstateStoreVisitor>(
-        &mut self,
-        new_root_key: StagedSubstateStoreKey,
-        visitor: &mut V,
-    ) {
+    pub fn reparent<CB>(&mut self, new_root_key: StagedSubstateStoreKey, callback: &mut CB)
+    where
+        CB: FnMut(&StagedSubstateStoreNodeKey),
+    {
         match new_root_key {
             StagedSubstateStoreKey::RootStoreKey => {}
             StagedSubstateStoreKey::InternalNodeStoreKey(new_root_key) => {
@@ -293,7 +287,7 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
                         &mut self.nodes,
                         &mut self.total_weight,
                         &new_root_key,
-                        visitor,
+                        callback,
                         node_key,
                         0,
                     );
@@ -310,7 +304,7 @@ impl<S: ReadableSubstateStore> StagedSubstateStoreManager<S> {
                 Self::remove_node(
                     &mut self.nodes,
                     &mut self.total_weight,
-                    visitor,
+                    callback,
                     &new_root_key,
                 );
 
@@ -361,10 +355,7 @@ mod tests {
     use crate::fee::FeeSummary;
     use crate::ledger::{OutputValue, ReadableSubstateStore, TypedInMemorySubstateStore};
     use crate::model::{PersistedSubstate, Resource, VaultSubstate};
-    use crate::state_manager::{
-        StagedSubstateStoreIgnoreVisitor, StagedSubstateStoreKey, StagedSubstateStoreManager,
-        StateDiff,
-    };
+    use crate::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreManager, StateDiff};
     use crate::transaction::{
         CommitResult, EntityChanges, TransactionExecution, TransactionOutcome, TransactionReceipt,
         TransactionResult,
@@ -558,13 +549,12 @@ mod tests {
             assert_eq!(manager.dead_weight, 0);
         }
 
-        let mut dummy_visitor = StagedSubstateStoreIgnoreVisitor {};
         // State tree layout:
         // root -> 1 -> 2 -> 3 -> 4
         //      │            └──> 5 -> 6 -> 9 -> 10
         //      └> 7 -> 8
         // After reparenting to 3: 7 and 8 are discarded completely. 1, 2 and 3 discarded but leave dead weight behind
-        manager.reparent(child_node[3], &mut dummy_visitor);
+        manager.reparent(child_node[3], &mut |_| {});
         let expected_dead_weight = [1, 2, 3]
             .iter()
             .fold(0, |acc, node_id| acc + expected_weights[*node_id]);
@@ -577,7 +567,7 @@ mod tests {
 
         // After reparenting to 5: node 4 gets discarded completely. Node 5 is discarded and added to the dead weight.
         // This should trigger the recomputation/garbage collection.
-        manager.reparent(child_node[5], &mut dummy_visitor);
+        manager.reparent(child_node[5], &mut |_| {});
         expected_total_weight -= [4, 5]
             .iter()
             .fold(0, |acc, node_id| acc + expected_weights[*node_id]);

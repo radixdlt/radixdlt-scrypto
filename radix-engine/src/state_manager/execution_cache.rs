@@ -1,6 +1,4 @@
-use crate::state_manager::{
-    StagedSubstateStoreKey, StagedSubstateStoreNodeKey, StagedSubstateStoreVisitor,
-};
+use crate::state_manager::{StagedSubstateStoreKey, StagedSubstateStoreNodeKey};
 
 use core::hash::Hash;
 use sbor::rust::collections::HashMap;
@@ -10,20 +8,6 @@ pub struct ExecutionCache<H> {
     root_accumulator_hash: H,
     accumulator_hash_to_key: HashMap<H, StagedSubstateStoreNodeKey>,
     key_to_accumulator_hash: SecondaryMap<StagedSubstateStoreNodeKey, H>,
-}
-
-impl<H> StagedSubstateStoreVisitor for ExecutionCache<H>
-where
-    H: Eq + Hash,
-{
-    fn remove_node(&mut self, key: &StagedSubstateStoreNodeKey) {
-        match self.key_to_accumulator_hash.get(*key) {
-            None => {}
-            Some(accumulator_hash) => {
-                self.accumulator_hash_to_key.remove(accumulator_hash);
-            }
-        };
-    }
 }
 
 impl<H> ExecutionCache<H>
@@ -63,5 +47,17 @@ where
                     .insert(*accumulator_hash, node_key);
             }
         }
+    }
+
+    pub fn remove_node(&mut self, key: &StagedSubstateStoreNodeKey) {
+        // Note: we don't have to remove anything from key_to_accumulator_hash.
+        // Since it's a SecondaryMap, it's guaranteed to be removed once the key
+        // is removed from the "primary" SlotMap.
+        match self.key_to_accumulator_hash.get(*key) {
+            None => {}
+            Some(accumulator_hash) => {
+                self.accumulator_hash_to_key.remove(accumulator_hash);
+            }
+        };
     }
 }
