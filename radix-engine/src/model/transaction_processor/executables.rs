@@ -457,6 +457,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                 TransactionProcessorError::BlobNotFound(abi.clone()),
                             ),
                         ))?;
+                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
                         code: code.clone().clone(),
                         abi: abi.clone().clone(),
@@ -486,6 +487,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                 TransactionProcessorError::BlobNotFound(abi.clone()),
                             ),
                         ))?;
+                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
                         code: code.clone().clone(),
                         abi: abi.clone().clone(),
