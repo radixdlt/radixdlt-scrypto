@@ -1,6 +1,5 @@
 use crate::api::api::Invocation;
 use crate::api::types::RENodeId;
-use crate::data::types::Blob;
 use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
@@ -11,8 +10,8 @@ use sbor::*;
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct PackagePublishInvocation {
-    pub code: Blob,
-    pub abi: Blob,
+    pub code: Vec<u8>,
+    pub abi: Vec<u8>,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
