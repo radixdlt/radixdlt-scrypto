@@ -1,3 +1,4 @@
+use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::{
     ActorApi, BlobApi, EngineApi, Invocation, Invokable, InvokableModel,
 };
@@ -237,11 +238,21 @@ where
                         SubstateOffset::Worktop(WorktopOffset::Worktop),
                         LockFlags::MUTABLE,
                     )?;
-                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                    let worktop = substate_ref_mut.worktop();
-                    worktop.drop().map_err(|_| {
-                        RuntimeError::KernelError(KernelError::DropNodeFailure(node_id))
-                    })?;
+
+                    let buckets = {
+                        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                        let worktop = substate_ref_mut.worktop();
+                        mem::replace(&mut worktop.resources, BTreeMap::new())
+                    };
+                    for (_, bucket) in buckets {
+                        let bucket = Bucket(bucket.bucket_id());
+                        if !bucket.sys_is_empty(system_api)? {
+                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                                RENodeId::Worktop,
+                            )));
+                        }
+                    }
+
                     system_api.drop_lock(handle)?;
                     Ok(())
                 }
