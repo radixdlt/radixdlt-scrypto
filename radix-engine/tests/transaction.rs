@@ -4,7 +4,6 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
-use scrypto::runtime::Blob;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
@@ -119,8 +118,8 @@ fn test_non_existent_blob_hash() {
     let manifest = ManifestBuilder::new()
         .lock_fee(account, dec!("10"))
         .add_instruction(BasicInstruction::PublishPackage {
-            code: Blob(Hash([0; 32])),
-            abi: Blob(Hash([0; 32])),
+            code: ManifestBlob(Hash([0; 32])),
+            abi: ManifestBlob(Hash([0; 32])),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: AccessRules::new(),

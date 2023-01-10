@@ -1,14 +1,12 @@
 use radix_engine_interface::api::api::{
-    ActorApi,   EngineApi, Invocation, Invokable, InvokableModel,
+    ActorApi, EngineApi, Invocation, Invokable, InvokableModel,
 };
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
     RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset, VaultId,
     WorktopOffset,
 };
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
-
 use radix_engine_interface::rule;
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
@@ -63,7 +61,6 @@ where
     pub fn new(
         auth_zone_params: AuthZoneParams,
         id_allocator: &'g mut IdAllocator,
-        blobs: &'g HashMap<Hash, &'g [u8]>,
         track: &'g mut Track<'s, R>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut M,

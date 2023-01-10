@@ -1,4 +1,8 @@
+use crate::engine::*;
+use crate::model::WorktopSubstate;
 use crate::model::*;
+use crate::types::*;
+use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
@@ -14,17 +18,13 @@ use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::*;
-use crate::model::WorktopSubstate;
-use crate::types::*;
-use crate::wasm::WasmEngine;
-
 #[derive(Debug)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
     pub instructions: Cow<'a, [Instruction]>,
+    pub blobs: Cow<'a, [Vec<u8>]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +40,7 @@ pub enum TransactionProcessorError {
     },
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
+    BlobNotFound(ManifestBlob),
     IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
     ReadOwnedNodesError(ReadOwnedNodesError),
@@ -251,6 +252,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             RENode::TransactionRuntime(runtime_substate),
         )?;
 
+        let mut blobs_by_hash = HashMap::new();
+        for blob in self.blobs.as_ref() {
+            blobs_by_hash.insert(hash(blob), blob);
+        }
+
         let mut processor = TransactionProcessor::new();
         let mut outputs = Vec::new();
         for inst in self.instructions.into_iter() {
@@ -433,9 +439,23 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     metadata,
                     access_rules,
                 }) => {
+                    let code = blobs_by_hash
+                        .get(&code.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(code.clone()),
+                            ),
+                        ))?;
+                    let abi = blobs_by_hash
+                        .get(&abi.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(abi.clone()),
+                            ),
+                        ))?;
                     let rtn = api.invoke(PackagePublishInvocation {
-                        code: code.clone(),
-                        abi: abi.clone(),
+                        code: code.clone().clone(),
+                        abi: abi.clone().clone(),
                         royalty_config: royalty_config.clone(),
                         metadata: metadata.clone(),
                         access_rules: access_rules.clone(),
@@ -448,9 +468,23 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     abi,
                     owner_badge,
                 }) => {
+                    let code = blobs_by_hash
+                        .get(&code.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(code.clone()),
+                            ),
+                        ))?;
+                    let abi = blobs_by_hash
+                        .get(&abi.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(abi.clone()),
+                            ),
+                        ))?;
                     let rtn = api.invoke(PackagePublishInvocation {
-                        code: code.clone(),
-                        abi: abi.clone(),
+                        code: code.clone().clone(),
+                        abi: abi.clone().clone(),
                         royalty_config: BTreeMap::new(),
                         metadata: BTreeMap::new(),
                         access_rules: package_access_rules_from_owner_badge(owner_badge),
