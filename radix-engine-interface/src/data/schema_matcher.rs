@@ -19,17 +19,21 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         Type::U64 => Some(ValueKind::U64),
         Type::U128 => Some(ValueKind::U128),
         Type::String => Some(ValueKind::String),
+
         Type::Array { .. } => Some(ValueKind::Array),
+        Type::Vec { .. } => Some(ValueKind::Array),
+        Type::HashSet { .. } => Some(ValueKind::Array),
+        Type::TreeSet { .. } => Some(ValueKind::Array),
+        Type::HashMap { .. } => Some(ValueKind::Array),
+        Type::TreeMap { .. } => Some(ValueKind::Array),
+
         Type::Tuple { .. } => Some(ValueKind::Tuple),
         Type::Struct { .. } => Some(ValueKind::Tuple),
+        Type::NonFungibleAddress { .. } => Some(ValueKind::Tuple),
+
         Type::Enum { .. } => Some(ValueKind::Enum),
         Type::Option { .. } => Some(ValueKind::Enum),
         Type::Result { .. } => Some(ValueKind::Enum),
-        Type::Vec { .. } => Some(ValueKind::Array),
-        Type::TreeSet { .. } => Some(ValueKind::Array),
-        Type::TreeMap { .. } => Some(ValueKind::Array),
-        Type::HashSet { .. } => Some(ValueKind::Array),
-        Type::HashMap { .. } => Some(ValueKind::Array),
 
         Type::PackageAddress => Some(ValueKind::Custom(ScryptoCustomValueKind::PackageAddress)),
         Type::ComponentAddress => Some(ValueKind::Custom(ScryptoCustomValueKind::ComponentAddress)),
@@ -42,14 +46,7 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         | Type::Vault
         | Type::Component
         | Type::KeyValueStore { .. } => Some(ValueKind::Custom(ScryptoCustomValueKind::Own)),
-        Type::NonFungibleAddress => Some(ValueKind::Custom(
-            ScryptoCustomValueKind::NonFungibleAddress,
-        )),
         Type::Blob => Some(ValueKind::Custom(ScryptoCustomValueKind::Blob)),
-
-        Type::ManifestBucket => Some(ValueKind::Custom(ScryptoCustomValueKind::Bucket)),
-        Type::ManifestProof => Some(ValueKind::Custom(ScryptoCustomValueKind::Proof)),
-        Type::ManifestExpression => Some(ValueKind::Custom(ScryptoCustomValueKind::Expression)),
 
         Type::Hash => Some(ValueKind::Custom(ScryptoCustomValueKind::Hash)),
         Type::EcdsaSecp256k1PublicKey => Some(ValueKind::Custom(
@@ -87,6 +84,8 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         Type::U64 => matches!(value, Value::U64 { .. }),
         Type::U128 => matches!(value, Value::U128 { .. }),
         Type::String => matches!(value, Value::String { .. }),
+
+        // array
         Type::Array {
             element_type,
             length,
@@ -105,56 +104,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                     && elements
                         .iter()
                         .all(|v| match_schema_with_value(element_type, v))
-            } else {
-                false
-            }
-        }
-        Type::Tuple { element_types } => {
-            if let Value::Tuple { fields } = value {
-                element_types.len() == fields.len()
-                    && element_types
-                        .iter()
-                        .enumerate()
-                        .all(|(i, e)| match_schema_with_value(e, fields.get(i).unwrap()))
-            } else {
-                false
-            }
-        }
-        Type::Option { some_type } => {
-            if let Value::Enum {
-                discriminator,
-                fields,
-            } = value
-            {
-                match discriminator.as_str() {
-                    OPTION_VARIANT_SOME => {
-                        fields.len() == 1 && match_schema_with_value(some_type, &fields[0])
-                    }
-                    OPTION_VARIANT_NONE => fields.len() == 0,
-                    _ => false,
-                }
-            } else {
-                false
-            }
-        }
-        Type::Result {
-            okay_type,
-            err_type,
-        } => {
-            if let Value::Enum {
-                discriminator,
-                fields,
-            } = value
-            {
-                match discriminator.as_str() {
-                    RESULT_VARIANT_OK => {
-                        fields.len() == 1 && match_schema_with_value(okay_type, &fields[0])
-                    }
-                    RESULT_VARIANT_ERR => {
-                        fields.len() == 1 && match_schema_with_value(err_type, &fields[0])
-                    }
-                    _ => false,
-                }
             } else {
                 false
             }
@@ -206,6 +155,19 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
+
+        // tuple
+        Type::Tuple { element_types } => {
+            if let Value::Tuple { fields } = value {
+                element_types.len() == fields.len()
+                    && element_types
+                        .iter()
+                        .enumerate()
+                        .all(|(i, e)| match_schema_with_value(e, fields.get(i).unwrap()))
+            } else {
+                false
+            }
+        }
         Type::Struct {
             name: _,
             fields: type_fields,
@@ -231,6 +193,17 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
+        Type::NonFungibleAddress => {
+            if let Value::Tuple { fields } = value {
+                fields.len() == 2
+                    && match_schema_with_value(&Type::ResourceAddress, fields.get(0).unwrap())
+                    && match_schema_with_value(&Type::NonFungibleId, fields.get(1).unwrap())
+            } else {
+                false
+            }
+        }
+
+        // enum
         Type::Enum {
             name: _,
             variants: type_variants,
@@ -264,6 +237,47 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
+        Type::Option { some_type } => {
+            if let Value::Enum {
+                discriminator,
+                fields,
+            } = value
+            {
+                match discriminator.as_str() {
+                    OPTION_VARIANT_SOME => {
+                        fields.len() == 1 && match_schema_with_value(some_type, &fields[0])
+                    }
+                    OPTION_VARIANT_NONE => fields.len() == 0,
+                    _ => false,
+                }
+            } else {
+                false
+            }
+        }
+        Type::Result {
+            okay_type,
+            err_type,
+        } => {
+            if let Value::Enum {
+                discriminator,
+                fields,
+            } = value
+            {
+                match discriminator.as_str() {
+                    RESULT_VARIANT_OK => {
+                        fields.len() == 1 && match_schema_with_value(okay_type, &fields[0])
+                    }
+                    RESULT_VARIANT_ERR => {
+                        fields.len() == 1 && match_schema_with_value(err_type, &fields[0])
+                    }
+                    _ => false,
+                }
+            } else {
+                false
+            }
+        }
+
+        // custom
         Type::PackageAddress => {
             if let Value::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::PackageAddress(_))
@@ -335,13 +349,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
-        Type::NonFungibleAddress => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::NonFungibleAddress(_))
-            } else {
-                false
-            }
-        }
         Type::Blob => {
             if let Value::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Blob(_))
@@ -349,29 +356,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 false
             }
         }
-
-        Type::ManifestBucket => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Bucket(_))
-            } else {
-                false
-            }
-        }
-        Type::ManifestProof => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Proof(_))
-            } else {
-                false
-            }
-        }
-        Type::ManifestExpression => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Expression(_))
-            } else {
-                false
-            }
-        }
-
         Type::Hash => {
             if let Value::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Hash(_))

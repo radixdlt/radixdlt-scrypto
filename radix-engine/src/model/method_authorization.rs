@@ -14,13 +14,15 @@ pub enum MethodAuthorizationError {
 #[scrypto(Categorize, Encode, Decode)]
 pub enum HardDecimal {
     Amount(Decimal),
-    SoftDecimalNotFound,
+    InvalidSchemaPath,
+    DisallowdValueType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Categorize, Encode, Decode)]
 pub enum HardCount {
     Count(u8),
-    SoftCountNotFound,
+    InvalidSchemaPath,
+    DisallowdValueType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -28,26 +30,16 @@ pub enum HardCount {
 pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleAddress),
     Resource(ResourceAddress),
-    SoftResourceNotFound,
-}
-
-impl From<NonFungibleAddress> for HardResourceOrNonFungible {
-    fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        HardResourceOrNonFungible::NonFungible(non_fungible_address)
-    }
-}
-
-impl From<ResourceAddress> for HardResourceOrNonFungible {
-    fn from(resource_address: ResourceAddress) -> Self {
-        HardResourceOrNonFungible::Resource(resource_address)
-    }
+    InvalidSchemaPath,
+    DisallowdValueType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 #[scrypto(Categorize, Encode, Decode)]
 pub enum HardProofRuleResourceList {
     List(Vec<HardResourceOrNonFungible>),
-    SoftResourceListNotFound,
+    InvalidSchemaPath,
+    DisallowdValueType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

@@ -65,10 +65,10 @@ macro_rules! pdec {
     };
 }
 
-/// A macro for implementing sbor traits.
+/// A macro for implementing sbor traits (for statically sized types).
 #[macro_export]
 macro_rules! scrypto_type {
-    // static size
+    // with describe
     ($t:ty, $value_kind:expr, $schema_type: expr, $size: expr) => {
         impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
             #[inline]
@@ -107,6 +107,42 @@ macro_rules! scrypto_type {
         impl scrypto_abi::LegacyDescribe for $t {
             fn describe() -> scrypto_abi::Type {
                 $schema_type
+            }
+        }
+    };
+    // without describe
+    ($t:ty, $value_kind:expr, $size: expr) => {
+        impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
+            #[inline]
+            fn value_kind() -> sbor::ValueKind<crate::data::ScryptoCustomValueKind> {
+                sbor::ValueKind::Custom($value_kind)
+            }
+        }
+
+        impl<E: sbor::Encoder<crate::data::ScryptoCustomValueKind>>
+            sbor::Encode<crate::data::ScryptoCustomValueKind, E> for $t
+        {
+            #[inline]
+            fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_value_kind(Self::value_kind())
+            }
+
+            #[inline]
+            fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_slice(&self.to_vec())
+            }
+        }
+
+        impl<D: sbor::Decoder<crate::data::ScryptoCustomValueKind>>
+            sbor::Decode<crate::data::ScryptoCustomValueKind, D> for $t
+        {
+            fn decode_body_with_value_kind(
+                decoder: &mut D,
+                value_kind: sbor::ValueKind<crate::data::ScryptoCustomValueKind>,
+            ) -> Result<Self, sbor::DecodeError> {
+                decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+                let slice = decoder.read_slice($size)?;
+                Self::try_from(slice).map_err(|_| sbor::DecodeError::InvalidCustomValue)
             }
         }
     };

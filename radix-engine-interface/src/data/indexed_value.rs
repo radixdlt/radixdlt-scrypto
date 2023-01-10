@@ -36,7 +36,6 @@ pub struct IndexedScryptoValue {
 
     // RE interpreted
     pub owned_nodes: HashSet<Own>,
-    pub non_fungible_addresses: HashSet<NonFungibleAddress>,
     pub blobs: Vec<(Blob, SborPath)>,
 
     // TX interpreted
@@ -78,7 +77,6 @@ impl IndexedScryptoValue {
             system_addresses: visitor.system_addresses,
 
             owned_nodes: visitor.owned_nodes,
-            non_fungible_addresses: visitor.non_fungible_addresses,
             blobs: visitor.blobs,
 
             buckets: visitor.buckets,
@@ -130,12 +128,6 @@ impl IndexedScryptoValue {
             node_ids.insert(GlobalAddress::System(*system_address));
         }
 
-        // Extract resource address from non-fungible address
-        for non_fungible_address in &self.non_fungible_addresses {
-            node_ids.insert(GlobalAddress::Resource(
-                non_fungible_address.resource_address(),
-            ));
-        }
         node_ids
     }
 
@@ -249,7 +241,6 @@ pub struct ScryptoCustomValueVisitor {
     pub system_addresses: HashSet<SystemAddress>,
     // RE interpreted
     pub owned_nodes: HashSet<Own>,
-    pub non_fungible_addresses: HashSet<NonFungibleAddress>,
     pub blobs: Vec<(Blob, SborPath)>,
     // TX interpreted
     pub buckets: HashMap<ManifestBucket, SborPath>,
@@ -273,7 +264,6 @@ impl ScryptoCustomValueVisitor {
             system_addresses: HashSet::new(),
 
             owned_nodes: HashSet::new(),
-            non_fungible_addresses: HashSet::new(),
             blobs: Vec::new(),
 
             buckets: HashMap::new(),
@@ -311,9 +301,6 @@ impl CustomValueVisitor<ScryptoCustomValue> for ScryptoCustomValueVisitor {
                 if !self.owned_nodes.insert(value.clone()) {
                     return Err(ValueIndexingError::DuplicateOwnership);
                 }
-            }
-            ScryptoCustomValue::NonFungibleAddress(value) => {
-                self.non_fungible_addresses.insert(value.clone());
             }
             ScryptoCustomValue::Blob(value) => {
                 self.blobs.push((value.clone(), path.clone().into()));

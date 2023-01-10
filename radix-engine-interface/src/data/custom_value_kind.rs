@@ -37,13 +37,12 @@ pub enum ScryptoCustomValueKind {
 
     // RE interpreted types
     Own,
-    NonFungibleAddress, // for resource address contained
     Blob,
 
-    // TX interpreted types (TODO: rename?)
-    Bucket,     // super::types::ManifestBucket
-    Proof,      // super::types::ManifestProof
-    Expression, // super::types::ManifestExpression
+    // TX interpreted types
+    Bucket,
+    Proof,
+    Expression,
 
     // Uninterpreted
     Hash,
@@ -74,7 +73,6 @@ impl CustomValueKind for ScryptoCustomValueKind {
             Self::Proof => VALUE_KIND_PROOF,
             Self::Expression => VALUE_KIND_EXPRESSION,
             Self::Blob => VALUE_KIND_BLOB,
-            Self::NonFungibleAddress => VALUE_KIND_NON_FUNGIBLE_ADDRESS,
             Self::Hash => VALUE_KIND_HASH,
             Self::EcdsaSecp256k1PublicKey => VALUE_KIND_ECDSA_SECP256K1_PUBLIC_KEY,
             Self::EcdsaSecp256k1Signature => VALUE_KIND_ECDSA_SECP256K1_SIGNATURE,
@@ -97,7 +95,6 @@ impl CustomValueKind for ScryptoCustomValueKind {
             VALUE_KIND_PROOF => Some(ScryptoCustomValueKind::Proof),
             VALUE_KIND_EXPRESSION => Some(ScryptoCustomValueKind::Expression),
             VALUE_KIND_BLOB => Some(ScryptoCustomValueKind::Blob),
-            VALUE_KIND_NON_FUNGIBLE_ADDRESS => Some(ScryptoCustomValueKind::NonFungibleAddress),
             VALUE_KIND_HASH => Some(ScryptoCustomValueKind::Hash),
             VALUE_KIND_ECDSA_SECP256K1_PUBLIC_KEY => {
                 Some(ScryptoCustomValueKind::EcdsaSecp256k1PublicKey)

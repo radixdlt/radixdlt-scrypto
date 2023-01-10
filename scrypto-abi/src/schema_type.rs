@@ -27,54 +27,50 @@ pub enum Type {
     U128,
     String,
 
+    // Array
     Array {
         element_type: Box<Type>,
         length: u16,
     },
-
-    Tuple {
-        element_types: Vec<Type>,
-    },
-
-    Struct {
-        name: String,
-        fields: Fields,
-    },
-
-    Enum {
-        name: String,
-        variants: Vec<Variant>,
-    },
-
-    Option {
-        some_type: Box<Type>,
-    },
-
-    Result {
-        okay_type: Box<Type>,
-        err_type: Box<Type>,
-    },
-
     Vec {
         element_type: Box<Type>,
     },
-
+    HashSet {
+        element_type: Box<Type>,
+    },
     TreeSet {
         element_type: Box<Type>,
     },
-
+    HashMap {
+        key_type: Box<Type>,
+        value_type: Box<Type>,
+    },
     TreeMap {
         key_type: Box<Type>,
         value_type: Box<Type>,
     },
 
-    HashSet {
-        element_type: Box<Type>,
+    // Tuple
+    Tuple {
+        element_types: Vec<Type>,
     },
+    Struct {
+        name: String,
+        fields: Fields,
+    },
+    NonFungibleAddress,
 
-    HashMap {
-        key_type: Box<Type>,
-        value_type: Box<Type>,
+    // Enum
+    Enum {
+        name: String,
+        variants: Vec<Variant>,
+    },
+    Option {
+        some_type: Box<Type>,
+    },
+    Result {
+        okay_type: Box<Type>,
+        err_type: Box<Type>,
     },
 
     // Global address types
@@ -84,8 +80,8 @@ pub enum Type {
     SystemAddress,
 
     // RE interpreted
-    Own,    // generic
-    Bucket, // specific
+    Own, /* generic, either bucket, proof, vault, component or kv store. TODO: do we really need this? */
+    Bucket,
     Proof,
     Vault,
     Component,
@@ -93,13 +89,7 @@ pub enum Type {
         key_type: Box<Type>,
         value_type: Box<Type>,
     },
-    NonFungibleAddress,
     Blob,
-
-    // TX interpreted types
-    ManifestBucket,
-    ManifestProof,
-    ManifestExpression,
 
     // Uninterpreted
     Hash,
@@ -111,8 +101,6 @@ pub enum Type {
     PreciseDecimal,
     NonFungibleId,
 
-    // TODO: remove
-    // Currently used by `ProofRule` because recursion is not supported
     Any,
 }
 
