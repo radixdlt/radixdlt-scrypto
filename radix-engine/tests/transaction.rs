@@ -1,6 +1,8 @@
+use radix_engine::engine::ApplicationError;
 use radix_engine::engine::KernelError;
 use radix_engine::engine::RejectionError;
 use radix_engine::engine::RuntimeError;
+use radix_engine::model::TransactionProcessorError;
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
@@ -134,7 +136,12 @@ fn test_non_existent_blob_hash() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::BlobNotFound(_)))
+        matches!(
+            e,
+            RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                TransactionProcessorError::BlobNotFound(_)
+            ))
+        )
     });
 }
 
