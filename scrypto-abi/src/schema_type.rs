@@ -72,13 +72,11 @@ pub enum Type {
         err_type: Box<Type>,
     },
 
-    // Global address types
+    // RE interpreted
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
     SystemAddress,
-
-    // RE interpreted
     Own, /* generic, either bucket, proof, vault, component or kv store. TODO: do we really need this? */
     Bucket,
     Proof,
@@ -88,7 +86,6 @@ pub enum Type {
         key_type: Box<Type>,
         value_type: Box<Type>,
     },
-    Blob,
 
     // Uninterpreted
     Hash,

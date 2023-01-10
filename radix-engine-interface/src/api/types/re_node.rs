@@ -217,7 +217,8 @@ pub enum VaultOffset {
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum EpochManagerOffset {
     EpochManager,
-    ValidatorSet,
+    CurrentValidatorSet,
+    PreparingValidatorSet,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]

@@ -1,18 +1,19 @@
 use crate::api::api::Invocation;
 use crate::api::types::RENodeId;
-use crate::data::types::Blob;
 use crate::model::*;
 use crate::scrypto;
 use crate::wasm::*;
+use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct PackagePublishInvocation {
-    pub code: Blob,
-    pub abi: Blob,
+    pub code: Vec<u8>,
+    pub abi: Vec<u8>,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
@@ -20,6 +21,10 @@ pub struct PackagePublishInvocation {
 
 impl Invocation for PackagePublishInvocation {
     type Output = PackageAddress;
+
+    fn fn_identifier(&self) -> String {
+        "Package(Publish)".to_owned()
+    }
 }
 
 impl SerializableInvocation for PackagePublishInvocation {

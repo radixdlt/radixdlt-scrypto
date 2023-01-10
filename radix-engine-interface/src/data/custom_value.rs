@@ -9,20 +9,18 @@ use crate::math::{Decimal, PreciseDecimal};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValue {
-    // RE global address types
+    // RE interpreted types
     PackageAddress(PackageAddress),
     ComponentAddress(ComponentAddress),
     ResourceAddress(ResourceAddress),
     SystemAddress(SystemAddress),
-
-    // RE interpreted types
     Own(Own),
-    Blob(Blob),
 
     // TX interpreted types
     Bucket(ManifestBucket),
     Proof(ManifestProof),
     Expression(ManifestExpression),
+    Blob(ManifestBlobRef),
 
     // Uninterpreted
     Hash(Hash),
@@ -142,7 +140,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
                     Own::decode_body_with_value_kind(decoder, value_kind).map(Self::Own)
                 }
                 ScryptoCustomValueKind::Blob => {
-                    Blob::decode_body_with_value_kind(decoder, value_kind).map(Self::Blob)
+                    ManifestBlobRef::decode_body_with_value_kind(decoder, value_kind)
+                        .map(Self::Blob)
                 }
                 ScryptoCustomValueKind::Bucket => {
                     ManifestBucket::decode_body_with_value_kind(decoder, value_kind)
@@ -253,18 +252,16 @@ mod tests {
             Own::Vault([3u8; 36]),
             Own::Component([4u8; 36]),
             Own::KeyValueStore([5u8; 36]),
-            Blob(Hash([8u8; 32])),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
             vec![
-                92, 33, 6, 144, 0, 1, 0, 0, 0, 144, 1, 2, 0, 0, 0, 144, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+                92, 33, 5, 144, 0, 1, 0, 0, 0, 144, 1, 2, 0, 0, 0, 144, 2, 3, 3, 3, 3, 3, 3, 3, 3,
                 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
                 144, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
                 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 144, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 163, 8, 8, 8, 8,
-                8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
+                5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
             ]
         );
         assert_eq!(
@@ -286,9 +283,6 @@ mod tests {
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::Own(Own::KeyValueStore([5u8; 36])),
                     },
-                    ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Blob(Blob(Hash([8u8; 32]))),
-                    },
                 ]
             }
         );
@@ -300,11 +294,15 @@ mod tests {
             ManifestBucket(1u32),
             ManifestProof(2u32),
             ManifestExpression::EntireWorktop,
+            ManifestBlobRef(Hash([3u8; 32])),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
-            vec![92, 33, 3, 160, 1, 0, 0, 0, 161, 2, 0, 0, 0, 162, 0]
+            vec![
+                92, 33, 4, 160, 1, 0, 0, 0, 161, 2, 0, 0, 0, 162, 0, 163, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+            ]
         );
         assert_eq!(
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),
@@ -318,6 +316,9 @@ mod tests {
                     },
                     ScryptoValue::Custom {
                         value: ScryptoCustomValue::Expression(ManifestExpression::EntireWorktop),
+                    },
+                    ScryptoValue::Custom {
+                        value: ScryptoCustomValue::Blob(ManifestBlobRef(Hash([3u8; 32]))),
                     },
                 ]
             }

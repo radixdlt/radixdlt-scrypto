@@ -1,5 +1,6 @@
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
-use radix_engine_interface::data::types::{Blob, ManifestBucket, ManifestProof};
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
@@ -97,29 +98,10 @@ pub enum BasicInstruction {
     /// Drops all of the proofs in the transaction.
     DropAllProofs,
 
-    /// Calls a scrypto function.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        function_name: String,
-        args: Vec<u8>,
-    },
-
-    /// Calls a scrypto method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallMethod {
-        component_address: ComponentAddress,
-        method_name: String,
-        args: Vec<u8>,
-    },
-
     /// Publish a package.
     PublishPackage {
-        code: Blob,
-        abi: Blob,
+        code: ManifestBlobRef,
+        abi: ManifestBlobRef,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
@@ -127,8 +109,8 @@ pub enum BasicInstruction {
 
     /// Publish a package with owner.
     PublishPackageWithOwner {
-        code: Blob,
-        abi: Blob,
+        code: ManifestBlobRef,
+        abi: ManifestBlobRef,
         owner_badge: NonFungibleAddress,
     },
 
@@ -208,6 +190,33 @@ pub enum BasicInstruction {
         metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleAddress,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
+    },
+
+    /// Calls a scrypto function.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallFunction {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        function_name: String,
+        args: Vec<u8>,
+    },
+
+    /// Calls a scrypto method.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallMethod {
+        component_address: ComponentAddress,
+        method_name: String,
+        args: Vec<u8>,
+    },
+
+    // TODO: Integrate this with CallMethod
+    RegisterValidator {
+        validator: EcdsaSecp256k1PublicKey,
+    },
+    UnregisterValidator {
+        validator: EcdsaSecp256k1PublicKey,
     },
 }
 

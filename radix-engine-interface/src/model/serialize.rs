@@ -99,6 +99,8 @@ pub enum EpochManagerInvocation {
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
     NextRound(EpochManagerNextRoundInvocation),
+    RegisterValidator(EpochManagerRegisterValidatorInvocation),
+    UnregisterValidator(EpochManagerUnregisterValidatorInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -357,6 +359,12 @@ impl NativeInvocation {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
                 }
                 EpochManagerInvocation::SetEpoch(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+                EpochManagerInvocation::RegisterValidator(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                }
+                EpochManagerInvocation::UnregisterValidator(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
                 }
             },
