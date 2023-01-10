@@ -287,8 +287,32 @@ pub const EDDSA_ED25519_TOKEN: ResourceAddress = construct_address!(
     22
 );
 
-pub const EPOCH_MANAGER_BLUEPRINT: &str = "EpochManager";
-pub const CLOCK_BLUEPRINT: &str = "Clock";
-pub const RESOURCE_MANAGER_BLUEPRINT: &str = "ResourceManager";
-pub const PACKAGE_BLUEPRINT: &str = "Package";
-pub const TRANSACTION_PROCESSOR_BLUEPRINT: &str = "TransactionProcessor";
+pub const PACKAGE_TOKEN: ResourceAddress = construct_address!(
+    EntityType::Resource,
+    68,
+    160,
+    7,
+    98,
+    178,
+    140,
+    86,
+    219,
+    59,
+    214,
+    120,
+    133,
+    86,
+    56,
+    212,
+    115,
+    198,
+    8,
+    151,
+    39,
+    203,
+    125,
+    28,
+    210,
+    215,
+    13
+);

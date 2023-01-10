@@ -1,4 +1,4 @@
-use radix_engine_interface::data::{ScryptoCustomTypeId, ScryptoSborTypeId};
+use radix_engine_interface::data::{ScryptoCustomValueKind, ScryptoValueKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
@@ -250,65 +250,69 @@ pub enum Type {
 }
 
 impl Type {
-    pub fn type_id(&self) -> ScryptoSborTypeId {
+    pub fn type_id(&self) -> ScryptoValueKind {
         match self {
-            Type::Unit => ScryptoSborTypeId::Unit,
-            Type::Bool => ScryptoSborTypeId::Bool,
-            Type::I8 => ScryptoSborTypeId::I8,
-            Type::I16 => ScryptoSborTypeId::I16,
-            Type::I32 => ScryptoSborTypeId::I32,
-            Type::I64 => ScryptoSborTypeId::I64,
-            Type::I128 => ScryptoSborTypeId::I128,
-            Type::U8 => ScryptoSborTypeId::U8,
-            Type::U16 => ScryptoSborTypeId::U16,
-            Type::U32 => ScryptoSborTypeId::U32,
-            Type::U64 => ScryptoSborTypeId::U64,
-            Type::U128 => ScryptoSborTypeId::U128,
-            Type::String => ScryptoSborTypeId::String,
-            Type::Enum => ScryptoSborTypeId::Enum,
-            Type::Array => ScryptoSborTypeId::Array,
-            Type::Tuple => ScryptoSborTypeId::Tuple,
+            Type::Unit => ScryptoValueKind::Unit,
+            Type::Bool => ScryptoValueKind::Bool,
+            Type::I8 => ScryptoValueKind::I8,
+            Type::I16 => ScryptoValueKind::I16,
+            Type::I32 => ScryptoValueKind::I32,
+            Type::I64 => ScryptoValueKind::I64,
+            Type::I128 => ScryptoValueKind::I128,
+            Type::U8 => ScryptoValueKind::U8,
+            Type::U16 => ScryptoValueKind::U16,
+            Type::U32 => ScryptoValueKind::U32,
+            Type::U64 => ScryptoValueKind::U64,
+            Type::U128 => ScryptoValueKind::U128,
+            Type::String => ScryptoValueKind::String,
+            Type::Enum => ScryptoValueKind::Enum,
+            Type::Array => ScryptoValueKind::Array,
+            Type::Tuple => ScryptoValueKind::Tuple,
 
             // Aliases
-            Type::Bytes => ScryptoSborTypeId::Array,
-            Type::NonFungibleAddress => ScryptoSborTypeId::Tuple,
+            Type::Bytes => ScryptoValueKind::Array,
+            Type::NonFungibleAddress => ScryptoValueKind::Tuple,
 
             // RE global address types
-            Type::PackageAddress => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::PackageAddress),
+            Type::PackageAddress => {
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::PackageAddress)
+            }
             Type::ComponentAddress => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::ComponentAddress)
             }
             Type::ResourceAddress => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::ResourceAddress)
             }
-            Type::SystemAddress => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::SystemAddress),
+            Type::SystemAddress => ScryptoValueKind::Custom(ScryptoCustomValueKind::SystemAddress),
 
             // RE interpreted types
-            Type::Own => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own),
-            Type::Blob => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Blob),
+            Type::Own => ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
+            Type::Blob => ScryptoValueKind::Custom(ScryptoCustomValueKind::Blob),
 
             // Tx interpreted types
-            Type::Bucket => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Bucket),
-            Type::Proof => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Proof),
-            Type::Expression => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Expression),
+            Type::Bucket => ScryptoValueKind::Custom(ScryptoCustomValueKind::Bucket),
+            Type::Proof => ScryptoValueKind::Custom(ScryptoCustomValueKind::Proof),
+            Type::Expression => ScryptoValueKind::Custom(ScryptoCustomValueKind::Expression),
 
             // Uninterpreted
-            Type::Hash => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Hash),
+            Type::Hash => ScryptoValueKind::Custom(ScryptoCustomValueKind::Hash),
             Type::EcdsaSecp256k1PublicKey => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::EcdsaSecp256k1PublicKey)
             }
             Type::EcdsaSecp256k1Signature => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1Signature)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::EcdsaSecp256k1Signature)
             }
             Type::EddsaEd25519PublicKey => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519PublicKey)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::EddsaEd25519PublicKey)
             }
             Type::EddsaEd25519Signature => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519Signature)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::EddsaEd25519Signature)
             }
-            Type::Decimal => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Decimal),
-            Type::PreciseDecimal => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::PreciseDecimal),
-            Type::NonFungibleId => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId),
+            Type::Decimal => ScryptoValueKind::Custom(ScryptoCustomValueKind::Decimal),
+            Type::PreciseDecimal => {
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)
+            }
+            Type::NonFungibleId => ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleId),
         }
     }
 }
@@ -377,37 +381,37 @@ pub enum Value {
 }
 
 impl Value {
-    pub const fn type_id(&self) -> ScryptoSborTypeId {
+    pub const fn type_id(&self) -> ScryptoValueKind {
         match self {
             // ==============
             // Basic Types
             // ==============
-            Value::Unit => ScryptoSborTypeId::Unit,
-            Value::Bool(_) => ScryptoSborTypeId::Bool,
-            Value::I8(_) => ScryptoSborTypeId::I8,
-            Value::I16(_) => ScryptoSborTypeId::I16,
-            Value::I32(_) => ScryptoSborTypeId::I32,
-            Value::I64(_) => ScryptoSborTypeId::I64,
-            Value::I128(_) => ScryptoSborTypeId::I128,
-            Value::U8(_) => ScryptoSborTypeId::U8,
-            Value::U16(_) => ScryptoSborTypeId::U16,
-            Value::U32(_) => ScryptoSborTypeId::U32,
-            Value::U64(_) => ScryptoSborTypeId::U64,
-            Value::U128(_) => ScryptoSborTypeId::U128,
-            Value::String(_) => ScryptoSborTypeId::String,
-            Value::Enum(_, _) => ScryptoSborTypeId::Enum,
-            Value::Array(_, _) => ScryptoSborTypeId::Array,
-            Value::Tuple(_) => ScryptoSborTypeId::Tuple,
+            Value::Unit => ScryptoValueKind::Unit,
+            Value::Bool(_) => ScryptoValueKind::Bool,
+            Value::I8(_) => ScryptoValueKind::I8,
+            Value::I16(_) => ScryptoValueKind::I16,
+            Value::I32(_) => ScryptoValueKind::I32,
+            Value::I64(_) => ScryptoValueKind::I64,
+            Value::I128(_) => ScryptoValueKind::I128,
+            Value::U8(_) => ScryptoValueKind::U8,
+            Value::U16(_) => ScryptoValueKind::U16,
+            Value::U32(_) => ScryptoValueKind::U32,
+            Value::U64(_) => ScryptoValueKind::U64,
+            Value::U128(_) => ScryptoValueKind::U128,
+            Value::String(_) => ScryptoValueKind::String,
+            Value::Enum(_, _) => ScryptoValueKind::Enum,
+            Value::Array(_, _) => ScryptoValueKind::Array,
+            Value::Tuple(_) => ScryptoValueKind::Tuple,
 
             // ==============
             // Aliases
             // ==============
-            Value::Some(_) => ScryptoSborTypeId::Enum,
-            Value::None => ScryptoSborTypeId::Enum,
-            Value::Ok(_) => ScryptoSborTypeId::Enum,
-            Value::Err(_) => ScryptoSborTypeId::Enum,
-            Value::Bytes(_) => ScryptoSborTypeId::Array,
-            Value::NonFungibleAddress(_, _) => ScryptoSborTypeId::Tuple,
+            Value::Some(_) => ScryptoValueKind::Enum,
+            Value::None => ScryptoValueKind::Enum,
+            Value::Ok(_) => ScryptoValueKind::Enum,
+            Value::Err(_) => ScryptoValueKind::Enum,
+            Value::Bytes(_) => ScryptoValueKind::Array,
+            Value::NonFungibleAddress(_, _) => ScryptoValueKind::Tuple,
 
             // ==============
             // Custom Types
@@ -415,47 +419,47 @@ impl Value {
 
             // Global address types
             Value::PackageAddress(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::PackageAddress)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::PackageAddress)
             }
             Value::ComponentAddress(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::ComponentAddress)
             }
             Value::ResourceAddress(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::ResourceAddress)
             }
             Value::SystemAddress(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::SystemAddress)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::SystemAddress)
             }
 
             // RE interpreted
-            Value::Own(_) => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own),
-            Value::Blob(_) => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Blob),
+            Value::Own(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
+            Value::Blob(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Blob),
 
             // TX interpreted
-            Value::Bucket(_) => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Bucket),
-            Value::Proof(_) => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Proof),
-            Value::Expression(_) => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Expression),
+            Value::Bucket(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Bucket),
+            Value::Proof(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Proof),
+            Value::Expression(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Expression),
 
             // Uninterpreted,
-            Value::Hash(_) => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Hash),
+            Value::Hash(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Hash),
             Value::EcdsaSecp256k1PublicKey(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::EcdsaSecp256k1PublicKey)
             }
             Value::EcdsaSecp256k1Signature(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1Signature)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::EcdsaSecp256k1Signature)
             }
             Value::EddsaEd25519PublicKey(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519PublicKey)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::EddsaEd25519PublicKey)
             }
             Value::EddsaEd25519Signature(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519Signature)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::EddsaEd25519Signature)
             }
-            Value::Decimal(_) => ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Decimal),
+            Value::Decimal(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Decimal),
             Value::PreciseDecimal(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::PreciseDecimal)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)
             }
             Value::NonFungibleId(_) => {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId)
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleId)
             }
         }
     }

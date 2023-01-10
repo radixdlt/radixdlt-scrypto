@@ -4,7 +4,7 @@ use crate::model::Resource;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum CostingError {
     FeeReserveError(FeeReserveError),
     MaxCallDepthLimitReached,
@@ -245,19 +245,10 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
         track: &mut Track<R>,
     ) -> Result<(), ModuleError> {
         match &actor.identifier {
-            FnIdentifier::Native(NativeFn::Function(native_function)) => track
+            FnIdentifier::Native(native_fn) => track
                 .fee_reserve
                 .consume_execution(
-                    track.fee_table.run_native_function_cost(&native_function),
-                    1,
-                    "run_native_function",
-                    false,
-                )
-                .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
-            FnIdentifier::Native(NativeFn::Method(native_method)) => track
-                .fee_reserve
-                .consume_execution(
-                    track.fee_table.run_native_method_cost(&native_method),
+                    track.fee_table.run_native_fn_cost(&native_fn),
                     1,
                     "run_native_method",
                     false,

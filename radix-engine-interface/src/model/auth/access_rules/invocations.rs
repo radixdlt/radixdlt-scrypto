@@ -6,7 +6,7 @@ use crate::api::{api::*, types::*};
 use crate::scrypto;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AccessRulesAddAccessCheckInvocation {
     pub receiver: RENodeId,
     pub access_rules: AccessRules,
@@ -27,7 +27,7 @@ impl Into<SerializedInvocation> for AccessRulesAddAccessCheckInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AccessRulesSetMethodAccessRuleInvocation {
     pub receiver: RENodeId,
     pub index: u32,
@@ -51,7 +51,7 @@ impl Into<SerializedInvocation> for AccessRulesSetMethodAccessRuleInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AccessRulesSetGroupAccessRuleInvocation {
     pub receiver: RENodeId,
     pub index: u32,
@@ -75,7 +75,7 @@ impl Into<SerializedInvocation> for AccessRulesSetGroupAccessRuleInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AccessRulesSetMethodMutabilityInvocation {
     pub receiver: RENodeId,
     pub index: u32,
@@ -99,7 +99,7 @@ impl Into<SerializedInvocation> for AccessRulesSetMethodMutabilityInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AccessRulesSetGroupMutabilityInvocation {
     pub receiver: RENodeId,
     pub index: u32,
@@ -123,7 +123,7 @@ impl Into<SerializedInvocation> for AccessRulesSetGroupMutabilityInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AccessRulesGetLengthInvocation {
     pub receiver: RENodeId,
 }

@@ -11,7 +11,7 @@ use crate::scrypto;
 use crate::wasm::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AuthZonePopInvocation {
     pub receiver: AuthZoneStackId,
 }
@@ -31,7 +31,7 @@ impl Into<SerializedInvocation> for AuthZonePopInvocation {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AuthZonePushInvocation {
     pub receiver: AuthZoneStackId,
     pub proof: Proof,
@@ -61,7 +61,7 @@ impl Into<SerializedInvocation> for AuthZonePushInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AuthZoneCreateProofInvocation {
     pub receiver: AuthZoneStackId,
     pub resource_address: ResourceAddress,
@@ -82,7 +82,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AuthZoneCreateProofByAmountInvocation {
     pub receiver: AuthZoneStackId,
     pub amount: Decimal,
@@ -104,7 +104,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofByAmountInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AuthZoneCreateProofByIdsInvocation {
     pub receiver: AuthZoneStackId,
     pub ids: BTreeSet<NonFungibleId>,
@@ -126,7 +126,7 @@ impl Into<SerializedInvocation> for AuthZoneCreateProofByIdsInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AuthZoneClearInvocation {
     pub receiver: AuthZoneStackId,
 }
@@ -146,7 +146,7 @@ impl Into<SerializedInvocation> for AuthZoneClearInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AuthZoneDrainInvocation {
     pub receiver: AuthZoneStackId,
 }
@@ -166,7 +166,7 @@ impl Into<SerializedInvocation> for AuthZoneDrainInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AuthZoneAssertAccessRuleInvocation {
     pub receiver: AuthZoneStackId,
     pub access_rule: AccessRule,

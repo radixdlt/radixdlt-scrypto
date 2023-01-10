@@ -12,7 +12,7 @@ use crate::scrypto_type;
 
 /// Represents an ECDSA public key.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct EcdsaSecp256k1PublicKey(
     #[cfg_attr(feature = "serde", serde(with = "hex::serde"))] pub [u8; Self::LENGTH],
 );
@@ -103,7 +103,7 @@ impl EcdsaSecp256k1PublicKey {
 
 scrypto_type!(
     EcdsaSecp256k1PublicKey,
-    ScryptoCustomTypeId::EcdsaSecp256k1PublicKey,
+    ScryptoCustomValueKind::EcdsaSecp256k1PublicKey,
     Type::EcdsaSecp256k1PublicKey,
     EcdsaSecp256k1PublicKey::LENGTH
 );
@@ -130,7 +130,7 @@ impl EcdsaSecp256k1Signature {
 
 scrypto_type!(
     EcdsaSecp256k1Signature,
-    ScryptoCustomTypeId::EcdsaSecp256k1Signature,
+    ScryptoCustomValueKind::EcdsaSecp256k1Signature,
     Type::EcdsaSecp256k1Signature,
     EcdsaSecp256k1Signature::LENGTH
 );

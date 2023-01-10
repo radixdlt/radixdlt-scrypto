@@ -6,7 +6,7 @@ use ethnum::I256 as EthnumI256;
 use num_bigint::BigInt;
 use num_integer::Roots;
 use num_traits::Pow;
-use radix_engine_interface::math::{NthRoot, I256, I512};
+use radix_engine_interface::math::integer::{NthRoot, I256, I512};
 use rug::{ops::Pow as RugPow, Integer};
 
 use crate::macros::QUICK;

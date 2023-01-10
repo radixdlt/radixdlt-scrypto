@@ -9,7 +9,7 @@ use sbor::rust::string::String;
 use sbor::*;
 
 /// Represents the level of a log message.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, TypeId, Encode, Decode, crate::Describe)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Categorize, Encode, Decode, crate::Describe)]
 pub enum Level {
     Error,
     Warn,
@@ -31,7 +31,7 @@ impl fmt::Display for Level {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct LoggerLogInvocation {
     pub level: Level,
     pub message: String,

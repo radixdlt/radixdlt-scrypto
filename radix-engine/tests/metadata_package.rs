@@ -103,9 +103,7 @@ fn can_lock_package_metadata_with_owner() {
         .set_method_access_rule(
             GlobalAddress::Package(package_address),
             0,
-            AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-                MetadataMethod::Set,
-            ))),
+            AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
             AccessRule::DenyAll,
         )
         .build();

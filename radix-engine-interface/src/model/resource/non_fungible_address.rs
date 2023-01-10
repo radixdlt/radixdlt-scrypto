@@ -8,15 +8,15 @@ use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto_abi::Describe;
+use scrypto_abi::LegacyDescribe;
 use scrypto_abi::Type;
 use utils::ContextualDisplay;
 
 #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct NonFungibleAddress(ResourceAddress, NonFungibleId);
 
-impl Describe for NonFungibleAddress {
+impl LegacyDescribe for NonFungibleAddress {
     fn describe() -> scrypto_abi::Type {
         Type::NonFungibleAddress
     }

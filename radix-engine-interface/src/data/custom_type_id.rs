@@ -54,9 +54,9 @@ pub enum ScryptoCustomTypeId {
     NonFungibleId,
 }
 
-impl From<ScryptoCustomTypeId> for SborTypeId<ScryptoCustomTypeId> {
+impl From<ScryptoCustomTypeId> for ValueKind<ScryptoCustomTypeId> {
     fn from(custom_type_id: ScryptoCustomTypeId) -> Self {
-        SborTypeId::Custom(custom_type_id)
+        ValueKind::Custom(custom_type_id)
     }
 }
 

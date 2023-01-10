@@ -3,13 +3,13 @@ use crate::rust::vec::Vec;
 use crate::*;
 
 /// Represents an error occurred during encoding.
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum EncodeError {
     MaxDepthExceeded(u8),
     SizeTooLarge { actual: usize, max_allowed: usize },
 }
 
-pub trait Encoder<X: CustomTypeId>: Sized {
+pub trait Encoder<X: CustomValueKind>: Sized {
     /// Consumes the Encoder and encodes the value as a full payload
     ///
     /// It starts by writing the payload prefix: It's the intention that each version of SBOR
@@ -26,9 +26,9 @@ pub trait Encoder<X: CustomTypeId>: Sized {
 
     /// Encodes the value as part of a larger payload
     ///
-    /// This method encodes the value's SBOR type id, and then its SBOR body.
+    /// This method encodes the SBOR value's kind and then its body.
     fn encode<T: Encode<X, Self> + ?Sized>(&mut self, value: &T) -> Result<(), EncodeError> {
-        value.encode_type_id(self)?;
+        value.encode_value_kind(self)?;
         self.encode_deeper_body(value)
     }
 
@@ -67,7 +67,7 @@ pub trait Encoder<X: CustomTypeId>: Sized {
     }
 
     #[inline]
-    fn write_type_id(&mut self, ty: SborTypeId<X>) -> Result<(), EncodeError> {
+    fn write_value_kind(&mut self, ty: ValueKind<X>) -> Result<(), EncodeError> {
         self.write_byte(ty.as_u8())
     }
 
@@ -104,13 +104,13 @@ pub trait Encoder<X: CustomTypeId>: Sized {
 }
 
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
-pub struct VecEncoder<'a, X: CustomTypeId, const MAX_DEPTH: u8> {
+pub struct VecEncoder<'a, X: CustomValueKind, const MAX_DEPTH: u8> {
     buf: &'a mut Vec<u8>,
     stack_depth: u8,
     phantom: PhantomData<X>,
 }
 
-impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
+impl<'a, X: CustomValueKind, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
     pub fn new(buf: &'a mut Vec<u8>) -> Self {
         Self {
             buf,
@@ -135,7 +135,7 @@ impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
     }
 }
 
-impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, MAX_DEPTH> {
+impl<'a, X: CustomValueKind, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, MAX_DEPTH> {
     fn encode_deeper_body<T: Encode<X, Self> + ?Sized>(
         &mut self,
         value: &T,

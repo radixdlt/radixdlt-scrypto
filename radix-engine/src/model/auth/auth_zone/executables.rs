@@ -8,14 +8,14 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
-    AuthZoneStackMethod, AuthZoneStackOffset, GlobalAddress, NativeMethod, ProofOffset, RENodeId,
+    AuthZoneStackFn, AuthZoneStackOffset, GlobalAddress, NativeFn, ProofOffset, RENodeId,
     ResourceManagerOffset, SubstateOffset,
 };
 use radix_engine_interface::model::*;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum AuthZoneError {
     EmptyAuthZone,
     ProofError(ProofError),
@@ -39,7 +39,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePopInvocation {
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
         let actor = ResolvedActor::method(
-            NativeMethod::AuthZoneStack(AuthZoneStackMethod::Pop),
+            NativeFn::AuthZoneStack(AuthZoneStackFn::Pop),
             resolved_receiver,
         );
 
@@ -99,7 +99,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZonePushInvocation {
             .push(RENodeId::Proof(self.proof.0));
 
         let actor = ResolvedActor::method(
-            NativeMethod::AuthZoneStack(AuthZoneStackMethod::Push),
+            NativeFn::AuthZoneStack(AuthZoneStackFn::Push),
             resolved_receiver,
         );
 
@@ -155,7 +155,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofInvocation {
             )));
 
         let actor = ResolvedActor::method(
-            NativeMethod::AuthZoneStack(AuthZoneStackMethod::CreateProof),
+            NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProof),
             resolved_receiver,
         );
 
@@ -225,7 +225,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByAmountInvoc
             )));
 
         let actor = ResolvedActor::method(
-            NativeMethod::AuthZoneStack(AuthZoneStackMethod::CreateProofByAmount),
+            NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProofByAmount),
             resolved_receiver,
         );
 
@@ -296,7 +296,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneCreateProofByIdsInvocati
             )));
 
         let actor = ResolvedActor::method(
-            NativeMethod::AuthZoneStack(AuthZoneStackMethod::CreateProofByIds),
+            NativeFn::AuthZoneStack(AuthZoneStackFn::CreateProofByIds),
             resolved_receiver,
         );
 
@@ -362,7 +362,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneClearInvocation {
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
         let actor = ResolvedActor::method(
-            NativeMethod::AuthZoneStack(AuthZoneStackMethod::Clear),
+            NativeFn::AuthZoneStack(AuthZoneStackFn::Clear),
             resolved_receiver,
         );
 
@@ -400,7 +400,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneDrainInvocation {
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
         let actor = ResolvedActor::method(
-            NativeMethod::AuthZoneStack(AuthZoneStackMethod::Drain),
+            NativeFn::AuthZoneStack(AuthZoneStackFn::Drain),
             resolved_receiver,
         );
 
@@ -458,7 +458,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AuthZoneAssertAccessRuleInvocati
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
 
         let actor = ResolvedActor::method(
-            NativeMethod::AuthZoneStack(AuthZoneStackMethod::AssertAccessRule),
+            NativeFn::AuthZoneStack(AuthZoneStackFn::AssertAccessRule),
             resolved_receiver,
         );
 

@@ -10,7 +10,7 @@ use crate::data::types::*;
 use crate::data::*;
 use utils::ContextualDisplay;
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum ScryptoValueDecodeError {
     RawValueEncodeError(EncodeError),
     TypedValueEncodeError(EncodeError),
@@ -141,7 +141,7 @@ impl IndexedScryptoValue {
                 .remove(&proof_id)
                 .ok_or(ValueReplacingError::ProofIdNotFound(proof_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
-            if let SborValue::Custom { value } = value {
+            if let Value::Custom { value } = value {
                 *value = ScryptoCustomValue::Own(Own::Proof(next_id));
                 self.owned_nodes.insert(Own::Proof(next_id));
             } else {
@@ -154,7 +154,7 @@ impl IndexedScryptoValue {
                 .remove(&bucket_id)
                 .ok_or(ValueReplacingError::BucketIdNotFound(bucket_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
-            if let SborValue::Custom { value } = value {
+            if let Value::Custom { value } = value {
                 *value = ScryptoCustomValue::Own(Own::Bucket(next_id));
                 self.owned_nodes.insert(Own::Bucket(next_id));
             } else {
@@ -162,7 +162,7 @@ impl IndexedScryptoValue {
             }
         }
 
-        replace_array_element_type_id(&mut self.dom);
+        replace_array_element_value_kind(&mut self.dom);
 
         self.raw = scrypto_encode(&self.dom)
             .expect("Previously encodable raw value is no longer encodable after replacement");
@@ -171,46 +171,46 @@ impl IndexedScryptoValue {
     }
 }
 
-pub fn replace_array_element_type_id(value: &mut ScryptoValue) {
+pub fn replace_array_element_value_kind(value: &mut ScryptoValue) {
     match value {
         // primitive types
-        SborValue::Unit
-        | SborValue::Bool { .. }
-        | SborValue::I8 { .. }
-        | SborValue::I16 { .. }
-        | SborValue::I32 { .. }
-        | SborValue::I64 { .. }
-        | SborValue::I128 { .. }
-        | SborValue::U8 { .. }
-        | SborValue::U16 { .. }
-        | SborValue::U32 { .. }
-        | SborValue::U64 { .. }
-        | SborValue::U128 { .. }
-        | SborValue::String { .. } => {}
-        SborValue::Tuple { fields } | SborValue::Enum { fields, .. } => {
+        Value::Unit
+        | Value::Bool { .. }
+        | Value::I8 { .. }
+        | Value::I16 { .. }
+        | Value::I32 { .. }
+        | Value::I64 { .. }
+        | Value::I128 { .. }
+        | Value::U8 { .. }
+        | Value::U16 { .. }
+        | Value::U32 { .. }
+        | Value::U64 { .. }
+        | Value::U128 { .. }
+        | Value::String { .. } => {}
+        Value::Tuple { fields } | Value::Enum { fields, .. } => {
             for e in fields {
-                replace_array_element_type_id(e);
+                replace_array_element_value_kind(e);
             }
         }
-        SborValue::Array {
+        Value::Array {
             elements,
-            element_type_id,
+            element_value_kind,
         } => {
-            match element_type_id {
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Bucket) => {
-                    *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+            match element_value_kind {
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::Bucket) => {
+                    *element_value_kind = ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
                 }
-                ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Proof) => {
-                    *element_type_id = ScryptoSborTypeId::Custom(ScryptoCustomTypeId::Own);
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::Proof) => {
+                    *element_value_kind = ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
                 }
                 _ => {}
             }
 
             for e in elements {
-                replace_array_element_type_id(e);
+                replace_array_element_value_kind(e);
             }
         }
-        SborValue::Custom { .. } => {}
+        Value::Custom { .. } => {}
     }
 }
 
@@ -248,7 +248,7 @@ pub struct ScryptoCustomValueVisitor {
     pub expressions: Vec<(ManifestExpression, SborPath)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum ValueIndexingError {
     DuplicateOwnership,
     DuplicateManifestBucket,

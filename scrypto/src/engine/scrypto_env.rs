@@ -48,7 +48,7 @@ pub fn call_engine_to_raw(_input: RadixEngineInput) -> Vec<u8> {
     todo!()
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Categorize, Encode, Decode)]
 pub struct EngineApiError;
 
 pub struct ScryptoEnv;
