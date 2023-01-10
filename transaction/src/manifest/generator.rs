@@ -12,10 +12,10 @@ use radix_engine_interface::data::{
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
-use sbor::rust::vec;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
+use sbor::rust::vec;
 use sbor::value_kind::*;
 use sbor::*;
 
