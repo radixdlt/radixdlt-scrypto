@@ -63,11 +63,7 @@ impl Bech32Encoder {
         fmt: &mut F,
         system_address: &SystemAddress,
     ) -> Result<(), AddressError> {
-        let data = match system_address {
-            SystemAddress::EpochManager(data) => data,
-        };
-
-        self.encode_to_fmt(fmt, EntityType::system(system_address), data)
+        panic!();
     }
 
     /// Encodes a component address in Bech32 and returns a String or panics on failure.
@@ -91,6 +87,7 @@ impl Bech32Encoder {
             ComponentAddress::Normal(data)
             | ComponentAddress::Account(data)
             | ComponentAddress::Clock(data)
+            | ComponentAddress::EpochManager(data)
             | ComponentAddress::EcdsaSecp256k1VirtualAccount(data)
             | ComponentAddress::EddsaEd25519VirtualAccount(data) => {
                 self.encode_to_fmt(fmt, EntityType::component(component_address), data)

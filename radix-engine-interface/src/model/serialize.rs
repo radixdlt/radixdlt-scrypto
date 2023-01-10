@@ -353,19 +353,19 @@ impl NativeInvocation {
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
                 EpochManagerInvocation::Create(..) => {}
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(invocation.receiver)));
                 }
                 EpochManagerInvocation::NextRound(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(invocation.receiver)));
                 }
                 EpochManagerInvocation::SetEpoch(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(invocation.receiver)));
                 }
                 EpochManagerInvocation::RegisterValidator(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(invocation.receiver)));
                 }
                 EpochManagerInvocation::UnregisterValidator(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(invocation.receiver)));
                 }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {

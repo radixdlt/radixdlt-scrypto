@@ -202,7 +202,7 @@ mod tests {
             PackageAddress::Normal([1u8; 26]),
             ComponentAddress::Normal([2u8; 26]),
             ResourceAddress::Normal([3u8; 26]),
-            SystemAddress::EpochManager([4u8; 26]),
+            ComponentAddress::EpochManager([4u8; 26]),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -235,7 +235,7 @@ mod tests {
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::SystemAddress(SystemAddress::EpochManager(
+                        value: ScryptoCustomValue::ComponentAddress(ComponentAddress::EpochManager(
                             [4u8; 26]
                         )),
                     },

@@ -1,6 +1,6 @@
 use scrypto::prelude::*;
 
-blueprint! {
+mod blueprint {
     struct Account {
         vaults: KeyValueStore<ResourceAddress, Vault>,
     }

@@ -17,11 +17,11 @@ pub struct EpochManagerCreateInvocation {
 }
 
 impl Invocation for EpochManagerCreateInvocation {
-    type Output = SystemAddress;
+    type Output = ComponentAddress;
 }
 
 impl SerializableInvocation for EpochManagerCreateInvocation {
-    type ScryptoOutput = SystemAddress;
+    type ScryptoOutput = ComponentAddress;
 }
 
 impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
@@ -33,7 +33,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
 }
 
 impl Invocation for EpochManagerGetCurrentEpochInvocation {
@@ -53,7 +53,7 @@ impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub epoch: u64,
 }
 
@@ -74,7 +74,7 @@ impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerNextRoundInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub round: u64,
 }
 
@@ -95,7 +95,7 @@ impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerRegisterValidatorInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub validator: EcdsaSecp256k1PublicKey,
 }
 
@@ -116,7 +116,7 @@ impl Into<SerializedInvocation> for EpochManagerRegisterValidatorInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerUnregisterValidatorInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub validator: EcdsaSecp256k1PublicKey,
 }
 

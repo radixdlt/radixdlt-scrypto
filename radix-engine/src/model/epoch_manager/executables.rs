@@ -42,7 +42,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
 }
 
 impl Executor for EpochManagerCreateInvocation {
-    type Output = SystemAddress;
+    type Output = ComponentAddress;
 
     fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
@@ -111,7 +111,7 @@ impl Executor for EpochManagerCreateInvocation {
             )),
         )?;
 
-        let system_address: SystemAddress = global_node_id.into();
+        let component_address: ComponentAddress = global_node_id.into();
         let mut node_refs_to_copy = HashSet::new();
         node_refs_to_copy.insert(global_node_id);
 
@@ -120,7 +120,7 @@ impl Executor for EpochManagerCreateInvocation {
             nodes_to_move: vec![],
         };
 
-        Ok((system_address, update))
+        Ok((component_address, update))
     }
 }
 
@@ -137,7 +137,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvoc
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -181,7 +181,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerNextRoundInvocation 
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -259,7 +259,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -300,7 +300,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerRegisterValidatorInv
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -360,7 +360,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUnregisterValidatorI
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(

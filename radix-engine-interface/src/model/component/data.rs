@@ -18,6 +18,7 @@ pub enum ComponentAddress {
     EcdsaSecp256k1VirtualAccount([u8; 26]),
     EddsaEd25519VirtualAccount([u8; 26]),
     Clock([u8; 26]),
+    EpochManager([u8; 26]),
 }
 
 //========
@@ -41,6 +42,7 @@ impl TryFrom<&[u8]> for ComponentAddress {
                     Ok(Self::EddsaEd25519VirtualAccount(copy_u8_array(&slice[1..])))
                 }
                 EntityType::Clock => Ok(Self::Clock(copy_u8_array(&slice[1..]))),
+                EntityType::EpochManager => Ok(Self::EpochManager(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
             _ => Err(AddressError::InvalidLength(slice.len())),
@@ -57,7 +59,8 @@ impl ComponentAddress {
             | Self::Account(v)
             | Self::EddsaEd25519VirtualAccount(v)
             | Self::EcdsaSecp256k1VirtualAccount(v)
-            | Self::Clock(v) => buf.extend(v),
+            | Self::Clock(v)
+            | Self::EpochManager(v) => buf.extend(v),
         }
         buf
     }
@@ -127,6 +130,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             }
             ComponentAddress::Clock(_) => {
                 write!(f, "ClockComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::EpochManager(_) => {
+                write!(f, "EpochManagerComponent[{}]", self.to_hex())
             }
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
                 write!(

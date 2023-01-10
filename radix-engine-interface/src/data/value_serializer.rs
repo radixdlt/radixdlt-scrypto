@@ -778,7 +778,7 @@ mod tests {
                             value: ScryptoCustomValue::ResourceAddress(RADIX_TOKEN),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::SystemAddress(EPOCH_MANAGER),
+                            value: ScryptoCustomValue::ComponentAddress(EPOCH_MANAGER),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::Own(Own::Vault([0; 36])),

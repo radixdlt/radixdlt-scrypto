@@ -100,7 +100,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             }
             BasicInstruction::RegisterValidator { .. }
             | BasicInstruction::UnregisterValidator { .. } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+                update.add_ref(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
             }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
@@ -212,7 +212,7 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
             instruction_get_update(instruction, &mut call_frame_update);
         }
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
             ECDSA_SECP256K1_TOKEN,

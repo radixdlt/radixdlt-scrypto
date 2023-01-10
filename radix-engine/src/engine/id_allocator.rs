@@ -79,13 +79,13 @@ impl IdAllocator {
         Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
     }
 
-    pub fn new_epoch_manager_address(&mut self) -> Result<SystemAddress, IdAllocationError> {
+    pub fn new_epoch_manager_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
         // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
 
-        Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
+        Ok(ComponentAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
     pub fn new_clock_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
