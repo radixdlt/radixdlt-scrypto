@@ -1,6 +1,5 @@
 use super::*;
 use crate::rust::collections::BTreeMap;
-use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
 /// A schema for the values that a codec can decode / views as valid
@@ -30,7 +29,7 @@ pub enum TypeKind<X: CustomValueKind, C: CustomTypeKind<L, CustomValueKind = X>,
 
     Tuple { field_types: Vec<L> },
 
-    Enum { variants: BTreeMap<String, Vec<L>> },
+    Enum { variants: BTreeMap<u8, Vec<L>> },
 
     // Custom Types
     Custom(C),

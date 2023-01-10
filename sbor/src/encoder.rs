@@ -71,9 +71,8 @@ pub trait Encoder<X: CustomValueKind>: Sized {
         self.write_byte(ty.as_u8())
     }
 
-    fn write_discriminator(&mut self, discriminator: &str) -> Result<(), EncodeError> {
-        self.write_size(discriminator.len())?;
-        self.write_slice(discriminator.as_bytes())
+    fn write_discriminator(&mut self, discriminator: u8) -> Result<(), EncodeError> {
+        self.write_byte(discriminator)
     }
 
     fn write_size(&mut self, mut size: usize) -> Result<(), EncodeError> {
@@ -196,8 +195,8 @@ mod tests {
         map.insert(3, 4);
         encoder.encode(&map)?;
 
-        encoder.encode(&Some(1u32))?;
         encoder.encode(&Option::<u32>::None)?;
+        encoder.encode(&Some(1u32))?;
         encoder.encode(&Result::<u32, String>::Ok(1u32))?;
         encoder.encode(&Result::<u32, String>::Err("hello".to_owned()))?;
 
@@ -230,10 +229,10 @@ mod tests {
                 32, 9, 3, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
                 32, 7, 2, 1, 2, // set
                 32, 33, 2, 2, 7, 1, 7, 2, 2, 7, 3, 7, 4, // map
-                34, 4, 83, 111, 109, 101, 1, 9, 1, 0, 0, 0, // Some<T>
-                34, 4, 78, 111, 110, 101, 0, // None
-                34, 2, 79, 107, 1, 9, 1, 0, 0, 0, // Ok<T>
-                34, 3, 69, 114, 114, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
+                34, 0, 0, // None
+                34, 1, 1, 9, 1, 0, 0, 0, // Some<T>
+                34, 0, 1, 9, 1, 0, 0, 0, // Ok<T>
+                34, 1, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
             ],
             bytes
         );
