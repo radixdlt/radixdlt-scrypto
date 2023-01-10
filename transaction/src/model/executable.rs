@@ -1,7 +1,7 @@
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
-use sbor::rust::collections::{BTreeSet, HashMap};
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::{Categorize, Decode, Encode};
 
@@ -43,7 +43,7 @@ pub enum InstructionList<'a> {
 #[derive(Debug)]
 pub struct Executable<'a> {
     instructions: InstructionList<'a>,
-    blobs: HashMap<Hash, &'a [u8]>,
+    blobs: &'a [Vec<u8>],
     context: ExecutionContext,
 }
 
@@ -91,7 +91,6 @@ impl<'a> Executable<'a> {
         blobs: &'a [Vec<u8>],
         context: ExecutionContext,
     ) -> Self {
-        let blobs = blobs.iter().map(|b| (hash(b), b.as_slice())).collect();
         Self {
             instructions,
             blobs,
@@ -102,7 +101,7 @@ impl<'a> Executable<'a> {
     pub fn new_no_blobs(instructions: InstructionList<'a>, context: ExecutionContext) -> Self {
         Self {
             instructions,
-            blobs: HashMap::new(),
+            blobs: &[],
             context,
         }
     }
@@ -123,7 +122,7 @@ impl<'a> Executable<'a> {
         &self.context.auth_zone_params
     }
 
-    pub fn blobs(&self) -> &HashMap<Hash, &[u8]> {
+    pub fn blobs(&self) -> &[Vec<u8>] {
         &self.blobs
     }
 

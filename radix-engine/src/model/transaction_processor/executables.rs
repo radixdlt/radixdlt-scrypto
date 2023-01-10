@@ -1,4 +1,8 @@
+use crate::engine::*;
+use crate::model::WorktopSubstate;
 use crate::model::*;
+use crate::types::*;
+use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
@@ -14,17 +18,13 @@ use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::*;
-use crate::model::WorktopSubstate;
-use crate::types::*;
-use crate::wasm::WasmEngine;
-
 #[derive(Debug)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
     pub instructions: Cow<'a, [Instruction]>,
+    pub blobs: Cow<'a, [Vec<u8>]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +40,7 @@ pub enum TransactionProcessorError {
     },
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
+    BlobNotFound(ManifestBlobRef),
     IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
     ReadOwnedNodesError(ReadOwnedNodesError),
@@ -66,6 +67,10 @@ impl InstructionOutput {
 
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
+
+    fn fn_identifier(&self) -> String {
+        "TransactionProcessor(Run)".to_owned()
+    }
 }
 
 fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdate) {
@@ -254,6 +259,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             runtime_node_id,
             RENode::TransactionRuntime(runtime_substate),
         )?;
+
+        // TODO: defer blob hashing to post fee payments as it's computationally costly
+        let mut blobs_by_hash = HashMap::new();
+        for blob in self.blobs.as_ref() {
+            blobs_by_hash.insert(hash(blob), blob);
+        }
 
         let mut processor = TransactionProcessor::new();
         let mut outputs = Vec::new();
@@ -451,9 +462,24 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     metadata,
                     access_rules,
                 }) => {
+                    let code = blobs_by_hash
+                        .get(&code.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(code.clone()),
+                            ),
+                        ))?;
+                    let abi = blobs_by_hash
+                        .get(&abi.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(abi.clone()),
+                            ),
+                        ))?;
+                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
-                        code: code.clone(),
-                        abi: abi.clone(),
+                        code: code.clone().clone(),
+                        abi: abi.clone().clone(),
                         royalty_config: royalty_config.clone(),
                         metadata: metadata.clone(),
                         access_rules: access_rules.clone(),
@@ -466,9 +492,24 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     abi,
                     owner_badge,
                 }) => {
+                    let code = blobs_by_hash
+                        .get(&code.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(code.clone()),
+                            ),
+                        ))?;
+                    let abi = blobs_by_hash
+                        .get(&abi.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(abi.clone()),
+                            ),
+                        ))?;
+                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
-                        code: code.clone(),
-                        abi: abi.clone(),
+                        code: code.clone().clone(),
+                        abi: abi.clone().clone(),
                         royalty_config: BTreeMap::new(),
                         metadata: BTreeMap::new(),
                         access_rules: package_access_rules_from_owner_badge(owner_badge),

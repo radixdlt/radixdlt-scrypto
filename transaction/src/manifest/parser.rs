@@ -370,7 +370,7 @@ impl Parser {
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            // RE global address types
+            // RE interpreted types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
             TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
@@ -379,15 +379,13 @@ impl Parser {
             TokenKind::ResourceAddress => {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
-
-            // RE interpreted types
             TokenKind::Own => Ok(Value::Own(self.parse_values_one()?.into())),
-            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
 
             // TX interpreted types
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
+            TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
@@ -500,20 +498,18 @@ impl Parser {
             TokenKind::Bytes => Ok(Type::Bytes),
             TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
 
-            // RE global address types
+            // RE interpreted types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
             TokenKind::SystemAddress => Ok(Type::SystemAddress),
-
-            // RE interpreted types
             TokenKind::Own => Ok(Type::Own),
-            TokenKind::Blob => Ok(Type::Blob),
 
             // TX interpreted types
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
             TokenKind::Expression => Ok(Type::Expression),
+            TokenKind::Blob => Ok(Type::Blob),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Type::Hash),
