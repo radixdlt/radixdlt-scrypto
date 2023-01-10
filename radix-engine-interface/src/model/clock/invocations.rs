@@ -12,11 +12,11 @@ use crate::wasm::*;
 pub struct ClockCreateInvocation {}
 
 impl Invocation for ClockCreateInvocation {
-    type Output = SystemAddress;
+    type Output = ComponentAddress;
 }
 
 impl SerializableInvocation for ClockCreateInvocation {
-    type ScryptoOutput = SystemAddress;
+    type ScryptoOutput = ComponentAddress;
 }
 
 impl Into<SerializedInvocation> for ClockCreateInvocation {
@@ -28,7 +28,7 @@ impl Into<SerializedInvocation> for ClockCreateInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct ClockGetCurrentTimeInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub precision: TimePrecision,
 }
 
@@ -49,7 +49,7 @@ impl Into<SerializedInvocation> for ClockGetCurrentTimeInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct ClockCompareCurrentTimeInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub instant: Instant,
     pub precision: TimePrecision,
     pub operator: TimeComparisonOperator,
@@ -72,7 +72,7 @@ impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct ClockSetCurrentTimeInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub current_time_ms: i64,
 }
 

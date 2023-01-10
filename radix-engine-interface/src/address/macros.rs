@@ -17,7 +17,7 @@ macro_rules! construct_address {
         radix_engine_interface::model::SystemAddress::EpochManager([$($bytes),*])
     };
     (EntityType::Clock, $($bytes:expr),*) => {
-        radix_engine_interface::model::SystemAddress::Clock([$($bytes),*])
+        radix_engine_interface::model::ComponentAddress::Clock([$($bytes),*])
     };
 }
 

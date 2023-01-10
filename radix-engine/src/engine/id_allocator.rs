@@ -88,13 +88,13 @@ impl IdAllocator {
         Ok(SystemAddress::EpochManager(hash(data).lower_26_bytes()))
     }
 
-    pub fn new_clock_address(&mut self) -> Result<SystemAddress, IdAllocationError> {
+    pub fn new_clock_address(&mut self) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
         // println!("Genesis clock {:?}", hash(&data).lower_26_bytes());
 
-        Ok(SystemAddress::Clock(hash(data).lower_26_bytes()))
+        Ok(ComponentAddress::Clock(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new resource address.

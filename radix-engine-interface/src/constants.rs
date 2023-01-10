@@ -287,7 +287,7 @@ pub const EPOCH_MANAGER: SystemAddress = construct_address!(
     13
 );
 
-pub const CLOCK: SystemAddress = construct_address!(
+pub const CLOCK: ComponentAddress = construct_address!(
     EntityType::Clock,
     35,
     155,

@@ -371,13 +371,19 @@ impl NativeInvocation {
             NativeInvocation::Clock(clock_method) => match clock_method {
                 ClockInvocation::Create(..) => {}
                 ClockInvocation::SetCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ClockInvocation::GetCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ClockInvocation::CompareCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
             },
             NativeInvocation::Logger(logger_invocation) => match logger_invocation {

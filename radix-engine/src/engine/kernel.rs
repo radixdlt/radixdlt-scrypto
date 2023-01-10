@@ -119,7 +119,7 @@ where
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::System(CLOCK)),
+            RENodeId::Global(GlobalAddress::Component(CLOCK)),
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
@@ -846,7 +846,7 @@ where
             RENodeType::GlobalClock => self
                 .id_allocator
                 .new_clock_address()
-                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
             RENodeType::GlobalResourceManager => self
                 .id_allocator
                 .new_resource_address()
@@ -908,7 +908,7 @@ where
                 RENode::Global(GlobalAddressSubstate::EpochManager(..)),
             ) => {}
             (
-                RENodeId::Global(GlobalAddress::System(..)),
+                RENodeId::Global(GlobalAddress::Component(..)),
                 RENode::Global(GlobalAddressSubstate::Clock(..)),
             ) => {}
             (

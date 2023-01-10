@@ -48,6 +48,7 @@ impl EntityType {
         match address {
             ComponentAddress::Normal(_) => Self::NormalComponent,
             ComponentAddress::Account(_) => Self::AccountComponent,
+            ComponentAddress::Clock(_) => Self::Clock,
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
                 Self::EcdsaSecp256k1VirtualAccountComponent
             }
@@ -60,7 +61,6 @@ impl EntityType {
     pub fn system(address: &SystemAddress) -> Self {
         match address {
             SystemAddress::EpochManager(_) => Self::EpochManager,
-            SystemAddress::Clock(_) => Self::Clock,
         }
     }
 

@@ -65,7 +65,6 @@ impl Bech32Encoder {
     ) -> Result<(), AddressError> {
         let data = match system_address {
             SystemAddress::EpochManager(data) => data,
-            SystemAddress::Clock(data) => data,
         };
 
         self.encode_to_fmt(fmt, EntityType::system(system_address), data)
@@ -91,6 +90,7 @@ impl Bech32Encoder {
         match component_address {
             ComponentAddress::Normal(data)
             | ComponentAddress::Account(data)
+            | ComponentAddress::Clock(data)
             | ComponentAddress::EcdsaSecp256k1VirtualAccount(data)
             | ComponentAddress::EddsaEd25519VirtualAccount(data) => {
                 self.encode_to_fmt(fmt, EntityType::component(component_address), data)
