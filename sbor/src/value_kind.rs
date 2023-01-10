@@ -16,7 +16,6 @@ use crate::rust::vec::Vec;
 )]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ValueKind<X: CustomValueKind> {
-    Unit,
     Bool,
     I8,
     I16,
@@ -38,7 +37,6 @@ pub enum ValueKind<X: CustomValueKind> {
 impl<X: CustomValueKind> ValueKind<X> {
     pub fn as_u8(&self) -> u8 {
         match self {
-            ValueKind::Unit => VALUE_KIND_UNIT,
             ValueKind::Bool => VALUE_KIND_BOOL,
             ValueKind::I8 => VALUE_KIND_I8,
             ValueKind::I16 => VALUE_KIND_I16,
@@ -60,7 +58,6 @@ impl<X: CustomValueKind> ValueKind<X> {
 
     pub fn from_u8(id: u8) -> Option<Self> {
         match id {
-            VALUE_KIND_UNIT => Some(ValueKind::Unit),
             VALUE_KIND_BOOL => Some(ValueKind::Bool),
             VALUE_KIND_I8 => Some(ValueKind::I8),
             VALUE_KIND_I16 => Some(ValueKind::I16),
@@ -85,7 +82,6 @@ impl<X: CustomValueKind> ValueKind<X> {
 }
 
 // primitive types
-pub const VALUE_KIND_UNIT: u8 = 0x00;
 pub const VALUE_KIND_BOOL: u8 = 0x01;
 pub const VALUE_KIND_I8: u8 = 0x02;
 pub const VALUE_KIND_I16: u8 = 0x03;
@@ -99,8 +95,8 @@ pub const VALUE_KIND_U64: u8 = 0x0a;
 pub const VALUE_KIND_U128: u8 = 0x0b;
 pub const VALUE_KIND_STRING: u8 = 0x0c;
 // composite types
-pub const VALUE_KIND_ARRAY: u8 = 0x20; // [T; N]
-pub const VALUE_KIND_TUPLE: u8 = 0x21; // Any "product type" - Tuples and Structs (T1, T2, T3)
+pub const VALUE_KIND_ARRAY: u8 = 0x20; // [T] or [T; N]
+pub const VALUE_KIND_TUPLE: u8 = 0x21; // Any "product type" - Units, Tuples and Structs (T1, T2, T3)
 pub const VALUE_KIND_ENUM: u8 = 0x22;
 
 /// The `Categorize` trait marks a rust type as having a fixed value kind for SBOR encoding/decoding.
@@ -115,13 +111,6 @@ pub const VALUE_KIND_ENUM: u8 = 0x22;
 /// wrapping it in a tuple of size 1.
 pub trait Categorize<X: CustomValueKind> {
     fn value_kind() -> ValueKind<X>;
-}
-
-impl<X: CustomValueKind> Categorize<X> for () {
-    #[inline]
-    fn value_kind() -> ValueKind<X> {
-        ValueKind::Unit
-    }
 }
 
 impl<X: CustomValueKind> Categorize<X> for bool {
@@ -244,8 +233,8 @@ impl<X: CustomValueKind, T, const N: usize> Categorize<X> for [T; N] {
 }
 
 macro_rules! categorize_tuple {
-    ($n:tt $($idx:tt $name:ident)+) => {
-        impl<X: CustomValueKind, $($name),+> Categorize<X> for ($($name,)+) {
+    ($n:tt$( $idx:tt $name:ident)*) => {
+        impl<X: CustomValueKind$(, $name)*> Categorize<X> for ($($name,)*) {
             #[inline]
             fn value_kind() -> ValueKind<X> {
                 ValueKind::Tuple
@@ -254,6 +243,7 @@ macro_rules! categorize_tuple {
     };
 }
 
+categorize_tuple! { 0 } // Unit
 categorize_tuple! { 1 0 A }
 categorize_tuple! { 2 0 A 1 B }
 categorize_tuple! { 3 0 A 1 B 2 C }

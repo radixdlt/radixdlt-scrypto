@@ -258,11 +258,6 @@ impl Parser {
             // ==============
             // Basic Types
             // ==============
-            TokenKind::OpenParenthesis => {
-                advance_match!(self, TokenKind::OpenParenthesis);
-                advance_match!(self, TokenKind::CloseParenthesis);
-                Ok(Value::Unit)
-            }
             TokenKind::BoolLiteral(value) => advance_ok!(self, Value::Bool(value)),
             TokenKind::U8Literal(value) => advance_ok!(self, Value::U8(value)),
             TokenKind::U16Literal(value) => advance_ok!(self, Value::U16(value)),
@@ -477,7 +472,6 @@ impl Parser {
     fn parse_type(&mut self) -> Result<Type, ParserError> {
         let token = self.advance()?;
         match &token.kind {
-            TokenKind::Unit => Ok(Type::Unit),
             TokenKind::Bool => Ok(Type::Bool),
             TokenKind::I8 => Ok(Type::I8),
             TokenKind::I16 => Ok(Type::I16),
@@ -567,7 +561,6 @@ mod tests {
 
     #[test]
     fn test_literals() {
-        parse_value_ok!(r#"()"#, Value::Unit);
         parse_value_ok!(r#"true"#, Value::Bool(true));
         parse_value_ok!(r#"false"#, Value::Bool(false));
         parse_value_ok!(r#"1i8"#, Value::I8(1));

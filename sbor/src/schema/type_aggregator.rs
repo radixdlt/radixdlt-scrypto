@@ -38,7 +38,6 @@ fn linearize<E: CustomTypeExtension>(
 ) -> TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
     match type_kind {
         TypeKind::Any => TypeKind::Any,
-        TypeKind::Unit => TypeKind::Unit,
         TypeKind::Bool => TypeKind::Bool,
         TypeKind::I8 => TypeKind::I8,
         TypeKind::I16 => TypeKind::I16,

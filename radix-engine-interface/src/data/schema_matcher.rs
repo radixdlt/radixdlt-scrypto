@@ -6,7 +6,6 @@ use super::types::Own;
 
 pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
     match ty {
-        Type::Unit => Some(ValueKind::Unit),
         Type::Bool => Some(ValueKind::Bool),
         Type::I8 => Some(ValueKind::I8),
         Type::I16 => Some(ValueKind::I16),
@@ -70,7 +69,6 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
 
 pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
     match ty {
-        Type::Unit => matches!(value, Value::Unit),
         Type::Bool => matches!(value, Value::Bool { .. }),
         Type::I8 => matches!(value, Value::I8 { .. }),
         Type::I16 => matches!(value, Value::I16 { .. }),

@@ -11,7 +11,6 @@ pub enum TypeKind<X: CustomValueKind, C: CustomTypeKind<L, CustomValueKind = X>,
     Any,
 
     // Simple Types
-    Unit,
     Bool,
     I8,
     I16,

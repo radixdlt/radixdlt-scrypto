@@ -2,8 +2,8 @@ use crate::value_kind::*;
 use crate::*;
 
 macro_rules! encode_tuple {
-    ($n:tt $($idx:tt $name:ident)+) => {
-        impl<X: CustomValueKind, E: Encoder<X>, $($name: Encode<X, E>),+> Encode<X, E> for ($($name,)+) {
+    ($n:tt$( $idx:tt $name:ident)*) => {
+        impl<X: CustomValueKind, E: Encoder<X>$(, $name: Encode<X, E>)*> Encode<X, E> for ($($name,)*) {
             #[inline]
             fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
                 encoder.write_value_kind(Self::value_kind())
@@ -12,13 +12,14 @@ macro_rules! encode_tuple {
             #[inline]
             fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
                 encoder.write_size($n)?;
-                $(encoder.encode(&self.$idx)?;)+
+                $(encoder.encode(&self.$idx)?;)*
                 Ok(())
             }
         }
     };
 }
 
+encode_tuple! { 0 } // Unit
 encode_tuple! { 1 0 T0 }
 encode_tuple! { 2 0 T0 1 T1 }
 encode_tuple! { 3 0 T0 1 T1 2 T2 }
@@ -41,19 +42,20 @@ encode_tuple! { 19 0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T
 encode_tuple! { 20 0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12 13 T13 14 T14 15 T15 16 T16 17 T17 18 T18 19 T19 }
 
 macro_rules! decode_tuple {
-    ($n:tt $($idx:tt $name:ident)+) => {
-        impl<X: CustomValueKind, D: Decoder<X>, $($name: Decode<X, D>),+> Decode<X, D> for ($($name,)+) {
+    ($n:tt$( $idx:tt $name:ident)*) => {
+        impl<X: CustomValueKind, D: Decoder<X>$(, $name: Decode<X, D>)*> Decode<X, D> for ($($name,)*) {
             #[inline]
             fn decode_body_with_value_kind(decoder: &mut D, value_kind: ValueKind<X>) -> Result<Self, DecodeError> {
                 decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
                 decoder.read_and_check_size($n)?;
 
-                Ok(($(decoder.decode::<$name>()?,)+))
+                Ok(($(decoder.decode::<$name>()?,)*))
             }
         }
     };
 }
 
+decode_tuple! { 0 } // Unit
 decode_tuple! { 1 0 T0 }
 decode_tuple! { 2 0 T0 1 T1 }
 decode_tuple! { 3 0 T0 1 T1 2 T2 }
@@ -82,23 +84,25 @@ pub use schema::*;
 mod schema {
     use super::*;
     macro_rules! describe_tuple {
-        ($n:tt $($idx:tt $name:ident)+) => {
-            impl<C: CustomTypeKind<GlobalTypeId>, $($name: Describe<C>),+> Describe<C> for ($($name,)+) {
-                const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Tuple", &[$($name::TYPE_ID, )+]);
+        ($n:tt$( $idx:tt $name:ident)*) => {
+            impl<C: CustomTypeKind<GlobalTypeId>$(, $name: Describe<C>)*> Describe<C> for ($($name,)*) {
+                const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Tuple", &[$($name::TYPE_ID),*]);
 
                 fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
                     Some(TypeData::named_tuple("Tuple", crate::rust::vec![
-                        $($name::TYPE_ID,)+
+                        $($name::TYPE_ID,)*
                     ]))
                 }
 
+                #[allow(unused_variables)] // For the unit case
                 fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
-                    $(aggregator.add_child_type_and_descendents::<$name>();)+
+                    $(aggregator.add_child_type_and_descendents::<$name>();)*
                 }
             }
         };
     }
 
+    well_known_basic_type!((), UNIT_ID);
     describe_tuple! { 1 0 T0 }
     describe_tuple! { 2 0 T0 1 T1 }
     describe_tuple! { 3 0 T0 1 T1 2 T2 }

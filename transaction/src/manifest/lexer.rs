@@ -29,7 +29,6 @@ pub enum TokenKind {
     // ==============
     // SBOR basic types
     // ==============
-    Unit,
     Bool,
     I8,
     I16,
@@ -388,7 +387,6 @@ impl Lexer {
             "true" => Ok(TokenKind::BoolLiteral(true)),
             "false" => Ok(TokenKind::BoolLiteral(false)),
 
-            "Unit" => Ok(TokenKind::Unit),
             "Bool" => Ok(TokenKind::Bool),
             "I8" => Ok(TokenKind::I8),
             "I16" => Ok(TokenKind::I16),

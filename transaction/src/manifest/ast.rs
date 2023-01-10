@@ -200,7 +200,6 @@ pub enum Instruction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Type {
     /* Rust types */
-    Unit,
     Bool,
     I8,
     I16,
@@ -258,7 +257,6 @@ pub enum Type {
 impl Type {
     pub fn type_id(&self) -> ScryptoValueKind {
         match self {
-            Type::Unit => ScryptoValueKind::Unit,
             Type::Bool => ScryptoValueKind::Bool,
             Type::I8 => ScryptoValueKind::I8,
             Type::I16 => ScryptoValueKind::I16,
@@ -326,7 +324,6 @@ pub enum Value {
     // ==============
     // Basic Types
     // ==============
-    Unit,
     Bool(bool),
     I8(i8),
     I16(i16),
@@ -388,7 +385,6 @@ impl Value {
             // ==============
             // Basic Types
             // ==============
-            Value::Unit => ScryptoValueKind::Unit,
             Value::Bool(_) => ScryptoValueKind::Bool,
             Value::I8(_) => ScryptoValueKind::I8,
             Value::I16(_) => ScryptoValueKind::I16,
