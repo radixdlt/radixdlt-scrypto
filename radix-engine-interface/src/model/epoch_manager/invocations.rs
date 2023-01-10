@@ -93,7 +93,7 @@ impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerRegisterValidatorInvocation {
     pub receiver: SystemAddress,
     pub validator: EcdsaSecp256k1PublicKey,
@@ -114,7 +114,7 @@ impl Into<SerializedInvocation> for EpochManagerRegisterValidatorInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerUnregisterValidatorInvocation {
     pub receiver: SystemAddress,
     pub validator: EcdsaSecp256k1PublicKey,

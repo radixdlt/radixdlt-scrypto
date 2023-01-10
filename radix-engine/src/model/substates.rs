@@ -972,6 +972,14 @@ impl<'a> SubstateRef<'a> {
 
                 (HashSet::new(), owned_nodes)
             }
+            SubstateRef::Worktop(worktop) => {
+                let nodes = worktop
+                    .resources
+                    .values()
+                    .map(|o| RENodeId::Bucket(o.bucket_id()))
+                    .collect();
+                (HashSet::new(), nodes)
+            }
             SubstateRef::Vault(vault) => {
                 let mut references = HashSet::new();
                 references.insert(GlobalAddress::Resource(vault.resource_address()));
