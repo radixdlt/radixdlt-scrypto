@@ -352,7 +352,7 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
         value: &ScryptoCustomValue,
     ) -> Result<(), Self::Err> {
         match value {
-            // Global addresses
+            // RE interpreted
             ScryptoCustomValue::PackageAddress(value) => {
                 self.package_addresses.insert(value.clone());
             }
@@ -365,13 +365,8 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             ScryptoCustomValue::SystemAddress(value) => {
                 self.system_addresses.insert(value.clone());
             }
-
-            // RE interpreted
             ScryptoCustomValue::Own(value) => {
                 self.owned_nodes.push((value.clone(), path.clone().into()));
-            }
-            ScryptoCustomValue::Blob(value) => {
-                self.blobs.push((value.clone(), path.clone().into()));
             }
 
             // TX interpreted
@@ -383,6 +378,9 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             }
             ScryptoCustomValue::Expression(value) => {
                 self.expressions.push((value.clone(), path.clone().into()));
+            }
+            ScryptoCustomValue::Blob(value) => {
+                self.blobs.push((value.clone(), path.clone().into()));
             }
 
             // Uninterpreted

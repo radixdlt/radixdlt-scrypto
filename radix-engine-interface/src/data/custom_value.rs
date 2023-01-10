@@ -298,7 +298,10 @@ mod tests {
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
             bytes,
-            vec![92, 33, 3, 160, 1, 0, 0, 0, 161, 2, 0, 0, 0, 162, 0]
+            vec![
+                92, 33, 4, 160, 1, 0, 0, 0, 161, 2, 0, 0, 0, 162, 0, 163, 3, 3, 3, 3, 3, 3, 3, 3,
+                3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3
+            ]
         );
         assert_eq!(
             scrypto_decode::<ScryptoValue>(&bytes).unwrap(),

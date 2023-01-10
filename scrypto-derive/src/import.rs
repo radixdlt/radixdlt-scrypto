@@ -324,6 +324,7 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             parse_quote! { Result<#okay_type, #err_type> }
         }
 
+        // RE
         SchemaType::PackageAddress => {
             parse_quote! { ::scrypto::model::PackageAddress }
         }
@@ -336,8 +337,6 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::SystemAddress => {
             parse_quote! { ::scrypto::model::SystemAddress}
         }
-
-        // RE
         SchemaType::Own => parse_quote! { ::scrypto::radix_engine_interface::data::types::Own },
         SchemaType::Bucket => parse_quote! {::scrypto::model::Bucket },
         SchemaType::Proof => parse_quote! { ::scrypto::model::Proof},
@@ -353,7 +352,6 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
             structs.extend(s);
             parse_quote! { ::scrypto::component::KeyValueStore<#k, #v> }
         }
-        SchemaType::Blob => parse_quote! { ::scrypto::engine_lib::data::types::Blob},
 
         // Misc
         SchemaType::Hash => parse_quote! { ::scrypto::crypto::Hash},
