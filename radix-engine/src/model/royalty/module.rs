@@ -3,13 +3,13 @@ use crate::fee::{FeeReserve, RoyaltyReceiver};
 use crate::model::{CostingError, GlobalAddressSubstate};
 use radix_engine_interface::api::types::{
     ComponentOffset, FnIdentifier, GlobalAddress, GlobalOffset, PackageOffset, RENodeId,
-    SubstateId, SubstateOffset,
+    SubstateId, SubstateOffset, VaultOffset,
 };
 use radix_engine_interface::scrypto;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum RoyaltyError {
     TrackError(TrackError),
 }
@@ -32,6 +32,24 @@ impl Default for RoyaltyModule {
     fn default() -> Self {
         Self {}
     }
+}
+
+macro_rules! preload_vault {
+    ($track:expr, $royalty_vault:expr) => {
+        let vault_node_id = RENodeId::Vault($royalty_vault.vault_id());
+        $track
+            .acquire_lock(
+                SubstateId(vault_node_id, SubstateOffset::Vault(VaultOffset::Vault)),
+                LockFlags::MUTABLE,
+            )
+            .map_err(RoyaltyError::from)?;
+        $track
+            .release_lock(
+                SubstateId(vault_node_id, SubstateOffset::Vault(VaultOffset::Vault)),
+                false,
+            )
+            .map_err(RoyaltyError::from)?;
+    };
 }
 
 impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
@@ -108,10 +126,19 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
             .release_lock(SubstateId(node_id, offset.clone()), false)
             .map_err(RoyaltyError::from)?;
 
+        // Pre-load accumulator and royalty vault substate to avoid additional substate loading
+        // during track finalization.
+        // TODO: refactor to defer substate loading to finalization.
         let offset = SubstateOffset::Package(PackageOffset::RoyaltyAccumulator);
         track
             .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::MUTABLE)
             .map_err(RoyaltyError::from)?;
+        let royalty_vault = track
+            .get_substate(node_id, &offset)
+            .package_royalty_accumulator()
+            .royalty
+            .clone();
+        preload_vault!(track, royalty_vault);
         track
             .release_lock(SubstateId(node_id, offset.clone()), false)
             .map_err(RoyaltyError::from)?;
@@ -160,10 +187,19 @@ impl<R: FeeReserve> BaseModule<R> for RoyaltyModule {
                 .release_lock(SubstateId(node_id, offset.clone()), false)
                 .map_err(RoyaltyError::from)?;
 
+            // Pre-load accumulator and royalty vault substate to avoid additional substate loading
+            // during track finalization.
+            // TODO: refactor to defer substate loading to finalization.
             let offset = SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator);
             track
                 .acquire_lock(SubstateId(node_id, offset.clone()), LockFlags::MUTABLE)
                 .map_err(RoyaltyError::from)?;
+            let royalty_vault = track
+                .get_substate(node_id, &offset)
+                .component_royalty_accumulator()
+                .royalty
+                .clone();
+            preload_vault!(track, royalty_vault);
             track
                 .release_lock(SubstateId(node_id, offset.clone()), false)
                 .map_err(RoyaltyError::from)?;

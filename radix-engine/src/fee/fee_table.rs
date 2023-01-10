@@ -10,7 +10,6 @@ pub enum SystemApiCostingEntry {
      */
     Invoke {
         input_size: u32,
-        owned_node_count: u32,
     },
 
     /*
@@ -143,13 +142,17 @@ impl FeeTable {
                 ProofFn::Clone => self.fixed_low,
             },
             NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerFn::Create => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateNonFungible => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateFungible => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::BurnBucket => self.fixed_low,
                 ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
                 ResourceManagerFn::LockAuth => self.fixed_medium,
                 ResourceManagerFn::CreateVault => self.fixed_medium,
                 ResourceManagerFn::CreateBucket => self.fixed_medium,
-                ResourceManagerFn::Mint => self.fixed_high,
+                ResourceManagerFn::MintNonFungible => self.fixed_high,
+                ResourceManagerFn::MintFungible => self.fixed_high,
                 ResourceManagerFn::GetResourceType => self.fixed_low,
                 ResourceManagerFn::GetTotalSupply => self.fixed_low,
                 ResourceManagerFn::UpdateNonFungibleData => self.fixed_medium,
@@ -223,11 +226,9 @@ impl FeeTable {
 
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::Invoke {
-                input_size,
-                owned_node_count,
-                ..
-            } => self.fixed_low + (5 * input_size + 10 * owned_node_count) as u32,
+            SystemApiCostingEntry::Invoke { input_size, .. } => {
+                self.fixed_low + (5 * input_size) as u32
+            }
 
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,

@@ -10,10 +10,10 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto_abi::{Describe, Fields, Type, Variant};
+use scrypto_abi::{Fields, LegacyDescribe, Type, Variant};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum SoftDecimal {
     Static(Decimal),
     Dynamic(SchemaPath),
@@ -39,7 +39,7 @@ impl From<&str> for SoftDecimal {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum SoftCount {
     Static(u8),
     Dynamic(SchemaPath),
@@ -65,7 +65,7 @@ impl From<&str> for SoftCount {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum SoftResource {
     Static(ResourceAddress),
     Dynamic(SchemaPath),
@@ -91,7 +91,7 @@ impl From<&str> for SoftResource {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
     StaticResource(ResourceAddress),
@@ -124,7 +124,7 @@ impl From<&str> for SoftResourceOrNonFungible {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
     Dynamic(SchemaPath),
@@ -154,7 +154,7 @@ where
 
 /// Resource Proof Rules
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(SoftDecimal, SoftResource),
@@ -170,7 +170,7 @@ impl From<ResourceAddress> for ProofRule {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum AccessRuleNode {
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
@@ -178,7 +178,7 @@ pub enum AccessRuleNode {
 }
 
 // FIXME: describe types with cycles
-impl Describe for AccessRuleNode {
+impl LegacyDescribe for AccessRuleNode {
     fn describe() -> Type {
         Type::Enum {
             name: "AccessRuleNode".to_owned(),
@@ -270,7 +270,7 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum AccessRule {
     AllowAll,
     DenyAll,

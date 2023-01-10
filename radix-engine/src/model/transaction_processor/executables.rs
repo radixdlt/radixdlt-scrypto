@@ -5,7 +5,9 @@ use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, Invokab
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
-use radix_engine_interface::data::{IndexedScryptoValue, ValueReplacingError};
+use radix_engine_interface::data::{
+    IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
+};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Cow;
 use transaction::errors::ManifestIdAllocationError;
@@ -18,7 +20,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
@@ -26,7 +28,7 @@ pub struct TransactionProcessorRunInvocation<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
         valid_from: u64,
@@ -36,12 +38,12 @@ pub enum TransactionProcessorError {
         valid_until: u64,
         current_epoch: u64,
     },
-    InvalidRequestData(DecodeError),
-    InvalidGetEpochResponseData(DecodeError),
-    InvalidMethod,
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
     IdAllocationError(ManifestIdAllocationError),
+    InvalidCallData(DecodeError),
+    ReadOwnedNodesError(ReadOwnedNodesError),
+    ReplaceManifestValuesError(ReplaceManifestValuesError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug {}
@@ -56,8 +58,8 @@ pub enum InstructionOutput {
 impl InstructionOutput {
     pub fn as_vec(&self) -> Vec<u8> {
         match self {
-            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).raw,
-            InstructionOutput::Scrypto(value) => value.raw.clone(),
+            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).into_vec(),
+            InstructionOutput::Scrypto(value) => value.as_slice().to_owned(),
         }
     }
 }
@@ -378,17 +380,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     function_name,
                     args,
                 }) => {
-                    let args = processor
-                        .replace_manifest_buckets_and_proofs(
-                            IndexedScryptoValue::from_slice(args)
-                                .expect("Invalid CALL_FUNCTION arguments"),
-                        )
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(e),
-                            )
-                        })
-                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor.replace_manifest_values(
+                        IndexedScryptoValue::from_slice(args)
+                            .expect("Invalid CALL_FUNCTION arguments"),
+                        api,
+                    )?;
 
                     let result = api.invoke(ParsedScryptoInvocation::Function(
                         ScryptoFunctionIdent {
@@ -410,17 +406,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     method_name,
                     args,
                 }) => {
-                    let args = processor
-                        .replace_manifest_buckets_and_proofs(
-                            IndexedScryptoValue::from_slice(args)
-                                .expect("Invalid CALL_METHOD arguments"),
-                        )
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(e),
-                            )
-                        })
-                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor.replace_manifest_values(
+                        IndexedScryptoValue::from_slice(args)
+                            .expect("Invalid CALL_METHOD arguments"),
+                        api,
+                    )?;
 
                     let result = api.invoke(ParsedScryptoInvocation::Method(
                         ScryptoMethodIdent {
@@ -475,20 +465,27 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     access_rules,
                     initial_supply,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerCreateInvocation {
-                        resource_type: ResourceType::Fungible {
+                    if let Some(amount) = initial_supply {
+                        let rtn =
+                            api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                divisibility: *divisibility,
+                                metadata: metadata.clone(),
+                                access_rules: access_rules.clone(),
+                                initial_supply: *amount,
+                            })?;
+
+                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    } else {
+                        let rtn = api.invoke(ResourceManagerCreateFungibleInvocation {
                             divisibility: *divisibility,
-                        },
-                        metadata: metadata.clone(),
-                        access_rules: access_rules.clone(),
-                        mint_params: initial_supply.map(|amount| MintParams::Fungible { amount }),
-                    })?;
+                            metadata: metadata.clone(),
+                            access_rules: access_rules.clone(),
+                        })?;
 
-                    if let (_, Some(bucket)) = &rtn {
-                        Worktop::sys_put(Bucket(bucket.0), api)?;
+                        InstructionOutput::Native(Box::new(rtn))
                     }
-
-                    InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::Basic(BasicInstruction::CreateFungibleResourceWithOwner {
                     divisibility,
@@ -496,19 +493,27 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     owner_badge,
                     initial_supply,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerCreateInvocation {
-                        resource_type: ResourceType::Fungible {
-                            divisibility: *divisibility,
-                        },
-                        metadata: metadata.clone(),
-                        access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                        mint_params: initial_supply.map(|amount| MintParams::Fungible { amount }),
-                    })?;
-                    if let (_, Some(bucket)) = &rtn {
-                        Worktop::sys_put(Bucket(bucket.0), api)?;
-                    }
+                    if let Some(amount) = initial_supply {
+                        let rtn =
+                            api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                divisibility: *divisibility,
+                                metadata: metadata.clone(),
+                                access_rules: resource_access_rules_from_owner_badge(owner_badge),
+                                initial_supply: *amount,
+                            })?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    } else {
+                        let rtn = api.invoke(ResourceManagerCreateFungibleInvocation {
+                            divisibility: *divisibility,
+                            metadata: metadata.clone(),
+                            access_rules: resource_access_rules_from_owner_badge(owner_badge),
+                        })?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    }
                 }
                 Instruction::Basic(BasicInstruction::CreateNonFungibleResource {
                     id_type,
@@ -516,19 +521,28 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     access_rules,
                     initial_supply,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerCreateInvocation {
-                        resource_type: ResourceType::NonFungible { id_type: *id_type },
-                        metadata: metadata.clone(),
-                        access_rules: access_rules.clone(),
-                        mint_params: initial_supply
-                            .as_ref()
-                            .map(|e| MintParams::NonFungible { entries: e.clone() }),
-                    })?;
-                    if let (_, Some(bucket)) = &rtn {
-                        Worktop::sys_put(Bucket(bucket.0), api)?;
-                    }
+                    if let Some(ids) = initial_supply {
+                        let rtn = api.invoke(
+                            ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                                id_type: *id_type,
+                                metadata: metadata.clone(),
+                                access_rules: access_rules.clone(),
+                                entries: ids.clone(),
+                            },
+                        )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    } else {
+                        let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            id_type: *id_type,
+                            metadata: metadata.clone(),
+                            access_rules: access_rules.clone(),
+                        })?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    }
                 }
                 Instruction::Basic(BasicInstruction::CreateNonFungibleResourceWithOwner {
                     id_type,
@@ -536,19 +550,28 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     owner_badge,
                     initial_supply,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerCreateInvocation {
-                        resource_type: ResourceType::NonFungible { id_type: *id_type },
-                        metadata: metadata.clone(),
-                        access_rules: resource_access_rules_from_owner_badge(owner_badge),
-                        mint_params: initial_supply
-                            .as_ref()
-                            .map(|e| MintParams::NonFungible { entries: e.clone() }),
-                    })?;
-                    if let (_, Some(bucket)) = &rtn {
-                        Worktop::sys_put(Bucket(bucket.0), api)?;
-                    }
+                    if let Some(ids) = initial_supply {
+                        let rtn = api.invoke(
+                            ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
+                                id_type: *id_type,
+                                metadata: metadata.clone(),
+                                access_rules: resource_access_rules_from_owner_badge(owner_badge),
+                                entries: ids.clone(),
+                            },
+                        )?;
 
-                    InstructionOutput::Native(Box::new(rtn))
+                        Worktop::sys_put(Bucket(rtn.1 .0), api)?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    } else {
+                        let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            id_type: *id_type,
+                            metadata: metadata.clone(),
+                            access_rules: resource_access_rules_from_owner_badge(owner_badge),
+                        })?;
+
+                        InstructionOutput::Native(Box::new(rtn))
+                    }
                 }
                 Instruction::Basic(BasicInstruction::BurnResource { bucket_id }) => {
                     let bucket = processor.take_bucket(bucket_id)?;
@@ -559,11 +582,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                     amount,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerMintInvocation {
+                    let rtn = api.invoke(ResourceManagerMintFungibleInvocation {
                         receiver: resource_address.clone(),
-                        mint_params: MintParams::Fungible {
-                            amount: amount.clone(),
-                        },
+                        amount: amount.clone(),
                     })?;
 
                     Worktop::sys_put(Bucket(rtn.0), api)?;
@@ -574,11 +595,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     resource_address,
                     entries,
                 }) => {
-                    let rtn = api.invoke(ResourceManagerMintInvocation {
+                    let rtn = api.invoke(ResourceManagerMintNonFungibleInvocation {
                         receiver: resource_address.clone(),
-                        mint_params: MintParams::NonFungible {
-                            entries: entries.clone(),
-                        },
+                        entries: entries.clone(),
                     })?;
                     Worktop::sys_put(Bucket(rtn.0), api)?;
 
@@ -787,12 +806,15 @@ impl TransactionProcessor {
             + InvokableModel<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
-        for ownership in &value.owned_nodes {
-            match ownership {
-                Own::Bucket(bucket_id) => {
+        for owned_node in &value
+            .owned_node_ids()
+            .expect("Duplication checked by engine")
+        {
+            match owned_node {
+                RENodeId::Bucket(bucket_id) => {
                     Worktop::sys_put(Bucket(*bucket_id), api)?;
                 }
-                Own::Proof(proof_id) => {
+                RENodeId::Proof(proof_id) => {
                     let proof = Proof(*proof_id);
                     ComponentAuthZone::sys_push(proof, api)?;
                 }
@@ -803,63 +825,39 @@ impl TransactionProcessor {
         Ok(())
     }
 
-    fn replace_manifest_buckets_and_proofs(
+    fn replace_manifest_values<'a, Y>(
         &mut self,
-        mut value: IndexedScryptoValue,
-    ) -> Result<IndexedScryptoValue, TransactionProcessorError> {
-        value
-            .replace_manifest_buckets_and_proofs(
-                &mut self.proof_id_mapping,
-                &mut self.bucket_id_mapping,
-            )
-            .map_err(|e| match e {
-                ValueReplacingError::BucketIdNotFound(bucket_id) => {
-                    TransactionProcessorError::BucketNotFound(bucket_id)
-                }
-                ValueReplacingError::ProofIdNotFound(proof_id) => {
-                    TransactionProcessorError::ProofNotFound(proof_id)
-                }
-            })?;
-        Ok(value)
-    }
-
-    fn process_expressions<'a, Y>(
-        args: IndexedScryptoValue,
+        value: IndexedScryptoValue,
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let mut value = args.dom;
-        for (expression, path) in args.expressions {
+        let mut expression_replacements = Vec::<Vec<Own>>::new();
+        for (expression, _) in value.expressions() {
             match expression {
                 ManifestExpression::EntireWorktop => {
                     let buckets = Worktop::sys_drain(env)?;
-
-                    let val = path
-                        .get_from_value_mut(&mut value)
-                        .expect("Failed to locate an expression value using SBOR path");
-                    *val = scrypto_decode(
-                        &scrypto_encode(&buckets).expect("Failed to encode Vec<Bucket>"),
-                    )
-                    .expect("Failed to decode Vec<Bucket>")
+                    expression_replacements.push(buckets.into_iter().map(Into::into).collect())
                 }
                 ManifestExpression::EntireAuthZone => {
                     let proofs = ComponentAuthZone::sys_drain(env)?;
-
-                    let val = path
-                        .get_from_value_mut(&mut value)
-                        .expect("Failed to locate an expression value using SBOR path");
-                    *val = scrypto_decode(
-                        &scrypto_encode(&proofs).expect("Failed to encode Vec<Proof>"),
-                    )
-                    .expect("Failed to decode Vec<Proof>")
+                    expression_replacements.push(proofs.into_iter().map(Into::into).collect())
                 }
             }
         }
 
-        Ok(IndexedScryptoValue::from_value(value)
-            .expect("SborValue became invalid post expression transformation"))
+        value
+            .replace_manifest_values(
+                &mut self.proof_id_mapping,
+                &mut self.bucket_id_mapping,
+                expression_replacements,
+            )
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::ReplaceManifestValuesError(e),
+                ))
+            })
     }
 
     fn perform_validation<'a, Y>(

@@ -6,7 +6,7 @@ use radix_engine_interface::api::types::*;
 use radix_engine_interface::crypto::hash;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum TransactionRuntimeError {
     OutOfUUid,
 }

@@ -1,6 +1,6 @@
 use crate::abi::*;
 use crate::api::types::*;
-use crate::data::ScryptoCustomTypeId;
+use crate::data::ScryptoCustomValueKind;
 use crate::scrypto;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
@@ -38,6 +38,18 @@ impl Own {
     }
 }
 
+impl From<Bucket> for Own {
+    fn from(bucket: Bucket) -> Self {
+        Own::Bucket(bucket.0)
+    }
+}
+
+impl From<Proof> for Own {
+    fn from(proof: Proof) -> Self {
+        Own::Proof(proof.0)
+    }
+}
+
 //========
 // error
 //========
@@ -62,17 +74,17 @@ impl fmt::Display for ParseOwnError {
 // binary
 //========
 
-impl TypeId<ScryptoCustomTypeId> for Own {
+impl Categorize<ScryptoCustomValueKind> for Own {
     #[inline]
-    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
-        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
     }
 }
 
-impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Own {
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Own {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -103,12 +115,12 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Own {
     }
 }
 
-impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Own {
-    fn decode_body_with_type_id(
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Own {
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<ScryptoCustomTypeId>,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         match decoder.read_byte()? {
             0 => Ok(Self::Bucket(u32::from_le_bytes(copy_u8_array(
                 decoder.read_slice(4)?,
@@ -124,7 +136,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Own {
     }
 }
 
-impl scrypto_abi::Describe for Own {
+impl scrypto_abi::LegacyDescribe for Own {
     fn describe() -> scrypto_abi::Type {
         Type::Own
     }

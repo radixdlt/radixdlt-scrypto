@@ -1,19 +1,20 @@
 use crate::engine::{BaseModule, Kernel, KernelError, LockFlags, RENode, RuntimeError, SystemApi};
 use crate::fee::FeeReserve;
+use crate::model::MetadataSubstate;
 use crate::model::{
     AccessRulesChainSubstate, ComponentInfoSubstate, ComponentRoyaltyAccumulatorSubstate,
     ComponentRoyaltyConfigSubstate, ComponentStateSubstate, KeyValueStore, RuntimeSubstate,
 };
-use crate::model::{MetadataSubstate, Resource};
 use crate::types::BTreeMap;
 use crate::wasm::WasmEngine;
-use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::api::types::{
     ComponentFn, LockHandle, NativeFn, RENodeId, RENodeType, ScryptoRENode, SubstateOffset,
 };
 use radix_engine_interface::constants::RADIX_TOKEN;
+use radix_engine_interface::data::types::Own;
 use radix_engine_interface::model::{
-    AccessRule, AccessRuleKey, AccessRules, ResourceType, RoyaltyConfig,
+    AccessRule, AccessRuleKey, AccessRules, ResourceManagerCreateVaultInvocation, RoyaltyConfig,
 };
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
@@ -30,15 +31,19 @@ where
             ScryptoRENode::Component(package_address, blueprint_name, state) => {
                 let node_id = self.allocate_node_id(RENodeType::Component)?;
 
+                // Create a royalty vault
+                let royalty_vault_id = self
+                    .invoke(ResourceManagerCreateVaultInvocation {
+                        receiver: RADIX_TOKEN,
+                    })?
+                    .vault_id();
+
                 // Royalty initialization done here
                 let royalty_config = ComponentRoyaltyConfigSubstate {
                     royalty_config: RoyaltyConfig::default(),
                 };
                 let royalty_accumulator = ComponentRoyaltyAccumulatorSubstate {
-                    royalty: Resource::new_empty(
-                        RADIX_TOKEN,
-                        ResourceType::Fungible { divisibility: 18 },
-                    ),
+                    royalty: Own::Vault(royalty_vault_id.into()),
                 };
 
                 // TODO: Remove Royalties from Node's access rule chain, possibly implement this
@@ -115,7 +120,7 @@ where
 
     fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, RuntimeError> {
         self.get_ref(lock_handle)
-            .map(|substate_ref| substate_ref.to_scrypto_value().raw)
+            .map(|substate_ref| substate_ref.to_scrypto_value().into_vec())
     }
 
     fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), RuntimeError> {

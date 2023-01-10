@@ -280,7 +280,7 @@ impl Parser {
             TokenKind::None |
             TokenKind::Ok |
             TokenKind::Err |
-            TokenKind::Bytes => self.parse_alias(),
+            TokenKind::Bytes | TokenKind::NonFungibleAddress => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -293,7 +293,6 @@ impl Parser {
             TokenKind::ResourceAddress |
             /* RE types */
             TokenKind::Own |
-            TokenKind::NonFungibleAddress |
             TokenKind::Blob |
             /* TX types */
             TokenKind::Bucket |
@@ -351,6 +350,13 @@ impl Parser {
             TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
             TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
             TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
+            TokenKind::NonFungibleAddress => {
+                let tuple = self.parse_values_two()?;
+                Ok(Value::NonFungibleAddress(
+                    Box::new(tuple.0),
+                    Box::new(tuple.1),
+                ))
+            }
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -370,10 +376,6 @@ impl Parser {
 
             // RE interpreted types
             TokenKind::Own => Ok(Value::Own(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleAddress => {
-                let values = self.parse_values_two()?;
-                Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
-            }
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
 
             // TX interpreted types
@@ -488,6 +490,10 @@ impl Parser {
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
 
+            // Alias
+            TokenKind::Bytes => Ok(Type::Bytes),
+            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+
             // RE global address types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
@@ -496,7 +502,6 @@ impl Parser {
 
             // RE interpreted types
             TokenKind::Own => Ok(Type::Own),
-            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
             TokenKind::Blob => Ok(Type::Blob),
 
             // TX interpreted types

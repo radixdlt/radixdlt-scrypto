@@ -9,7 +9,7 @@ use sbor::*;
 
 /// Scrypto function/method invocation.
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ScryptoInvocation {
     Function(ScryptoFunctionIdent, Vec<u8>),
     Method(ScryptoMethodIdent, Vec<u8>),

@@ -1,3 +1,4 @@
+use crate::model::auth_converter::convert_contextless;
 use crate::model::{convert, ComponentStateSubstate, MethodAuthorization};
 use crate::types::*;
 use radix_engine_interface::abi::Type;
@@ -6,7 +7,7 @@ use radix_engine_interface::model::AccessRules;
 
 /// A transient resource container.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct AccessRulesChainSubstate {
     pub access_rules_chain: Vec<AccessRules>,
 }
@@ -41,7 +42,7 @@ impl AccessRulesChainSubstate {
             let method_auth = auth.get(&key);
 
             // TODO: Remove
-            let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), method_auth);
+            let authorization = convert_contextless(method_auth);
             authorizations.push(authorization);
         }
 
@@ -54,7 +55,7 @@ impl AccessRulesChainSubstate {
             let method_auth = auth.get_mutability(key);
 
             // TODO: Remove
-            let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), method_auth);
+            let authorization = convert_contextless(method_auth);
             authorizations.push(authorization);
         }
 
@@ -67,7 +68,7 @@ impl AccessRulesChainSubstate {
             let group_auth = auth.get_group_mutability(name);
 
             // TODO: Remove
-            let authorization = convert(&Type::Any, &IndexedScryptoValue::unit(), group_auth);
+            let authorization = convert_contextless(group_auth);
             authorizations.push(authorization);
         }
 

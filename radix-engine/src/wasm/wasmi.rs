@@ -45,7 +45,7 @@ impl ModuleImportResolver for WasmiEnvModule {
                 }
                 Ok(FuncInstance::alloc_host(
                     signature.clone(),
-                    RADIX_ENGINE_FUNCTION_INDEX,
+                    RADIX_ENGINE_FUNCTION_ID,
                 ))
             }
             CONSUME_COST_UNITS_FUNCTION_NAME => {
@@ -56,7 +56,7 @@ impl ModuleImportResolver for WasmiEnvModule {
                 }
                 Ok(FuncInstance::alloc_host(
                     signature.clone(),
-                    CONSUME_COST_UNITS_FUNCTION_INDEX,
+                    CONSUME_COST_UNITS_FUNCTION_ID,
                 ))
             }
             _ => Err(Error::Instantiation(format!(
@@ -148,7 +148,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
             return Err(WasmError::MemoryAccessError);
         }
 
-        IndexedScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
+        IndexedScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::SborDecodeError)
     }
 }
 
@@ -159,7 +159,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
         match index {
-            RADIX_ENGINE_FUNCTION_INDEX => {
+            RADIX_ENGINE_FUNCTION_ID => {
                 let input_ptr = args.nth_checked::<u32>(0)? as usize;
                 let input = self.read_value(input_ptr)?;
                 let output = self.runtime.main(input)?;
@@ -167,7 +167,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(Option::Some)
                     .map_err(|e| e.into())
             }
-            CONSUME_COST_UNITS_FUNCTION_INDEX => {
+            CONSUME_COST_UNITS_FUNCTION_ID => {
                 let n: u32 = args.nth_checked(0)?;
                 self.runtime
                     .consume_cost_units(n)

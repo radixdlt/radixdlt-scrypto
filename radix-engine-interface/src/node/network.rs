@@ -1,9 +1,9 @@
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Categorize, Decode, Encode};
 
 /// Network Definition is intended to be the actual definition of a network
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct NetworkDefinition {
     // TODO: we may be able to squeeze network identifier into the other fields, like the `v` byte in signature.
     pub id: u8,

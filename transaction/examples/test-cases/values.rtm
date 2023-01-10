@@ -9,7 +9,7 @@ CALL_METHOD
     ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
     "with_aliases"
 
-    # Test aliases and their non-aliased versions
+    # enum
     None
     Enum("None")
     Some("hello")
@@ -17,9 +17,25 @@ CALL_METHOD
     Ok("test")
     Enum("Ok", "test")
     Err("test123")
-    Enum("Err", "test123")
-    Bytes("050aff")
+    Enum("Err", "test123") 
+
+    # bytes
+    Bytes("deadbeef")
     Array<U8>(5u8, 10u8, 255u8)
+
+    # non-fungible address
+    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value")
+    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 123u32)
+    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 456u64)
+    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"))
+    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 1234567890u128)
+    Tuple(ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"), NonFungibleId(1u32))
+
+    # array
+    Array<Bytes>(Bytes("dead"), Array<U8>(5u8, 10u8, 255u8))
+    Array<Array>(Bytes("dead"), Array<U8>(5u8, 10u8, 255u8))
+    Array<NonFungibleAddress>(NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value"), Tuple(ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"), NonFungibleId(1u32)))
+    Array<Tuple>(NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value"), Tuple(ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"), NonFungibleId(1u32)))
     ;
 
 CALL_METHOD 
@@ -32,13 +48,9 @@ CALL_METHOD
     ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v")
     SystemAddress("system_sim1qne8qu4seyvzfgd94p3z8rjcdl3v0nfhv84judpum2lq7x4635")
 
-    # RE nodes types
-    # TODO: Ownership("000000000000000000000000000000000000000000000000000000000000000005000000")
-    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value")
-    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 123u32)
-    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 456u64)
-    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f"))
-    NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 1234567890u128)
+    # RE interpreted types
+    # TODO: fix own syntax OR disallow own type in manifest
+    # Own("000000000000000000000000000000000000000000000000000000000000000005000000")
     Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618")
 
     # TX interpreted types

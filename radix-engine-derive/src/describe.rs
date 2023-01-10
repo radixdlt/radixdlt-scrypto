@@ -45,11 +45,11 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                 let types = ns.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl scrypto_abi::Describe for #ident {
+                    impl scrypto_abi::LegacyDescribe for #ident {
                         fn describe() -> scrypto_abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use scrypto_abi::Describe;
+                            use scrypto_abi::LegacyDescribe;
 
                             scrypto_abi::Type::Struct {
                                 name: #ident_str.to_owned(),
@@ -70,11 +70,11 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                 let types = ns.iter().map(|f| &f.ty);
 
                 quote! {
-                    impl scrypto_abi::Describe for #ident {
+                    impl scrypto_abi::LegacyDescribe for #ident {
                         fn describe() -> scrypto_abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
                             use ::sbor::rust::vec;
-                            use scrypto_abi::Describe;
+                            use scrypto_abi::LegacyDescribe;
 
                             scrypto_abi::Type::Struct {
                                 name: #ident_str.to_owned(),
@@ -88,7 +88,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl scrypto_abi::Describe for #ident {
+                    impl scrypto_abi::LegacyDescribe for #ident {
                         fn describe() -> scrypto_abi::Type {
                             use ::sbor::rust::borrow::ToOwned;
 
@@ -154,11 +154,11 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
             });
 
             quote! {
-                impl scrypto_abi::Describe for #ident {
+                impl scrypto_abi::LegacyDescribe for #ident {
                     fn describe() -> scrypto_abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::Describe;
+                        use scrypto_abi::LegacyDescribe;
 
                         scrypto_abi::Type::Enum {
                             name: #ident_str.to_owned(),
@@ -204,11 +204,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl scrypto_abi::Describe for Test {
+                impl scrypto_abi::LegacyDescribe for Test {
                     fn describe() -> scrypto_abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::Describe;
+                        use scrypto_abi::LegacyDescribe;
 
                         scrypto_abi::Type::Struct {
                             name: "Test".to_owned(),
@@ -230,11 +230,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl scrypto_abi::Describe for Test {
+                impl scrypto_abi::LegacyDescribe for Test {
                     fn describe() -> scrypto_abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::Describe;
+                        use scrypto_abi::LegacyDescribe;
 
                         scrypto_abi::Type::Enum {
                             name: "Test".to_owned(),
@@ -271,11 +271,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl scrypto_abi::Describe for Test {
+                impl scrypto_abi::LegacyDescribe for Test {
                     fn describe() -> scrypto_abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::Describe;
+                        use scrypto_abi::LegacyDescribe;
 
                         scrypto_abi::Type::Struct {
                             name: "Test".to_owned(),
@@ -298,11 +298,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl scrypto_abi::Describe for Test {
+                impl scrypto_abi::LegacyDescribe for Test {
                     fn describe() -> scrypto_abi::Type {
                         use ::sbor::rust::borrow::ToOwned;
                         use ::sbor::rust::vec;
-                        use scrypto_abi::Describe;
+                        use scrypto_abi::LegacyDescribe;
 
                         scrypto_abi::Type::Enum {
                             name: "Test".to_owned(),

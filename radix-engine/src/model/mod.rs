@@ -27,7 +27,7 @@ pub use self::scrypto::*;
 pub use crate::engine::InvokeError;
 pub use abi_extractor::*;
 pub use auth::*;
-pub use auth_converter::convert;
+pub use auth_converter::*;
 pub use clock::*;
 pub use component::*;
 pub use epoch_manager::*;

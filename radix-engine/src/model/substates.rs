@@ -8,7 +8,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::data::IndexedScryptoValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
@@ -31,6 +31,14 @@ pub enum PersistedSubstate {
 
 impl PersistedSubstate {
     pub fn vault(&self) -> &VaultSubstate {
+        if let PersistedSubstate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
+    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
         if let PersistedSubstate::Vault(vault) = self {
             vault
         } else {
@@ -261,17 +269,17 @@ impl RuntimeSubstate {
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::ComponentState(substate)
             }
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)
             }
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::NonFungible(substate)
             }
             offset => {
@@ -991,12 +999,24 @@ impl<'a> SubstateRef<'a> {
                 }
                 (HashSet::new(), owned_nodes)
             }
+            SubstateRef::PackageRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
+            }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
                 (
                     scrypto_value.global_references(),
-                    scrypto_value.owned_node_ids(),
+                    scrypto_value
+                        .owned_node_ids()
+                        .expect("No duplicates expected"),
                 )
+            }
+            SubstateRef::ComponentRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 let maybe_scrypto_value = substate
@@ -1006,7 +1026,9 @@ impl<'a> SubstateRef<'a> {
                 if let Some(scrypto_value) = maybe_scrypto_value {
                     (
                         scrypto_value.global_references(),
-                        scrypto_value.owned_node_ids(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
                     )
                 } else {
                     (HashSet::new(), HashSet::new())
@@ -1020,7 +1042,9 @@ impl<'a> SubstateRef<'a> {
                 if let Some(scrypto_value) = maybe_scrypto_value {
                     (
                         scrypto_value.global_references(),
-                        scrypto_value.owned_node_ids(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
                     )
                 } else {
                     (HashSet::new(), HashSet::new())

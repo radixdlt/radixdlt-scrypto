@@ -13,7 +13,7 @@ use crate::state_manager::StateDiff;
 use crate::types::*;
 
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
@@ -72,7 +72,7 @@ impl TransactionOutcome {
 }
 
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -111,7 +111,7 @@ impl EntityChanges {
 }
 
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
@@ -231,11 +231,11 @@ impl TransactionReceipt {
             InstructionOutput::Native(native) => {
                 // TODO: Use downcast
                 let value = IndexedScryptoValue::from_typed(&native.as_ref());
-                scrypto_decode::<T>(&value.raw).expect("Wrong native instruction output type!")
+                scrypto_decode::<T>(value.as_slice())
+                    .expect("Wrong native instruction output type!")
             }
-            InstructionOutput::Scrypto(value) => {
-                scrypto_decode::<T>(&value.raw).expect("Wrong scrypto instruction output type!")
-            }
+            InstructionOutput::Scrypto(value) => scrypto_decode::<T>(value.as_slice())
+                .expect("Wrong scrypto instruction output type!"),
         }
     }
 
