@@ -10,7 +10,7 @@ pub trait QueryableSubstateStore {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct OutputId {
     pub substate_id: SubstateId,
     pub substate_hash: Hash,
@@ -18,7 +18,7 @@ pub struct OutputId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct OutputValue {
     pub substate: PersistedSubstate,
     pub version: u32,

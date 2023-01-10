@@ -1,10 +1,10 @@
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::data::types::Own;
-use radix_engine_interface::data::ScryptoCustomTypeId;
+use radix_engine_interface::data::ScryptoCustomValueKind;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use radix_engine_interface::TypeId;
+use radix_engine_interface::Categorize;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -22,17 +22,17 @@ pub struct Vault(pub VaultId); // scrypto stub
 // binary
 //========
 
-impl TypeId<ScryptoCustomTypeId> for Vault {
+impl Categorize<ScryptoCustomValueKind> for Vault {
     #[inline]
-    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
-        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
     }
 }
 
-impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Vault {
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Vault {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -41,12 +41,12 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Vault {
     }
 }
 
-impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Vault {
-    fn decode_body_with_type_id(
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Vault {
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<ScryptoCustomTypeId>,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
         match o {
             Own::Vault(vault_id) => Ok(Self(vault_id)),
             _ => Err(DecodeError::InvalidCustomValue),
@@ -54,7 +54,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Vault {
     }
 }
 
-impl scrypto_abi::Describe for Vault {
+impl scrypto_abi::LegacyDescribe for Vault {
     fn describe() -> scrypto_abi::Type {
         Type::Vault
     }

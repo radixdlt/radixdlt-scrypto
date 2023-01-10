@@ -11,8 +11,8 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
-    trace!("handle_type_id() starts");
+pub fn handle_categorize(input: TokenStream) -> Result<TokenStream> {
+    trace!("handle_categorize() starts");
 
     let DeriveInput {
         attrs,
@@ -21,24 +21,23 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
         generics,
         ..
     } = parse2(input)?;
-    let custom_type_id = custom_type_id(&attrs);
     let (impl_generics, ty_generics, where_clause, sbor_cti) =
-        build_custom_type_id_generic(&generics, custom_type_id)?;
+        build_custom_categorize_generic(&generics, &attrs)?;
 
     let output = match data {
         Data::Struct(_) => quote! {
-            impl #impl_generics ::sbor::TypeId <#sbor_cti> for #ident #ty_generics #where_clause {
+            impl #impl_generics ::sbor::Categorize <#sbor_cti> for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> ::sbor::SborTypeId <#sbor_cti> {
-                    ::sbor::SborTypeId::Tuple
+                fn value_kind() -> ::sbor::ValueKind <#sbor_cti> {
+                    ::sbor::ValueKind::Tuple
                 }
             }
         },
         Data::Enum(_) => quote! {
-            impl #impl_generics ::sbor::TypeId <#sbor_cti> for #ident #ty_generics #where_clause {
+            impl #impl_generics ::sbor::Categorize <#sbor_cti> for #ident #ty_generics #where_clause {
                 #[inline]
-                fn type_id() -> ::sbor::SborTypeId <#sbor_cti> {
-                    ::sbor::SborTypeId::Enum
+                fn value_kind() -> ::sbor::ValueKind <#sbor_cti> {
+                    ::sbor::ValueKind::Enum
                 }
             }
         },
@@ -48,9 +47,9 @@ pub fn handle_type_id(input: TokenStream) -> Result<TokenStream> {
     };
 
     #[cfg(feature = "trace")]
-    crate::utils::print_generated_code("TypeId", &output);
+    crate::utils::print_generated_code("Categorize", &output);
 
-    trace!("handle_type_id() finishes");
+    trace!("handle_categorize() finishes");
     Ok(output)
 }
 
@@ -66,17 +65,17 @@ mod tests {
     }
 
     #[test]
-    fn test_type_id_struct() {
+    fn test_categorize_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        let output = handle_type_id(input).unwrap();
+        let output = handle_categorize(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <X: ::sbor::CustomTypeId> ::sbor::TypeId<X> for Test {
+                impl <X: ::sbor::CustomValueKind> ::sbor::Categorize<X> for Test {
                     #[inline]
-                    fn type_id() -> ::sbor::SborTypeId<X> {
-                        ::sbor::SborTypeId::Tuple
+                    fn value_kind() -> ::sbor::ValueKind<X> {
+                        ::sbor::ValueKind::Tuple
                     }
                 }
             },
@@ -84,17 +83,17 @@ mod tests {
     }
 
     #[test]
-    fn test_type_id_struct_generics() {
+    fn test_categorize_struct_generics() {
         let input = TokenStream::from_str("struct Test<A> {a: A}").unwrap();
-        let output = handle_type_id(input).unwrap();
+        let output = handle_categorize(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <A, X: ::sbor::CustomTypeId> ::sbor::TypeId<X> for Test<A> {
+                impl <A, X: ::sbor::CustomValueKind> ::sbor::Categorize<X> for Test<A> {
                     #[inline]
-                    fn type_id() -> ::sbor::SborTypeId<X> {
-                        ::sbor::SborTypeId::Tuple
+                    fn value_kind() -> ::sbor::ValueKind<X> {
+                        ::sbor::ValueKind::Tuple
                     }
                 }
             },
@@ -102,17 +101,17 @@ mod tests {
     }
 
     #[test]
-    fn test_type_id_enum() {
+    fn test_categorize_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        let output = handle_type_id(input).unwrap();
+        let output = handle_categorize(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <X: ::sbor::CustomTypeId> ::sbor::TypeId<X> for Test {
+                impl <X: ::sbor::CustomValueKind> ::sbor::Categorize<X> for Test {
                     #[inline]
-                    fn type_id() -> ::sbor::SborTypeId<X> {
-                        ::sbor::SborTypeId::Enum
+                    fn value_kind() -> ::sbor::ValueKind<X> {
+                        ::sbor::ValueKind::Enum
                     }
                 }
             },

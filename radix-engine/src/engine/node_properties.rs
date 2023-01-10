@@ -4,9 +4,9 @@ use crate::engine::{
 use crate::model::GlobalAddressSubstate;
 use radix_engine_interface::api::types::{
     AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
-    GlobalOffset, KeyValueStoreOffset, NativeFn, NativeFunction, NativeMethod, PackageOffset,
-    ProofOffset, RENodeId, ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset,
-    TransactionProcessorFunction, VaultOffset, WorktopOffset,
+    GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId,
+    ResourceManagerOffset, ScryptoFnIdentifier, SubstateOffset, TransactionProcessorFn,
+    VaultOffset, WorktopOffset,
 };
 
 pub struct VisibilityProperties;
@@ -25,35 +25,29 @@ impl VisibilityProperties {
             ExecutionMode::Application => match node_id {
                 // TODO: Cleanup and reduce to least privilege
                 RENodeId::Worktop => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Function(
-                        NativeFunction::TransactionProcessor(..),
-                    )) => true,
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
                 RENodeId::AuthZoneStack(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Function(
-                        NativeFunction::TransactionProcessor(..),
-                    )) => true,
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
                 RENodeId::TransactionRuntime(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Function(
-                        NativeFunction::TransactionProcessor(..),
-                    )) => true,
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(..)) => true,
                     _ => false,
                 },
                 RENodeId::Bucket(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Bucket(..)))
-                    | FnIdentifier::Native(NativeFn::Method(NativeMethod::Worktop(..)))
-                    | FnIdentifier::Native(NativeFn::Method(NativeMethod::ResourceManager(..)))
-                    | FnIdentifier::Native(NativeFn::Method(NativeMethod::Vault(..))) => true,
+                    FnIdentifier::Native(NativeFn::Bucket(..))
+                    | FnIdentifier::Native(NativeFn::Worktop(..))
+                    | FnIdentifier::Native(NativeFn::ResourceManager(..))
+                    | FnIdentifier::Native(NativeFn::Vault(..)) => true,
                     _ => false,
                 },
                 RENodeId::Proof(..) => match &actor.identifier {
-                    FnIdentifier::Native(NativeFn::Method(NativeMethod::AuthZoneStack(..))) => true,
-                    FnIdentifier::Native(NativeFn::Method(NativeMethod::Proof(..))) => true,
-                    FnIdentifier::Native(NativeFn::Function(
-                        NativeFunction::TransactionProcessor(TransactionProcessorFunction::Run),
+                    FnIdentifier::Native(NativeFn::AuthZoneStack(..)) => true,
+                    FnIdentifier::Native(NativeFn::Proof(..)) => true,
+                    FnIdentifier::Native(NativeFn::TransactionProcessor(
+                        TransactionProcessorFn::Run,
                     )) => true,
                     FnIdentifier::Scrypto(..) => true,
                     _ => false,

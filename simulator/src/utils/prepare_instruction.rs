@@ -523,10 +523,10 @@ impl From<BuildArgsError> for BuildCallWithAbiError {
 #[cfg(test)]
 mod test {
     use super::*;
+    use radix_engine::engine::{IdAllocator, IdSpace};
     use radix_engine_interface::abi::Type;
     use serial_test::serial;
     use transaction::builder::ManifestBuilder;
-    use transaction::validation::{IdAllocator, IdSpace};
 
     #[test]
     pub fn parsing_of_u8_succeeds() {

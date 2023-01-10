@@ -6,12 +6,12 @@ use crate::model::{BucketSubstate, ProofError, ResourceOperationError};
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
-    BucketMethod, BucketOffset, GlobalAddress, NativeMethod, RENodeId, SubstateOffset,
+    BucketFn, BucketOffset, GlobalAddress, RENodeId, SubstateOffset,
 };
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum BucketError {
     InvalidDivisibility,
     InvalidRequestData(DecodeError),
@@ -20,7 +20,7 @@ pub enum BucketError {
     ResourceOperationError(ResourceOperationError),
     ProofError(ProofError),
     CouldNotCreateProof,
-    MethodNotFound(BucketMethod),
+    MethodNotFound(BucketFn),
 }
 
 impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
@@ -33,7 +33,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Bucket(BucketMethod::Take),
+            NativeFn::Bucket(BucketFn::Take),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -79,7 +79,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketCreateProofInvocation {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Bucket(BucketMethod::CreateProof),
+            NativeFn::Bucket(BucketFn::CreateProof),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -126,7 +126,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeNonFungiblesInvocation
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Bucket(BucketMethod::TakeNonFungibles),
+            NativeFn::Bucket(BucketFn::TakeNonFungibles),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -172,7 +172,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetNonFungibleIdsInvocatio
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Bucket(BucketMethod::GetNonFungibleIds),
+            NativeFn::Bucket(BucketFn::GetNonFungibleIds),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -214,7 +214,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetAmountInvocation {
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Bucket(BucketMethod::GetAmount),
+            NativeFn::Bucket(BucketFn::GetAmount),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -251,7 +251,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketPutInvocation {
             .nodes_to_move
             .push(RENodeId::Bucket(self.bucket.0));
         let actor = ResolvedActor::method(
-            NativeMethod::Bucket(BucketMethod::Put),
+            NativeFn::Bucket(BucketFn::Put),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))
@@ -294,7 +294,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetResourceAddressInvocati
         let receiver = RENodeId::Bucket(self.receiver);
         let call_frame_update = CallFrameUpdate::copy_ref(receiver);
         let actor = ResolvedActor::method(
-            NativeMethod::Bucket(BucketMethod::GetResourceAddress),
+            NativeFn::Bucket(BucketFn::GetResourceAddress),
             ResolvedReceiver::new(receiver),
         );
         Ok((actor, call_frame_update, self))

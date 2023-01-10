@@ -24,11 +24,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Package", 
-                            Enum("SetRoyaltyConfig")
-                        )
+                        "Package",
+                        Enum("SetRoyaltyConfig")
                     )
                 ), 
                 Enum(
@@ -52,13 +49,10 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Package", 
-                            Enum("ClaimRoyalty")
-                        )
+                        "Package",
+                        Enum("ClaimRoyalty")
                     )
-                ), 
+                ),
                 Enum(
                     "AccessRule", 
                     Enum(
@@ -80,13 +74,10 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Metadata", 
-                            Enum("Set")
-                        )
+                        "Metadata",
+                        Enum("Set")
                     )
-                ), 
+                ),
                 Enum(
                     "AccessRule", 
                     Enum(
@@ -108,13 +99,10 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Metadata", 
-                            Enum("Get")
-                        )
+                        "Metadata",
+                        Enum("Get")
                     )
-                ), 
+                ),
                 Enum(
                     "AccessRule", 
                     Enum("AllowAll")
@@ -128,11 +116,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Package", 
-                            Enum("SetRoyaltyConfig")
-                        )
+                        "Package",
+                        Enum("SetRoyaltyConfig")
                     )
                 ), 
                 Enum(
@@ -153,11 +138,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Package", 
-                            Enum("ClaimRoyalty")
-                        )
+                        "Package",
+                        Enum("ClaimRoyalty")
                     )
                 ), 
                 Enum(
@@ -178,11 +160,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Metadata", 
-                            Enum("Set")
-                        )
+                        "Metadata",
+                        Enum("Set")
                     )
                 ), 
                 Enum(
@@ -203,11 +182,8 @@ PUBLISH_PACKAGE
                 Enum(
                     "Native", 
                     Enum(
-                        "Method", 
-                        Enum(
-                            "Metadata", 
-                            Enum("Get")
-                        )
+                        "Metadata",
+                        Enum("Get")
                     )
                 ), 
                 Enum(

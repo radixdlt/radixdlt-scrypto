@@ -6,7 +6,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::abi::*;
 use crate::address::*;
-use crate::data::ScryptoCustomTypeId;
+use crate::data::ScryptoCustomValueKind;
 use crate::scrypto_type;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -60,7 +60,7 @@ impl SystemAddress {
 
 scrypto_type!(
     SystemAddress,
-    ScryptoCustomTypeId::SystemAddress,
+    ScryptoCustomValueKind::SystemAddress,
     Type::SystemAddress,
     27
 );

@@ -6,22 +6,22 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::*;
 
-use crate::api::types::PackageMethod;
-use crate::api::types::{MetadataMethod, NativeMethod};
+use crate::api::types::MetadataFn;
+use crate::api::types::PackageFn;
 use crate::model::*;
 use crate::rule;
 use crate::scrypto;
 use crate::Describe;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum AccessRuleKey {
     ScryptoMethod(String),
     Native(NativeFn),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
     Group(String),
@@ -29,7 +29,7 @@ pub enum AccessRuleEntry {
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub struct AccessRules {
     method_auth: HashMap<AccessRuleKey, AccessRuleEntry>,
     grouped_auth: HashMap<String, AccessRule>,
@@ -196,30 +196,22 @@ impl AccessRules {
 pub fn package_access_rules_from_owner_badge(owner_badge: &NonFungibleAddress) -> AccessRules {
     let mut access_rules = AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll);
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-            MetadataMethod::Get,
-        ))),
+        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Get)),
         AccessRule::AllowAll,
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Metadata(
-            MetadataMethod::Set,
-        ))),
+        AccessRuleKey::Native(NativeFn::Metadata(MetadataFn::Set)),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-            PackageMethod::SetRoyaltyConfig,
-        ))),
+        AccessRuleKey::Native(NativeFn::Package(PackageFn::SetRoyaltyConfig)),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );
     access_rules.set_access_rule_and_mutability(
-        AccessRuleKey::Native(NativeFn::Method(NativeMethod::Package(
-            PackageMethod::ClaimRoyalty,
-        ))),
+        AccessRuleKey::Native(NativeFn::Package(PackageFn::ClaimRoyalty)),
         rule!(require(owner_badge.clone())),
         rule!(require(owner_badge.clone())),
     );

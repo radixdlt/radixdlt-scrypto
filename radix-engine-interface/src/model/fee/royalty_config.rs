@@ -9,7 +9,7 @@ use crate::Describe;
 
 /// Royalty rules
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub struct RoyaltyConfig {
     pub rules: HashMap<String, u32>,
     pub default_rule: u32,

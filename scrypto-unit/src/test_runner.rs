@@ -12,8 +12,8 @@ use radix_engine::model::{
 };
 use radix_engine::state_manager::StagedSubstateStoreManager;
 use radix_engine::transaction::{
-    execute_and_commit_transaction, execute_preview, ExecutionConfig, FeeReserveConfig,
-    PreviewError, PreviewResult, TransactionReceipt,
+    execute_and_commit_transaction, execute_preview, execute_transaction, ExecutionConfig,
+    FeeReserveConfig, PreviewError, PreviewResult, TransactionReceipt,
 };
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
@@ -23,11 +23,12 @@ use radix_engine_interface::constants::EPOCH_MANAGER;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, AccessRules, EpochManagerInvocation, FromPublicKey, NativeInvocation,
-    NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
+    NativeInvocation, NonFungibleAddress, NonFungibleIdType,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
@@ -113,12 +114,26 @@ pub struct TestRunner {
 
 impl TestRunner {
     pub fn new(trace: bool) -> Self {
+        Self::new_with_genesis(trace, create_genesis(HashSet::new(), 1u64, 1u64))
+    }
+
+    pub fn new_with_genesis(trace: bool, genesis: SystemTransaction) -> Self {
         let scrypto_interpreter = ScryptoInterpreter {
             wasm_metering_config: WasmMeteringConfig::V0,
             wasm_engine: DefaultWasmEngine::default(),
             wasm_instrumenter: WasmInstrumenter::default(),
         };
-        let substate_store = TypedInMemorySubstateStore::with_bootstrap(&scrypto_interpreter);
+        let mut substate_store = TypedInMemorySubstateStore::new();
+        let transaction_receipt = execute_transaction(
+            &mut substate_store,
+            &scrypto_interpreter,
+            &FeeReserveConfig::default(),
+            &ExecutionConfig::default(),
+            &genesis.get_executable(vec![AuthAddresses::system_role()]),
+        );
+        let commit_result = transaction_receipt.expect_commit();
+        commit_result.outcome.expect_success();
+        commit_result.state_updates.commit(&mut substate_store);
         Self {
             scrypto_interpreter,
             substate_store,
@@ -847,7 +862,7 @@ impl TestRunner {
                 blobs,
                 nonce,
             }
-            .get_executable(vec![AuthAddresses::validator_role()]),
+            .get_executable(vec![AuthAddresses::system_role()]),
         );
         receipt.expect_commit_success();
     }
@@ -856,6 +871,48 @@ impl TestRunner {
         let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
             EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
                 receiver: EPOCH_MANAGER,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        receipt.output(0)
+    }
+
+    pub fn set_current_time(&mut self, current_time_ms: i64) {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+                current_time_ms,
+                receiver: CLOCK,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        receipt.output(0)
+    }
+
+    pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
+                precision,
+                receiver: CLOCK,
             }),
         ))];
         let blobs = vec![];

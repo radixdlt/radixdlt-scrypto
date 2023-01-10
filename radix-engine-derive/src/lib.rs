@@ -26,7 +26,7 @@ pub fn describe(input: TokenStream) -> TokenStream {
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
-/// #[scrypto(Encode, Decode, TypeId, Describe, NonFungibleData)]
+/// #[scrypto(Encode, Decode, Categorize, Describe, NonFungibleData)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
 ///     pub field_2: String,
