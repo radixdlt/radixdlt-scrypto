@@ -141,8 +141,8 @@ pub fn create_genesis(
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
         let inst = BasicInstruction::PublishPackage {
-            code: Blob(hash(&faucet_code)),
-            abi: Blob(hash(&faucet_abi)),
+            code: ManifestBlob(hash(&faucet_code)),
+            abi: ManifestBlob(hash(&faucet_abi)),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
@@ -157,8 +157,8 @@ pub fn create_genesis(
         let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
         let inst = BasicInstruction::PublishPackage {
-            code: Blob(hash(&account_code)),
-            abi: Blob(hash(&account_abi)),
+            code: ManifestBlob(hash(&account_code)),
+            abi: ManifestBlob(hash(&account_abi)),
             royalty_config: BTreeMap::new(),
             metadata: BTreeMap::new(),
             access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
