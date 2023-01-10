@@ -339,7 +339,7 @@ pub fn serialize_custom_value<S: Serializer>(
     context: &ScryptoValueFormattingContext,
 ) -> Result<S::Ok, S::Error> {
     match value {
-        // Global address types
+        // RE interpreted types
         ScryptoCustomValue::PackageAddress(value) => {
             let string_address =
                 format!("{}", value.display(context.display_context.bech32_encoder));
@@ -387,20 +387,12 @@ pub fn serialize_custom_value<S: Serializer>(
                 &string_address,
             )
         }
-        // RE interpreted types
         ScryptoCustomValue::Own(value) => serialize_value(
             ValueEncoding::WithType,
             serializer,
             context,
             ScryptoCustomValueKind::Own,
             &format!("{:?}", value), // TODO: fix syntax
-        ),
-        ScryptoCustomValue::Blob(value) => serialize_value(
-            ValueEncoding::WithType,
-            serializer,
-            context,
-            ScryptoCustomValueKind::Blob,
-            &format!("{}", value),
         ),
         // TX interpreted types
         ScryptoCustomValue::Bucket(value) => {
@@ -454,6 +446,13 @@ pub fn serialize_custom_value<S: Serializer>(
                     ManifestExpression::EntireAuthZone => "ENTIRE_AUTH_ZONE",
                 }
             ),
+        ),
+        ScryptoCustomValue::Blob(value) => serialize_value(
+            ValueEncoding::WithType,
+            serializer,
+            context,
+            ScryptoCustomValueKind::Blob,
+            &format!("{}", hex::encode(&value.0 .0)),
         ),
         // Uninterpreted
         ScryptoCustomValue::Hash(value) => serialize_value(
@@ -719,7 +718,7 @@ mod tests {
                 EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
                 EddsaEd25519Signature,
             },
-            data::types::{Blob, ManifestBucket, ManifestExpression, ManifestProof, Own},
+            data::types::{ManifestBlob, ManifestBucket, ManifestExpression, ManifestProof, Own},
             math::{Decimal, PreciseDecimal},
         };
 
@@ -797,7 +796,7 @@ mod tests {
                             ),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::Blob(Blob(Hash([0; 32]))),
+                            value: ScryptoCustomValue::Blob(ManifestBlob(Hash([0; 32]))),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::Hash(Hash([0; 32])),
