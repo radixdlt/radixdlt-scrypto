@@ -1,10 +1,10 @@
 use super::*;
 
-use well_known_basic_types::*;
+use basic_well_known_types::*;
 
-pub const CUSTOM_WELL_KNOWN_VALUE_KIND_START: u8 = 0x80;
+pub const CUSTOM_WELL_KNOWN_TYPE_START: u8 = 0x80;
 
-pub mod well_known_basic_types {
+pub mod basic_well_known_types {
     use sbor::*;
 
     // These ids must be usable in a const context
@@ -64,7 +64,7 @@ pub fn resolve_well_known_type<E: CustomTypeExtension>(
                 element_type: LocalTypeIndex::WellKnown(U8_ID),
             },
         ),
-        index if index >= CUSTOM_WELL_KNOWN_VALUE_KIND_START => {
+        index if index >= CUSTOM_WELL_KNOWN_TYPE_START => {
             return E::resolve_custom_well_known_type(index)
         }
         _ => return None,

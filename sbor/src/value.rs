@@ -258,7 +258,7 @@ mod schema {
     use crate::*;
 
     impl<X: CustomValueKind, Y, C: CustomTypeKind<GlobalTypeId>> Describe<C> for Value<X, Y> {
-        const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(well_known_basic_types::ANY_ID);
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
     }
 }
 

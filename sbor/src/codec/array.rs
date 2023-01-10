@@ -2,6 +2,20 @@ use crate::rust::mem::MaybeUninit;
 use crate::value_kind::*;
 use crate::*;
 
+impl<X: CustomValueKind, T> Categorize<X> for [T] {
+    #[inline]
+    fn value_kind() -> ValueKind<X> {
+        ValueKind::Array
+    }
+}
+
+impl<X: CustomValueKind, T, const N: usize> Categorize<X> for [T; N] {
+    #[inline]
+    fn value_kind() -> ValueKind<X> {
+        ValueKind::Array
+    }
+}
+
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>> Encode<X, E> for [T] {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -82,15 +96,15 @@ mod schema {
 
     impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for [T] {
         const TYPE_ID: GlobalTypeId = match T::TYPE_ID {
-            GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => {
-                GlobalTypeId::well_known(well_known_basic_types::BYTES_ID)
+            GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => {
+                GlobalTypeId::well_known(basic_well_known_types::BYTES_ID)
             }
             _ => GlobalTypeId::novel("Array", &[T::TYPE_ID]),
         };
 
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             match T::TYPE_ID {
-                GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => None,
+                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => None,
                 _ => Some(TypeData::new(
                     TypeMetadata::named_no_child_names("Array"),
                     TypeKind::Array {
@@ -118,7 +132,7 @@ mod schema {
                 .try_into()
                 .expect("The array length is too large for a u32 for the SBOR schema");
             let type_name = match T::TYPE_ID {
-                GlobalTypeId::WellKnown([well_known_basic_types::U8_ID]) => "Bytes",
+                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => "Bytes",
                 _ => "Array",
             };
             Some(

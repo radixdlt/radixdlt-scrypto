@@ -1,6 +1,8 @@
 use crate::value_kind::*;
 use crate::*;
 
+categorize_simple!(bool, ValueKind::Bool);
+
 impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for bool {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -30,4 +32,4 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for bool {
 }
 
 #[cfg(feature = "schema")]
-well_known_basic_type!(bool, BOOL_ID);
+describe_basic_well_known_type!(bool, BOOL_ID);
