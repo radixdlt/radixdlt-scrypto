@@ -38,7 +38,7 @@ pub use macros::*;
 
 // Re-export SBOR derive.
 extern crate sbor;
-pub use sbor::{Decode, Encode, TypeId};
+pub use sbor::{Categorize, Decode, Encode};
 
 // Re-export Engine derive.
 extern crate radix_engine_derive;

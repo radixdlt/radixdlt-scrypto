@@ -281,6 +281,20 @@ impl SubstateProperties {
                     node_id,
                 ))),
             },
+            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator) => match node_id {
+                RENodeId::Vault(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
+            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator) => match node_id {
+                RENodeId::Vault(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
                 | RENodeId::Package(..)

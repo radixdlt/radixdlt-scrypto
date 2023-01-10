@@ -7,11 +7,11 @@ use sbor::*;
 use crate::abi::*;
 use crate::api::{api::*, types::*};
 use crate::data::types::Own;
-use crate::data::ScryptoCustomTypeId;
+use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::wasm::*;
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ProofGetAmountInvocation {
     pub receiver: ProofId,
 }
@@ -30,7 +30,7 @@ impl Into<SerializedInvocation> for ProofGetAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ProofGetNonFungibleIdsInvocation {
     pub receiver: ProofId,
 }
@@ -49,7 +49,7 @@ impl Into<SerializedInvocation> for ProofGetNonFungibleIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ProofGetResourceAddressInvocation {
     pub receiver: ProofId,
 }
@@ -68,7 +68,7 @@ impl Into<SerializedInvocation> for ProofGetResourceAddressInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub struct ProofCloneInvocation {
     pub receiver: ProofId,
 }
@@ -147,17 +147,17 @@ pub struct Proof(pub ProofId); // scrypto stub
 // binary
 //========
 
-impl TypeId<ScryptoCustomTypeId> for Proof {
+impl Categorize<ScryptoCustomValueKind> for Proof {
     #[inline]
-    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
-        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
     }
 }
 
-impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Proof {
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Proof {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -166,12 +166,12 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Proof {
     }
 }
 
-impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Proof {
-    fn decode_body_with_type_id(
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Proof {
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<ScryptoCustomTypeId>,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
         match o {
             Own::Proof(proof_id) => Ok(Self(proof_id)),
             _ => Err(DecodeError::InvalidCustomValue),
@@ -179,7 +179,7 @@ impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Proof {
     }
 }
 
-impl scrypto_abi::Describe for Proof {
+impl scrypto_abi::LegacyDescribe for Proof {
     fn describe() -> scrypto_abi::Type {
         Type::Proof
     }

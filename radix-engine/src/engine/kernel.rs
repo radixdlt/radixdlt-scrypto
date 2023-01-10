@@ -177,7 +177,13 @@ where
                     },
                     IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
                 ))?;
-                let component_id = result.owned_node_ids().into_iter().next().unwrap().into();
+                let component_id = result
+                    .owned_node_ids()
+                    .expect("No duplicates expected")
+                    .into_iter()
+                    .next()
+                    .unwrap()
+                    .into();
 
                 // TODO: Use system_api to globalize component when create_node is refactored
                 // TODO: to allow for address selection
@@ -637,8 +643,7 @@ where
                 &mut self.track,
                 SysCallInput::Invoke {
                     invocation: &invocation,
-                    input_size: 0,       // TODO: Fix this
-                    owned_node_count: 0, // TODO: Fix this
+                    input_size: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
                 },
             )

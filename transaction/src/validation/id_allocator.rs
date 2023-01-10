@@ -10,7 +10,7 @@ pub struct ManifestIdAllocator {
 impl ManifestIdAllocator {
     pub fn new() -> Self {
         Self {
-            available: 512..u32::MAX, // TODO: start from zero?
+            available: 0..u32::MAX,
         }
     }
 

@@ -7,7 +7,7 @@ use bitflags::bitflags;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
 
 bitflags! {
-    #[derive(Encode, Decode, TypeId)]
+    #[derive(Encode, Decode, Categorize)]
     pub struct LockFlags: u32 {
         /// Allows the locked substate to be mutated
         const MUTABLE = 0b00000001;

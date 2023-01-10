@@ -12,7 +12,7 @@ use sbor::*;
 // TODO: Should `Encode` and `Decode` be removed so that `ComponentAccessRules` can not be passed
 // between components?
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub struct ComponentAccessRules {
     component: ComponentIdentifier,
     index: u32,
@@ -60,7 +60,7 @@ impl ComponentAccessRules {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum ComponentIdentifier {
     RENodeId(ComponentId),
     GlobalAddress(ComponentAddress),
@@ -90,7 +90,7 @@ impl From<ComponentIdentifier> for RENodeId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum Mutability {
     LOCKED,
     MUTABLE(AccessRule),

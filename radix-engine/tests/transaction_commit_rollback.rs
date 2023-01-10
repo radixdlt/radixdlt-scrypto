@@ -29,11 +29,43 @@ fn test_state_track_success() {
 
     // Assert
     receipt.expect_commit_success();
+    let state_updates = &receipt.expect_commit().state_updates;
+    for (o, n) in state_updates.down_substate_offsets() {
+        println!("DOWN: {:?}, {}", o, n);
+    }
+    for (o, n) in state_updates.up_substate_offsets() {
+        println!("UP: {:?}, {}", o, n);
+    }
     assert_eq!(
-        22,
-        receipt.expect_commit().state_updates.down_substates.len()
+        state_updates.down_substate_ids().len(),
+        4 /* Global(Global */
+        + 2 /* Component(Info) */
+        + 2 /* Component(State) */
+        + 2 /* Component(RoyaltyConfig) */
+        + 2 /* Component(RoyaltyAccumulator) */
+        + 2 /* AccessRulesChain(AccessRulesChain) */
+        + 1 /* VaultAccessRulesChain(AccessRulesChain) */
+        + 1 /* Package(Info) */
+        + 1 /* Package(RoyaltyConfig) */
+        + 1 /* Package(RoyaltyAccumulator) */
+        + 2 /* KeyValueStore(Entry([92, 130, 0, 83, 241, 195, 226, 12, 194, 56, 53, 94, 35, 176, 29, 236, 187, 0, 167, 136, 92, 42, 130, 100, 141, 94, 133, 157, 79])) */
+        + 5 /* Vault(Vault) */
     );
-    assert_eq!(22, receipt.expect_commit().state_updates.up_substates.len());
+    assert_eq!(
+        state_updates.up_substate_ids().len(),
+        4 /* Global(Global */
+        + 2 /* Component(Info) */
+        + 2 /* Component(State) */
+        + 2 /* Component(RoyaltyConfig) */
+        + 2 /* Component(RoyaltyAccumulator) */
+        + 2 /* AccessRulesChain(AccessRulesChain) */
+        + 1 /* VaultAccessRulesChain(AccessRulesChain) */
+        + 1 /* Package(Info) */
+        + 1 /* Package(RoyaltyConfig) */
+        + 1 /* Package(RoyaltyAccumulator) */
+        + 2 /* KeyValueStore(Entry([92, 130, 0, 83, 241, 195, 226, 12, 194, 56, 53, 94, 35, 176, 29, 236, 187, 0, 167, 136, 92, 42, 130, 100, 141, 94, 133, 157, 79])) */
+        + 5 /* Vault(Vault) */
+    );
 }
 
 #[test]

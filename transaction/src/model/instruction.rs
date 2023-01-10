@@ -1,4 +1,5 @@
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
+use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::types::{Blob, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
@@ -9,7 +10,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum BasicInstruction {
     /// Takes resource from worktop.
     TakeFromWorktop {
@@ -96,25 +97,6 @@ pub enum BasicInstruction {
 
     /// Drops all of the proofs in the transaction.
     DropAllProofs,
-
-    /// Calls a scrypto function.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        function_name: String,
-        args: Vec<u8>,
-    },
-
-    /// Calls a scrypto method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallMethod {
-        component_address: ComponentAddress,
-        method_name: String,
-        args: Vec<u8>,
-    },
 
     /// Publish a package.
     PublishPackage {
@@ -209,10 +191,37 @@ pub enum BasicInstruction {
         owner_badge: NonFungibleAddress,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
+
+    /// Calls a scrypto function.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallFunction {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        function_name: String,
+        args: Vec<u8>,
+    },
+
+    /// Calls a scrypto method.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallMethod {
+        component_address: ComponentAddress,
+        method_name: String,
+        args: Vec<u8>,
+    },
+
+    // TODO: Integrate this with CallMethod
+    RegisterValidator {
+        validator: EcdsaSecp256k1PublicKey,
+    },
+    UnregisterValidator {
+        validator: EcdsaSecp256k1PublicKey,
+    },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum Instruction {
     Basic(BasicInstruction),
     System(NativeInvocation),

@@ -10,7 +10,6 @@ pub enum SystemApiCostingEntry {
      */
     Invoke {
         input_size: u32,
-        owned_node_count: u32,
     },
 
     /*
@@ -120,6 +119,8 @@ impl FeeTable {
                 EpochManagerFn::GetCurrentEpoch => self.fixed_low,
                 EpochManagerFn::NextRound => self.fixed_low,
                 EpochManagerFn::SetEpoch => self.fixed_low,
+                EpochManagerFn::RegisterValidator => self.fixed_low,
+                EpochManagerFn::UnregisterValidator => self.fixed_low,
             },
             NativeFn::Clock(clock_method) => match clock_method {
                 ClockFn::Create => self.fixed_low,
@@ -143,13 +144,17 @@ impl FeeTable {
                 ProofFn::Clone => self.fixed_low,
             },
             NativeFn::ResourceManager(resource_manager_ident) => match resource_manager_ident {
-                ResourceManagerFn::Create => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateNonFungible => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateFungible => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::BurnBucket => self.fixed_low,
                 ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
                 ResourceManagerFn::LockAuth => self.fixed_medium,
                 ResourceManagerFn::CreateVault => self.fixed_medium,
                 ResourceManagerFn::CreateBucket => self.fixed_medium,
-                ResourceManagerFn::Mint => self.fixed_high,
+                ResourceManagerFn::MintNonFungible => self.fixed_high,
+                ResourceManagerFn::MintFungible => self.fixed_high,
                 ResourceManagerFn::GetResourceType => self.fixed_low,
                 ResourceManagerFn::GetTotalSupply => self.fixed_low,
                 ResourceManagerFn::UpdateNonFungibleData => self.fixed_medium,
@@ -167,6 +172,9 @@ impl FeeTable {
                 WorktopFn::AssertContainsNonFungibles => self.fixed_low,
                 WorktopFn::Drain => self.fixed_low,
             },
+            NativeFn::Logger(logger_method) => match logger_method {
+                LoggerFn::Log => self.fixed_low,
+            },
             NativeFn::AccessRulesChain(component_ident) => match component_ident {
                 AccessRulesChainFn::AddAccessCheck => self.fixed_low,
                 AccessRulesChainFn::SetMethodAccessRule => self.fixed_low,
@@ -174,9 +182,6 @@ impl FeeTable {
                 AccessRulesChainFn::SetGroupAccessRule => self.fixed_low,
                 AccessRulesChainFn::SetGroupMutability => self.fixed_low,
                 AccessRulesChainFn::GetLength => self.fixed_low,
-            },
-            NativeFn::Logger(logger_method) => match logger_method {
-                LoggerFn::Log => self.fixed_low,
             },
             NativeFn::Metadata(metadata_method) => match metadata_method {
                 MetadataFn::Set => self.fixed_low,
@@ -189,7 +194,7 @@ impl FeeTable {
                 ComponentFn::ClaimRoyalty => self.fixed_medium,
             },
             NativeFn::Package(method_ident) => match method_ident {
-                PackageFn::Publish => self.fixed_low,
+                PackageFn::Publish => self.fixed_high,
                 PackageFn::SetRoyaltyConfig => self.fixed_medium,
                 PackageFn::ClaimRoyalty => self.fixed_medium,
             },
@@ -223,11 +228,9 @@ impl FeeTable {
 
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::Invoke {
-                input_size,
-                owned_node_count,
-                ..
-            } => self.fixed_low + (5 * input_size + 10 * owned_node_count) as u32,
+            SystemApiCostingEntry::Invoke { input_size, .. } => {
+                self.fixed_low + (5 * input_size) as u32
+            }
 
             SystemApiCostingEntry::ReadOwnedNodes => self.fixed_low,
             SystemApiCostingEntry::CreateNode { .. } => self.fixed_medium,

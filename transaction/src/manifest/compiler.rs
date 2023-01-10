@@ -91,7 +91,7 @@ mod tests {
                 BasicInstruction::CallMethod {
                     component_address: component2,
                     method_name: "buy_gumball".to_string(),
-                    args: args!(ManifestBucket(512))
+                    args: args!(ManifestBucket(0))
                 },
                 BasicInstruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),
@@ -116,16 +116,16 @@ mod tests {
                         .unwrap(),
                 },
                 BasicInstruction::CreateProofFromBucket {
-                    bucket_id: ManifestBucket(513)
+                    bucket_id: ManifestBucket(1)
                 },
                 BasicInstruction::CloneProof {
-                    proof_id: ManifestProof(514)
+                    proof_id: ManifestProof(2)
                 },
                 BasicInstruction::DropProof {
-                    proof_id: ManifestProof(514)
+                    proof_id: ManifestProof(2)
                 },
                 BasicInstruction::DropProof {
-                    proof_id: ManifestProof(515)
+                    proof_id: ManifestProof(3)
                 },
                 BasicInstruction::CallMethod {
                     component_address: component1,
@@ -141,10 +141,10 @@ mod tests {
                 },
                 BasicInstruction::PopFromAuthZone,
                 BasicInstruction::DropProof {
-                    proof_id: ManifestProof(516)
+                    proof_id: ManifestProof(4)
                 },
                 BasicInstruction::ReturnToWorktop {
-                    bucket_id: ManifestBucket(513)
+                    bucket_id: ManifestBucket(1)
                 },
                 BasicInstruction::TakeFromWorktopByIds {
                     ids: BTreeSet::from([NonFungibleId::U32(1)]),

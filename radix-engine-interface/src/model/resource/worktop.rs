@@ -8,7 +8,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Debug, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct WorktopPutInvocation {
     pub bucket: Bucket,
 }
@@ -36,7 +36,7 @@ impl Into<SerializedInvocation> for WorktopPutInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct WorktopTakeAmountInvocation {
     pub amount: Decimal,
     pub resource_address: ResourceAddress,
@@ -57,7 +57,7 @@ impl Into<SerializedInvocation> for WorktopTakeAmountInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct WorktopTakeNonFungiblesInvocation {
     pub ids: BTreeSet<NonFungibleId>,
     pub resource_address: ResourceAddress,
@@ -78,7 +78,7 @@ impl Into<SerializedInvocation> for WorktopTakeNonFungiblesInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct WorktopTakeAllInvocation {
     pub resource_address: ResourceAddress,
 }
@@ -98,7 +98,7 @@ impl Into<SerializedInvocation> for WorktopTakeAllInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct WorktopAssertContainsInvocation {
     pub resource_address: ResourceAddress,
 }
@@ -118,7 +118,7 @@ impl Into<SerializedInvocation> for WorktopAssertContainsInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct WorktopAssertContainsAmountInvocation {
     pub resource_address: ResourceAddress,
     pub amount: Decimal,
@@ -138,7 +138,7 @@ impl Into<SerializedInvocation> for WorktopAssertContainsAmountInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct WorktopAssertContainsNonFungiblesInvocation {
     pub resource_address: ResourceAddress,
     pub ids: BTreeSet<NonFungibleId>,
@@ -159,7 +159,7 @@ impl Into<SerializedInvocation> for WorktopAssertContainsNonFungiblesInvocation 
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct WorktopDrainInvocation {}
 
 impl Invocation for WorktopDrainInvocation {

@@ -13,7 +13,7 @@ test_crates_features \
     "sbor" \
     "--release"
 
-echo "Testing raidx engine with wasmer..."
+echo "Testing radix engine with wasmer..."
 test_crates_features \
     "radix-engine" \
     "--features wasmer"

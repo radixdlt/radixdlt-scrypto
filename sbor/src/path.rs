@@ -1,7 +1,7 @@
 use crate::rust::vec;
 use crate::rust::vec::Vec;
-use crate::value::SborValue;
-use crate::CustomTypeId;
+use crate::value::Value;
+use crate::CustomValueKind;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct SborPathBuf(Vec<usize>);
@@ -20,6 +20,12 @@ impl SborPathBuf {
     }
 }
 
+impl From<SborPath> for SborPathBuf {
+    fn from(path: SborPath) -> Self {
+        Self(path.0)
+    }
+}
+
 impl From<SborPathBuf> for SborPath {
     fn from(mutable: SborPathBuf) -> Self {
         SborPath::new(mutable.0)
@@ -35,27 +41,27 @@ impl SborPath {
         SborPath(path)
     }
 
-    pub fn get_from_value<'a, X: CustomTypeId, Y>(
+    pub fn get_from_value<'a, X: CustomValueKind, Y>(
         &'a self,
-        value: &'a SborValue<X, Y>,
-    ) -> Option<&'a SborValue<X, Y>> {
-        let rel_path = SborValueRetriever(&self.0);
+        value: &'a Value<X, Y>,
+    ) -> Option<&'a Value<X, Y>> {
+        let rel_path = ValueRetriever(&self.0);
         rel_path.get_from(value)
     }
 
-    pub fn get_from_value_mut<'a, X: CustomTypeId, Y>(
+    pub fn get_from_value_mut<'a, X: CustomValueKind, Y>(
         &'a self,
-        value: &'a mut SborValue<X, Y>,
-    ) -> Option<&'a mut SborValue<X, Y>> {
-        let rel_path = SborValueRetriever(&self.0);
+        value: &'a mut Value<X, Y>,
+    ) -> Option<&'a mut Value<X, Y>> {
+        let rel_path = ValueRetriever(&self.0);
         rel_path.get_from_mut(value)
     }
 }
 
 /// Helper structure which helps in retrieving a value given a root value and sbor path
-struct SborValueRetriever<'a>(&'a [usize]);
+struct ValueRetriever<'a>(&'a [usize]);
 
-impl<'a> SborValueRetriever<'a> {
+impl<'a> ValueRetriever<'a> {
     fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -63,57 +69,54 @@ impl<'a> SborValueRetriever<'a> {
     fn pop(&self) -> (usize, Self) {
         let (index_slice, extended_path) = self.0.split_at(1);
         let index = index_slice[0];
-        (index, SborValueRetriever(extended_path))
+        (index, ValueRetriever(extended_path))
     }
 
-    fn get_from_vector<X: CustomTypeId, Y>(
+    fn get_from_vector<X: CustomValueKind, Y>(
         &self,
-        values: &'a [SborValue<X, Y>],
-    ) -> Option<&'a SborValue<X, Y>> {
+        values: &'a [Value<X, Y>],
+    ) -> Option<&'a Value<X, Y>> {
         let (index, next_path) = self.pop();
         values
             .get(index)
             .and_then(|value| next_path.get_from(value))
     }
 
-    fn get_from<X: CustomTypeId, Y>(
-        self,
-        value: &'a SborValue<X, Y>,
-    ) -> Option<&'a SborValue<X, Y>> {
+    fn get_from<X: CustomValueKind, Y>(self, value: &'a Value<X, Y>) -> Option<&'a Value<X, Y>> {
         if self.is_empty() {
             return Option::Some(value);
         }
 
         match value {
-            SborValue::Tuple { fields: vec, .. }
-            | SborValue::Enum { fields: vec, .. }
-            | SborValue::Array { elements: vec, .. } => self.get_from_vector(vec),
+            Value::Tuple { fields: vec, .. }
+            | Value::Enum { fields: vec, .. }
+            | Value::Array { elements: vec, .. } => self.get_from_vector(vec),
             _ => Option::None,
         }
     }
 
-    fn get_from_vector_mut<X: CustomTypeId, Y>(
+    fn get_from_vector_mut<X: CustomValueKind, Y>(
         &self,
-        values: &'a mut [SborValue<X, Y>],
-    ) -> Option<&'a mut SborValue<X, Y>> {
+        values: &'a mut [Value<X, Y>],
+    ) -> Option<&'a mut Value<X, Y>> {
         let (index, next_path) = self.pop();
         values
             .get_mut(index)
             .and_then(|value| next_path.get_from_mut(value))
     }
 
-    fn get_from_mut<X: CustomTypeId, Y>(
+    fn get_from_mut<X: CustomValueKind, Y>(
         self,
-        value: &'a mut SborValue<X, Y>,
-    ) -> Option<&'a mut SborValue<X, Y>> {
+        value: &'a mut Value<X, Y>,
+    ) -> Option<&'a mut Value<X, Y>> {
         if self.is_empty() {
             return Option::Some(value);
         }
 
         match value {
-            SborValue::Tuple { fields: vec, .. }
-            | SborValue::Enum { fields: vec, .. }
-            | SborValue::Array { elements: vec, .. } => self.get_from_vector_mut(vec),
+            Value::Tuple { fields: vec, .. }
+            | Value::Enum { fields: vec, .. }
+            | Value::Array { elements: vec, .. } => self.get_from_vector_mut(vec),
             _ => Option::None,
         }
     }

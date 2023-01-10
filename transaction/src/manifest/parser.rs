@@ -238,6 +238,12 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
+            TokenKind::RegisterValidator => Instruction::RegisterValidator {
+                validator: self.parse_value()?,
+            },
+            TokenKind::UnregisterValidator => Instruction::UnregisterValidator {
+                validator: self.parse_value()?,
+            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }
@@ -280,7 +286,7 @@ impl Parser {
             TokenKind::None |
             TokenKind::Ok |
             TokenKind::Err |
-            TokenKind::Bytes => self.parse_alias(),
+            TokenKind::Bytes | TokenKind::NonFungibleAddress => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -293,7 +299,6 @@ impl Parser {
             TokenKind::ResourceAddress |
             /* RE types */
             TokenKind::Own |
-            TokenKind::NonFungibleAddress |
             TokenKind::Blob |
             /* TX types */
             TokenKind::Bucket |
@@ -351,6 +356,13 @@ impl Parser {
             TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
             TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
             TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
+            TokenKind::NonFungibleAddress => {
+                let tuple = self.parse_values_two()?;
+                Ok(Value::NonFungibleAddress(
+                    Box::new(tuple.0),
+                    Box::new(tuple.1),
+                ))
+            }
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -370,10 +382,6 @@ impl Parser {
 
             // RE interpreted types
             TokenKind::Own => Ok(Value::Own(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleAddress => {
-                let values = self.parse_values_two()?;
-                Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
-            }
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
 
             // TX interpreted types
@@ -488,6 +496,10 @@ impl Parser {
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
 
+            // Alias
+            TokenKind::Bytes => Ok(Type::Bytes),
+            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+
             // RE global address types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
@@ -496,7 +508,6 @@ impl Parser {
 
             // RE interpreted types
             TokenKind::Own => Ok(Type::Own),
-            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
             TokenKind::Blob => Ok(Type::Blob),
 
             // TX interpreted types
@@ -523,6 +534,7 @@ impl Parser {
 mod tests {
     use super::*;
     use crate::manifest::lexer::{tokenize, Span};
+    use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
     #[macro_export]
     macro_rules! parse_instruction_ok {
@@ -1106,6 +1118,30 @@ mod tests {
                         ])
                     ])]
                 )
+            }
+        );
+    }
+
+    #[test]
+    fn test_register_validator_instruction() {
+        parse_instruction_ok!(
+            r#"REGISTER_VALIDATOR EcdsaSecp256k1PublicKey("000000000000000000000000000000000000000000000000000000000000000000");"#,
+            Instruction::RegisterValidator {
+                validator: Value::EcdsaSecp256k1PublicKey(Box::new(Value::String(hex::encode(
+                    [0u8; EcdsaSecp256k1PublicKey::LENGTH]
+                ))))
+            }
+        );
+    }
+
+    #[test]
+    fn test_unregister_validator_instruction() {
+        parse_instruction_ok!(
+            r#"UNREGISTER_VALIDATOR EcdsaSecp256k1PublicKey("000000000000000000000000000000000000000000000000000000000000000000");"#,
+            Instruction::UnregisterValidator {
+                validator: Value::EcdsaSecp256k1PublicKey(Box::new(Value::String(hex::encode(
+                    [0u8; EcdsaSecp256k1PublicKey::LENGTH]
+                ))))
             }
         );
     }

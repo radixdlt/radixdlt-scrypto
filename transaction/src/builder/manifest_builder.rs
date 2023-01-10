@@ -1,7 +1,7 @@
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::constants::*;
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
@@ -351,6 +351,16 @@ impl ManifestBuilder {
         self
     }
 
+    pub fn register_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::RegisterValidator { validator });
+        self
+    }
+
+    pub fn unregister_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::UnregisterValidator { validator });
+        self
+    }
+
     /// Calls a function where the arguments should be an array of encoded Scrypto value.
     pub fn call_function(
         &mut self,
@@ -620,7 +630,7 @@ impl ManifestBuilder {
         ids.insert(non_fungible_address.non_fungible_id().clone());
         self.take_from_worktop_by_ids(
             &ids,
-            non_fungible_address.resource_address(),
+            non_fungible_address.resource_address().clone(),
             |builder, bucket_id| {
                 builder
                     .add_instruction(BasicInstruction::BurnResource { bucket_id })
