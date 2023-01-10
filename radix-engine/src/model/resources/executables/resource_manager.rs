@@ -1123,8 +1123,6 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
     where
         Y: SystemApi,
     {
-
-
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
 
@@ -1134,7 +1132,13 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
 
             let id_type = match resource_manager.resource_type {
                 ResourceType::NonFungible { id_type } => id_type,
-                _ => return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::ResourceTypeDoesNotMatch)))
+                _ => {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::ResourceTypeDoesNotMatch,
+                        ),
+                    ))
+                }
             };
 
             if id_type == NonFungibleIdTypeId::UUID {
@@ -1152,10 +1156,14 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
             let mut non_fungibles = BTreeMap::new();
             for (id, data) in self.1 {
                 if id.id_type() != id_type {
-                    return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
-                        id.id_type(),
-                        id_type,
-                    ))));
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::NonFungibleIdTypeDoesNotMatch(
+                                id.id_type(),
+                                id_type,
+                            ),
+                        ),
+                    ));
                 }
 
                 let non_fungible = NonFungible::new(data.0, data.1);
@@ -1163,7 +1171,10 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
                 non_fungibles.insert(id, non_fungible);
             }
 
-            (Resource::new_non_fungible(resource_manager.resource_address, ids, id_type), non_fungibles)
+            (
+                Resource::new_non_fungible(resource_manager.resource_address, ids, id_type),
+                non_fungibles,
+            )
         };
 
         let node_id = api.allocate_node_id(RENodeType::Bucket)?;
@@ -1212,10 +1223,7 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
     }
 }
 
-pub struct ResourceManagerMintUuidNonFungibleExecutable(
-    RENodeId,
-    Vec<(Vec<u8>, Vec<u8>)>,
-);
+pub struct ResourceManagerMintUuidNonFungibleExecutable(RENodeId, Vec<(Vec<u8>, Vec<u8>)>);
 
 impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintUuidNonFungibleInvocation {
     type Exec = ResourceManagerMintUuidNonFungibleExecutable;
@@ -1244,8 +1252,8 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
     type Output = Bucket;
 
     fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
+    where
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let offset = SubstateOffset::ResourceManager(ResourceManagerOffset::ResourceManager);
         let resman_handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
@@ -1256,9 +1264,15 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             let resource_address = resource_manager.resource_address;
             let id_type = match resource_manager.resource_type {
                 ResourceType::NonFungible { id_type } => id_type,
-                _ => return Err(RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(ResourceManagerError::ResourceTypeDoesNotMatch)))
+                _ => {
+                    return Err(RuntimeError::ApplicationError(
+                        ApplicationError::ResourceManagerError(
+                            ResourceManagerError::ResourceTypeDoesNotMatch,
+                        ),
+                    ))
+                }
             };
-            let nf_store_id =  resource_manager.nf_store_id.unwrap();
+            let nf_store_id = resource_manager.nf_store_id.unwrap();
 
             if id_type != NonFungibleIdTypeId::UUID {
                 return Err(RuntimeError::ApplicationError(
@@ -1279,8 +1293,10 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
 
                 {
                     let node_id = RENodeId::NonFungibleStore(nf_store_id);
-                    let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
-                    let non_fungible_handle = api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
+                    let offset =
+                        SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(id));
+                    let non_fungible_handle =
+                        api.lock_substate(node_id, offset, LockFlags::MUTABLE)?;
                     let non_fungible = NonFungible::new(data.0, data.1);
                     let mut substate_mut = api.get_ref_mut(non_fungible_handle)?;
                     let non_fungible_mut = substate_mut.non_fungible();
@@ -1290,7 +1306,14 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             }
 
             let node_id = api.allocate_node_id(RENodeType::Bucket)?;
-            api.create_node(node_id, RENode::Bucket(BucketSubstate::new(Resource::new_non_fungible(resource_address, ids, id_type))))?;
+            api.create_node(
+                node_id,
+                RENode::Bucket(BucketSubstate::new(Resource::new_non_fungible(
+                    resource_address,
+                    ids,
+                    id_type,
+                ))),
+            )?;
             let bucket_id: BucketId = node_id.into();
             bucket_id
         };
@@ -1301,7 +1324,6 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
         ))
     }
 }
-
 
 pub struct ResourceManagerMintFungibleExecutable(RENodeId, Decimal);
 

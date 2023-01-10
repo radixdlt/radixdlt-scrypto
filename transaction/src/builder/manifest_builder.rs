@@ -615,9 +615,9 @@ impl ManifestBuilder {
         resource_address: ResourceAddress,
         entries: T,
     ) -> &mut Self
-        where
-            T: IntoIterator<Item = V>,
-            V: NonFungibleData,
+    where
+        T: IntoIterator<Item = V>,
+        V: NonFungibleData,
     {
         let entries = entries
             .into_iter()

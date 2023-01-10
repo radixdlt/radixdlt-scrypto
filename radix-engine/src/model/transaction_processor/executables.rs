@@ -155,8 +155,7 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
             }
             | BasicInstruction::MintUuidNonFungible {
                 resource_address, ..
-            }
-            => {
+            } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::Resource(*resource_address)));
             }
             BasicInstruction::ReturnToWorktop { .. }
@@ -618,9 +617,9 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     InstructionOutput::Native(Box::new(rtn))
                 }
                 Instruction::Basic(BasicInstruction::MintUuidNonFungible {
-                                       resource_address,
-                                       entries,
-                                   }) => {
+                    resource_address,
+                    entries,
+                }) => {
                     let rtn = api.invoke(ResourceManagerMintUuidNonFungibleInvocation {
                         receiver: resource_address.clone(),
                         entries: entries.clone(),

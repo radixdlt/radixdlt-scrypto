@@ -263,15 +263,13 @@ impl ResourceManager {
     /// Mints uuid non-fungible resources
     pub fn mint_uuid_non_fungible<T: NonFungibleData>(&mut self, data: T) -> Bucket {
         let mut entries = Vec::new();
-        entries.push(
-            (data.immutable_data().unwrap(), data.mutable_data().unwrap()),
-        );
+        entries.push((data.immutable_data().unwrap(), data.mutable_data().unwrap()));
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerMintUuidNonFungibleInvocation {
             entries,
             receiver: self.0,
         })
-            .unwrap()
+        .unwrap()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.

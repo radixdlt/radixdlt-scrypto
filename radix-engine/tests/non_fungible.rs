@@ -1,6 +1,8 @@
 use radix_engine::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
+use scrypto::prelude::scrypto;
+use scrypto::prelude::NonFungibleData;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -383,7 +385,7 @@ fn create_uuid_non_fungible() {
 }
 
 #[test]
-fn can_mint_uuid_non_fungible() {
+fn can_mint_uuid_non_fungible_in_scrypto() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
@@ -408,6 +410,54 @@ fn can_mint_uuid_non_fungible() {
         manifest,
         vec![NonFungibleAddress::from_public_key(&public_key)],
     );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[derive(NonFungibleData)]
+pub struct Sandwich {
+    pub name: String,
+    #[scrypto(mutable)]
+    pub available: bool,
+}
+
+#[test]
+fn can_mint_uuid_non_fungible_in_manifest() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let (_, _, account) = test_runner.new_allocated_account();
+    let package = test_runner.compile_and_publish("./tests/blueprints/non_fungible");
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "create_mintable_uuid_non_fungible",
+            args!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    receipt.expect_commit_success();
+    let resource_address = receipt.new_resource_addresses()[0];
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .lock_fee(FAUCET_COMPONENT, 10.into())
+        .mint_uuid_non_fungible(
+            resource_address,
+            vec![Sandwich {
+                name: "test".to_string(),
+                available: false,
+            }],
+        )
+        .call_method(
+            account,
+            "deposit_batch",
+            args!(ManifestExpression::EntireWorktop),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_commit_success();

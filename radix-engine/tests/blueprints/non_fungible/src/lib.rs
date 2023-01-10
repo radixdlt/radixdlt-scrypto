@@ -304,11 +304,10 @@ blueprint! {
 
         pub fn create_uuid_non_fungible() -> Bucket {
             // creating non-fungible id with id type set to default (UUID)
-            ResourceBuilder::new_non_fungible::<u128>()
-                .initial_supply_uuid([Sandwich {
-                    name: "Zero".to_owned(),
-                    available: true,
-                }])
+            ResourceBuilder::new_non_fungible::<u128>().initial_supply_uuid([Sandwich {
+                name: "Zero".to_owned(),
+                available: true,
+            }])
         }
 
         pub fn create_mintable_uuid_non_fungible() -> ResourceAddress {
@@ -324,12 +323,10 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .no_initial_supply();
 
-            borrow_resource_manager!(resource_address).mint_uuid_non_fungible(
-                Sandwich {
-                    name: "Test".to_owned(),
-                    available: false,
-                },
-            )
+            borrow_resource_manager!(resource_address).mint_uuid_non_fungible(Sandwich {
+                name: "Test".to_owned(),
+                available: false,
+            })
         }
     }
 }

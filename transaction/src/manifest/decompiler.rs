@@ -645,15 +645,12 @@ fn transform_non_fungible_mint_params(
 fn transform_uuid_non_fungible_mint_params(
     mint_params: &Vec<(Vec<u8>, Vec<u8>)>,
 ) -> Result<Vec<(ScryptoValue, ScryptoValue)>, ScryptoValueDecodeError> {
-    let mut mint_params_scrypto_value =
-        Vec::<(ScryptoValue, ScryptoValue)>::new();
+    let mut mint_params_scrypto_value = Vec::<(ScryptoValue, ScryptoValue)>::new();
     for (immutable_data, mutable_data) in mint_params.into_iter() {
-        mint_params_scrypto_value.push(
-            (
-                scrypto_decode(&immutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
-                scrypto_decode(&mutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
-            ),
-        );
+        mint_params_scrypto_value.push((
+            scrypto_decode(&immutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
+            scrypto_decode(&mutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
+        ));
     }
     Ok(mint_params_scrypto_value)
 }

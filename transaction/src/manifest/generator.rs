@@ -473,7 +473,12 @@ pub fn generate_instruction(
             entries,
         } => BasicInstruction::MintUuidNonFungible {
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
-            entries: generate_uuid_non_fungible_mint_params(entries, resolver, bech32_decoder, blobs)?,
+            entries: generate_uuid_non_fungible_mint_params(
+                entries,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
         },
 
         ast::Instruction::CreateFungibleResource {
@@ -1121,14 +1126,14 @@ fn generate_uuid_non_fungible_mint_params(
                             bech32_decoder,
                             blobs,
                         )?)
-                            .map_err(GeneratorError::ArgumentEncodingError)?;
+                        .map_err(GeneratorError::ArgumentEncodingError)?;
                         let mutable_data = scrypto_encode(&generate_args_from_tuple(
                             &values[1],
                             resolver,
                             bech32_decoder,
                             blobs,
                         )?)
-                            .map_err(GeneratorError::ArgumentEncodingError)?;
+                        .map_err(GeneratorError::ArgumentEncodingError)?;
 
                         mint_params.push((immutable_data, mutable_data));
                     }
@@ -1867,12 +1872,10 @@ mod tests {
             "#,
             BasicInstruction::MintUuidNonFungible {
                 resource_address: resource,
-                entries: Vec::from([
-                    (
-                        args!(String::from("Hello World"), Decimal::from("12")),
-                        args!(12u8, 19u128)
-                    )
-                ])
+                entries: Vec::from([(
+                    args!(String::from("Hello World"), Decimal::from("12")),
+                    args!(12u8, 19u128)
+                )])
             },
         );
     }
