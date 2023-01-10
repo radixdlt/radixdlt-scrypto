@@ -1,5 +1,5 @@
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
-use radix_engine_interface::data::types::{ManifestBlob, ManifestBucket, ManifestProof};
+use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use radix_engine_interface::scrypto;
@@ -118,8 +118,8 @@ pub enum BasicInstruction {
 
     /// Publish a package.
     PublishPackage {
-        code: ManifestBlob,
-        abi: ManifestBlob,
+        code: ManifestBlobRef,
+        abi: ManifestBlobRef,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
@@ -127,8 +127,8 @@ pub enum BasicInstruction {
 
     /// Publish a package with owner.
     PublishPackageWithOwner {
-        code: ManifestBlob,
-        abi: ManifestBlob,
+        code: ManifestBlobRef,
+        abi: ManifestBlobRef,
         owner_badge: NonFungibleAddress,
     },
 

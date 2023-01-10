@@ -718,7 +718,9 @@ mod tests {
                 EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
                 EddsaEd25519Signature,
             },
-            data::types::{ManifestBlob, ManifestBucket, ManifestExpression, ManifestProof, Own},
+            data::types::{
+                ManifestBlobRef, ManifestBucket, ManifestExpression, ManifestProof, Own,
+            },
             math::{Decimal, PreciseDecimal},
         };
 
@@ -796,7 +798,7 @@ mod tests {
                             ),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::Blob(ManifestBlob(Hash([0; 32]))),
+                            value: ScryptoCustomValue::Blob(ManifestBlobRef(Hash([0; 32]))),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::Hash(Hash([0; 32])),

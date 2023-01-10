@@ -20,7 +20,7 @@ pub enum ScryptoCustomValue {
     Bucket(ManifestBucket),
     Proof(ManifestProof),
     Expression(ManifestExpression),
-    Blob(ManifestBlob),
+    Blob(ManifestBlobRef),
 
     // Uninterpreted
     Hash(Hash),
@@ -140,7 +140,8 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
                     Own::decode_body_with_value_kind(decoder, value_kind).map(Self::Own)
                 }
                 ScryptoCustomValueKind::Blob => {
-                    ManifestBlob::decode_body_with_value_kind(decoder, value_kind).map(Self::Blob)
+                    ManifestBlobRef::decode_body_with_value_kind(decoder, value_kind)
+                        .map(Self::Blob)
                 }
                 ScryptoCustomValueKind::Bucket => {
                     ManifestBucket::decode_body_with_value_kind(decoder, value_kind)
@@ -293,7 +294,7 @@ mod tests {
             ManifestBucket(1u32),
             ManifestProof(2u32),
             ManifestExpression::EntireWorktop,
-            ManifestBlob(Hash([3u8; 32])),
+            ManifestBlobRef(Hash([3u8; 32])),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -317,7 +318,7 @@ mod tests {
                         value: ScryptoCustomValue::Expression(ManifestExpression::EntireWorktop),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::Blob(ManifestBlob(Hash([3u8; 32]))),
+                        value: ScryptoCustomValue::Blob(ManifestBlobRef(Hash([3u8; 32]))),
                     },
                 ]
             }

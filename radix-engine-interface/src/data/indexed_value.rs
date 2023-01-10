@@ -44,7 +44,7 @@ pub struct IndexedScryptoValue {
     buckets: Vec<(ManifestBucket, SborPath)>,
     proofs: Vec<(ManifestProof, SborPath)>,
     expressions: Vec<(ManifestExpression, SborPath)>,
-    blobs: Vec<(ManifestBlob, SborPath)>,
+    blobs: Vec<(ManifestBlobRef, SborPath)>,
     arrays: Vec<(ScryptoValueKind, SborPath)>,
 }
 
@@ -303,7 +303,7 @@ pub struct ScryptoValueVisitor {
     pub buckets: Vec<(ManifestBucket, SborPath)>,
     pub proofs: Vec<(ManifestProof, SborPath)>,
     pub expressions: Vec<(ManifestExpression, SborPath)>,
-    pub blobs: Vec<(ManifestBlob, SborPath)>,
+    pub blobs: Vec<(ManifestBlobRef, SborPath)>,
     pub arrays: Vec<(ScryptoValueKind, SborPath)>,
 }
 

@@ -464,8 +464,8 @@ impl ManifestBuilder {
         self.blobs.insert(abi_hash, abi);
 
         self.add_instruction(BasicInstruction::PublishPackage {
-            code: ManifestBlob(code_hash),
-            abi: ManifestBlob(abi_hash),
+            code: ManifestBlobRef(code_hash),
+            abi: ManifestBlobRef(abi_hash),
             royalty_config,
             metadata,
             access_rules,
@@ -488,8 +488,8 @@ impl ManifestBuilder {
         self.blobs.insert(abi_hash, abi);
 
         self.add_instruction(BasicInstruction::PublishPackageWithOwner {
-            code: ManifestBlob(code_hash),
-            abi: ManifestBlob(abi_hash),
+            code: ManifestBlobRef(code_hash),
+            abi: ManifestBlobRef(abi_hash),
             owner_badge,
         });
         self

@@ -10,23 +10,23 @@ use crate::data::*;
 use crate::scrypto_type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestBlob(pub Hash);
+pub struct ManifestBlobRef(pub Hash);
 
 //========
 // error
 //========
 
-/// Represents an error when parsing ManifestBlob.
+/// Represents an error when parsing ManifestBlobRef.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseManifestBlobError {
+pub enum ParseManifestBlobRefError {
     InvalidLength,
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseManifestBlobError {}
+impl std::error::Error for ParseManifestBlobRefError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseManifestBlobError {
+impl fmt::Display for ParseManifestBlobRefError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -36,8 +36,8 @@ impl fmt::Display for ParseManifestBlobError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ManifestBlob {
-    type Error = ParseManifestBlobError;
+impl TryFrom<&[u8]> for ManifestBlobRef {
+    type Error = ParseManifestBlobRefError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() != 32 {
@@ -47,10 +47,10 @@ impl TryFrom<&[u8]> for ManifestBlob {
     }
 }
 
-impl ManifestBlob {
+impl ManifestBlobRef {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-scrypto_type!(ManifestBlob, ScryptoCustomValueKind::Blob, 32);
+scrypto_type!(ManifestBlobRef, ScryptoCustomValueKind::Blob, 32);

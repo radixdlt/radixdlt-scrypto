@@ -40,7 +40,7 @@ pub enum TransactionProcessorError {
     },
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
-    BlobNotFound(ManifestBlob),
+    BlobNotFound(ManifestBlobRef),
     IdAllocationError(ManifestIdAllocationError),
     InvalidCallData(DecodeError),
     ReadOwnedNodesError(ReadOwnedNodesError),
@@ -256,6 +256,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             RENode::TransactionRuntime(runtime_substate),
         )?;
 
+        // TODO: defer blob hashing to post fee payments as it's computationally costly
         let mut blobs_by_hash = HashMap::new();
         for blob in self.blobs.as_ref() {
             blobs_by_hash.insert(hash(blob), blob);
