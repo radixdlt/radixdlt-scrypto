@@ -244,6 +244,8 @@ pub enum EpochManagerFn {
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
+    RegisterValidator,
+    UnregisterValidator,
 }
 
 #[derive(

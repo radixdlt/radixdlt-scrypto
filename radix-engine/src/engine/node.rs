@@ -41,6 +41,7 @@ pub enum RENode {
     EpochManager(
         EpochManagerSubstate,
         ValidatorSetSubstate,
+        ValidatorSetSubstate,
         AccessRulesChainSubstate,
     ),
     Clock(
@@ -195,14 +196,23 @@ impl RENode {
                     );
                 }
             }
-            RENode::EpochManager(epoch_manager, validator_set_substate, access_rules) => {
+            RENode::EpochManager(
+                epoch_manager,
+                current_validator_set_substate,
+                preparing_validator_set_substate,
+                access_rules,
+            ) => {
                 substates.insert(
                     SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                     epoch_manager.into(),
                 );
                 substates.insert(
-                    SubstateOffset::EpochManager(EpochManagerOffset::ValidatorSet),
-                    validator_set_substate.into(),
+                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
+                    current_validator_set_substate.into(),
+                );
+                substates.insert(
+                    SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet),
+                    preparing_validator_set_substate.into(),
                 );
                 substates.insert(
                     SubstateOffset::AccessRulesChain(AccessRulesChainOffset::AccessRulesChain),
