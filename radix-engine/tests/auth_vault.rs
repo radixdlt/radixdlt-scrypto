@@ -44,11 +44,11 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .lock_fee_and_withdraw_by_ids(
             account,
             10u32.into(),
-            BTreeSet::from([NonFungibleId::U32(1)]),
+            BTreeSet::from([NonFungibleId::Number(1)]),
             auth_resource_address,
         )
         .take_from_worktop_by_ids(
-            &BTreeSet::from([NonFungibleId::U32(1)]),
+            &BTreeSet::from([NonFungibleId::Number(1)]),
             auth_resource_address,
             |builder, bucket_id| {
                 builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {

@@ -15,7 +15,7 @@ CALL_METHOD
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE
-    Enum("U32")
+    Enum("Number")
     Array<Tuple>(
         Tuple("name", "MyResource"),                                        # Resource Name
         Tuple("description", "A very innovative and important resource")    # Resource Description
@@ -53,7 +53,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
     Some(
         Array<Tuple>(
             Tuple(
-                NonFungibleId(1u32), 
+                NonFungibleId(1u64),
                 Tuple(
                     Tuple("Hello World", Decimal("12")),        # The immutable part of the data
                     Tuple(12u8, 19u128)                         # The mutable part of the data

@@ -1,4 +1,4 @@
-use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -41,7 +41,7 @@ pub enum ResourceMethodAuthKey {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct ResourceManagerCreateNonFungibleInvocation {
-    pub id_type: NonFungibleIdType,
+    pub id_type: NonFungibleIdTypeId,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
@@ -85,7 +85,7 @@ impl Into<SerializedInvocation> for ResourceManagerCreateFungibleInvocation {
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    pub id_type: NonFungibleIdType,
+    pub id_type: NonFungibleIdTypeId,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
@@ -104,6 +104,33 @@ impl Into<SerializedInvocation> for ResourceManagerCreateNonFungibleWithInitialS
         NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungibleWithInitialSupply(
             self,
         ))
+        .into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,
+}
+
+impl Invocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    type Output = (ResourceAddress, Bucket);
+}
+
+impl SerializableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    type ScryptoOutput = (ResourceAddress, Bucket);
+}
+
+impl Into<SerializedInvocation>
+    for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation
+{
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(
+            ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(self),
+        )
         .into()
     }
 }
@@ -292,6 +319,27 @@ impl SerializableInvocation for ResourceManagerMintNonFungibleInvocation {
 impl Into<SerializedInvocation> for ResourceManagerMintNonFungibleInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::ResourceManager(ResourceInvocation::MintNonFungible(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct ResourceManagerMintUuidNonFungibleInvocation {
+    pub receiver: ResourceAddress,
+    pub entries: Vec<(Vec<u8>, Vec<u8>)>,
+}
+
+impl Invocation for ResourceManagerMintUuidNonFungibleInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<SerializedInvocation> for ResourceManagerMintUuidNonFungibleInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::MintUuidNonFungible(self)).into()
     }
 }
 

@@ -112,10 +112,7 @@ pub fn format_scrypto_value<F: fmt::Write>(
                     write!(f, "{}", address.display(context.bech32_encoder))?;
                     f.write_str("\", ")?;
                     match id {
-                        NonFungibleId::U32(v) => {
-                            write!(f, "{}u32", v)?;
-                        }
-                        NonFungibleId::U64(v) => {
+                        NonFungibleId::Number(v) => {
                             write!(f, "{}u64", v)?;
                         }
                         NonFungibleId::UUID(v) => {
@@ -390,8 +387,7 @@ pub fn format_non_fungible_id_contents<F: fmt::Write>(
     match value {
         NonFungibleId::Bytes(b) => write!(f, "Bytes(\"{}\")", hex::encode(b)),
         NonFungibleId::String(s) => write!(f, "\"{}\"", s),
-        NonFungibleId::U32(n) => write!(f, "{}u32", n),
-        NonFungibleId::U64(n) => write!(f, "{}u64", n),
+        NonFungibleId::Number(n) => write!(f, "{}u64", n),
         NonFungibleId::UUID(u) => write!(f, "{}u128", u),
     }
 }

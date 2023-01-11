@@ -24,7 +24,7 @@ use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
     AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
-    NativeInvocation, NonFungibleAddress, NonFungibleIdType,
+    NativeInvocation, NonFungibleAddress, NonFungibleIdTypeId,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::node::NetworkDefinition;
@@ -311,6 +311,15 @@ impl TestRunner {
             .traverse_all_descendents(None, node_id)
             .unwrap();
         vault_finder.to_vaults()
+    }
+
+    pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleId>> {
+        self.substate_store
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
+            .map(|output| output.substate.vault().0.ids().clone())
     }
 
     pub fn get_component_resources(
@@ -763,14 +772,14 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleId::U32(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::U32(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::U32(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::Number(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::Number(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::Number(3), SampleNonFungibleData {});
 
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_non_fungible_resource(
-                NonFungibleIdType::U32,
+                NonFungibleIdTypeId::Number,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),

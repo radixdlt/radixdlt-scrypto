@@ -223,7 +223,7 @@ fn test_basic_transfer() {
         + 7000 /* read_owned_nodes */
         + 32500 /* read_substate */
         + 4000 /* run_native_method */
-        + 306831 /* run_wasm */
+        + 306136 /* run_wasm */
         + 10000 /* tx_base_fee */
         + 304 /* tx_payload_cost */
         + 3750 /* tx_signature_verification */
