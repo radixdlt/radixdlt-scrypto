@@ -273,6 +273,7 @@ impl Parser {
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
+            TokenKind::Map => self.parse_map(),
 
             // ==============
             // Aliases
@@ -341,6 +342,16 @@ impl Parser {
             TokenKind::OpenParenthesis,
             TokenKind::CloseParenthesis,
         )?))
+    }
+
+    pub fn parse_map(&mut self) -> Result<Value, ParserError> {
+        advance_match!(self, TokenKind::Array);
+        let generics = self.parse_generics(2)?;
+        Ok(Value::Map(
+            generics[0],
+            generics[1],
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
+        ))
     }
 
     pub fn parse_alias(&mut self) -> Result<Value, ParserError> {

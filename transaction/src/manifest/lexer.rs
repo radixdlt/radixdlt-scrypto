@@ -44,6 +44,7 @@ pub enum TokenKind {
     Enum,
     Array,
     Tuple,
+    Map,
 
     // ==============
     // SBOR aliases
@@ -402,6 +403,7 @@ impl Lexer {
             "Enum" => Ok(TokenKind::Enum),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
+            "Map" => Ok(TokenKind::Map),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),

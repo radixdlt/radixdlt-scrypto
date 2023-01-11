@@ -72,6 +72,7 @@ pub enum GeneratorError {
         expected_length: usize,
         actual: usize,
     },
+    OddNumberOfElements,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1150,6 +1151,22 @@ pub fn generate_value(
                 )?,
             })
         }
+        ast::Value::Map(key_type, value_type, entries) => {
+            let key_value_kind = key_type.type_id();
+            let value_value_kind = value_type.type_id();
+            Ok(Value::Map {
+                key_value_kind,
+                value_value_kind,
+                entries: generate_kv_entries(
+                    entries,
+                    key_value_kind,
+                    value_value_kind,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            })
+        }
         // ==============
         // Aliases
         // ==============
@@ -1301,6 +1318,39 @@ fn generate_singletons(
             bech32_decoder,
             blobs,
         )?);
+    }
+    Ok(result)
+}
+
+fn generate_kv_entries(
+    elements: &Vec<ast::Value>,
+    key_value_kind: ScryptoValueKind,
+    value_value_kind: ScryptoValueKind,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<Vec<(ScryptoValue, ScryptoValue)>, GeneratorError> {
+    if elements.len() % 2 != 0 {
+        return Err(GeneratorError::OddNumberOfElements);
+    }
+
+    let mut result = vec![];
+    for i in 0..elements.len() / 2 {
+        let key = generate_value(
+            &elements[i * 2],
+            Some(key_value_kind),
+            resolver,
+            bech32_decoder,
+            blobs,
+        )?;
+        let value = generate_value(
+            &elements[i * 2],
+            Some(value_value_kind),
+            resolver,
+            bech32_decoder,
+            blobs,
+        )?;
+        result.push((key, value));
     }
     Ok(result)
 }
