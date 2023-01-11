@@ -130,9 +130,11 @@ impl<
         encoder.write_value_kind(K::value_kind())?;
         encoder.write_value_kind(V::value_kind())?;
         encoder.write_size(self.len())?;
-        for (k, v) in self {
-            encoder.encode_deeper_body(k)?;
-            encoder.encode_deeper_body(v)?;
+        let mut keys: Vec<&K> = self.keys().collect();
+        keys.sort();
+        for key in keys {
+            encoder.encode_deeper_body(key)?;
+            encoder.encode_deeper_body(self.get(key).unwrap())?;
         }
         Ok(())
     }
@@ -156,9 +158,11 @@ impl<
         encoder.write_value_kind(K::value_kind())?;
         encoder.write_value_kind(V::value_kind())?;
         encoder.write_size(self.len())?;
-        for (k, v) in self {
-            encoder.encode_deeper_body(k)?;
-            encoder.encode_deeper_body(v)?;
+        let mut keys: Vec<&K> = self.keys().collect();
+        keys.sort();
+        for key in keys {
+            encoder.encode_deeper_body(key)?;
+            encoder.encode_deeper_body(self.get(key).unwrap())?;
         }
         Ok(())
     }
