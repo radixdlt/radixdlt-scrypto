@@ -31,7 +31,7 @@ pub use sbor::rust::string::String;
 pub use sbor::rust::string::ToString;
 pub use sbor::rust::vec;
 pub use sbor::rust::vec::Vec;
-pub use sbor::{Decode, DecodeError, Encode, TypeId};
+pub use sbor::{Categorize, Decode, DecodeError, Encode};
 
 pub use super::radix_engine_derive;
 pub use super::radix_engine_interface;

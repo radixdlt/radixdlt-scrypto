@@ -11,7 +11,7 @@ use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub component_id: ComponentId, // TODO: support non component actor
@@ -33,7 +33,7 @@ pub enum VaultOp {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ExecutionTraceError {
     CallFrameError(CallFrameError),
 }
@@ -55,7 +55,7 @@ pub struct ExecutionTraceModule {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ProofSnapshot {
     pub resource_address: ResourceAddress,
     pub resource_type: ResourceType,
@@ -64,7 +64,7 @@ pub struct ProofSnapshot {
 }
 
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct TracedSysCallData {
     pub buckets: HashMap<BucketId, Resource>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
@@ -84,7 +84,7 @@ impl TracedSysCallData {
 }
 
 #[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct SysCallTrace {
     pub origin: SysCallTraceOrigin,
     pub sys_call_depth: usize,
@@ -97,7 +97,7 @@ pub struct SysCallTrace {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum SysCallTraceOrigin {
     ScryptoFunction(ScryptoFnIdentifier),
     ScryptoMethod(ScryptoFnIdentifier),

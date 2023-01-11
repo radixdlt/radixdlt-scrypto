@@ -339,17 +339,17 @@ mod tests {
     #[test]
     fn test_complex_enum_schema() {
         let input =
-            TokenStream::from_str("#[sbor(generic_type_id_bounds = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
+            TokenStream::from_str("#[sbor(generic_categorize_bounds = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
         let output = handle_describe(input).unwrap();
 
         assert_code_eq(
             output,
             quote! {
-                impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::TypeId<C::CustomTypeId>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2> {
+                impl <T: SomeTrait + ::sbor::Describe<C>, T2: ::sbor::Describe<C> + ::sbor::Categorize<C::CustomValueKind>, C: ::sbor::CustomTypeKind<::sbor::GlobalTypeId> > ::sbor::Describe<C> for Test<T, T2> {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[T::TYPE_ID, T2::TYPE_ID,],
-                        &[211u8, 164u8, 57u8, 227u8, 220u8, 74u8, 90u8, 141u8, 72u8, 27u8, 35u8, 85u8, 171u8, 13u8, 176u8, 124u8, 122u8, 28u8, 53u8, 105u8]
+                        &[107u8, 144u8, 17u8, 82u8, 110u8, 162u8, 58u8, 11u8, 170u8, 99u8, 11u8, 157u8, 132u8, 243u8, 106u8, 138u8, 8u8, 152u8, 239u8, 22u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {

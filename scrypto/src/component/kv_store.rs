@@ -22,7 +22,7 @@ pub struct KeyValueStore<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + Sc
 }
 
 // TODO: de-duplication
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct KeyValueStoreEntrySubstate(pub Option<Vec<u8>>);
 
 impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValueStore<K, V> {
@@ -96,24 +96,24 @@ impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> KeyValu
 //========
 // binary
 //========
-impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode> TypeId<ScryptoCustomTypeId>
-    for KeyValueStore<K, V>
+impl<K: ScryptoEncode + ScryptoDecode, V: ScryptoEncode + ScryptoDecode>
+    Categorize<ScryptoCustomValueKind> for KeyValueStore<K, V>
 {
     #[inline]
-    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
-        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
     }
 }
 
 impl<
         K: ScryptoEncode + ScryptoDecode,
         V: ScryptoEncode + ScryptoDecode,
-        E: Encoder<ScryptoCustomTypeId>,
-    > Encode<ScryptoCustomTypeId, E> for KeyValueStore<K, V>
+        E: Encoder<ScryptoCustomValueKind>,
+    > Encode<ScryptoCustomValueKind, E> for KeyValueStore<K, V>
 {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -125,14 +125,14 @@ impl<
 impl<
         K: ScryptoEncode + ScryptoDecode,
         V: ScryptoEncode + ScryptoDecode,
-        D: Decoder<ScryptoCustomTypeId>,
-    > Decode<ScryptoCustomTypeId, D> for KeyValueStore<K, V>
+        D: Decoder<ScryptoCustomValueKind>,
+    > Decode<ScryptoCustomValueKind, D> for KeyValueStore<K, V>
 {
-    fn decode_body_with_type_id(
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<ScryptoCustomTypeId>,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
         match o {
             Own::KeyValueStore(kv_store_id) => Ok(Self {
                 id: kv_store_id,

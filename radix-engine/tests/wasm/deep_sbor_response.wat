@@ -85,10 +85,10 @@
       br_if $loop
     )
 
-    ;; Write a unit 0x0000 to finish off
+    ;; Write two little endian bytes of 0x2100 to encode () and finish off
     local.get $curr_pointer
-    (i32.const 0)
-    (i32.store16)
+    i32.const 0x0021
+    i32.store16
     (local.get $0)
   )
 

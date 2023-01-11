@@ -9,7 +9,7 @@ use crate::scrypto;
 use crate::wasm::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerCreateInvocation {
     pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
     pub initial_epoch: u64,
@@ -31,7 +31,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
 }
@@ -51,7 +51,7 @@ impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
     pub epoch: u64,
@@ -72,7 +72,7 @@ impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerNextRoundInvocation {
     pub receiver: SystemAddress,
     pub round: u64,
@@ -89,5 +89,47 @@ impl SerializableInvocation for EpochManagerNextRoundInvocation {
 impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct EpochManagerRegisterValidatorInvocation {
+    pub receiver: SystemAddress,
+    pub validator: EcdsaSecp256k1PublicKey,
+}
+
+impl Invocation for EpochManagerRegisterValidatorInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for EpochManagerRegisterValidatorInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<SerializedInvocation> for EpochManagerRegisterValidatorInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::EpochManager(EpochManagerInvocation::RegisterValidator(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct EpochManagerUnregisterValidatorInvocation {
+    pub receiver: SystemAddress,
+    pub validator: EcdsaSecp256k1PublicKey,
+}
+
+impl Invocation for EpochManagerUnregisterValidatorInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for EpochManagerUnregisterValidatorInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<SerializedInvocation> for EpochManagerUnregisterValidatorInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::EpochManager(EpochManagerInvocation::UnregisterValidator(self)).into()
     }
 }

@@ -1,32 +1,34 @@
+use crate::engine::*;
+use crate::model::WorktopSubstate;
 use crate::model::*;
+use crate::types::*;
+use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
-use radix_engine_interface::data::{IndexedScryptoValue, ValueReplacingError};
+use radix_engine_interface::data::{
+    IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
+};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Cow;
 use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::*;
-use crate::model::WorktopSubstate;
-use crate::types::*;
-use crate::wasm::WasmEngine;
-
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
     pub instructions: Cow<'a, [Instruction]>,
+    pub blobs: Cow<'a, [Vec<u8>]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
         valid_from: u64,
@@ -36,12 +38,13 @@ pub enum TransactionProcessorError {
         valid_until: u64,
         current_epoch: u64,
     },
-    InvalidRequestData(DecodeError),
-    InvalidGetEpochResponseData(DecodeError),
-    InvalidMethod,
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
+    BlobNotFound(ManifestBlobRef),
     IdAllocationError(ManifestIdAllocationError),
+    InvalidCallData(DecodeError),
+    ReadOwnedNodesError(ReadOwnedNodesError),
+    ReplaceManifestValuesError(ReplaceManifestValuesError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug {}
@@ -56,14 +59,18 @@ pub enum InstructionOutput {
 impl InstructionOutput {
     pub fn as_vec(&self) -> Vec<u8> {
         match self {
-            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).raw,
-            InstructionOutput::Scrypto(value) => value.raw.clone(),
+            InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).into_vec(),
+            InstructionOutput::Scrypto(value) => value.as_slice().to_owned(),
         }
     }
 }
 
 impl<'a> Invocation for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
+
+    fn fn_identifier(&self) -> String {
+        "TransactionProcessor(Run)".to_owned()
+    }
 }
 
 fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdate) {
@@ -90,6 +97,10 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 for node_id in slice_to_global_references(args) {
                     update.add_ref(node_id);
                 }
+            }
+            BasicInstruction::RegisterValidator { .. }
+            | BasicInstruction::UnregisterValidator { .. } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
             }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
@@ -252,6 +263,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
             RENode::TransactionRuntime(runtime_substate),
         )?;
 
+        // TODO: defer blob hashing to post fee payments as it's computationally costly
+        let mut blobs_by_hash = HashMap::new();
+        for blob in self.blobs.as_ref() {
+            blobs_by_hash.insert(hash(blob), blob);
+        }
+
         let mut processor = TransactionProcessor::new();
         let mut outputs = Vec::new();
         for inst in self.instructions.into_iter() {
@@ -375,23 +392,31 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
+                Instruction::Basic(BasicInstruction::RegisterValidator { validator }) => {
+                    let rtn = api.invoke(EpochManagerRegisterValidatorInvocation {
+                        receiver: EPOCH_MANAGER,
+                        validator: *validator,
+                    })?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::UnregisterValidator { validator }) => {
+                    let rtn = api.invoke(EpochManagerUnregisterValidatorInvocation {
+                        receiver: EPOCH_MANAGER,
+                        validator: *validator,
+                    })?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
                 Instruction::Basic(BasicInstruction::CallFunction {
                     package_address,
                     blueprint_name,
                     function_name,
                     args,
                 }) => {
-                    let args = processor
-                        .replace_manifest_buckets_and_proofs(
-                            IndexedScryptoValue::from_slice(args)
-                                .expect("Invalid CALL_FUNCTION arguments"),
-                        )
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(e),
-                            )
-                        })
-                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor.replace_manifest_values(
+                        IndexedScryptoValue::from_slice(args)
+                            .expect("Invalid CALL_FUNCTION arguments"),
+                        api,
+                    )?;
 
                     let result = api.invoke(ParsedScryptoInvocation::Function(
                         ScryptoFunctionIdent {
@@ -413,17 +438,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     method_name,
                     args,
                 }) => {
-                    let args = processor
-                        .replace_manifest_buckets_and_proofs(
-                            IndexedScryptoValue::from_slice(args)
-                                .expect("Invalid CALL_METHOD arguments"),
-                        )
-                        .map_err(|e| {
-                            RuntimeError::ApplicationError(
-                                ApplicationError::TransactionProcessorError(e),
-                            )
-                        })
-                        .and_then(|args| TransactionProcessor::process_expressions(args, api))?;
+                    let args = processor.replace_manifest_values(
+                        IndexedScryptoValue::from_slice(args)
+                            .expect("Invalid CALL_METHOD arguments"),
+                        api,
+                    )?;
 
                     let result = api.invoke(ParsedScryptoInvocation::Method(
                         ScryptoMethodIdent {
@@ -446,9 +465,24 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     metadata,
                     access_rules,
                 }) => {
+                    let code = blobs_by_hash
+                        .get(&code.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(code.clone()),
+                            ),
+                        ))?;
+                    let abi = blobs_by_hash
+                        .get(&abi.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(abi.clone()),
+                            ),
+                        ))?;
+                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
-                        code: code.clone(),
-                        abi: abi.clone(),
+                        code: code.clone().clone(),
+                        abi: abi.clone().clone(),
                         royalty_config: royalty_config.clone(),
                         metadata: metadata.clone(),
                         access_rules: access_rules.clone(),
@@ -461,9 +495,24 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     abi,
                     owner_badge,
                 }) => {
+                    let code = blobs_by_hash
+                        .get(&code.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(code.clone()),
+                            ),
+                        ))?;
+                    let abi = blobs_by_hash
+                        .get(&abi.0)
+                        .ok_or(RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::BlobNotFound(abi.clone()),
+                            ),
+                        ))?;
+                    // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
-                        code: code.clone(),
-                        abi: abi.clone(),
+                        code: code.clone().clone(),
+                        abi: abi.clone().clone(),
                         royalty_config: BTreeMap::new(),
                         metadata: BTreeMap::new(),
                         access_rules: package_access_rules_from_owner_badge(owner_badge),
@@ -831,12 +880,15 @@ impl TransactionProcessor {
             + InvokableModel<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
-        for ownership in &value.owned_nodes {
-            match ownership {
-                Own::Bucket(bucket_id) => {
+        for owned_node in &value
+            .owned_node_ids()
+            .expect("Duplication checked by engine")
+        {
+            match owned_node {
+                RENodeId::Bucket(bucket_id) => {
                     Worktop::sys_put(Bucket(*bucket_id), api)?;
                 }
-                Own::Proof(proof_id) => {
+                RENodeId::Proof(proof_id) => {
                     let proof = Proof(*proof_id);
                     ComponentAuthZone::sys_push(proof, api)?;
                 }
@@ -847,63 +899,39 @@ impl TransactionProcessor {
         Ok(())
     }
 
-    fn replace_manifest_buckets_and_proofs(
+    fn replace_manifest_values<'a, Y>(
         &mut self,
-        mut value: IndexedScryptoValue,
-    ) -> Result<IndexedScryptoValue, TransactionProcessorError> {
-        value
-            .replace_manifest_buckets_and_proofs(
-                &mut self.proof_id_mapping,
-                &mut self.bucket_id_mapping,
-            )
-            .map_err(|e| match e {
-                ValueReplacingError::BucketIdNotFound(bucket_id) => {
-                    TransactionProcessorError::BucketNotFound(bucket_id)
-                }
-                ValueReplacingError::ProofIdNotFound(proof_id) => {
-                    TransactionProcessorError::ProofNotFound(proof_id)
-                }
-            })?;
-        Ok(value)
-    }
-
-    fn process_expressions<'a, Y>(
-        args: IndexedScryptoValue,
+        value: IndexedScryptoValue,
         env: &mut Y,
     ) -> Result<IndexedScryptoValue, RuntimeError>
     where
         Y: EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
-        let mut value = args.dom;
-        for (expression, path) in args.expressions {
+        let mut expression_replacements = Vec::<Vec<Own>>::new();
+        for (expression, _) in value.expressions() {
             match expression {
                 ManifestExpression::EntireWorktop => {
                     let buckets = Worktop::sys_drain(env)?;
-
-                    let val = path
-                        .get_from_value_mut(&mut value)
-                        .expect("Failed to locate an expression value using SBOR path");
-                    *val = scrypto_decode(
-                        &scrypto_encode(&buckets).expect("Failed to encode Vec<Bucket>"),
-                    )
-                    .expect("Failed to decode Vec<Bucket>")
+                    expression_replacements.push(buckets.into_iter().map(Into::into).collect())
                 }
                 ManifestExpression::EntireAuthZone => {
                     let proofs = ComponentAuthZone::sys_drain(env)?;
-
-                    let val = path
-                        .get_from_value_mut(&mut value)
-                        .expect("Failed to locate an expression value using SBOR path");
-                    *val = scrypto_decode(
-                        &scrypto_encode(&proofs).expect("Failed to encode Vec<Proof>"),
-                    )
-                    .expect("Failed to decode Vec<Proof>")
+                    expression_replacements.push(proofs.into_iter().map(Into::into).collect())
                 }
             }
         }
 
-        Ok(IndexedScryptoValue::from_value(value)
-            .expect("SborValue became invalid post expression transformation"))
+        value
+            .replace_manifest_values(
+                &mut self.proof_id_mapping,
+                &mut self.bucket_id_mapping,
+                expression_replacements,
+            )
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::ReplaceManifestValuesError(e),
+                ))
+            })
     }
 
     fn perform_validation<'a, Y>(

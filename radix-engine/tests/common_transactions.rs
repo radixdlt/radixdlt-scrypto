@@ -1,9 +1,8 @@
 use radix_engine::types::{
-    require, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, FromPublicKey, NonFungibleAddress,
-    NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType, FAUCET_COMPONENT,
-    RADIX_TOKEN,
+    hash, require, BTreeMap, Bech32Encoder, ComponentAddress, Decimal, FromPublicKey,
+    NonFungibleAddress, NonFungibleId, ResourceAddress, ResourceMethodAuthKey, ResourceType,
+    FAUCET_COMPONENT, RADIX_TOKEN,
 };
-use radix_engine_interface::data::types::Blob;
 use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::rule;
 use scrypto::NonFungibleData;
@@ -202,8 +201,8 @@ fn publish_package_succeeds() {
 
         let manifest = format!(
             include_str!("../../transaction/examples/package/publish.rtm"),
-            code_blob_hash = Blob::new(&code_blob),
-            abi_blob_hash = Blob::new(&abi_blob),
+            code_blob_hash = hash(&code_blob),
+            abi_blob_hash = hash(&abi_blob),
             account_component_address = account_component_address.display(bech32_encoder),
             auth_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
             auth_badge_non_fungible_id = "1u64",
@@ -224,8 +223,8 @@ fn publish_package_with_owner_succeeds() {
 
         let manifest = format!(
             include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
-            code_blob_hash = Blob::new(&code_blob),
-            abi_blob_hash = Blob::new(&abi_blob),
+            code_blob_hash = hash(&code_blob),
+            abi_blob_hash = hash(&abi_blob),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
             owner_badge_non_fungible_id = "1u64",

@@ -11,9 +11,8 @@ use sbor::*;
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")  // See https://serde.rs/enum-representations.html
 )]
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
 pub enum Type {
-    Unit,
     Bool,
     I8,
     I16,
@@ -27,65 +26,59 @@ pub enum Type {
     U128,
     String,
 
+    // Array
     Array {
         element_type: Box<Type>,
         length: u16,
     },
-
-    Tuple {
-        element_types: Vec<Type>,
-    },
-
-    Struct {
-        name: String,
-        fields: Fields,
-    },
-
-    Enum {
-        name: String,
-        variants: Vec<Variant>,
-    },
-
-    Option {
-        some_type: Box<Type>,
-    },
-
-    Result {
-        okay_type: Box<Type>,
-        err_type: Box<Type>,
-    },
-
     Vec {
         element_type: Box<Type>,
     },
-
+    HashSet {
+        element_type: Box<Type>,
+    },
     TreeSet {
         element_type: Box<Type>,
     },
-
+    HashMap {
+        key_type: Box<Type>,
+        value_type: Box<Type>,
+    },
     TreeMap {
         key_type: Box<Type>,
         value_type: Box<Type>,
     },
 
-    HashSet {
-        element_type: Box<Type>,
+    // Tuple
+    Tuple {
+        element_types: Vec<Type>,
+    },
+    Struct {
+        name: String,
+        fields: Fields,
+    },
+    NonFungibleAddress,
+
+    // Enum
+    Enum {
+        name: String,
+        variants: Vec<Variant>,
+    },
+    Option {
+        some_type: Box<Type>,
+    },
+    Result {
+        okay_type: Box<Type>,
+        err_type: Box<Type>,
     },
 
-    HashMap {
-        key_type: Box<Type>,
-        value_type: Box<Type>,
-    },
-
-    // Global address types
+    // RE interpreted
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
     SystemAddress,
-
-    // RE interpreted
-    Own,    // generic
-    Bucket, // specific
+    Own, /* generic, either bucket, proof, vault, component or kv store. TODO: do we really need this? */
+    Bucket,
     Proof,
     Vault,
     Component,
@@ -93,13 +86,6 @@ pub enum Type {
         key_type: Box<Type>,
         value_type: Box<Type>,
     },
-    NonFungibleAddress,
-    Blob,
-
-    // TX interpreted types
-    ManifestBucket,
-    ManifestProof,
-    ManifestExpression,
 
     // Uninterpreted
     Hash,
@@ -111,14 +97,12 @@ pub enum Type {
     PreciseDecimal,
     NonFungibleId,
 
-    // TODO: remove
-    // Currently used by `ProofRule` because recursion is not supported
     Any,
 }
 
 /// Represents the type info of an enum variant.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
 pub struct Variant {
     pub name: String,
     pub fields: Fields,
@@ -130,7 +114,7 @@ pub struct Variant {
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
 pub enum Fields {
     Named { named: Vec<(String, Type)> },
 
@@ -144,17 +128,11 @@ pub trait LegacyDescribe {
     fn describe() -> Type;
 }
 
-impl LegacyDescribe for () {
-    fn describe() -> Type {
-        Type::Unit
-    }
-}
-
 macro_rules! describe_basic_type {
-    ($type:ident, $type_id:expr) => {
-        impl LegacyDescribe for $type {
+    ($type_name:ident, $type:expr) => {
+        impl LegacyDescribe for $type_name {
             fn describe() -> Type {
-                $type_id
+                $type
             }
         }
     };
@@ -198,8 +176,8 @@ impl<T: LegacyDescribe, const N: usize> LegacyDescribe for [T; N] {
 }
 
 macro_rules! describe_tuple {
-    ($($name:ident)+) => {
-        impl<$($name: LegacyDescribe),+> LegacyDescribe for ($($name,)+) {
+    ($($name:ident)*) => {
+        impl<$($name: LegacyDescribe),*> LegacyDescribe for ($($name,)*) {
             fn describe() -> Type {
                 Type::Tuple { element_types: vec![ $($name::describe(),)* ] }
             }
@@ -207,6 +185,8 @@ macro_rules! describe_tuple {
     };
 }
 
+describe_tuple! {} // Unit
+describe_tuple! { A }
 describe_tuple! { A B }
 describe_tuple! { A B C }
 describe_tuple! { A B C D }

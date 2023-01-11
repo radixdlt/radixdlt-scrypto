@@ -5,13 +5,13 @@ use sbor::*;
 use crate::abi::*;
 use crate::api::{api::*, types::*};
 use crate::data::types::Own;
-use crate::data::ScryptoCustomTypeId;
+use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::scrypto;
 use crate::wasm::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct BucketTakeInvocation {
     pub receiver: BucketId,
     pub amount: Decimal,
@@ -32,7 +32,7 @@ impl Into<SerializedInvocation> for BucketTakeInvocation {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct BucketPutInvocation {
     pub receiver: BucketId,
     pub bucket: Bucket,
@@ -62,7 +62,7 @@ impl Into<SerializedInvocation> for BucketPutInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct BucketTakeNonFungiblesInvocation {
     pub receiver: BucketId,
     pub ids: BTreeSet<NonFungibleId>,
@@ -83,7 +83,7 @@ impl Into<SerializedInvocation> for BucketTakeNonFungiblesInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct BucketGetNonFungibleIdsInvocation {
     pub receiver: BucketId,
 }
@@ -103,7 +103,7 @@ impl Into<SerializedInvocation> for BucketGetNonFungibleIdsInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct BucketGetAmountInvocation {
     pub receiver: BucketId,
 }
@@ -123,7 +123,7 @@ impl Into<SerializedInvocation> for BucketGetAmountInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct BucketGetResourceAddressInvocation {
     pub receiver: BucketId,
 }
@@ -143,7 +143,7 @@ impl Into<SerializedInvocation> for BucketGetResourceAddressInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct BucketCreateProofInvocation {
     pub receiver: BucketId,
 }
@@ -169,17 +169,17 @@ pub struct Bucket(pub BucketId); // scrypto stub
 // binary
 //========
 
-impl TypeId<ScryptoCustomTypeId> for Bucket {
+impl Categorize<ScryptoCustomValueKind> for Bucket {
     #[inline]
-    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
-        SborTypeId::Custom(ScryptoCustomTypeId::Own)
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
     }
 }
 
-impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Bucket {
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Bucket {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -188,12 +188,12 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for Bucket 
     }
 }
 
-impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for Bucket {
-    fn decode_body_with_type_id(
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Bucket {
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<ScryptoCustomTypeId>,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        let o = Own::decode_body_with_type_id(decoder, type_id)?;
+        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
         match o {
             Own::Bucket(bucket_id) => Ok(Self(bucket_id)),
             _ => Err(DecodeError::InvalidCustomValue),

@@ -4,7 +4,7 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum RadixEngineInput {
     Invoke(SerializedInvocation),
 

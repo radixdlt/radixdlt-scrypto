@@ -10,7 +10,7 @@ use transaction::model::BasicInstruction;
 
 use crate::resim::*;
 
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 struct EmptyStruct;
 
 /// Create a non-fungible badge with fixed supply

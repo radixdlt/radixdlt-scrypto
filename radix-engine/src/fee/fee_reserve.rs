@@ -9,7 +9,7 @@ use sbor::rust::cmp::min;
 
 // Note: for performance reason, `u128` is used to represent decimal in this file.
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum FeeReserveError {
     InsufficientBalance,
     Overflow,
@@ -44,7 +44,7 @@ pub trait FeeReserve {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum RoyaltyReceiver {
     Package(PackageAddress, RENodeId),
     Component(ComponentAddress, RENodeId),

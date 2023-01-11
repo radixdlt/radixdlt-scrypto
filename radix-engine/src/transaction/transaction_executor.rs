@@ -160,7 +160,6 @@ where
             let mut kernel = Kernel::new(
                 auth_zone_params.clone(),
                 &mut id_allocator,
-                blobs,
                 &mut track,
                 self.scrypto_interpreter,
                 &mut module,
@@ -176,6 +175,7 @@ where
                     InstructionList::Any(instructions) => Cow::Borrowed(instructions),
                     InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
                 },
+                blobs: Cow::Borrowed(blobs),
             });
 
             let events = module.collect_events();

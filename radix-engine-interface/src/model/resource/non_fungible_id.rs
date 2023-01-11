@@ -210,7 +210,7 @@ pub enum ParseNonFungibleIdError {
     InvalidInt(ParseIntError),
     InvalidIdType(ParseNonFungibleIdTypeError),
     CannotParseType,
-    UnexpectedTypeId,
+    UnexpectedValueKind,
     TooLong,
     Empty,
     InvalidCharacter(char),
@@ -255,17 +255,17 @@ impl fmt::Display for ParseNonFungibleIdError {
 // binary
 //========
 
-impl TypeId<ScryptoCustomTypeId> for NonFungibleId {
+impl Categorize<ScryptoCustomValueKind> for NonFungibleId {
     #[inline]
-    fn type_id() -> SborTypeId<ScryptoCustomTypeId> {
-        SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId)
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::NonFungibleId)
     }
 }
 
-impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for NonFungibleId {
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for NonFungibleId {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -294,12 +294,12 @@ impl<E: Encoder<ScryptoCustomTypeId>> Encode<ScryptoCustomTypeId, E> for NonFung
     }
 }
 
-impl<D: Decoder<ScryptoCustomTypeId>> Decode<ScryptoCustomTypeId, D> for NonFungibleId {
-    fn decode_body_with_type_id(
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for NonFungibleId {
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<ScryptoCustomTypeId>,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let non_fungible_id = match decoder.read_byte()? {
             0 => Self::Number(u64::from_le_bytes(copy_u8_array(decoder.read_slice(8)?))),
             1 => Self::UUID(u128::from_le_bytes(copy_u8_array(decoder.read_slice(16)?))),

@@ -3,28 +3,30 @@ use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use utils::copy_u8_array;
 
+use crate::crypto::Hash;
 use crate::data::*;
 use crate::scrypto_type;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ManifestBucket(pub u32);
+pub struct ManifestBlobRef(pub Hash);
 
 //========
 // error
 //========
 
-/// Represents an error when parsing ManifestBucket.
+/// Represents an error when parsing ManifestBlobRef.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseManifestBucketError {
+pub enum ParseManifestBlobRefError {
     InvalidLength,
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseManifestBucketError {}
+impl std::error::Error for ParseManifestBlobRefError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseManifestBucketError {
+impl fmt::Display for ParseManifestBlobRefError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -34,21 +36,21 @@ impl fmt::Display for ParseManifestBucketError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ManifestBucket {
-    type Error = ParseManifestBucketError;
+impl TryFrom<&[u8]> for ManifestBlobRef {
+    type Error = ParseManifestBlobRefError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != 4 {
+        if slice.len() != 32 {
             return Err(Self::Error::InvalidLength);
         }
-        Ok(Self(u32::from_le_bytes(slice.try_into().unwrap())))
+        Ok(Self(Hash(copy_u8_array(slice))))
     }
 }
 
-impl ManifestBucket {
+impl ManifestBlobRef {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_le_bytes().to_vec()
+        self.0.to_vec()
     }
 }
 
-scrypto_type!(ManifestBucket, ScryptoCustomValueKind::Bucket, 4);
+scrypto_type!(ManifestBlobRef, ScryptoCustomValueKind::Blob, 32);

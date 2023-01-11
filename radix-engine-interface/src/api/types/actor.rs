@@ -7,14 +7,14 @@ use crate::scrypto;
 use crate::Describe;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum PackageIdentifier {
     Scrypto(PackageAddress),
     Native(NativePackage),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum NativePackage {
     Auth,
     Component,
@@ -29,7 +29,7 @@ pub enum NativePackage {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
     Native(NativeFn),
@@ -61,7 +61,7 @@ impl FnIdentifier {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ScryptoFnIdentifier {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -87,7 +87,7 @@ impl ScryptoFnIdentifier {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
@@ -142,7 +142,7 @@ impl NativeFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessRulesChainFn {
     AddAccessCheck,
@@ -168,7 +168,7 @@ pub enum AccessRulesChainFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum MetadataFn {
     Set,
@@ -190,7 +190,7 @@ pub enum MetadataFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ComponentFn {
     SetRoyaltyConfig,
@@ -214,7 +214,7 @@ pub enum ComponentFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFn {
     Publish,
@@ -237,13 +237,15 @@ pub enum PackageFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFn {
     Create,
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
+    RegisterValidator,
+    UnregisterValidator,
 }
 
 #[derive(
@@ -261,7 +263,7 @@ pub enum EpochManagerFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum AuthZoneStackFn {
     Pop,
@@ -289,7 +291,7 @@ pub enum AuthZoneStackFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFn {
     CreateNonFungible,
@@ -328,7 +330,7 @@ pub enum ResourceManagerFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum BucketFn {
     Take,
@@ -355,7 +357,7 @@ pub enum BucketFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum VaultFn {
     Take,
@@ -387,7 +389,7 @@ pub enum VaultFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ProofFn {
     Clone,
@@ -411,7 +413,7 @@ pub enum ProofFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum WorktopFn {
     TakeAll,
@@ -439,7 +441,7 @@ pub enum WorktopFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ClockFn {
     Create,
@@ -463,7 +465,7 @@ pub enum ClockFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum LoggerFn {
     Log,
@@ -484,7 +486,7 @@ pub enum LoggerFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionRuntimeFn {
     Get,
@@ -506,7 +508,7 @@ pub enum TransactionRuntimeFn {
     AsRefStr,
     Display,
 )]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFn {
     Run,

@@ -24,7 +24,7 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
     let parser = Punctuated::<Path, Comma>::parse_terminated;
     let paths = parser.parse2(attr)?;
     let mut derived_attributes = Vec::<Attribute>::new();
-    let mut add_custom_type_id = false;
+    let mut add_custom_value_kind = false;
     for path in paths {
         let segments: Vec<String> = path
             .segments
@@ -34,9 +34,8 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
 
         // best-effort sbor detection
         match segments.join("::").as_str() {
-            "TypeId" | "Encode" | "Decode" | "sbor::TypeId" | "sbor::Encode" | "sbor::Decode" => {
-                add_custom_type_id = true
-            }
+            "Categorize" | "Encode" | "Decode" | "sbor::Categorize" | "sbor::Encode"
+            | "sbor::Decode" => add_custom_value_kind = true,
             _ => {}
         }
 
@@ -44,9 +43,9 @@ pub fn handle_scrypto(attr: TokenStream, item: TokenStream) -> Result<TokenStrea
           #[derive(#path)]
         });
     }
-    if add_custom_type_id {
+    if add_custom_value_kind {
         derived_attributes.push(parse_quote! {
-            #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
+            #[sbor(custom_value_kind = "radix_engine_interface::data::ScryptoCustomValueKind")]
         })
     }
 
@@ -104,7 +103,7 @@ mod tests {
                 #[derive(Debug)]
                 #[derive(std::fmt::Debug)]
                 #[derive(::std::fmt::Debug)]
-                #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
+                #[sbor(custom_value_kind = "radix_engine_interface::data::ScryptoCustomValueKind")]
                 pub struct MyStruct {
                 }
             },
@@ -114,13 +113,13 @@ mod tests {
     #[test]
     fn test_full_paths() {
         for s in [
-            "TypeId",
+            "Categorize",
             "Encode",
             "Decode",
-            "sbor::TypeId",
+            "sbor::Categorize",
             "sbor::Encode",
             "sbor::Decode",
-            "::sbor::TypeId",
+            "::sbor::Categorize",
             "::sbor::Encode",
             "::sbor::Decode",
         ] {
@@ -128,14 +127,14 @@ mod tests {
             let item = TokenStream::from_str("pub struct MyStruct { }").unwrap();
             let output = handle_scrypto(attr, item).unwrap();
 
-            assert!(output.to_string().contains("ScryptoCustomTypeId"));
+            assert!(output.to_string().contains("ScryptoCustomValueKind"));
         }
     }
 
     #[test]
     fn test_scrypto_data_with_struct() {
         let attr =
-            TokenStream::from_str("Encode, Decode, TypeId, Describe, NonFungibleData").unwrap();
+            TokenStream::from_str("Encode, Decode, Categorize, Describe, NonFungibleData").unwrap();
         let item = TokenStream::from_str(
             "pub struct MyStruct<T: Bound> { pub field_1: T, pub field_2: String, }",
         )
@@ -147,10 +146,10 @@ mod tests {
             quote! {
                 #[derive(Encode)]
                 #[derive(Decode)]
-                #[derive(TypeId)]
+                #[derive(Categorize)]
                 #[derive(Describe)]
                 #[derive(NonFungibleData)]
-                #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
+                #[sbor(custom_value_kind = "radix_engine_interface::data::ScryptoCustomValueKind")]
                 pub struct MyStruct<T: Bound> {
                     pub field_1: T,
                     pub field_2: String,
@@ -162,7 +161,7 @@ mod tests {
     #[test]
     fn test_scrypto_data_with_enum() {
         let attr =
-            TokenStream::from_str("Encode, Decode, TypeId, Describe, NonFungibleData").unwrap();
+            TokenStream::from_str("Encode, Decode, Categorize, Describe, NonFungibleData").unwrap();
         let item = TokenStream::from_str("enum MyEnum<T: Bound> { A { named: T }, B(String), C }")
             .unwrap();
         let output = handle_scrypto(attr, item).unwrap();
@@ -172,10 +171,10 @@ mod tests {
             quote! {
                 #[derive(Encode)]
                 #[derive(Decode)]
-                #[derive(TypeId)]
+                #[derive(Categorize)]
                 #[derive(Describe)]
                 #[derive(NonFungibleData)]
-                #[sbor(custom_type_id = "radix_engine_interface::data::ScryptoCustomTypeId")]
+                #[sbor(custom_value_kind = "radix_engine_interface::data::ScryptoCustomValueKind")]
                 enum MyEnum<T: Bound> {
                     A { named: T },
                     B(String),

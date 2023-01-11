@@ -25,7 +25,7 @@ use radix_engine_interface::{dec, rule, scrypto};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ResourceManagerError {
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,

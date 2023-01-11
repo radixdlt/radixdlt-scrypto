@@ -29,7 +29,6 @@ pub enum TokenKind {
     // ==============
     // SBOR basic types
     // ==============
-    Unit,
     Bool,
     I8,
     I16,
@@ -54,6 +53,7 @@ pub enum TokenKind {
     Ok,
     Err,
     Bytes,
+    NonFungibleAddress,
 
     // ==============
     // SBOR custom types
@@ -67,7 +67,6 @@ pub enum TokenKind {
 
     /* RE interpreted types */
     Own,
-    NonFungibleAddress,
     Blob,
 
     /* TX interpreted types */
@@ -130,6 +129,8 @@ pub enum TokenKind {
     CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithOwner,
+    RegisterValidator,
+    UnregisterValidator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -387,7 +388,6 @@ impl Lexer {
             "true" => Ok(TokenKind::BoolLiteral(true)),
             "false" => Ok(TokenKind::BoolLiteral(false)),
 
-            "Unit" => Ok(TokenKind::Unit),
             "Bool" => Ok(TokenKind::Bool),
             "I8" => Ok(TokenKind::I8),
             "I16" => Ok(TokenKind::I16),
@@ -409,6 +409,7 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
             "Bytes" => Ok(TokenKind::Bytes),
+            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
             "SystemAddress" => Ok(TokenKind::SystemAddress),
@@ -416,7 +417,6 @@ impl Lexer {
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
             "Own" => Ok(TokenKind::Own),
-            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
             "Blob" => Ok(TokenKind::Blob),
 
             "Bucket" => Ok(TokenKind::Bucket),
@@ -472,6 +472,8 @@ impl Lexer {
             "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
                 Ok(TokenKind::CreateNonFungibleResourceWithOwner)
             }
+            "REGISTER_VALIDATOR" => Ok(TokenKind::RegisterValidator),
+            "UNREGISTER_VALIDATOR" => Ok(TokenKind::UnregisterValidator),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

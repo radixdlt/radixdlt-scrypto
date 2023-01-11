@@ -4,7 +4,7 @@ use crate::model::Resource;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum CostingError {
     FeeReserveError(FeeReserveError),
     MaxCallDepthLimitReached,
@@ -30,10 +30,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
     ) -> Result<(), ModuleError> {
         match input {
             SysCallInput::Invoke {
-                depth,
-                input_size,
-                owned_node_count,
-                ..
+                depth, input_size, ..
             } => {
                 if depth == self.max_depth {
                     return Err(ModuleError::CostingError(
@@ -47,10 +44,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                         .consume_execution(
                             track
                                 .fee_table
-                                .system_api_cost(SystemApiCostingEntry::Invoke {
-                                    input_size,
-                                    owned_node_count,
-                                }),
+                                .system_api_cost(SystemApiCostingEntry::Invoke { input_size }),
                             1,
                             "invoke",
                             false,

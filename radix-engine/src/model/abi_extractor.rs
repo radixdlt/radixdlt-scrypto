@@ -9,7 +9,7 @@ use crate::model::*;
 use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub enum ExportError {
     ComponentNotFound(ComponentAddress),
     PackageNotFound(PackageAddress),

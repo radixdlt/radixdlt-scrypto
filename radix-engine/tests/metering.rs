@@ -13,7 +13,13 @@ fn test_loop() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -39,7 +45,13 @@ fn test_loop_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "200000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -64,7 +76,13 @@ fn test_recursion() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "256"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -88,7 +106,13 @@ fn test_recursion_stack_overflow() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -112,7 +136,13 @@ fn test_grow_memory() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -136,7 +166,13 @@ fn test_grow_memory_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
@@ -180,19 +216,18 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         3000 /* create_node */
-        + 6900 /* drop_lock */
-        + 2500 /* drop_node */
-        + 900 /* invoke */
-        + 8700 /* lock_substate */
-        + 5000 /* read_owned_nodes */
-        + 28500 /* read_substate */
-        + 1000 /* run_native_function */
-        + 2200 /* run_native_method */
-        + 304686 /* run_wasm */
+        + 8200 /* drop_lock */
+        + 2000 /* drop_node */
+        + 1300 /* invoke */
+        + 10400 /* lock_substate */
+        + 7000 /* read_owned_nodes */
+        + 32500 /* read_substate */
+        + 4000 /* run_native_method */
+        + 306136 /* run_wasm */
         + 10000 /* tx_base_fee */
         + 304 /* tx_payload_cost */
         + 3750 /* tx_signature_verification */
-        + 18500, /* write_substate */
+        + 23000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
     );
 }

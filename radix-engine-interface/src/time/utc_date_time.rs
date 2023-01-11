@@ -37,7 +37,7 @@ const MIN_SUPPORTED_TIMESTAMP: i64 = -62135596800;
 /// where year `4294967295` equals `u32::MAX`.
 const MAX_SUPPORTED_TIMESTAMP: i64 = 135536014634284799;
 
-#[derive(Encode, Decode, TypeId, PartialEq, Eq, Copy, Clone, Debug)]
+#[derive(Encode, Decode, Categorize, PartialEq, Eq, Copy, Clone, Debug)]
 pub enum DateTimeError {
     InvalidYear,
     InvalidMonth,
@@ -81,7 +81,7 @@ impl fmt::Display for DateTimeError {
 ///
 /// `UtcDateTime` supports methods for easy conversion to and from the [`Instant`](super::Instant) type, which
 /// can be queried from the Radix Engine.
-#[derive(Encode, Decode, TypeId, PartialEq, Eq, Copy, Clone, Debug)]
+#[derive(Encode, Decode, Categorize, PartialEq, Eq, Copy, Clone, Debug)]
 pub struct UtcDateTime {
     year: u32,
     month: u8,

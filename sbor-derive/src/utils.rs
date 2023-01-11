@@ -84,9 +84,9 @@ pub fn is_encoding_skipped(f: &Field) -> bool {
     parsed.contains_key("skip") || parsed.contains_key("skip_decoding")
 }
 
-pub fn get_custom_type_id(attributes: &[Attribute]) -> Option<String> {
+pub fn get_custom_value_kind(attributes: &[Attribute]) -> Option<String> {
     extract_attributes(attributes)
-        .get("custom_type_id")
+        .get("custom_value_kind")
         .cloned()
         .unwrap_or(None)
 }
@@ -98,9 +98,11 @@ pub fn get_custom_type_kind(attributes: &[Attribute]) -> Option<String> {
         .unwrap_or(None)
 }
 
-pub fn get_generic_type_names_requiring_type_id_bound(attributes: &[Attribute]) -> HashSet<String> {
+pub fn get_generic_type_names_requiring_categorize_bound(
+    attributes: &[Attribute],
+) -> HashSet<String> {
     let contents = extract_attributes(attributes)
-        .get("generic_type_id_bounds")
+        .get("generic_categorize_bounds")
         .cloned()
         .unwrap_or(None);
     let Some(comma_separated_types) = contents else {
@@ -148,16 +150,16 @@ pub fn build_decode_generics<'a>(
     Path,
     Path,
 )> {
-    let custom_type_id = get_custom_type_id(&attributes);
-    let generic_type_names_needing_type_id_bound =
-        get_generic_type_names_requiring_type_id_bound(&attributes);
+    let custom_value_kind = get_custom_value_kind(&attributes);
+    let generic_type_names_needing_categorize_bound =
+        get_generic_type_names_requiring_categorize_bound(&attributes);
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };
 
-    let (custom_type_id_generic, need_to_add_cti_generic): (Path, bool) =
-        if let Some(path) = custom_type_id {
+    let (custom_value_kind_generic, need_to_add_cti_generic): (Path, bool) =
+        if let Some(path) = custom_value_kind {
             (parse_str(path.as_str())?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "X")?;
@@ -177,30 +179,30 @@ pub fn build_decode_generics<'a>(
         };
         type_param
             .bounds
-            .push(parse_quote!(::sbor::Decode<#custom_type_id_generic, #decoder_generic>));
+            .push(parse_quote!(::sbor::Decode<#custom_value_kind_generic, #decoder_generic>));
 
-        if generic_type_names_needing_type_id_bound.contains(&type_param.ident.to_string()) {
+        if generic_type_names_needing_categorize_bound.contains(&type_param.ident.to_string()) {
             type_param
                 .bounds
-                .push(parse_quote!(::sbor::TypeId<#custom_type_id_generic>));
+                .push(parse_quote!(::sbor::Categorize<#custom_value_kind_generic>));
         }
     }
 
     impl_generics
         .params
-        .push(parse_quote!(#decoder_generic: ::sbor::Decoder<#custom_type_id_generic>));
+        .push(parse_quote!(#decoder_generic: ::sbor::Decoder<#custom_value_kind_generic>));
 
     if need_to_add_cti_generic {
         impl_generics
             .params
-            .push(parse_quote!(#custom_type_id_generic: ::sbor::CustomTypeId));
+            .push(parse_quote!(#custom_value_kind_generic: ::sbor::CustomValueKind));
     }
 
     Ok((
         impl_generics,
         ty_generics,
         where_clause,
-        custom_type_id_generic,
+        custom_value_kind_generic,
         decoder_generic,
     ))
 }
@@ -215,16 +217,16 @@ pub fn build_encode_generics<'a>(
     Path,
     Path,
 )> {
-    let custom_type_id = get_custom_type_id(&attributes);
-    let generic_type_names_needing_type_id_bound =
-        get_generic_type_names_requiring_type_id_bound(&attributes);
+    let custom_value_kind = get_custom_value_kind(&attributes);
+    let generic_type_names_needing_categorize_bound =
+        get_generic_type_names_requiring_categorize_bound(&attributes);
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Extract owned generic to allow mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };
 
-    let (custom_type_id_generic, need_to_add_cti_generic): (Path, bool) =
-        if let Some(path) = custom_type_id {
+    let (custom_value_kind_generic, need_to_add_cti_generic): (Path, bool) =
+        if let Some(path) = custom_value_kind {
             (parse_str(path.as_str())?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "X")?;
@@ -244,30 +246,30 @@ pub fn build_encode_generics<'a>(
         };
         type_param
             .bounds
-            .push(parse_quote!(::sbor::Encode<#custom_type_id_generic, #encoder_generic>));
+            .push(parse_quote!(::sbor::Encode<#custom_value_kind_generic, #encoder_generic>));
 
-        if generic_type_names_needing_type_id_bound.contains(&type_param.ident.to_string()) {
+        if generic_type_names_needing_categorize_bound.contains(&type_param.ident.to_string()) {
             type_param
                 .bounds
-                .push(parse_quote!(::sbor::TypeId<#custom_type_id_generic>));
+                .push(parse_quote!(::sbor::Categorize<#custom_value_kind_generic>));
         }
     }
 
     impl_generics
         .params
-        .push(parse_quote!(#encoder_generic: ::sbor::Encoder<#custom_type_id_generic>));
+        .push(parse_quote!(#encoder_generic: ::sbor::Encoder<#custom_value_kind_generic>));
 
     if need_to_add_cti_generic {
         impl_generics
             .params
-            .push(parse_quote!(#custom_type_id_generic: ::sbor::CustomTypeId));
+            .push(parse_quote!(#custom_value_kind_generic: ::sbor::CustomValueKind));
     }
 
     Ok((
         impl_generics,
         ty_generics,
         where_clause,
-        custom_type_id_generic,
+        custom_value_kind_generic,
         encoder_generic,
     ))
 }
@@ -277,8 +279,8 @@ pub fn build_describe_generics<'a>(
     attributes: &'a [Attribute],
 ) -> syn::Result<(Generics, Generics, Option<&'a WhereClause>, Path)> {
     let custom_type_kind = get_custom_type_kind(attributes);
-    let generic_type_names_needing_type_id_bound =
-        get_generic_type_names_requiring_type_id_bound(&attributes);
+    let generic_type_names_needing_categorize_bound =
+        get_generic_type_names_requiring_categorize_bound(&attributes);
 
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
@@ -305,10 +307,10 @@ pub fn build_describe_generics<'a>(
             .bounds
             .push(parse_quote!(::sbor::Describe<#custom_type_kind_generic>));
 
-        if generic_type_names_needing_type_id_bound.contains(&type_param.ident.to_string()) {
+        if generic_type_names_needing_categorize_bound.contains(&type_param.ident.to_string()) {
             type_param
                 .bounds
-                .push(parse_quote!(::sbor::TypeId<#custom_type_kind_generic::CustomTypeId>));
+                .push(parse_quote!(::sbor::Categorize<#custom_type_kind_generic::CustomValueKind>));
         }
     }
 
@@ -328,25 +330,25 @@ pub fn build_describe_generics<'a>(
     ))
 }
 
-pub fn build_custom_type_id_generic<'a>(
+pub fn build_custom_categorize_generic<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
 ) -> syn::Result<(Generics, TypeGenerics<'a>, Option<&'a WhereClause>, Path)> {
-    let custom_type_id = get_custom_type_id(&attributes);
+    let custom_value_kind = get_custom_value_kind(&attributes);
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
 
     // Unwrap for mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };
 
-    let sbor_cti = if let Some(path) = custom_type_id {
+    let sbor_cti = if let Some(path) = custom_value_kind {
         parse_str(path.as_str())?
     } else {
         let custom_type_label = find_free_generic_name(original_generics, "X")?;
-        let custom_type_id_generic = parse_str(&custom_type_label)?;
+        let custom_value_kind_generic = parse_str(&custom_type_label)?;
         impl_generics
             .params
-            .push(parse_quote!(#custom_type_id_generic: ::sbor::CustomTypeId));
-        custom_type_id_generic
+            .push(parse_quote!(#custom_value_kind_generic: ::sbor::CustomValueKind));
+        custom_value_kind_generic
     };
 
     Ok((impl_generics, ty_generics, where_clause, sbor_cti))
@@ -391,15 +393,15 @@ mod tests {
     #[test]
     fn test_extract_attributes() {
         let attr = parse_quote! {
-            #[sbor(skip, custom_type_id = "NoCustomTypeId")]
+            #[sbor(skip, custom_value_kind = "NoCustomValueKind")]
         };
         assert_eq!(
             extract_attributes(&[attr]),
             HashMap::from([
                 ("skip".to_owned(), None),
                 (
-                    "custom_type_id".to_owned(),
-                    Some("NoCustomTypeId".to_owned())
+                    "custom_value_kind".to_owned(),
+                    Some("NoCustomValueKind".to_owned())
                 )
             ])
         );

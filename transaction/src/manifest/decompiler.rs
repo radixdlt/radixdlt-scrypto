@@ -17,21 +17,21 @@ use crate::validation::*;
 pub enum DecompileError {
     InvalidAddress(AddressError),
     InvalidArguments,
-    InvalidScryptoValue(ScryptoValueDecodeError),
-    InvalidSborValue(EncodeError),
+    EncodeError(EncodeError),
+    DecodeError(DecodeError),
     IdAllocationError(ManifestIdAllocationError),
     FormattingError(fmt::Error),
 }
 
-impl From<ScryptoValueDecodeError> for DecompileError {
-    fn from(error: ScryptoValueDecodeError) -> Self {
-        Self::InvalidScryptoValue(error)
+impl From<EncodeError> for DecompileError {
+    fn from(error: EncodeError) -> Self {
+        Self::EncodeError(error)
     }
 }
 
-impl From<EncodeError> for DecompileError {
-    fn from(error: EncodeError) -> Self {
-        Self::InvalidSborValue(error)
+impl From<DecodeError> for DecompileError {
+    fn from(error: DecodeError) -> Self {
+        Self::DecodeError(error)
     }
 }
 
@@ -546,6 +546,16 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
+        BasicInstruction::RegisterValidator { validator } => {
+            f.write_str("REGISTER_VALIDATOR")?;
+            format_typed_value(f, context, validator)?;
+            f.write_str(";")?;
+        }
+        BasicInstruction::UnregisterValidator { validator } => {
+            f.write_str("UNREGISTER_VALIDATOR")?;
+            format_typed_value(f, context, validator)?;
+            f.write_str(";")?;
+        }
     }
     Ok(())
 }
@@ -555,9 +565,7 @@ pub fn format_typed_value<F: fmt::Write, T: ScryptoEncode>(
     context: &mut DecompilationContext,
     value: &T,
 ) -> Result<(), DecompileError> {
-    let bytes = scrypto_encode(value).map_err(DecompileError::InvalidSborValue)?;
-    let value =
-        IndexedScryptoValue::from_slice(&bytes).map_err(DecompileError::InvalidScryptoValue)?;
+    let value = IndexedScryptoValue::from_typed(value);
     f.write_char(' ')?;
     write!(f, "{}", &value.display(context.for_value_display()))?;
     Ok(())
@@ -610,7 +618,7 @@ pub fn format_args<F: fmt::Write>(
 ) -> Result<(), DecompileError> {
     let value =
         IndexedScryptoValue::from_slice(&args).map_err(|_| DecompileError::InvalidArguments)?;
-    if let SborValue::Tuple { fields } = value.dom {
+    if let Value::Tuple { fields } = value.as_value() {
         for field in fields {
             let bytes = scrypto_encode(&field)?;
             let arg = IndexedScryptoValue::from_slice(&bytes)
@@ -627,15 +635,15 @@ pub fn format_args<F: fmt::Write>(
 
 fn transform_non_fungible_mint_params(
     mint_params: &BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
-) -> Result<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>, ScryptoValueDecodeError> {
+) -> Result<BTreeMap<NonFungibleId, (ScryptoValue, ScryptoValue)>, DecodeError> {
     let mut mint_params_scrypto_value =
         BTreeMap::<NonFungibleId, (ScryptoValue, ScryptoValue)>::new();
     for (id, (immutable_data, mutable_data)) in mint_params.into_iter() {
         mint_params_scrypto_value.insert(
             id.clone(),
             (
-                scrypto_decode(&immutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
-                scrypto_decode(&mutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
+                scrypto_decode(&immutable_data)?,
+                scrypto_decode(&mutable_data)?,
             ),
         );
     }
@@ -644,12 +652,12 @@ fn transform_non_fungible_mint_params(
 
 fn transform_uuid_non_fungible_mint_params(
     mint_params: &Vec<(Vec<u8>, Vec<u8>)>,
-) -> Result<Vec<(ScryptoValue, ScryptoValue)>, ScryptoValueDecodeError> {
+) -> Result<Vec<(ScryptoValue, ScryptoValue)>, DecodeError> {
     let mut mint_params_scrypto_value = Vec::<(ScryptoValue, ScryptoValue)>::new();
     for (immutable_data, mutable_data) in mint_params.into_iter() {
         mint_params_scrypto_value.push((
-            scrypto_decode(&immutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
-            scrypto_decode(&mutable_data).map_err(ScryptoValueDecodeError::DecodeError)?,
+            scrypto_decode(&immutable_data)?,
+            scrypto_decode(&mutable_data)?,
         ));
     }
     Ok(mint_params_scrypto_value)
@@ -831,8 +839,9 @@ SET_METADATA ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk
             canonical_manifest,
             r#"TAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");
 CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Proof("proof1");
-CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_aliases" None None Some("hello") Some("hello") Ok("test") Ok("test") Err("test123") Err("test123") Bytes("050aff") Bytes("050aff");
-CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_all_types" PackageAddress("package_sim1qyqzcexvnyg60z7lnlwauh66nhzg3m8tch2j8wc0e70qkydk8r") ComponentAddress("account_sim1q0u9gxewjxj8nhxuaschth2mgencma2hpkgwz30s9wlslthace") ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v") SystemAddress("system_sim1qne8qu4seyvzfgd94p3z8rjcdl3v0nfhv84judpum2lq7x4635") NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value") NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 123u64) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 456u64) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f")) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 1234567890u128) Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Bucket("bucket1") Proof("proof1") Expression("ENTIRE_WORKTOP") Hash("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824") EcdsaSecp256k1PublicKey("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798") EcdsaSecp256k1Signature("0079224ea514206706298d8d620f660828f7987068d6d02757e6f3cbbf4a51ab133395db69db1bc9b2726dd99e34efc252d8258dcb003ebaba42be349f50f7765e") EddsaEd25519PublicKey("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29") EddsaEd25519Signature("ce993adc51111309a041faa65cbcf1154d21ed0ecdc2d54070bc90b9deb744aa8605b3f686fa178fba21070b4a4678e54eee3486a881e0e328251cd37966de09") Decimal("1.2") PreciseDecimal("1.2") NonFungibleId(Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f")) NonFungibleId(12u64) NonFungibleId(12345u64) NonFungibleId(1234567890u128) NonFungibleId("SomeId");
+CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_some_basic_types" Tuple();
+CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_aliases" None None Some("hello") Some("hello") Ok("test") Ok("test") Err("test123") Err("test123") Bytes("deadbeef") Bytes("050aff") NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value") NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 123u64) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 456u64) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f")) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 1234567890u128) NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 1u64) Array<Array>(Bytes("dead"), Bytes("050aff")) Array<Array>(Bytes("dead"), Bytes("050aff")) Array<Tuple>(NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value"), NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 1u64)) Array<Tuple>(NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value"), NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", 1u64));
+CALL_METHOD ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum") "with_all_scrypto_custom_types" PackageAddress("package_sim1qyqzcexvnyg60z7lnlwauh66nhzg3m8tch2j8wc0e70qkydk8r") ComponentAddress("account_sim1q0u9gxewjxj8nhxuaschth2mgencma2hpkgwz30s9wlslthace") ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk59ddd4qs8cr5v") SystemAddress("system_sim1qne8qu4seyvzfgd94p3z8rjcdl3v0nfhv84judpum2lq7x4635") Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Bucket("bucket1") Proof("proof1") Expression("ENTIRE_WORKTOP") Hash("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824") EcdsaSecp256k1PublicKey("0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798") EcdsaSecp256k1Signature("0079224ea514206706298d8d620f660828f7987068d6d02757e6f3cbbf4a51ab133395db69db1bc9b2726dd99e34efc252d8258dcb003ebaba42be349f50f7765e") EddsaEd25519PublicKey("4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29") EddsaEd25519Signature("ce993adc51111309a041faa65cbcf1154d21ed0ecdc2d54070bc90b9deb744aa8605b3f686fa178fba21070b4a4678e54eee3486a881e0e328251cd37966de09") Decimal("1.2") PreciseDecimal("1.2") NonFungibleId(Bytes("031b84c5567b126440995d3ed5aaba0565d71e1834604819ff9c17f5e9d5dd078f")) NonFungibleId(12u64) NonFungibleId(12345u64) NonFungibleId(1234567890u128) NonFungibleId("SomeId");
 "#
         );
     }

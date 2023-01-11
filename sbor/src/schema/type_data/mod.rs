@@ -17,14 +17,14 @@ pub use type_validation::*;
 /// * `metadata` - The type's [`TypeMetadata`] including the name of the type and any of its fields or variants.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeData<C: CustomTypeKind<L>, L: SchemaTypeLink> {
-    pub kind: TypeKind<C::CustomTypeId, C, L>,
+    pub kind: TypeKind<C::CustomValueKind, C, L>,
     pub metadata: TypeMetadata,
     pub validation:
         TypeValidation<<C::CustomTypeExtension as CustomTypeExtension>::CustomTypeValidation>,
 }
 
-impl<C: CustomTypeKind<L>, L: SchemaTypeLink + TypeId<C::CustomTypeId>> TypeData<C, L> {
-    pub fn new(metadata: TypeMetadata, kind: TypeKind<C::CustomTypeId, C, L>) -> Self {
+impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> TypeData<C, L> {
+    pub fn new(metadata: TypeMetadata, kind: TypeKind<C::CustomValueKind, C, L>) -> Self {
         Self {
             kind,
             metadata,
@@ -47,13 +47,18 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + TypeId<C::CustomTypeId>> TypeData
 
     pub fn named_no_child_names(
         name: &'static str,
-        schema: TypeKind<C::CustomTypeId, C, L>,
+        schema: TypeKind<C::CustomValueKind, C, L>,
     ) -> Self {
         Self::new(TypeMetadata::named_no_child_names(name), schema)
     }
 
     pub fn named_unit(name: &'static str) -> Self {
-        Self::new(TypeMetadata::named_no_child_names(name), TypeKind::Unit)
+        Self::new(
+            TypeMetadata::named_no_child_names(name),
+            TypeKind::Tuple {
+                field_types: crate::rust::vec![],
+            },
+        )
     }
 
     pub fn named_tuple(name: &'static str, field_types: Vec<L>) -> Self {
@@ -76,9 +81,8 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + TypeId<C::CustomTypeId>> TypeData
             .into_iter()
             .map(|(k, variant_type_data)| {
                 let variant_fields_schema = match variant_type_data.kind {
-                    TypeKind::Unit => crate::rust::vec![],
                     TypeKind::Tuple { field_types } => field_types,
-                    _ => panic!("Only Unit and Tuple are allowed in Enum variant TypeData"),
+                    _ => panic!("Only Tuple is allowed in Enum variant TypeData"),
                 };
                 (
                     (k.clone(), variant_type_data.metadata),

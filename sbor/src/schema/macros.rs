@@ -1,12 +1,12 @@
-macro_rules! well_known_basic_type {
+macro_rules! describe_basic_well_known_type {
     ($type:ty, $well_known_index:ident) => {
         impl<C: CustomTypeKind<GlobalTypeId>> Describe<C> for $type {
             const TYPE_ID: GlobalTypeId =
-                GlobalTypeId::well_known(well_known_basic_types::$well_known_index);
+                GlobalTypeId::well_known(basic_well_known_types::$well_known_index);
         }
     };
 }
-pub(crate) use well_known_basic_type;
+pub(crate) use describe_basic_well_known_type;
 
 macro_rules! wrapped_generic_describe {
     ($generic:ident, $type:ty, $other_type:ty) => {

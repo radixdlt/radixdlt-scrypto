@@ -33,12 +33,11 @@ pub fn generate_full_schema<C: CustomTypeKind<GlobalTypeId>>(
 }
 
 fn linearize<E: CustomTypeExtension>(
-    type_kind: TypeKind<E::CustomTypeId, E::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
+    type_kind: TypeKind<E::CustomValueKind, E::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
     schemas: &IndexSet<TypeHash>,
-) -> TypeKind<E::CustomTypeId, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
+) -> TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
     match type_kind {
         TypeKind::Any => TypeKind::Any,
-        TypeKind::Unit => TypeKind::Unit,
         TypeKind::Bool => TypeKind::Bool,
         TypeKind::I8 => TypeKind::I8,
         TypeKind::I16 => TypeKind::I16,

@@ -5,7 +5,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ResourceManagerSubstate {
     pub resource_address: ResourceAddress, // TODO: Figure out a way to remove?
     pub resource_type: ResourceType,

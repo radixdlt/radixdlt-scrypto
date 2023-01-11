@@ -14,14 +14,14 @@ use crate::scrypto;
 use crate::Describe;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum AccessRuleKey {
     ScryptoMethod(String),
     Native(NativeFn),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
     Group(String),
@@ -29,7 +29,7 @@ pub enum AccessRuleEntry {
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode, Describe)]
+#[scrypto(Categorize, Encode, Decode, Describe)]
 pub struct AccessRules {
     method_auth: HashMap<AccessRuleKey, AccessRuleEntry>,
     grouped_auth: HashMap<String, AccessRule>,

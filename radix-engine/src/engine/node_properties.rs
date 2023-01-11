@@ -229,6 +229,30 @@ impl VisibilityProperties {
 pub struct SubstateProperties;
 
 impl SubstateProperties {
+    pub fn is_persisted(offset: &SubstateOffset) -> bool {
+        match offset {
+            SubstateOffset::Global(..) => true,
+            SubstateOffset::AuthZoneStack(..) => false,
+            SubstateOffset::FeeReserve(..) => false,
+            SubstateOffset::Component(..) => true,
+            SubstateOffset::AccessRulesChain(..) => true,
+            SubstateOffset::VaultAccessRulesChain(..) => true,
+            SubstateOffset::Metadata(..) => true,
+            SubstateOffset::Package(..) => true,
+            SubstateOffset::ResourceManager(..) => true,
+            SubstateOffset::KeyValueStore(..) => true,
+            SubstateOffset::NonFungibleStore(..) => true,
+            SubstateOffset::Vault(..) => true,
+            SubstateOffset::EpochManager(..) => true,
+            SubstateOffset::Bucket(..) => false,
+            SubstateOffset::Proof(..) => false,
+            SubstateOffset::Worktop(..) => false,
+            SubstateOffset::Logger(..) => false,
+            SubstateOffset::Clock(..) => true,
+            SubstateOffset::TransactionRuntime(..) => false,
+        }
+    }
+
     pub fn verify_can_own(offset: &SubstateOffset, node_id: RENodeId) -> Result<(), RuntimeError> {
         match offset {
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..))
@@ -250,6 +274,27 @@ impl SubstateProperties {
                     ))),
                 }
             }
+            SubstateOffset::Worktop(WorktopOffset::Worktop) => match node_id {
+                RENodeId::Bucket(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
+            SubstateOffset::Package(PackageOffset::RoyaltyAccumulator) => match node_id {
+                RENodeId::Vault(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
+            SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator) => match node_id {
+                RENodeId::Vault(..) => Ok(()),
+                _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
+                    offset.clone(),
+                    node_id,
+                ))),
+            },
             SubstateOffset::Global(GlobalOffset::Global) => match node_id {
                 RENodeId::Component(..)
                 | RENodeId::Package(..)
