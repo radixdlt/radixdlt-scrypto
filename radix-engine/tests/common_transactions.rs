@@ -160,7 +160,8 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
         let manifest = replace_variables!(
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
             account_component_address =
-                account_component_address.display(bech32_encoder)
+                account_component_address.display(bech32_encoder),
+                non_fungible_id = "1u32"
         );
         (manifest, Vec::new())
     });
@@ -190,7 +191,8 @@ fn creating_a_non_fungible_resource_with_initial_supply_with_owner_succeeds() {
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u32"
+            owner_badge_non_fungible_id = "1u32",
+            non_fungible_id = "1u32"
         );
         (manifest, Vec::new())
     });
