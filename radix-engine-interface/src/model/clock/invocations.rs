@@ -27,6 +27,12 @@ impl Into<SerializedInvocation> for ClockCreateInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
+pub struct ClockGetCurrentTimeMethodArgs {
+    pub precision: TimePrecision,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct ClockGetCurrentTimeInvocation {
     pub receiver: ComponentAddress,
     pub precision: TimePrecision,
@@ -44,6 +50,14 @@ impl Into<SerializedInvocation> for ClockGetCurrentTimeInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::Clock(ClockInvocation::GetCurrentTime(self)).into()
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct ClockCompareCurrentTimeMethodArgs {
+    pub instant: Instant,
+    pub precision: TimePrecision,
+    pub operator: TimeComparisonOperator,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -67,6 +81,12 @@ impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::Clock(ClockInvocation::CompareCurrentTime(self)).into()
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct ClockSetCurrentTimeMethodArgs {
+    pub current_time_ms: i64,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

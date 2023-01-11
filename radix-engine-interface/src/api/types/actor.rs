@@ -1,3 +1,4 @@
+use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::*;
 
@@ -256,13 +257,18 @@ pub enum ResolveError {
     NotAMethod,
 }
 
-impl EpochManagerFn {
-    pub fn to_method_invocation(
-        &self,
+pub struct EpochManagerPackage;
+
+impl EpochManagerPackage {
+    pub fn resolve_method_invocation(
         receiver: ComponentAddress,
+        method_name: &str,
         args: &[u8],
     ) -> Result<EpochManagerInvocation, ResolveError> {
-        let invocation = match self {
+        let epoch_manager_fn =
+            EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+        let invocation = match epoch_manager_fn {
             EpochManagerFn::Create => {
                 return Err(ResolveError::NotAMethod);
             }
@@ -511,6 +517,51 @@ pub enum ClockFn {
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
+}
+
+pub struct ClockPackage;
+
+impl ClockPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<ClockInvocation, ResolveError> {
+        let clock_fn = ClockFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+        let invocation = match clock_fn {
+            ClockFn::Create => {
+                return Err(ResolveError::NotAMethod);
+            }
+            ClockFn::CompareCurrentTime => {
+                let args: ClockCompareCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::CompareCurrentTime(ClockCompareCurrentTimeInvocation {
+                    receiver,
+                    instant: args.instant,
+                    precision: args.precision,
+                    operator: args.operator,
+                })
+            }
+            ClockFn::GetCurrentTime => {
+                let args: ClockGetCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
+                    receiver,
+                    precision: args.precision,
+                })
+            }
+            ClockFn::SetCurrentTime => {
+                let args: ClockSetCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+                    receiver,
+                    current_time_ms: args.current_time_ms,
+                })
+            }
+        };
+
+        Ok(invocation)
+    }
 }
 
 #[derive(
