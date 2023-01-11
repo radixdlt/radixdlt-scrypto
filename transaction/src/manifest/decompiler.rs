@@ -107,7 +107,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             let name = format!("bucket{}", context.bucket_names.len() + 1);
             write!(
                 f,
-                "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
@@ -125,7 +125,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP_BY_AMOUNT\n    Decimal(\"{}\")\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder),
                 name
@@ -143,7 +143,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.bucket_names.insert(bucket_id, name.clone());
             write!(
                 f,
-                "TAKE_FROM_WORKTOP_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");",
+                "TAKE_FROM_WORKTOP_BY_IDS\n    Array<NonFungibleId>({})\n    ResourceAddress(\"{}\")\n    Bucket(\"{}\");",
                 ids.iter()
                     .map(|k| ScryptoCustomValue::NonFungibleId(k.clone()).to_string(context.for_value_display()))
                     .collect::<Vec<String>>()
@@ -155,7 +155,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::ReturnToWorktop { bucket_id } => {
             write!(
                 f,
-                "RETURN_TO_WORKTOP Bucket({});",
+                "RETURN_TO_WORKTOP\n    Bucket({});",
                 context
                     .bucket_names
                     .get(&bucket_id)
@@ -166,7 +166,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::AssertWorktopContains { resource_address } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS\n    ResourceAddress(\"{}\");",
                 resource_address.display(context.bech32_encoder)
             )?;
         }
@@ -176,7 +176,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT\n    Decimal(\"{}\")\n    ResourceAddress(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder)
             )?;
@@ -187,7 +187,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "ASSERT_WORKTOP_CONTAINS_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\");",
+                "ASSERT_WORKTOP_CONTAINS_BY_IDS\n    Array<NonFungibleId>({})\n    ResourceAddress(\"{}\");",
                 ids.iter()
                     .map(|k| ScryptoCustomValue::NonFungibleId(k.clone())
                         .to_string(context.for_value_display()))
@@ -203,12 +203,12 @@ pub fn decompile_instruction<F: fmt::Write>(
                 .map_err(DecompileError::IdAllocationError)?;
             let name = format!("proof{}", context.proof_names.len() + 1);
             context.proof_names.insert(proof_id, name.clone());
-            write!(f, "POP_FROM_AUTH_ZONE Proof(\"{}\");", name)?;
+            write!(f, "POP_FROM_AUTH_ZONE\n    Proof(\"{}\");", name)?;
         }
         BasicInstruction::PushToAuthZone { proof_id } => {
             write!(
                 f,
-                "PUSH_TO_AUTH_ZONE Proof({});",
+                "PUSH_TO_AUTH_ZONE\n    Proof({});",
                 context
                     .proof_names
                     .get(&proof_id)
@@ -228,7 +228,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");",
+                "CREATE_PROOF_FROM_AUTH_ZONE\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",
                 resource_address.display(context.bech32_encoder),
                 name
             )?;
@@ -245,7 +245,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");",
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT\n    Decimal(\"{}\")\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",
                 amount,
                 resource_address.display(context.bech32_encoder),
                 name
@@ -263,7 +263,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS Array<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");",ids.iter()
+                "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS\n    Array<NonFungibleId>({})\n    ResourceAddress(\"{}\")\n    Proof(\"{}\");",ids.iter()
                 .map(|k| ScryptoCustomValue::NonFungibleId(k.clone()).to_string(context.for_value_display()))
                 .collect::<Vec<String>>()
                 .join(", "),
@@ -280,7 +280,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id, name.clone());
             write!(
                 f,
-                "CREATE_PROOF_FROM_BUCKET Bucket({}) Proof(\"{}\");",
+                "CREATE_PROOF_FROM_BUCKET\n    Bucket({})\n    Proof(\"{}\");",
                 context
                     .bucket_names
                     .get(&bucket_id)
@@ -298,7 +298,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             context.proof_names.insert(proof_id2, name.clone());
             write!(
                 f,
-                "CLONE_PROOF Proof({}) Proof(\"{}\");",
+                "CLONE_PROOF\n    Proof({})\n    Proof(\"{}\");",
                 context
                     .proof_names
                     .get(&proof_id)
@@ -310,7 +310,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::DropProof { proof_id } => {
             write!(
                 f,
-                "DROP_PROOF Proof({});",
+                "DROP_PROOF\n    Proof({});",
                 context
                     .proof_names
                     .get(&proof_id)
@@ -329,7 +329,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         } => {
             write!(
                 f,
-                "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
+                "CALL_FUNCTION\n    PackageAddress(\"{}\")\n    \"{}\"\n    \"{}\"",
                 package_address.display(context.bech32_encoder),
                 blueprint_name,
                 function_name,
@@ -343,7 +343,7 @@ pub fn decompile_instruction<F: fmt::Write>(
             args,
         } => {
             f.write_str(&format!(
-                "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
+                "CALL_METHOD\n    ComponentAddress(\"{}\")\n    \"{}\"",
                 component_address.display(context.bech32_encoder),
                 method_name
             ))?;
@@ -379,7 +379,7 @@ pub fn decompile_instruction<F: fmt::Write>(
         BasicInstruction::BurnResource { bucket_id } => {
             write!(
                 f,
-                "BURN_RESOURCE Bucket({});",
+                "BURN_RESOURCE\n    Bucket({});",
                 context
                     .bucket_names
                     .get(&bucket_id)
@@ -555,7 +555,7 @@ pub fn format_typed_value<F: fmt::Write, T: ScryptoEncode>(
     value: &T,
 ) -> Result<(), DecompileError> {
     let value = IndexedScryptoValue::from_typed(value);
-    f.write_char(' ')?;
+    f.write_str("\n    ")?;
     write!(f, "{}", &value.display(context.for_value_display()))?;
     Ok(())
 }
@@ -612,7 +612,7 @@ pub fn format_args<F: fmt::Write>(
             let bytes = scrypto_encode(&field)?;
             let arg = IndexedScryptoValue::from_slice(&bytes)
                 .map_err(|_| DecompileError::InvalidArguments)?;
-            f.write_char(' ')?;
+            f.write_str("\n    ")?;
             write!(f, "{}", &arg.display(context.for_value_display()))?;
         }
     } else {

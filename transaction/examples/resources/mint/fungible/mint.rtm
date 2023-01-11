@@ -13,25 +13,25 @@
 # a method for creating a proof and locking a fee at the same time. Therefore, locking a fee will be
 # its own method call and creating a proof will be its own method call.
 CALL_METHOD 
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 
 # We have a badge in our account component which allows us to mint this resource. So, we create a 
 # proof from this badge which will allow us to mint the resource
 CALL_METHOD
-    ComponentAddress("{account_component_address}")
+    ComponentAddress("${account_component_address}")
     "create_proof_by_amount"
     Decimal("1")
-    ResourceAddress("{minter_badge_resource_address}");
+    ResourceAddress("${minter_badge_resource_address}");
 
 # Minting some amount of tokens from the mintable fungible resource
 MINT_FUNGIBLE 
-    ResourceAddress("{mintable_resource_address}")
-    Decimal("{mint_amount}");
+    ResourceAddress("${mintable_resource_address}")
+    Decimal("${mint_amount}");
 
 # Depositing the entirety of the newly minted tokens into out account
 CALL_METHOD
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
