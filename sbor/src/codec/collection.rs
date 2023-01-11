@@ -253,12 +253,14 @@ impl<
         value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
+        let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
         let size = decoder.read_size()?;
         let mut map = BTreeMap::new();
         for _ in 0..size {
             map.insert(
-                K::decode_body_with_value_kind(decoder, value_kind)?,
-                V::decode_body_with_value_kind(decoder, value_kind)?,
+                K::decode_body_with_value_kind(decoder, key_value_kind)?,
+                V::decode_body_with_value_kind(decoder, value_value_kind)?,
             );
         }
         Ok(map)
@@ -278,12 +280,14 @@ impl<
         value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
+        let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
         let size = decoder.read_size()?;
         let mut map = HashMap::new();
         for _ in 0..size {
             map.insert(
-                K::decode_body_with_value_kind(decoder, value_kind)?,
-                V::decode_body_with_value_kind(decoder, value_kind)?,
+                K::decode_body_with_value_kind(decoder, key_value_kind)?,
+                V::decode_body_with_value_kind(decoder, value_value_kind)?,
             );
         }
         Ok(map)
@@ -304,12 +308,14 @@ impl<
         value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
+        let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
         let size = decoder.read_size()?;
         let mut map = indexmap::IndexMap::new();
         for _ in 0..size {
             map.insert(
-                K::decode_body_with_value_kind(decoder, value_kind)?,
-                V::decode_body_with_value_kind(decoder, value_kind)?,
+                K::decode_body_with_value_kind(decoder, key_value_kind)?,
+                V::decode_body_with_value_kind(decoder, value_value_kind)?,
             );
         }
         Ok(map)
@@ -354,8 +360,9 @@ mod schema {
         fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
             Some(TypeData::new(
                 TypeMetadata::named_no_child_names("Map"),
-                TypeKind::Array {
-                    element_type: <(K, V)>::TYPE_ID,
+                TypeKind::Map {
+                    key_type: K::TYPE_ID,
+                    value_type: V::TYPE_ID,
                 },
             ))
         }

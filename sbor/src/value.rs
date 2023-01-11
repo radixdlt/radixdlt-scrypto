@@ -535,23 +535,15 @@ mod tests {
                         element_value_kind: ValueKind::U32,
                         elements: vec![BasicValue::U32 { value: 2 }]
                     },
-                    BasicValue::Array {
-                        element_value_kind: ValueKind::Tuple,
-                        elements: vec![BasicValue::Tuple {
-                            fields: vec![
-                                BasicValue::U32 { value: 1 },
-                                BasicValue::U32 { value: 2 }
-                            ]
-                        }]
+                    BasicValue::Map {
+                        key_value_kind: ValueKind::U32,
+                        value_value_kind: ValueKind::U32,
+                        entries: vec![(BasicValue::U32 { value: 1 }, BasicValue::U32 { value: 2 })]
                     },
-                    BasicValue::Array {
-                        element_value_kind: ValueKind::Tuple,
-                        elements: vec![BasicValue::Tuple {
-                            fields: vec![
-                                BasicValue::U32 { value: 3 },
-                                BasicValue::U32 { value: 4 }
-                            ]
-                        }]
+                    BasicValue::Map {
+                        key_value_kind: ValueKind::U32,
+                        value_value_kind: ValueKind::U32,
+                        entries: vec![(BasicValue::U32 { value: 3 }, BasicValue::U32 { value: 4 })]
                     }
                 ]
             },
