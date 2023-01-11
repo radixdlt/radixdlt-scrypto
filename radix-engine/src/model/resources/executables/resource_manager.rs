@@ -1287,6 +1287,8 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
             // Allocate non-fungibles
             let mut ids = BTreeSet::new();
             for data in self.1 {
+                // TODO: Is this enough bits to prevent hash collisions?
+                // TODO: Possibly use an always incrementing timestamp
                 let uuid = Runtime::generate_uuid(api)?;
                 let id = NonFungibleId::UUID(uuid);
                 ids.insert(id.clone());
