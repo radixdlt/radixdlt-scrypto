@@ -6,6 +6,7 @@ use crate::model::{PackageAddress, SerializedInvocation};
 use crate::scrypto;
 use crate::wasm::SerializableInvocation;
 use sbor::rust::vec::Vec;
+use sbor::rust::string::String;
 use sbor::*;
 
 /// Scrypto function/method invocation.
@@ -51,25 +52,20 @@ impl SerializableInvocation for ScryptoMethodInvocation {
 
 impl Into<SerializedInvocation> for ScryptoMethodInvocation {
     fn into(self) -> SerializedInvocation {
-        SerializedInvocation::Component(self)
+        SerializedInvocation::Method(self)
     }
 }
 
 #[derive(Debug)]
-pub enum ParsedScryptoInvocation {
-    Function(ScryptoFunctionIdent, IndexedScryptoValue),
+pub struct ParsedScryptoFunctionInvocation {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub function_name: String,
+    pub args: IndexedScryptoValue,
 }
 
-impl Invocation for ParsedScryptoInvocation {
+impl Invocation for ParsedScryptoFunctionInvocation {
     type Output = IndexedScryptoValue;
-}
-
-impl ParsedScryptoInvocation {
-    pub fn args(&self) -> &IndexedScryptoValue {
-        match self {
-            ParsedScryptoInvocation::Function(_, args) => &args,
-        }
-    }
 }
 
 #[derive(Debug)]

@@ -15,13 +15,13 @@ blueprint! {
 
         pub fn call_mut_self(&mut self, address: ComponentAddress) {
             let input =
-                RadixEngineInput::Invoke(SerializedInvocation::Scrypto(ScryptoInvocation::Method(
-                    ScryptoMethodIdent {
+                RadixEngineInput::Invoke(SerializedInvocation::Method(ScryptoMethodInvocation
+                    {
                         receiver: ScryptoReceiver::Global(address),
                         method_name: "mut_func".to_string(),
+                        args: args!(),
                     },
-                    args!(),
-                )));
+                ));
             let _: Vec<u8> = call_engine(input);
         }
 
@@ -29,25 +29,23 @@ blueprint! {
 
         pub fn call_self(&self, address: ComponentAddress) {
             let input =
-                RadixEngineInput::Invoke(SerializedInvocation::Scrypto(ScryptoInvocation::Method(
-                    ScryptoMethodIdent {
+                RadixEngineInput::Invoke(SerializedInvocation::Method(ScryptoMethodInvocation {
                         receiver: ScryptoReceiver::Global(address),
                         method_name: "func".to_string(),
+                        args: args!(),
                     },
-                    args!(),
-                )));
+                ));
             let _: Vec<u8> = call_engine(input);
         }
 
         pub fn call_mut_self_2(&self, address: ComponentAddress) {
             let input =
-                RadixEngineInput::Invoke(SerializedInvocation::Scrypto(ScryptoInvocation::Method(
-                    ScryptoMethodIdent {
+                RadixEngineInput::Invoke(SerializedInvocation::Method(ScryptoMethodInvocation {
                         receiver: ScryptoReceiver::Global(address),
                         method_name: "mut_func".to_string(),
+                        args: args!(),
                     },
-                    args!(),
-                )));
+                ));
             let _: Vec<u8> = call_engine(input);
         }
     }

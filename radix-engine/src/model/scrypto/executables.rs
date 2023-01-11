@@ -306,7 +306,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoFunctionInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoFunctionInvocation {
     type Exec = ScryptoExecutorToParsed<W::WasmInstance>;
 
     fn resolve<D: ResolverApi<W> + SystemApi>(
@@ -316,7 +316,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
         let mut node_refs_to_copy = HashSet::new();
 
         let nodes_to_move = self
-            .args()
+            .args
             .owned_node_ids()
             .map_err(|e| {
                 RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
@@ -325,18 +325,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
             })?
             .into_iter()
             .collect();
-        for global_address in self.args().global_references() {
+        for global_address in self.args.global_references() {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
 
-        let (executor, actor) = match self {
-            ParsedScryptoInvocation::Function(function_ident, args) => {
+        let (executor, actor) = {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
-                let package_address = match function_ident.package {
-                    ScryptoPackage::Global(address) => address,
-                };
-                let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+                let global_node_id = RENodeId::Global(GlobalAddress::Package(self.package_address));
 
                 let package = {
                     let handle = api.lock_substate(
@@ -357,21 +353,21 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
 
                 // Find the abi
                 let abi = package
-                    .blueprint_abi(&function_ident.blueprint_name)
+                    .blueprint_abi(&self.blueprint_name)
                     .ok_or(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            package_address,
-                            function_ident.blueprint_name.clone(),
-                            function_ident.function_name.clone(),
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.function_name.clone(),
                             ScryptoFnResolvingError::BlueprintNotFound,
                         ),
                     ))?;
-                let fn_abi = abi.get_fn_abi(&function_ident.function_name).ok_or(
+                let fn_abi = abi.get_fn_abi(&self.function_name).ok_or(
                     RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            package_address,
-                            function_ident.blueprint_name.clone(),
-                            function_ident.function_name.clone(),
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.function_name.clone(),
                             ScryptoFnResolvingError::FunctionNotFound,
                         ),
                     ),
@@ -379,30 +375,30 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 if fn_abi.mutability.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            package_address,
-                            function_ident.blueprint_name.clone(),
-                            function_ident.function_name.clone(),
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.function_name.clone(),
                             ScryptoFnResolvingError::FunctionNotFound,
                         ),
                     ));
                 }
                 // Check input against the ABI
 
-                if !match_schema_with_value(&fn_abi.input, args.as_value()) {
+                if !match_schema_with_value(&fn_abi.input, self.args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            package_address,
-                            function_ident.blueprint_name.clone(),
-                            function_ident.function_name.clone(),
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.function_name.clone(),
                             ScryptoFnResolvingError::InvalidInput,
                         ),
                     ));
                 }
 
                 let scrypto_fn_ident = ScryptoFnIdentifier::new(
-                    package_address,
-                    function_ident.blueprint_name.clone(),
-                    function_ident.function_name.clone(),
+                    self.package_address,
+                    self.blueprint_name.clone(),
+                    self.function_name.clone(),
                 );
 
                 // Emit event
@@ -410,16 +406,15 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
 
                 (
                     api.vm().create_executor_to_parsed(
-                        package_address,
+                        self.package_address,
                         &package.code,
                         fn_abi.export_name.clone(),
                         None,
-                        args.into_vec(),
+                        self.args.into_vec(),
                         fn_abi.output.clone(),
                     ),
                     ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
                 )
-            }
         };
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));

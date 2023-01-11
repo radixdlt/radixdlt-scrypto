@@ -51,7 +51,7 @@ where
                 SerializedInvocation::Function(invocation) => {
                     encode(self.api.invoke(invocation)?)? // TODO: Figure out to remove encode
                 }
-                SerializedInvocation::Component(invocation) => {
+                SerializedInvocation::Method(invocation) => {
                     encode(self.api.invoke(invocation)?)?
                 }
                 SerializedInvocation::Native(invocation) => {
