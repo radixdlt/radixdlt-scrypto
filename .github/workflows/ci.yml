@@ -67,7 +67,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-8-cores]
+        os: [k8s-linux-runner, windows-latest-32-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -93,7 +93,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-8-cores]
+        os: [k8s-linux-runner, windows-latest-32-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -119,7 +119,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-8-cores]
+        os: [k8s-linux-runner, windows-latest-32-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -148,7 +148,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-8-cores]
+        os: [k8s-linux-runner, windows-latest-32-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -171,7 +171,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-8-cores]
+        os: [k8s-linux-runner, windows-latest-32-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -318,7 +318,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-8-cores]
+        os: [k8s-linux-runner, windows-latest-32-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -338,7 +338,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-8-cores]
+        os: [k8s-linux-runner, windows-latest-32-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -380,7 +380,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-8-cores]
+        os: [k8s-linux-runner, windows-latest-32-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
