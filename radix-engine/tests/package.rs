@@ -143,12 +143,18 @@ fn test_basic_package_missing_export() {
     blueprints.insert(
         "some_blueprint".to_string(),
         BlueprintAbi {
-            structure: Type::Unit,
+            structure: Type::Tuple {
+                element_types: vec![],
+            },
             fns: vec![Fn {
                 ident: "f".to_string(),
                 mutability: Option::None,
-                input: Type::Unit,
-                output: Type::Unit,
+                input: Type::Tuple {
+                    element_types: vec![],
+                },
+                output: Type::Tuple {
+                    element_types: vec![],
+                },
                 export_name: "f".to_string(),
             }],
         },

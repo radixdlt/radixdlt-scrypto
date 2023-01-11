@@ -5,6 +5,17 @@ use crate::rust::vec::Vec;
 use crate::value_kind::*;
 use crate::*;
 
+categorize_generic!(Vec<T>, <T>, ValueKind::Array);
+categorize_generic!(BTreeSet<T>, <T>, ValueKind::Array);
+categorize_generic!(HashSet<T>, <T>, ValueKind::Array);
+#[cfg(feature = "indexmap")]
+categorize_generic!(indexmap::IndexSet<T>, <T>, ValueKind::Array);
+
+categorize_generic!(BTreeMap<K, V>, <K, V>, ValueKind::Array);
+categorize_generic!(HashMap<K, V>, <K, V>, ValueKind::Array);
+#[cfg(feature = "indexmap")]
+categorize_generic!(indexmap::IndexMap<K, V>, <K, V>, ValueKind::Array);
+
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>> Encode<X, E> for Vec<T> {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {

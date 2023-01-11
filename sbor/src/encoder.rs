@@ -212,7 +212,7 @@ mod tests {
 
         assert_eq!(
             vec![
-                0, 0, // unit
+                33, 0, // unit (encoded as empty tuple)
                 1, 1, // bool
                 2, 1, // i8
                 3, 1, 0, // i16

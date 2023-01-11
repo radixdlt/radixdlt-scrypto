@@ -2,6 +2,9 @@ use crate::rust::string::String;
 use crate::value_kind::*;
 use crate::*;
 
+categorize_simple!(str, ValueKind::String);
+categorize_simple!(String, ValueKind::String);
+
 impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for str {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -48,6 +51,6 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    well_known_basic_type!(String, STRING_ID);
-    well_known_basic_type!(str, STRING_ID);
+    describe_basic_well_known_type!(String, STRING_ID);
+    describe_basic_well_known_type!(str, STRING_ID);
 }

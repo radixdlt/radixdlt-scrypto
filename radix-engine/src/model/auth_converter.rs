@@ -282,5 +282,11 @@ pub fn convert(
 }
 
 pub fn convert_contextless(method_auth: &AccessRule) -> MethodAuthorization {
-    convert(&Type::Unit, &IndexedScryptoValue::unit(), method_auth)
+    convert(
+        &Type::Tuple {
+            element_types: Vec::new(),
+        },
+        &IndexedScryptoValue::unit(),
+        method_auth,
+    )
 }

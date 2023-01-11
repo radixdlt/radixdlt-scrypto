@@ -54,12 +54,12 @@
     (i32.const 92)
     (i32.store8)
 
-    ;; PART 2: We need to write two more 0 bytes to encode our unit, at offset 4 + 1 from the pointer
+    ;; PART 2: We need to write two little endian bytes of 0x2100 to encode (), at offset 4 + 1 from the pointer
     (i32.add
       (local.get $0)
       (i32.const 5)
     )
-    (i32.const 0)
+    (i32.const 0x0021)
     (i32.store16)
 
     ;; We're finished! Return the pointer

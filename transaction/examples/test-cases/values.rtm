@@ -7,6 +7,14 @@ CREATE_PROOF_FROM_AUTH_ZONE
 
 CALL_METHOD 
     ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
+    "with_some_basic_types"
+
+    # Unit
+    Tuple()
+    ;
+
+CALL_METHOD 
+    ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
     "with_aliases"
 
     # enum
@@ -40,7 +48,7 @@ CALL_METHOD
 
 CALL_METHOD 
     ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
-    "with_all_types"
+    "with_all_scrypto_custom_types"
 
     # RE global address types
     PackageAddress("package_sim1qyqzcexvnyg60z7lnlwauh66nhzg3m8tch2j8wc0e70qkydk8r")

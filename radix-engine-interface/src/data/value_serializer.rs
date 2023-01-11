@@ -89,13 +89,6 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
 ) -> Result<S::Ok, S::Error> {
     match value {
         // primitive types
-        Value::Unit => serialize_value(
-            ValueEncoding::NoType,
-            serializer,
-            context,
-            ValueKind::Unit,
-            &(),
-        ),
         Value::Bool { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
@@ -720,7 +713,6 @@ mod tests {
 
         let value = ScryptoValue::Tuple {
             fields: vec![
-                Value::Unit,
                 Value::Bool { value: true },
                 Value::U8 { value: 5 },
                 Value::U16 { value: 5 },
@@ -845,7 +837,6 @@ mod tests {
         };
 
         let expected_simple = json!([
-            null,
             true,
             5,
             5,
@@ -892,7 +883,6 @@ mod tests {
         let expected_invertible = json!({
             "type": "Tuple",
             "value": [
-                { "type": "Unit", "value": null },
                 { "type": "Bool", "value": true },
                 { "type": "U8", "value": 5 },
                 { "type": "U16", "value": 5 },

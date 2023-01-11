@@ -1,6 +1,19 @@
 use crate::value_kind::*;
 use crate::*;
 
+categorize_simple!(i8, ValueKind::I8);
+categorize_simple!(i16, ValueKind::I16);
+categorize_simple!(i32, ValueKind::I32);
+categorize_simple!(i64, ValueKind::I64);
+categorize_simple!(i128, ValueKind::I128);
+categorize_simple!(isize, ValueKind::I64);
+categorize_simple!(u8, ValueKind::U8);
+categorize_simple!(u16, ValueKind::U16);
+categorize_simple!(u32, ValueKind::U32);
+categorize_simple!(u64, ValueKind::U64);
+categorize_simple!(u128, ValueKind::U128);
+categorize_simple!(usize, ValueKind::U64);
+
 impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for i8 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -154,17 +167,17 @@ pub use schema::*;
 mod schema {
     use super::*;
 
-    well_known_basic_type!(u8, U8_ID);
-    well_known_basic_type!(u16, U16_ID);
-    well_known_basic_type!(u32, U32_ID);
-    well_known_basic_type!(u64, U64_ID);
-    well_known_basic_type!(u128, U128_ID);
-    well_known_basic_type!(i8, I8_ID);
-    well_known_basic_type!(i16, I16_ID);
-    well_known_basic_type!(i32, I32_ID);
-    well_known_basic_type!(i64, I64_ID);
-    well_known_basic_type!(i128, I128_ID);
+    describe_basic_well_known_type!(u8, U8_ID);
+    describe_basic_well_known_type!(u16, U16_ID);
+    describe_basic_well_known_type!(u32, U32_ID);
+    describe_basic_well_known_type!(u64, U64_ID);
+    describe_basic_well_known_type!(u128, U128_ID);
+    describe_basic_well_known_type!(i8, I8_ID);
+    describe_basic_well_known_type!(i16, I16_ID);
+    describe_basic_well_known_type!(i32, I32_ID);
+    describe_basic_well_known_type!(i64, I64_ID);
+    describe_basic_well_known_type!(i128, I128_ID);
 
-    well_known_basic_type!(usize, U64_ID);
-    well_known_basic_type!(isize, I64_ID);
+    describe_basic_well_known_type!(usize, U64_ID);
+    describe_basic_well_known_type!(isize, I64_ID);
 }
