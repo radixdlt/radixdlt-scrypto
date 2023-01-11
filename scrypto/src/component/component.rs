@@ -76,13 +76,11 @@ impl Component {
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let mut env = ScryptoEnv;
         let buffer = env
-            .invoke(ScryptoInvocation::Method(
-                ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Component(self.0),
-                    method_name: method.to_string(),
-                },
-                args,
-            ))
+            .invoke(ScryptoMethodInvocation {
+                receiver: ScryptoReceiver::Component(self.0),
+                method_name: method.to_string(),
+                args
+            })
             .unwrap();
         scrypto_decode(&buffer).unwrap()
     }
@@ -182,13 +180,11 @@ impl GlobalComponentRef {
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
         let mut env = ScryptoEnv;
         let raw = env
-            .invoke(ScryptoInvocation::Method(
-                ScryptoMethodIdent {
-                    receiver: ScryptoReceiver::Global(self.0),
-                    method_name: method.to_string(),
-                },
-                args,
-            ))
+            .invoke(ScryptoMethodInvocation {
+                receiver: ScryptoReceiver::Global(self.0),
+                method_name: method.to_string(),
+                args
+            })
             .unwrap();
         scrypto_decode(&raw).unwrap()
     }

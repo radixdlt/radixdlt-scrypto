@@ -8,6 +8,7 @@ use sbor::rust::fmt::Debug;
 pub enum SerializedInvocation {
     Native(NativeInvocation),
     Scrypto(ScryptoInvocation),
+    Component(ScryptoMethodInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

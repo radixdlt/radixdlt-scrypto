@@ -74,13 +74,12 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let buffer = ScryptoEnv
-            .invoke(ScryptoInvocation::Method(
-                ScryptoMethodIdent {
+            .invoke(ScryptoMethodInvocation {
                     receiver: ScryptoReceiver::Global(component_address),
                     method_name: method.as_ref().to_string(),
+                    args,
                 },
-                args,
-            ))
+            )
             .unwrap();
         scrypto_decode(&buffer).unwrap()
     }

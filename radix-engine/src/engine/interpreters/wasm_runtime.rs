@@ -51,6 +51,9 @@ where
                 SerializedInvocation::Scrypto(invocation) => {
                     encode(self.api.invoke(invocation)?)? // TODO: Figure out to remove encode
                 }
+                SerializedInvocation::Component(invocation) => {
+                    encode(self.api.invoke(invocation)?)?
+                }
                 SerializedInvocation::Native(invocation) => {
                     let rtn = invoke_native_fn(invocation, self.api)?;
                     scrypto_encode(rtn.as_ref()).unwrap()
