@@ -22,8 +22,6 @@ pub enum DecodeError {
 
     UnknownDiscriminator(String),
 
-    InvalidUnit(u8),
-
     InvalidBool(u8),
 
     InvalidUtf8,
@@ -346,7 +344,7 @@ mod tests {
     #[test]
     pub fn test_decoding() {
         let bytes = vec![
-            0, 0, // unit
+            33, 0, // unit (encoded as empty tuple)
             1, 1, // bool
             2, 1, // i8
             3, 1, 0, // i16

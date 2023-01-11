@@ -85,7 +85,6 @@ pub fn format_scrypto_value<F: fmt::Write>(
 ) -> fmt::Result {
     match value {
         // primitive types
-        Value::Unit => write!(f, "()")?,
         Value::Bool { value } => write!(f, "{}", value)?,
         Value::I8 { value } => write!(f, "{}i8", value)?,
         Value::I16 { value } => write!(f, "{}i16", value)?,
@@ -208,7 +207,6 @@ pub fn format_tuple<F: fmt::Write>(
 
 pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind) -> fmt::Result {
     match value_kind {
-        ValueKind::Unit => f.write_str("Unit"),
         ValueKind::Bool => f.write_str("Bool"),
         ValueKind::I8 => f.write_str("I8"),
         ValueKind::I16 => f.write_str("I16"),

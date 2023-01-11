@@ -619,7 +619,9 @@ mod tests {
         blueprint_abis.insert(
             "Test".to_string(),
             BlueprintAbi {
-                structure: scrypto::abi::Type::Unit,
+                structure: scrypto::abi::Type::Tuple {
+                    element_types: vec![],
+                },
                 fns: vec![abi::Fn {
                     ident: "f".to_string(),
                     mutability: Option::None,
@@ -627,7 +629,9 @@ mod tests {
                         name: "Any".to_string(),
                         fields: scrypto::abi::Fields::Named { named: vec![] },
                     },
-                    output: scrypto::abi::Type::Unit,
+                    output: scrypto::abi::Type::Tuple {
+                        element_types: vec![],
+                    },
                     export_name: "Test_f".to_string(),
                 }],
             },

@@ -124,7 +124,6 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
 
     let t: Type = match ty {
         // primitive types
-        SchemaType::Unit => parse_quote! { () },
         SchemaType::Bool => parse_quote! { bool },
         SchemaType::I8 => parse_quote! { i8 },
         SchemaType::I16 => parse_quote! { i16 },

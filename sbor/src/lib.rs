@@ -7,6 +7,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// SBOR basic, no custom types
 pub mod basic;
+/// SBOR Categorize trait
+pub mod categorize;
 /// SBOR codec for core Rust types.
 pub mod codec;
 /// SBOR constants
@@ -32,6 +34,8 @@ pub mod value;
 pub mod value_kind;
 
 pub use basic::*;
+pub use categorize::Categorize;
+pub(crate) use categorize::{categorize_generic, categorize_simple};
 pub use constants::*;
 pub use decode::Decode;
 pub use decoder::{DecodeError, Decoder, VecDecoder};

@@ -1049,7 +1049,9 @@ pub fn generate_single_function_abi(
     blueprint_abis.insert(
         blueprint_name.to_string(),
         BlueprintAbi {
-            structure: Type::Unit,
+            structure: Type::Tuple {
+                element_types: vec![],
+            },
             fns: vec![Fn {
                 ident: function_name.to_string(),
                 mutability: Option::None,

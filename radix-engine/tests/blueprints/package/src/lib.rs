@@ -35,7 +35,9 @@ pub extern "C" fn LargeReturnSize_abi(_input: *mut u8) -> *mut u8 {
                 name: "Any".to_string(),
                 fields: Fields::Named { named: vec![] },
             },
-            output: Type::Unit,
+            output: Type::Tuple {
+                element_types: vec![],
+            },
             export_name: "LargeReturnSize_f_main".to_string(),
         }],
     };
@@ -57,7 +59,9 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8) -> *mut u8 {
                 name: "Any".to_string(),
                 fields: Fields::Named { named: vec![] },
             },
-            output: Type::Unit,
+            output: Type::Tuple {
+                element_types: vec![],
+            },
             export_name: "MaxReturnSize_f_main".to_string(),
         }],
     };
@@ -80,7 +84,9 @@ pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8) -> *mut u8 {
                 name: "Any".to_string(),
                 fields: Fields::Named { named: vec![] },
             },
-            output: Type::Unit,
+            output: Type::Tuple {
+                element_types: vec![],
+            },
             export_name: "ZeroReturnSize_f_main".to_string(),
         }],
     };

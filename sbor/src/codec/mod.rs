@@ -7,7 +7,6 @@ mod option;
 mod result;
 mod string;
 mod tuple;
-mod unit;
 
 pub use array::*;
 pub use boolean::*;
@@ -18,4 +17,3 @@ pub use option::*;
 pub use result::*;
 pub use string::*;
 pub use tuple::*;
-pub use unit::*;

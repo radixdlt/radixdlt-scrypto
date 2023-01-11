@@ -53,7 +53,12 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
     }
 
     pub fn named_unit(name: &'static str) -> Self {
-        Self::new(TypeMetadata::named_no_child_names(name), TypeKind::Unit)
+        Self::new(
+            TypeMetadata::named_no_child_names(name),
+            TypeKind::Tuple {
+                field_types: crate::rust::vec![],
+            },
+        )
     }
 
     pub fn named_tuple(name: &'static str, field_types: Vec<L>) -> Self {
@@ -76,9 +81,8 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
             .into_iter()
             .map(|(k, variant_type_data)| {
                 let variant_fields_schema = match variant_type_data.kind {
-                    TypeKind::Unit => crate::rust::vec![],
                     TypeKind::Tuple { field_types } => field_types,
-                    _ => panic!("Only Unit and Tuple are allowed in Enum variant TypeData"),
+                    _ => panic!("Only Tuple is allowed in Enum variant TypeData"),
                 };
                 (
                     (k.clone(), variant_type_data.metadata),
