@@ -32,6 +32,11 @@ impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
+pub struct EpochManagerGetCurrentEpochMethodArgs {
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: ComponentAddress,
 }
@@ -48,6 +53,12 @@ impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(self)).into()
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct EpochManagerSetEpochMethodArgs {
+    pub epoch: u64,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -73,6 +84,13 @@ impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
+pub struct EpochManagerNextRoundMethodArgs {
+    pub round: u64,
+}
+
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerNextRoundInvocation {
     pub receiver: ComponentAddress,
     pub round: u64,
@@ -94,6 +112,12 @@ impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
+pub struct EpochManagerRegisterValidatorMethodArgs {
+    pub validator: EcdsaSecp256k1PublicKey,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
 pub struct EpochManagerRegisterValidatorInvocation {
     pub receiver: ComponentAddress,
     pub validator: EcdsaSecp256k1PublicKey,
@@ -111,6 +135,12 @@ impl Into<SerializedInvocation> for EpochManagerRegisterValidatorInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::RegisterValidator(self)).into()
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub struct EpochManagerUnregisterValidatorMethodArgs {
+    pub validator: EcdsaSecp256k1PublicKey,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

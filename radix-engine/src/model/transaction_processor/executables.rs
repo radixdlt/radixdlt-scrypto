@@ -45,6 +45,7 @@ pub enum TransactionProcessorError {
     InvalidCallData(DecodeError),
     ReadOwnedNodesError(ReadOwnedNodesError),
     ReplaceManifestValuesError(ReplaceManifestValuesError),
+    ResolveError(ResolveError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug {}
@@ -441,19 +442,37 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let result = api.invoke(ParsedScryptoInvocation::Method(
-                        ScryptoMethodIdent {
-                            receiver: ScryptoReceiver::Global(component_address.clone()),
-                            method_name: method_name.clone(),
-                        },
-                        args,
-                    ))?;
+                    match component_address {
+                        ComponentAddress::EpochManager(..) => {
+                            if let Some(epoch_manager_fn) = EpochManagerFn::from_str(method_name).ok() {
+                                let invocation = epoch_manager_fn.to_method_invocation(*component_address, args.as_slice())
+                                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(TransactionProcessorError::ResolveError(e))))?;
+                                let rtn = invoke_native_fn(NativeInvocation::EpochManager(invocation), api)?;
+                                InstructionOutput::Native(rtn)
+                            } else {
+                                return Err(RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(TransactionProcessorError::ResolveError(ResolveError::NotAMethod))));
+                            }
+                        }
+                        ComponentAddress::Clock(..) => {
+                            panic!();
+                        }
+                        ComponentAddress::EcdsaSecp256k1VirtualAccount(..) | ComponentAddress::EddsaEd25519VirtualAccount(..)
+                        | ComponentAddress::Normal(..) | ComponentAddress::Account(..) => {
+                            let result = api.invoke(ParsedScryptoInvocation::Method(
+                                ScryptoMethodIdent {
+                                    receiver: ScryptoReceiver::Global(component_address.clone()),
+                                    method_name: method_name.clone(),
+                                },
+                                args,
+                            ))?;
 
-                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                        &result, api,
-                    )?;
+                            TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                                &result, api,
+                            )?;
 
-                    InstructionOutput::Scrypto(result)
+                            InstructionOutput::Scrypto(result)
+                        }
+                    }
                 }
                 Instruction::Basic(BasicInstruction::PublishPackage {
                     code,

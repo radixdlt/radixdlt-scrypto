@@ -2,6 +2,7 @@ use sbor::rust::string::String;
 use sbor::*;
 
 use crate::api::types::*;
+use crate::data::scrypto_decode;
 use crate::model::*;
 use crate::scrypto;
 use crate::Describe;
@@ -246,6 +247,59 @@ pub enum EpochManagerFn {
     SetEpoch,
     RegisterValidator,
     UnregisterValidator,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[scrypto(Categorize, Encode, Decode)]
+pub enum ResolveError {
+    DecodeError(DecodeError),
+    NotAMethod,
+}
+
+impl EpochManagerFn {
+    pub fn to_method_invocation(&self, receiver: ComponentAddress, args: &[u8]) -> Result<EpochManagerInvocation, ResolveError> {
+        let invocation = match self {
+            EpochManagerFn::Create => {
+                return Err(ResolveError::NotAMethod);
+            }
+            EpochManagerFn::GetCurrentEpoch => {
+                let _args: EpochManagerGetCurrentEpochMethodArgs = scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
+                    receiver,
+                })
+            }
+            EpochManagerFn::NextRound => {
+                let args: EpochManagerNextRoundMethodArgs = scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
+                    receiver,
+                    round: args.round,
+                })
+            }
+            EpochManagerFn::SetEpoch => {
+                let args: EpochManagerSetEpochMethodArgs = scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                EpochManagerInvocation::SetEpoch(EpochManagerSetEpochInvocation {
+                    receiver,
+                    epoch: args.epoch,
+                })
+            }
+            EpochManagerFn::RegisterValidator => {
+                let args: EpochManagerRegisterValidatorMethodArgs = scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                EpochManagerInvocation::RegisterValidator(EpochManagerRegisterValidatorInvocation {
+                    receiver,
+                    validator: args.validator,
+                })
+            }
+            EpochManagerFn::UnregisterValidator => {
+                let args: EpochManagerUnregisterValidatorMethodArgs = scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                EpochManagerInvocation::UnregisterValidator(EpochManagerUnregisterValidatorInvocation {
+                    receiver,
+                    validator: args.validator,
+                })
+            }
+        };
+
+        Ok(invocation)
+    }
 }
 
 #[derive(
