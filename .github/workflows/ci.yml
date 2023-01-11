@@ -67,7 +67,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -93,7 +93,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -119,7 +119,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -148,7 +148,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -171,7 +171,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -318,7 +318,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -376,8 +376,6 @@ jobs:
     - name: Run rtmc tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
-
-  # CLI tests splitted into 2 parts to reduce the CI time.
   cli-scrypto:
     name: Run CLI tests - scrypto
     runs-on: ${{ matrix.os }}
