@@ -420,8 +420,54 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
                 )
             }
-            ParsedScryptoInvocation::Method(method_ident, args) => {
-                let original_node_id = match method_ident.receiver {
+        };
+
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+
+        Ok((
+            actor,
+            CallFrameUpdate {
+                nodes_to_move,
+                node_refs_to_copy,
+            },
+            executor,
+        ))
+    }
+}
+
+impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoMethodInvocation {
+    type Exec = ScryptoExecutorToParsed<W::WasmInstance>;
+
+    fn resolve<D: ResolverApi<W> + SystemApi>(
+        self,
+        api: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let mut node_refs_to_copy = HashSet::new();
+
+        let nodes_to_move = self.args
+            .owned_node_ids()
+            .map_err(|e| {
+                RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                    TransactionProcessorError::ReadOwnedNodesError(e),
+                ))
+            })?
+            .into_iter()
+            .collect();
+        for global_address in self.args.global_references() {
+            node_refs_to_copy.insert(RENodeId::Global(global_address));
+        }
+
+        let (executor, actor) = {
+                let original_node_id = match self.receiver {
                     ScryptoReceiver::Global(address) => {
                         RENodeId::Global(GlobalAddress::Component(address))
                     }
@@ -479,14 +525,14 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     .blueprint_abi(&component_info.blueprint_name)
                     .ok_or(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoMethodInvocation(
-                            method_ident.method_name.clone(),
+                            self.method_name.clone(),
                             ScryptoFnResolvingError::BlueprintNotFound,
                         ),
                     ))?;
-                let fn_abi = abi.get_fn_abi(&method_ident.method_name).ok_or(
+                let fn_abi = abi.get_fn_abi(&self.method_name).ok_or(
                     RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoMethodInvocation(
-                            method_ident.method_name.clone(),
+                            self.method_name.clone(),
                             ScryptoFnResolvingError::MethodNotFound,
                         ),
                     ),
@@ -494,17 +540,17 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 if fn_abi.mutability.is_none() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoMethodInvocation(
-                            method_ident.method_name.clone(),
+                            self.method_name.clone(),
                             ScryptoFnResolvingError::MethodNotFound,
                         ),
                     ));
                 }
 
                 // Check input against the ABI
-                if !match_schema_with_value(&fn_abi.input, args.as_value()) {
+                if !match_schema_with_value(&fn_abi.input, self.args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoMethodInvocation(
-                            method_ident.method_name.clone(),
+                            self.method_name.clone(),
                             ScryptoFnResolvingError::InvalidInput,
                         ),
                     ));
@@ -513,7 +559,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 let scrypto_fn_ident = ScryptoFnIdentifier::new(
                     component_info.package_address,
                     component_info.blueprint_name,
-                    method_ident.method_name.clone(),
+                    self.method_name.clone(),
                 );
 
                 // Emit event
@@ -525,7 +571,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                         &package.code,
                         fn_abi.export_name.clone(),
                         Some(component_node_id.into()),
-                        args.into_vec(),
+                        self.args.into_vec(),
                         fn_abi.output.clone(),
                     ),
                     ResolvedActor::method(
@@ -533,7 +579,6 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                         resolved_receiver,
                     ),
                 )
-            }
         };
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));

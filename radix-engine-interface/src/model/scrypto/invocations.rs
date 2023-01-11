@@ -58,7 +58,6 @@ impl Into<SerializedInvocation> for ScryptoMethodInvocation {
 #[derive(Debug)]
 pub enum ParsedScryptoInvocation {
     Function(ScryptoFunctionIdent, IndexedScryptoValue),
-    Method(ScryptoMethodIdent, IndexedScryptoValue),
 }
 
 impl Invocation for ParsedScryptoInvocation {
@@ -69,7 +68,17 @@ impl ParsedScryptoInvocation {
     pub fn args(&self) -> &IndexedScryptoValue {
         match self {
             ParsedScryptoInvocation::Function(_, args) => &args,
-            ParsedScryptoInvocation::Method(_, args) => &args,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct ParsedScryptoMethodInvocation {
+    pub receiver: ScryptoReceiver,
+    pub method_name: String,
+    pub args: IndexedScryptoValue,
+}
+
+impl Invocation for ParsedScryptoMethodInvocation {
+    type Output = IndexedScryptoValue;
 }

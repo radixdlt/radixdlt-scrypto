@@ -462,13 +462,11 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         | ComponentAddress::EddsaEd25519VirtualAccount(..)
                         | ComponentAddress::Normal(..)
                         | ComponentAddress::Account(..) => {
-                            let result = api.invoke(ParsedScryptoInvocation::Method(
-                                ScryptoMethodIdent {
-                                    receiver: ScryptoReceiver::Global(component_address.clone()),
-                                    method_name: method_name.clone(),
-                                },
+                            let result = api.invoke(ParsedScryptoMethodInvocation {
+                                receiver: ScryptoReceiver::Global(component_address.clone()),
+                                method_name: method_name.clone(),
                                 args,
-                            ))?;
+                            })?;
 
                             TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                                 &result, api,

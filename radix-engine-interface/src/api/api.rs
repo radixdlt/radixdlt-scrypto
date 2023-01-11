@@ -38,6 +38,7 @@ pub trait ActorApi<E: Debug> {
 
 pub trait InvokableModel<E>:
     Invokable<ParsedScryptoInvocation, E>
+    + Invokable<ParsedScryptoMethodInvocation, E>
     + Invokable<ScryptoFunctionInvocation, E>
     + Invokable<ScryptoMethodInvocation, E>
     + Invokable<EpochManagerCreateInvocation, E>
