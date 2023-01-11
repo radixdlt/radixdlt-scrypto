@@ -64,6 +64,11 @@ pub enum Value<X: CustomValueKind, Y> {
     Tuple {
         fields: Vec<Value<X, Y>>,
     },
+    Map {
+        key_value_kind: ValueKind<X>,
+        value_value_kind: ValueKind<X>,
+        entries: Vec<(Value<X, Y>, Value<X, Y>)>,
+    },
     Custom {
         value: Y,
     },
@@ -88,6 +93,7 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
             Value::Enum { .. } => encoder.write_value_kind(ValueKind::Enum),
             Value::Array { .. } => encoder.write_value_kind(ValueKind::Array),
             Value::Tuple { .. } => encoder.write_value_kind(ValueKind::Tuple),
+            Value::Map { .. } => encoder.write_value_kind(ValueKind::Map),
             Value::Custom { value } => value.encode_value_kind(encoder),
         }
     }
@@ -155,6 +161,19 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
                 encoder.write_size(fields.len())?;
                 for field in fields {
                     encoder.encode(field)?;
+                }
+            }
+            Value::Map {
+                key_value_kind,
+                value_value_kind,
+                entries,
+            } => {
+                encoder.write_value_kind(*key_value_kind)?;
+                encoder.write_value_kind(*value_value_kind)?;
+                encoder.write_size(entries.len())?;
+                for entry in entries {
+                    encoder.encode_deeper_body(&entry.0)?;
+                    encoder.encode_deeper_body(&entry.1)?;
                 }
             }
             // custom
@@ -242,6 +261,23 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for Value<
                     elements,
                 })
             }
+            ValueKind::Map => {
+                let key_value_kind = decoder.read_value_kind()?;
+                let value_value_kind = decoder.read_value_kind()?;
+                let length = decoder.read_size()?;
+                let mut entries = Vec::with_capacity(if length <= 1024 { length } else { 1024 });
+                for _ in 0..length {
+                    entries.push((
+                        decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
+                        decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
+                    ));
+                }
+                Ok(Value::Map {
+                    key_value_kind,
+                    value_value_kind,
+                    entries,
+                })
+            }
             ValueKind::Custom(_) => Ok(Value::Custom {
                 value: Y::decode_body_with_value_kind(decoder, value_kind)?,
             }),
@@ -303,6 +339,18 @@ pub fn traverse_any<X: CustomValueKind, Y, V: ValueVisitor<X, Y, Err = E>, E>(
             for (i, e) in elements.iter().enumerate() {
                 path.push(i);
                 traverse_any(path, e, visitor)?;
+                path.pop();
+            }
+        }
+        Value::Map {
+            key_value_kind: _,
+            value_value_kind: _,
+            entries,
+        } => {
+            for (i, e) in entries.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, &e.0, visitor)?;
+                traverse_any(path, &e.1, visitor)?;
                 path.pop();
             }
         }
