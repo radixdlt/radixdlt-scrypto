@@ -99,10 +99,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                     update.add_ref(node_id);
                 }
             }
-            BasicInstruction::RegisterValidator { .. }
-            | BasicInstruction::UnregisterValidator { .. } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
-            }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
                 update.add_ref(RENodeId::Global(*entity_address));
@@ -390,20 +386,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::RegisterValidator { validator }) => {
-                    let rtn = api.invoke(EpochManagerRegisterValidatorInvocation {
-                        receiver: EPOCH_MANAGER,
-                        validator: *validator,
-                    })?;
-                    InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::UnregisterValidator { validator }) => {
-                    let rtn = api.invoke(EpochManagerUnregisterValidatorInvocation {
-                        receiver: EPOCH_MANAGER,
-                        validator: *validator,
-                    })?;
-                    InstructionOutput::Native(Box::new(rtn))
-                }
                 Instruction::Basic(BasicInstruction::CallFunction {
                     package_address,
                     blueprint_name,
@@ -444,20 +426,40 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
 
                     match component_address {
                         ComponentAddress::EpochManager(..) => {
-                            if let Some(epoch_manager_fn) = EpochManagerFn::from_str(method_name).ok() {
-                                let invocation = epoch_manager_fn.to_method_invocation(*component_address, args.as_slice())
-                                    .map_err(|e| RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(TransactionProcessorError::ResolveError(e))))?;
-                                let rtn = invoke_native_fn(NativeInvocation::EpochManager(invocation), api)?;
+                            if let Some(epoch_manager_fn) =
+                                EpochManagerFn::from_str(method_name).ok()
+                            {
+                                let invocation = epoch_manager_fn
+                                    .to_method_invocation(*component_address, args.as_slice())
+                                    .map_err(|e| {
+                                        RuntimeError::ApplicationError(
+                                            ApplicationError::TransactionProcessorError(
+                                                TransactionProcessorError::ResolveError(e),
+                                            ),
+                                        )
+                                    })?;
+                                let rtn = invoke_native_fn(
+                                    NativeInvocation::EpochManager(invocation),
+                                    api,
+                                )?;
                                 InstructionOutput::Native(rtn)
                             } else {
-                                return Err(RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(TransactionProcessorError::ResolveError(ResolveError::NotAMethod))));
+                                return Err(RuntimeError::ApplicationError(
+                                    ApplicationError::TransactionProcessorError(
+                                        TransactionProcessorError::ResolveError(
+                                            ResolveError::NotAMethod,
+                                        ),
+                                    ),
+                                ));
                             }
                         }
                         ComponentAddress::Clock(..) => {
                             panic!();
                         }
-                        ComponentAddress::EcdsaSecp256k1VirtualAccount(..) | ComponentAddress::EddsaEd25519VirtualAccount(..)
-                        | ComponentAddress::Normal(..) | ComponentAddress::Account(..) => {
+                        ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+                        | ComponentAddress::EddsaEd25519VirtualAccount(..)
+                        | ComponentAddress::Normal(..)
+                        | ComponentAddress::Account(..) => {
                             let result = api.invoke(ParsedScryptoInvocation::Method(
                                 ScryptoMethodIdent {
                                     receiver: ScryptoReceiver::Global(component_address.clone()),

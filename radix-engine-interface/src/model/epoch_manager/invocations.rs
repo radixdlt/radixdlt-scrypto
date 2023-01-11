@@ -32,8 +32,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
-pub struct EpochManagerGetCurrentEpochMethodArgs {
-}
+pub struct EpochManagerGetCurrentEpochMethodArgs {}
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
@@ -87,7 +86,6 @@ impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
 pub struct EpochManagerNextRoundMethodArgs {
     pub round: u64,
 }
-
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]

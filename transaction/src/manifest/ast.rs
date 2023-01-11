@@ -187,14 +187,6 @@ pub enum Instruction {
         owner_badge: Value,
         initial_supply: Value,
     },
-
-    RegisterValidator {
-        validator: Value,
-    },
-
-    UnregisterValidator {
-        validator: Value,
-    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
