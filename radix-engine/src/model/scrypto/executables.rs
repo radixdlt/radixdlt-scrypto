@@ -169,7 +169,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoMethodInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
+impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoFunctionInvocation {
     type Exec = ScryptoExecutor<W::WasmInstance>;
 
     fn resolve<D: ResolverApi<W> + SystemApi>(
@@ -177,7 +177,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
         let mut node_refs_to_copy = HashSet::new();
-        let args = IndexedScryptoValue::from_slice(&self.args()).map_err(|e| {
+        let args = IndexedScryptoValue::from_slice(&self.args).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
                 TransactionProcessorError::InvalidCallData(e),
             ))
@@ -196,14 +196,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
             node_refs_to_copy.insert(RENodeId::Global(global_address));
         }
 
-        let (executor, actor) = match &self {
-            ScryptoInvocation::Function(function_ident, _) => {
+        let (executor, actor) = {
                 // Load the package substate
                 // TODO: Move this in a better spot when more refactors are done
-                let package_address = match function_ident.package {
-                    ScryptoPackage::Global(address) => address,
-                };
-                let global_node_id = RENodeId::Global(GlobalAddress::Package(package_address));
+                let global_node_id = RENodeId::Global(GlobalAddress::Package(self.package_address));
 
                 let package = {
                     let handle = api.lock_substate(
@@ -224,17 +220,21 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
 
                 // Find the abi
                 let abi = package
-                    .blueprint_abi(&function_ident.blueprint_name)
+                    .blueprint_abi(&self.blueprint_name)
                     .ok_or(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.function_name.clone(),
                             ScryptoFnResolvingError::BlueprintNotFound,
                         ),
                     ))?;
-                let fn_abi = abi.get_fn_abi(&function_ident.function_name).ok_or(
+                let fn_abi = abi.get_fn_abi(&self.function_name).ok_or(
                     RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.function_name.clone(),
                             ScryptoFnResolvingError::FunctionNotFound,
                         ),
                     ),
@@ -242,7 +242,9 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 if fn_abi.mutability.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.function_name.clone(),
                             ScryptoFnResolvingError::FunctionNotFound,
                         ),
                     ));
@@ -252,16 +254,18 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                 if !match_schema_with_value(&fn_abi.input, args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
+                            self.package_address,
+                            self.blueprint_name.clone(),
+                            self.function_name.clone(),
                             ScryptoFnResolvingError::InvalidInput,
                         ),
                     ));
                 }
 
                 let scrypto_fn_ident = ScryptoFnIdentifier::new(
-                    package_address,
-                    function_ident.blueprint_name.clone(),
-                    function_ident.function_name.clone(),
+                    self.package_address,
+                    self.blueprint_name.clone(),
+                    self.function_name.clone(),
                 );
 
                 // Emit event
@@ -269,7 +273,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
 
                 (
                     api.vm().create_executor(
-                        package_address,
+                        self.package_address,
                         &package.code,
                         fn_abi.export_name.clone(),
                         None,
@@ -278,7 +282,6 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoInvocation {
                     ),
                     ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
                 )
-            }
         };
 
         node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
@@ -357,14 +360,18 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                     .blueprint_abi(&function_ident.blueprint_name)
                     .ok_or(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
+                            package_address,
+                            function_ident.blueprint_name.clone(),
+                            function_ident.function_name.clone(),
                             ScryptoFnResolvingError::BlueprintNotFound,
                         ),
                     ))?;
                 let fn_abi = abi.get_fn_abi(&function_ident.function_name).ok_or(
                     RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
+                            package_address,
+                            function_ident.blueprint_name.clone(),
+                            function_ident.function_name.clone(),
                             ScryptoFnResolvingError::FunctionNotFound,
                         ),
                     ),
@@ -372,7 +379,9 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 if fn_abi.mutability.is_some() {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
+                            package_address,
+                            function_ident.blueprint_name.clone(),
+                            function_ident.function_name.clone(),
                             ScryptoFnResolvingError::FunctionNotFound,
                         ),
                     ));
@@ -382,7 +391,9 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoInvocation {
                 if !match_schema_with_value(&fn_abi.input, args.as_value()) {
                     return Err(RuntimeError::InterpreterError(
                         InterpreterError::InvalidScryptoFunctionInvocation(
-                            function_ident.clone(),
+                            package_address,
+                            function_ident.blueprint_name.clone(),
+                            function_ident.function_name.clone(),
                             ScryptoFnResolvingError::InvalidInput,
                         ),
                     ));

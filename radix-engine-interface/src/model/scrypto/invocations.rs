@@ -2,7 +2,7 @@ use radix_engine_interface::model::ComponentAddress;
 use crate::api::api::Invocation;
 use crate::api::types::{ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoReceiver};
 use crate::data::IndexedScryptoValue;
-use crate::model::SerializedInvocation;
+use crate::model::{PackageAddress, SerializedInvocation};
 use crate::scrypto;
 use crate::wasm::SerializableInvocation;
 use sbor::rust::vec::Vec;
@@ -11,29 +11,24 @@ use sbor::*;
 /// Scrypto function/method invocation.
 #[derive(Debug)]
 #[scrypto(Categorize, Encode, Decode)]
-pub enum ScryptoInvocation {
-    Function(ScryptoFunctionIdent, Vec<u8>),
+pub struct ScryptoFunctionInvocation {
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+    pub function_name: String,
+    pub args: Vec<u8>,
 }
 
-impl Invocation for ScryptoInvocation {
+impl Invocation for ScryptoFunctionInvocation {
     type Output = Vec<u8>;
 }
 
-impl SerializableInvocation for ScryptoInvocation {
+impl SerializableInvocation for ScryptoFunctionInvocation {
     type ScryptoOutput = Vec<u8>;
 }
 
-impl Into<SerializedInvocation> for ScryptoInvocation {
+impl Into<SerializedInvocation> for ScryptoFunctionInvocation {
     fn into(self) -> SerializedInvocation {
-        SerializedInvocation::Scrypto(self)
-    }
-}
-
-impl ScryptoInvocation {
-    pub fn args(&self) -> &[u8] {
-        match self {
-            ScryptoInvocation::Function(_, args) => &args,
-        }
+        SerializedInvocation::Function(self)
     }
 }
 

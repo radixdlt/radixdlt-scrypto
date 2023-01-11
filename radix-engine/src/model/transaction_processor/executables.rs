@@ -235,7 +235,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation, RuntimeError>
+            + Invokable<ScryptoFunctionInvocation, RuntimeError>
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>,
     {
@@ -883,7 +883,7 @@ impl TransactionProcessor {
     ) -> Result<(), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation, RuntimeError>
+            + Invokable<ScryptoFunctionInvocation, RuntimeError>
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>,
     {

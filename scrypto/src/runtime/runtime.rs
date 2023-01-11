@@ -55,14 +55,13 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let buffer = ScryptoEnv
-            .invoke(ScryptoInvocation::Function(
-                ScryptoFunctionIdent {
-                    package: ScryptoPackage::Global(package_address),
+            .invoke(ScryptoFunctionInvocation {
+                    package_address,
                     blueprint_name: blueprint_name.as_ref().to_owned(),
                     function_name: function_name.as_ref().to_owned(),
+                    args,
                 },
-                args,
-            ))
+            )
             .unwrap();
         scrypto_decode(&buffer).unwrap()
     }

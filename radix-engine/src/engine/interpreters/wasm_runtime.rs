@@ -1,7 +1,7 @@
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::{invoke_native_fn, InvokeError};
-use crate::types::{scrypto_decode, scrypto_encode, ScryptoInvocation};
+use crate::types::{scrypto_decode, scrypto_encode, ScryptoFunctionInvocation};
 use crate::wasm::*;
 use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
@@ -15,14 +15,14 @@ use sbor::rust::vec::Vec;
 /// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
+    Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoFunctionInvocation, RuntimeError>,
 {
     api: &'y mut Y,
 }
 
 impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
 where
-    Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
+    Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoFunctionInvocation, RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime { api }
@@ -48,7 +48,7 @@ where
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
             RadixEngineInput::Invoke(invocation) => match invocation {
-                SerializedInvocation::Scrypto(invocation) => {
+                SerializedInvocation::Function(invocation) => {
                     encode(self.api.invoke(invocation)?)? // TODO: Figure out to remove encode
                 }
                 SerializedInvocation::Component(invocation) => {

@@ -71,11 +71,9 @@ fn invalid_blueprint_name_should_cause_error() {
     // Assert
     receipt.expect_specific_failure(|e| {
         if let RuntimeError::InterpreterError(InterpreterError::InvalidScryptoFunctionInvocation(
-            ScryptoFunctionIdent {
-                package: ScryptoPackage::Global(package_address),
-                blueprint_name,
-                ..
-            },
+            package_address,
+            blueprint_name,
+            _,
             ScryptoFnResolvingError::BlueprintNotFound,
         )) = e
         {
