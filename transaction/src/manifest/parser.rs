@@ -661,5 +661,5 @@ mod tests {
     //
     // It's also not very useful as instruction parsing basically calls `parse_value` recursively
     //
-    // That said, all manifest instructions should be tested in `generator.rs`, `compiler.rs` and/or `decompiler.rs`.
+    // That said, all manifest instructions should be tested in `generator.rs` and `e2e.rs`.
 }
