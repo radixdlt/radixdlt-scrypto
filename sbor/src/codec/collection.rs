@@ -259,8 +259,8 @@ impl<
         let mut map = BTreeMap::new();
         for _ in 0..size {
             map.insert(
-                K::decode_body_with_value_kind(decoder, key_value_kind)?,
-                V::decode_body_with_value_kind(decoder, value_value_kind)?,
+                decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
+                decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
             );
         }
         Ok(map)
@@ -286,8 +286,8 @@ impl<
         let mut map = HashMap::new();
         for _ in 0..size {
             map.insert(
-                K::decode_body_with_value_kind(decoder, key_value_kind)?,
-                V::decode_body_with_value_kind(decoder, value_value_kind)?,
+                decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
+                decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
             );
         }
         Ok(map)
@@ -314,8 +314,8 @@ impl<
         let mut map = indexmap::IndexMap::new();
         for _ in 0..size {
             map.insert(
-                K::decode_body_with_value_kind(decoder, key_value_kind)?,
-                V::decode_body_with_value_kind(decoder, value_value_kind)?,
+                decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
+                decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
             );
         }
         Ok(map)

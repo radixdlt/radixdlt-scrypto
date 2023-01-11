@@ -227,6 +227,19 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
             }
             .serializable(*context),
         ),
+        Value::Map {
+            key_value_kind,
+            value_value_kind,
+            entries,
+        } => serialize_value_with_kv_types(
+            ValueEncoding::NoType,
+            serializer,
+            context,
+            ValueKind::Map,
+            *key_value_kind,
+            *value_value_kind,
+            &MapValue { entries }.serializable(*context),
+        ),
         Value::Custom { value } => serialize_custom_value(serializer, value, context),
     }
 }
@@ -255,6 +268,28 @@ impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for ArrayVal
         } else {
             serialize_schemaless_scrypto_value_slice(serializer, self.elements, context)
         }
+    }
+}
+
+pub struct MapValue<'a> {
+    entries: &'a [(ScryptoValue, ScryptoValue)],
+}
+
+impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for MapValue<'b> {
+    fn contextual_serialize<S: Serializer>(
+        &self,
+        serializer: S,
+        context: &ScryptoValueFormattingContext<'a>,
+    ) -> Result<S::Ok, S::Error> {
+        // Serialize map into JSON array instead of JSON map because SBOR map is a superset of JSON map.
+        let mut tuple = serializer.serialize_tuple(self.entries.len())?;
+        for entry in self.entries {
+            let t = ScryptoValue::Tuple {
+                fields: vec![entry.0.clone(), entry.1.clone()],
+            };
+            tuple.serialize_element(&t.serializable(*context))?;
+        }
+        tuple.end()
     }
 }
 
@@ -633,6 +668,36 @@ fn serialize_value_with_element_type<
     }
 }
 
+fn serialize_value_with_kv_types<
+    S: Serializer,
+    T: Serialize + ?Sized,
+    K: Into<ScryptoValueKind>,
+>(
+    value_encoding_type: ValueEncoding,
+    serializer: S,
+    context: &ScryptoValueFormattingContext,
+    value_kind: K,
+    key_value_kind: K,
+    value_value_kind: K,
+    value: &T,
+) -> Result<S::Ok, S::Error> {
+    if context.serialization_type == ScryptoValueSerializationType::Simple
+        && value_encoding_type == ValueEncoding::NoType
+    {
+        value.serialize(serializer)
+    } else {
+        let mut map = serializer.serialize_map(Some(2))?;
+        map.serialize_entry("type", &value_kind_to_string(&value_kind.into()))?;
+        map.serialize_entry("key_type", &value_kind_to_string(&key_value_kind.into()))?;
+        map.serialize_entry(
+            "value_type",
+            &value_kind_to_string(&value_value_kind.into()),
+        )?;
+        map.serialize_entry("value", value)?;
+        map.end()
+    }
+}
+
 #[cfg(test)]
 #[cfg(feature = "serde")] // Ensures that VS Code runs this module with the features serde tag!
 mod tests {
@@ -758,6 +823,11 @@ mod tests {
                     discriminator: "VariantMultiValues".to_string(),
                     fields: vec![Value::U32 { value: 153 }, Value::Bool { value: true }],
                 },
+                Value::Map {
+                    key_value_kind: ValueKind::U32,
+                    value_value_kind: ValueKind::U32,
+                    entries: vec![(Value::U32 { value: 153 }, Value::U32 { value: 62 })],
+                },
                 Value::Tuple {
                     fields: vec![
                         Value::Custom {
@@ -865,6 +935,7 @@ mod tests {
             { "variant": "VariantUnit", "fields": [] },
             { "variant": "VariantSingleValue", "fields": [153] },
             { "variant": "VariantMultiValues", "fields": [153, true] },
+            [[153, 62]],
             [
                 account_package_address,
                 faucet_address,
@@ -918,6 +989,7 @@ mod tests {
                 { "type": "Enum", "value": { "variant": "VariantUnit", "fields": [] } },
                 { "type": "Enum", "value": { "variant": "VariantSingleValue", "fields": [{ "type": "U32", "value": 153 }] } },
                 { "type": "Enum", "value": { "variant": "VariantMultiValues", "fields": [{ "type": "U32", "value": 153 }, { "type": "Bool", "value": true }] } },
+                { "type": "Map", "key_type": "U32", "value_type": "U32", "value": [{"type":"Tuple","value":[{"type":"U32","value":153},{"type":"U32","value":62}]}] },
                 {
                     "type": "Tuple",
                     "value": [
