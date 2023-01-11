@@ -343,14 +343,22 @@ pub fn traverse_any<X: CustomValueKind, Y, V: ValueVisitor<X, Y, Err = E>, E>(
             }
         }
         Value::Map {
-            key_value_kind: _,
-            value_value_kind: _,
+            key_value_kind,
+            value_value_kind,
             entries,
         } => {
+            visitor.visit_map(path, key_value_kind, value_value_kind, entries)?;
             for (i, e) in entries.iter().enumerate() {
                 path.push(i);
+
+                path.push(0);
                 traverse_any(path, &e.0, visitor)?;
+                path.pop();
+
+                path.push(1);
                 traverse_any(path, &e.1, visitor)?;
+                path.pop();
+
                 path.pop();
             }
         }
@@ -371,6 +379,14 @@ pub trait ValueVisitor<X: CustomValueKind, Y> {
         path: &mut SborPathBuf,
         element_value_kind: &ValueKind<X>,
         elements: &[Value<X, Y>],
+    ) -> Result<(), Self::Err>;
+
+    fn visit_map(
+        &mut self,
+        path: &mut SborPathBuf,
+        key_value_kind: &ValueKind<X>,
+        value_value_kind: &ValueKind<X>,
+        entries: &[(Value<X, Y>, Value<X, Y>)],
     ) -> Result<(), Self::Err>;
 
     fn visit(&mut self, path: &mut SborPathBuf, value: &Y) -> Result<(), Self::Err>;
