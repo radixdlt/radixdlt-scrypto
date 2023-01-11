@@ -190,17 +190,15 @@ pub enum BasicInstruction {
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
+    // TODO: Integrate the following with CallMethod
     CreateValidator {
         key: EcdsaSecp256k1PublicKey,
     },
-
-    // TODO: Integrate this with CallMethod
     RegisterValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
+        validator_address: SystemAddress, // TODO: Replace this with ComponentAddress
     },
-
     UnregisterValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
+        validator_address: SystemAddress, // TODO: Replace this with ComponentAddress
     },
 
     /// Calls a scrypto function.
