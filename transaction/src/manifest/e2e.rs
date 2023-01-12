@@ -152,7 +152,7 @@ CALL_METHOD
     }
 
     #[test]
-    fn test_invocation_values() {
+    fn test_values() {
         compile_and_decompile_with_inversion_test(
             include_str!("../../examples/call/values.rtm"),
             &NetworkDefinition::simulator(),
@@ -182,6 +182,10 @@ CALL_METHOD
     Enum(0u8, "test")
     Enum(1u8, "test123")
     Enum(1u8, "test123")
+    Enum(0u8)
+    Enum(1u8, "a")
+    Enum(0u8, "b")
+    Enum(1u8, "c")
     Bytes("deadbeef")
     Bytes("050aff")
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value")

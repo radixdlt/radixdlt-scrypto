@@ -19,6 +19,22 @@ lazy_static! {
 
         known_enum!(
             m,
+            enum Option {
+                None = 0;
+                Some = 1;
+            }
+        );
+
+        known_enum!(
+            m,
+            enum Result {
+                Ok = 0;
+                Err = 1;
+            }
+        );
+
+        known_enum!(
+            m,
             enum AccessRuleEntry {
                 AccessRule = 0;
                 Group = 1;
