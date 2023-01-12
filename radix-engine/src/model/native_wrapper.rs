@@ -10,7 +10,12 @@ pub fn invoke_call_table<Y, E>(
         Y: InvokableModel<E>,
 {
     match invocation {
-        CallTableInvocation::Scrypto(invocation) => {
+        CallTableInvocation::ScryptoMethod(invocation) => {
+            let rtn = api.invoke(invocation)?;
+            let rtn = IndexedScryptoValue::from_typed(&rtn);
+            Ok(rtn)
+        }
+        CallTableInvocation::ScryptoFunction(invocation) => {
             let rtn = api.invoke(invocation)?;
             let rtn = IndexedScryptoValue::from_typed(&rtn);
             Ok(rtn)

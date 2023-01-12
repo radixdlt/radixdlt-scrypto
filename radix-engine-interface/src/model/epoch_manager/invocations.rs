@@ -24,8 +24,8 @@ impl SerializableInvocation for EpochManagerCreateInvocation {
     type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerCreateInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::Create(self)).into()
     }
 }
@@ -48,8 +48,8 @@ impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
     type ScryptoOutput = u64;
 }
 
-impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerGetCurrentEpochInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(self)).into()
     }
 }
@@ -75,8 +75,8 @@ impl SerializableInvocation for EpochManagerSetEpochInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerSetEpochInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(self)).into()
     }
 }
@@ -102,8 +102,8 @@ impl SerializableInvocation for EpochManagerNextRoundInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerNextRoundInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(self)).into()
     }
 }
@@ -129,8 +129,8 @@ impl SerializableInvocation for EpochManagerRegisterValidatorInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for EpochManagerRegisterValidatorInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerRegisterValidatorInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::RegisterValidator(self)).into()
     }
 }
@@ -156,8 +156,8 @@ impl SerializableInvocation for EpochManagerUnregisterValidatorInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for EpochManagerUnregisterValidatorInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerUnregisterValidatorInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::UnregisterValidator(self)).into()
     }
 }

@@ -1,11 +1,10 @@
 use crate::engine::*;
 use crate::fee::*;
-use crate::model::{invoke_native_fn, InvokeError};
+use crate::model::{invoke_call_table, InvokeError};
 use crate::types::{scrypto_decode, scrypto_encode, ScryptoFunctionInvocation};
 use crate::wasm::*;
 use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
-use radix_engine_interface::model::SerializedInvocation;
 use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
 
@@ -47,16 +46,7 @@ where
         let input: RadixEngineInput = scrypto_decode(input.as_slice())
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
         let rtn = match input {
-            RadixEngineInput::Invoke(invocation) => match invocation {
-                SerializedInvocation::Function(invocation) => {
-                    encode(self.api.invoke(invocation)?)? // TODO: Figure out to remove encode
-                }
-                SerializedInvocation::Method(invocation) => encode(self.api.invoke(invocation)?)?,
-                SerializedInvocation::Native(invocation) => {
-                    let rtn = invoke_native_fn(invocation, self.api)?;
-                    scrypto_encode(rtn.as_ref()).unwrap()
-                }
-            },
+            RadixEngineInput::Invoke(invocation) => invoke_call_table(invocation, self.api)?.into_vec(),
             RadixEngineInput::CreateNode(node) => encode(self.api.sys_create_node(node)?)?,
             RadixEngineInput::GetVisibleNodeIds() => encode(self.api.sys_get_visible_nodes()?)?,
             RadixEngineInput::DropNode(node_id) => encode(self.api.sys_drop_node(node_id)?)?,

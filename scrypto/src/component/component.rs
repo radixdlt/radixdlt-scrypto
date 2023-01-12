@@ -3,7 +3,7 @@ use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoReceiver, SubstateOffset,
 };
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode, ScryptoValue};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;

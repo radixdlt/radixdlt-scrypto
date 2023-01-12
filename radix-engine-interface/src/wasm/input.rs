@@ -6,7 +6,7 @@ use sbor::rust::vec::Vec;
 #[derive(Debug)]
 #[scrypto(Categorize, Encode, Decode)]
 pub enum RadixEngineInput {
-    Invoke(SerializedInvocation),
+    Invoke(CallTableInvocation),
 
     CreateNode(ScryptoRENode),
     GetVisibleNodeIds(),

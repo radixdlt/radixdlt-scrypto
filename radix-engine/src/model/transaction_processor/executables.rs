@@ -462,7 +462,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                 method_name: method_name.clone(),
                                 args: args.to_vec(),
                             };
-                            CallTableInvocation::Scrypto(method_invocation)
+                            CallTableInvocation::ScryptoMethod(method_invocation)
                         }
                     };
 

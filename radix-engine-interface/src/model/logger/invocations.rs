@@ -1,4 +1,4 @@
-use radix_engine_interface::model::{LoggerInvocation, NativeInvocation, SerializedInvocation};
+use radix_engine_interface::model::{LoggerInvocation, NativeInvocation, CallTableInvocation};
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
@@ -45,8 +45,8 @@ impl SerializableInvocation for LoggerLogInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for LoggerLogInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for LoggerLogInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Logger(LoggerInvocation::Log(self)).into()
     }
 }

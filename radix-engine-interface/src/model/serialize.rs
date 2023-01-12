@@ -5,17 +5,10 @@ use sbor::rust::fmt::Debug;
 
 #[derive(Debug)]
 #[scrypto(Categorize, Encode, Decode)]
-pub enum SerializedInvocation {
-    Native(NativeInvocation),
-    Function(ScryptoFunctionInvocation),
-    Method(ScryptoMethodInvocation),
-}
-
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
 pub enum CallTableInvocation {
-    Scrypto(ScryptoMethodInvocation),
     Native(NativeInvocation),
+    ScryptoFunction(ScryptoFunctionInvocation),
+    ScryptoMethod(ScryptoMethodInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -37,9 +30,9 @@ pub enum NativeInvocation {
     TransactionRuntime(TransactionRuntimeInvocation),
 }
 
-impl Into<SerializedInvocation> for NativeInvocation {
-    fn into(self) -> SerializedInvocation {
-        SerializedInvocation::Native(self)
+impl Into<CallTableInvocation> for NativeInvocation {
+    fn into(self) -> CallTableInvocation {
+        CallTableInvocation::Native(self)
     }
 }
 

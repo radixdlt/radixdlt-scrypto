@@ -2,7 +2,7 @@ use radix_engine_interface::data::ScryptoValue;
 use crate::api::api::Invocation;
 use crate::api::types::ScryptoReceiver;
 use crate::data::IndexedScryptoValue;
-use crate::model::{PackageAddress, SerializedInvocation};
+use crate::model::{PackageAddress, CallTableInvocation};
 use crate::scrypto;
 use crate::wasm::SerializableInvocation;
 use sbor::rust::string::String;
@@ -27,9 +27,9 @@ impl SerializableInvocation for ScryptoFunctionInvocation {
     type ScryptoOutput = ScryptoValue;
 }
 
-impl Into<SerializedInvocation> for ScryptoFunctionInvocation {
-    fn into(self) -> SerializedInvocation {
-        SerializedInvocation::Function(self)
+impl Into<CallTableInvocation> for ScryptoFunctionInvocation {
+    fn into(self) -> CallTableInvocation {
+        CallTableInvocation::ScryptoFunction(self)
     }
 }
 
@@ -50,9 +50,9 @@ impl SerializableInvocation for ScryptoMethodInvocation {
     type ScryptoOutput = ScryptoValue;
 }
 
-impl Into<SerializedInvocation> for ScryptoMethodInvocation {
-    fn into(self) -> SerializedInvocation {
-        SerializedInvocation::Method(self)
+impl Into<CallTableInvocation> for ScryptoMethodInvocation {
+    fn into(self) -> CallTableInvocation {
+        CallTableInvocation::ScryptoMethod(self)
     }
 }
 
