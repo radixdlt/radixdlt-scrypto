@@ -11,7 +11,10 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
+pub fn handle_decode(
+    input: TokenStream,
+    context_custom_value_kind: Option<&'static str>,
+) -> Result<TokenStream> {
     trace!("handle_decode() starts");
 
     let DeriveInput {
@@ -22,7 +25,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
         ..
     } = parse2(input)?;
     let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, decoder_generic) =
-        build_decode_generics(&generics, &attrs)?;
+        build_decode_generics(&generics, &attrs, context_custom_value_kind)?;
 
     let output = match data {
         Data::Struct(s) => match s.fields {
@@ -189,7 +192,7 @@ mod tests {
     #[test]
     fn test_decode_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        let output = handle_decode(input).unwrap();
+        let output = handle_decode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -212,7 +215,7 @@ mod tests {
     #[test]
     fn test_decode_generic() {
         let input = TokenStream::from_str("struct Test<T, D: Clashing> { a: T, b: D }").unwrap();
-        let output = handle_decode(input).unwrap();
+        let output = handle_decode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -239,7 +242,7 @@ mod tests {
             "#[sbor(custom_value_kind = \"NoCustomValueKind\")] struct Test {a: u32}",
         )
         .unwrap();
-        let output = handle_decode(input).unwrap();
+        let output = handle_decode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -262,7 +265,7 @@ mod tests {
     #[test]
     fn test_decode_struct_with_generic_params() {
         let input = TokenStream::from_str("#[sbor(generic_categorize_bounds = \"T1, T2\")] struct Test<'a, S, T1, T2> {a: &'a u32, b: S, c: Vec<T1>, d: Vec<T2>}").unwrap();
-        let output = handle_decode(input).unwrap();
+        let output = handle_decode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -288,7 +291,7 @@ mod tests {
     #[test]
     fn test_decode_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        let output = handle_decode(input).unwrap();
+        let output = handle_decode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -325,7 +328,7 @@ mod tests {
     #[test]
     fn test_skip() {
         let input = TokenStream::from_str("struct Test {#[sbor(skip)] a: u32}").unwrap();
-        let output = handle_decode(input).unwrap();
+        let output = handle_decode(input, None).unwrap();
 
         assert_code_eq(
             output,

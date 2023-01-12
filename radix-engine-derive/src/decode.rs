@@ -2,7 +2,10 @@ use proc_macro2::TokenStream;
 use syn::Result;
 
 pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
-    Ok(input)
+    sbor_derive_common::decode::handle_decode(
+        input,
+        Some("radix_engine_interface::data::ScryptoCustomValueKind"),
+    )
 }
 
 #[cfg(test)]
@@ -21,7 +24,25 @@ mod tests {
         let input = TokenStream::from_str("pub struct MyStruct { }").unwrap();
         let output = handle_decode(input).unwrap();
 
-        assert_code_eq(output, quote! {});
+        assert_code_eq(
+            output,
+            quote! {
+                impl<D: ::sbor::Decoder<radix_engine_interface::data::ScryptoCustomValueKind> >
+                    ::sbor::Decode<radix_engine_interface::data::ScryptoCustomValueKind, D> for MyStruct
+                {
+                    #[inline]
+                    fn decode_body_with_value_kind(
+                        decoder: &mut D,
+                        value_kind: ::sbor::ValueKind<radix_engine_interface::data::ScryptoCustomValueKind>
+                    ) -> Result<Self, ::sbor::DecodeError> {
+                        use ::sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Tuple)?;
+                        decoder.read_and_check_size(0)?;
+                        Ok(Self {})
+                    }
+                }
+            },
+        );
     }
 
     #[test]
@@ -30,6 +51,42 @@ mod tests {
             .unwrap();
         let output = handle_decode(input).unwrap();
 
-        assert_code_eq(output, quote! {});
+        assert_code_eq(
+            output,
+            quote! {
+                impl<
+                        T: Bound + ::sbor::Decode<radix_engine_interface::data::ScryptoCustomValueKind, D>,
+                        D: ::sbor::Decoder<radix_engine_interface::data::ScryptoCustomValueKind>
+                    > ::sbor::Decode<radix_engine_interface::data::ScryptoCustomValueKind, D> for MyEnum<T>
+                {
+                    #[inline]
+                    fn decode_body_with_value_kind(
+                        decoder: &mut D,
+                        value_kind: ::sbor::ValueKind<radix_engine_interface::data::ScryptoCustomValueKind>
+                    ) -> Result<Self, ::sbor::DecodeError> {
+                        use ::sbor::{self, Decode};
+                        decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
+                        let discriminator = decoder.read_discriminator()?;
+                        match discriminator.as_str() {
+                            "A" => {
+                                decoder.read_and_check_size(1)?;
+                                Ok(Self::A {
+                                    named: decoder.decode::<T>()?,
+                                })
+                            }
+                            "B" => {
+                                decoder.read_and_check_size(1)?;
+                                Ok(Self::B(decoder.decode::<String>()?))
+                            }
+                            "C" => {
+                                decoder.read_and_check_size(0)?;
+                                Ok(Self::C)
+                            }
+                            _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator)),
+                        }
+                    }
+                }
+            },
+        );
     }
 }

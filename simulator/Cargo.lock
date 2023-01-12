@@ -1145,7 +1145,7 @@ version = "0.8.0"
 dependencies = [
  "proc-macro2",
  "quote",
- "sbor-derive",
+ "sbor-derive-common",
  "syn",
 ]
 

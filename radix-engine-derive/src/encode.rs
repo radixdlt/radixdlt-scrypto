@@ -2,7 +2,10 @@ use proc_macro2::TokenStream;
 use syn::Result;
 
 pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
-    Ok(input)
+    sbor_derive_common::encode::handle_encode(
+        input,
+        Some("radix_engine_interface::data::ScryptoCustomValueKind"),
+    )
 }
 
 #[cfg(test)]
@@ -21,7 +24,25 @@ mod tests {
         let input = TokenStream::from_str("pub struct MyStruct { }").unwrap();
         let output = handle_encode(input).unwrap();
 
-        assert_code_eq(output, quote! {});
+        assert_code_eq(
+            output,
+            quote! {
+                impl<E: ::sbor::Encoder<radix_engine_interface::data::ScryptoCustomValueKind> >
+                    ::sbor::Encode<radix_engine_interface::data::ScryptoCustomValueKind, E> for MyStruct
+                {
+                    #[inline]
+                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_value_kind(::sbor::ValueKind::Tuple)
+                    }
+                    #[inline]
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
+                        use ::sbor::{self, Encode};
+                        encoder.write_size(0)?;
+                        Ok(())
+                    }
+                }
+            },
+        );
     }
 
     #[test]
@@ -30,6 +51,41 @@ mod tests {
             .unwrap();
         let output = handle_encode(input).unwrap();
 
-        assert_code_eq(output, quote! {});
+        assert_code_eq(
+            output,
+            quote! {
+                impl<
+                        T: Bound + ::sbor::Encode<radix_engine_interface::data::ScryptoCustomValueKind, E>,
+                        E: ::sbor::Encoder<radix_engine_interface::data::ScryptoCustomValueKind>
+                    > ::sbor::Encode<radix_engine_interface::data::ScryptoCustomValueKind, E> for MyEnum<T>
+                {
+                    #[inline]
+                    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
+                        encoder.write_value_kind(::sbor::ValueKind::Enum)
+                    }
+                    #[inline]
+                    fn encode_body(&self, encoder: &mut E) -> Result<(), ::sbor::EncodeError> {
+                        use ::sbor::{self, Encode};
+                        match self {
+                            Self::A { named, .. } => {
+                                encoder.write_discriminator("A")?;
+                                encoder.write_size(1)?;
+                                encoder.encode(named)?;
+                            }
+                            Self::B(a0) => {
+                                encoder.write_discriminator("B")?;
+                                encoder.write_size(1)?;
+                                encoder.encode(a0)?;
+                            }
+                            Self::C => {
+                                encoder.write_discriminator("C")?;
+                                encoder.write_size(0)?;
+                            }
+                        }
+                        Ok(())
+                    }
+                }
+            },
+        );
     }
 }

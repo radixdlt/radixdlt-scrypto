@@ -2,7 +2,10 @@ use proc_macro2::TokenStream;
 use syn::Result;
 
 pub fn handle_categorize(input: TokenStream) -> Result<TokenStream> {
-    Ok(input)
+    sbor_derive_common::categorize::handle_categorize(
+        input,
+        Some("radix_engine_interface::data::ScryptoCustomValueKind"),
+    )
 }
 
 #[cfg(test)]
@@ -21,7 +24,17 @@ mod tests {
         let input = TokenStream::from_str("pub struct MyStruct { }").unwrap();
         let output = handle_categorize(input).unwrap();
 
-        assert_code_eq(output, quote! {});
+        assert_code_eq(
+            output,
+            quote! {
+                impl ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomValueKind> for MyStruct {
+                    #[inline]
+                    fn value_kind() -> ::sbor::ValueKind<radix_engine_interface::data::ScryptoCustomValueKind> {
+                        ::sbor::ValueKind::Tuple
+                    }
+                }
+            },
+        );
     }
 
     #[test]
@@ -30,6 +43,18 @@ mod tests {
             .unwrap();
         let output = handle_categorize(input).unwrap();
 
-        assert_code_eq(output, quote! {});
+        assert_code_eq(
+            output,
+            quote! {
+                impl<T: Bound> ::sbor::Categorize<radix_engine_interface::data::ScryptoCustomValueKind>
+                    for MyEnum<T>
+                {
+                    #[inline]
+                    fn value_kind() -> ::sbor::ValueKind<radix_engine_interface::data::ScryptoCustomValueKind> {
+                        ::sbor::ValueKind::Enum
+                    }
+                }
+            },
+        );
     }
 }
