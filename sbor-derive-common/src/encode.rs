@@ -11,7 +11,10 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
+pub fn handle_encode(
+    input: TokenStream,
+    context_custom_value_kind: Option<&'static str>,
+) -> Result<TokenStream> {
     trace!("handle_encode() starts");
 
     let DeriveInput {
@@ -22,7 +25,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
         ..
     } = parse2(input)?;
     let (impl_generics, ty_generics, where_clause, custom_value_kind_generic, encoder_generic) =
-        build_encode_generics(&generics, &attrs)?;
+        build_encode_generics(&generics, &attrs, context_custom_value_kind)?;
 
     let output = match data {
         Data::Struct(s) => match s.fields {
@@ -199,7 +202,7 @@ mod tests {
     #[test]
     fn test_encode_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        let output = handle_encode(input).unwrap();
+        let output = handle_encode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -225,7 +228,7 @@ mod tests {
     #[test]
     fn test_encode_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        let output = handle_encode(input).unwrap();
+        let output = handle_encode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -265,7 +268,7 @@ mod tests {
     #[test]
     fn test_skip() {
         let input = TokenStream::from_str("struct Test {#[sbor(skip)] a: u32}").unwrap();
-        let output = handle_encode(input).unwrap();
+        let output = handle_encode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -290,7 +293,7 @@ mod tests {
     #[test]
     fn test_encode_generic() {
         let input = TokenStream::from_str("struct Test<T, E: Clashing> { a: T, b: E, }").unwrap();
-        let output = handle_encode(input).unwrap();
+        let output = handle_encode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -320,7 +323,7 @@ mod tests {
             "#[sbor(custom_value_kind = \"NoCustomValueKind\")] struct Test {#[sbor(skip)] a: u32}",
         )
         .unwrap();
-        let output = handle_encode(input).unwrap();
+        let output = handle_encode(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -348,7 +351,7 @@ mod tests {
             "#[sbor(custom_value_kind = \"::sbor::basic::NoCustomValueKind\")] struct Test {#[sbor(skip)] a: u32}",
         )
         .unwrap();
-        let output = handle_encode(input).unwrap();
+        let output = handle_encode(input, None).unwrap();
 
         assert_code_eq(
             output,

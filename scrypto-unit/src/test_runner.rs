@@ -20,7 +20,6 @@ use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig
 use radix_engine_constants::*;
 use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::constants::EPOCH_MANAGER;
-use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
     AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,

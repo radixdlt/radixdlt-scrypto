@@ -2,8 +2,7 @@ use crate::types::*;
 use radix_engine_interface::api::types::{PackageId, RENodeId, ResourceManagerId};
 
 // TODO: clean up after `Owned(RENodeId)`?
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum GlobalAddressSubstate {
     Component(ComponentId),
     Resource(ResourceManagerId),

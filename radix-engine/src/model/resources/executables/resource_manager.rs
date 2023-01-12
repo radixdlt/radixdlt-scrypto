@@ -21,11 +21,10 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;
-use radix_engine_interface::{dec, rule, scrypto};
+use radix_engine_interface::*;
 
 /// Represents an error when accessing a bucket.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceManagerError {
     InvalidAmount(Decimal, u8),
     MaxMintAmountExceeded,

@@ -7,11 +7,11 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use self::SchemaSubPath::{Field, Index};
-use crate::Describe;
+use crate::*;
 use scrypto_abi::*;
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, Describe, Categorize, Encode, Decode, Ord, PartialOrd,
+    Debug, Clone, PartialEq, Eq, Hash, LegacyDescribe, Categorize, Encode, Decode, Ord, PartialOrd,
 )]
 pub enum SchemaSubPath {
     Index(usize),
@@ -33,7 +33,7 @@ impl FromStr for SchemaSubPath {
 
 /// Describes a value located in some sbor given a schema for that sbor
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, Describe, Categorize, Encode, Decode, Ord, PartialOrd,
+    Debug, Clone, PartialEq, Eq, Hash, LegacyDescribe, Categorize, Encode, Decode, Ord, PartialOrd,
 )]
 pub struct SchemaPath(pub Vec<SchemaSubPath>);
 

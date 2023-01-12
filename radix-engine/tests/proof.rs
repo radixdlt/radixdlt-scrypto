@@ -2,7 +2,6 @@ use radix_engine::engine::node_move_module::NodeMoveError;
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;

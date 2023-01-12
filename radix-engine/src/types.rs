@@ -11,7 +11,7 @@ pub use radix_engine_interface::data::{
 pub use radix_engine_interface::dec;
 pub use radix_engine_interface::math::{BnumI256, Decimal, RoundingMode};
 pub use radix_engine_interface::model::*;
-pub use radix_engine_interface::scrypto;
+pub use radix_engine_interface::*;
 pub use sbor::rust::borrow::ToOwned;
 pub use sbor::rust::boxed::Box;
 pub use sbor::rust::cell::{Ref, RefCell, RefMut};

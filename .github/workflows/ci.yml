@@ -75,7 +75,7 @@ jobs:
       working-directory: sbor
     - name: Run derive tests
       run: cargo test
-      working-directory: sbor-derive
+      working-directory: sbor-derive-common
   sbor-integration-tests:
     name: Run SBOR integration tests
     runs-on: ${{ matrix.os }}

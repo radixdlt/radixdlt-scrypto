@@ -1,7 +1,7 @@
 use radix_engine_interface::crypto::{hash, Hash, PublicKey, Signature, SignatureWithPublicKey};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::node::NetworkDefinition;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::*;
 use sbor::*;
 
 use crate::manifest::{compile, CompileError};
@@ -10,8 +10,7 @@ use crate::model::TransactionManifest;
 // TODO: add versioning of transaction schema
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionHeader {
     pub version: u8,
     pub network_id: u8,
@@ -24,22 +23,19 @@ pub struct TransactionHeader {
     pub tip_percentage: u16,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionIntent {
     pub header: TransactionHeader,
     pub manifest: TransactionManifest,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SignedTransactionIntent {
     pub intent: TransactionIntent,
     pub intent_signatures: Vec<SignatureWithPublicKey>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
     pub notary_signature: Signature,

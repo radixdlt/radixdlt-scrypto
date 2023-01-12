@@ -18,8 +18,7 @@ use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
@@ -27,8 +26,7 @@ pub struct TransactionProcessorRunInvocation<'a> {
     pub blobs: Cow<'a, [Vec<u8>]>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
         valid_from: u64,

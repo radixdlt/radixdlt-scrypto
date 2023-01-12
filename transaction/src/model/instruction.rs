@@ -3,14 +3,12 @@ use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BasicInstruction {
     /// Takes resource from worktop.
     TakeFromWorktop {
@@ -225,8 +223,7 @@ pub enum BasicInstruction {
     },
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum Instruction {
     Basic(BasicInstruction),
     System(NativeInvocation),

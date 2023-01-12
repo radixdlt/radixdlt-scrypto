@@ -11,6 +11,7 @@ setup_test_runner
 echo "Testing crates..."
 test_crates_features \
     "sbor \
+    sbor-derive-common \
     sbor-derive \
     sbor-tests \
     scrypto \

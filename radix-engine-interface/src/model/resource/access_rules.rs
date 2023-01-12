@@ -3,32 +3,53 @@ use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::*;
 
 use crate::api::types::MetadataFn;
 use crate::api::types::PackageFn;
 use crate::model::*;
 use crate::rule;
-use crate::scrypto;
-use crate::Describe;
+use crate::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
 pub enum AccessRuleKey {
     ScryptoMethod(String),
     Native(NativeFn),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
     Group(String),
 }
 
 /// Method authorization rules for a component
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccessRules {
     method_auth: BTreeMap<AccessRuleKey, AccessRuleEntry>,
     grouped_auth: BTreeMap<String, AccessRule>,

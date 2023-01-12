@@ -5,7 +5,6 @@ use radix_engine::engine::{
 use radix_engine::model::MethodAuthorizationError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
