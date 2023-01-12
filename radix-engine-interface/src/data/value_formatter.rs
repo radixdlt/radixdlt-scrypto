@@ -138,24 +138,14 @@ pub fn format_scrypto_value<F: fmt::Write>(
             discriminator,
             fields,
         } => {
-            match (discriminator.as_str(), fields.len()) {
-                // Map aliases
-                ("Some", 1) => format_tuple(f, "Some", fields, context)?,
-                ("None", 0) => f.write_str("None")?,
-                ("Ok", 1) => format_tuple(f, "Ok", fields, context)?,
-                ("Err", 1) => format_tuple(f, "Err", fields, context)?,
-                // Standard
-                (_, _) => {
-                    f.write_str("Enum(\"")?;
-                    f.write_str(discriminator)?;
-                    f.write_str("\"")?;
-                    if !fields.is_empty() {
-                        f.write_str(", ")?;
-                        format_elements(f, fields, context)?;
-                    }
-                    f.write_str(")")?;
-                }
+            f.write_str("Enum(")?;
+            f.write_str(discriminator.to_string().as_str())?;
+            f.write_str("u8")?;
+            if !fields.is_empty() {
+                f.write_str(", ")?;
+                format_elements(f, fields, context)?;
             }
+            f.write_str(")")?;
         }
         Value::Array {
             element_value_kind,

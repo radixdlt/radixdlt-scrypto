@@ -93,10 +93,10 @@ pub fn handle_encode(
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().map(|v| {
+            let match_arms = variants.iter().enumerate().map(|(i, v)| {
                 let v_id = &v.ident;
-                let discriminator_string = v_id.to_string();
-                let discriminator: Expr = parse_quote! { #discriminator_string };
+                let i: u8 = i.try_into().expect("Too many variants found in enum");
+                let discriminator: Expr = parse_quote! { #i };
 
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
@@ -244,16 +244,16 @@ mod tests {
                         use ::sbor::{self, Encode};
                         match self {
                             Self::A => {
-                                encoder.write_discriminator("A")?;
+                                encoder.write_discriminator(0u8)?;
                                 encoder.write_size(0)?;
                             }
                             Self::B(a0) => {
-                                encoder.write_discriminator("B")?;
+                                encoder.write_discriminator(1u8)?;
                                 encoder.write_size(1)?;
                                 encoder.encode(a0)?;
                             }
                             Self::C { x, .. } => {
-                                encoder.write_discriminator("C")?;
+                                encoder.write_discriminator(2u8)?;
                                 encoder.write_size(1)?;
                                 encoder.encode(x)?;
                             }

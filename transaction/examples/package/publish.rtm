@@ -21,22 +21,22 @@ PUBLISH_PACKAGE
     Tuple(                     # Access Rules Struct
         Map<Enum, Enum>(       # Method auth Field
             Enum(
-                "Native", 
+                "AccessRuleKey::Native", 
                 Enum(
-                    "Package",
-                    Enum("SetRoyaltyConfig")
+                    "NativeFn::Package",
+                    Enum("PackageFn::SetRoyaltyConfig")
                 )
             ), 
             Enum(
-                "AccessRule", 
+                "AccessRuleEntry::AccessRule", 
                 Enum(
-                    "Protected", 
+                    "AccessRule::Protected", 
                     Enum(
-                        "ProofRule", 
+                        "AccessRuleNode::ProofRule", 
                         Enum(
-                            "Require", 
+                            "ProofRule::Require", 
                             Enum(
-                                "StaticNonFungible", 
+                                "SoftResourceOrNonFungible::StaticNonFungible", 
                                 NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                             )
                         )
@@ -44,22 +44,22 @@ PUBLISH_PACKAGE
                 )
             ),
             Enum(
-                "Native", 
+                "AccessRuleKey::Native", 
                 Enum(
-                    "Package",
-                    Enum("ClaimRoyalty")
+                    "NativeFn::Package",
+                    Enum("PackageFn::ClaimRoyalty")
                 )
             ),
             Enum(
-                "AccessRule", 
+                "AccessRuleEntry::AccessRule", 
                 Enum(
-                    "Protected", 
+                    "AccessRule::Protected", 
                     Enum(
-                        "ProofRule", 
+                        "AccessRuleNode::ProofRule", 
                         Enum(
-                            "Require", 
+                            "ProofRule::Require", 
                             Enum(
-                                "StaticNonFungible", 
+                                "SoftResourceOrNonFungible::StaticNonFungible", 
                                 NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                             )
                         )
@@ -67,22 +67,22 @@ PUBLISH_PACKAGE
                 )
             ),
             Enum(
-                "Native", 
+                "AccessRuleKey::Native", 
                 Enum(
-                    "Metadata",
-                    Enum("Set")
+                    "NativeFn::Metadata",
+                    Enum("MetadataFn::Set")
                 )
             ),
             Enum(
-                "AccessRule", 
+                "AccessRuleEntry::AccessRule", 
                 Enum(
-                    "Protected", 
+                    "AccessRule::Protected", 
                     Enum(
-                        "ProofRule", 
+                        "AccessRuleNode::ProofRule", 
                         Enum(
-                            "Require", 
+                            "ProofRule::Require", 
                             Enum(
-                                "StaticNonFungible", 
+                                "SoftResourceOrNonFungible::StaticNonFungible", 
                                 NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                             )
                         )
@@ -90,95 +90,95 @@ PUBLISH_PACKAGE
                 )
             ),
             Enum(
-                "Native", 
+                "AccessRuleKey::Native", 
                 Enum(
-                    "Metadata",
-                    Enum("Get")
+                    "NativeFn::Metadata",
+                    Enum("MetadataFn::Get")
                 )
             ),
             Enum(
-                "AccessRule", 
-                Enum("AllowAll")
+                "AccessRuleEntry::AccessRule", 
+                Enum("AccessRule::AllowAll")
             )
         ), 
         Map<String, Enum>(),     # Grouped Auth Field
-        Enum("DenyAll"),         # Default Auth Field
+        Enum("AccessRule::DenyAll"),         # Default Auth Field
         Map<Enum, Enum>(         # Method Auth Mutability Field
             Enum(
-                "Native", 
+                "AccessRuleKey::Native", 
                 Enum(
-                    "Package",
-                    Enum("SetRoyaltyConfig")
+                    "NativeFn::Package",
+                    Enum("PackageFn::SetRoyaltyConfig")
                 )
             ), 
             Enum(
-                "Protected", 
+                "AccessRule::Protected", 
                 Enum(
-                    "ProofRule", 
+                    "AccessRuleNode::ProofRule", 
                     Enum(
-                        "Require", 
+                        "ProofRule::Require", 
                         Enum(
-                            "StaticNonFungible", 
+                            "SoftResourceOrNonFungible::StaticNonFungible", 
                             NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                         )
                     )
                 )
             ),
             Enum(
-                "Native", 
+                "AccessRuleKey::Native", 
                 Enum(
-                    "Package",
-                    Enum("ClaimRoyalty")
+                    "NativeFn::Package",
+                    Enum("PackageFn::ClaimRoyalty")
                 )
             ), 
             Enum(
-                "Protected", 
+                "AccessRule::Protected", 
                 Enum(
-                    "ProofRule", 
+                    "AccessRuleNode::ProofRule", 
                     Enum(
-                        "Require", 
+                        "ProofRule::Require", 
                         Enum(
-                            "StaticNonFungible", 
+                            "SoftResourceOrNonFungible::StaticNonFungible", 
                             NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                         )
                     )
                 )
             ),
             Enum(
-                "Native", 
+                "AccessRuleKey::Native", 
                 Enum(
-                    "Metadata",
-                    Enum("Set")
+                    "NativeFn::Metadata",
+                    Enum("MetadataFn::Set")
                 )
             ), 
             Enum(
-                "Protected", 
+                "AccessRule::Protected", 
                 Enum(
-                    "ProofRule", 
+                    "AccessRuleNode::ProofRule", 
                     Enum(
-                        "Require", 
+                        "ProofRule::Require", 
                         Enum(
-                            "StaticNonFungible", 
+                            "SoftResourceOrNonFungible::StaticNonFungible", 
                             NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                         )
                     )
                 )
             ),
             Enum(
-                "Native", 
+                "AccessRuleKey::Native", 
                 Enum(
-                    "Metadata",
-                    Enum("Get")
+                    "NativeFn::Metadata",
+                    Enum("MetadataFn::Get")
                 )
             ), 
             Enum(
-                "Protected", 
+                "AccessRule::Protected", 
                 Enum(
-                    "ProofRule", 
+                    "AccessRuleNode::ProofRule", 
                     Enum(
-                        "Require", 
+                        "ProofRule::Require", 
                         Enum(
-                            "StaticNonFungible", 
+                            "SoftResourceOrNonFungible::StaticNonFungible", 
                             NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                         )
                     )
@@ -186,5 +186,5 @@ PUBLISH_PACKAGE
             )
         ), 
         Map<String, Enum>(),     # Group Auth Mutability Field
-        Enum("DenyAll")          # Default Auth Mutability Field
+        Enum("AccessRule::DenyAll")          # Default Auth Mutability Field
     );

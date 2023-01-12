@@ -1776,6 +1776,7 @@ version = "0.8.0"
 dependencies = [
  "ed25519-dalek",
  "hex",
+ "lazy_static",
  "radix-engine-constants",
  "radix-engine-interface",
  "sbor",

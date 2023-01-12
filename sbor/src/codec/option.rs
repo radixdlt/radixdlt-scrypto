@@ -36,14 +36,14 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let discriminator = decoder.read_discriminator()?;
 
-        match discriminator.as_ref() {
-            OPTION_VARIANT_SOME => {
-                decoder.read_and_check_size(1)?;
-                Ok(Some(decoder.decode()?))
-            }
+        match discriminator {
             OPTION_VARIANT_NONE => {
                 decoder.read_and_check_size(0)?;
                 Ok(None)
+            }
+            OPTION_VARIANT_SOME => {
+                decoder.read_and_check_size(1)?;
+                Ok(Some(decoder.decode()?))
             }
             _ => Err(DecodeError::UnknownDiscriminator(discriminator)),
         }
@@ -60,8 +60,8 @@ impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> 
         Some(TypeData::named_enum(
             "Option",
             crate::rust::collections::btree_map::btreemap![
-                "Some".to_owned() => TypeData::named_tuple("Some", crate::rust::vec![T::TYPE_ID]),
-                "None".to_owned() => TypeData::named_unit("None"),
+                OPTION_VARIANT_NONE => TypeData::named_unit("None"),
+                OPTION_VARIANT_SOME => TypeData::named_tuple("Some", crate::rust::vec![T::TYPE_ID]),
             ],
         ))
     }

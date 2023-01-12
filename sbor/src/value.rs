@@ -54,7 +54,7 @@ pub enum Value<X: CustomValueKind, Y> {
         value: String,
     },
     Enum {
-        discriminator: String,
+        discriminator: u8,
         fields: Vec<Value<X, Y>>,
     },
     Array {
@@ -141,7 +141,7 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
                 discriminator,
                 fields,
             } => {
-                encoder.write_discriminator(discriminator)?;
+                encoder.write_discriminator(*discriminator)?;
                 encoder.write_size(fields.len())?;
                 for field in fields {
                     encoder.encode(field)?;
@@ -396,7 +396,6 @@ pub trait ValueVisitor<X: CustomValueKind, Y> {
 mod tests {
     use crate::rust::collections::*;
     use crate::rust::string::String;
-    use crate::rust::string::ToString;
     use crate::rust::vec;
     use crate::rust::vec::Vec;
     use crate::*;
@@ -506,11 +505,11 @@ mod tests {
                         value: String::from("abc")
                     },
                     BasicValue::Enum {
-                        discriminator: "Some".to_string(),
+                        discriminator: 1,
                         fields: vec![BasicValue::U32 { value: 1 }]
                     },
                     BasicValue::Enum {
-                        discriminator: "Ok".to_string(),
+                        discriminator: 0,
                         fields: vec![BasicValue::U32 { value: 2 }]
                     },
                     BasicValue::Array {
@@ -528,15 +527,15 @@ mod tests {
                         fields: vec![BasicValue::U32 { value: 1 }]
                     },
                     BasicValue::Enum {
-                        discriminator: "A".to_string(),
+                        discriminator: 0,
                         fields: vec![BasicValue::U32 { value: 1 }]
                     },
                     BasicValue::Enum {
-                        discriminator: "B".to_string(),
+                        discriminator: 1,
                         fields: vec![BasicValue::U32 { value: 2 }]
                     },
                     BasicValue::Enum {
-                        discriminator: "C".to_string(),
+                        discriminator: 2,
                         fields: vec![]
                     },
                     BasicValue::Array {

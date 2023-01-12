@@ -93,10 +93,10 @@ pub fn handle_decode(
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().map(|v| {
+            let match_arms = variants.iter().enumerate().map(|(i, v)| {
                 let v_id = &v.ident;
-                let discriminator_string = v_id.to_string();
-                let discriminator: Expr = parse_quote! { #discriminator_string };
+                let i: u8 = i.try_into().expect("Too many variants found in enum");
+                let discriminator: Expr = parse_quote! { #i };
 
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
@@ -158,7 +158,7 @@ pub fn handle_decode(
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
-                        match discriminator.as_str() {
+                        match discriminator {
                             #(#match_arms,)*
                             _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
                         }
@@ -302,16 +302,16 @@ mod tests {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
-                        match discriminator.as_str() {
-                            "A" => {
+                        match discriminator {
+                            0u8 => {
                                 decoder.read_and_check_size(0)?;
                                 Ok(Self::A)
                             },
-                            "B" => {
+                            1u8 => {
                                 decoder.read_and_check_size(1)?;
                                 Ok(Self::B(decoder.decode::<u32>()?))
                             },
-                            "C" => {
+                            2u8 => {
                                 decoder.read_and_check_size(1)?;
                                 Ok(Self::C {
                                     x: decoder.decode::<u8>()?,
