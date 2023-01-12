@@ -122,11 +122,15 @@ pub enum ResourceInvocation {
     CreateNonFungible(ResourceManagerCreateNonFungibleInvocation),
     CreateFungible(ResourceManagerCreateFungibleInvocation),
     CreateNonFungibleWithInitialSupply(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation),
+    CreateUuidNonFungibleWithInitialSupply(
+        ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
+    ),
     CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
     MintNonFungible(ResourceManagerMintNonFungibleInvocation),
+    MintUuidNonFungible(ResourceManagerMintUuidNonFungibleInvocation),
     MintFungible(ResourceManagerMintFungibleInvocation),
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
@@ -287,6 +291,7 @@ impl NativeInvocation {
                 ResourceInvocation::CreateNonFungible(..) => {}
                 ResourceInvocation::CreateFungible(..) => {}
                 ResourceInvocation::CreateNonFungibleWithInitialSupply(..) => {}
+                ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::CreateFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::BurnBucket(..) => {}
                 ResourceInvocation::Burn(invocation) => {
@@ -315,6 +320,11 @@ impl NativeInvocation {
                     )));
                 }
                 ResourceInvocation::MintNonFungible(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::MintUuidNonFungible(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));

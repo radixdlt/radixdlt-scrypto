@@ -15,7 +15,7 @@ CALL_METHOD
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
-    Enum("U32")
+    Enum("Number")
     Map<String, String>(
         "name", "MyResource",                                        # Resource Name
         "description", "A very innovative and important resource"    # Resource Description

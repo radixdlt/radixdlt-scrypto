@@ -782,19 +782,6 @@ mod test {
     }
 
     #[test]
-    pub fn parsing_of_u32_non_fungible_id_succeeds() {
-        // Arrange
-        let arg = "U32#12";
-        let arg_type = Type::NonFungibleId;
-
-        // Act
-        let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
-
-        // Assert
-        assert_eq!(parsed_arg, NonFungibleId::U32(12))
-    }
-
-    #[test]
     pub fn parsing_of_u64_non_fungible_id_succeeds() {
         // Arrange
         let arg = "U64#12";
@@ -804,7 +791,7 @@ mod test {
         let parsed_arg: NonFungibleId = parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
-        assert_eq!(parsed_arg, NonFungibleId::U64(12))
+        assert_eq!(parsed_arg, NonFungibleId::Number(12))
     }
 
     #[test]

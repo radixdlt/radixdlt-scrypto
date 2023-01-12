@@ -465,6 +465,17 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &entries)?;
             f.write_str(";")?;
         }
+        BasicInstruction::MintUuidNonFungible {
+            resource_address,
+            entries,
+        } => {
+            let entries = transform_uuid_non_fungible_mint_params(entries)?;
+
+            f.write_str("MINT_UUID_NON_FUNGIBLE")?;
+            format_typed_value(f, context, resource_address)?;
+            format_typed_value(f, context, &entries)?;
+            f.write_str(";")?;
+        }
         BasicInstruction::CreateFungibleResource {
             divisibility,
             metadata,
@@ -635,6 +646,19 @@ fn transform_non_fungible_mint_params(
                 scrypto_decode(&mutable_data)?,
             ),
         );
+    }
+    Ok(mint_params_scrypto_value)
+}
+
+fn transform_uuid_non_fungible_mint_params(
+    mint_params: &Vec<(Vec<u8>, Vec<u8>)>,
+) -> Result<Vec<(ScryptoValue, ScryptoValue)>, DecodeError> {
+    let mut mint_params_scrypto_value = Vec::<(ScryptoValue, ScryptoValue)>::new();
+    for (immutable_data, mutable_data) in mint_params.into_iter() {
+        mint_params_scrypto_value.push((
+            scrypto_decode(&immutable_data)?,
+            scrypto_decode(&mutable_data)?,
+        ));
     }
     Ok(mint_params_scrypto_value)
 }
