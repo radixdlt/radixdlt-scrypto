@@ -43,8 +43,18 @@ pub trait FeeReserve {
     fn finalize(self) -> FeeSummary;
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum RoyaltyReceiver {
     Package(PackageAddress, RENodeId),
     Component(ComponentAddress, RENodeId),

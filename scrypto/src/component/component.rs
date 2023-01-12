@@ -1,4 +1,4 @@
-use radix_engine_derive::Describe;
+use radix_engine_derive::LegacyDescribe;
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
@@ -18,7 +18,7 @@ use sbor::*;
 use crate::abi::*;
 use crate::engine::scrypto_env::ScryptoEnv;
 use crate::runtime::*;
-use crate::scrypto;
+use crate::*;
 
 use super::ComponentAccessRules;
 
@@ -54,15 +54,16 @@ pub trait LocalComponent {
 }
 
 // TODO: de-duplication
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct ComponentInfoSubstate {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
 }
 
 // TODO: de-duplication
-#[derive(Debug, Clone, Categorize, Encode, Decode, Describe, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, LegacyDescribe, PartialEq, Eq)]
 pub struct ComponentStateSubstate {
     pub raw: Vec<u8>,
 }

@@ -8,8 +8,7 @@ pub struct PackageInfoSubstate {
     pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageRoyaltyConfigSubstate {
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
@@ -32,8 +31,7 @@ impl PackageInfoSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageRoyaltyAccumulatorSubstate {
     pub royalty: Own,
 }

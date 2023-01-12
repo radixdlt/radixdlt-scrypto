@@ -4,18 +4,18 @@ use scrypto::prelude::*;
 use serde::Serialize;
 use serde_json::{json, to_string, to_value, Value};
 
-#[derive(Describe)]
+#[derive(LegacyDescribe)]
 pub struct TestStructNamed {
     pub state: u32,
 }
 
-#[derive(Describe)]
+#[derive(LegacyDescribe)]
 pub struct TestStructUnnamed(u32);
 
-#[derive(Describe)]
+#[derive(LegacyDescribe)]
 pub struct TestStructUnit;
 
-#[derive(Describe)]
+#[derive(LegacyDescribe)]
 pub enum TestEnum {
     A,
     B(u32),

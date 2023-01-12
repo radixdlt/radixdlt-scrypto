@@ -1,7 +1,6 @@
 use radix_engine::fee::u128_to_decimal;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_COST_UNIT_PRICE;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

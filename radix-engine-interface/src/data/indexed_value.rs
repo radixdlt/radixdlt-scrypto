@@ -9,19 +9,17 @@ use sbor::*;
 use crate::api::types::*;
 use crate::data::types::*;
 use crate::data::*;
-use radix_engine_derive::scrypto;
+use radix_engine_derive::*;
 use utils::ContextualDisplay;
 
 /// Represents an error when reading the owned node ids from a value.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ReadOwnedNodesError {
     DuplicateOwn,
 }
 
 /// Represents an error when replacing manifest values.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ReplaceManifestValuesError {
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),

@@ -1,7 +1,6 @@
 use clap::Parser;
 use colored::Colorize;
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::NonFungibleAddress;
 use radix_engine_interface::node::*;
 use radix_engine_interface::rule;
@@ -10,7 +9,7 @@ use transaction::model::BasicInstruction;
 
 use crate::resim::*;
 
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 struct EmptyStruct;
 
 /// Create a non-fungible badge with fixed supply

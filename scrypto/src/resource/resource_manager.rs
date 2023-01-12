@@ -13,7 +13,7 @@ use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 
-use crate::scrypto;
+use crate::*;
 
 /// Represents a resource manager.
 #[derive(Debug)]

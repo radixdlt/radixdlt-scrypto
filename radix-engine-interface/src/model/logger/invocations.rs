@@ -3,13 +3,13 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
 use crate::api::api::*;
-use crate::scrypto;
 use crate::wasm::*;
+use crate::*;
 use sbor::rust::string::String;
 use sbor::*;
 
 /// Represents the level of a log message.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Categorize, Encode, Decode, crate::Describe)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Categorize, Encode, Decode, LegacyDescribe)]
 pub enum Level {
     Error,
     Warn,
@@ -30,8 +30,7 @@ impl fmt::Display for Level {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct LoggerLogInvocation {
     pub level: Level,
     pub message: String,

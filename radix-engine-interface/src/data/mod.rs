@@ -109,7 +109,7 @@ macro_rules! args {
 mod tests {
     use super::*;
     use crate::model::*;
-    use crate::scrypto;
+    use crate::*;
     use sbor::rust::borrow::ToOwned;
     use sbor::rust::boxed::Box;
     use sbor::rust::cell::RefCell;
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_args() {
-        #[scrypto(Encode, Decode, Categorize)]
+        #[derive(ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
         struct A {
             a: u32,
             b: String,
@@ -414,8 +414,17 @@ mod tests {
         value
     }
 
-    #[scrypto(Categorize, Encode, Decode)]
-    #[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+    #[derive(
+        ScryptoCategorize,
+        ScryptoEncode,
+        ScryptoDecode,
+        Debug,
+        Clone,
+        Eq,
+        PartialEq,
+        Ord,
+        PartialOrd,
+    )]
     struct NestedType {
         inner: Box<Rc<Option<RefCell<NestedType>>>>,
     }

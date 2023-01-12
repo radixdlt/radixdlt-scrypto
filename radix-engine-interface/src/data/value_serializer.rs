@@ -696,7 +696,7 @@ fn serialize_value_with_kv_types<
 mod tests {
     use super::*;
     use crate::address::Bech32Encoder;
-    use radix_engine_derive::scrypto;
+    use radix_engine_derive::*;
     use sbor::rust::collections::HashMap;
     use sbor::rust::vec;
     use serde::Serialize;
@@ -709,7 +709,7 @@ mod tests {
         data::{scrypto_decode, scrypto_encode, ScryptoValue},
     };
 
-    #[scrypto(Categorize, Encode, Decode)]
+    #[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
     pub struct Sample {
         pub a: ResourceAddress,
     }

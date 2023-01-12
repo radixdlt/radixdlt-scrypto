@@ -14,8 +14,7 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::model::*;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AuthZoneError {
     EmptyAuthZone,
     ProofError(ProofError),

@@ -9,7 +9,7 @@ use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 
 use crate::resource::*;
-use crate::scrypto;
+use crate::*;
 
 pub trait ScryptoProof: Sized {
     fn clone(&self) -> Self;
