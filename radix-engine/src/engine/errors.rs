@@ -1,8 +1,6 @@
 use crate::engine::node_move_module::NodeMoveError;
 use crate::engine::{AuthError, ExecutionMode, LockFlags, ResolvedActor};
-use radix_engine_interface::api::types::{
-    GlobalAddress, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, SubstateOffset,
-};
+use radix_engine_interface::api::types::{GlobalAddress, LockHandle, RENodeId, SubstateOffset};
 use radix_engine_interface::data::ReadOwnedNodesError;
 use sbor::*;
 

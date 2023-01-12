@@ -3,7 +3,6 @@ use radix_engine_interface::data::*;
 use crate::engine::*;
 use crate::model::TransactionProcessorError;
 use crate::types::*;
-use crate::wasm::*;
 
 impl ExecutableInvocation for ScryptoMethodInvocation {
     type Exec = ScryptoExecutor;

@@ -4,8 +4,7 @@ use radix_engine_interface::api::api::{
 };
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
-    RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset, VaultId,
-    WorktopOffset,
+    RENodeId, SubstateId, SubstateOffset, VaultId, WorktopOffset,
 };
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;

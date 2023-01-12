@@ -1,6 +1,5 @@
 use crate::engine::*;
 use crate::model::*;
-use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::RENodeId;
 
 impl<E: Into<ApplicationError>> Into<RuntimeError> for InvokeError<E> {

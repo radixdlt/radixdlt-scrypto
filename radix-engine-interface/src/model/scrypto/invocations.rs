@@ -1,10 +1,9 @@
 use crate::api::api::Invocation;
-use crate::api::types::{ScryptoFunctionIdent, ScryptoMethodIdent, ScryptoReceiver};
+use crate::api::types::ScryptoReceiver;
 use crate::data::IndexedScryptoValue;
 use crate::model::{PackageAddress, SerializedInvocation};
 use crate::scrypto;
 use crate::wasm::SerializableInvocation;
-use radix_engine_interface::model::ComponentAddress;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;

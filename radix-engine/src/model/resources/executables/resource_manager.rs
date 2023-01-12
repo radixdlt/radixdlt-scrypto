@@ -482,9 +482,7 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
     }
 }
 
-impl ExecutableInvocation
-    for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation
-{
+impl ExecutableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi>(
@@ -556,9 +554,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     }
 }
 
-impl ExecutableInvocation
-    for ResourceManagerCreateFungibleWithInitialSupplyInvocation
-{
+impl ExecutableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi>(

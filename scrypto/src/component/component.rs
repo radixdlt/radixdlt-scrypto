@@ -1,8 +1,7 @@
 use radix_engine_derive::Describe;
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoMethodIdent, ScryptoReceiver,
-    SubstateOffset,
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_interface::data::{
     scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
