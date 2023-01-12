@@ -1,7 +1,7 @@
 mod categorize;
 mod decode;
-mod describe;
 mod encode;
+mod legacy_describe;
 mod utils;
 
 use proc_macro::TokenStream;
@@ -14,9 +14,9 @@ use proc_macro::TokenStream;
 ///     array: Vec<A>
 /// }
 /// ```
-#[proc_macro_derive(Describe, attributes(skip))]
-pub fn describe(input: TokenStream) -> TokenStream {
-    describe::handle_describe(proc_macro2::TokenStream::from(input))
+#[proc_macro_derive(LegacyDescribe, attributes(skip))]
+pub fn legacy_describe(input: TokenStream) -> TokenStream {
+    legacy_describe::handle_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
@@ -41,7 +41,7 @@ pub fn encode(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derives code for encoding a struct or enum with Scrypto value model.
+/// Derives code for decoding a struct or enum with Scrypto value model.
 ///
 /// # Example
 ///
@@ -61,7 +61,7 @@ pub fn decode(input: TokenStream) -> TokenStream {
         .into()
 }
 
-/// Derives code for encoding a struct or enum with Scrypto value model.
+/// Derives code for categorizing a struct or enum with Scrypto value model.
 ///
 /// # Example
 ///
