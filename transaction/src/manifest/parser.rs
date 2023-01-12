@@ -1,6 +1,29 @@
 use crate::manifest::ast::{Instruction, Type, Value};
 use crate::manifest::lexer::{Token, TokenKind};
 
+use lazy_static::lazy_static;
+use std::collections::HashMap;
+
+macro_rules! known_enum {
+    ($map: expr, $name:ident { $($variant:ident = $id:expr),* }) => {
+        $(
+            $map.insert(concat!(stringify!($name), "::", stringify!($variant)), $id);
+        )*
+    };
+}
+
+lazy_static! {
+    static ref KNOWN_ENUM_DISCRIMINATORS: HashMap<&'static str, u8> = {
+        let mut m = HashMap::new();
+        known_enum!(m, AccessRule {
+            AllowAll = 0,
+            DenyAll = 1,
+            Protected = 2
+        });
+        m
+    };
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParserError {
     UnexpectedEof,
@@ -9,6 +32,8 @@ pub enum ParserError {
     InvalidNumberOfTypes { actual: usize, expected: usize },
     InvalidHex(String),
     MissingEnumDiscriminator,
+    InvalidEnumDiscriminator,
+    UnknownEnumDiscriminator(String),
 }
 
 pub struct Parser {
@@ -322,11 +347,14 @@ impl Parser {
         let mut discriminator_and_fields =
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
         let discriminator = match discriminator_and_fields.get(0) {
-            Some(Value::U8(discriminator)) => discriminator.clone(),
-            _ => {
-                return Err(ParserError::MissingEnumDiscriminator);
-            }
-        };
+            Some(Value::U8(discriminator)) => Ok(*discriminator),
+            Some(Value::String(discriminator)) => KNOWN_ENUM_DISCRIMINATORS
+                .get(discriminator.as_str())
+                .cloned()
+                .ok_or(ParserError::UnknownEnumDiscriminator(discriminator.clone())),
+            Some(_) => Err(ParserError::InvalidEnumDiscriminator),
+            None => Err(ParserError::MissingEnumDiscriminator),
+        }?;
         discriminator_and_fields.remove(0);
         Ok(Value::Enum(discriminator, discriminator_and_fields))
     }
