@@ -1,7 +1,6 @@
 use radix_engine_interface::data::ScryptoValue;
 use crate::api::api::Invocation;
 use crate::api::types::ScryptoReceiver;
-use crate::data::IndexedScryptoValue;
 use crate::model::{PackageAddress, CallTableInvocation};
 use crate::scrypto;
 use crate::wasm::SerializableInvocation;
@@ -54,27 +53,4 @@ impl Into<CallTableInvocation> for ScryptoMethodInvocation {
     fn into(self) -> CallTableInvocation {
         CallTableInvocation::ScryptoMethod(self)
     }
-}
-
-#[derive(Debug)]
-pub struct ParsedScryptoFunctionInvocation {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
-    pub function_name: String,
-    pub args: IndexedScryptoValue,
-}
-
-impl Invocation for ParsedScryptoFunctionInvocation {
-    type Output = IndexedScryptoValue;
-}
-
-#[derive(Debug)]
-pub struct ParsedScryptoMethodInvocation {
-    pub receiver: ScryptoReceiver,
-    pub method_name: String,
-    pub args: IndexedScryptoValue,
-}
-
-impl Invocation for ParsedScryptoMethodInvocation {
-    type Output = IndexedScryptoValue;
 }

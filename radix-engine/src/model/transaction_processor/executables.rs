@@ -398,13 +398,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let result = api.invoke(ParsedScryptoFunctionInvocation {
+                    let function_invocation = ScryptoFunctionInvocation {
                         package_address: package_address.clone(),
                         blueprint_name: blueprint_name.clone(),
                         function_name: function_name.clone(),
-                        args,
-                    })?;
-
+                        args: args.to_vec(),
+                    };
+                    let invocation = CallTableInvocation::ScryptoFunction(function_invocation);
+                    let result = invoke_call_table(invocation, api)?;
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;

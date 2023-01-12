@@ -162,13 +162,13 @@ where
 
                 // TODO: Replace with trusted IndexedScryptoValue
                 let access_rule = rule!(require(non_fungible_address));
-                let result = self.invoke(ParsedScryptoFunctionInvocation {
+                let result = self.invoke(ScryptoFunctionInvocation {
                     package_address: ACCOUNT_PACKAGE,
                     blueprint_name: "Account".to_string(),
                     function_name: "create".to_string(),
-                    args: IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
+                    args: args!(access_rule),
                 })?;
-                let component_id = result
+                let component_id = IndexedScryptoValue::from_typed(&result)
                     .owned_node_ids()
                     .expect("No duplicates expected")
                     .into_iter()
