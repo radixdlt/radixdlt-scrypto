@@ -922,9 +922,9 @@ mod tests {
             "-5",
             { "hex": "3a92" },
             [153, 62],
-            { "variant": "0", "fields": [] },
-            { "variant": "1", "fields": [153] },
-            { "variant": "2", "fields": [153, true] },
+            { "variant": 0, "fields": [] },
+            { "variant": 1, "fields": [153] },
+            { "variant": 2, "fields": [153, true] },
             [[153, 62]],
             [
                 account_package_address,
@@ -975,9 +975,9 @@ mod tests {
                         { "type": "U32", "value": 62 },
                     ]
                 },
-                { "type": "Enum", "value": { "variant": "VariantUnit", "fields": [] } },
-                { "type": "Enum", "value": { "variant": "VariantSingleValue", "fields": [{ "type": "U32", "value": 153 }] } },
-                { "type": "Enum", "value": { "variant": "VariantMultiValues", "fields": [{ "type": "U32", "value": 153 }, { "type": "Bool", "value": true }] } },
+                { "type": "Enum", "value": { "variant": 0, "fields": [] } },
+                { "type": "Enum", "value": { "variant": 1, "fields": [{ "type": "U32", "value": 153 }] } },
+                { "type": "Enum", "value": { "variant": 2, "fields": [{ "type": "U32", "value": 153 }, { "type": "Bool", "value": true }] } },
                 { "type": "Map", "key_type": "U32", "value_type": "U32", "value": [{"type":"Tuple","value":[{"type":"U32","value":153},{"type":"U32","value":62}]}] },
                 {
                     "type": "Tuple",
