@@ -67,22 +67,22 @@ mod tests {
                         use ::sbor::{self, Decode};
                         decoder.check_preloaded_value_kind(value_kind, ::sbor::ValueKind::Enum)?;
                         let discriminator = decoder.read_discriminator()?;
-                        match discriminator.as_str() {
-                            "A" => {
+                        match discriminator {
+                            0u8 => {
                                 decoder.read_and_check_size(1)?;
                                 Ok(Self::A {
                                     named: decoder.decode::<T>()?,
                                 })
-                            }
-                            "B" => {
+                            },
+                            1u8 => {
                                 decoder.read_and_check_size(1)?;
                                 Ok(Self::B(decoder.decode::<String>()?))
-                            }
-                            "C" => {
+                            },
+                            2u8 => {
                                 decoder.read_and_check_size(0)?;
                                 Ok(Self::C)
-                            }
-                            _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator)),
+                            },
+                            _ => Err(::sbor::DecodeError::UnknownDiscriminator(discriminator))
                         }
                     }
                 }

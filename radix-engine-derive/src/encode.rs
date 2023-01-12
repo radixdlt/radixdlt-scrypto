@@ -68,17 +68,17 @@ mod tests {
                         use ::sbor::{self, Encode};
                         match self {
                             Self::A { named, .. } => {
-                                encoder.write_discriminator("A")?;
+                                encoder.write_discriminator(0u8)?;
                                 encoder.write_size(1)?;
                                 encoder.encode(named)?;
                             }
                             Self::B(a0) => {
-                                encoder.write_discriminator("B")?;
+                                encoder.write_discriminator(1u8)?;
                                 encoder.write_size(1)?;
                                 encoder.encode(a0)?;
                             }
                             Self::C => {
-                                encoder.write_discriminator("C")?;
+                                encoder.write_discriminator(2u8)?;
                                 encoder.write_size(0)?;
                             }
                         }

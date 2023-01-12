@@ -1,5 +1,6 @@
 mod categorize;
 mod decode;
+mod describe;
 mod encode;
 mod legacy_describe;
 mod utils;
@@ -77,6 +78,26 @@ pub fn decode(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(ScryptoCategorize, attributes(sbor))]
 pub fn categorize(input: TokenStream) -> TokenStream {
     categorize::handle_categorize(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derives code for describing a struct or enum with Scrypto schema.
+///
+/// # Example
+///
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// #[derive(ScryptoDescribe)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(ScryptoDescribe, attributes(sbor))]
+pub fn describe(input: TokenStream) -> TokenStream {
+    describe::handle_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
