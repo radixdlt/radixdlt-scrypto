@@ -1,7 +1,7 @@
 use crate::engine::{
     ExecutionMode, KernelError, LockFlags, RENode, ResolvedActor, ResolvedReceiver, RuntimeError,
 };
-use crate::model::GlobalAddressSubstate;
+use crate::model::{GlobalAddressSubstate, Package};
 use radix_engine_interface::api::types::{
     AccessRulesChainOffset, AuthZoneStackOffset, BucketOffset, ComponentOffset, FnIdentifier,
     GlobalOffset, KeyValueStoreOffset, NativeFn, PackageOffset, ProofOffset, RENodeId,
@@ -158,6 +158,10 @@ impl VisibilityProperties {
                         FnIdentifier::Scrypto(..) => match &actor.receiver {
                             None => match (node_id, offset) {
                                 (
+                                    _,
+                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                ) => true,
+                                (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
                                 ) => true,
@@ -171,6 +175,10 @@ impl VisibilityProperties {
                                 receiver: RENodeId::Component(component_address),
                                 ..
                             }) => match (node_id, offset) {
+                                (
+                                    _,
+                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                ) => true,
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),

@@ -68,7 +68,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeInvocation {
 impl Executor for VaultTakeInvocation {
     type Output = Bucket;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -121,7 +124,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultPutInvocation {
 impl Executor for VaultPutInvocation {
     type Output = ();
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -165,7 +171,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultLockFeeInvocation {
 impl Executor for VaultLockFeeInvocation {
     type Output = ();
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -254,7 +263,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultTakeNonFungiblesInvocation 
 impl Executor for VaultTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -306,7 +318,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetAmountInvocation {
 impl Executor for VaultGetAmountInvocation {
     type Output = Decimal;
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -342,7 +357,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetResourceAddressInvocatio
 impl Executor for VaultGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
-    fn execute<'a, Y>(
+    fn execute<'a, Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
@@ -384,7 +399,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultGetNonFungibleIdsInvocation
 impl Executor for VaultGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 
-    fn execute<'a, Y>(
+    fn execute<'a, Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
@@ -427,7 +442,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofInvocation {
 impl Executor for VaultCreateProofInvocation {
     type Output = Proof;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -478,7 +496,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByAmountInvocati
 impl Executor for VaultCreateProofByAmountInvocation {
     type Output = Proof;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -529,7 +550,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for VaultCreateProofByIdsInvocation 
 impl Executor for VaultCreateProofByIdsInvocation {
     type Output = Proof;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

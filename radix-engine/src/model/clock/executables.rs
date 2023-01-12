@@ -43,7 +43,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCreateInvocation {
 impl Executor for ClockCreateInvocation {
     type Output = ComponentAddress;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
@@ -122,7 +125,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
 impl Executor for ClockSetCurrentTimeExecutable {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -170,7 +176,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
 impl Executor for ClockGetCurrentTimeExecutable {
     type Output = Instant;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Instant, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Instant, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -231,7 +240,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocatio
 impl Executor for ClockCompareCurrentTimeExecutable {
     type Output = bool;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

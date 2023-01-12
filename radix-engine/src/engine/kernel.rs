@@ -164,11 +164,11 @@ where
                 // TODO: Replace with trusted IndexedScryptoValue
                 let access_rule = rule!(require(non_fungible_address));
                 let result = self.invoke(ParsedScryptoFunctionInvocation {
-                        package_address: ACCOUNT_PACKAGE,
-                        blueprint_name: "Account".to_string(),
-                        function_name: "create".to_string(),
-                        args: IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
-                    })?;
+                    package_address: ACCOUNT_PACKAGE,
+                    blueprint_name: "Account".to_string(),
+                    function_name: "create".to_string(),
+                    args: IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
+                })?;
                 let component_id = result
                     .owned_node_ids()
                     .expect("No duplicates expected")
@@ -576,6 +576,25 @@ where
     }
 }
 
+impl<'g, 's, W, R, M> VmApi<W> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+    fn vm(&mut self) -> &ScryptoInterpreter<W> {
+        self.scrypto_interpreter
+    }
+
+    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
+        self.module
+            .on_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
+            .map_err(RuntimeError::ModuleError)?;
+
+        Ok(())
+    }
+}
+
 impl<'g, 's, W, R, M> ResolverApi<W> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
@@ -602,12 +621,14 @@ where
 pub trait Executor {
     type Output: Debug;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
-            + ActorApi<RuntimeError>;
+            + ActorApi<RuntimeError>
+            + VmApi<W>,
+        W: WasmEngine;
 }
 
 pub trait ExecutableInvocation<W: WasmEngine>: Invocation {

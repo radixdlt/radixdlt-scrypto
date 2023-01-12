@@ -23,6 +23,11 @@ blueprint! {
 }
 
 #[no_mangle]
+pub extern "C" fn AbiComponent2_invalid_output(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&()).unwrap()
+}
+
+#[no_mangle]
 pub extern "C" fn AbiComponent2_main(_input: *mut u8) -> *mut u8 {
     ::scrypto::buffer::scrypto_encode_to_buffer(&()).unwrap()
 }
@@ -43,7 +48,7 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
                     element_types: vec![],
                 },
                 output: Type::U8,
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_invalid_output".to_string(),
             },
             Fn {
                 ident: "unit".to_string(),

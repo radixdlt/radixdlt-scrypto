@@ -39,7 +39,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
 impl Executor for MetadataSetInvocation {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
@@ -85,7 +88,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
 impl Executor for MetadataGetInvocation {
     type Output = Option<String>;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {

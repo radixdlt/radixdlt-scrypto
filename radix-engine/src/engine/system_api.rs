@@ -79,6 +79,11 @@ pub trait SystemApi {
     fn get_ref_mut(&mut self, lock_handle: LockHandle) -> Result<SubstateRefMut, RuntimeError>;
 }
 
+pub trait VmApi<W: WasmEngine> {
+    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError>;
+    fn vm(&mut self) -> &ScryptoInterpreter<W>;
+}
+
 // TODO: Clean this up
 pub trait ResolverApi<W: WasmEngine> {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError>;

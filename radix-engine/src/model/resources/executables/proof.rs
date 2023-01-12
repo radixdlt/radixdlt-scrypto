@@ -47,7 +47,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
 impl Executor for ProofGetAmountInvocation {
     type Output = Decimal;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -81,7 +84,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation
 impl Executor for ProofGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
@@ -124,7 +127,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocatio
 impl Executor for ProofGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
@@ -166,7 +169,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
 impl Executor for ProofCloneInvocation {
     type Output = Proof;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

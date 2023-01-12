@@ -229,7 +229,7 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
 impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
@@ -398,13 +398,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let result = api.invoke(ParsedScryptoFunctionInvocation
-                        {
-                            package_address: package_address.clone(),
-                            blueprint_name: blueprint_name.clone(),
-                            function_name: function_name.clone(),
-                            args,
-                        })?;
+                    let result = api.invoke(ParsedScryptoFunctionInvocation {
+                        package_address: package_address.clone(),
+                        blueprint_name: blueprint_name.clone(),
+                        function_name: function_name.clone(),
+                        args,
+                    })?;
 
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,

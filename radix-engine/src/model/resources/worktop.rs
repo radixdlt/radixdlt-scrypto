@@ -53,7 +53,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopPutInvocation {
 impl Executor for WorktopPutInvocation {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -104,7 +104,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAmountInvocation {
 impl Executor for WorktopTakeAmountInvocation {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -162,7 +165,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAllInvocation {
 impl Executor for WorktopTakeAllInvocation {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -212,7 +218,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeNonFungiblesInvocatio
 impl Executor for WorktopTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -270,7 +279,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsInvocation 
 impl Executor for WorktopAssertContainsInvocation {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -322,7 +331,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsAmountInvoc
 impl Executor for WorktopAssertContainsAmountInvocation {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -373,7 +382,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsNonFungible
 impl Executor for WorktopAssertContainsNonFungiblesInvocation {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -420,7 +429,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for WorktopDrainInvocation {
 impl Executor for WorktopDrainInvocation {
     type Output = Vec<Bucket>;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Vec<Bucket>, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Vec<Bucket>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {

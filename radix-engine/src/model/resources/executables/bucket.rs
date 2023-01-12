@@ -43,7 +43,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
 impl Executor for BucketTakeInvocation {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -89,7 +92,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketCreateProofInvocation {
 impl Executor for BucketCreateProofInvocation {
     type Output = Proof;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -136,7 +142,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeNonFungiblesInvocation
 impl Executor for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -182,7 +191,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetNonFungibleIdsInvocatio
 impl Executor for BucketGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
@@ -224,7 +233,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetAmountInvocation {
 impl Executor for BucketGetAmountInvocation {
     type Output = Decimal;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -261,7 +273,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketPutInvocation {
 impl Executor for BucketPutInvocation {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -304,7 +319,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetResourceAddressInvocati
 impl Executor for BucketGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>

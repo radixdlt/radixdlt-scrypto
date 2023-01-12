@@ -26,7 +26,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for LoggerLogInvocation {
 impl Executor for LoggerLogInvocation {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {

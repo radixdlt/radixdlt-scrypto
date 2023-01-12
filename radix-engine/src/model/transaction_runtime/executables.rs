@@ -34,7 +34,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGetHashInvocat
 impl Executor for TransactionRuntimeGetHashInvocation {
     type Output = Hash;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
@@ -75,7 +78,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGenerateUuidIn
 impl Executor for TransactionRuntimeGenerateUuidInvocation {
     type Output = u128;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {

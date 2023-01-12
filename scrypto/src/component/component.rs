@@ -79,7 +79,7 @@ impl Component {
             .invoke(ScryptoMethodInvocation {
                 receiver: ScryptoReceiver::Component(self.0),
                 method_name: method.to_string(),
-                args
+                args,
             })
             .unwrap();
         scrypto_decode(&buffer).unwrap()
@@ -183,7 +183,7 @@ impl GlobalComponentRef {
             .invoke(ScryptoMethodInvocation {
                 receiver: ScryptoReceiver::Global(self.0),
                 method_name: method.to_string(),
-                args
+                args,
             })
             .unwrap();
         scrypto_decode(&raw).unwrap()
