@@ -11,6 +11,13 @@ pub enum SerializedInvocation {
     Method(ScryptoMethodInvocation),
 }
 
+#[derive(Debug)]
+#[scrypto(Categorize, Encode, Decode)]
+pub enum CallTableInvocation {
+    Scrypto(ScryptoMethodInvocation),
+    Native(NativeInvocation),
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
 pub enum NativeInvocation {

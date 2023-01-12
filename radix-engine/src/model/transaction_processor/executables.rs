@@ -422,7 +422,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    match component_address {
+                    let call_table_entry = match component_address {
                         ComponentAddress::EpochManager(..) => {
                             let invocation = EpochManagerPackage::resolve_method_invocation(
                                 *component_address,
@@ -436,9 +436,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                     ),
                                 )
                             })?;
-                            let rtn =
-                                invoke_native_fn(NativeInvocation::EpochManager(invocation), api)?;
-                            InstructionOutput::Native(rtn)
+                            CallTableInvocation::Native(NativeInvocation::EpochManager(invocation))
                         }
                         ComponentAddress::Clock(..) => {
                             let invocation = ClockPackage::resolve_method_invocation(
@@ -453,26 +451,28 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                                     ),
                                 )
                             })?;
-                            let rtn = invoke_native_fn(NativeInvocation::Clock(invocation), api)?;
-                            InstructionOutput::Native(rtn)
+                            CallTableInvocation::Native(NativeInvocation::Clock(invocation))
                         }
                         ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
                         | ComponentAddress::EddsaEd25519VirtualAccount(..)
                         | ComponentAddress::Normal(..)
                         | ComponentAddress::Account(..) => {
-                            let result = api.invoke(ParsedScryptoMethodInvocation {
+                            let method_invocation = ScryptoMethodInvocation {
                                 receiver: ScryptoReceiver::Global(component_address.clone()),
                                 method_name: method_name.clone(),
-                                args,
-                            })?;
-
-                            TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
-                                &result, api,
-                            )?;
-
-                            InstructionOutput::Scrypto(result)
+                                args: args.to_vec(),
+                            };
+                            CallTableInvocation::Scrypto(method_invocation)
                         }
-                    }
+                    };
+
+                    let result = invoke_call_table(call_table_entry, api)?;
+
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
+                    InstructionOutput::Scrypto(result)
                 }
                 Instruction::Basic(BasicInstruction::PublishPackage {
                     code,

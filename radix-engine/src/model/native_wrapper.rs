@@ -2,6 +2,27 @@ use crate::model::NativeOutput;
 use crate::types::*;
 use radix_engine_interface::api::api::InvokableModel;
 
+pub fn invoke_call_table<Y, E>(
+    invocation: CallTableInvocation,
+    api: &mut Y,
+) -> Result<IndexedScryptoValue, E>
+    where
+        Y: InvokableModel<E>,
+{
+    match invocation {
+        CallTableInvocation::Scrypto(invocation) => {
+            let rtn = api.invoke(invocation)?;
+            let rtn = IndexedScryptoValue::from_slice(&rtn).unwrap();
+            Ok(rtn)
+        }
+        CallTableInvocation::Native(invocation) => {
+            let rtn = invoke_native_fn(invocation, api)?;
+            Ok(IndexedScryptoValue::from_typed(rtn.as_ref()))
+        }
+    }
+}
+
+
 pub fn invoke_native_fn<Y, E>(
     native_invocation: NativeInvocation,
     api: &mut Y,
