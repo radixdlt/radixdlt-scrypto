@@ -1,3 +1,4 @@
+use radix_engine_interface::data::ScryptoValue;
 use crate::api::api::Invocation;
 use crate::api::types::ScryptoReceiver;
 use crate::data::IndexedScryptoValue;
@@ -19,11 +20,11 @@ pub struct ScryptoFunctionInvocation {
 }
 
 impl Invocation for ScryptoFunctionInvocation {
-    type Output = Vec<u8>;
+    type Output = ScryptoValue;
 }
 
 impl SerializableInvocation for ScryptoFunctionInvocation {
-    type ScryptoOutput = Vec<u8>;
+    type ScryptoOutput = ScryptoValue;
 }
 
 impl Into<SerializedInvocation> for ScryptoFunctionInvocation {
@@ -42,11 +43,11 @@ pub struct ScryptoMethodInvocation {
 }
 
 impl Invocation for ScryptoMethodInvocation {
-    type Output = Vec<u8>;
+    type Output = ScryptoValue;
 }
 
 impl SerializableInvocation for ScryptoMethodInvocation {
-    type ScryptoOutput = Vec<u8>;
+    type ScryptoOutput = ScryptoValue;
 }
 
 impl Into<SerializedInvocation> for ScryptoMethodInvocation {

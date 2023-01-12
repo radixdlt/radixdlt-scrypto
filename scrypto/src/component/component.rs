@@ -3,9 +3,7 @@ use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoReceiver, SubstateOffset,
 };
-use radix_engine_interface::data::{
-    scrypto_decode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
-};
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode, ScryptoValue};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
@@ -81,7 +79,7 @@ impl Component {
                 args,
             })
             .unwrap();
-        scrypto_decode(&buffer).unwrap()
+        scrypto_decode(&scrypto_encode(&buffer).unwrap()).unwrap()
     }
 
     /// Returns the package ID of this component.
@@ -185,7 +183,8 @@ impl GlobalComponentRef {
                 args,
             })
             .unwrap();
-        scrypto_decode(&raw).unwrap()
+
+        scrypto_decode(&scrypto_encode(&raw).unwrap()).unwrap()
     }
 
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {

@@ -12,7 +12,7 @@ pub fn invoke_call_table<Y, E>(
     match invocation {
         CallTableInvocation::Scrypto(invocation) => {
             let rtn = api.invoke(invocation)?;
-            let rtn = IndexedScryptoValue::from_slice(&rtn).unwrap();
+            let rtn = IndexedScryptoValue::from_typed(&rtn);
             Ok(rtn)
         }
         CallTableInvocation::Native(invocation) => {

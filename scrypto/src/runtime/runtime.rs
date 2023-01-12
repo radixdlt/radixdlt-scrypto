@@ -61,7 +61,7 @@ impl Runtime {
                 args,
             })
             .unwrap();
-        scrypto_decode(&buffer).unwrap()
+        scrypto_decode(&scrypto_encode(&buffer).unwrap()).unwrap()
     }
 
     /// Invokes a method on a component.
@@ -77,7 +77,7 @@ impl Runtime {
                 args,
             })
             .unwrap();
-        scrypto_decode(&buffer).unwrap()
+        scrypto_decode(&scrypto_encode(&buffer).unwrap()).unwrap()
     }
 
     /// Returns the transaction hash.

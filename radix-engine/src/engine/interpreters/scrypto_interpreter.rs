@@ -100,9 +100,9 @@ pub struct ScryptoExecutor {
 }
 
 impl Executor for ScryptoExecutor {
-    type Output = Vec<u8>;
+    type Output = ScryptoValue;
 
-    fn execute<Y, W>(self, api: &mut Y) -> Result<(Vec<u8>, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + EngineApi<RuntimeError>
@@ -118,7 +118,7 @@ impl Executor for ScryptoExecutor {
             export_name: self.export_name,
         }
         .execute(api)
-        .map(|(indexed, update)| (indexed.into_vec(), update))
+        .map(|(indexed, update)| (indexed.into(), update))
     }
 }
 
