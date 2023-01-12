@@ -42,6 +42,12 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - uses: actions/cache@v3
+      with:
+        key: simulator-release-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock') }}
+        path: |
+          ~/.cargo/registry/src/**/librocksdb-sys-*
+          simulator/target
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang -y
@@ -208,7 +214,7 @@ jobs:
       run: cargo test --no-default-features --features alloc
       working-directory: radix-engine
   radix-engine-wasmer:
-    name: Run Radix Engine tests with Wasmer
+    name: Run Radix Engine tests (wasmer)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -272,6 +278,12 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - uses: actions/cache@v3
+      with:
+        key: simulator-debug-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock') }}
+        path: |
+          ~/.cargo/registry/src/**/librocksdb-sys-*
+          simulator/target
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -301,6 +313,12 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - uses: actions/cache@v3
+      with:
+        key: simulator-debug-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock') }}
+        path: |
+          ~/.cargo/registry/src/**/librocksdb-sys-*
+          simulator/target
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
