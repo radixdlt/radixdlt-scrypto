@@ -72,7 +72,7 @@ impl Into<ApplicationError> for EpochManagerError {
     }
 }
 
-pub fn deref_and_update<D: ResolverApi<W>, W: WasmEngine>(
+pub fn deref_and_update<D: ResolverApi>(
     receiver: RENodeId,
     call_frame_update: &mut CallFrameUpdate,
     deref: &mut D,

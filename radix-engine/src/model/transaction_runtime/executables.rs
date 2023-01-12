@@ -11,10 +11,10 @@ pub enum TransactionRuntimeError {
     OutOfUUid,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGetHashInvocation {
+impl ExecutableInvocation for TransactionRuntimeGetHashInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -54,10 +54,10 @@ impl Executor for TransactionRuntimeGetHashInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGenerateUuidInvocation {
+impl ExecutableInvocation for TransactionRuntimeGenerateUuidInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>

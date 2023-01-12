@@ -38,10 +38,10 @@ impl Package {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackagePublishInvocation {
+impl ExecutableInvocation for PackagePublishInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -123,10 +123,10 @@ impl Executor for PackagePublishInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackageSetRoyaltyConfigInvocation {
+impl ExecutableInvocation for PackageSetRoyaltyConfigInvocation {
     type Exec = PackageSetRoyaltyConfigExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -171,10 +171,10 @@ impl Executor for PackageSetRoyaltyConfigExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for PackageClaimRoyaltyInvocation {
+impl ExecutableInvocation for PackageClaimRoyaltyInvocation {
     type Exec = PackageClaimRoyaltyExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

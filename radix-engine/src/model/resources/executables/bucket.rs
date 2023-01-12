@@ -23,10 +23,10 @@ pub enum BucketError {
     MethodNotFound(BucketFn),
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
+impl ExecutableInvocation for BucketTakeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -72,10 +72,10 @@ impl Executor for BucketTakeInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketCreateProofInvocation {
+impl ExecutableInvocation for BucketCreateProofInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -122,10 +122,10 @@ impl Executor for BucketCreateProofInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeNonFungiblesInvocation {
+impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -171,10 +171,10 @@ impl Executor for BucketTakeNonFungiblesInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetNonFungibleIdsInvocation {
+impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -213,10 +213,10 @@ impl Executor for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetAmountInvocation {
+impl ExecutableInvocation for BucketGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -250,10 +250,10 @@ impl Executor for BucketGetAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketPutInvocation {
+impl ExecutableInvocation for BucketPutInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -299,10 +299,10 @@ impl Executor for BucketPutInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetResourceAddressInvocation {
+impl ExecutableInvocation for BucketGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

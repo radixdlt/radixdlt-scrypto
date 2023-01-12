@@ -5,10 +5,10 @@ use crate::model::TransactionProcessorError;
 use crate::types::*;
 use crate::wasm::*;
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoMethodInvocation {
+impl ExecutableInvocation for ScryptoMethodInvocation {
     type Exec = ScryptoExecutor;
 
-    fn resolve<D: ResolverApi<W> + SystemApi>(
+    fn resolve<D: ResolverApi + SystemApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -128,9 +128,6 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoMethodInvocation {
                 self.method_name.clone(),
             );
 
-            // Emit event
-            api.on_wasm_instantiation(package.code())?;
-
             (
                 ScryptoExecutor {
                     package_address: component_info.package_address,
@@ -164,10 +161,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoMethodInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoFunctionInvocation {
+impl ExecutableInvocation for ScryptoFunctionInvocation {
     type Exec = ScryptoExecutor;
 
-    fn resolve<D: ResolverApi<W> + SystemApi>(
+    fn resolve<D: ResolverApi + SystemApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -261,9 +258,6 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoFunctionInvocation {
                 self.function_name.clone(),
             );
 
-            // Emit event
-            api.on_wasm_instantiation(package.code())?;
-
             (
                 ScryptoExecutor {
                     package_address: self.package_address,
@@ -297,10 +291,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ScryptoFunctionInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoFunctionInvocation {
+impl ExecutableInvocation for ParsedScryptoFunctionInvocation {
     type Exec = ScryptoExecutorToParsed;
 
-    fn resolve<D: ResolverApi<W> + SystemApi>(
+    fn resolve<D: ResolverApi + SystemApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -389,9 +383,6 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoFunctionInvocation 
                 self.blueprint_name.clone(),
                 self.function_name.clone(),
             );
-
-            // Emit event
-            api.on_wasm_instantiation(package.code())?;
 
             (
                 ScryptoExecutorToParsed {
@@ -427,10 +418,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoFunctionInvocation 
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoMethodInvocation {
+impl ExecutableInvocation for ParsedScryptoMethodInvocation {
     type Exec = ScryptoExecutorToParsed;
 
-    fn resolve<D: ResolverApi<W> + SystemApi>(
+    fn resolve<D: ResolverApi + SystemApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -545,9 +536,6 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ParsedScryptoMethodInvocation {
                 component_info.blueprint_name,
                 self.method_name.clone(),
             );
-
-            // Emit event
-            api.on_wasm_instantiation(package.code())?;
 
             (
                 ScryptoExecutorToParsed {

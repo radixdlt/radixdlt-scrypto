@@ -3,10 +3,10 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::*;
 
-impl<W: WasmEngine> ExecutableInvocation<W> for LoggerLogInvocation {
+impl ExecutableInvocation for LoggerLogInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>

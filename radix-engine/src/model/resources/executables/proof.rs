@@ -27,10 +27,10 @@ pub enum ProofError {
     InvalidRequestData(DecodeError),
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetAmountInvocation {
+impl ExecutableInvocation for ProofGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -64,10 +64,10 @@ impl Executor for ProofGetAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetNonFungibleIdsInvocation {
+impl ExecutableInvocation for ProofGetNonFungibleIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -107,10 +107,10 @@ impl Executor for ProofGetNonFungibleIdsInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ProofGetResourceAddressInvocation {
+impl ExecutableInvocation for ProofGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -149,10 +149,10 @@ impl Executor for ProofGetResourceAddressInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ProofCloneInvocation {
+impl ExecutableInvocation for ProofCloneInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

@@ -196,10 +196,10 @@ fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
         .collect()
 }
 
-impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvocation<'a> {
+impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

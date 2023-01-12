@@ -9,10 +9,10 @@ use radix_engine_interface::api::api::*;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::{constants::*, rule};
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeInvocation {
+impl ExecutableInvocation for ComponentGlobalizeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -71,10 +71,10 @@ impl Executor for ComponentGlobalizeInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentGlobalizeWithOwnerInvocation {
+impl ExecutableInvocation for ComponentGlobalizeWithOwnerInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -161,10 +161,10 @@ impl Executor for ComponentGlobalizeWithOwnerInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentSetRoyaltyConfigInvocation {
+impl ExecutableInvocation for ComponentSetRoyaltyConfigInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -209,10 +209,10 @@ impl Executor for ComponentSetRoyaltyConfigInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ComponentClaimRoyaltyInvocation {
+impl ExecutableInvocation for ComponentClaimRoyaltyInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

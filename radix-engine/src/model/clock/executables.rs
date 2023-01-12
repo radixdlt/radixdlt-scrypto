@@ -23,10 +23,10 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct Clock;
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockCreateInvocation {
+impl ExecutableInvocation for ClockCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -99,10 +99,10 @@ impl Executor for ClockCreateInvocation {
 
 pub struct ClockSetCurrentTimeExecutable(RENodeId, i64);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
+impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
     type Exec = ClockSetCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -151,10 +151,10 @@ impl Executor for ClockSetCurrentTimeExecutable {
 
 pub struct ClockGetCurrentTimeExecutable(RENodeId, TimePrecision);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
+impl ExecutableInvocation for ClockGetCurrentTimeInvocation {
     type Exec = ClockGetCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -208,10 +208,10 @@ pub struct ClockCompareCurrentTimeExecutable {
     operator: TimeComparisonOperator,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocation {
+impl ExecutableInvocation for ClockCompareCurrentTimeInvocation {
     type Exec = ClockCompareCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>

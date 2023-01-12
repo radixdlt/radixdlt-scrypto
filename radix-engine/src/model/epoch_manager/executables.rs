@@ -23,10 +23,10 @@ pub enum EpochManagerError {
 
 pub struct EpochManager;
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
+impl ExecutableInvocation for EpochManagerCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -129,10 +129,10 @@ impl Executor for EpochManagerCreateInvocation {
 
 pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvocation {
+impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
     type Exec = EpochManagerGetCurrentEpochExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -176,10 +176,10 @@ pub struct EpochManagerNextRoundExecutable {
     round: u64,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerNextRoundInvocation {
+impl ExecutableInvocation for EpochManagerNextRoundInvocation {
     type Exec = EpochManagerNextRoundExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -257,10 +257,10 @@ impl Executor for EpochManagerNextRoundExecutable {
 
 pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
+impl ExecutableInvocation for EpochManagerSetEpochInvocation {
     type Exec = EpochManagerSetEpochExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -301,10 +301,10 @@ impl Executor for EpochManagerSetEpochExecutable {
 
 pub struct EpochManagerRegisterValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerRegisterValidatorInvocation {
+impl ExecutableInvocation for EpochManagerRegisterValidatorInvocation {
     type Exec = EpochManagerRegisterValidatorExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -361,10 +361,10 @@ impl Executor for EpochManagerRegisterValidatorExecutable {
 
 pub struct EpochManagerUnregisterValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUnregisterValidatorInvocation {
+impl ExecutableInvocation for EpochManagerUnregisterValidatorInvocation {
     type Exec = EpochManagerUnregisterValidatorExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>

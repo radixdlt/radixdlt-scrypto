@@ -595,7 +595,7 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ResolverApi<W> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> ResolverApi for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
@@ -603,18 +603,6 @@ where
 {
     fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
         self.node_method_deref(node_id)
-    }
-
-    fn vm(&mut self) -> &ScryptoInterpreter<W> {
-        self.scrypto_interpreter
-    }
-
-    fn on_wasm_instantiation(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
-        self.module
-            .on_wasm_instantiation(&self.current_frame, &mut self.heap, &mut self.track, code)
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(())
     }
 }
 
@@ -631,10 +619,10 @@ pub trait Executor {
         W: WasmEngine;
 }
 
-pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
+pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: ResolverApi<W> + SystemApi>(
+    fn resolve<Y: ResolverApi + SystemApi>(
         self,
         api: &mut Y,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
@@ -645,7 +633,7 @@ where
     W: WasmEngine,
     R: FeeReserve,
     M: BaseModule<R>,
-    N: ExecutableInvocation<W>,
+    N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         self.module

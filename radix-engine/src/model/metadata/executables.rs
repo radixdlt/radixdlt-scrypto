@@ -8,10 +8,10 @@ use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{NativeFn, RENodeId, SubstateOffset};
 use radix_engine_interface::model::*;
 
-impl<W: WasmEngine> ExecutableInvocation<W> for MetadataSetInvocation {
+impl ExecutableInvocation for MetadataSetInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -57,10 +57,10 @@ impl Executor for MetadataSetInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for MetadataGetInvocation {
+impl ExecutableInvocation for MetadataGetInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {

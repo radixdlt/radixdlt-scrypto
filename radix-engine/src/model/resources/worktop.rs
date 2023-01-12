@@ -30,10 +30,10 @@ pub enum WorktopError {
     AssertionFailed,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for WorktopPutInvocation {
+impl ExecutableInvocation for WorktopPutInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -79,10 +79,10 @@ impl Executor for WorktopPutInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAmountInvocation {
+impl ExecutableInvocation for WorktopTakeAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -140,10 +140,10 @@ impl Executor for WorktopTakeAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeAllInvocation {
+impl ExecutableInvocation for WorktopTakeAllInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -193,10 +193,10 @@ impl Executor for WorktopTakeAllInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for WorktopTakeNonFungiblesInvocation {
+impl ExecutableInvocation for WorktopTakeNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -254,10 +254,10 @@ impl Executor for WorktopTakeNonFungiblesInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsInvocation {
+impl ExecutableInvocation for WorktopAssertContainsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -306,10 +306,10 @@ impl Executor for WorktopAssertContainsInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsAmountInvocation {
+impl ExecutableInvocation for WorktopAssertContainsAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -357,10 +357,10 @@ impl Executor for WorktopAssertContainsAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for WorktopAssertContainsNonFungiblesInvocation {
+impl ExecutableInvocation for WorktopAssertContainsNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -409,10 +409,10 @@ impl Executor for WorktopAssertContainsNonFungiblesInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for WorktopDrainInvocation {
+impl ExecutableInvocation for WorktopDrainInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
