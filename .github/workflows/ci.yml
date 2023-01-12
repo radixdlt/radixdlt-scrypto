@@ -178,6 +178,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -185,14 +187,11 @@ jobs:
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: cargo test
-      working-directory: radix-engine-derive
-    - name: Run tests
-      run: cargo test
-      working-directory: radix-engine-interface
-    - name: Run tests
-      run: cargo test
-      working-directory: radix-engine
+      run: |
+        cargo nextest run \
+          -p radix-engine-derive \
+          -p radix-engine-interface \
+          -p radix-engine
   radix-engine-no-std:
     name: Run Radix Engine tests (no_std)
     runs-on: ${{ matrix.os }}
@@ -204,6 +203,8 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - name: Install nextest
+      uses: taiki-e/install-action@nextest
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -211,8 +212,10 @@ jobs:
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: cargo test --no-default-features --features alloc
-      working-directory: radix-engine
+      run: |
+        cargo nextest run \
+          --no-default-features --features alloc \
+          -p radix-engine
   radix-engine-wasmer:
     name: Run Radix Engine tests (wasmer)
     runs-on: ${{ matrix.os }}
@@ -231,8 +234,10 @@ jobs:
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: cargo test --features wasmer
-      working-directory: radix-engine
+      run: |
+        cargo nextest run \
+          --features wasmer \
+          -p radix-engine
   radix-engine-bench:
     name: Run Radix Engine benchmarks
     runs-on: ${{ matrix.os }}
