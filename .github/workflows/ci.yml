@@ -42,12 +42,11 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: actions/cache@v3
+    - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
-        key: simulator-release-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock') }}
-        path: |
-          ~/.cargo/registry/src/**/librocksdb-sys-*
-          simulator/target
+        shared-key: simulator-release-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock') }}
+        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+        workspaces: simulator
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang -y
@@ -278,12 +277,11 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: actions/cache@v3
+    - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
-        key: simulator-debug-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock') }}
-        path: |
-          ~/.cargo/registry/src/**/librocksdb-sys-*
-          simulator/target
+        shared-key: simulator-debug-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock') }}
+        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+        workspaces: simulator
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -313,12 +311,11 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: actions/cache@v3
+    - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
-        key: simulator-debug-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock') }}
-        path: |
-          ~/.cargo/registry/src/**/librocksdb-sys-*
-          simulator/target
+        shared-key: simulator-debug-${{ runner.os }}-${{ hashFiles('simulator/Cargo.lock') }}
+        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
+        workspaces: simulator
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
