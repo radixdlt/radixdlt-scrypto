@@ -3,13 +3,13 @@ use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::api::{ActorApi, EngineApi, InvokableModel};
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue};
+use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue, ScryptoValue};
 
 pub struct ScryptoExecutorToParsed {
     pub package_address: PackageAddress,
     pub export_name: String,
     pub component_id: Option<ComponentId>,
-    pub args: Vec<u8>,
+    pub args: ScryptoValue,
 }
 
 impl Executor for ScryptoExecutorToParsed {
@@ -55,7 +55,8 @@ impl Executor for ScryptoExecutorToParsed {
         if let Some(component_id) = self.component_id {
             args.push(scrypto_encode(&component_id).unwrap());
         }
-        args.push(self.args);
+        let arg = scrypto_encode(&self.args).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        args.push(arg);
 
         let output = {
             let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(api));
@@ -95,7 +96,7 @@ pub struct ScryptoExecutor {
     pub package_address: PackageAddress,
     pub export_name: String,
     pub component_id: Option<ComponentId>,
-    pub args: Vec<u8>,
+    pub args: ScryptoValue,
 }
 
 impl Executor for ScryptoExecutor {

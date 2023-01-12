@@ -102,24 +102,7 @@ impl ExecutableInvocation for ScryptoMethodInvocation {
                             ScryptoFnResolvingError::MethodNotFound,
                         ),
                     ))?;
-            if fn_abi.mutability.is_none() {
-                return Err(RuntimeError::InterpreterError(
-                    InterpreterError::InvalidScryptoMethodInvocation(
-                        self.method_name.clone(),
-                        ScryptoFnResolvingError::MethodNotFound,
-                    ),
-                ));
-            }
 
-            // Check input against the ABI
-            if !match_schema_with_value(&fn_abi.input, args.as_value()) {
-                return Err(RuntimeError::InterpreterError(
-                    InterpreterError::InvalidScryptoMethodInvocation(
-                        self.method_name.clone(),
-                        ScryptoFnResolvingError::InvalidInput,
-                    ),
-                ));
-            }
 
             let scrypto_fn_ident = ScryptoFnIdentifier::new(
                 component_info.package_address,
@@ -132,7 +115,7 @@ impl ExecutableInvocation for ScryptoMethodInvocation {
                     package_address: component_info.package_address,
                     export_name: fn_abi.export_name.clone(),
                     component_id: Some(component_node_id.into()),
-                    args: args.into_vec(),
+                    args: args.into(),
                 },
                 ResolvedActor::method(FnIdentifier::Scrypto(scrypto_fn_ident), resolved_receiver),
             )
@@ -262,7 +245,7 @@ impl ExecutableInvocation for ScryptoFunctionInvocation {
                     package_address: self.package_address,
                     export_name: fn_abi.export_name.clone(),
                     component_id: None,
-                    args: args.into_vec(),
+                    args: args.into(),
                 },
                 ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
             )
@@ -389,7 +372,7 @@ impl ExecutableInvocation for ParsedScryptoFunctionInvocation {
                     package_address: self.package_address,
                     export_name: fn_abi.export_name.clone(),
                     component_id: None,
-                    args: self.args.into_vec(),
+                    args: self.args.into(),
                 },
                 ResolvedActor::function(FnIdentifier::Scrypto(scrypto_fn_ident)),
             )
@@ -541,7 +524,7 @@ impl ExecutableInvocation for ParsedScryptoMethodInvocation {
                     package_address: component_info.package_address,
                     export_name: fn_abi.export_name.clone(),
                     component_id: Some(component_node_id.into()),
-                    args: self.args.into_vec(),
+                    args: self.args.into(),
                 },
                 ResolvedActor::method(FnIdentifier::Scrypto(scrypto_fn_ident), resolved_receiver),
             )

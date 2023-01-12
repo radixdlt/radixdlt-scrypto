@@ -47,6 +47,12 @@ pub struct IndexedScryptoValue {
     arrays: Vec<(ScryptoValueKind, SborPath)>,
 }
 
+impl Into<ScryptoValue> for IndexedScryptoValue {
+    fn into(self) -> ScryptoValue {
+        self.value
+    }
+}
+
 impl IndexedScryptoValue {
     pub fn unit() -> Self {
         Self::from_typed(&())
