@@ -44,6 +44,7 @@ pub enum TokenKind {
     Enum,
     Array,
     Tuple,
+    Map,
 
     // ==============
     // SBOR aliases
@@ -403,6 +404,7 @@ impl Lexer {
             "Enum" => Ok(TokenKind::Enum),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
+            "Map" => Ok(TokenKind::Map),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),
@@ -626,15 +628,15 @@ mod tests {
     #[test]
     fn test_mixed() {
         lex_ok!(
-            r#"CALL_FUNCTION Array<Tuple>(Tuple("test", Array<String>("abc")));"#,
+            r#"CALL_FUNCTION Map<String, Array>("test", Array<String>("abc"));"#,
             vec![
                 TokenKind::CallFunction,
-                TokenKind::Array,
+                TokenKind::Map,
                 TokenKind::LessThan,
-                TokenKind::Tuple,
+                TokenKind::String,
+                TokenKind::Comma,
+                TokenKind::Array,
                 TokenKind::GreaterThan,
-                TokenKind::OpenParenthesis,
-                TokenKind::Tuple,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("test".into()),
                 TokenKind::Comma,
@@ -644,7 +646,6 @@ mod tests {
                 TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("abc".into()),
-                TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,

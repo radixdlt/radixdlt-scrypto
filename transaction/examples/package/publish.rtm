@@ -8,199 +8,183 @@
 
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 
 # Publishing a new package and setting some of its royalty and access rules.
 PUBLISH_PACKAGE 
-    Blob("{code_blob_hash}") 
-    Blob("{abi_blob_hash}") 
-    Array<Tuple>()          # Royalty Configuration
-    Array<Tuple>()          # Metadata 
-    Tuple(                  # Access Rules Struct
-        Array<Tuple>(       # Method auth Field
-            Tuple(
+    Blob("${code_blob_hash}") 
+    Blob("${abi_blob_hash}") 
+    Map<String, Tuple>()       # Royalty Configuration
+    Map<String, String>()      # Metadata 
+    Tuple(                     # Access Rules Struct
+        Map<Enum, Enum>(       # Method auth Field
+            Enum(
+                "Native", 
                 Enum(
-                    "Native", 
-                    Enum(
-                        "Package",
-                        Enum("SetRoyaltyConfig")
-                    )
-                ), 
+                    "Package",
+                    Enum("SetRoyaltyConfig")
+                )
+            ), 
+            Enum(
+                "AccessRule", 
                 Enum(
-                    "AccessRule", 
+                    "Protected", 
                     Enum(
-                        "Protected", 
+                        "ProofRule", 
                         Enum(
-                            "ProofRule", 
+                            "Require", 
                             Enum(
-                                "Require", 
-                                Enum(
-                                    "StaticNonFungible", 
-                                    NonFungibleAddress("{auth_badge_resource_address}", {auth_badge_non_fungible_id})
-                                )
+                                "StaticNonFungible", 
+                                NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                             )
                         )
                     )
                 )
-            ), 
-            Tuple(
+            ),
+            Enum(
+                "Native", 
                 Enum(
-                    "Native", 
-                    Enum(
-                        "Package",
-                        Enum("ClaimRoyalty")
-                    )
-                ),
+                    "Package",
+                    Enum("ClaimRoyalty")
+                )
+            ),
+            Enum(
+                "AccessRule", 
                 Enum(
-                    "AccessRule", 
+                    "Protected", 
                     Enum(
-                        "Protected", 
+                        "ProofRule", 
                         Enum(
-                            "ProofRule", 
+                            "Require", 
                             Enum(
-                                "Require", 
-                                Enum(
-                                    "StaticNonFungible", 
-                                    NonFungibleAddress("{auth_badge_resource_address}", {auth_badge_non_fungible_id})
-                                )
+                                "StaticNonFungible", 
+                                NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                             )
                         )
                     )
                 )
-            ), 
-            Tuple(
+            ),
+            Enum(
+                "Native", 
                 Enum(
-                    "Native", 
-                    Enum(
-                        "Metadata",
-                        Enum("Set")
-                    )
-                ),
+                    "Metadata",
+                    Enum("Set")
+                )
+            ),
+            Enum(
+                "AccessRule", 
                 Enum(
-                    "AccessRule", 
+                    "Protected", 
                     Enum(
-                        "Protected", 
+                        "ProofRule", 
                         Enum(
-                            "ProofRule", 
+                            "Require", 
                             Enum(
-                                "Require", 
-                                Enum(
-                                    "StaticNonFungible", 
-                                    NonFungibleAddress("{auth_badge_resource_address}", {auth_badge_non_fungible_id})
-                                )
+                                "StaticNonFungible", 
+                                NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                             )
                         )
                     )
                 )
-            ), 
-            Tuple(
+            ),
+            Enum(
+                "Native", 
                 Enum(
-                    "Native", 
-                    Enum(
-                        "Metadata",
-                        Enum("Get")
-                    )
-                ),
-                Enum(
-                    "AccessRule", 
-                    Enum("AllowAll")
+                    "Metadata",
+                    Enum("Get")
                 )
+            ),
+            Enum(
+                "AccessRule", 
+                Enum("AllowAll")
             )
         ), 
-        Array<Tuple>(),     # Grouped Auth Field
-        Enum("DenyAll"),    # Default Auth Field
-        Array<Tuple>(       # Method Auth Mutability Field
-            Tuple(
+        Map<String, Enum>(),     # Grouped Auth Field
+        Enum("DenyAll"),         # Default Auth Field
+        Map<Enum, Enum>(         # Method Auth Mutability Field
+            Enum(
+                "Native", 
                 Enum(
-                    "Native", 
-                    Enum(
-                        "Package",
-                        Enum("SetRoyaltyConfig")
-                    )
-                ), 
+                    "Package",
+                    Enum("SetRoyaltyConfig")
+                )
+            ), 
+            Enum(
+                "Protected", 
                 Enum(
-                    "Protected", 
+                    "ProofRule", 
                     Enum(
-                        "ProofRule", 
+                        "Require", 
                         Enum(
-                            "Require", 
-                            Enum(
-                                "StaticNonFungible", 
-                                NonFungibleAddress("{auth_badge_resource_address}", {auth_badge_non_fungible_id})
-                            )
+                            "StaticNonFungible", 
+                            NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                         )
                     )
                 )
+            ),
+            Enum(
+                "Native", 
+                Enum(
+                    "Package",
+                    Enum("ClaimRoyalty")
+                )
             ), 
-            Tuple(
+            Enum(
+                "Protected", 
                 Enum(
-                    "Native", 
+                    "ProofRule", 
                     Enum(
-                        "Package",
-                        Enum("ClaimRoyalty")
-                    )
-                ), 
-                Enum(
-                    "Protected", 
-                    Enum(
-                        "ProofRule", 
+                        "Require", 
                         Enum(
-                            "Require", 
-                            Enum(
-                                "StaticNonFungible", 
-                                NonFungibleAddress("{auth_badge_resource_address}", {auth_badge_non_fungible_id})
-                            )
+                            "StaticNonFungible", 
+                            NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                         )
                     )
                 )
+            ),
+            Enum(
+                "Native", 
+                Enum(
+                    "Metadata",
+                    Enum("Set")
+                )
             ), 
-            Tuple(
+            Enum(
+                "Protected", 
                 Enum(
-                    "Native", 
+                    "ProofRule", 
                     Enum(
-                        "Metadata",
-                        Enum("Set")
-                    )
-                ), 
-                Enum(
-                    "Protected", 
-                    Enum(
-                        "ProofRule", 
+                        "Require", 
                         Enum(
-                            "Require", 
-                            Enum(
-                                "StaticNonFungible", 
-                                NonFungibleAddress("{auth_badge_resource_address}", {auth_badge_non_fungible_id})
-                            )
+                            "StaticNonFungible", 
+                            NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                         )
                     )
                 )
+            ),
+            Enum(
+                "Native", 
+                Enum(
+                    "Metadata",
+                    Enum("Get")
+                )
             ), 
-            Tuple(
+            Enum(
+                "Protected", 
                 Enum(
-                    "Native", 
+                    "ProofRule", 
                     Enum(
-                        "Metadata",
-                        Enum("Get")
-                    )
-                ), 
-                Enum(
-                    "Protected", 
-                    Enum(
-                        "ProofRule", 
+                        "Require", 
                         Enum(
-                            "Require", 
-                            Enum(
-                                "StaticNonFungible", 
-                                NonFungibleAddress("{auth_badge_resource_address}", {auth_badge_non_fungible_id})
-                            )
+                            "StaticNonFungible", 
+                            NonFungibleAddress("${auth_badge_resource_address}", ${auth_badge_non_fungible_id})
                         )
                     )
                 )
             )
         ), 
-        Array<Tuple>(),     # Group Auth Mutability Field
-        Enum("DenyAll")     # Default Auth Mutability Field
+        Map<String, Enum>(),     # Group Auth Mutability Field
+        Enum("DenyAll")          # Default Auth Mutability Field
     );

@@ -31,6 +31,8 @@ pub enum TypeKind<X: CustomValueKind, C: CustomTypeKind<L, CustomValueKind = X>,
 
     Enum { variants: BTreeMap<String, Vec<L>> },
 
+    Map { key_type: L, value_type: L },
+
     // Custom Types
     Custom(C),
 }

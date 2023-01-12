@@ -12,11 +12,18 @@ use transaction::manifest::compile;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 use utils::ContextualDisplay;
 
+macro_rules! replace_variables {
+    ($content:expr $(, $a:ident = $b:expr)* ) => {
+        $content
+            $(.replace(concat!("${", stringify!($a), "}"), &format!("{}", $b)))*
+    };
+}
+
 /// An example manifest for freeing some funds from the faucet
 #[test]
 fn free_funds_from_faucet_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!("../../transaction/examples/faucet/free_funds.rtm"),
             faucet_component_address = FAUCET_COMPONENT.display(bech32_encoder),
             account_component_address = account_component_address.display(bech32_encoder)
@@ -34,12 +41,12 @@ fn transfer_of_funds_to_another_account_succeeds() {
         let other_account_component_address =
             ComponentAddress::virtual_account_from_public_key(&public_key);
 
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!("../../transaction/examples/account/resource_transfer.rtm"),
             xrd_resource_address = RADIX_TOKEN.display(bech32_encoder),
             this_account_component_address = this_account_component_address.display(bech32_encoder),
             other_account_component_address =
-                other_account_component_address.display(bech32_encoder),
+                other_account_component_address.display(bech32_encoder)
         );
         (manifest, Vec::new())
     });
@@ -50,7 +57,7 @@ fn multi_account_fund_transfer_succeeds() {
     test_manifest_with_additional_accounts(
         3,
         |this_account_component_address, other_accounts, bech32_encoder| {
-            let manifest = format!(
+            let manifest = replace_variables!(
                 include_str!(
                     "../../transaction/examples/account/multi_account_resource_transfer.rtm"
                 ),
@@ -59,7 +66,7 @@ fn multi_account_fund_transfer_succeeds() {
                     .encode_component_address_to_string(&this_account_component_address),
                 account_a_component_address = other_accounts[0].display(bech32_encoder),
                 account_b_component_address = other_accounts[1].display(bech32_encoder),
-                account_c_component_address = other_accounts[2].display(bech32_encoder),
+                account_c_component_address = other_accounts[2].display(bech32_encoder)
             );
             (manifest, Vec::new())
         },
@@ -70,7 +77,7 @@ fn multi_account_fund_transfer_succeeds() {
 #[test]
 fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/fungible/no_initial_supply.rtm"
             ),
@@ -84,13 +91,13 @@ fn creating_a_fungible_resource_with_no_initial_supply_succeeds() {
 #[test]
 fn creating_a_fungible_resource_with_no_initial_supply_with_owner_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/fungible/no_initial_supply_with_owner.rtm"
             ),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u64",
+            owner_badge_non_fungible_id = "1u64"
         );
         (manifest, Vec::new())
     });
@@ -102,7 +109,7 @@ fn creating_a_fungible_resource_with_initial_supply_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
         let initial_supply = Decimal::from("10000000");
 
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/fungible/with_initial_supply.rtm"
             ),
@@ -119,14 +126,14 @@ fn creating_a_fungible_resource_with_initial_supply_with_owner_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
         let initial_supply = Decimal::from("10000000");
 
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/fungible/with_initial_supply_with_owner.rtm"
             ),
             initial_supply = initial_supply,
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u64",
+            owner_badge_non_fungible_id = "1u64"
         );
         (manifest, Vec::new())
     });
@@ -136,7 +143,7 @@ fn creating_a_fungible_resource_with_initial_supply_with_owner_succeeds() {
 #[test]
 fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/non_fungible/no_initial_supply.rtm"
             ),
@@ -150,10 +157,11 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_succeeds() {
 #[test]
 fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
             account_component_address =
-                account_component_address.display(bech32_encoder)
+                account_component_address.display(bech32_encoder),
+                non_fungible_id = "1u64"
         );
         (manifest, Vec::new())
     });
@@ -163,13 +171,13 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
 #[test]
 fn creating_a_non_fungible_resource_with_no_initial_supply_with_owner_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!(
                 "../../transaction/examples/resources/creation/non_fungible/no_initial_supply_with_owner.rtm"
             ),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u64",
+            owner_badge_non_fungible_id = "1u64"
         );
         (manifest, Vec::new())
     });
@@ -179,11 +187,12 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_with_owner_succeeds()
 #[test]
 fn creating_a_non_fungible_resource_with_initial_supply_with_owner_succeeds() {
     test_manifest(|account_component_address, bech32_encoder| {
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
             owner_badge_non_fungible_id = "1u64",
+            non_fungible_id = "1u64"
         );
         (manifest, Vec::new())
     });
@@ -199,13 +208,13 @@ fn publish_package_succeeds() {
         let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
         let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
 
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!("../../transaction/examples/package/publish.rtm"),
             code_blob_hash = hash(&code_blob),
             abi_blob_hash = hash(&abi_blob),
             account_component_address = account_component_address.display(bech32_encoder),
             auth_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            auth_badge_non_fungible_id = "1u64",
+            auth_badge_non_fungible_id = "1u64"
         );
         (manifest, vec![code_blob, abi_blob])
     });
@@ -221,13 +230,13 @@ fn publish_package_with_owner_succeeds() {
         let code_blob = include_bytes!("../../assets/account.wasm").to_vec();
         let abi_blob = include_bytes!("../../assets/account.abi").to_vec();
 
-        let manifest = format!(
+        let manifest = replace_variables!(
             include_str!("../../transaction/examples/package/publish_with_owner.rtm"),
             code_blob_hash = hash(&code_blob),
             abi_blob_hash = hash(&abi_blob),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_id = "1u64",
+            owner_badge_non_fungible_id = "1u64"
         );
         (manifest, vec![code_blob, abi_blob])
     });
@@ -244,7 +253,7 @@ fn minting_of_fungible_resource_succeeds() {
          bech32_encoder| {
             let mint_amount = Decimal::from("800");
 
-            let manifest = format!(
+            let manifest = replace_variables!(
                 include_str!("../../transaction/examples/resources/mint/fungible/mint.rtm"),
                 account_component_address = account_component_address.display(bech32_encoder),
                 mintable_resource_address = mintable_resource_address.display(bech32_encoder),
@@ -268,7 +277,7 @@ fn minting_of_non_fungible_resource_succeeds() {
          minter_badge_resource_address,
          mintable_resource_address,
          bech32_encoder| {
-            let manifest = format!(
+            let manifest = replace_variables!(
                 include_str!("../../transaction/examples/resources/mint/non_fungible/mint.rtm"),
                 account_component_address = account_component_address.display(bech32_encoder),
                 mintable_resource_address = mintable_resource_address.display(bech32_encoder),

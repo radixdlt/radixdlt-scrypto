@@ -76,10 +76,12 @@ pub enum LedgerLookupError {
 #[cfg(test)]
 mod tests {
     use radix_engine::types::{NonFungibleIdTypeId, ECDSA_SECP256K1_TOKEN};
+    use serial_test::serial;
 
     use super::lookup_non_fungible_id_type;
 
     #[test]
+    #[serial]
     pub fn non_fungible_id_type_ledger_lookup_matches_expected() {
         // Arrange
         let resource_address = ECDSA_SECP256K1_TOKEN;

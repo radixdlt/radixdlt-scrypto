@@ -345,6 +345,7 @@ pub enum Value {
     Enum(String, Vec<Value>),
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
+    Map(Type, Type, Vec<Value>),
 
     // ==============
     // Aliases
@@ -405,6 +406,7 @@ impl Value {
             Value::Enum(_, _) => ScryptoValueKind::Enum,
             Value::Array(_, _) => ScryptoValueKind::Array,
             Value::Tuple(_) => ScryptoValueKind::Tuple,
+            Value::Map(_, _, _) => ScryptoValueKind::Map,
 
             // ==============
             // Aliases

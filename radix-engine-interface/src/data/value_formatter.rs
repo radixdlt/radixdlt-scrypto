@@ -181,6 +181,19 @@ pub fn format_scrypto_value<F: fmt::Write>(
                 f.write_str(")")?;
             }
         },
+        Value::Map {
+            key_value_kind,
+            value_value_kind,
+            entries,
+        } => {
+            f.write_str("Map<")?;
+            format_value_kind(f, key_value_kind)?;
+            f.write_str(", ")?;
+            format_value_kind(f, value_value_kind)?;
+            f.write_str(">(")?;
+            format_kv_entries(f, entries, context)?;
+            f.write_str(")")?;
+        }
         // custom types
         Value::Custom { value } => {
             format_custom_value(f, value, context)?;
@@ -219,6 +232,7 @@ pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind
         ValueKind::Enum => f.write_str("Enum"),
         ValueKind::Array => f.write_str("Array"),
         ValueKind::Tuple => f.write_str("Tuple"),
+        ValueKind::Map => f.write_str("Map"),
         ValueKind::Custom(value_kind) => match value_kind {
             ScryptoCustomValueKind::PackageAddress => f.write_str("PackageAddress"),
             ScryptoCustomValueKind::ComponentAddress => f.write_str("ComponentAddress"),
@@ -267,6 +281,22 @@ pub fn format_elements<F: fmt::Write>(
             f.write_str(", ")?;
         }
         format_scrypto_value(f, x, context)?;
+    }
+    Ok(())
+}
+
+pub fn format_kv_entries<F: fmt::Write>(
+    f: &mut F,
+    entries: &[(ScryptoValue, ScryptoValue)],
+    context: &ValueFormattingContext,
+) -> fmt::Result {
+    for (i, x) in entries.iter().enumerate() {
+        if i != 0 {
+            f.write_str(", ")?;
+        }
+        format_scrypto_value(f, &x.0, context)?;
+        f.write_str(", ")?;
+        format_scrypto_value(f, &x.1, context)?;
     }
     Ok(())
 }

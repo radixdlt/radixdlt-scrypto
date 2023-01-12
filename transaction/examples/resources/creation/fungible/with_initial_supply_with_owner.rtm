@@ -9,7 +9,7 @@
 
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 
@@ -17,17 +17,17 @@ CALL_METHOD
 # the default set of behaviors associated with owner badges.
 CREATE_FUNGIBLE_RESOURCE_WITH_OWNER
     18u8
-    Array<Tuple>(
-        Tuple("name", "MyResource"),                                        # Resource Name
-        Tuple("symbol", "RSRC"),                                            # Resource Symbol
-        Tuple("description", "A very innovative and important resource")    # Resource Description
+    Map<String, String>(
+        "name", "MyResource",                                        # Resource Name
+        "symbol", "RSRC",                                            # Resource Symbol
+        "description", "A very innovative and important resource"    # Resource Description
     ) 
-    NonFungibleAddress("{owner_badge_resource_address}", {owner_badge_non_fungible_id})
-    Some(Decimal("{initial_supply}"));
+    NonFungibleAddress("${owner_badge_resource_address}", ${owner_badge_non_fungible_id})
+    Some(Decimal("${initial_supply}"));
 
 # Depositing the entirety of the initial supply of the newly created resource into our account 
 # component.
 CALL_METHOD
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");

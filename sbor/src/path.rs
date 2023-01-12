@@ -66,20 +66,14 @@ impl<'a> ValueRetriever<'a> {
         self.0.is_empty()
     }
 
-    fn pop(&self) -> (usize, Self) {
+    fn advance(&self) -> Option<(usize, Self)> {
+        if self.is_empty() {
+            return None;
+        }
+
         let (index_slice, extended_path) = self.0.split_at(1);
         let index = index_slice[0];
-        (index, ValueRetriever(extended_path))
-    }
-
-    fn get_from_vector<X: CustomValueKind, Y>(
-        &self,
-        values: &'a [Value<X, Y>],
-    ) -> Option<&'a Value<X, Y>> {
-        let (index, next_path) = self.pop();
-        values
-            .get(index)
-            .and_then(|value| next_path.get_from(value))
+        Some((index, ValueRetriever(extended_path)))
     }
 
     fn get_from<X: CustomValueKind, Y>(self, value: &'a Value<X, Y>) -> Option<&'a Value<X, Y>> {
@@ -88,21 +82,28 @@ impl<'a> ValueRetriever<'a> {
         }
 
         match value {
-            Value::Tuple { fields: vec, .. }
-            | Value::Enum { fields: vec, .. }
-            | Value::Array { elements: vec, .. } => self.get_from_vector(vec),
+            Value::Tuple { fields: v, .. }
+            | Value::Enum { fields: v, .. }
+            | Value::Array { elements: v, .. } => {
+                let (index, next_path) = self.advance().expect("Should be available");
+                v.get(index).and_then(|value| next_path.get_from(value))
+            }
+            Value::Map { entries, .. } => {
+                let (index, next_path) = self.advance().expect("Should be available");
+                entries.get(index).and_then(|value| {
+                    if let Some((index, next_path)) = next_path.advance() {
+                        match index {
+                            0 => next_path.get_from(&value.0),
+                            1 => next_path.get_from(&value.1),
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    }
+                })
+            }
             _ => Option::None,
         }
-    }
-
-    fn get_from_vector_mut<X: CustomValueKind, Y>(
-        &self,
-        values: &'a mut [Value<X, Y>],
-    ) -> Option<&'a mut Value<X, Y>> {
-        let (index, next_path) = self.pop();
-        values
-            .get_mut(index)
-            .and_then(|value| next_path.get_from_mut(value))
     }
 
     fn get_from_mut<X: CustomValueKind, Y>(
@@ -114,10 +115,94 @@ impl<'a> ValueRetriever<'a> {
         }
 
         match value {
-            Value::Tuple { fields: vec, .. }
-            | Value::Enum { fields: vec, .. }
-            | Value::Array { elements: vec, .. } => self.get_from_vector_mut(vec),
+            Value::Tuple { fields: v, .. }
+            | Value::Enum { fields: v, .. }
+            | Value::Array { elements: v, .. } => {
+                let (index, next_path) = self.advance().expect("Should be available");
+                v.get_mut(index)
+                    .and_then(|value| next_path.get_from_mut(value))
+            }
+            Value::Map { entries, .. } => {
+                let (index, next_path) = self.advance().expect("Should be available");
+                entries.get_mut(index).and_then(|value| {
+                    if let Some((index, next_path)) = next_path.advance() {
+                        match index {
+                            0 => next_path.get_from_mut(&mut value.0),
+                            1 => next_path.get_from_mut(&mut value.1),
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    }
+                })
+            }
             _ => Option::None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sbor::*;
+
+    #[test]
+    fn query_array() {
+        let value = BasicValue::Array {
+            element_value_kind: BasicValueKind::Array,
+            elements: vec![BasicValue::Array {
+                element_value_kind: BasicValueKind::U8,
+                elements: vec![BasicValue::U8 { value: 5 }],
+            }],
+        };
+        assert_eq!(
+            SborPath(vec![0]).get_from_value(&value),
+            Some(&BasicValue::Array {
+                element_value_kind: BasicValueKind::U8,
+                elements: vec![BasicValue::U8 { value: 5 }],
+            })
+        );
+        assert_eq!(
+            SborPath(vec![0, 0]).get_from_value(&value),
+            Some(&BasicValue::U8 { value: 5 })
+        );
+        assert_eq!(SborPath(vec![0, 0, 0]).get_from_value(&value), None);
+        assert_eq!(SborPath(vec![1]).get_from_value(&value), None);
+        assert_eq!(SborPath(vec![0, 1]).get_from_value(&value), None);
+        assert_eq!(SborPath(vec![0, 0, 1]).get_from_value(&value), None);
+    }
+
+    #[test]
+    fn query_map() {
+        let value = BasicValue::Map {
+            key_value_kind: BasicValueKind::U8,
+            value_value_kind: BasicValueKind::Array,
+            entries: vec![(
+                BasicValue::U8 { value: 3 },
+                BasicValue::Array {
+                    element_value_kind: BasicValueKind::U8,
+                    elements: vec![BasicValue::U8 { value: 5 }],
+                },
+            )],
+        };
+        assert_eq!(
+            SborPath(vec![0, 0]).get_from_value(&value),
+            Some(&BasicValue::U8 { value: 3 })
+        );
+        assert_eq!(
+            SborPath(vec![0, 1]).get_from_value(&value),
+            Some(&BasicValue::Array {
+                element_value_kind: BasicValueKind::U8,
+                elements: vec![BasicValue::U8 { value: 5 }],
+            })
+        );
+        assert_eq!(
+            SborPath(vec![0, 1, 0]).get_from_value(&value),
+            Some(&BasicValue::U8 { value: 5 })
+        );
+
+        assert_eq!(SborPath(vec![0]).get_from_value(&value), None);
+        assert_eq!(SborPath(vec![0, 2]).get_from_value(&value), None);
+        assert_eq!(SborPath(vec![0, 0, 0]).get_from_value(&value), None);
     }
 }

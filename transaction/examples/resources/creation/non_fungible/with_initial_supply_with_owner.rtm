@@ -9,26 +9,24 @@
 
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
     Enum("Number")
-    Array<Tuple>(
-        Tuple("name", "MyResource"),                                        # Resource Name
-        Tuple("description", "A very innovative and important resource")    # Resource Description
-    ) 
-    NonFungibleAddress("{owner_badge_resource_address}", {owner_badge_non_fungible_id})
+    Map<String, String>(
+        "name", "MyResource",                                        # Resource Name
+        "description", "A very innovative and important resource"    # Resource Description
+    )
+    NonFungibleAddress("${owner_badge_resource_address}", ${owner_badge_non_fungible_id})
     Some(
-        Array<Tuple>(
+        Map<NonFungibleId, Tuple>(
+            NonFungibleId(${non_fungible_id}), 
             Tuple(
-                NonFungibleId(1u64),
-                Tuple(
-                    Tuple("Hello World", Decimal("12")),        # The immutable part of the data
-                    Tuple(12u8, 19u128)                         # The mutable part of the data
-                )
+                Tuple("Hello World", Decimal("12")),        # The immutable part of the data    
+                Tuple(12u8, 19u128)                         # The mutable part of the data
             )
         )
     );
@@ -36,6 +34,6 @@ CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
 # Depositing the entirety of the initial supply of the newly created resource into our account 
 # component.
 CALL_METHOD
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");
