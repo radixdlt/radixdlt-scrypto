@@ -42,18 +42,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      # TODO: switch to tag (here and below) once this revision is available within some tag (latest tag v1.1.0 does not include it)
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
-    - uses: radixdlt/rust-cache@allow_registry_src_caching
-      with:
-        key: ${{ runner.os }}
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang -y
@@ -73,12 +61,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: sbor
@@ -99,12 +81,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: sbor-tests
@@ -125,12 +101,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: scrypto
@@ -154,12 +124,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: scrypto-tests
@@ -177,12 +141,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -214,12 +172,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -246,12 +198,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -272,12 +218,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -298,12 +238,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -324,12 +258,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: transaction
@@ -344,17 +272,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
-    - uses: radixdlt/rust-cache@allow_registry_src_caching
-      with:
-        key: ${{ runner.os }}
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -386,17 +303,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
-    - uses: radixdlt/rust-cache@allow_registry_src_caching
-      with:
-        key: ${{ runner.os }}
-        cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
-        workspaces: simulator
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
