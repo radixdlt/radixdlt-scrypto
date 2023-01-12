@@ -207,7 +207,7 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
             context,
             ValueKind::Enum,
             &EnumVariant {
-                discriminator,
+                discriminator: *discriminator,
                 fields,
             }
             .serializable(*context),
@@ -318,7 +318,7 @@ fn value_kind_to_string(value_kind: &ScryptoValueKind) -> String {
 }
 
 pub struct EnumVariant<'a> {
-    discriminator: &'a str,
+    discriminator: u8,
     fields: &'a [ScryptoValue],
 }
 
@@ -805,15 +805,15 @@ mod tests {
                     elements: vec![Value::U32 { value: 153 }, Value::U32 { value: 62 }],
                 },
                 Value::Enum {
-                    discriminator: "VariantUnit".to_string(),
+                    discriminator: 0,
                     fields: vec![],
                 },
                 Value::Enum {
-                    discriminator: "VariantSingleValue".to_string(),
+                    discriminator: 1,
                     fields: vec![Value::U32 { value: 153 }],
                 },
                 Value::Enum {
-                    discriminator: "VariantMultiValues".to_string(),
+                    discriminator: 2,
                     fields: vec![Value::U32 { value: 153 }, Value::Bool { value: true }],
                 },
                 Value::Map {
@@ -922,9 +922,9 @@ mod tests {
             "-5",
             { "hex": "3a92" },
             [153, 62],
-            { "variant": "VariantUnit", "fields": [] },
-            { "variant": "VariantSingleValue", "fields": [153] },
-            { "variant": "VariantMultiValues", "fields": [153, true] },
+            { "variant": "0", "fields": [] },
+            { "variant": "1", "fields": [153] },
+            { "variant": "2", "fields": [153, true] },
             [[153, 62]],
             [
                 account_package_address,

@@ -25,7 +25,7 @@ PUBLISH_PACKAGE
     Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d")
     Map<String, Tuple>()
     Map<String, String>()
-    Tuple(Map<Enum, Enum>(Enum("Native", Enum("Package", Enum("SetRoyaltyConfig"))), Enum("AccessRule", Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64)))))), Enum("Native", Enum("Package", Enum("ClaimRoyalty"))), Enum("AccessRule", Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64)))))), Enum("Native", Enum("Metadata", Enum("Set"))), Enum("AccessRule", Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64)))))), Enum("Native", Enum("Metadata", Enum("Get"))), Enum("AccessRule", Enum("AllowAll"))), Map<String, Enum>(), Enum("DenyAll"), Map<Enum, Enum>(Enum("Native", Enum("Package", Enum("SetRoyaltyConfig"))), Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64))))), Enum("Native", Enum("Package", Enum("ClaimRoyalty"))), Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64))))), Enum("Native", Enum("Metadata", Enum("Set"))), Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64))))), Enum("Native", Enum("Metadata", Enum("Get"))), Enum("Protected", Enum("ProofRule", Enum("Require", Enum("StaticNonFungible", NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64)))))), Map<String, Enum>(), Enum("DenyAll"));
+    Tuple(Map<Enum, Enum>(Enum(1u8, Enum(2u8, Enum(1u8))), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64)))))), Enum(1u8, Enum(2u8, Enum(2u8))), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64)))))), Enum(1u8, Enum(3u8, Enum(0u8))), Enum(0u8, Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64)))))), Enum(1u8, Enum(3u8, Enum(1u8))), Enum(0u8, Enum(0u8))), Map<String, Enum>(), Enum(1u8), Map<Enum, Enum>(Enum(1u8, Enum(2u8, Enum(1u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64))))), Enum(1u8, Enum(2u8, Enum(2u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64))))), Enum(1u8, Enum(3u8, Enum(0u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64))))), Enum(1u8, Enum(3u8, Enum(1u8))), Enum(2u8, Enum(0u8, Enum(0u8, Enum(0u8, NonFungibleAddress("resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v", 1u64)))))), Map<String, Enum>(), Enum(1u8));
 "#,
         );
     }
@@ -152,7 +152,7 @@ CALL_METHOD
     }
 
     #[test]
-    fn test_invocation_values() {
+    fn test_values() {
         compile_and_decompile_with_inversion_test(
             include_str!("../../examples/call/values.rtm"),
             &NetworkDefinition::simulator(),
@@ -174,14 +174,18 @@ CALL_METHOD
 CALL_METHOD
     ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
     "with_aliases"
-    None
-    None
-    Some("hello")
-    Some("hello")
-    Ok("test")
-    Ok("test")
-    Err("test123")
-    Err("test123")
+    Enum(0u8)
+    Enum(0u8)
+    Enum(1u8, "hello")
+    Enum(1u8, "hello")
+    Enum(0u8, "test")
+    Enum(0u8, "test")
+    Enum(1u8, "test123")
+    Enum(1u8, "test123")
+    Enum(0u8)
+    Enum(1u8, "a")
+    Enum(0u8, "b")
+    Enum(1u8, "c")
     Bytes("deadbeef")
     Bytes("050aff")
     NonFungibleAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag", "value")
@@ -271,8 +275,8 @@ SET_METADATA ResourceAddress("resource_sim1qq8cays25704xdyap2vhgmshkkfyr023uxdtk
             r#"
 SET_METHOD_ACCESS_RULE ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
     0u32
-    Enum("ScryptoMethod", "test")
-    Enum("AllowAll");
+    Enum(0u8, "test")
+    Enum(0u8);
 "#,
         );
     }
@@ -294,8 +298,8 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     18u8
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
-    Map<Enum, Tuple>(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll")), Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
-    Some(Decimal("12"));
+    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
+    Enum(1u8, Decimal("12"));
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -324,7 +328,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_OWNER
     18u8
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
     NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u64)
-    Some(Decimal("12"));
+    Enum(1u8, Decimal("12"));
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -350,8 +354,8 @@ CALL_METHOD
 CREATE_FUNGIBLE_RESOURCE
     18u8
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
-    Map<Enum, Tuple>(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll")), Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
-    None;
+    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
+    Enum(0u8);
 "#,
         );
     }
@@ -376,7 +380,7 @@ CREATE_FUNGIBLE_RESOURCE_WITH_OWNER
     18u8
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource", "symbol", "RSRC")
     NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u64)
-    None;
+    Enum(0u8);
 "#,
         );
     }
@@ -398,10 +402,10 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE
-    Enum("Number")
+    Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
-    Map<Enum, Tuple>(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll")), Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
-    Some(Map<NonFungibleId, Tuple>(NonFungibleId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
+    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
+    Enum(1u8, Map<NonFungibleId, Tuple>(NonFungibleId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -426,10 +430,10 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
-    Enum("Number")
+    Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
     NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u64)
-    Some(Map<NonFungibleId, Tuple>(NonFungibleId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
+    Enum(1u8, Map<NonFungibleId, Tuple>(NonFungibleId(12u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));
 CALL_METHOD
     ComponentAddress("account_sim1qwskd4q5jdywfw6f7jlwmcyp2xxq48uuwruc003x2kcskxh3na")
     "deposit_batch"
@@ -455,10 +459,10 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE
-    Enum("Number")
+    Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
-    Map<Enum, Tuple>(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll")), Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))
-    None;
+    Map<Enum, Tuple>(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)), Enum(5u8), Tuple(Enum(0u8), Enum(1u8)))
+    Enum(0u8);
 "#,
         );
     }
@@ -479,10 +483,10 @@ CALL_METHOD
     "lock_fee"
     Decimal("10");
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
-    Enum("Number")
+    Enum(1u8)
     Map<String, String>("description", "A very innovative and important resource", "name", "MyResource")
     NonFungibleAddress("resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx", 1u64)
-    None;
+    Enum(0u8);
 "#,
         );
     }

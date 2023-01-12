@@ -1,6 +1,5 @@
 use crate::rust::borrow::Cow;
 use crate::rust::collections::BTreeMap;
-use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::TypeHash;
 
@@ -47,7 +46,7 @@ impl TypeMetadata {
 
     pub fn named_with_variants(
         name: &'static str,
-        variant_naming: BTreeMap<String, TypeMetadata>,
+        variant_naming: BTreeMap<u8, TypeMetadata>,
     ) -> Self {
         Self {
             type_name: Cow::Borrowed(name),
@@ -61,5 +60,5 @@ pub enum ChildNames {
     #[default]
     None,
     FieldNames(Vec<Cow<'static, str>>),
-    VariantNames(BTreeMap<String, TypeMetadata>),
+    VariantNames(BTreeMap<u8, TypeMetadata>),
 }

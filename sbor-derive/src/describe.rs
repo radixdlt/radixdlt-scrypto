@@ -136,7 +136,11 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let variant_names: Vec<_> = variants.iter().map(|v| v.ident.to_string()).collect();
+            let n: u8 = variants
+                .len()
+                .try_into()
+                .expect("Too many variants in enum");
+            let variant_indices: Vec<u8> = (0..n).into_iter().collect();
             let mut all_field_types = Vec::new();
 
             let variant_type_data: Vec<_> = {
@@ -209,7 +213,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                         Some(::sbor::TypeData::named_enum(
                             stringify!(#ident),
                             ::sbor::rust::collections::btree_map::btreemap![
-                                #(#variant_names.to_owned() => #variant_type_data,)*
+                                #(#variant_indices => #variant_type_data,)*
                             ],
                         ))
                     }
@@ -357,15 +361,15 @@ mod tests {
                         Some(::sbor::TypeData::named_enum(
                             stringify!(Test),
                             ::sbor::rust::collections::btree_map::btreemap![
-                                "A".to_owned() => ::sbor::TypeData::named_unit("A"),
-                                "B".to_owned() => ::sbor::TypeData::named_tuple(
+                                0u8 => ::sbor::TypeData::named_unit("A"),
+                                1u8 => ::sbor::TypeData::named_tuple(
                                     "B",
                                     ::sbor::rust::vec![
                                         <T as ::sbor::Describe<C>>::TYPE_ID,
                                         <Vec<T2> as ::sbor::Describe<C>>::TYPE_ID,
                                     ],
                                 ),
-                                "C".to_owned() => ::sbor::TypeData::named_fields_tuple(
+                                2u8 => ::sbor::TypeData::named_fields_tuple(
                                     "C",
                                     ::sbor::rust::vec![
                                         ("x", <[u8; 5] as ::sbor::Describe<C>>::TYPE_ID),

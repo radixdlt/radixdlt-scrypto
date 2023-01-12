@@ -1,4 +1,5 @@
 use crate::manifest::ast::{Instruction, Type, Value};
+use crate::manifest::enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -8,7 +9,9 @@ pub enum ParserError {
     InvalidNumberOfValues { actual: usize, expected: usize },
     InvalidNumberOfTypes { actual: usize, expected: usize },
     InvalidHex(String),
-    MissingEnumName,
+    MissingEnumDiscriminator,
+    InvalidEnumDiscriminator,
+    UnknownEnumDiscriminator(String),
 }
 
 pub struct Parser {
@@ -319,16 +322,19 @@ impl Parser {
 
     pub fn parse_enum(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Enum);
-        let mut name_and_fields =
+        let mut discriminator_and_fields =
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        let name = match name_and_fields.get(0) {
-            Some(Value::String(name)) => name.clone(),
-            _ => {
-                return Err(ParserError::MissingEnumName);
-            }
-        };
-        name_and_fields.remove(0);
-        Ok(Value::Enum(name, name_and_fields))
+        let discriminator = match discriminator_and_fields.get(0) {
+            Some(Value::U8(discriminator)) => Ok(*discriminator),
+            Some(Value::String(discriminator)) => KNOWN_ENUM_DISCRIMINATORS
+                .get(discriminator.as_str())
+                .cloned()
+                .ok_or(ParserError::UnknownEnumDiscriminator(discriminator.clone())),
+            Some(_) => Err(ParserError::InvalidEnumDiscriminator),
+            None => Err(ParserError::MissingEnumDiscriminator),
+        }?;
+        discriminator_and_fields.remove(0);
+        Ok(Value::Enum(discriminator, discriminator_and_fields))
     }
 
     pub fn parse_array(&mut self) -> Result<Value, ParserError> {
@@ -593,16 +599,10 @@ mod tests {
     #[test]
     fn test_enum() {
         parse_value_ok!(
-            r#"Enum("Variant", "Hello", 123u8)"#,
-            Value::Enum(
-                "Variant".to_string(),
-                vec![Value::String("Hello".into()), Value::U8(123)],
-            )
+            r#"Enum(0u8, "Hello", 123u8)"#,
+            Value::Enum(0, vec![Value::String("Hello".into()), Value::U8(123)],)
         );
-        parse_value_ok!(
-            r#"Enum("Variant")"#,
-            Value::Enum("Variant".to_string(), Vec::new())
-        );
+        parse_value_ok!(r#"Enum(0u8)"#, Value::Enum(0, Vec::new()));
     }
 
     #[test]
