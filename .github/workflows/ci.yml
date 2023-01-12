@@ -36,7 +36,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -50,7 +50,7 @@ jobs:
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang -y
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'k8s-linux-runner'
     - name: Install Scrypto toolchain
       run: cargo install --path ./simulator
     - name: Check format
@@ -60,7 +60,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -80,7 +80,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -100,7 +100,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -123,7 +123,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -140,7 +140,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -149,7 +149,7 @@ jobs:
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
@@ -171,7 +171,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -180,7 +180,7 @@ jobs:
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -197,7 +197,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -206,7 +206,7 @@ jobs:
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -217,7 +217,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -226,7 +226,7 @@ jobs:
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -237,7 +237,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -246,7 +246,7 @@ jobs:
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run bench
@@ -257,7 +257,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -271,7 +271,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [k8s-linux-runner, windows-latest-16-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -285,7 +285,7 @@ jobs:
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
@@ -305,7 +305,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [k8s-linux-runner, windows-latest-16-cores]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -319,7 +319,7 @@ jobs:
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'k8s-linux-runner'
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
