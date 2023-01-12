@@ -15,7 +15,7 @@ CALL_METHOD
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE
-    Enum("Number")
+    Enum("NonFungibleIdKind::Number")
     Map<String, String>(
         "name", "MyResource",                                        # Resource Name
         "description", "A very innovative and important resource"    # Resource Description
@@ -34,10 +34,10 @@ CREATE_NON_FUNGIBLE_RESOURCE
         #       b. The mutability of the behaviour. As in, who can change the current behavior in 
         #          the future.
         # 
-        # Lets take `Tuple(Enum(4u8), Tuple(Enum(0u8), Enum(1u8)))` as an 
+        # Lets take `Tuple(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")))` as an 
         # example. This means that anybody who is in possession of the resource may withdraw it from
         # a vault that they control. This behavior is permanent and can not be changed by anybody
-        # as the mutability is a `Enum(1u8)`.
+        # as the mutability is a `Enum("AccessRule::DenyAll")`.
         # 
         #        ┌ We Are customizing the "Withdraw" behavior of the resource
         #        │                       
@@ -47,7 +47,7 @@ CREATE_NON_FUNGIBLE_RESOURCE
         #        │                       │                 │ by anybody who has the resource) is permanent and can't 
         #        │                       │                 │ be changed in the future.
         #        │                       │                 │
-        Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll")),
-        Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll"))
+        Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")),
+        Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))
     )
     None;

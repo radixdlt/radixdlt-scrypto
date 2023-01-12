@@ -1,28 +1,6 @@
 use crate::manifest::ast::{Instruction, Type, Value};
+use crate::manifest::enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::lexer::{Token, TokenKind};
-
-use lazy_static::lazy_static;
-use std::collections::HashMap;
-
-macro_rules! known_enum {
-    ($map: expr, $name:ident { $($variant:ident = $id:expr),* }) => {
-        $(
-            $map.insert(concat!(stringify!($name), "::", stringify!($variant)), $id);
-        )*
-    };
-}
-
-lazy_static! {
-    static ref KNOWN_ENUM_DISCRIMINATORS: HashMap<&'static str, u8> = {
-        let mut m = HashMap::new();
-        known_enum!(m, AccessRule {
-            AllowAll = 0,
-            DenyAll = 1,
-            Protected = 2
-        });
-        m
-    };
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParserError {
