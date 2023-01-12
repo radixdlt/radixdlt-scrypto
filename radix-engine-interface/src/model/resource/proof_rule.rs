@@ -184,7 +184,7 @@ impl LegacyDescribe for AccessRuleNode {
             name: "AccessRuleNode".to_owned(),
             variants: vec![
                 Variant {
-                    name: "AccessRuleNode::ProofRule".to_string(),
+                    name: "ProofRule".to_string(),
                     fields: Fields::Unnamed {
                         unnamed: vec![Type::Any],
                     },
