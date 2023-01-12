@@ -42,16 +42,10 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      # TODO: switch to tag (here and below) once this revision is available within some tag (latest tag v1.1.0 does not include it)
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
-        key: ${{ runner.os }}
+        prefix-key: ""
+        shared-key: simulator-release-${{ runner.os }}
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
     - run: |
@@ -67,18 +61,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: sbor
@@ -93,18 +81,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: sbor-tests
@@ -119,18 +101,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: scrypto
@@ -148,18 +124,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: scrypto-tests
@@ -171,18 +141,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -214,12 +178,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -246,12 +204,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -262,7 +214,7 @@ jobs:
       run: cargo test --no-default-features --features alloc
       working-directory: radix-engine
   radix-engine-wasmer:
-    name: Run Radix Engine tests with Wasmer
+    name: Run Radix Engine tests (wasmer)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -272,12 +224,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -298,12 +244,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - run: |
         sudo apt-get update -qq
         sudo apt-get install clang cmake m4 -y
@@ -318,23 +258,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [k8s-linux-runner, windows-latest-16-cores]
+        os: [k8s-linux-runner]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - name: Run tests
       run: cargo test
       working-directory: transaction
-  simulator:
-    name: Run CLI tests
+  cli-resim-rtmc:
+    name: Run CLI tests (resim & rtmc)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -344,15 +278,10 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
-        key: ${{ runner.os }}
+        prefix-key: ""
+        shared-key: simulator-debug-${{ runner.os }}
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
     - run: |
@@ -373,10 +302,8 @@ jobs:
     - name: Run tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
-
-  # CLI tests splitted into 2 parts to reduce the CI time.
-  simulator2:
-    name: Run CLI tests - part 2
+  cli-scrypto:
+    name: Run CLI tests (scrypto)
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -386,15 +313,10 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - name: Setup Sccache for Rust compilation
-      uses: metalbear-co/sccache-action@17192d82c6c41cc16d4e06b7681ab1b452690206
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        cache-from: sccache-${{ runner.os }}-
-        cache-to: sccache-${{ runner.os }}-${{ github.sha }}
     - uses: radixdlt/rust-cache@allow_registry_src_caching
       with:
-        key: ${{ runner.os }}
+        prefix-key: ""
+        shared-key: simulator-debug-${{ runner.os }}
         cache-directories: ~/.cargo/registry/src/**/librocksdb-sys-*
         workspaces: simulator
     - run: |
