@@ -12,43 +12,43 @@
 # that you are using is resim then you can safely ignore this warning.
 # ==================================================================================================
 CALL_METHOD 
-    ComponentAddress("{this_account_component_address}") 
+    ComponentAddress("${this_account_component_address}") 
     "lock_fee"
     Decimal("10");
 
 # Withdrawing 330 XRD from the account component
 CALL_METHOD 
-    ComponentAddress("{this_account_component_address}") 
+    ComponentAddress("${this_account_component_address}") 
     "withdraw_by_amount"
     Decimal("330")
-    ResourceAddress("{xrd_resource_address}");
+    ResourceAddress("${xrd_resource_address}");
 
 # Taking 150 XRD from the worktop and depositing them into Account A
 TAKE_FROM_WORKTOP_BY_AMOUNT
     Decimal("150")
-    ResourceAddress("{xrd_resource_address}")
+    ResourceAddress("${xrd_resource_address}")
     Bucket("account_a_bucket");
 CALL_METHOD
-    ComponentAddress("{account_a_component_address}")
+    ComponentAddress("${account_a_component_address}")
     "deposit"
     Bucket("account_a_bucket");
 
 # Taking 130 XRD from the worktop and depositing them into Account B
 TAKE_FROM_WORKTOP_BY_AMOUNT
     Decimal("130")
-    ResourceAddress("{xrd_resource_address}")
+    ResourceAddress("${xrd_resource_address}")
     Bucket("account_b_bucket");
 CALL_METHOD
-    ComponentAddress("{account_b_component_address}")
+    ComponentAddress("${account_b_component_address}")
     "deposit"
     Bucket("account_b_bucket");
 
 # Taking 50 XRD from the worktop and depositing them into Account C
 TAKE_FROM_WORKTOP_BY_AMOUNT
     Decimal("50")
-    ResourceAddress("{xrd_resource_address}")
+    ResourceAddress("${xrd_resource_address}")
     Bucket("account_c_bucket");
 CALL_METHOD
-    ComponentAddress("{account_c_component_address}")
+    ComponentAddress("${account_c_component_address}")
     "deposit"
     Bucket("account_c_bucket");

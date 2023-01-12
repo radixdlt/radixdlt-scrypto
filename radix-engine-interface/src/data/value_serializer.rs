@@ -1,11 +1,11 @@
+use super::types::ManifestExpression;
 use crate::api::types::*;
 use crate::data::*;
 use sbor::rust::format;
+use sbor::rust::vec;
 use serde::ser::*;
 use serde::*;
 use utils::{ContextSerializable, ContextualDisplay, ContextualSerialize};
-
-use super::types::ManifestExpression;
 
 // TODO - Add a deserializer for invertible JSON, and tests that the process is invertible
 // TODO - Rewrite value formatter as a serializer/deserializer variant?
@@ -89,13 +89,6 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
 ) -> Result<S::Ok, S::Error> {
     match value {
         // primitive types
-        Value::Unit => serialize_value(
-            ValueEncoding::NoType,
-            serializer,
-            context,
-            ValueKind::Unit,
-            &(),
-        ),
         Value::Bool { value } => serialize_value(
             ValueEncoding::NoType,
             serializer,
@@ -234,6 +227,19 @@ pub fn serialize_schemaless_scrypto_value<S: Serializer>(
             }
             .serializable(*context),
         ),
+        Value::Map {
+            key_value_kind,
+            value_value_kind,
+            entries,
+        } => serialize_value_with_kv_types(
+            ValueEncoding::NoType,
+            serializer,
+            context,
+            ValueKind::Map,
+            *key_value_kind,
+            *value_value_kind,
+            &MapValue { entries }.serializable(*context),
+        ),
         Value::Custom { value } => serialize_custom_value(serializer, value, context),
     }
 }
@@ -262,6 +268,28 @@ impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for ArrayVal
         } else {
             serialize_schemaless_scrypto_value_slice(serializer, self.elements, context)
         }
+    }
+}
+
+pub struct MapValue<'a> {
+    entries: &'a [(ScryptoValue, ScryptoValue)],
+}
+
+impl<'a, 'b> ContextualSerialize<ScryptoValueFormattingContext<'a>> for MapValue<'b> {
+    fn contextual_serialize<S: Serializer>(
+        &self,
+        serializer: S,
+        context: &ScryptoValueFormattingContext<'a>,
+    ) -> Result<S::Ok, S::Error> {
+        // Serialize map into JSON array instead of JSON map because SBOR map is a superset of JSON map.
+        let mut tuple = serializer.serialize_tuple(self.entries.len())?;
+        for entry in self.entries {
+            let t = ScryptoValue::Tuple {
+                fields: vec![entry.0.clone(), entry.1.clone()],
+            };
+            tuple.serialize_element(&t.serializable(*context))?;
+        }
+        tuple.end()
     }
 }
 
@@ -548,14 +576,7 @@ impl<'a> ContextualSerialize<ScryptoValueFormattingContext<'a>> for NonFungibleI
                 ValueKind::String,
                 value,
             ),
-            NonFungibleId::U32(value) => serialize_value(
-                ValueEncoding::NoType,
-                serializer,
-                context,
-                ValueKind::U32,
-                value,
-            ),
-            NonFungibleId::U64(value) => serialize_value(
+            NonFungibleId::Number(value) => serialize_value(
                 ValueEncoding::NoType,
                 serializer,
                 context,
@@ -634,6 +655,36 @@ fn serialize_value_with_element_type<
         map.serialize_entry(
             "element_type",
             &value_kind_to_string(&element_value_kind.into()),
+        )?;
+        map.serialize_entry("value", value)?;
+        map.end()
+    }
+}
+
+fn serialize_value_with_kv_types<
+    S: Serializer,
+    T: Serialize + ?Sized,
+    K: Into<ScryptoValueKind>,
+>(
+    value_encoding_type: ValueEncoding,
+    serializer: S,
+    context: &ScryptoValueFormattingContext,
+    value_kind: K,
+    key_value_kind: K,
+    value_value_kind: K,
+    value: &T,
+) -> Result<S::Ok, S::Error> {
+    if context.serialization_type == ScryptoValueSerializationType::Simple
+        && value_encoding_type == ValueEncoding::NoType
+    {
+        value.serialize(serializer)
+    } else {
+        let mut map = serializer.serialize_map(Some(2))?;
+        map.serialize_entry("type", &value_kind_to_string(&value_kind.into()))?;
+        map.serialize_entry("key_type", &value_kind_to_string(&key_value_kind.into()))?;
+        map.serialize_entry(
+            "value_type",
+            &value_kind_to_string(&value_value_kind.into()),
         )?;
         map.serialize_entry("value", value)?;
         map.end()
@@ -732,7 +783,6 @@ mod tests {
 
         let value = ScryptoValue::Tuple {
             fields: vec![
-                Value::Unit,
                 Value::Bool { value: true },
                 Value::U8 { value: 5 },
                 Value::U16 { value: 5 },
@@ -765,6 +815,11 @@ mod tests {
                 Value::Enum {
                     discriminator: 2,
                     fields: vec![Value::U32 { value: 153 }, Value::Bool { value: true }],
+                },
+                Value::Map {
+                    key_value_kind: ValueKind::U32,
+                    value_value_kind: ValueKind::U32,
+                    entries: vec![(Value::U32 { value: 153 }, Value::U32 { value: 62 })],
                 },
                 Value::Tuple {
                     fields: vec![
@@ -838,10 +893,7 @@ mod tests {
                             )),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::U32(123)),
-                        },
-                        Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::U64(123)),
+                            value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Number(123)),
                         },
                         Value::Custom {
                             value: ScryptoCustomValue::NonFungibleId(NonFungibleId::Bytes(vec![
@@ -857,7 +909,6 @@ mod tests {
         };
 
         let expected_simple = json!([
-            null,
             true,
             5,
             5,
@@ -874,6 +925,7 @@ mod tests {
             { "variant": "0", "fields": [] },
             { "variant": "1", "fields": [153] },
             { "variant": "2", "fields": [153, true] },
+            [[153, 62]],
             [
                 account_package_address,
                 faucet_address,
@@ -894,7 +946,6 @@ mod tests {
                 "0.01",
                 "0",
                 { "type": "NonFungibleId", "value": "hello" },
-                { "type": "NonFungibleId", "value": 123 },
                 { "type": "NonFungibleId", "value": "123" },
                 { "type": "NonFungibleId", "value": { "hex": "2345" } },
                 { "type": "NonFungibleId", "value": "371" },
@@ -904,7 +955,6 @@ mod tests {
         let expected_invertible = json!({
             "type": "Tuple",
             "value": [
-                { "type": "Unit", "value": null },
                 { "type": "Bool", "value": true },
                 { "type": "U8", "value": 5 },
                 { "type": "U16", "value": 5 },
@@ -928,6 +978,7 @@ mod tests {
                 { "type": "Enum", "value": { "variant": "VariantUnit", "fields": [] } },
                 { "type": "Enum", "value": { "variant": "VariantSingleValue", "fields": [{ "type": "U32", "value": 153 }] } },
                 { "type": "Enum", "value": { "variant": "VariantMultiValues", "fields": [{ "type": "U32", "value": 153 }, { "type": "Bool", "value": true }] } },
+                { "type": "Map", "key_type": "U32", "value_type": "U32", "value": [{"type":"Tuple","value":[{"type":"U32","value":153},{"type":"U32","value":62}]}] },
                 {
                     "type": "Tuple",
                     "value": [
@@ -950,7 +1001,6 @@ mod tests {
                         { "type": "Decimal", "value": "0.01" },
                         { "type": "PreciseDecimal", "value": "0" },
                         { "type": "NonFungibleId", "value": { "type": "String", "value": "hello" } },
-                        { "type": "NonFungibleId", "value": { "type": "U32", "value": 123 } },
                         { "type": "NonFungibleId", "value": { "type": "U64", "value": "123" } },
                         { "type": "NonFungibleId", "value": { "type": "Array", "element_type": "U8", "value": { "hex": "2345" } } },
                         { "type": "NonFungibleId", "value": { "type": "U128", "value": "371" } },

@@ -2,6 +2,8 @@ use crate::constants::*;
 use crate::value_kind::*;
 use crate::*;
 
+categorize_generic!(Result<T, E>, <T, E>, ValueKind::Enum);
+
 impl<X: CustomValueKind, Enc: Encoder<X>, T: Encode<X, Enc>, E: Encode<X, Enc>> Encode<X, Enc>
     for Result<T, E>
 {

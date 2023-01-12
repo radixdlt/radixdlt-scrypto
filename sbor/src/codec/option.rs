@@ -2,6 +2,8 @@ use crate::constants::*;
 use crate::value_kind::*;
 use crate::*;
 
+categorize_generic!(Option<T>, <T>, ValueKind::Enum);
+
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E>> Encode<X, E> for Option<T> {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {

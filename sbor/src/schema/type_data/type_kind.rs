@@ -10,7 +10,6 @@ pub enum TypeKind<X: CustomValueKind, C: CustomTypeKind<L, CustomValueKind = X>,
     Any,
 
     // Simple Types
-    Unit,
     Bool,
     I8,
     I16,
@@ -30,6 +29,8 @@ pub enum TypeKind<X: CustomValueKind, C: CustomTypeKind<L, CustomValueKind = X>,
     Tuple { field_types: Vec<L> },
 
     Enum { variants: BTreeMap<u8, Vec<L>> },
+
+    Map { key_type: L, value_type: L },
 
     // Custom Types
     Custom(C),

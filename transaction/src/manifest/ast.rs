@@ -160,6 +160,11 @@ pub enum Instruction {
         entries: Value,
     },
 
+    MintUuidNonFungible {
+        resource_address: Value,
+        entries: Value,
+    },
+
     CreateFungibleResource {
         divisibility: Value,
         metadata: Value,
@@ -200,7 +205,6 @@ pub enum Instruction {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Type {
     /* Rust types */
-    Unit,
     Bool,
     I8,
     I16,
@@ -258,7 +262,6 @@ pub enum Type {
 impl Type {
     pub fn type_id(&self) -> ScryptoValueKind {
         match self {
-            Type::Unit => ScryptoValueKind::Unit,
             Type::Bool => ScryptoValueKind::Bool,
             Type::I8 => ScryptoValueKind::I8,
             Type::I16 => ScryptoValueKind::I16,
@@ -326,7 +329,6 @@ pub enum Value {
     // ==============
     // Basic Types
     // ==============
-    Unit,
     Bool(bool),
     I8(i8),
     I16(i16),
@@ -343,6 +345,7 @@ pub enum Value {
     Enum(u8, Vec<Value>),
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
+    Map(Type, Type, Vec<Value>),
 
     // ==============
     // Aliases
@@ -388,7 +391,6 @@ impl Value {
             // ==============
             // Basic Types
             // ==============
-            Value::Unit => ScryptoValueKind::Unit,
             Value::Bool(_) => ScryptoValueKind::Bool,
             Value::I8(_) => ScryptoValueKind::I8,
             Value::I16(_) => ScryptoValueKind::I16,
@@ -404,6 +406,7 @@ impl Value {
             Value::Enum(_, _) => ScryptoValueKind::Enum,
             Value::Array(_, _) => ScryptoValueKind::Array,
             Value::Tuple(_) => ScryptoValueKind::Tuple,
+            Value::Map(_, _, _) => ScryptoValueKind::Map,
 
             // ==============
             // Aliases

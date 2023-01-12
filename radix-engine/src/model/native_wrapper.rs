@@ -223,6 +223,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             ResourceInvocation::CreateFungibleWithInitialSupply(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -252,6 +256,10 @@ where
                 Ok(Box::new(rtn))
             }
             ResourceInvocation::MintNonFungible(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ResourceInvocation::MintUuidNonFungible(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

@@ -80,7 +80,7 @@ impl Executor for AccessRulesAddAccessCheckInvocation {
                     blueprint_name, package_id
                 )
             });
-            for (key, _) in self.access_rules.iter() {
+            for (key, _) in self.access_rules.get_all_method_auth() {
                 if let AccessRuleKey::ScryptoMethod(func_name) = key {
                     if !blueprint_abi.contains_fn(func_name.as_str()) {
                         return Err(RuntimeError::ApplicationError(

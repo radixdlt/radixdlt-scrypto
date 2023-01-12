@@ -67,7 +67,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -93,7 +93,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -119,7 +119,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -148,7 +148,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -171,7 +171,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -318,7 +318,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [linux, windows-latest]
+        os: [linux]
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
@@ -333,8 +333,8 @@ jobs:
     - name: Run tests
       run: cargo test
       working-directory: transaction
-  simulator:
-    name: Run CLI tests
+  cli-resim-rtmc:
+    name: Run CLI tests - resim & rtmc
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -367,16 +367,17 @@ jobs:
     - name: Install dependencies
       if: runner.os == 'Windows'
       run: choco install llvm -y
-    - name: Run tests
+    - name: Run unit tests
+      run: cargo test
+      working-directory: simulator
+    - name: Run resim tests
       run: bash ./tests/resim.sh
       working-directory: simulator
-    - name: Run tests
+    - name: Run rtmc tests
       run: bash ./tests/manifest.sh
       working-directory: simulator
-
-  # CLI tests splitted into 2 parts to reduce the CI time.
-  simulator2:
-    name: Run CLI tests - part 2
+  cli-scrypto:
+    name: Run CLI tests - scrypto
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -409,6 +410,6 @@ jobs:
     - name: Install dependencies
       if: runner.os == 'Windows'
       run: choco install llvm -y
-    - name: Run tests
+    - name: Run scrypto tests
       run: bash ./tests/scrypto.sh
       working-directory: simulator

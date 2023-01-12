@@ -85,7 +85,6 @@ pub fn format_scrypto_value<F: fmt::Write>(
 ) -> fmt::Result {
     match value {
         // primitive types
-        Value::Unit => write!(f, "()")?,
         Value::Bool { value } => write!(f, "{}", value)?,
         Value::I8 { value } => write!(f, "{}i8", value)?,
         Value::I16 { value } => write!(f, "{}i16", value)?,
@@ -113,10 +112,7 @@ pub fn format_scrypto_value<F: fmt::Write>(
                     write!(f, "{}", address.display(context.bech32_encoder))?;
                     f.write_str("\", ")?;
                     match id {
-                        NonFungibleId::U32(v) => {
-                            write!(f, "{}u32", v)?;
-                        }
-                        NonFungibleId::U64(v) => {
+                        NonFungibleId::Number(v) => {
                             write!(f, "{}u64", v)?;
                         }
                         NonFungibleId::UUID(v) => {
@@ -175,6 +171,19 @@ pub fn format_scrypto_value<F: fmt::Write>(
                 f.write_str(")")?;
             }
         },
+        Value::Map {
+            key_value_kind,
+            value_value_kind,
+            entries,
+        } => {
+            f.write_str("Map<")?;
+            format_value_kind(f, key_value_kind)?;
+            f.write_str(", ")?;
+            format_value_kind(f, value_value_kind)?;
+            f.write_str(">(")?;
+            format_kv_entries(f, entries, context)?;
+            f.write_str(")")?;
+        }
         // custom types
         Value::Custom { value } => {
             format_custom_value(f, value, context)?;
@@ -198,7 +207,6 @@ pub fn format_tuple<F: fmt::Write>(
 
 pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind) -> fmt::Result {
     match value_kind {
-        ValueKind::Unit => f.write_str("Unit"),
         ValueKind::Bool => f.write_str("Bool"),
         ValueKind::I8 => f.write_str("I8"),
         ValueKind::I16 => f.write_str("I16"),
@@ -214,6 +222,7 @@ pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind
         ValueKind::Enum => f.write_str("Enum"),
         ValueKind::Array => f.write_str("Array"),
         ValueKind::Tuple => f.write_str("Tuple"),
+        ValueKind::Map => f.write_str("Map"),
         ValueKind::Custom(value_kind) => match value_kind {
             ScryptoCustomValueKind::PackageAddress => f.write_str("PackageAddress"),
             ScryptoCustomValueKind::ComponentAddress => f.write_str("ComponentAddress"),
@@ -262,6 +271,22 @@ pub fn format_elements<F: fmt::Write>(
             f.write_str(", ")?;
         }
         format_scrypto_value(f, x, context)?;
+    }
+    Ok(())
+}
+
+pub fn format_kv_entries<F: fmt::Write>(
+    f: &mut F,
+    entries: &[(ScryptoValue, ScryptoValue)],
+    context: &ValueFormattingContext,
+) -> fmt::Result {
+    for (i, x) in entries.iter().enumerate() {
+        if i != 0 {
+            f.write_str(", ")?;
+        }
+        format_scrypto_value(f, &x.0, context)?;
+        f.write_str(", ")?;
+        format_scrypto_value(f, &x.1, context)?;
     }
     Ok(())
 }
@@ -382,8 +407,7 @@ pub fn format_non_fungible_id_contents<F: fmt::Write>(
     match value {
         NonFungibleId::Bytes(b) => write!(f, "Bytes(\"{}\")", hex::encode(b)),
         NonFungibleId::String(s) => write!(f, "\"{}\"", s),
-        NonFungibleId::U32(n) => write!(f, "{}u32", n),
-        NonFungibleId::U64(n) => write!(f, "{}u64", n),
+        NonFungibleId::Number(n) => write!(f, "{}u64", n),
         NonFungibleId::UUID(u) => write!(f, "{}u128", u),
     }
 }

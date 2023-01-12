@@ -17,7 +17,6 @@ use crate::value_kind::*;
 )]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value<X: CustomValueKind, Y> {
-    Unit,
     Bool {
         value: bool,
     },
@@ -65,6 +64,11 @@ pub enum Value<X: CustomValueKind, Y> {
     Tuple {
         fields: Vec<Value<X, Y>>,
     },
+    Map {
+        key_value_kind: ValueKind<X>,
+        value_value_kind: ValueKind<X>,
+        entries: Vec<(Value<X, Y>, Value<X, Y>)>,
+    },
     Custom {
         value: Y,
     },
@@ -74,7 +78,6 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
-            Value::Unit => encoder.write_value_kind(ValueKind::Unit),
             Value::Bool { .. } => encoder.write_value_kind(ValueKind::Bool),
             Value::I8 { .. } => encoder.write_value_kind(ValueKind::I8),
             Value::I16 { .. } => encoder.write_value_kind(ValueKind::I16),
@@ -90,6 +93,7 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
             Value::Enum { .. } => encoder.write_value_kind(ValueKind::Enum),
             Value::Array { .. } => encoder.write_value_kind(ValueKind::Array),
             Value::Tuple { .. } => encoder.write_value_kind(ValueKind::Tuple),
+            Value::Map { .. } => encoder.write_value_kind(ValueKind::Map),
             Value::Custom { value } => value.encode_value_kind(encoder),
         }
     }
@@ -97,9 +101,6 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
         match self {
-            Value::Unit => {
-                (()).encode_body(encoder)?;
-            }
             Value::Bool { value } => {
                 value.encode_body(encoder)?;
             }
@@ -162,6 +163,19 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
                     encoder.encode(field)?;
                 }
             }
+            Value::Map {
+                key_value_kind,
+                value_value_kind,
+                entries,
+            } => {
+                encoder.write_value_kind(*key_value_kind)?;
+                encoder.write_value_kind(*value_value_kind)?;
+                encoder.write_size(entries.len())?;
+                for entry in entries {
+                    encoder.encode_deeper_body(&entry.0)?;
+                    encoder.encode_deeper_body(&entry.1)?;
+                }
+            }
             // custom
             Value::Custom { value } => {
                 value.encode_body(encoder)?;
@@ -179,10 +193,6 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for Value<
     ) -> Result<Self, DecodeError> {
         match value_kind {
             // primitive types
-            ValueKind::Unit => {
-                <()>::decode_body_with_value_kind(decoder, value_kind)?;
-                Ok(Value::Unit)
-            }
             ValueKind::Bool => Ok(Value::Bool {
                 value: <bool>::decode_body_with_value_kind(decoder, value_kind)?,
             }),
@@ -251,6 +261,23 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for Value<
                     elements,
                 })
             }
+            ValueKind::Map => {
+                let key_value_kind = decoder.read_value_kind()?;
+                let value_value_kind = decoder.read_value_kind()?;
+                let length = decoder.read_size()?;
+                let mut entries = Vec::with_capacity(if length <= 1024 { length } else { 1024 });
+                for _ in 0..length {
+                    entries.push((
+                        decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
+                        decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
+                    ));
+                }
+                Ok(Value::Map {
+                    key_value_kind,
+                    value_value_kind,
+                    entries,
+                })
+            }
             ValueKind::Custom(_) => Ok(Value::Custom {
                 value: Y::decode_body_with_value_kind(decoder, value_kind)?,
             }),
@@ -267,7 +294,7 @@ mod schema {
     use crate::*;
 
     impl<X: CustomValueKind, Y, C: CustomTypeKind<GlobalTypeId>> Describe<C> for Value<X, Y> {
-        const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(well_known_basic_types::ANY_ID);
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::well_known(basic_well_known_types::ANY_ID);
     }
 }
 
@@ -278,8 +305,7 @@ pub fn traverse_any<X: CustomValueKind, Y, V: ValueVisitor<X, Y, Err = E>, E>(
 ) -> Result<(), E> {
     match value {
         // primitive types
-        Value::Unit
-        | Value::Bool { .. }
+        Value::Bool { .. }
         | Value::I8 { .. }
         | Value::I16 { .. }
         | Value::I32 { .. }
@@ -316,6 +342,26 @@ pub fn traverse_any<X: CustomValueKind, Y, V: ValueVisitor<X, Y, Err = E>, E>(
                 path.pop();
             }
         }
+        Value::Map {
+            key_value_kind,
+            value_value_kind,
+            entries,
+        } => {
+            visitor.visit_map(path, key_value_kind, value_value_kind, entries)?;
+            for (i, e) in entries.iter().enumerate() {
+                path.push(i);
+
+                path.push(0);
+                traverse_any(path, &e.0, visitor)?;
+                path.pop();
+
+                path.push(1);
+                traverse_any(path, &e.1, visitor)?;
+                path.pop();
+
+                path.pop();
+            }
+        }
         // custom types
         Value::Custom { value } => {
             visitor.visit(path, value)?;
@@ -333,6 +379,14 @@ pub trait ValueVisitor<X: CustomValueKind, Y> {
         path: &mut SborPathBuf,
         element_value_kind: &ValueKind<X>,
         elements: &[Value<X, Y>],
+    ) -> Result<(), Self::Err>;
+
+    fn visit_map(
+        &mut self,
+        path: &mut SborPathBuf,
+        key_value_kind: &ValueKind<X>,
+        value_value_kind: &ValueKind<X>,
+        entries: &[(Value<X, Y>, Value<X, Y>)],
     ) -> Result<(), Self::Err>;
 
     fn visit(&mut self, path: &mut SborPathBuf, value: &Y) -> Result<(), Self::Err>;
@@ -435,7 +489,7 @@ mod tests {
         assert_eq!(
             BasicValue::Tuple {
                 fields: vec![
-                    BasicValue::Unit,
+                    BasicValue::Tuple { fields: vec![] },
                     BasicValue::Bool { value: true },
                     BasicValue::I8 { value: 1 },
                     BasicValue::I16 { value: 2 },
@@ -496,23 +550,15 @@ mod tests {
                         element_value_kind: ValueKind::U32,
                         elements: vec![BasicValue::U32 { value: 2 }]
                     },
-                    BasicValue::Array {
-                        element_value_kind: ValueKind::Tuple,
-                        elements: vec![BasicValue::Tuple {
-                            fields: vec![
-                                BasicValue::U32 { value: 1 },
-                                BasicValue::U32 { value: 2 }
-                            ]
-                        }]
+                    BasicValue::Map {
+                        key_value_kind: ValueKind::U32,
+                        value_value_kind: ValueKind::U32,
+                        entries: vec![(BasicValue::U32 { value: 1 }, BasicValue::U32 { value: 2 })]
                     },
-                    BasicValue::Array {
-                        element_value_kind: ValueKind::Tuple,
-                        elements: vec![BasicValue::Tuple {
-                            fields: vec![
-                                BasicValue::U32 { value: 3 },
-                                BasicValue::U32 { value: 4 }
-                            ]
-                        }]
+                    BasicValue::Map {
+                        key_value_kind: ValueKind::U32,
+                        value_value_kind: ValueKind::U32,
+                        entries: vec![(BasicValue::U32 { value: 3 }, BasicValue::U32 { value: 4 })]
                     }
                 ]
             },

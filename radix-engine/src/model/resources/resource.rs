@@ -39,7 +39,7 @@ pub enum Resource {
         /// The total non-fungible ids.
         ids: BTreeSet<NonFungibleId>,
         /// NonFungible Id type
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
     },
 }
 
@@ -59,7 +59,7 @@ impl Resource {
     pub fn new_non_fungible(
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleId>,
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
     ) -> Self {
         Self::NonFungible {
             resource_address,
@@ -98,7 +98,7 @@ impl Resource {
         self.amount().is_zero()
     }
 
-    pub fn id_type(&self) -> NonFungibleIdType {
+    pub fn id_type(&self) -> NonFungibleIdTypeId {
         match self {
             Resource::Fungible { .. } => panic!("id_type() called on fungible resource"),
             Resource::NonFungible { id_type, .. } => id_type.clone(),
@@ -268,7 +268,7 @@ pub enum LockableResource {
         /// The liquid non-fungible ids.
         liquid_ids: BTreeSet<NonFungibleId>,
         /// The non-fungible ID type.
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
     },
 }
 
