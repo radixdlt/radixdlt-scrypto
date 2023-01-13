@@ -1,20 +1,15 @@
-use sbor::rust::string::String;
-use sbor::*;
-
 use crate::api::types::*;
 use crate::model::*;
-use crate::scrypto;
-use crate::Describe;
+use crate::*;
+use sbor::rust::string::String;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PackageIdentifier {
     Scrypto(PackageAddress),
     Native(NativePackage),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NativePackage {
     Auth,
     Component,
@@ -28,8 +23,7 @@ pub enum NativePackage {
     TransactionProcessor,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum FnIdentifier {
     Scrypto(ScryptoFnIdentifier),
     Native(NativeFn),
@@ -60,8 +54,7 @@ impl FnIdentifier {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ScryptoFnIdentifier {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
@@ -86,8 +79,20 @@ impl ScryptoFnIdentifier {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
 pub enum NativeFn {
     AccessRulesChain(AccessRulesChainFn),
     Component(ComponentFn), // TODO: investigate whether to make royalty universal and take any "receiver".
@@ -141,8 +146,11 @@ impl NativeFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum AccessRulesChainFn {
     AddAccessCheck,
@@ -167,8 +175,11 @@ pub enum AccessRulesChainFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum MetadataFn {
     Set,
@@ -189,8 +200,11 @@ pub enum MetadataFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ComponentFn {
     SetRoyaltyConfig,
@@ -213,8 +227,11 @@ pub enum ComponentFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum PackageFn {
     Publish,
@@ -236,8 +253,11 @@ pub enum PackageFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum EpochManagerFn {
     Create,
@@ -262,8 +282,11 @@ pub enum EpochManagerFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum AuthZoneStackFn {
     Pop,
@@ -290,8 +313,11 @@ pub enum AuthZoneStackFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ResourceManagerFn {
     CreateNonFungible,
@@ -329,8 +355,11 @@ pub enum ResourceManagerFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum BucketFn {
     Take,
@@ -356,8 +385,11 @@ pub enum BucketFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum VaultFn {
     Take,
@@ -388,8 +420,11 @@ pub enum VaultFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ProofFn {
     Clone,
@@ -412,8 +447,11 @@ pub enum ProofFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum WorktopFn {
     TakeAll,
@@ -440,8 +478,11 @@ pub enum WorktopFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum ClockFn {
     Create,
@@ -464,8 +505,11 @@ pub enum ClockFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum LoggerFn {
     Log,
@@ -485,8 +529,11 @@ pub enum LoggerFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionRuntimeFn {
     Get,
@@ -507,8 +554,11 @@ pub enum TransactionRuntimeFn {
     IntoStaticStr,
     AsRefStr,
     Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
 )]
-#[scrypto(Categorize, Encode, Decode, Describe)]
 #[strum(serialize_all = "snake_case")]
 pub enum TransactionProcessorFn {
     Run,

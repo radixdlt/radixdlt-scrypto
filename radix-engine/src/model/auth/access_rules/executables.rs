@@ -11,8 +11,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessRulesChainError {
     BlueprintFunctionNotFound(String),
     InvalidIndex(u32),

@@ -1,8 +1,19 @@
 use super::InstructionCostRules;
 use crate::types::*;
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum WasmMeteringConfig {
     V0,
 }

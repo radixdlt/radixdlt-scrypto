@@ -2,7 +2,6 @@ use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::model::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

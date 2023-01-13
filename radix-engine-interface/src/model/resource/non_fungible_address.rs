@@ -2,18 +2,18 @@ use crate::address::*;
 use crate::constants::*;
 use crate::crypto::*;
 use crate::model::*;
-use radix_engine_derive::scrypto;
+use radix_engine_derive::*;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto_abi::LegacyDescribe;
 use scrypto_abi::Type;
 use utils::ContextualDisplay;
 
-#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
 pub struct NonFungibleAddress(ResourceAddress, NonFungibleId);
 
 impl LegacyDescribe for NonFungibleAddress {

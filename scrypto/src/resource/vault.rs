@@ -13,7 +13,7 @@ use scrypto::scrypto_env_native_fn;
 use scrypto_abi::Type;
 
 use crate::resource::*;
-use crate::scrypto;
+use crate::*;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId); // scrypto stub
