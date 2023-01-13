@@ -8,7 +8,9 @@ pub struct EpochManagerSubstate {
     pub rounds_per_epoch: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
 pub struct Validator {
     pub address: SystemAddress,
     pub key: EcdsaSecp256k1PublicKey,
