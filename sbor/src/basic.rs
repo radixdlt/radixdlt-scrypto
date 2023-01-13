@@ -88,10 +88,8 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for NoCustomValue {
     }
 }
 
-#[cfg(feature = "schema")]
 pub use schema::*;
 
-#[cfg(feature = "schema")]
 mod schema {
     use super::*;
     use crate::rust::collections::IndexSet;

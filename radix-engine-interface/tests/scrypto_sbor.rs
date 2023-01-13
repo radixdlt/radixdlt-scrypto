@@ -1,7 +1,7 @@
 use radix_engine_interface::math::*;
 use radix_engine_interface::*;
 
-#[derive(NonFungibleData, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
+#[derive(ScryptoSbor, LegacyDescribe, NonFungibleData)]
 pub struct TestStruct {
     pub a: u32,
     #[legacy_skip]
@@ -10,9 +10,9 @@ pub struct TestStruct {
     pub c: Decimal,
 }
 
-#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
+#[derive(ScryptoSbor, LegacyDescribe)]
 pub enum TestEnum {
     A { named: String },
-    B(u32, u8, Decimal),
-    C,
+    B(u32, u8),
+    C(Decimal),
 }

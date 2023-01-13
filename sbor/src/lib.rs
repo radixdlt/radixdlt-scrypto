@@ -25,7 +25,7 @@ pub mod encoder;
 pub mod path;
 /// A facade of Rust types.
 pub mod rust;
-#[cfg(feature = "schema")]
+
 /// SBOR Schema
 pub mod schema;
 /// SBOR value model and any decoding/encoding.
@@ -42,16 +42,15 @@ pub use decoder::{DecodeError, Decoder, VecDecoder};
 pub use encode::Encode;
 pub use encoder::{EncodeError, Encoder, VecEncoder};
 pub use path::{SborPath, SborPathBuf};
-#[cfg(feature = "schema")]
+
 pub use schema::*;
 pub use value::*;
 pub use value_kind::*;
 
 // Re-export derives
 extern crate sbor_derive;
-pub use sbor_derive::{Categorize, Decode, Encode};
+pub use sbor_derive::{Categorize, Decode, Encode, Sbor};
 
-#[cfg(feature = "schema")]
 pub use sbor_derive::Describe;
 
 // This is to make derives work within this crate.

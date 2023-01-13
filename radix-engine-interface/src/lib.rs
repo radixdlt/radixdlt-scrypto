@@ -44,7 +44,7 @@ pub use sbor::{Categorize, Decode, Encode};
 extern crate radix_engine_derive;
 pub use radix_engine_derive::{
     LegacyDescribe, NonFungibleData, ScryptoCategorize, ScryptoDecode, ScryptoDescribe,
-    ScryptoEncode,
+    ScryptoEncode, ScryptoSbor,
 };
 
 // This is to make derives work within this crate.

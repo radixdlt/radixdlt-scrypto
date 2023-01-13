@@ -31,3 +31,12 @@ pub fn describe(input: TokenStream) -> TokenStream {
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }
+
+/// Derive code that implements `Categorize`, `Encode`, `Decode`, and `Describe` traits for this struct or enum.
+///
+#[proc_macro_derive(Sbor, attributes(sbor))]
+pub fn sbor(input: TokenStream) -> TokenStream {
+    sbor_derive_common::sbor::handle_sbor(proc_macro2::TokenStream::from(input), None, None)
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}

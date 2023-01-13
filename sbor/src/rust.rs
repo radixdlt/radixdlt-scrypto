@@ -105,7 +105,7 @@ pub mod collections {
                 temp
             });
             ( $($key:expr => $value:expr,)* ) => (
-                btreemap!{$($key => $value),*}
+                $crate::btreemap!{$($key => $value),*}
             );
         }
 
@@ -183,7 +183,6 @@ pub mod collections {
         pub use hashset;
     }
 
-    #[cfg(feature = "indexmap")]
     pub use indexmap;
 
     #[cfg(feature = "alloc")]
@@ -204,8 +203,6 @@ pub mod collections {
     #[cfg(not(feature = "alloc"))]
     pub use std::collections::HashSet;
 
-    #[cfg(feature = "indexmap")]
     pub use indexmap::IndexMap;
-    #[cfg(feature = "indexmap")]
     pub use indexmap::IndexSet;
 }

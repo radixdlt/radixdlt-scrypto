@@ -13,7 +13,7 @@ macro_rules! trace {
 
 pub fn handle_describe(
     input: TokenStream,
-    context_custom_value_kind: Option<&'static str>,
+    context_custom_type_kind: Option<&'static str>,
 ) -> Result<TokenStream> {
     trace!("handle_describe() starts");
 
@@ -26,8 +26,8 @@ pub fn handle_describe(
         generics,
         ..
     } = parse2(input)?;
-    let (impl_generics, ty_generics, where_clause, custom_type_schema_generic) =
-        build_describe_generics(&generics, &attrs, context_custom_value_kind)?;
+    let (impl_generics, ty_generics, where_clause, custom_type_kind_generic) =
+        build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
 
     let generic_type_idents = ty_generics
         .type_params()
@@ -51,7 +51,7 @@ pub fn handle_describe(
                     })
                     .collect();
                 quote! {
-                    impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                         const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
@@ -68,16 +68,16 @@ pub fn handle_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<C, ::sbor::GlobalTypeId>> {
+                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
                             Some(::sbor::TypeData::named_fields_tuple(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
-                                    #((#field_names, <#field_types as ::sbor::Describe<C>>::TYPE_ID),)*
+                                    #((#field_names, <#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                 ],
                             ))
                         }
 
-                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
+                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
                             #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                         }
                     }
@@ -90,7 +90,7 @@ pub fn handle_describe(
                 let unique_field_types: Vec<_> = get_unique_types(&field_types);
 
                 quote! {
-                    impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                         const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
@@ -107,16 +107,16 @@ pub fn handle_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<C, ::sbor::GlobalTypeId>> {
+                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
                             Some(::sbor::TypeData::named_tuple(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
-                                    #(<#field_types as ::sbor::Describe<C>>::TYPE_ID,)*
+                                    #(<#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                 ],
                             ))
                         }
 
-                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
+                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
                             #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                         }
                     }
@@ -124,14 +124,14 @@ pub fn handle_describe(
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                         const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
                             &[#(#generic_type_idents::TYPE_ID,)*],
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<C, ::sbor::GlobalTypeId>> {
+                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
                             Some(::sbor::TypeData::named_unit(stringify!(#ident)))
                         }
                     }
@@ -171,7 +171,7 @@ pub fn handle_describe(
                                     ::sbor::TypeData::named_fields_tuple(
                                         #variant_name,
                                         ::sbor::rust::vec![
-                                            #((#field_names, <#field_types as ::sbor::Describe<C>>::TYPE_ID),)*
+                                            #((#field_names, <#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                         ],
                                     )
                                 }
@@ -186,7 +186,7 @@ pub fn handle_describe(
                                     ::sbor::TypeData::named_tuple(
                                         #variant_name,
                                         ::sbor::rust::vec![
-                                            #(<#field_types as ::sbor::Describe<C>>::TYPE_ID,)*
+                                            #(<#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                         ],
                                     )
                                 }
@@ -204,14 +204,14 @@ pub fn handle_describe(
             let unique_field_types: Vec<_> = get_unique_types(&all_field_types);
 
             quote! {
-                impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(#ident),
                         &[#(#generic_type_idents::TYPE_ID,)*],
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData<C, ::sbor::GlobalTypeId>> {
+                    fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
                         use ::sbor::rust::borrow::ToOwned;
                         Some(::sbor::TypeData::named_enum(
                             stringify!(#ident),
@@ -221,7 +221,7 @@ pub fn handle_describe(
                         ))
                     }
 
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
+                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
                         #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                     }
                 }
