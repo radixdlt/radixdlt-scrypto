@@ -101,6 +101,7 @@ pub enum NativeFn {
     Package(PackageFn),
     Metadata(MetadataFn),
     EpochManager(EpochManagerFn),
+    Validator(ValidatorFn),
     AuthZoneStack(AuthZoneStackFn),
     ResourceManager(ResourceManagerFn),
     Bucket(BucketFn),
@@ -120,7 +121,7 @@ impl NativeFn {
             NativeFn::Component(..) => NativePackage::Component,
             NativeFn::Package(..) => NativePackage::Package,
             NativeFn::Metadata(..) => NativePackage::Metadata,
-            NativeFn::EpochManager(..) => NativePackage::EpochManager,
+            NativeFn::EpochManager(..) | NativeFn::Validator(..) => NativePackage::EpochManager,
             NativeFn::ResourceManager(..)
             | NativeFn::Bucket(..)
             | NativeFn::Vault(..)
@@ -266,8 +267,33 @@ pub enum EpochManagerFn {
     GetCurrentEpoch,
     NextRound,
     SetEpoch,
-    RegisterValidator,
-    UnregisterValidator,
+    CreateValidator,
+    UpdateValidator,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum ValidatorFn {
+    Register,
+    Unregister,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -283,55 +309,89 @@ impl EpochManagerPackage {
         receiver: ComponentAddress,
         method_name: &str,
         args: &[u8],
-    ) -> Result<EpochManagerInvocation, ResolveError> {
-        let epoch_manager_fn =
-            EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+    ) -> Result<NativeInvocation, ResolveError> {
+        let invocation = match receiver {
+            ComponentAddress::EpochManager(..) => {
+                let epoch_manager_fn =
+                    EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
 
-        let invocation = match epoch_manager_fn {
-            EpochManagerFn::Create => {
-                return Err(ResolveError::NotAMethod);
+                match epoch_manager_fn {
+                    EpochManagerFn::Create => {
+                        return Err(ResolveError::NotAMethod);
+                    }
+                    EpochManagerFn::GetCurrentEpoch => {
+                        let _args: EpochManagerGetCurrentEpochMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(
+                            EpochManagerGetCurrentEpochInvocation { receiver },
+                        ))
+                    }
+                    EpochManagerFn::NextRound => {
+                        let args: EpochManagerNextRoundMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(
+                            EpochManagerNextRoundInvocation {
+                                receiver,
+                                round: args.round,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::SetEpoch => {
+                        let args: EpochManagerSetEpochMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
+                            EpochManagerSetEpochInvocation {
+                                receiver,
+                                epoch: args.epoch,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::CreateValidator => {
+                        let args: EpochManagerCreateValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(
+                            EpochManagerCreateValidatorInvocation {
+                                receiver,
+                                key: args.validator,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::UpdateValidator => {
+                        let args: EpochManagerUpdateValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(
+                            EpochManagerUpdateValidatorInvocation {
+                                receiver,
+                                validator_address: args.validator_address,
+                                register: args.register,
+                                key: args.key,
+                            },
+                        ))
+                    }
+                }
             }
-            EpochManagerFn::GetCurrentEpoch => {
-                let _args: EpochManagerGetCurrentEpochMethodArgs =
-                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
-                    receiver,
-                })
+            ComponentAddress::Validator(..) => {
+                let validator_fn =
+                    ValidatorFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+                match validator_fn {
+                    ValidatorFn::Register => {
+                        let _args: ValidatorRegisterMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Register(
+                            ValidatorRegisterInvocation { receiver },
+                        ))
+                    }
+                    ValidatorFn::Unregister => {
+                        let _args: ValidatorUnregisterValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Unregister(
+                            ValidatorUnregisterInvocation { receiver },
+                        ))
+                    }
+                }
             }
-            EpochManagerFn::NextRound => {
-                let args: EpochManagerNextRoundMethodArgs =
-                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                EpochManagerInvocation::NextRound(EpochManagerNextRoundInvocation {
-                    receiver,
-                    round: args.round,
-                })
-            }
-            EpochManagerFn::SetEpoch => {
-                let args: EpochManagerSetEpochMethodArgs =
-                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                EpochManagerInvocation::SetEpoch(EpochManagerSetEpochInvocation {
-                    receiver,
-                    epoch: args.epoch,
-                })
-            }
-            EpochManagerFn::RegisterValidator => {
-                let args: EpochManagerRegisterValidatorMethodArgs =
-                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                EpochManagerInvocation::RegisterValidator(EpochManagerRegisterValidatorInvocation {
-                    receiver,
-                    validator: args.validator,
-                })
-            }
-            EpochManagerFn::UnregisterValidator => {
-                let args: EpochManagerUnregisterValidatorMethodArgs =
-                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
-                EpochManagerInvocation::UnregisterValidator(
-                    EpochManagerUnregisterValidatorInvocation {
-                        receiver,
-                        validator: args.validator,
-                    },
-                )
-            }
+            _ => return Err(ResolveError::NotAMethod),
         };
 
         Ok(invocation)

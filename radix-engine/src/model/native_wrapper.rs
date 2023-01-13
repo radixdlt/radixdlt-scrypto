@@ -11,7 +11,7 @@ pub fn resolve_method<Y: SystemApi>(
 ) -> Result<CallTableInvocation, RuntimeError> {
     let invocation = match receiver {
         ScryptoReceiver::Global(component_address) => match component_address {
-            ComponentAddress::EpochManager(..) => {
+            ComponentAddress::EpochManager(..) | ComponentAddress::Validator(..) => {
                 let invocation = EpochManagerPackage::resolve_method_invocation(
                     component_address,
                     method_name,
@@ -22,7 +22,7 @@ pub fn resolve_method<Y: SystemApi>(
                         TransactionProcessorError::ResolveError(e),
                     ))
                 })?;
-                CallTableInvocation::Native(NativeInvocation::EpochManager(invocation))
+                CallTableInvocation::Native(invocation)
             }
             ComponentAddress::Clock(..) => {
                 let invocation =
@@ -414,11 +414,21 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            EpochManagerInvocation::RegisterValidator(invocation) => {
+            EpochManagerInvocation::CreateValidator(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            EpochManagerInvocation::UnregisterValidator(invocation) => {
+            EpochManagerInvocation::UpdateValidator(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
+        NativeInvocation::Validator(invocation) => match invocation {
+            ValidatorInvocation::Register(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ValidatorInvocation::Unregister(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -441,7 +451,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Logger(logger_invocation) => match logger_invocation {
+        NativeInvocation::Logger(invocation) => match invocation {
             LoggerInvocation::Log(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

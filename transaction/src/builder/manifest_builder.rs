@@ -351,20 +351,29 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn register_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
+    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
             component_address: EPOCH_MANAGER,
-            method_name: "register_validator".to_string(),
-            args: args!(validator),
+            method_name: "create_validator".to_string(),
+            args: args!(key),
         });
         self
     }
 
-    pub fn unregister_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
+    pub fn register_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
         self.add_instruction(BasicInstruction::CallMethod {
-            component_address: EPOCH_MANAGER,
-            method_name: "unregister_validator".to_string(),
-            args: args!(validator),
+            component_address: validator_address,
+            method_name: "register".to_string(),
+            args: args!(),
+        });
+        self
+    }
+
+    pub fn unregister_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "unregister".to_string(),
+            args: args!(),
         });
         self
     }

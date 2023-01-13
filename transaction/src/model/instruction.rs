@@ -1,7 +1,6 @@
-use radix_engine_interface::api::types::{GlobalAddress, VaultId};
+use radix_engine_interface::api::types::*;
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
@@ -194,7 +193,6 @@ pub enum BasicInstruction {
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
-    /// Calls a function.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {

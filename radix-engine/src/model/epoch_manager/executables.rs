@@ -4,7 +4,8 @@ use crate::engine::{
 };
 use crate::model::{
     AccessRulesChainSubstate, EpochManagerSubstate, GlobalAddressSubstate, HardAuthRule,
-    HardProofRule, HardResourceOrNonFungible, MethodAuthorization, ValidatorSetSubstate,
+    HardProofRule, HardResourceOrNonFungible, MethodAuthorization, Validator, ValidatorSetSubstate,
+    ValidatorSubstate,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -52,21 +53,30 @@ impl Executor for EpochManagerCreateInvocation {
         Y: SystemApi + EngineApi<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
 
         let epoch_manager = EpochManagerSubstate {
+            address: global_node_id.into(),
             epoch: self.initial_epoch,
             round: 0,
             rounds_per_epoch: self.rounds_per_epoch,
         };
 
+        let mut validator_set = BTreeSet::new();
+
+        for key in self.validator_set {
+            let address = EpochManager::create_validator(global_node_id.into(), key, api)?;
+            validator_set.insert(Validator { address, key });
+        }
+
         let current_validator_set = ValidatorSetSubstate {
             epoch: self.initial_epoch,
-            validator_set: self.validator_set.clone(),
+            validator_set: validator_set.clone(),
         };
 
         let preparing_validator_set = ValidatorSetSubstate {
             epoch: self.initial_epoch + 1,
-            validator_set: self.validator_set,
+            validator_set,
         };
 
         let mut access_rules = AccessRules::new();
@@ -75,23 +85,24 @@ impl Executor for EpochManagerCreateInvocation {
             rule!(require(AuthAddresses::validator_role())),
         );
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch)),
-            rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
-        );
-        access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::GetCurrentEpoch)),
             rule!(allow_all),
         );
-
-        // Access Rule is checked manually in method
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::RegisterValidator)),
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::CreateValidator)),
             rule!(allow_all),
         );
-        // Access Rule is checked manually in method
+        let non_fungible_id = NonFungibleId::Bytes(
+            scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
+        );
+        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
         access_rules.set_method_access_rule(
-            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::UnregisterValidator)),
-            rule!(allow_all),
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator)),
+            rule!(require(non_fungible_address)),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::SetEpoch)),
+            rule!(require(AuthAddresses::system_role())), // Set epoch only used for debugging
         );
 
         api.create_node(
@@ -106,7 +117,6 @@ impl Executor for EpochManagerCreateInvocation {
             ),
         )?;
 
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
         api.create_node(
             global_node_id,
             RENode::Global(GlobalAddressSubstate::EpochManager(
@@ -299,70 +309,10 @@ impl Executor for EpochManagerSetEpochExecutable {
     }
 }
 
-pub struct EpochManagerRegisterValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
+pub struct EpochManagerCreateValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
 
-impl ExecutableInvocation for EpochManagerRegisterValidatorInvocation {
-    type Exec = EpochManagerRegisterValidatorExecutable;
-
-    fn resolve<D: ResolverApi>(
-        self,
-        deref: &mut D,
-    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
-    where
-        Self: Sized,
-    {
-        let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
-        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
-
-        let actor = ResolvedActor::method(
-            NativeFn::EpochManager(EpochManagerFn::RegisterValidator),
-            resolved_receiver,
-        );
-        let executor =
-            EpochManagerRegisterValidatorExecutable(resolved_receiver.receiver, self.validator);
-
-        Ok((actor, call_frame_update, executor))
-    }
-}
-
-impl Executor for EpochManagerRegisterValidatorExecutable {
-    type Output = ();
-
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi + InvokableModel<RuntimeError>,
-    {
-        // TODO: Figure out how to move this access check into more appropriate place
-        {
-            let node_ids = api.get_visible_node_ids()?;
-            let auth_zone_id = node_ids
-                .into_iter()
-                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
-                .expect("AuthZone does not exist");
-            let non_fungible_address = NonFungibleAddress::from_public_key(&self.1);
-            let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
-                SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address),
-            )));
-
-            api.invoke(AuthZoneAssertAccessRuleInvocation {
-                receiver: auth_zone_id.into(),
-                access_rule,
-            })?;
-        }
-
-        let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
-        let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = api.get_ref_mut(handle)?;
-        substate_mut.validator_set().validator_set.insert(self.1);
-        Ok(((), CallFrameUpdate::empty()))
-    }
-}
-
-pub struct EpochManagerUnregisterValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
-
-impl ExecutableInvocation for EpochManagerUnregisterValidatorInvocation {
-    type Exec = EpochManagerUnregisterValidatorExecutable;
+impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
+    type Exec = EpochManagerCreateValidatorExecutable;
 
     fn resolve<D: ResolverApi>(
         self,
@@ -376,55 +326,247 @@ impl ExecutableInvocation for EpochManagerUnregisterValidatorInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::EpochManager(EpochManagerFn::UnregisterValidator),
+            NativeFn::EpochManager(EpochManagerFn::CreateValidator),
             resolved_receiver,
         );
-        let executor =
-            EpochManagerUnregisterValidatorExecutable(resolved_receiver.receiver, self.validator);
+        let executor = EpochManagerCreateValidatorExecutable(resolved_receiver.receiver, self.key);
 
         Ok((actor, call_frame_update, executor))
     }
 }
 
-impl Executor for EpochManagerUnregisterValidatorExecutable {
+impl Executor for EpochManagerCreateValidatorExecutable {
+    type Output = ComponentAddress;
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + InvokableModel<RuntimeError>,
+    {
+        let handle = api.lock_substate(
+            self.0,
+            SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
+            LockFlags::read_only(),
+        )?;
+        let substate_ref = api.get_ref(handle)?;
+        let epoch_manager = substate_ref.epoch_manager();
+        let manager = epoch_manager.address;
+        let validator_address = EpochManager::create_validator(manager, self.1, api)?;
+        Ok((
+            validator_address,
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(
+                validator_address,
+            ))),
+        ))
+    }
+}
+
+pub struct EpochManagerUpdateValidatorExecutable(
+    RENodeId,
+    ComponentAddress,
+    EcdsaSecp256k1PublicKey,
+    bool,
+);
+
+impl ExecutableInvocation for EpochManagerUpdateValidatorInvocation {
+    type Exec = EpochManagerUpdateValidatorExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::EpochManager(EpochManagerFn::UpdateValidator),
+            resolved_receiver,
+        );
+        let executor = EpochManagerUpdateValidatorExecutable(
+            resolved_receiver.receiver,
+            self.validator_address,
+            self.key,
+            self.register,
+        );
+
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for EpochManagerUpdateValidatorExecutable {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
-        // TODO: Figure out how to move this access check into more appropriate place
-        {
-            let node_ids = api.get_visible_node_ids()?;
-            let auth_zone_id = node_ids
-                .into_iter()
-                .find(|n| matches!(n, RENodeId::AuthZoneStack(..)))
-                .expect("AuthZone does not exist");
-            let non_fungible_address = NonFungibleAddress::from_public_key(&self.1);
-            let access_rule = AccessRule::Protected(AccessRuleNode::ProofRule(ProofRule::Require(
-                SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address),
-            )));
-
-            api.invoke(AuthZoneAssertAccessRuleInvocation {
-                receiver: auth_zone_id.into(),
-                access_rule,
-            })?;
-        }
-
         let offset = SubstateOffset::EpochManager(EpochManagerOffset::PreparingValidatorSet);
         let handle = api.lock_substate(self.0, offset, LockFlags::MUTABLE)?;
-        let mut substate_mut = api.get_ref_mut(handle)?;
-        substate_mut.validator_set().validator_set.remove(&self.1);
+        let mut substate_ref = api.get_ref_mut(handle)?;
+        let validator_set = substate_ref.validator_set();
+        let validator = Validator {
+            address: self.1,
+            key: self.2,
+        };
+        if self.3 {
+            validator_set.validator_set.insert(validator);
+        } else {
+            validator_set.validator_set.remove(&validator);
+        }
+
         Ok(((), CallFrameUpdate::empty()))
     }
 }
 
 impl EpochManager {
+    pub fn create_validator<Y>(
+        manager: ComponentAddress,
+        key: EcdsaSecp256k1PublicKey,
+        api: &mut Y,
+    ) -> Result<ComponentAddress, RuntimeError>
+    where
+        Y: SystemApi,
+    {
+        let node_id = api.allocate_node_id(RENodeType::Validator)?;
+        let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
+        let address: ComponentAddress = global_node_id.into();
+        let mut access_rules = AccessRules::new();
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
+            rule!(require(NonFungibleAddress::from_public_key(&key))),
+        );
+        access_rules.set_method_access_rule(
+            AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Unregister)),
+            rule!(require(NonFungibleAddress::from_public_key(&key))),
+        );
+
+        let node = RENode::Validator(
+            ValidatorSubstate {
+                manager,
+                key,
+                address,
+            },
+            AccessRulesChainSubstate {
+                access_rules_chain: vec![access_rules],
+            },
+        );
+        api.create_node(node_id, node)?;
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Validator(node_id.into())),
+        )?;
+
+        Ok(global_node_id.into())
+    }
+
     pub fn create_auth() -> Vec<MethodAuthorization> {
         vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
             HardProofRule::Require(HardResourceOrNonFungible::NonFungible(
                 AuthAddresses::system_role(),
             )),
         ))]
+    }
+}
+
+pub struct ValidatorRegisterExecutable(RENodeId);
+
+impl ExecutableInvocation for ValidatorRegisterInvocation {
+    type Exec = ValidatorRegisterExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+
+        let actor = ResolvedActor::method(
+            NativeFn::Validator(ValidatorFn::Register),
+            resolved_receiver,
+        );
+        let executor = ValidatorRegisterExecutable(resolved_receiver.receiver);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for ValidatorRegisterExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + InvokableModel<RuntimeError>,
+    {
+        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
+        let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let substate = api.get_ref(handle)?;
+        let validator = substate.validator();
+        let invocation = EpochManagerUpdateValidatorInvocation {
+            receiver: validator.manager,
+            validator_address: validator.address,
+            key: validator.key,
+            register: true,
+        };
+
+        api.invoke(invocation)?;
+
+        Ok(((), CallFrameUpdate::empty()))
+    }
+}
+
+pub struct ValidatorUnregisterExecutable(RENodeId);
+
+impl ExecutableInvocation for ValidatorUnregisterInvocation {
+    type Exec = ValidatorUnregisterExecutable;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        deref: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
+    where
+        Self: Sized,
+    {
+        let mut call_frame_update = CallFrameUpdate::empty();
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
+        let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
+        let actor = ResolvedActor::method(
+            NativeFn::Validator(ValidatorFn::Unregister),
+            resolved_receiver,
+        );
+        let executor = ValidatorUnregisterExecutable(resolved_receiver.receiver);
+        Ok((actor, call_frame_update, executor))
+    }
+}
+
+impl Executor for ValidatorUnregisterExecutable {
+    type Output = ();
+
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    where
+        Y: SystemApi + InvokableModel<RuntimeError>,
+    {
+        let offset = SubstateOffset::Validator(ValidatorOffset::Validator);
+        let handle = api.lock_substate(self.0, offset, LockFlags::read_only())?;
+        let substate = api.get_ref(handle)?;
+        let validator = substate.validator();
+        let invocation = EpochManagerUpdateValidatorInvocation {
+            receiver: validator.manager,
+            validator_address: validator.address,
+            key: validator.key,
+            register: false,
+        };
+
+        api.invoke(invocation)?;
+
+        Ok(((), CallFrameUpdate::empty()))
     }
 }

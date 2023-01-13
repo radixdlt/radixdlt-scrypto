@@ -55,6 +55,7 @@ impl AuthModule {
                     (method, ..)
                         if matches!(method, NativeFn::Metadata(..))
                             || matches!(method, NativeFn::EpochManager(..))
+                            || matches!(method, NativeFn::Validator(..))
                             || matches!(method, NativeFn::ResourceManager(..))
                             || matches!(method, NativeFn::Package(..))
                             || matches!(method, NativeFn::Clock(..))

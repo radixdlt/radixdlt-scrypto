@@ -46,7 +46,9 @@ impl ExecutableInvocation for ScryptoInvocation {
                     | ComponentAddress::EddsaEd25519VirtualAccount(..) => {
                         RENodeId::Global(GlobalAddress::Component(component_address))
                     }
-                    ComponentAddress::Clock(..) | ComponentAddress::EpochManager(..) => {
+                    ComponentAddress::Clock(..)
+                    | ComponentAddress::EpochManager(..)
+                    | ComponentAddress::Validator(..) => {
                         return Err(RuntimeError::InterpreterError(
                             InterpreterError::InvalidInvocation,
                         ));

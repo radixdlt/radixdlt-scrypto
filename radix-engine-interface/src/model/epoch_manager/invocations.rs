@@ -1,5 +1,5 @@
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
-use sbor::rust::collections::HashSet;
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
 use crate::api::api::*;
@@ -9,7 +9,7 @@ use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateInvocation {
-    pub validator_set: HashSet<EcdsaSecp256k1PublicKey>,
+    pub validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
 }
@@ -101,51 +101,100 @@ impl Into<CallTableInvocation> for EpochManagerNextRoundInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerRegisterValidatorMethodArgs {
+pub struct EpochManagerCreateValidatorMethodArgs {
     pub validator: EcdsaSecp256k1PublicKey,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerRegisterValidatorInvocation {
+pub struct EpochManagerCreateValidatorInvocation {
     pub receiver: ComponentAddress,
-    pub validator: EcdsaSecp256k1PublicKey,
+    pub key: EcdsaSecp256k1PublicKey,
 }
 
-impl Invocation for EpochManagerRegisterValidatorInvocation {
-    type Output = ();
+impl Invocation for EpochManagerCreateValidatorInvocation {
+    type Output = ComponentAddress;
 }
 
-impl SerializableInvocation for EpochManagerRegisterValidatorInvocation {
-    type ScryptoOutput = ();
+impl SerializableInvocation for EpochManagerCreateValidatorInvocation {
+    type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<CallTableInvocation> for EpochManagerRegisterValidatorInvocation {
+impl Into<CallTableInvocation> for EpochManagerCreateValidatorInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::RegisterValidator(self)).into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(self)).into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerUnregisterValidatorMethodArgs {
-    pub validator: EcdsaSecp256k1PublicKey,
+pub struct EpochManagerUpdateValidatorMethodArgs {
+    pub validator_address: ComponentAddress,
+    pub key: EcdsaSecp256k1PublicKey,
+    pub register: bool,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct EpochManagerUnregisterValidatorInvocation {
+pub struct EpochManagerUpdateValidatorInvocation {
     pub receiver: ComponentAddress,
-    pub validator: EcdsaSecp256k1PublicKey,
+    pub validator_address: ComponentAddress,
+    pub key: EcdsaSecp256k1PublicKey,
+    pub register: bool,
 }
 
-impl Invocation for EpochManagerUnregisterValidatorInvocation {
+impl Invocation for EpochManagerUpdateValidatorInvocation {
     type Output = ();
 }
 
-impl SerializableInvocation for EpochManagerUnregisterValidatorInvocation {
+// TODO: Should we have this or not?
+impl SerializableInvocation for EpochManagerUpdateValidatorInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<CallTableInvocation> for EpochManagerUnregisterValidatorInvocation {
+impl Into<CallTableInvocation> for EpochManagerUpdateValidatorInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::EpochManager(EpochManagerInvocation::UnregisterValidator(self)).into()
+        NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorRegisterMethodArgs {}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorRegisterInvocation {
+    pub receiver: ComponentAddress,
+}
+
+impl Invocation for ValidatorRegisterInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for ValidatorRegisterInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<CallTableInvocation> for ValidatorRegisterInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::Register(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUnregisterValidatorMethodArgs {}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUnregisterInvocation {
+    pub receiver: ComponentAddress,
+}
+
+impl Invocation for ValidatorUnregisterInvocation {
+    type Output = ();
+}
+
+impl SerializableInvocation for ValidatorUnregisterInvocation {
+    type ScryptoOutput = ();
+}
+
+impl Into<CallTableInvocation> for ValidatorUnregisterInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::Validator(ValidatorInvocation::Unregister(self)).into()
     }
 }

@@ -16,6 +16,7 @@ pub enum NativeInvocation {
     Package(PackageInvocation),
     Component(ComponentInvocation),
     EpochManager(EpochManagerInvocation),
+    Validator(ValidatorInvocation),
     Clock(ClockInvocation),
     Logger(LoggerInvocation),
     AuthZoneStack(AuthZoneStackInvocation),
@@ -89,8 +90,14 @@ pub enum EpochManagerInvocation {
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
     SetEpoch(EpochManagerSetEpochInvocation),
     NextRound(EpochManagerNextRoundInvocation),
-    RegisterValidator(EpochManagerRegisterValidatorInvocation),
-    UnregisterValidator(EpochManagerUnregisterValidatorInvocation),
+    CreateValidator(EpochManagerCreateValidatorInvocation),
+    UpdateValidator(EpochManagerUpdateValidatorInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum ValidatorInvocation {
+    Register(ValidatorRegisterInvocation),
+    Unregister(ValidatorUnregisterInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -361,12 +368,24 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-                EpochManagerInvocation::RegisterValidator(invocation) => {
+                EpochManagerInvocation::CreateValidator(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
                     )));
                 }
-                EpochManagerInvocation::UnregisterValidator(invocation) => {
+                EpochManagerInvocation::UpdateValidator(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
+            },
+            NativeInvocation::Validator(method) => match method {
+                ValidatorInvocation::Register(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
+                }
+                ValidatorInvocation::Unregister(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Component(
                         invocation.receiver,
                     )));
@@ -390,7 +409,7 @@ impl NativeInvocation {
                     )));
                 }
             },
-            NativeInvocation::Logger(logger_invocation) => match logger_invocation {
+            NativeInvocation::Logger(method) => match method {
                 LoggerInvocation::Log(..) => {
                     refs.insert(RENodeId::Logger);
                 }
