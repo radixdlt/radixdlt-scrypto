@@ -4,7 +4,6 @@ mod describe;
 mod encode;
 mod legacy_describe;
 mod non_fungible_data;
-mod utils;
 
 use proc_macro::TokenStream;
 
@@ -16,7 +15,7 @@ use proc_macro::TokenStream;
 ///     array: Vec<A>
 /// }
 /// ```
-#[proc_macro_derive(LegacyDescribe, attributes(skip))]
+#[proc_macro_derive(LegacyDescribe, attributes(legacy_skip))]
 pub fn legacy_describe(input: TokenStream) -> TokenStream {
     legacy_describe::handle_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
@@ -113,11 +112,11 @@ pub fn describe(input: TokenStream) -> TokenStream {
 /// #[derive(NonFungibleData)]
 /// pub struct MyStruct {
 ///     pub field_1: u32,
-///     #[scrypto(mutable)]
+///     #[mutable]
 ///     pub field_2: String,
 /// }
 /// ```
-#[proc_macro_derive(NonFungibleData, attributes(scrypto))]
+#[proc_macro_derive(NonFungibleData, attributes(mutable))]
 pub fn non_fungible_data(input: TokenStream) -> TokenStream {
     non_fungible_data::handle_non_fungible_data(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())

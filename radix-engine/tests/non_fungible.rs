@@ -472,7 +472,7 @@ fn can_mint_uuid_non_fungible_in_scrypto() {
 #[derive(NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
-    #[scrypto(mutable)]
+    #[mutable]
     pub available: bool,
 }
 
