@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable};
+use radix_engine_interface::api::api::{ActorApi, ComponentApi, EngineApi, Invokable};
 use radix_engine_interface::api::types::{
     FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, Receiver,
 };
@@ -8,7 +8,6 @@ use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::*;
 use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 
@@ -70,14 +69,12 @@ impl Runtime {
         method: S,
         args: Vec<u8>,
     ) -> T {
-        let buffer = ScryptoEnv
-            .invoke(ScryptoMethodInvocation {
-                receiver: Receiver::Global(component_address),
-                method_name: method.as_ref().to_string(),
-                args,
-            })
-            .unwrap();
-        scrypto_decode(&scrypto_encode(&buffer).unwrap()).unwrap()
+        let output = ScryptoEnv.invoke_method(
+            Receiver::Global(component_address),
+            method.as_ref(),
+            &scrypto_decode(&args).unwrap()
+        ).unwrap();
+        scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
     }
 
     /// Returns the transaction hash.

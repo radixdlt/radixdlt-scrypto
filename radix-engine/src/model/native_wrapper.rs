@@ -1,54 +1,96 @@
 use crate::model::{NativeOutput, TransactionProcessorError};
 use crate::types::*;
 use radix_engine_interface::api::api::InvokableModel;
-use crate::engine::{ApplicationError, RuntimeError};
+use crate::engine::{ApplicationError, LockFlags, RuntimeError, SystemApi};
 
-pub fn resolve_method(
-    component_address: ComponentAddress,
+pub fn resolve_method<Y: SystemApi>(
+    receiver: Receiver,
     method_name: &str,
     args: &[u8],
+    api: &mut Y,
 ) -> Result<CallTableInvocation, RuntimeError> {
-    let invocation = match component_address {
-        ComponentAddress::EpochManager(..) => {
-            let invocation = EpochManagerPackage::resolve_method_invocation(
-                component_address,
-                method_name,
-                args,
-            )
-                .map_err(|e| {
-                    RuntimeError::ApplicationError(
-                        ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::ResolveError(e),
-                        ),
-                    )
-                })?;
-            CallTableInvocation::Native(NativeInvocation::EpochManager(invocation))
+    let invocation = match receiver {
+        Receiver::Global(component_address) => match component_address {
+            ComponentAddress::EpochManager(..) => {
+                let invocation = EpochManagerPackage::resolve_method_invocation(
+                    component_address,
+                    method_name,
+                    args,
+                )
+                    .map_err(|e| {
+                        RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::ResolveError(e),
+                            ),
+                        )
+                    })?;
+                CallTableInvocation::Native(NativeInvocation::EpochManager(invocation))
+            }
+            ComponentAddress::Clock(..) => {
+                let invocation = ClockPackage::resolve_method_invocation(
+                    component_address,
+                    method_name,
+                    args,
+                )
+                    .map_err(|e| {
+                        RuntimeError::ApplicationError(
+                            ApplicationError::TransactionProcessorError(
+                                TransactionProcessorError::ResolveError(e),
+                            ),
+                        )
+                    })?;
+                CallTableInvocation::Native(NativeInvocation::Clock(invocation))
+            }
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+            | ComponentAddress::EddsaEd25519VirtualAccount(..)
+            | ComponentAddress::Normal(..)
+            | ComponentAddress::Account(..) => {
+                let component_node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+                let component_info = {
+                    let handle = api.lock_substate(
+                        component_node_id,
+                        SubstateOffset::Component(ComponentOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
+
+                    component_info
+                };
+
+                let method_invocation = ScryptoMethodInvocation {
+                    package_address: component_info.package_address,
+                    blueprint_name: component_info.blueprint_name,
+                    receiver: Receiver::Global(component_address.clone()),
+                    method_name: method_name.to_string(),
+                    args: args.to_owned(),
+                };
+                CallTableInvocation::ScryptoMethod(method_invocation)
+            }
         }
-        ComponentAddress::Clock(..) => {
-            let invocation = ClockPackage::resolve_method_invocation(
-                component_address,
-                method_name,
-                args,
-            )
-                .map_err(|e| {
-                    RuntimeError::ApplicationError(
-                        ApplicationError::TransactionProcessorError(
-                            TransactionProcessorError::ResolveError(e),
-                        ),
-                    )
-                })?;
-            CallTableInvocation::Native(NativeInvocation::Clock(invocation))
-        }
-        ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-        | ComponentAddress::EddsaEd25519VirtualAccount(..)
-        | ComponentAddress::Normal(..)
-        | ComponentAddress::Account(..) => {
-            let method_invocation = ScryptoMethodInvocation {
-                receiver: Receiver::Global(component_address.clone()),
+        Receiver::Component(component_id) => {
+            let component_node_id = RENodeId::Component(component_id);
+            let component_info = {
+                let handle = api.lock_substate(
+                    component_node_id,
+                    SubstateOffset::Component(ComponentOffset::Info),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.get_ref(handle)?;
+                let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+                api.drop_lock(handle)?;
+
+                component_info
+            };
+
+            CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
+                package_address: component_info.package_address,
+                blueprint_name: component_info.blueprint_name,
+                receiver: Receiver::Component(component_id),
                 method_name: method_name.to_string(),
                 args: args.to_owned(),
-            };
-            CallTableInvocation::ScryptoMethod(method_invocation)
+            })
         }
     };
 

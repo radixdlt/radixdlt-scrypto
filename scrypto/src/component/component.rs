@@ -1,5 +1,5 @@
 use radix_engine_derive::Describe;
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::api::{ComponentApi, Invokable};
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, Receiver, SubstateOffset,
 };
@@ -8,7 +8,6 @@ use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
@@ -71,15 +70,9 @@ pub struct Component(pub ComponentId);
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut env = ScryptoEnv;
-        let buffer = env
-            .invoke(ScryptoMethodInvocation {
-                receiver: Receiver::Component(self.0),
-                method_name: method.to_string(),
-                args,
-            })
+        let output = ScryptoEnv.invoke_method(Receiver::Component(self.0), method, &scrypto_decode(&args).unwrap())
             .unwrap();
-        scrypto_decode(&scrypto_encode(&buffer).unwrap()).unwrap()
+        scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
     }
 
     /// Returns the package ID of this component.
@@ -104,8 +97,7 @@ impl Component {
 
     /// Add access check on the component.
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        let mut env = ScryptoEnv;
-        env.invoke(AccessRulesAddAccessCheckInvocation {
+        ScryptoEnv.invoke(AccessRulesAddAccessCheckInvocation {
             receiver: RENodeId::Component(self.0),
             access_rules,
         })
@@ -175,16 +167,9 @@ pub struct GlobalComponentRef(pub ComponentAddress);
 impl GlobalComponentRef {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let mut env = ScryptoEnv;
-        let raw = env
-            .invoke(ScryptoMethodInvocation {
-                receiver: Receiver::Global(self.0),
-                method_name: method.to_string(),
-                args,
-            })
+        let output = ScryptoEnv.invoke_method(Receiver::Global(self.0), method, &scrypto_decode(&args).unwrap())
             .unwrap();
-
-        scrypto_decode(&scrypto_encode(&raw).unwrap()).unwrap()
+        scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
     }
 
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {

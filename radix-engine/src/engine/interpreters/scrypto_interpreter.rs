@@ -24,6 +24,7 @@ impl Executor for ScryptoExecutorToParsed {
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
             + ActorApi<RuntimeError>
+            + ComponentApi<RuntimeError>
             + VmApi<W>,
         W: WasmEngine,
     {

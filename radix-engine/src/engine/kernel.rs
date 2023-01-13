@@ -632,18 +632,7 @@ impl<'g, 's, W, R, M> ComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
         R: FeeReserve,
         M: BaseModule<R>, {
     fn invoke_method(&mut self, receiver: Receiver, method_name: &str, args: &ScryptoValue) -> Result<ScryptoValue, RuntimeError> {
-        let invocation = match receiver {
-            Receiver::Global(component_address) => {
-                resolve_method(component_address, method_name, &scrypto_encode(args).unwrap())?
-            }
-            Receiver::Component(..) => {
-                CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
-                    receiver,
-                    method_name: method_name.to_string(),
-                    args: scrypto_encode(args).unwrap()
-                })
-            }
-        };
+        let invocation = resolve_method(receiver, method_name, &scrypto_encode(args).unwrap(), self)?;
         let rtn = invoke_call_table(invocation, self)?;
         Ok(rtn.into())
     }

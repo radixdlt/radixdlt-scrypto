@@ -1,11 +1,10 @@
-use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable};
-use radix_engine_interface::api::types::{
-    FnIdentifier, LockHandle, RENodeId, ScryptoRENode, SubstateOffset,
-};
-use radix_engine_interface::data::ScryptoDecode;
+use radix_engine_interface::api::api::{ActorApi, ComponentApi, EngineApi, Invokable};
+use radix_engine_interface::api::types::{FnIdentifier, LockHandle, Receiver, RENodeId, ScryptoRENode, SubstateOffset};
+use radix_engine_interface::data::{ScryptoDecode, ScryptoValue};
 use radix_engine_interface::wasm::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
+use sbor::rust::string::ToString;
 use sbor::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -102,6 +101,13 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), EngineApiError> {
         let rtn = call_engine(RadixEngineInput::DropLock(lock_handle));
+        Ok(rtn)
+    }
+}
+
+impl ComponentApi<EngineApiError> for ScryptoEnv {
+    fn invoke_method(&mut self, receiver: Receiver, method_name: &str, args: &ScryptoValue) -> Result<ScryptoValue, EngineApiError> {
+        let rtn = call_engine(RadixEngineInput::InvokeMethod(receiver, method_name.to_string(), args.clone()));
         Ok(rtn)
     }
 }

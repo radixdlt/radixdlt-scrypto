@@ -36,8 +36,11 @@ impl Into<CallTableInvocation> for ScryptoFunctionInvocation {
 #[derive(Debug)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct ScryptoMethodInvocation {
-    pub receiver: Receiver,
+    pub package_address: PackageAddress,
+    pub blueprint_name: String,
+
     pub method_name: String,
+    pub receiver: Receiver,
     pub args: Vec<u8>,
 }
 
