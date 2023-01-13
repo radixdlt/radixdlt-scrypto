@@ -254,36 +254,6 @@ mod tests {
     }
 
     #[test]
-    pub fn test_encode_index_map_and_set() {
-        let mut bytes = Vec::with_capacity(512);
-        let mut encoder = BasicEncoder::new(&mut bytes);
-        let mut set = IndexSet::<u8>::new();
-        set.insert(1);
-        set.insert(2);
-        encoder.encode(&set).unwrap();
-        let mut map = IndexMap::<u8, u8>::new();
-        map.insert(1, 2);
-        map.insert(3, 4);
-        encoder.encode(&map).unwrap();
-
-        assert_eq!(
-            vec![
-                32, 7, 2, 1, 2, // set
-                35, 7, 7, 2, 1, 2, 3, 4, // map
-            ],
-            bytes
-        );
-
-        let mut decoder = BasicDecoder::new(&bytes);
-        let set_out = decoder.decode::<IndexSet<u8>>().unwrap();
-        let map_out = decoder.decode::<IndexMap<u8, u8>>().unwrap();
-        decoder.check_end().unwrap();
-
-        assert_eq!(set, set_out);
-        assert_eq!(map, map_out);
-    }
-
-    #[test]
     pub fn test_encode_cow_borrowed() {
         let mut set = BTreeSet::<u8>::new();
         set.insert(1);

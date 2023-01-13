@@ -1,11 +1,6 @@
-#[cfg(feature = "alloc")]
-extern crate alloc;
-#[cfg(feature = "alloc")]
-use alloc::string::String;
-#[cfg(feature = "alloc")]
-use alloc::vec::Vec;
-
 use crate::schema_type::Type;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::{Categorize, Decode, Encode};
 
 /// Represents a blueprint.

@@ -1,8 +1,8 @@
 use super::RoyaltyReceiver;
 use crate::model::Resource;
 use crate::types::*;
-use indexmap::IndexMap;
 use radix_engine_interface::api::types::VaultId;
+use sbor::rust::collections::BTreeMap;
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct FeeSummary {
@@ -23,7 +23,7 @@ pub struct FeeSummary {
     /// The vaults locked for XRD payment
     pub vault_locks: Vec<(VaultId, Resource, bool)>,
     /// The resultant vault charges in XRD (only present on commit)
-    pub vault_payments_xrd: Option<IndexMap<VaultId, Decimal>>,
+    pub vault_payments_xrd: Option<BTreeMap<VaultId, Decimal>>,
     /// The execution cost breakdown
     pub execution_cost_unit_breakdown: HashMap<String, u32>,
     /// The royalty cost breakdown.

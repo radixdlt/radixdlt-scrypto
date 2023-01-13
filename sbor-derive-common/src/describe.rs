@@ -262,7 +262,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[63u8, 255u8, 173u8, 220u8, 251u8, 214u8, 95u8, 139u8, 106u8, 20u8, 23u8, 4u8, 15u8, 10u8, 124u8, 49u8, 219u8, 44u8, 235u8, 215u8]
+                        &[159u8 , 209u8 , 242u8 , 94u8 , 4u8 , 85u8 , 29u8 , 88u8 , 103u8 , 42u8 , 6u8 , 107u8 , 55u8 , 82u8 , 41u8 , 37u8 , 138u8 , 251u8 , 115u8 , 188u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -304,8 +304,7 @@ mod tests {
                         stringify!(Test),
                         &[],
                         &[
-                            63u8, 255u8, 173u8, 220u8, 251u8, 214u8, 95u8, 139u8, 106u8, 20u8, 23u8, 4u8, 15u8,
-                            10u8, 124u8, 49u8, 219u8, 44u8, 235u8, 215u8
+                            159u8 , 209u8 , 242u8 , 94u8 , 4u8 , 85u8 , 29u8 , 88u8 , 103u8 , 42u8 , 6u8 , 107u8 , 55u8 , 82u8 , 41u8 , 37u8 , 138u8 , 251u8 , 115u8 , 188u8
                         ]
                     );
                     fn type_data() -> Option<
@@ -361,7 +360,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[85u8, 53u8, 15u8, 85u8, 176u8, 230u8, 4u8, 110u8, 15u8, 96u8, 35u8, 64u8, 192u8, 210u8, 254u8, 146u8, 192u8, 7u8, 246u8, 5u8]
+                        &[34u8 , 114u8 , 203u8 , 221u8 , 124u8 , 31u8 , 95u8 , 225u8 , 232u8 , 133u8 , 214u8 , 82u8 , 163u8 , 166u8 , 47u8 , 94u8 , 1u8 , 45u8 , 24u8 , 85u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -396,7 +395,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[167u8, 108u8, 181u8, 130u8, 168u8, 229u8, 85u8, 237u8, 66u8, 69u8, 34u8, 138u8, 113u8, 220u8, 225u8, 107u8, 0u8, 247u8, 189u8, 58u8]
+                        &[191u8 , 160u8 , 163u8 , 134u8 , 72u8 , 226u8 , 165u8 , 105u8 , 145u8 , 247u8 , 102u8 , 49u8 , 49u8 , 92u8 , 177u8 , 109u8 , 66u8 , 111u8 , 153u8 , 93u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -420,7 +419,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[T::TYPE_ID, T2::TYPE_ID,],
-                        &[107u8, 144u8, 17u8, 82u8, 110u8, 162u8, 58u8, 11u8, 170u8, 99u8, 11u8, 157u8, 132u8, 243u8, 106u8, 138u8, 8u8, 152u8, 239u8, 22u8]
+                        &[128u8 , 130u8 , 11u8 , 0u8 , 197u8 , 86u8 , 125u8 , 186u8 , 15u8 , 144u8 , 196u8 , 61u8 , 236u8 , 39u8 , 235u8 , 228u8 , 7u8 , 225u8 , 251u8 , 25u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {

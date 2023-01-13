@@ -92,7 +92,7 @@ pub use schema::*;
 
 mod schema {
     use super::*;
-    use crate::rust::collections::IndexSet;
+    use crate::rust::collections::BTreeMap;
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum NoCustomTypeKind {}
@@ -117,7 +117,7 @@ mod schema {
 
         fn linearize_type_kind(
             _: Self::CustomTypeKind<GlobalTypeId>,
-            _: &IndexSet<TypeHash>,
+            _: &BTreeMap<TypeHash, usize>,
         ) -> Self::CustomTypeKind<LocalTypeIndex> {
             unreachable!("No custom type kinds exist")
         }

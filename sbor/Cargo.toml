@@ -7,13 +7,12 @@ edition = "2021"
 sbor-derive = { path = "../sbor-derive" }
 hashbrown = { version = "0.12.1", optional = true }
 serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
-indexmap = { version = "1.9.2", default-features = false }
-const-sha1 = { version = "0.2.0", default-features = false } # Chosen because of its small size and 0 transitive dependencies
+const-sha1 = { git = "https://github.com/iamyulong/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["serde?/std", "indexmap/std"]
+std = ["serde?/std"]
 alloc = ["hashbrown", "serde?/alloc"]
 
 # Enable serde derives for SBOR value and type models

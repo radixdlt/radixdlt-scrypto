@@ -8,11 +8,9 @@ use crate::*;
 categorize_generic!(Vec<T>, <T>, ValueKind::Array);
 categorize_generic!(BTreeSet<T>, <T>, ValueKind::Array);
 categorize_generic!(HashSet<T>, <T>, ValueKind::Array);
-categorize_generic!(indexmap::IndexSet<T>, <T>, ValueKind::Array);
 
 categorize_generic!(BTreeMap<K, V>, <K, V>, ValueKind::Map);
 categorize_generic!(HashMap<K, V>, <K, V>, ValueKind::Map);
-categorize_generic!(indexmap::IndexMap<K, V>, <K, V>, ValueKind::Map);
 
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>> Encode<X, E> for Vec<T> {
     #[inline]
@@ -66,25 +64,6 @@ impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X> + Ord + 
     }
 }
 
-impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X> + Hash> Encode<X, E>
-    for indexmap::IndexSet<T>
-{
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(T::value_kind())?;
-        encoder.write_size(self.len())?;
-        for v in self {
-            encoder.encode_deeper_body(v)?;
-        }
-        Ok(())
-    }
-}
-
 impl<
         X: CustomValueKind,
         E: Encoder<X>,
@@ -116,33 +95,6 @@ impl<
         K: Encode<X, E> + Categorize<X> + Ord + Hash,
         V: Encode<X, E> + Categorize<X>,
     > Encode<X, E> for HashMap<K, V>
-{
-    #[inline]
-    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(Self::value_kind())
-    }
-
-    #[inline]
-    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_value_kind(K::value_kind())?;
-        encoder.write_value_kind(V::value_kind())?;
-        encoder.write_size(self.len())?;
-        let mut keys: Vec<&K> = self.keys().collect();
-        keys.sort();
-        for key in keys {
-            encoder.encode_deeper_body(key)?;
-            encoder.encode_deeper_body(self.get(key).unwrap())?;
-        }
-        Ok(())
-    }
-}
-
-impl<
-        X: CustomValueKind,
-        E: Encoder<X>,
-        K: Encode<X, E> + Categorize<X> + Ord + Hash,
-        V: Encode<X, E> + Categorize<X>,
-    > Encode<X, E> for indexmap::IndexMap<K, V>
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -220,25 +172,6 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash +
     }
 }
 
-impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash + Eq> Decode<X, D>
-    for IndexSet<T>
-{
-    #[inline]
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<X>,
-    ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        let element_value_kind = decoder.read_and_check_value_kind(T::value_kind())?;
-        let len = decoder.read_size()?;
-        let mut result = IndexSet::<T>::with_capacity(if len <= 1024 { len } else { 1024 });
-        for _ in 0..len {
-            result.insert(decoder.decode_deeper_body_with_value_kind(element_value_kind)?);
-        }
-        Ok(result)
-    }
-}
-
 impl<
         X: CustomValueKind,
         D: Decoder<X>,
@@ -293,33 +226,6 @@ impl<
     }
 }
 
-impl<
-        X: CustomValueKind,
-        D: Decoder<X>,
-        K: Decode<X, D> + Categorize<X> + Hash + Eq,
-        V: Decode<X, D> + Categorize<X>,
-    > Decode<X, D> for indexmap::IndexMap<K, V>
-{
-    #[inline]
-    fn decode_body_with_value_kind(
-        decoder: &mut D,
-        value_kind: ValueKind<X>,
-    ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
-        let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
-        let size = decoder.read_size()?;
-        let mut map = indexmap::IndexMap::new();
-        for _ in 0..size {
-            map.insert(
-                decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
-                decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
-            );
-        }
-        Ok(map)
-    }
-}
-
 pub use schema::*;
 
 mod schema {
@@ -345,7 +251,6 @@ mod schema {
     }
 
     wrapped_generic_describe!(T, HashSet<T>, BTreeSet<T>);
-    wrapped_generic_describe!(T, IndexSet<T>, BTreeSet<T>);
 
     impl<C: CustomTypeKind<GlobalTypeId>, K: Describe<C>, V: Describe<C>> Describe<C>
         for BTreeMap<K, V>
@@ -368,5 +273,4 @@ mod schema {
     }
 
     wrapped_double_generic_describe!(K, V, HashMap<K, V>, BTreeMap<K, V>);
-    wrapped_double_generic_describe!(K, V, IndexMap<K, V>, BTreeMap<K, V>);
 }

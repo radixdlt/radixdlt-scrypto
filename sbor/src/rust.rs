@@ -183,8 +183,6 @@ pub mod collections {
         pub use hashset;
     }
 
-    pub use indexmap;
-
     #[cfg(feature = "alloc")]
     pub use alloc::collections::BTreeMap;
     #[cfg(feature = "alloc")]
@@ -202,7 +200,4 @@ pub mod collections {
     pub use std::collections::HashMap;
     #[cfg(not(feature = "alloc"))]
     pub use std::collections::HashSet;
-
-    pub use indexmap::IndexMap;
-    pub use indexmap::IndexSet;
 }

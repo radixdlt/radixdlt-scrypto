@@ -1,5 +1,5 @@
 use super::*;
-use sbor::rust::collections::IndexSet;
+use sbor::rust::collections::BTreeMap;
 use sbor::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomValueKind, ScryptoCustomTypeKind<L>, L>;
@@ -55,7 +55,7 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,
-        schemas: &IndexSet<TypeHash>,
+        type_indices: &BTreeMap<TypeHash, usize>,
     ) -> Self::CustomTypeKind<LocalTypeIndex> {
         match type_kind {
             ScryptoCustomTypeKind::PackageAddress => ScryptoCustomTypeKind::PackageAddress,
@@ -66,8 +66,8 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
                 key_type,
                 value_type,
             } => ScryptoCustomTypeKind::KeyValueStore {
-                key_type: resolve_local_type_ref(schemas, &key_type),
-                value_type: resolve_local_type_ref(schemas, &value_type),
+                key_type: resolve_local_type_ref(type_indices, &key_type),
+                value_type: resolve_local_type_ref(type_indices, &value_type),
             },
             ScryptoCustomTypeKind::Bucket => ScryptoCustomTypeKind::Bucket,
             ScryptoCustomTypeKind::Proof => ScryptoCustomTypeKind::Proof,
