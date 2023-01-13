@@ -1,6 +1,59 @@
-use crate::model::NativeOutput;
+use crate::model::{NativeOutput, TransactionProcessorError};
 use crate::types::*;
 use radix_engine_interface::api::api::InvokableModel;
+use crate::engine::{ApplicationError, RuntimeError};
+
+pub fn resolve_method(
+    component_address: ComponentAddress,
+    method_name: &str,
+    args: &[u8],
+) -> Result<CallTableInvocation, RuntimeError> {
+    let invocation = match component_address {
+        ComponentAddress::EpochManager(..) => {
+            let invocation = EpochManagerPackage::resolve_method_invocation(
+                component_address,
+                method_name,
+                args,
+            )
+                .map_err(|e| {
+                    RuntimeError::ApplicationError(
+                        ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::ResolveError(e),
+                        ),
+                    )
+                })?;
+            CallTableInvocation::Native(NativeInvocation::EpochManager(invocation))
+        }
+        ComponentAddress::Clock(..) => {
+            let invocation = ClockPackage::resolve_method_invocation(
+                component_address,
+                method_name,
+                args,
+            )
+                .map_err(|e| {
+                    RuntimeError::ApplicationError(
+                        ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::ResolveError(e),
+                        ),
+                    )
+                })?;
+            CallTableInvocation::Native(NativeInvocation::Clock(invocation))
+        }
+        ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+        | ComponentAddress::EddsaEd25519VirtualAccount(..)
+        | ComponentAddress::Normal(..)
+        | ComponentAddress::Account(..) => {
+            let method_invocation = ScryptoMethodInvocation {
+                receiver: Receiver::Global(component_address.clone()),
+                method_name: method_name.to_string(),
+                args: args.to_owned(),
+            };
+            CallTableInvocation::ScryptoMethod(method_invocation)
+        }
+    };
+
+    Ok(invocation)
+}
 
 pub fn invoke_call_table<Y, E>(
     invocation: CallTableInvocation,

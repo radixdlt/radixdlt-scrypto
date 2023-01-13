@@ -5,7 +5,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
+use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel, ComponentApi};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
@@ -237,6 +237,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
         Y: SystemApi
             + Invokable<ScryptoFunctionInvocation, RuntimeError>
             + EngineApi<RuntimeError>
+            + ComponentApi<RuntimeError>
             + InvokableModel<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
@@ -423,52 +424,8 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let call_table_entry = match component_address {
-                        ComponentAddress::EpochManager(..) => {
-                            let invocation = EpochManagerPackage::resolve_method_invocation(
-                                *component_address,
-                                method_name,
-                                args.as_slice(),
-                            )
-                            .map_err(|e| {
-                                RuntimeError::ApplicationError(
-                                    ApplicationError::TransactionProcessorError(
-                                        TransactionProcessorError::ResolveError(e),
-                                    ),
-                                )
-                            })?;
-                            CallTableInvocation::Native(NativeInvocation::EpochManager(invocation))
-                        }
-                        ComponentAddress::Clock(..) => {
-                            let invocation = ClockPackage::resolve_method_invocation(
-                                *component_address,
-                                method_name,
-                                args.as_slice(),
-                            )
-                            .map_err(|e| {
-                                RuntimeError::ApplicationError(
-                                    ApplicationError::TransactionProcessorError(
-                                        TransactionProcessorError::ResolveError(e),
-                                    ),
-                                )
-                            })?;
-                            CallTableInvocation::Native(NativeInvocation::Clock(invocation))
-                        }
-                        ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
-                        | ComponentAddress::EddsaEd25519VirtualAccount(..)
-                        | ComponentAddress::Normal(..)
-                        | ComponentAddress::Account(..) => {
-                            let method_invocation = ScryptoMethodInvocation {
-                                receiver: ScryptoReceiver::Global(component_address.clone()),
-                                method_name: method_name.clone(),
-                                args: args.to_vec(),
-                            };
-                            CallTableInvocation::ScryptoMethod(method_invocation)
-                        }
-                    };
-
-                    let result = invoke_call_table(call_table_entry, api)?;
-
+                    let result = api.invoke_method(Receiver::Global(*component_address), method_name, args.as_value())?;
+                    let result = IndexedScryptoValue::from_typed(&result);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;

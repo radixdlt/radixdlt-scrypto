@@ -1,7 +1,7 @@
 use radix_engine_derive::Describe;
 use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoReceiver, SubstateOffset,
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, Receiver, SubstateOffset,
 };
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::model::*;
@@ -74,7 +74,7 @@ impl Component {
         let mut env = ScryptoEnv;
         let buffer = env
             .invoke(ScryptoMethodInvocation {
-                receiver: ScryptoReceiver::Component(self.0),
+                receiver: Receiver::Component(self.0),
                 method_name: method.to_string(),
                 args,
             })
@@ -178,7 +178,7 @@ impl GlobalComponentRef {
         let mut env = ScryptoEnv;
         let raw = env
             .invoke(ScryptoMethodInvocation {
-                receiver: ScryptoReceiver::Global(self.0),
+                receiver: Receiver::Global(self.0),
                 method_name: method.to_string(),
                 args,
             })

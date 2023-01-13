@@ -1,6 +1,6 @@
 use radix_engine_interface::api::api::{ActorApi, EngineApi, Invokable};
 use radix_engine_interface::api::types::{
-    FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoReceiver,
+    FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, Receiver,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::*;
@@ -72,7 +72,7 @@ impl Runtime {
     ) -> T {
         let buffer = ScryptoEnv
             .invoke(ScryptoMethodInvocation {
-                receiver: ScryptoReceiver::Global(component_address),
+                receiver: Receiver::Global(component_address),
                 method_name: method.as_ref().to_string(),
                 args,
             })

@@ -16,7 +16,7 @@ blueprint! {
         pub fn call_mut_self(&mut self, address: ComponentAddress) {
             let input =
                 RadixEngineInput::Invoke(CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
-                    receiver: ScryptoReceiver::Global(address),
+                    receiver: Receiver::Global(address),
                     method_name: "mut_func".to_string(),
                     args: args!(),
                 }));
@@ -28,7 +28,7 @@ blueprint! {
         pub fn call_self(&self, address: ComponentAddress) {
             let input =
                 RadixEngineInput::Invoke(CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
-                    receiver: ScryptoReceiver::Global(address),
+                    receiver: Receiver::Global(address),
                     method_name: "func".to_string(),
                     args: args!(),
                 }));
@@ -38,7 +38,7 @@ blueprint! {
         pub fn call_mut_self_2(&self, address: ComponentAddress) {
             let input =
                 RadixEngineInput::Invoke(CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
-                    receiver: ScryptoReceiver::Global(address),
+                    receiver: Receiver::Global(address),
                     method_name: "mut_func".to_string(),
                     args: args!(),
                 }));

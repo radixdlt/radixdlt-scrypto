@@ -33,10 +33,10 @@ impl ExecutableInvocation for ScryptoMethodInvocation {
 
         let (executor, actor) = {
             let original_node_id = match self.receiver {
-                ScryptoReceiver::Global(address) => {
+                Receiver::Global(address) => {
                     RENodeId::Global(GlobalAddress::Component(address))
                 }
-                ScryptoReceiver::Component(component_id) => RENodeId::Component(component_id),
+                Receiver::Component(component_id) => RENodeId::Component(component_id),
             };
 
             // Deref if global

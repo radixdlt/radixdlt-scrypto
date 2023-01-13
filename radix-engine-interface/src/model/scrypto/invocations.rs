@@ -1,6 +1,6 @@
 use radix_engine_interface::data::ScryptoValue;
 use crate::api::api::Invocation;
-use crate::api::types::ScryptoReceiver;
+use crate::api::types::Receiver;
 use crate::model::{PackageAddress, CallTableInvocation};
 use crate::scrypto;
 use crate::wasm::SerializableInvocation;
@@ -36,7 +36,7 @@ impl Into<CallTableInvocation> for ScryptoFunctionInvocation {
 #[derive(Debug)]
 #[scrypto(Categorize, Encode, Decode)]
 pub struct ScryptoMethodInvocation {
-    pub receiver: ScryptoReceiver,
+    pub receiver: Receiver,
     pub method_name: String,
     pub args: Vec<u8>,
 }

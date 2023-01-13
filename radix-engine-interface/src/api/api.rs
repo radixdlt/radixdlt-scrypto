@@ -3,6 +3,7 @@ use crate::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::format;
 use sbor::rust::vec::Vec;
+use crate::data::ScryptoValue;
 
 pub trait Invocation: Debug {
     type Output: Debug;
@@ -16,6 +17,7 @@ pub trait Invocation: Debug {
 pub trait Invokable<I: Invocation, E> {
     fn invoke(&mut self, invocation: I) -> Result<I::Output, E>;
 }
+
 
 pub trait EngineApi<E: Debug> {
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, E>;
@@ -34,6 +36,15 @@ pub trait EngineApi<E: Debug> {
 
 pub trait ActorApi<E: Debug> {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
+}
+
+pub trait ComponentApi<E> {
+    fn invoke_method(
+        &mut self,
+        receiver: Receiver,
+        method_name: &str,
+        args: &ScryptoValue
+    ) -> Result<ScryptoValue, E>;
 }
 
 pub trait InvokableModel<E>:
