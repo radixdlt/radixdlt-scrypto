@@ -19,7 +19,7 @@ blueprint! {
                     package_address: Runtime::package_address(),
                     blueprint_name: "ReentrantComponent".to_string(),
                     method_name: "mut_func".to_string(),
-                    receiver: Receiver::Global(address),
+                    receiver: Some(Receiver::Global(address)),
                     args: args!(),
                 }));
             let _: ScryptoValue = call_engine(input);
@@ -32,7 +32,7 @@ blueprint! {
                 RadixEngineInput::Invoke(CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
                     package_address: Runtime::package_address(),
                     blueprint_name: "ReentrantComponent".to_string(),
-                    receiver: Receiver::Global(address),
+                    receiver: Some(Receiver::Global(address)),
                     method_name: "func".to_string(),
                     args: args!(),
                 }));
@@ -45,7 +45,7 @@ blueprint! {
                     package_address: Runtime::package_address(),
                     blueprint_name: "ReentrantComponent".to_string(),
                     method_name: "mut_func".to_string(),
-                    receiver: Receiver::Global(address),
+                    receiver: Some(Receiver::Global(address)),
                     args: args!(),
                 }));
             let _: ScryptoValue = call_engine(input);

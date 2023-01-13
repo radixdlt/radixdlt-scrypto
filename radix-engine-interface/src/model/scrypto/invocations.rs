@@ -38,9 +38,8 @@ impl Into<CallTableInvocation> for ScryptoFunctionInvocation {
 pub struct ScryptoMethodInvocation {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
-
     pub method_name: String,
-    pub receiver: Receiver,
+    pub receiver: Option<Receiver>,
     pub args: Vec<u8>,
 }
 

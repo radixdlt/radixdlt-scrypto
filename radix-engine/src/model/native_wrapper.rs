@@ -62,7 +62,7 @@ pub fn resolve_method<Y: SystemApi>(
                 let method_invocation = ScryptoMethodInvocation {
                     package_address: component_info.package_address,
                     blueprint_name: component_info.blueprint_name,
-                    receiver: Receiver::Global(component_address.clone()),
+                    receiver: Some(Receiver::Global(component_address.clone())),
                     method_name: method_name.to_string(),
                     args: args.to_owned(),
                 };
@@ -87,7 +87,7 @@ pub fn resolve_method<Y: SystemApi>(
             CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
                 package_address: component_info.package_address,
                 blueprint_name: component_info.blueprint_name,
-                receiver: Receiver::Component(component_id),
+                receiver: Some(Receiver::Component(component_id)),
                 method_name: method_name.to_string(),
                 args: args.to_owned(),
             })
