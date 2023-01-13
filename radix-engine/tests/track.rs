@@ -7,7 +7,6 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::WasmEngine;
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

@@ -7,8 +7,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),

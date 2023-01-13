@@ -160,6 +160,11 @@ pub enum Instruction {
         entries: Value,
     },
 
+    MintUuidNonFungible {
+        resource_address: Value,
+        entries: Value,
+    },
+
     CreateFungibleResource {
         divisibility: Value,
         metadata: Value,
@@ -327,9 +332,10 @@ pub enum Value {
     U128(u128),
     String(String),
 
-    Enum(String, Vec<Value>),
+    Enum(u8, Vec<Value>),
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
+    Map(Type, Type, Vec<Value>),
 
     // ==============
     // Aliases
@@ -389,6 +395,7 @@ impl Value {
             Value::Enum(_, _) => ScryptoValueKind::Enum,
             Value::Array(_, _) => ScryptoValueKind::Array,
             Value::Tuple(_) => ScryptoValueKind::Tuple,
+            Value::Map(_, _, _) => ScryptoValueKind::Map,
 
             // ==============
             // Aliases

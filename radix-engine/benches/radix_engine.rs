@@ -7,7 +7,6 @@ use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
 use radix_engine_constants::DEFAULT_COST_UNIT_LIMIT;
-use radix_engine_interface::data::*;
 use radix_engine_interface::dec;
 use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::rule;

@@ -2,14 +2,12 @@ use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BasicInstruction {
     /// Takes resource from worktop.
     TakeFromWorktop {
@@ -163,6 +161,11 @@ pub enum BasicInstruction {
         entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
     },
 
+    MintUuidNonFungible {
+        resource_address: ResourceAddress,
+        entries: Vec<(Vec<u8>, Vec<u8>)>,
+    },
+
     CreateFungibleResource {
         divisibility: u8,
         metadata: BTreeMap<String, String>,
@@ -178,14 +181,14 @@ pub enum BasicInstruction {
     },
 
     CreateNonFungibleResource {
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
     CreateNonFungibleResourceWithOwner {
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleAddress,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
@@ -211,8 +214,7 @@ pub enum BasicInstruction {
     },
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum Instruction {
     Basic(BasicInstruction),
     System(NativeInvocation),

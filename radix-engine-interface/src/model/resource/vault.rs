@@ -1,12 +1,11 @@
 use crate::api::{api::*, types::*};
 use crate::math::*;
-use crate::scrypto;
 use crate::wasm::*;
+use crate::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
-#[derive(Debug, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultPutInvocation {
     pub receiver: VaultId,
     pub bucket: Bucket,
@@ -35,8 +34,7 @@ impl Into<CallTableInvocation> for VaultPutInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultTakeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -56,8 +54,7 @@ impl Into<CallTableInvocation> for VaultTakeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultTakeNonFungiblesInvocation {
     pub receiver: VaultId,
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
@@ -77,8 +74,7 @@ impl Into<CallTableInvocation> for VaultTakeNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultGetAmountInvocation {
     pub receiver: VaultId,
 }
@@ -97,8 +93,7 @@ impl Into<CallTableInvocation> for VaultGetAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultRecallInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -118,8 +113,7 @@ impl Into<CallTableInvocation> for VaultRecallInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultRecallNonFungiblesInvocation {
     pub receiver: VaultId,
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
@@ -139,8 +133,7 @@ impl Into<CallTableInvocation> for VaultRecallNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultGetResourceAddressInvocation {
     pub receiver: VaultId,
 }
@@ -159,8 +152,7 @@ impl Into<CallTableInvocation> for VaultGetResourceAddressInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultGetNonFungibleIdsInvocation {
     pub receiver: VaultId,
 }
@@ -179,8 +171,7 @@ impl Into<CallTableInvocation> for VaultGetNonFungibleIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultCreateProofInvocation {
     pub receiver: VaultId,
 }
@@ -199,8 +190,7 @@ impl Into<CallTableInvocation> for VaultCreateProofInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultCreateProofByAmountInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -220,8 +210,7 @@ impl Into<CallTableInvocation> for VaultCreateProofByAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultCreateProofByIdsInvocation {
     pub receiver: VaultId,
     pub ids: BTreeSet<NonFungibleId>,
@@ -241,8 +230,7 @@ impl Into<CallTableInvocation> for VaultCreateProofByIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultLockFeeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,

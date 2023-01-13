@@ -1,23 +1,20 @@
 use crate::api::api::Invocation;
 use crate::api::types::ComponentId;
 use crate::model::{CallTableInvocation, ComponentAddress, PackageAddress};
-use crate::scrypto;
 use crate::wasm::SerializableInvocation;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::string::String;
+use crate::*;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ScryptoReceiver {
     Global(ComponentAddress),
     Component(ComponentId),
 }
 
 /// Scrypto function/method invocation.
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ScryptoInvocation {
     pub package_address: PackageAddress,
     pub blueprint_name: String,

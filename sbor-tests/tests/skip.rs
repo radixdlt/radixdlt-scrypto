@@ -84,20 +84,17 @@ fn test_enum_with_skip() {
     assert_eq!(
         vec![
             34, // enum type
-            1,  // string size
-            65, // "A"
+            0, // "A"
             1,  // number of fields
             9, 2, 0, 0, 0, // field value
 
             34, // enum type
-            1,  // string size
-            66, // "B"
+            1, // "B"
             1,  // number of fields
             9, 4, 0, 0, 0, // field value
             
             34, // enum type
-            1,  // string size
-            67, // "C"
+            2, // "C"
             0,  // number of fields
         ],
         bytes

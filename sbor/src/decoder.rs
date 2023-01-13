@@ -1,5 +1,4 @@
 use crate::rust::marker::PhantomData;
-use crate::rust::string::String;
 use crate::value_kind::*;
 use crate::*;
 
@@ -20,7 +19,7 @@ pub enum DecodeError {
 
     UnknownValueKind(u8),
 
-    UnknownDiscriminator(String),
+    UnknownDiscriminator(u8),
 
     InvalidBool(u8),
 
@@ -89,10 +88,8 @@ pub trait Decoder<X: CustomValueKind>: Sized {
         ValueKind::from_u8(id).ok_or(DecodeError::UnknownValueKind(id))
     }
 
-    fn read_discriminator(&mut self) -> Result<String, DecodeError> {
-        let n = self.read_size()?;
-        let slice = self.read_slice(n)?;
-        String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
+    fn read_discriminator(&mut self) -> Result<u8, DecodeError> {
+        self.read_byte()
     }
 
     fn read_size(&mut self) -> Result<usize, DecodeError> {
@@ -332,8 +329,8 @@ mod tests {
         map.insert(3, 4);
         assert_eq!(map, dec.decode::<BTreeMap<u8, u8>>().unwrap());
 
-        assert_eq!(Some(1u32), dec.decode::<Option<u32>>().unwrap());
         assert_eq!(None, dec.decode::<Option<u32>>().unwrap());
+        assert_eq!(Some(1u32), dec.decode::<Option<u32>>().unwrap());
         assert_eq!(Ok(1u32), dec.decode::<Result<u32, String>>().unwrap());
         assert_eq!(
             Err("hello".to_owned()),
@@ -361,11 +358,11 @@ mod tests {
             33, 2, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
             32, 9, 3, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
             32, 7, 2, 1, 2, // set
-            32, 33, 2, 2, 7, 1, 7, 2, 2, 7, 3, 7, 4, // map
-            34, 4, 83, 111, 109, 101, 1, 9, 1, 0, 0, 0, // Some<T>
-            34, 4, 78, 111, 110, 101, 0, // None
-            34, 2, 79, 107, 1, 9, 1, 0, 0, 0, // Ok<T>
-            34, 3, 69, 114, 114, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
+            35, 7, 7, 2, 1, 2, 3, 4, // map
+            34, 0, 0, // None
+            34, 1, 1, 9, 1, 0, 0, 0, // Some<T>
+            34, 0, 1, 9, 1, 0, 0, 0, // Ok<T>
+            34, 1, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
         ];
         let mut dec = BasicDecoder::new(&bytes);
         assert_decoding(&mut dec);

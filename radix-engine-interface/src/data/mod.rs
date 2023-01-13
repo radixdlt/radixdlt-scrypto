@@ -109,7 +109,7 @@ macro_rules! args {
 mod tests {
     use super::*;
     use crate::model::*;
-    use crate::scrypto;
+    use crate::*;
     use sbor::rust::borrow::ToOwned;
     use sbor::rust::boxed::Box;
     use sbor::rust::cell::RefCell;
@@ -124,7 +124,7 @@ mod tests {
 
     #[test]
     fn test_args() {
-        #[scrypto(Encode, Decode, Categorize)]
+        #[derive(ScryptoEncode, ScryptoDecode, ScryptoCategorize)]
         struct A {
             a: u32,
             b: String,
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn test_args_with_non_fungible_id() {
-        let id = NonFungibleId::U32(1);
+        let id = NonFungibleId::Number(1);
         let _x = args!(BTreeSet::from([id]));
     }
 
@@ -155,20 +155,20 @@ mod tests {
         assert!(scrypto_encode(&valid_value).is_ok());
 
         let invalid_value = build_value_of_vec_of_depth(MAX_SCRYPTO_SBOR_DEPTH + 1);
-        assert!(matches!(
+        assert_eq!(
             scrypto_encode(&invalid_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
 
         // Test deep scrypto value tuples
         let valid_value = build_value_of_tuple_of_depth(MAX_SCRYPTO_SBOR_DEPTH);
         assert!(scrypto_encode(&valid_value).is_ok());
 
         let invalid_value = build_value_of_tuple_of_depth(MAX_SCRYPTO_SBOR_DEPTH + 1);
-        assert!(matches!(
+        assert_eq!(
             scrypto_encode(&invalid_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
     }
 
     #[test]
@@ -182,10 +182,10 @@ mod tests {
 
         let invalid_payload =
             encode_ignore_depth(&build_value_of_vec_of_depth(MAX_SCRYPTO_SBOR_DEPTH + 1));
-        assert!(matches!(
+        assert_eq!(
             scrypto_decode::<ScryptoValue>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
 
         // Test deep scrypto value tuples
         let valid_payload =
@@ -194,10 +194,10 @@ mod tests {
 
         let invalid_payload =
             encode_ignore_depth(&build_value_of_tuple_of_depth(MAX_SCRYPTO_SBOR_DEPTH + 1));
-        assert!(matches!(
+        assert_eq!(
             scrypto_decode::<ScryptoValue>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
     }
 
     #[test]
@@ -213,16 +213,16 @@ mod tests {
         assert!(scrypto_encode(&valid_value_as_scrypto_value).is_ok());
 
         let invalid_value = vec![wrap_in_64_collections(Option::<String>::None)];
-        assert!(matches!(
+        assert_eq!(
             scrypto_encode(&invalid_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
         let invalid_value_as_scrypto_value =
             decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&invalid_value));
-        assert!(matches!(
+        assert_eq!(
             scrypto_encode(&invalid_value_as_scrypto_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
 
         // Test deep nested types
         let valid_value = build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH);
@@ -232,37 +232,38 @@ mod tests {
         assert!(scrypto_encode(&valid_value_as_scrypto_value).is_ok());
 
         let invalid_value = vec![build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH)];
-        assert!(matches!(
+        assert_eq!(
             scrypto_encode(&invalid_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
         let invalid_value_as_scrypto_value =
             decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&invalid_value));
-        assert!(matches!(
+        assert_eq!(
             scrypto_encode(&invalid_value_as_scrypto_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
 
         // Test hashmaps
-        let valid_value = wrap_in_hashmap(build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH - 2)); // Maps add 2 depth (for now)
+        let valid_value = wrap_in_hashmap(wrap_in_hashmap(build_nested_struct_of_depth(
+            MAX_SCRYPTO_SBOR_DEPTH - 2,
+        )));
         assert!(scrypto_encode(&valid_value).is_ok());
         let valid_value_as_scrypto_value =
             decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&valid_value));
         assert!(scrypto_encode(&valid_value_as_scrypto_value).is_ok());
-
-        let invalid_value = vec![wrap_in_hashmap(build_nested_struct_of_depth(
-            MAX_SCRYPTO_SBOR_DEPTH - 2,
-        ))];
-        assert!(matches!(
+        let invalid_value = wrap_in_hashmap(wrap_in_hashmap(wrap_in_hashmap(
+            build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH - 2),
+        )));
+        assert_eq!(
             scrypto_encode(&invalid_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
         let invalid_value_as_scrypto_value =
             decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&invalid_value));
-        assert!(matches!(
+        assert_eq!(
             scrypto_encode(&invalid_value_as_scrypto_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
 
         // Test hashsets + tuples
         let valid_value = wrap_in_61_vecs(Some(wrap_in_tuple_single(wrap_in_hashset("hello"))));
@@ -274,16 +275,16 @@ mod tests {
         let invalid_value = vec![wrap_in_61_vecs(Some(wrap_in_tuple_single(
             wrap_in_hashset("hello"),
         )))];
-        assert!(matches!(
+        assert_eq!(
             scrypto_encode(&invalid_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
         let invalid_value_as_scrypto_value =
             decode_ignore_depth::<ScryptoValue>(&encode_ignore_depth(&invalid_value));
-        assert!(matches!(
+        assert_eq!(
             scrypto_encode(&invalid_value_as_scrypto_value),
             Err(EncodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
     }
 
     #[test]
@@ -298,14 +299,14 @@ mod tests {
 
         let invalid_payload =
             encode_ignore_depth(&vec![wrap_in_64_collections(Option::<String>::None)]); // 65 deep
-        assert!(matches!(
+        assert_eq!(
             scrypto_decode::<Vec<SixtyFourDeepCollection<String>>>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
-        assert!(matches!(
+        );
+        assert_eq!(
             scrypto_decode::<ScryptoValue>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
 
         // Test deep nested types
         let valid_payload =
@@ -319,29 +320,28 @@ mod tests {
             scrypto_decode::<Vec<NestedType>>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
         ));
-        assert!(matches!(
+        assert_eq!(
             scrypto_decode::<ScryptoValue>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
 
         // Test hashmaps
-        let valid_payload = encode_ignore_depth(&wrap_in_hashmap(build_nested_struct_of_depth(
-            MAX_SCRYPTO_SBOR_DEPTH - 2,
-        ))); // Maps add 2 depth (for now)
-        assert!(scrypto_decode::<HashMap<u8, NestedType>>(&valid_payload).is_ok());
-        assert!(scrypto_decode::<ScryptoValue>(&valid_payload).is_ok());
-
-        let invalid_payload = encode_ignore_depth(&vec![wrap_in_hashmap(
+        let valid_payload = encode_ignore_depth(&wrap_in_hashmap(wrap_in_hashmap(
             build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH - 2),
-        )]);
+        )));
+        assert!(scrypto_decode::<HashMap<u8, HashMap<u8, NestedType>>>(&valid_payload).is_ok());
+        assert!(scrypto_decode::<ScryptoValue>(&valid_payload).is_ok());
+        let invalid_payload = encode_ignore_depth(&wrap_in_hashmap(wrap_in_hashmap(
+            wrap_in_hashmap(build_nested_struct_of_depth(MAX_SCRYPTO_SBOR_DEPTH - 2)),
+        )));
         assert!(matches!(
-            scrypto_decode::<Vec<HashMap<u8, NestedType>>>(&invalid_payload),
+            scrypto_decode::<HashMap<u8, HashMap<u8, HashMap<u8, NestedType>>>>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
         ));
-        assert!(matches!(
+        assert_eq!(
             scrypto_decode::<ScryptoValue>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
 
         // Test hashsets + tuples
         let valid_payload = encode_ignore_depth(&wrap_in_61_vecs(Some(wrap_in_tuple_single(
@@ -353,14 +353,14 @@ mod tests {
         let invalid_payload = encode_ignore_depth(&vec![wrap_in_61_vecs(Some(
             wrap_in_tuple_single(wrap_in_hashset("hello")),
         ))]);
-        assert!(matches!(
+        assert_eq!(
             scrypto_decode::<Vec<SixtyOneDeepVec<(HashSet<String>,)>>>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
-        assert!(matches!(
+        );
+        assert_eq!(
             scrypto_decode::<ScryptoValue>(&invalid_payload),
             Err(DecodeError::MaxDepthExceeded(MAX_SCRYPTO_SBOR_DEPTH))
-        ));
+        );
     }
 
     fn encode_ignore_depth<
@@ -414,8 +414,17 @@ mod tests {
         value
     }
 
-    #[scrypto(Categorize, Encode, Decode)]
-    #[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
+    #[derive(
+        ScryptoCategorize,
+        ScryptoEncode,
+        ScryptoDecode,
+        Debug,
+        Clone,
+        Eq,
+        PartialEq,
+        Ord,
+        PartialOrd,
+    )]
     struct NestedType {
         inner: Box<Rc<Option<RefCell<NestedType>>>>,
     }
@@ -485,8 +494,7 @@ mod tests {
     }
 
     // NB - can't use Hash stuff here because they can't nest
-    // NOTE - Maps encode currently as Vec<Tuple<K, V>> so count as two deep
-    type FourDeepCollection<T> = BTreeMap<u8, BTreeSet<Vec<T>>>;
+    type FourDeepCollection<T> = BTreeMap<u8, BTreeMap<u8, BTreeSet<Vec<T>>>>;
 
     fn wrap_in_4_collections<T: Eq + Ord + Eq>(inner: Option<T>) -> FourDeepCollection<T> {
         let inner = match inner {
@@ -497,7 +505,9 @@ mod tests {
         inner2.insert(inner);
         let mut inner3 = BTreeMap::new();
         inner3.insert(1, inner2);
-        inner3
+        let mut inner4 = BTreeMap::new();
+        inner4.insert(2, inner3);
+        inner4
     }
 
     fn wrap_in_hashmap<T>(inner: T) -> HashMap<u8, T> {

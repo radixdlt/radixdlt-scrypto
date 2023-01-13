@@ -1,11 +1,10 @@
 use crate::api::types::*;
 use crate::data::ScryptoValue;
-use crate::scrypto;
+use crate::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RadixEngineInput {
     // High Level method call
     InvokeMethod(ScryptoReceiver, String, ScryptoValue),

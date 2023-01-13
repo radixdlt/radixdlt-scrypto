@@ -1,18 +1,28 @@
 use super::*;
 use crate::model::*;
-use crate::scrypto;
+use crate::*;
 
 // TODO: Remove and replace with real HeapRENodes
-#[derive(Debug, Clone)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ScryptoRENode {
     Component(PackageAddress, String, Vec<u8>),
     KeyValueStore,
 }
 
 // TODO: Remove when better type system implemented
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum RENodeType {
     Bucket,
     Proof,
@@ -36,8 +46,19 @@ pub enum RENodeType {
     Logger,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
@@ -113,8 +134,19 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
@@ -193,8 +225,18 @@ pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum NonFungibleStoreOffset {
     Entry(NonFungibleId),
 }
@@ -247,8 +289,18 @@ pub enum TransactionRuntimeOffset {
 }
 
 /// Specifies a specific Substate into a given RENode
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum SubstateOffset {
     Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
@@ -272,6 +324,16 @@ pub enum SubstateOffset {
 }
 
 /// TODO: separate space addresses?
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct SubstateId(pub RENodeId, pub SubstateOffset);

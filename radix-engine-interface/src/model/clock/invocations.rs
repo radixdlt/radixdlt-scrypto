@@ -1,14 +1,12 @@
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
 use crate::api::api::*;
 use crate::model::*;
-use crate::scrypto;
 use crate::time::{Instant, TimeComparisonOperator};
 use crate::wasm::*;
+use crate::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockCreateInvocation {}
 
 impl Invocation for ClockCreateInvocation {
@@ -25,14 +23,12 @@ impl Into<CallTableInvocation> for ClockCreateInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockGetCurrentTimeMethodArgs {
     pub precision: TimePrecision,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockGetCurrentTimeInvocation {
     pub receiver: ComponentAddress,
     pub precision: TimePrecision,
@@ -52,16 +48,14 @@ impl Into<CallTableInvocation> for ClockGetCurrentTimeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockCompareCurrentTimeMethodArgs {
     pub instant: Instant,
     pub precision: TimePrecision,
     pub operator: TimeComparisonOperator,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockCompareCurrentTimeInvocation {
     pub receiver: ComponentAddress,
     pub instant: Instant,
@@ -83,14 +77,12 @@ impl Into<CallTableInvocation> for ClockCompareCurrentTimeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockSetCurrentTimeMethodArgs {
     pub current_time_ms: i64,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockSetCurrentTimeInvocation {
     pub receiver: ComponentAddress,
     pub current_time_ms: i64,

@@ -11,8 +11,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessRulesChainError {
     BlueprintFunctionNotFound(String),
     InvalidIndex(u32),
@@ -83,7 +82,7 @@ impl Executor for AccessRulesAddAccessCheckInvocation {
                     blueprint_name, package_id
                 )
             });
-            for (key, _) in self.access_rules.iter() {
+            for (key, _) in self.access_rules.get_all_method_auth() {
                 if let AccessRuleKey::ScryptoMethod(func_name) = key {
                     if !blueprint_abi.contains_fn(func_name.as_str()) {
                         return Err(RuntimeError::ApplicationError(

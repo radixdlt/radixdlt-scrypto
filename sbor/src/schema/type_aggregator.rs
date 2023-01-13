@@ -71,6 +71,13 @@ fn linearize<E: CustomTypeExtension>(
                 })
                 .collect(),
         },
+        TypeKind::Map {
+            key_type,
+            value_type,
+        } => TypeKind::Map {
+            key_type: resolve_local_type_ref(schemas, &key_type),
+            value_type: resolve_local_type_ref(schemas, &value_type),
+        },
         TypeKind::Custom(custom_type_kind) => {
             TypeKind::Custom(E::linearize_type_kind(custom_type_kind, schemas))
         }

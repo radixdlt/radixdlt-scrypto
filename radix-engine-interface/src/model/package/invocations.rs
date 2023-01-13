@@ -1,16 +1,14 @@
 use crate::api::api::Invocation;
 use crate::api::types::RENodeId;
 use crate::model::*;
-use crate::scrypto;
 use crate::wasm::*;
+use crate::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackagePublishInvocation {
     pub code: Vec<u8>,
     pub abi: Vec<u8>,
@@ -37,8 +35,7 @@ impl Into<CallTableInvocation> for PackagePublishInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
@@ -58,15 +55,13 @@ impl Into<CallTableInvocation> for PackageSetRoyaltyConfigInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageClaimRoyaltyInvocation {
     pub receiver: PackageAddress,
 }
@@ -85,8 +80,7 @@ impl Into<CallTableInvocation> for PackageClaimRoyaltyInvocation {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageClaimRoyaltyExecutable {
     pub receiver: RENodeId,
 }

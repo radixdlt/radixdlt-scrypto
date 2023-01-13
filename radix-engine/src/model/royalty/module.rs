@@ -5,11 +5,9 @@ use radix_engine_interface::api::types::{
     ComponentOffset, FnIdentifier, GlobalAddress, GlobalOffset, PackageOffset, RENodeId,
     SubstateId, SubstateOffset, VaultOffset,
 };
-use radix_engine_interface::scrypto;
-use sbor::*;
+use radix_engine_interface::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RoyaltyError {
     TrackError(TrackError),
 }

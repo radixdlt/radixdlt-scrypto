@@ -1,21 +1,19 @@
 use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::{Categorize, Decode, Encode};
 
 use crate::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneParams {
     pub initial_proofs: Vec<NonFungibleAddress>,
     pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
     pub payload_size: usize,
@@ -47,8 +45,7 @@ pub struct Executable<'a> {
     context: ExecutionContext,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct RuntimeValidationRequest {
     /// The validation to perform
     pub validation: RuntimeValidation,
@@ -57,8 +54,7 @@ pub struct RuntimeValidationRequest {
     pub skip_assertion: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RuntimeValidation {
     /// To ensure we don't commit a duplicate intent hash
     IntentHashUniqueness { intent_hash: Hash },

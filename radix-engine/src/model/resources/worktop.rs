@@ -24,8 +24,7 @@ impl WorktopSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum WorktopError {
     AssertionFailed,
 }

@@ -10,18 +10,18 @@
 # account component. However, since this example hows how to get free funds from the faucet, then 
 # we can assume that our account component probably has no funds in the first place. 
 CALL_METHOD 
-    ComponentAddress("{faucet_component_address}") 
+    ComponentAddress("${faucet_component_address}") 
     "lock_fee"
     Decimal("10");
 
 # Calling the "free" method on the faucet component which is the method responsible for dispensing 
 # XRD from the faucet.
 CALL_METHOD 
-    ComponentAddress("{faucet_component_address}") 
+    ComponentAddress("${faucet_component_address}") 
     "free";
 
 # Depositing all of the XRD dispensed from the faucet into our account component.
 CALL_METHOD
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "deposit_batch"
     Expression("ENTIRE_WORKTOP");

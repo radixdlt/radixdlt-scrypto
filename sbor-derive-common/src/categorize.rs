@@ -11,7 +11,10 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_categorize(input: TokenStream) -> Result<TokenStream> {
+pub fn handle_categorize(
+    input: TokenStream,
+    context_custom_value_kind: Option<&'static str>,
+) -> Result<TokenStream> {
     trace!("handle_categorize() starts");
 
     let DeriveInput {
@@ -22,7 +25,7 @@ pub fn handle_categorize(input: TokenStream) -> Result<TokenStream> {
         ..
     } = parse2(input)?;
     let (impl_generics, ty_generics, where_clause, sbor_cti) =
-        build_custom_categorize_generic(&generics, &attrs)?;
+        build_custom_categorize_generic(&generics, &attrs, context_custom_value_kind)?;
 
     let output = match data {
         Data::Struct(_) => quote! {
@@ -67,7 +70,7 @@ mod tests {
     #[test]
     fn test_categorize_struct() {
         let input = TokenStream::from_str("struct Test {a: u32}").unwrap();
-        let output = handle_categorize(input).unwrap();
+        let output = handle_categorize(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -85,7 +88,7 @@ mod tests {
     #[test]
     fn test_categorize_struct_generics() {
         let input = TokenStream::from_str("struct Test<A> {a: A}").unwrap();
-        let output = handle_categorize(input).unwrap();
+        let output = handle_categorize(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -103,7 +106,7 @@ mod tests {
     #[test]
     fn test_categorize_enum() {
         let input = TokenStream::from_str("enum Test {A, B (u32), C {x: u8}}").unwrap();
-        let output = handle_categorize(input).unwrap();
+        let output = handle_categorize(input, None).unwrap();
 
         assert_code_eq(
             output,

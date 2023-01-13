@@ -1,14 +1,14 @@
 use crate::abi::*;
 use crate::api::types::*;
 use crate::data::ScryptoCustomValueKind;
-use crate::scrypto;
+use crate::*;
 #[cfg(not(feature = "alloc"))]
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 use utils::copy_u8_array;
 
 // TODO: it's still up to debate whether this should be an enum OR dedicated types for each variant.
-#[scrypto(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Own {
     Bucket(BucketId),
     Proof(ProofId),
