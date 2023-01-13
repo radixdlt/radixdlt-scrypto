@@ -632,6 +632,7 @@ impl<'g, 's, W, R, M> ComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
         R: FeeReserve,
         M: BaseModule<R>, {
     fn invoke_method(&mut self, receiver: Receiver, method_name: &str, args: &ScryptoValue) -> Result<ScryptoValue, RuntimeError> {
+        // TODO: Use execution mode?
         let invocation = resolve_method(receiver, method_name, &scrypto_encode(args).unwrap(), self)?;
         let rtn = invoke_call_table(invocation, self)?;
         Ok(rtn.into())

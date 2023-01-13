@@ -219,9 +219,9 @@ fn test_basic_transfer() {
         + 8800 /* drop_lock */
         + 2000 /* drop_node */
         + 1300 /* invoke */
-        + 11600 /* lock_substate */
+        + 11900 /* lock_substate */
         + 7000 /* read_owned_nodes */
-        + 38500 /* read_substate */
+        + 40000 /* read_substate */
         + 4000 /* run_native_method */
         + 306401 /* run_wasm */
         + 10000 /* tx_base_fee */
