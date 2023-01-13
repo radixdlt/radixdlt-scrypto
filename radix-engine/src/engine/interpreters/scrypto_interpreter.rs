@@ -3,22 +3,19 @@ use crate::types::*;
 use crate::wasm::{WasmEngine, WasmInstance, WasmInstrumenter, WasmMeteringConfig, WasmRuntime};
 use radix_engine_interface::api::api::{ActorApi, ComponentApi, EngineApi, InvokableModel};
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::{match_schema_with_value, IndexedScryptoValue, ScryptoValue};
+use radix_engine_interface::data::{match_schema_with_value, ScryptoValue};
 
-pub struct ScryptoExecutorToParsed {
+pub struct ScryptoExecutor {
     pub package_address: PackageAddress,
     pub export_name: String,
     pub component_id: Option<ComponentId>,
     pub args: ScryptoValue,
 }
 
-impl Executor for ScryptoExecutorToParsed {
-    type Output = IndexedScryptoValue;
+impl Executor for ScryptoExecutor {
+    type Output = ScryptoValue;
 
-    fn execute<Y, W>(
-        self,
-        api: &mut Y,
-    ) -> Result<(IndexedScryptoValue, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + EngineApi<RuntimeError>
@@ -86,41 +83,10 @@ impl Executor for ScryptoExecutorToParsed {
                     .into_iter()
                     .collect(),
             };
-            Ok((output, update))
+            Ok((output.into(), update))
         };
 
         rtn
-    }
-}
-
-pub struct ScryptoExecutor {
-    pub package_address: PackageAddress,
-    pub export_name: String,
-    pub component_id: Option<ComponentId>,
-    pub args: ScryptoValue,
-}
-
-impl Executor for ScryptoExecutor {
-    type Output = ScryptoValue;
-
-    fn execute<Y, W>(self, api: &mut Y) -> Result<(ScryptoValue, CallFrameUpdate), RuntimeError>
-    where
-        Y: SystemApi
-            + EngineApi<RuntimeError>
-            + InvokableModel<RuntimeError>
-            + ActorApi<RuntimeError>
-            + ComponentApi<RuntimeError>
-            + VmApi<W>,
-        W: WasmEngine,
-    {
-        ScryptoExecutorToParsed {
-            package_address: self.package_address,
-            args: self.args,
-            component_id: self.component_id,
-            export_name: self.export_name,
-        }
-        .execute(api)
-        .map(|(indexed, update)| (indexed.into(), update))
     }
 }
 
