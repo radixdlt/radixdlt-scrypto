@@ -1,6 +1,6 @@
 use radix_engine_interface::api::types::{
     AuthZoneStackId, BucketId, ComponentId, FeeReserveId, KeyValueStoreId, NonFungibleStoreId,
-    PackageId, ProofId, ResourceManagerId, TransactionRuntimeId, VaultId,
+    PackageId, ProofId, ResourceManagerId, TransactionRuntimeId, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
@@ -79,6 +79,15 @@ impl IdAllocator {
         Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
     }
 
+    pub fn new_validator_address(&mut self) -> Result<SystemAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis validator {:?}", hash(&data).lower_26_bytes());
+
+        Ok(SystemAddress::Validator(hash(data).lower_26_bytes()))
+    }
+
     pub fn new_epoch_manager_address(&mut self) -> Result<SystemAddress, IdAllocationError> {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
@@ -135,6 +144,10 @@ impl IdAllocator {
     }
 
     pub fn new_component_id(&mut self) -> Result<ComponentId, IdAllocationError> {
+        self.next_id()
+    }
+
+    pub fn new_validator_id(&mut self) -> Result<ValidatorId, IdAllocationError> {
         self.next_id()
     }
 

@@ -546,14 +546,19 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
-        BasicInstruction::RegisterValidator { validator } => {
-            f.write_str("REGISTER_VALIDATOR")?;
-            format_typed_value(f, context, validator)?;
+        BasicInstruction::CreateValidator { key } => {
+            f.write_str("CREATE_VALIDATOR")?;
+            format_typed_value(f, context, key)?;
             f.write_str(";")?;
         }
-        BasicInstruction::UnregisterValidator { validator } => {
+        BasicInstruction::RegisterValidator { validator_address } => {
+            f.write_str("REGISTER_VALIDATOR")?;
+            format_typed_value(f, context, validator_address)?;
+            f.write_str(";")?;
+        }
+        BasicInstruction::UnregisterValidator { validator_address } => {
             f.write_str("UNREGISTER_VALIDATOR")?;
-            format_typed_value(f, context, validator)?;
+            format_typed_value(f, context, validator_address)?;
             f.write_str(";")?;
         }
     }

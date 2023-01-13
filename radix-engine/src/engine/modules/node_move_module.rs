@@ -77,6 +77,7 @@ impl NodeMoveModule {
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::EpochManager(..)
+            | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                 NodeMoveError::CantMoveDownstream(node_id),
@@ -119,6 +120,7 @@ impl NodeMoveModule {
             | RENodeId::Worktop
             | RENodeId::Logger
             | RENodeId::EpochManager(..)
+            | RENodeId::Validator(..)
             | RENodeId::Clock(..)
             | RENodeId::Global(..) => Err(RuntimeError::ModuleError(ModuleError::NodeMoveError(
                 NodeMoveError::CantMoveUpstream(node_id),

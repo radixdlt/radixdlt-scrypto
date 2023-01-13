@@ -1,8 +1,7 @@
-use radix_engine_interface::api::types::{GlobalAddress, VaultId};
-use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
+use radix_engine_interface::api::types::*;
+use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::model::*;
 use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
@@ -195,6 +194,17 @@ pub enum BasicInstruction {
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
+    // TODO: Integrate the following with CallMethod
+    CreateValidator {
+        key: EcdsaSecp256k1PublicKey,
+    },
+    RegisterValidator {
+        validator_address: SystemAddress, // TODO: Replace this with ComponentAddress
+    },
+    UnregisterValidator {
+        validator_address: SystemAddress, // TODO: Replace this with ComponentAddress
+    },
+
     /// Calls a scrypto function.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
@@ -212,14 +222,6 @@ pub enum BasicInstruction {
         component_address: ComponentAddress,
         method_name: String,
         args: Vec<u8>,
-    },
-
-    // TODO: Integrate this with CallMethod
-    RegisterValidator {
-        validator: EcdsaSecp256k1PublicKey,
-    },
-    UnregisterValidator {
-        validator: EcdsaSecp256k1PublicKey,
     },
 }
 

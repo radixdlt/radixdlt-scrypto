@@ -351,13 +351,18 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn register_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(BasicInstruction::RegisterValidator { validator });
+    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateValidator { key });
         self
     }
 
-    pub fn unregister_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(BasicInstruction::UnregisterValidator { validator });
+    pub fn register_validator(&mut self, validator_address: SystemAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::RegisterValidator { validator_address });
+        self
+    }
+
+    pub fn unregister_validator(&mut self, validator_address: SystemAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::UnregisterValidator { validator_address });
         self
     }
 

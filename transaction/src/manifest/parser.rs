@@ -245,6 +245,9 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
+            TokenKind::CreateValidator => Instruction::CreateValidator {
+                key: self.parse_value()?,
+            },
             TokenKind::RegisterValidator => Instruction::RegisterValidator {
                 validator: self.parse_value()?,
             },
