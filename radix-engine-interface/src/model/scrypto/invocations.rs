@@ -2,9 +2,9 @@ use crate::api::api::Invocation;
 use crate::api::types::ComponentId;
 use crate::model::{CallTableInvocation, ComponentAddress, PackageAddress};
 use crate::wasm::SerializableInvocation;
+use crate::*;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::string::String;
-use crate::*;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

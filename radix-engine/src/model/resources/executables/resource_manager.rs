@@ -571,9 +571,7 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     }
 }
 
-impl ExecutableInvocation
-    for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation
-{
+impl ExecutableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi>(
@@ -1270,7 +1268,10 @@ impl ExecutableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
 impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
     type Output = Bucket;
 
-    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {

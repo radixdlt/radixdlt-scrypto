@@ -143,9 +143,7 @@ impl SerializableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialS
     type ScryptoOutput = (ResourceAddress, Bucket);
 }
 
-impl Into<CallTableInvocation>
-    for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation
-{
+impl Into<CallTableInvocation> for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     fn into(self) -> CallTableInvocation {
         NativeInvocation::ResourceManager(
             ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(self),

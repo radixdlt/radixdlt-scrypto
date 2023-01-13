@@ -1,8 +1,8 @@
-use sbor::rust::str::FromStr;
 use crate::api::types::*;
 use crate::data::scrypto_decode;
 use crate::model::*;
 use crate::*;
+use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
