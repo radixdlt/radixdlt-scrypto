@@ -1,7 +1,7 @@
 use radix_engine_interface::abi::*;
 use radix_engine_interface::api::types::{GlobalAddress, VaultId};
 use radix_engine_interface::constants::*;
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::crypto::{hash, EcdsaSecp256k1PublicKey, Hash};
 use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
@@ -295,7 +295,7 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<T>,
@@ -327,7 +327,7 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource with an owner badge
     pub fn create_non_fungible_resource_with_owner<T, V>(
         &mut self,
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleAddress,
         initial_supply: Option<T>,
@@ -348,6 +348,16 @@ impl ManifestBuilder {
             owner_badge,
             initial_supply,
         });
+        self
+    }
+
+    pub fn register_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::RegisterValidator { validator });
+        self
+    }
+
+    pub fn unregister_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::UnregisterValidator { validator });
         self
     }
 
@@ -464,8 +474,8 @@ impl ManifestBuilder {
         self.blobs.insert(abi_hash, abi);
 
         self.add_instruction(BasicInstruction::PublishPackage {
-            code: Blob(code_hash),
-            abi: Blob(abi_hash),
+            code: ManifestBlobRef(code_hash),
+            abi: ManifestBlobRef(abi_hash),
             royalty_config,
             metadata,
             access_rules,
@@ -488,8 +498,8 @@ impl ManifestBuilder {
         self.blobs.insert(abi_hash, abi);
 
         self.add_instruction(BasicInstruction::PublishPackageWithOwner {
-            code: Blob(code_hash),
-            abi: Blob(abi_hash),
+            code: ManifestBlobRef(code_hash),
+            abi: ManifestBlobRef(abi_hash),
             owner_badge,
         });
         self
@@ -604,6 +614,26 @@ impl ManifestBuilder {
             .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
             .collect();
         self.add_instruction(BasicInstruction::MintNonFungible {
+            resource_address,
+            entries,
+        });
+        self
+    }
+
+    pub fn mint_uuid_non_fungible<T, V>(
+        &mut self,
+        resource_address: ResourceAddress,
+        entries: T,
+    ) -> &mut Self
+    where
+        T: IntoIterator<Item = V>,
+        V: NonFungibleData,
+    {
+        let entries = entries
+            .into_iter()
+            .map(|e| (e.immutable_data().unwrap(), e.mutable_data().unwrap()))
+            .collect();
+        self.add_instruction(BasicInstruction::MintUuidNonFungible {
             resource_address,
             entries,
         });

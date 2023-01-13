@@ -6,8 +6,7 @@ use radix_engine_interface::data::IndexedScryptoValue;
 use radix_engine_interface::model::AccessRules;
 
 /// A transient resource container.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessRulesChainSubstate {
     pub access_rules_chain: Vec<AccessRules>,
 }

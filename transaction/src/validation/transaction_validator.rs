@@ -292,10 +292,13 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::SetMethodAccessRule { .. } => {}
                 BasicInstruction::MintFungible { .. } => {}
                 BasicInstruction::MintNonFungible { .. } => {}
+                BasicInstruction::MintUuidNonFungible { .. } => {}
                 BasicInstruction::CreateFungibleResource { .. } => {}
                 BasicInstruction::CreateFungibleResourceWithOwner { .. } => {}
                 BasicInstruction::CreateNonFungibleResource { .. } => {}
                 BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
+                BasicInstruction::RegisterValidator { .. } => {}
+                BasicInstruction::UnregisterValidator { .. } => {}
             }
         }
 

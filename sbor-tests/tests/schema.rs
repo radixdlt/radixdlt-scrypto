@@ -99,7 +99,7 @@ fn create_basic_sample_schema_works_correctly() {
     );
     assert!(
         matches!(type_data.kind.into_owned(), TypeKind::Tuple { field_types } if matches!(field_types[..], [
-            LocalTypeIndex::WellKnown(well_known_basic_types::UNIT_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_ID),
             LocalTypeIndex::SchemaLocalIndex(1),
         ]))
     );
@@ -109,7 +109,9 @@ fn create_basic_sample_schema_works_correctly() {
     let type_data = schema.resolve(LocalTypeIndex::SchemaLocalIndex(1)).unwrap();
     assert_eq!(type_data.metadata.type_name, "UnitStruct");
     assert!(matches!(type_data.metadata.child_names, ChildNames::None));
-    assert!(matches!(type_data.kind.into_owned(), TypeKind::Unit));
+    assert!(
+        matches!(type_data.kind.into_owned(), TypeKind::Tuple { field_types } if matches!(field_types[..], []))
+    );
 }
 
 #[test]
@@ -147,14 +149,14 @@ fn create_advanced_sample_schema_works_correctly() {
     assert!(matches!(
         field_types[..],
         [
-            LocalTypeIndex::WellKnown(well_known_basic_types::UNIT_ID),
-            LocalTypeIndex::WellKnown(well_known_basic_types::U32_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::UNIT_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::U32_ID),
             LocalTypeIndex::SchemaLocalIndex(1), // Registers (u8, Vec<T>) which also registers SchemaLocal(2) as Vec<T>
-            LocalTypeIndex::WellKnown(well_known_basic_types::STRING_ID),
-            LocalTypeIndex::WellKnown(well_known_basic_types::U128_ID),
-            LocalTypeIndex::WellKnown(well_known_basic_types::U128_ID), // S resolves to U128
+            LocalTypeIndex::WellKnown(basic_well_known_types::STRING_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::U128_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::U128_ID), // S resolves to U128
             LocalTypeIndex::SchemaLocalIndex(3),                        // T resolves to UnitStruct
-            LocalTypeIndex::WellKnown(well_known_basic_types::BYTES_ID),
+            LocalTypeIndex::WellKnown(basic_well_known_types::BYTES_ID),
             LocalTypeIndex::SchemaLocalIndex(4), // Vec<S> = Vec<u128>, a non-well-known type
             LocalTypeIndex::SchemaLocalIndex(3), // T resolves to UnitStruct - at the same schema index as before
             LocalTypeIndex::SchemaLocalIndex(5), // HashMap<[u8; 3], IndexMap<i64, BTreeSet<i32>>>
@@ -182,7 +184,7 @@ fn creating_schema_from_multiple_types_works_correctly() {
     ));
     assert!(matches!(
         i64_type_ref,
-        LocalTypeIndex::WellKnown(well_known_basic_types::I64_ID)
+        LocalTypeIndex::WellKnown(basic_well_known_types::I64_ID)
     ));
     assert!(matches!(
         unit_struct_type_ref_2,

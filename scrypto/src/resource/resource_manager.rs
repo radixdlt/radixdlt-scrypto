@@ -13,7 +13,7 @@ use sbor::rust::vec::Vec;
 use scrypto::engine::scrypto_env::ScryptoEnv;
 use scrypto::scrypto_env_native_fn;
 
-use crate::scrypto;
+use crate::*;
 
 /// Represents a resource manager.
 #[derive(Debug)]
@@ -254,6 +254,18 @@ impl ResourceManager {
         );
         let mut env = ScryptoEnv;
         env.invoke(ResourceManagerMintNonFungibleInvocation {
+            entries,
+            receiver: self.0,
+        })
+        .unwrap()
+    }
+
+    /// Mints uuid non-fungible resources
+    pub fn mint_uuid_non_fungible<T: NonFungibleData>(&mut self, data: T) -> Bucket {
+        let mut entries = Vec::new();
+        entries.push((data.immutable_data().unwrap(), data.mutable_data().unwrap()));
+        let mut env = ScryptoEnv;
+        env.invoke(ResourceManagerMintUuidNonFungibleInvocation {
             entries,
             receiver: self.0,
         })

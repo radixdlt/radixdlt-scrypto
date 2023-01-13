@@ -9,16 +9,16 @@
 
 # Locking 10 XRD in fees from the account component. 
 CALL_METHOD 
-    ComponentAddress("{account_component_address}") 
+    ComponentAddress("${account_component_address}") 
     "lock_fee"
     Decimal("10");
 
 # Creating a new resource 
 CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER
-    Enum("U32")
-    Array<Tuple>(
-        Tuple("name", "MyResource"),                                        # Resource Name
-        Tuple("description", "A very innovative and important resource")    # Resource Description
-    ) 
-    NonFungibleAddress("{owner_badge_resource_address}", {owner_badge_non_fungible_id})
+    Enum("NonFungibleIdKind::Number")
+    Map<String, String>(
+        "name", "MyResource",                                        # Resource Name
+        "description", "A very innovative and important resource"    # Resource Description
+    )
+    NonFungibleAddress("${owner_badge_resource_address}", ${owner_badge_non_fungible_id})
     None;

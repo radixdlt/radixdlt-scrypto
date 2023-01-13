@@ -13,7 +13,6 @@ use sbor::*;
 )]
 #[derive(Debug, Clone, PartialEq, Eq, Categorize, Decode, Encode)]
 pub enum Type {
-    Unit,
     Bool,
     I8,
     I16,
@@ -73,13 +72,11 @@ pub enum Type {
         err_type: Box<Type>,
     },
 
-    // Global address types
+    // RE interpreted
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
     SystemAddress,
-
-    // RE interpreted
     Own, /* generic, either bucket, proof, vault, component or kv store. TODO: do we really need this? */
     Bucket,
     Proof,
@@ -89,7 +86,6 @@ pub enum Type {
         key_type: Box<Type>,
         value_type: Box<Type>,
     },
-    Blob,
 
     // Uninterpreted
     Hash,
@@ -130,12 +126,6 @@ pub enum Fields {
 /// A data structure that can be described using SBOR types.
 pub trait LegacyDescribe {
     fn describe() -> Type;
-}
-
-impl LegacyDescribe for () {
-    fn describe() -> Type {
-        Type::Unit
-    }
 }
 
 macro_rules! describe_basic_type {
@@ -186,8 +176,8 @@ impl<T: LegacyDescribe, const N: usize> LegacyDescribe for [T; N] {
 }
 
 macro_rules! describe_tuple {
-    ($($name:ident)+) => {
-        impl<$($name: LegacyDescribe),+> LegacyDescribe for ($($name,)+) {
+    ($($name:ident)*) => {
+        impl<$($name: LegacyDescribe),*> LegacyDescribe for ($($name,)*) {
             fn describe() -> Type {
                 Type::Tuple { element_types: vec![ $($name::describe(),)* ] }
             }
@@ -195,6 +185,8 @@ macro_rules! describe_tuple {
     };
 }
 
+describe_tuple! {} // Unit
+describe_tuple! { A }
 describe_tuple! { A B }
 describe_tuple! { A B C }
 describe_tuple! { A B C D }

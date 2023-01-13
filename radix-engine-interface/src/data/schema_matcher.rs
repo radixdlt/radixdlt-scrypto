@@ -6,7 +6,6 @@ use super::types::Own;
 
 pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
     match ty {
-        Type::Unit => Some(ValueKind::Unit),
         Type::Bool => Some(ValueKind::Bool),
         Type::I8 => Some(ValueKind::I8),
         Type::I16 => Some(ValueKind::I16),
@@ -46,7 +45,6 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         | Type::Vault
         | Type::Component
         | Type::KeyValueStore { .. } => Some(ValueKind::Custom(ScryptoCustomValueKind::Own)),
-        Type::Blob => Some(ValueKind::Custom(ScryptoCustomValueKind::Blob)),
 
         Type::Hash => Some(ValueKind::Custom(ScryptoCustomValueKind::Hash)),
         Type::EcdsaSecp256k1PublicKey => Some(ValueKind::Custom(
@@ -71,7 +69,6 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
 
 pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
     match ty {
-        Type::Unit => matches!(value, Value::Unit),
         Type::Bool => matches!(value, Value::Bool { .. }),
         Type::I8 => matches!(value, Value::I8 { .. }),
         Type::I16 => matches!(value, Value::I16 { .. }),
@@ -136,20 +133,25 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
             key_type,
             value_type,
         } => {
-            if let Value::Array {
-                element_value_kind,
-                elements,
+            if let Value::Map {
+                key_value_kind,
+                value_value_kind,
+                entries,
             } = value
             {
-                *element_value_kind == ValueKind::Tuple
-                    && elements.iter().all(|e| {
-                        if let Value::Tuple { fields } = e {
-                            fields.len() == 2
-                                && match_schema_with_value(key_type, &fields[0])
-                                && match_schema_with_value(value_type, &fields[1])
-                        } else {
-                            false
-                        }
+                let key_type_matches = match get_value_kind(key_type) {
+                    Some(id) => id == *key_value_kind,
+                    None => true,
+                };
+                let value_type_matches = match get_value_kind(value_type) {
+                    Some(id) => id == *value_value_kind,
+                    None => true,
+                };
+                key_type_matches
+                    && value_type_matches
+                    && entries.iter().all(|e| {
+                        match_schema_with_value(key_type, &e.0)
+                            && match_schema_with_value(value_type, &e.1)
                     })
             } else {
                 false
@@ -213,24 +215,22 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 fields,
             } = value
             {
-                for variant in type_variants {
-                    if variant.name.eq(discriminator) {
-                        return match &variant.fields {
-                            Fields::Unit => fields.is_empty(),
-                            Fields::Unnamed { unnamed } => {
-                                unnamed.len() == fields.len()
-                                    && unnamed.iter().enumerate().all(|(i, e)| {
-                                        match_schema_with_value(e, fields.get(i).unwrap())
-                                    })
-                            }
-                            Fields::Named { named } => {
-                                named.len() == fields.len()
-                                    && named.iter().enumerate().all(|(i, (_, e))| {
-                                        match_schema_with_value(e, fields.get(i).unwrap())
-                                    })
-                            }
-                        };
-                    }
+                if let Some(variant) = type_variants.get(*discriminator as usize) {
+                    return match &variant.fields {
+                        Fields::Unit => fields.is_empty(),
+                        Fields::Unnamed { unnamed } => {
+                            unnamed.len() == fields.len()
+                                && unnamed.iter().enumerate().all(|(i, e)| {
+                                    match_schema_with_value(e, fields.get(i).unwrap())
+                                })
+                        }
+                        Fields::Named { named } => {
+                            named.len() == fields.len()
+                                && named.iter().enumerate().all(|(i, (_, e))| {
+                                    match_schema_with_value(e, fields.get(i).unwrap())
+                                })
+                        }
+                    };
                 }
                 false
             } else {
@@ -243,11 +243,11 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 fields,
             } = value
             {
-                match discriminator.as_str() {
+                match *discriminator {
+                    OPTION_VARIANT_NONE => fields.len() == 0,
                     OPTION_VARIANT_SOME => {
                         fields.len() == 1 && match_schema_with_value(some_type, &fields[0])
                     }
-                    OPTION_VARIANT_NONE => fields.len() == 0,
                     _ => false,
                 }
             } else {
@@ -263,7 +263,7 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
                 fields,
             } = value
             {
-                match discriminator.as_str() {
+                match *discriminator {
                     RESULT_VARIANT_OK => {
                         fields.len() == 1 && match_schema_with_value(okay_type, &fields[0])
                     }
@@ -345,13 +345,6 @@ pub fn match_schema_with_value(ty: &Type, value: &ScryptoValue) -> bool {
         Type::KeyValueStore { .. } => {
             if let Value::Custom { value } = value {
                 matches!(value, ScryptoCustomValue::Own(Own::KeyValueStore(_)))
-            } else {
-                false
-            }
-        }
-        Type::Blob => {
-            if let Value::Custom { value } = value {
-                matches!(value, ScryptoCustomValue::Blob(_))
             } else {
                 false
             }

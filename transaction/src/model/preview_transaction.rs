@@ -1,6 +1,6 @@
 use radix_engine_interface::crypto::{hash, Hash, PublicKey};
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::*;
 use sbor::*;
 
 use crate::model::TransactionIntent;
@@ -13,8 +13,7 @@ pub struct PreviewFlags {
     pub permit_invalid_header_epoch: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PreviewIntent {
     pub intent: TransactionIntent,
     pub signer_public_keys: Vec<PublicKey>,

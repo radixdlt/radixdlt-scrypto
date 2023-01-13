@@ -10,8 +10,7 @@ use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceChange {
     pub resource_address: ResourceAddress,
     pub component_id: ComponentId, // TODO: support non component actor
@@ -32,8 +31,7 @@ pub enum VaultOp {
     LockFee,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ExecutionTraceError {
     CallFrameError(CallFrameError),
 }
@@ -54,8 +52,7 @@ pub struct ExecutionTraceModule {
     sys_call_traces_stacks: HashMap<usize, Vec<SysCallTrace>>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Clone, Debug, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ProofSnapshot {
     pub resource_address: ResourceAddress,
     pub resource_type: ResourceType,
@@ -63,8 +60,7 @@ pub struct ProofSnapshot {
     pub total_locked: LockedAmountOrIds,
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TracedSysCallData {
     pub buckets: HashMap<BucketId, Resource>,
     pub proofs: HashMap<ProofId, ProofSnapshot>,
@@ -83,8 +79,7 @@ impl TracedSysCallData {
     }
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SysCallTrace {
     pub origin: SysCallTraceOrigin,
     pub sys_call_depth: usize,
@@ -96,8 +91,7 @@ pub struct SysCallTrace {
     pub children: Vec<SysCallTrace>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum SysCallTraceOrigin {
     ScryptoFunction(ScryptoFnIdentifier),
     ScryptoMethod(ScryptoFnIdentifier),

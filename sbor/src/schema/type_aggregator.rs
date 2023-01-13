@@ -38,7 +38,6 @@ fn linearize<E: CustomTypeExtension>(
 ) -> TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
     match type_kind {
         TypeKind::Any => TypeKind::Any,
-        TypeKind::Unit => TypeKind::Unit,
         TypeKind::Bool => TypeKind::Bool,
         TypeKind::I8 => TypeKind::I8,
         TypeKind::I16 => TypeKind::I16,
@@ -71,6 +70,13 @@ fn linearize<E: CustomTypeExtension>(
                     (variant_index, new_field_types)
                 })
                 .collect(),
+        },
+        TypeKind::Map {
+            key_type,
+            value_type,
+        } => TypeKind::Map {
+            key_type: resolve_local_type_ref(schemas, &key_type),
+            value_type: resolve_local_type_ref(schemas, &value_type),
         },
         TypeKind::Custom(custom_type_kind) => {
             TypeKind::Custom(E::linearize_type_kind(custom_type_kind, schemas))

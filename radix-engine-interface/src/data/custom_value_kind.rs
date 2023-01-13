@@ -27,20 +27,18 @@ pub const VALUE_KIND_NON_FUNGIBLE_ID: u8 = 0xb7;
 )]
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValueKind {
-    // RE global address types
+    // RE interpreted types
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
     SystemAddress,
-
-    // RE interpreted types
     Own,
-    Blob,
 
     // TX interpreted types
     Bucket,
     Proof,
     Expression,
+    Blob,
 
     // Uninterpreted
     Hash,

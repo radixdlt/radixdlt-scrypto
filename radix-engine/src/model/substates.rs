@@ -7,8 +7,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
@@ -971,6 +970,14 @@ impl<'a> SubstateRef<'a> {
                 };
 
                 (HashSet::new(), owned_nodes)
+            }
+            SubstateRef::Worktop(worktop) => {
+                let nodes = worktop
+                    .resources
+                    .values()
+                    .map(|o| RENodeId::Bucket(o.bucket_id()))
+                    .collect();
+                (HashSet::new(), nodes)
             }
             SubstateRef::Vault(vault) => {
                 let mut references = HashSet::new();

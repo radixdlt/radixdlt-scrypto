@@ -198,9 +198,11 @@ impl CallFrame {
 
             for old_child in &substate_lock.substate_owned_nodes {
                 if !new_children.remove(old_child) {
-                    return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
-                        old_child.clone(),
-                    )));
+                    if SubstateProperties::is_persisted(&offset) {
+                        return Err(RuntimeError::KernelError(KernelError::StoredNodeRemoved(
+                            old_child.clone(),
+                        )));
+                    }
                 }
             }
 

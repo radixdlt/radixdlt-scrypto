@@ -2,7 +2,6 @@ use radix_engine::engine::node_move_module::NodeMoveError;
 use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto::resource::DIVISIBILITY_MAXIMUM;
 use scrypto_unit::*;
@@ -134,11 +133,11 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
 
     // Act
     let total_ids = BTreeSet::from([
-        NonFungibleId::U32(1),
-        NonFungibleId::U32(2),
-        NonFungibleId::U32(3),
+        NonFungibleId::Number(1),
+        NonFungibleId::Number(2),
+        NonFungibleId::Number(3),
     ]);
-    let proof_ids = BTreeSet::from([NonFungibleId::U32(2)]);
+    let proof_ids = BTreeSet::from([NonFungibleId::Number(2)]);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(
@@ -442,11 +441,11 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .withdraw_from_account_by_ids(
             account,
-            &BTreeSet::from([NonFungibleId::U32(2), NonFungibleId::U32(3)]),
+            &BTreeSet::from([NonFungibleId::Number(2), NonFungibleId::Number(3)]),
             resource_address,
         )
         .take_from_worktop_by_ids(
-            &BTreeSet::from([NonFungibleId::U32(2), NonFungibleId::U32(3)]),
+            &BTreeSet::from([NonFungibleId::Number(2), NonFungibleId::Number(3)]),
             resource_address,
             |builder, bucket_id| {
                 builder.call_method(
@@ -454,7 +453,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                     "compose_vault_and_bucket_proof_by_ids",
                     args!(
                         bucket_id,
-                        BTreeSet::from([NonFungibleId::U32(1), NonFungibleId::U32(2),])
+                        BTreeSet::from([NonFungibleId::Number(1), NonFungibleId::Number(2),])
                     ),
                 )
             },
@@ -515,16 +514,16 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .create_proof_from_account_by_ids(
             account,
-            &BTreeSet::from([NonFungibleId::U32(1), NonFungibleId::U32(2)]),
+            &BTreeSet::from([NonFungibleId::Number(1), NonFungibleId::Number(2)]),
             resource_address,
         )
         .create_proof_from_account_by_ids(
             account,
-            &BTreeSet::from([NonFungibleId::U32(3)]),
+            &BTreeSet::from([NonFungibleId::Number(3)]),
             resource_address,
         )
         .create_proof_from_auth_zone_by_ids(
-            &BTreeSet::from([NonFungibleId::U32(2), NonFungibleId::U32(3)]),
+            &BTreeSet::from([NonFungibleId::Number(2), NonFungibleId::Number(3)]),
             resource_address,
             |builder, proof_id| {
                 builder.call_function(
@@ -533,7 +532,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                     "assert_ids",
                     args!(
                         proof_id,
-                        BTreeSet::from([NonFungibleId::U32(2), NonFungibleId::U32(3)]),
+                        BTreeSet::from([NonFungibleId::Number(2), NonFungibleId::Number(3)]),
                         resource_address
                     ),
                 )

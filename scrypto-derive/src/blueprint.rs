@@ -51,7 +51,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         pub mod #module_ident {
             use super::*;
 
-            #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+            #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
             #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
             pub struct #bp_ident #bp_fields #bp_semi_token
 
@@ -164,7 +164,7 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
             let method_input_struct: ItemStruct = parse_quote! {
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
                 #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct #input_struct_name {
                     #(#args),*
@@ -353,7 +353,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                     };
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
-                            ::scrypto::abi::Type::Unit
+                            ::scrypto::abi::Type::Tuple { element_types: ::sbor::rust::vec![] }
                         },
                         ReturnType::Type(_, t) => {
                             let ty = replace_self_with(t, &bp_ident.to_string());
@@ -487,7 +487,7 @@ fn generate_stubs(
 
     let output = quote! {
         #[allow(non_camel_case_types)]
-        #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+        #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
         #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
         pub struct #component_ident {
             pub component: ::scrypto::component::Component,
@@ -622,7 +622,7 @@ mod tests {
                 pub mod Test_impl {
                     use super::*;
 
-                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
                     #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                     pub struct Test {
                         a: u32,
@@ -652,12 +652,12 @@ mod tests {
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
                 #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct Test_x_Input { arg0 : u32 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
                 #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct Test_y_Input { arg0 : u32 }
 
@@ -731,7 +731,7 @@ mod tests {
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
                 #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,
@@ -835,7 +835,7 @@ mod tests {
                 pub mod Test_impl {
                     use super::*;
 
-                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                    #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
                     #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                     pub struct Test {
                     }
@@ -872,7 +872,7 @@ mod tests {
                 }
 
                 #[allow(non_camel_case_types)]
-                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::Describe)]
+                #[derive(::sbor::Categorize, ::sbor::Encode, ::sbor::Decode, ::scrypto::LegacyDescribe)]
                 #[sbor(custom_value_kind = "::scrypto::data::ScryptoCustomValueKind")]
                 pub struct TestComponent {
                     pub component: ::scrypto::component::Component,

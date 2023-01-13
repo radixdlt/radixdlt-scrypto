@@ -1,18 +1,17 @@
 use crate::api::api::Invocation;
 use crate::api::types::RENodeId;
-use crate::data::types::Blob;
 use crate::model::*;
-use crate::scrypto;
 use crate::wasm::*;
+use crate::*;
+use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::string::String;
-use sbor::*;
+use sbor::rust::vec::Vec;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackagePublishInvocation {
-    pub code: Blob,
-    pub abi: Blob,
+    pub code: Vec<u8>,
+    pub abi: Vec<u8>,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: AccessRules,
@@ -20,6 +19,10 @@ pub struct PackagePublishInvocation {
 
 impl Invocation for PackagePublishInvocation {
     type Output = PackageAddress;
+
+    fn fn_identifier(&self) -> String {
+        "Package(Publish)".to_owned()
+    }
 }
 
 impl SerializableInvocation for PackagePublishInvocation {
@@ -32,8 +35,7 @@ impl Into<SerializedInvocation> for PackagePublishInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageSetRoyaltyConfigInvocation {
     pub receiver: PackageAddress,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>, // TODO: optimize to allow per blueprint configuration.
@@ -53,15 +55,13 @@ impl Into<SerializedInvocation> for PackageSetRoyaltyConfigInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageSetRoyaltyConfigExecutable {
     pub receiver: RENodeId,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageClaimRoyaltyInvocation {
     pub receiver: PackageAddress,
 }
@@ -80,8 +80,7 @@ impl Into<SerializedInvocation> for PackageClaimRoyaltyInvocation {
     }
 }
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageClaimRoyaltyExecutable {
     pub receiver: RENodeId,
 }

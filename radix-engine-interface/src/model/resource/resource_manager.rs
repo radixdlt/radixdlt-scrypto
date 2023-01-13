@@ -1,4 +1,4 @@
-use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::{BTreeMap, BTreeSet};
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -15,19 +15,42 @@ use crate::model::*;
 use crate::scrypto_type;
 use crate::wasm::*;
 
-use crate::scrypto;
-use crate::Describe;
+use crate::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
 pub enum VaultMethodAuthKey {
     Withdraw,
     Deposit,
     Recall,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
 pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
@@ -38,10 +61,9 @@ pub enum ResourceMethodAuthKey {
     Recall,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleInvocation {
-    pub id_type: NonFungibleIdType,
+    pub id_type: NonFungibleIdTypeId,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
 }
@@ -60,8 +82,7 @@ impl Into<SerializedInvocation> for ResourceManagerCreateNonFungibleInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleInvocation {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
@@ -82,10 +103,9 @@ impl Into<SerializedInvocation> for ResourceManagerCreateFungibleInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
-    pub id_type: NonFungibleIdType,
+    pub id_type: NonFungibleIdTypeId,
     pub metadata: BTreeMap<String, String>,
     pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
     pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
@@ -108,8 +128,33 @@ impl Into<SerializedInvocation> for ResourceManagerCreateNonFungibleWithInitialS
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub entries: BTreeSet<(Vec<u8>, Vec<u8>)>,
+}
+
+impl Invocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    type Output = (ResourceAddress, Bucket);
+}
+
+impl SerializableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
+    type ScryptoOutput = (ResourceAddress, Bucket);
+}
+
+impl Into<SerializedInvocation>
+    for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation
+{
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(
+            ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(self),
+        )
+        .into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,
@@ -132,8 +177,7 @@ impl Into<SerializedInvocation> for ResourceManagerCreateFungibleWithInitialSupp
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerBucketBurnInvocation {
     pub bucket: Bucket,
 }
@@ -160,8 +204,7 @@ impl Into<SerializedInvocation> for ResourceManagerBucketBurnInvocation {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerBurnInvocation {
     pub receiver: ResourceAddress,
     pub bucket: Bucket,
@@ -190,8 +233,7 @@ impl Into<SerializedInvocation> for ResourceManagerBurnInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerUpdateVaultAuthInvocation {
     pub receiver: ResourceAddress,
     pub method: VaultMethodAuthKey,
@@ -212,8 +254,7 @@ impl Into<SerializedInvocation> for ResourceManagerUpdateVaultAuthInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerSetVaultAuthMutabilityInvocation {
     pub receiver: ResourceAddress,
     pub method: VaultMethodAuthKey,
@@ -234,8 +275,7 @@ impl Into<SerializedInvocation> for ResourceManagerSetVaultAuthMutabilityInvocat
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateVaultInvocation {
     pub receiver: ResourceAddress,
 }
@@ -254,8 +294,7 @@ impl Into<SerializedInvocation> for ResourceManagerCreateVaultInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateBucketInvocation {
     pub receiver: ResourceAddress,
 }
@@ -274,8 +313,7 @@ impl Into<SerializedInvocation> for ResourceManagerCreateBucketInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerMintNonFungibleInvocation {
     pub receiver: ResourceAddress,
     pub entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
@@ -295,8 +333,27 @@ impl Into<SerializedInvocation> for ResourceManagerMintNonFungibleInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerMintUuidNonFungibleInvocation {
+    pub receiver: ResourceAddress,
+    pub entries: Vec<(Vec<u8>, Vec<u8>)>,
+}
+
+impl Invocation for ResourceManagerMintUuidNonFungibleInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<SerializedInvocation> for ResourceManagerMintUuidNonFungibleInvocation {
+    fn into(self) -> SerializedInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::MintUuidNonFungible(self)).into()
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerMintFungibleInvocation {
     pub receiver: ResourceAddress,
     pub amount: Decimal,
@@ -316,8 +373,7 @@ impl Into<SerializedInvocation> for ResourceManagerMintFungibleInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerGetResourceTypeInvocation {
     pub receiver: ResourceAddress,
 }
@@ -336,8 +392,7 @@ impl Into<SerializedInvocation> for ResourceManagerGetResourceTypeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerGetTotalSupplyInvocation {
     pub receiver: ResourceAddress,
 }
@@ -356,8 +411,7 @@ impl Into<SerializedInvocation> for ResourceManagerGetTotalSupplyInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerUpdateNonFungibleDataInvocation {
     pub receiver: ResourceAddress,
     pub id: NonFungibleId,
@@ -378,8 +432,7 @@ impl Into<SerializedInvocation> for ResourceManagerUpdateNonFungibleDataInvocati
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerNonFungibleExistsInvocation {
     pub receiver: ResourceAddress,
     pub id: NonFungibleId,
@@ -399,8 +452,7 @@ impl Into<SerializedInvocation> for ResourceManagerNonFungibleExistsInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerGetNonFungibleInvocation {
     pub receiver: ResourceAddress,
     pub id: NonFungibleId,

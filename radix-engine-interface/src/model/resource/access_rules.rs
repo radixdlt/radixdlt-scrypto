@@ -1,52 +1,72 @@
 use radix_engine_interface::api::types::NativeFn;
-use sbor::rust::collections::hash_map::Iter;
-use sbor::rust::collections::{BTreeMap, HashMap};
+use sbor::rust::collections::BTreeMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::*;
 
 use crate::api::types::MetadataFn;
 use crate::api::types::PackageFn;
 use crate::model::*;
 use crate::rule;
-use crate::scrypto;
-use crate::Describe;
+use crate::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
 pub enum AccessRuleKey {
     ScryptoMethod(String),
     Native(NativeFn),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
 pub enum AccessRuleEntry {
     AccessRule(AccessRule),
     Group(String),
 }
 
 /// Method authorization rules for a component
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode, Describe)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe,
+)]
 pub struct AccessRules {
-    method_auth: HashMap<AccessRuleKey, AccessRuleEntry>,
-    grouped_auth: HashMap<String, AccessRule>,
+    method_auth: BTreeMap<AccessRuleKey, AccessRuleEntry>,
+    grouped_auth: BTreeMap<String, AccessRule>,
     default_auth: AccessRule,
-    method_auth_mutability: HashMap<AccessRuleKey, AccessRule>,
-    grouped_auth_mutability: HashMap<String, AccessRule>,
+    method_auth_mutability: BTreeMap<AccessRuleKey, AccessRule>,
+    grouped_auth_mutability: BTreeMap<String, AccessRule>,
     default_auth_mutability: AccessRule,
 }
 
 impl AccessRules {
     pub fn new() -> Self {
         Self {
-            method_auth: HashMap::new(),
-            grouped_auth: HashMap::new(),
+            method_auth: BTreeMap::new(),
+            grouped_auth: BTreeMap::new(),
             default_auth: AccessRule::DenyAll,
-            method_auth_mutability: HashMap::new(),
-            grouped_auth_mutability: HashMap::new(),
+            method_auth_mutability: BTreeMap::new(),
+            grouped_auth_mutability: BTreeMap::new(),
             default_auth_mutability: AccessRule::DenyAll,
         }
     }
@@ -163,16 +183,11 @@ impl AccessRules {
         self.method_auth_mutability.insert(key, mutability);
     }
 
-    pub fn iter(&self) -> Iter<'_, AccessRuleKey, AccessRuleEntry> {
-        let l = self.method_auth.iter();
-        l
-    }
-
-    pub fn get_all_method_auth(&self) -> &HashMap<AccessRuleKey, AccessRuleEntry> {
+    pub fn get_all_method_auth(&self) -> &BTreeMap<AccessRuleKey, AccessRuleEntry> {
         &self.method_auth
     }
 
-    pub fn get_all_grouped_auth(&self) -> &HashMap<String, AccessRule> {
+    pub fn get_all_grouped_auth(&self) -> &BTreeMap<String, AccessRule> {
         &self.grouped_auth
     }
 
@@ -180,11 +195,11 @@ impl AccessRules {
         &self.default_auth
     }
 
-    pub fn get_all_method_auth_mutability(&self) -> &HashMap<AccessRuleKey, AccessRule> {
+    pub fn get_all_method_auth_mutability(&self) -> &BTreeMap<AccessRuleKey, AccessRule> {
         &self.method_auth_mutability
     }
 
-    pub fn get_all_grouped_auth_mutability(&self) -> &HashMap<String, AccessRule> {
+    pub fn get_all_grouped_auth_mutability(&self) -> &BTreeMap<String, AccessRule> {
         &self.grouped_auth_mutability
     }
 

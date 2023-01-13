@@ -72,8 +72,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
@@ -596,7 +595,7 @@ impl<'s> FinalizingTrack<'s> {
                         let logger: LoggerSubstate = loaded.substate.into();
                         application_logs.extend(logger.logs);
                     }
-                    SubstateOffset::EpochManager(EpochManagerOffset::ValidatorSet) => {
+                    SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet) => {
                         // TODO: Use application layer events rather than state updates to get this info
                         match &loaded.metastate {
                             SubstateMetaState::New

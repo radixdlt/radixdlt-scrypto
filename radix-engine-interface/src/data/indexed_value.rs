@@ -9,19 +9,17 @@ use sbor::*;
 use crate::api::types::*;
 use crate::data::types::*;
 use crate::data::*;
-use radix_engine_derive::scrypto;
+use radix_engine_derive::*;
 use utils::ContextualDisplay;
 
 /// Represents an error when reading the owned node ids from a value.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ReadOwnedNodesError {
     DuplicateOwn,
 }
 
 /// Represents an error when replacing manifest values.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ReplaceManifestValuesError {
     BucketNotFound(ManifestBucket),
     ProofNotFound(ManifestProof),
@@ -33,21 +31,20 @@ pub struct IndexedScryptoValue {
     raw: Vec<u8>,
     value: ScryptoValue,
 
-    // Global addresses
+    // RE interpreted
     component_addresses: HashSet<ComponentAddress>,
     resource_addresses: HashSet<ResourceAddress>,
     package_addresses: HashSet<PackageAddress>,
     system_addresses: HashSet<SystemAddress>,
-
-    // RE interpreted
     owned_nodes: Vec<(Own, SborPath)>,
-    blobs: Vec<(Blob, SborPath)>,
 
     // TX interpreted
     buckets: Vec<(ManifestBucket, SborPath)>,
     proofs: Vec<(ManifestProof, SborPath)>,
     expressions: Vec<(ManifestExpression, SborPath)>,
+    blobs: Vec<(ManifestBlobRef, SborPath)>,
     arrays: Vec<(ScryptoValueKind, SborPath)>,
+    maps: Vec<(ScryptoValueKind, ScryptoValueKind, SborPath)>,
 }
 
 impl IndexedScryptoValue {
@@ -90,6 +87,7 @@ impl IndexedScryptoValue {
             proofs: visitor.proofs,
             expressions: visitor.expressions,
             arrays: visitor.arrays,
+            maps: visitor.maps,
         }
     }
 
@@ -162,6 +160,7 @@ impl IndexedScryptoValue {
         node_ids
     }
 
+    // TODO: replace blobs with Vec<u8> so `Blob` can be used in argument list.
     pub fn replace_manifest_values(
         mut self,
         proof_replacements: &mut HashMap<ManifestProof, ProofId>,
@@ -175,10 +174,9 @@ impl IndexedScryptoValue {
         // Array replacement:
         // * Vec<ManifestBucket> ==> Vec<Own>
         // * Vec<ManifestProof> ==> Vec<Own>
-        // * Vec<Expression> ==> Vec<Vec<Own>>
-        let mut retained_arrays = Vec::new();
-        for (element_value_kind, path) in self.arrays.drain(..) {
-            match element_value_kind {
+        // * Vec<ManifestExpression> ==> Vec<Vec<Own>>
+        for (cached_element_value_kind, path) in &mut self.arrays {
+            match cached_element_value_kind {
                 ValueKind::Custom(ScryptoCustomValueKind::Bucket)
                 | ValueKind::Custom(ScryptoCustomValueKind::Proof) => {
                     let value = path.get_from_value_mut(&mut self.value).unwrap();
@@ -187,6 +185,8 @@ impl IndexedScryptoValue {
                     } = value
                     {
                         *element_value_kind = ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
+                        *cached_element_value_kind =
+                            ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
                     } else {
                         panic!("Should be an array");
                     }
@@ -198,16 +198,73 @@ impl IndexedScryptoValue {
                     } = value
                     {
                         *element_value_kind = ScryptoValueKind::Array;
+                        *cached_element_value_kind = ScryptoValueKind::Array;
                     } else {
                         panic!("Should be an array");
                     }
                 }
-                element_value_kind => {
-                    retained_arrays.push((element_value_kind, path));
-                }
+                _ => {}
             }
         }
-        self.arrays = retained_arrays;
+
+        // Map replacement:
+        // Map<K, ManifestBucket> => Map<K, Own>
+        // Map<ManifestBucket, V> => Map<Own, V>
+        // etc.
+        for (cached_key_value_kind, cached_value_value_kind, path) in &mut self.maps {
+            match cached_key_value_kind {
+                ValueKind::Custom(ScryptoCustomValueKind::Bucket)
+                | ValueKind::Custom(ScryptoCustomValueKind::Proof) => {
+                    let value = path.get_from_value_mut(&mut self.value).unwrap();
+                    if let Value::Map { key_value_kind, .. } = value {
+                        *key_value_kind = ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
+                        *cached_key_value_kind =
+                            ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
+                    } else {
+                        panic!("Should be a map");
+                    }
+                }
+                ValueKind::Custom(ScryptoCustomValueKind::Expression) => {
+                    let value = path.get_from_value_mut(&mut self.value).unwrap();
+                    if let Value::Map { key_value_kind, .. } = value {
+                        *key_value_kind = ScryptoValueKind::Array;
+                        *cached_key_value_kind = ScryptoValueKind::Array;
+                    } else {
+                        panic!("Should be a map");
+                    }
+                }
+                _ => {}
+            }
+            match cached_value_value_kind {
+                ValueKind::Custom(ScryptoCustomValueKind::Bucket)
+                | ValueKind::Custom(ScryptoCustomValueKind::Proof) => {
+                    let value = path.get_from_value_mut(&mut self.value).unwrap();
+                    if let Value::Map {
+                        value_value_kind, ..
+                    } = value
+                    {
+                        *value_value_kind = ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
+                        *cached_value_value_kind =
+                            ScryptoValueKind::Custom(ScryptoCustomValueKind::Own);
+                    } else {
+                        panic!("Should be a map");
+                    }
+                }
+                ValueKind::Custom(ScryptoCustomValueKind::Expression) => {
+                    let value = path.get_from_value_mut(&mut self.value).unwrap();
+                    if let Value::Map {
+                        value_value_kind, ..
+                    } = value
+                    {
+                        *value_value_kind = ScryptoValueKind::Array;
+                        *cached_value_value_kind = ScryptoValueKind::Array;
+                    } else {
+                        panic!("Should be a map");
+                    }
+                }
+                _ => {}
+            }
+        }
 
         // Bucket replacement
         for (bucket, path) in self.buckets.drain(..) {
@@ -294,19 +351,19 @@ impl<'a> ContextualDisplay<ValueFormattingContext<'a>> for IndexedScryptoValue {
 
 /// A visitor the indexes scrypto custom values.
 pub struct ScryptoValueVisitor {
-    // Global addresses
+    // RE interpreted
     pub component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
     pub package_addresses: HashSet<PackageAddress>,
     pub system_addresses: HashSet<SystemAddress>,
-    // RE interpreted
     pub owned_nodes: Vec<(Own, SborPath)>,
-    pub blobs: Vec<(Blob, SborPath)>,
     // TX interpreted
     pub buckets: Vec<(ManifestBucket, SborPath)>,
     pub proofs: Vec<(ManifestProof, SborPath)>,
     pub expressions: Vec<(ManifestExpression, SborPath)>,
+    pub blobs: Vec<(ManifestBlobRef, SborPath)>,
     pub arrays: Vec<(ScryptoValueKind, SborPath)>,
+    pub maps: Vec<(ScryptoValueKind, ScryptoValueKind, SborPath)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
@@ -331,6 +388,7 @@ impl ScryptoValueVisitor {
             proofs: Vec::new(),
             expressions: Vec::new(),
             arrays: Vec::new(),
+            maps: Vec::new(),
         }
     }
 }
@@ -349,13 +407,28 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
         Ok(())
     }
 
+    fn visit_map(
+        &mut self,
+        path: &mut SborPathBuf,
+        key_value_kind: &ScryptoValueKind,
+        value_value_kind: &ScryptoValueKind,
+        _entries: &[(ScryptoValue, ScryptoValue)],
+    ) -> Result<(), Self::Err> {
+        self.maps.push((
+            key_value_kind.clone(),
+            value_value_kind.clone(),
+            path.clone().into(),
+        ));
+        Ok(())
+    }
+
     fn visit(
         &mut self,
         path: &mut SborPathBuf,
         value: &ScryptoCustomValue,
     ) -> Result<(), Self::Err> {
         match value {
-            // Global addresses
+            // RE interpreted
             ScryptoCustomValue::PackageAddress(value) => {
                 self.package_addresses.insert(value.clone());
             }
@@ -368,13 +441,8 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             ScryptoCustomValue::SystemAddress(value) => {
                 self.system_addresses.insert(value.clone());
             }
-
-            // RE interpreted
             ScryptoCustomValue::Own(value) => {
                 self.owned_nodes.push((value.clone(), path.clone().into()));
-            }
-            ScryptoCustomValue::Blob(value) => {
-                self.blobs.push((value.clone(), path.clone().into()));
             }
 
             // TX interpreted
@@ -386,6 +454,9 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             }
             ScryptoCustomValue::Expression(value) => {
                 self.expressions.push((value.clone(), path.clone().into()));
+            }
+            ScryptoCustomValue::Blob(value) => {
+                self.blobs.push((value.clone(), path.clone().into()));
             }
 
             // Uninterpreted

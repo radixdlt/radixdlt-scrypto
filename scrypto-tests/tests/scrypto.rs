@@ -2,7 +2,7 @@
 
 use scrypto::prelude::*;
 
-#[scrypto(Encode, Decode, Categorize, NonFungibleData, Describe)]
+#[derive(NonFungibleData, ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub struct TestStruct {
     pub a: u32,
     #[scrypto(skip)]
@@ -10,7 +10,7 @@ pub struct TestStruct {
     pub b: String,
 }
 
-#[scrypto(Encode, Decode, Categorize, Describe)]
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
 pub enum TestEnum {
     A { named: String },
     B(u32, u8),

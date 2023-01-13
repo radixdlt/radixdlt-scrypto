@@ -1,8 +1,7 @@
 use crate::types::*;
 
 /// A transient resource container.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct MetadataSubstate {
     pub metadata: BTreeMap<String, String>,
 }

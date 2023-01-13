@@ -7,7 +7,7 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use radix_engine_interface::api::api::{BlobApi, InvokableModel};
+use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
 use radix_engine_interface::model::*;
@@ -57,7 +57,7 @@ impl Executor for PackagePublishInvocation {
 
     fn execute<Y>(self, api: &mut Y) -> Result<(PackageAddress, CallFrameUpdate), RuntimeError>
     where
-        Y: SystemApi + BlobApi<RuntimeError> + InvokableModel<RuntimeError>,
+        Y: SystemApi + InvokableModel<RuntimeError>,
     {
         let royalty_vault_id = api
             .invoke(ResourceManagerCreateVaultInvocation {
@@ -65,15 +65,12 @@ impl Executor for PackagePublishInvocation {
             })?
             .vault_id();
 
-        let code = api.get_blob(&self.code.0)?.to_vec();
-        let blob = api.get_blob(&self.abi.0)?;
-
-        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(blob).map_err(|e| {
+        let abi = scrypto_decode::<BTreeMap<String, BlueprintAbi>>(&self.abi).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidAbi(e),
             ))
         })?;
-        let package = Package::new(code, abi).map_err(|e| {
+        let package = Package::new(self.code, abi).map_err(|e| {
             RuntimeError::ApplicationError(ApplicationError::PackageError(
                 PackageError::InvalidWasm(e),
             ))
