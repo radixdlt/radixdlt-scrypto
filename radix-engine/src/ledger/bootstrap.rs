@@ -80,15 +80,14 @@ pub fn create_genesis(
             ResourceMethodAuthKey::Withdraw,
             (rule!(allow_all), rule!(deny_all)),
         );
-        let initial_supply = None;
 
         // TODO: Create token at a specific address
         instructions.push(Instruction::Basic(
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
+                id_type: NonFungibleIdTypeId::Bytes,
                 metadata,
                 access_rules,
-                initial_supply,
+                initial_supply: None,
             },
         ));
     }
@@ -107,7 +106,7 @@ pub fn create_genesis(
         // TODO: Create token at a specific address
         instructions.push(Instruction::Basic(
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
+                id_type: NonFungibleIdTypeId::Bytes,
                 metadata,
                 access_rules,
                 initial_supply,
@@ -128,7 +127,7 @@ pub fn create_genesis(
         // TODO: Create token at a specific address
         instructions.push(Instruction::Basic(
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
+                id_type: NonFungibleIdTypeId::Bytes,
                 metadata,
                 access_rules,
                 initial_supply,
@@ -148,7 +147,7 @@ pub fn create_genesis(
         // TODO: Create token at a specific address
         instructions.push(Instruction::Basic(
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::Bytes,
+                id_type: NonFungibleIdTypeId::Bytes,
                 metadata,
                 access_rules,
                 initial_supply,

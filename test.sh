@@ -11,6 +11,7 @@ setup_test_runner
 echo "Testing crates..."
 test_crates_features \
     "sbor \
+    sbor-derive-common \
     sbor-derive \
     sbor-tests \
     scrypto \
@@ -29,6 +30,7 @@ test_packages \
     examples/no-std"
 
 echo "Testing CLIs..."
+(cd simulator; cargo test)
 test_cli \
     "./tests/resim.sh \
     ./tests/scrypto.sh \

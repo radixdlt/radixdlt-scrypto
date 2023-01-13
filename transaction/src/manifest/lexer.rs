@@ -44,6 +44,7 @@ pub enum TokenKind {
     Enum,
     Array,
     Tuple,
+    Map,
 
     // ==============
     // SBOR aliases
@@ -124,6 +125,7 @@ pub enum TokenKind {
     SetMethodAccessRule,
     MintFungible,
     MintNonFungible,
+    MintUuidNonFungible,
     CreateFungibleResource,
     CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
@@ -403,6 +405,7 @@ impl Lexer {
             "Enum" => Ok(TokenKind::Enum),
             "Array" => Ok(TokenKind::Array),
             "Tuple" => Ok(TokenKind::Tuple),
+            "Map" => Ok(TokenKind::Map),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),
@@ -465,6 +468,7 @@ impl Lexer {
             "SET_METHOD_ACCESS_RULE" => Ok(TokenKind::SetMethodAccessRule),
             "MINT_FUNGIBLE" => Ok(TokenKind::MintFungible),
             "MINT_NON_FUNGIBLE" => Ok(TokenKind::MintNonFungible),
+            "MINT_UUID_NON_FUNGIBLE" => Ok(TokenKind::MintUuidNonFungible),
             "CREATE_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateFungibleResource),
             "CREATE_NON_FUNGIBLE_RESOURCE" => Ok(TokenKind::CreateNonFungibleResource),
             "CREATE_FUNGIBLE_RESOURCE_WITH_OWNER" => Ok(TokenKind::CreateFungibleResourceWithOwner),
@@ -626,15 +630,15 @@ mod tests {
     #[test]
     fn test_mixed() {
         lex_ok!(
-            r#"CALL_FUNCTION Array<Tuple>(Tuple("test", Array<String>("abc")));"#,
+            r#"CALL_FUNCTION Map<String, Array>("test", Array<String>("abc"));"#,
             vec![
                 TokenKind::CallFunction,
-                TokenKind::Array,
+                TokenKind::Map,
                 TokenKind::LessThan,
-                TokenKind::Tuple,
+                TokenKind::String,
+                TokenKind::Comma,
+                TokenKind::Array,
                 TokenKind::GreaterThan,
-                TokenKind::OpenParenthesis,
-                TokenKind::Tuple,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("test".into()),
                 TokenKind::Comma,
@@ -644,7 +648,6 @@ mod tests {
                 TokenKind::GreaterThan,
                 TokenKind::OpenParenthesis,
                 TokenKind::StringLiteral("abc".into()),
-                TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::CloseParenthesis,
                 TokenKind::Semicolon,

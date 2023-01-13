@@ -2,7 +2,7 @@ use radix_engine::engine::{KernelError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
 use radix_engine::wasm::WasmError;
-use radix_engine_interface::data::*;
+use radix_engine_interface::data::MAX_SCRYPTO_SBOR_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

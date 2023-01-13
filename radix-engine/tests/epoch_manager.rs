@@ -2,7 +2,6 @@ use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
 use radix_engine::model::Validator;
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

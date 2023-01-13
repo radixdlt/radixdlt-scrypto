@@ -1,15 +1,15 @@
-use super::NonFungibleIdType;
-use crate::Describe;
+use super::NonFungibleIdTypeId;
+use crate::*;
 use sbor::*;
 
 /// Represents the type of a resource.
-#[derive(Debug, Clone, Copy, Categorize, Encode, Decode, Describe, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Categorize, Encode, Decode, LegacyDescribe, Eq, PartialEq)]
 pub enum ResourceType {
     /// Represents a fungible resource
     Fungible { divisibility: u8 },
 
     /// Represents a non-fungible resource
-    NonFungible { id_type: NonFungibleIdType },
+    NonFungible { id_type: NonFungibleIdTypeId },
 }
 
 impl ResourceType {

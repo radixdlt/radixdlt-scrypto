@@ -54,7 +54,7 @@ pub enum Value<X: CustomValueKind, Y> {
         value: String,
     },
     Enum {
-        discriminator: String,
+        discriminator: u8,
         fields: Vec<Value<X, Y>>,
     },
     Array {
@@ -63,6 +63,11 @@ pub enum Value<X: CustomValueKind, Y> {
     },
     Tuple {
         fields: Vec<Value<X, Y>>,
+    },
+    Map {
+        key_value_kind: ValueKind<X>,
+        value_value_kind: ValueKind<X>,
+        entries: Vec<(Value<X, Y>, Value<X, Y>)>,
     },
     Custom {
         value: Y,
@@ -88,6 +93,7 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
             Value::Enum { .. } => encoder.write_value_kind(ValueKind::Enum),
             Value::Array { .. } => encoder.write_value_kind(ValueKind::Array),
             Value::Tuple { .. } => encoder.write_value_kind(ValueKind::Tuple),
+            Value::Map { .. } => encoder.write_value_kind(ValueKind::Map),
             Value::Custom { value } => value.encode_value_kind(encoder),
         }
     }
@@ -135,7 +141,7 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
                 discriminator,
                 fields,
             } => {
-                encoder.write_discriminator(discriminator)?;
+                encoder.write_discriminator(*discriminator)?;
                 encoder.write_size(fields.len())?;
                 for field in fields {
                     encoder.encode(field)?;
@@ -155,6 +161,19 @@ impl<X: CustomValueKind, E: Encoder<X>, Y: Encode<X, E>> Encode<X, E> for Value<
                 encoder.write_size(fields.len())?;
                 for field in fields {
                     encoder.encode(field)?;
+                }
+            }
+            Value::Map {
+                key_value_kind,
+                value_value_kind,
+                entries,
+            } => {
+                encoder.write_value_kind(*key_value_kind)?;
+                encoder.write_value_kind(*value_value_kind)?;
+                encoder.write_size(entries.len())?;
+                for entry in entries {
+                    encoder.encode_deeper_body(&entry.0)?;
+                    encoder.encode_deeper_body(&entry.1)?;
                 }
             }
             // custom
@@ -242,6 +261,23 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for Value<
                     elements,
                 })
             }
+            ValueKind::Map => {
+                let key_value_kind = decoder.read_value_kind()?;
+                let value_value_kind = decoder.read_value_kind()?;
+                let length = decoder.read_size()?;
+                let mut entries = Vec::with_capacity(if length <= 1024 { length } else { 1024 });
+                for _ in 0..length {
+                    entries.push((
+                        decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
+                        decoder.decode_deeper_body_with_value_kind(value_value_kind)?,
+                    ));
+                }
+                Ok(Value::Map {
+                    key_value_kind,
+                    value_value_kind,
+                    entries,
+                })
+            }
             ValueKind::Custom(_) => Ok(Value::Custom {
                 value: Y::decode_body_with_value_kind(decoder, value_kind)?,
             }),
@@ -306,6 +342,26 @@ pub fn traverse_any<X: CustomValueKind, Y, V: ValueVisitor<X, Y, Err = E>, E>(
                 path.pop();
             }
         }
+        Value::Map {
+            key_value_kind,
+            value_value_kind,
+            entries,
+        } => {
+            visitor.visit_map(path, key_value_kind, value_value_kind, entries)?;
+            for (i, e) in entries.iter().enumerate() {
+                path.push(i);
+
+                path.push(0);
+                traverse_any(path, &e.0, visitor)?;
+                path.pop();
+
+                path.push(1);
+                traverse_any(path, &e.1, visitor)?;
+                path.pop();
+
+                path.pop();
+            }
+        }
         // custom types
         Value::Custom { value } => {
             visitor.visit(path, value)?;
@@ -325,6 +381,14 @@ pub trait ValueVisitor<X: CustomValueKind, Y> {
         elements: &[Value<X, Y>],
     ) -> Result<(), Self::Err>;
 
+    fn visit_map(
+        &mut self,
+        path: &mut SborPathBuf,
+        key_value_kind: &ValueKind<X>,
+        value_value_kind: &ValueKind<X>,
+        entries: &[(Value<X, Y>, Value<X, Y>)],
+    ) -> Result<(), Self::Err>;
+
     fn visit(&mut self, path: &mut SborPathBuf, value: &Y) -> Result<(), Self::Err>;
 }
 
@@ -332,7 +396,6 @@ pub trait ValueVisitor<X: CustomValueKind, Y> {
 mod tests {
     use crate::rust::collections::*;
     use crate::rust::string::String;
-    use crate::rust::string::ToString;
     use crate::rust::vec;
     use crate::rust::vec::Vec;
     use crate::*;
@@ -442,11 +505,11 @@ mod tests {
                         value: String::from("abc")
                     },
                     BasicValue::Enum {
-                        discriminator: "Some".to_string(),
+                        discriminator: 1,
                         fields: vec![BasicValue::U32 { value: 1 }]
                     },
                     BasicValue::Enum {
-                        discriminator: "Ok".to_string(),
+                        discriminator: 0,
                         fields: vec![BasicValue::U32 { value: 2 }]
                     },
                     BasicValue::Array {
@@ -464,15 +527,15 @@ mod tests {
                         fields: vec![BasicValue::U32 { value: 1 }]
                     },
                     BasicValue::Enum {
-                        discriminator: "A".to_string(),
+                        discriminator: 0,
                         fields: vec![BasicValue::U32 { value: 1 }]
                     },
                     BasicValue::Enum {
-                        discriminator: "B".to_string(),
+                        discriminator: 1,
                         fields: vec![BasicValue::U32 { value: 2 }]
                     },
                     BasicValue::Enum {
-                        discriminator: "C".to_string(),
+                        discriminator: 2,
                         fields: vec![]
                     },
                     BasicValue::Array {
@@ -487,23 +550,15 @@ mod tests {
                         element_value_kind: ValueKind::U32,
                         elements: vec![BasicValue::U32 { value: 2 }]
                     },
-                    BasicValue::Array {
-                        element_value_kind: ValueKind::Tuple,
-                        elements: vec![BasicValue::Tuple {
-                            fields: vec![
-                                BasicValue::U32 { value: 1 },
-                                BasicValue::U32 { value: 2 }
-                            ]
-                        }]
+                    BasicValue::Map {
+                        key_value_kind: ValueKind::U32,
+                        value_value_kind: ValueKind::U32,
+                        entries: vec![(BasicValue::U32 { value: 1 }, BasicValue::U32 { value: 2 })]
                     },
-                    BasicValue::Array {
-                        element_value_kind: ValueKind::Tuple,
-                        elements: vec![BasicValue::Tuple {
-                            fields: vec![
-                                BasicValue::U32 { value: 3 },
-                                BasicValue::U32 { value: 4 }
-                            ]
-                        }]
+                    BasicValue::Map {
+                        key_value_kind: ValueKind::U32,
+                        value_value_kind: ValueKind::U32,
+                        entries: vec![(BasicValue::U32 { value: 3 }, BasicValue::U32 { value: 4 })]
                     }
                 ]
             },

@@ -18,8 +18,7 @@ use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
@@ -27,8 +26,7 @@ pub struct TransactionProcessorRunInvocation<'a> {
     pub blobs: Cow<'a, [Vec<u8>]>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
         valid_from: u64,
@@ -165,6 +163,9 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 resource_address, ..
             }
             | BasicInstruction::MintNonFungible {
+                resource_address, ..
+            }
+            | BasicInstruction::MintUuidNonFungible {
                 resource_address, ..
             } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::Resource(*resource_address)));
@@ -663,6 +664,18 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 }) => {
                     let rtn = api.invoke(ResourceManagerMintNonFungibleInvocation {
+                        receiver: resource_address.clone(),
+                        entries: entries.clone(),
+                    })?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
+
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::MintUuidNonFungible {
+                    resource_address,
+                    entries,
+                }) => {
+                    let rtn = api.invoke(ResourceManagerMintUuidNonFungibleInvocation {
                         receiver: resource_address.clone(),
                         entries: entries.clone(),
                     })?;

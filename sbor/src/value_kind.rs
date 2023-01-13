@@ -23,6 +23,7 @@ pub enum ValueKind<X: CustomValueKind> {
     Enum,
     Array,
     Tuple,
+    Map,
     Custom(X),
 }
 
@@ -44,6 +45,7 @@ impl<X: CustomValueKind> ValueKind<X> {
             ValueKind::Tuple => VALUE_KIND_TUPLE,
             ValueKind::Enum => VALUE_KIND_ENUM,
             ValueKind::Array => VALUE_KIND_ARRAY,
+            ValueKind::Map => VALUE_KIND_MAP,
             ValueKind::Custom(custom_value_kind) => custom_value_kind.as_u8(),
         }
     }
@@ -65,6 +67,7 @@ impl<X: CustomValueKind> ValueKind<X> {
             VALUE_KIND_TUPLE => Some(ValueKind::Tuple),
             VALUE_KIND_ENUM => Some(ValueKind::Enum),
             VALUE_KIND_ARRAY => Some(ValueKind::Array),
+            VALUE_KIND_MAP => Some(ValueKind::Map),
             custom_value_kind_id if custom_value_kind_id >= CUSTOM_VALUE_KIND_START => {
                 X::from_u8(custom_value_kind_id).map(ValueKind::Custom)
             }
@@ -96,3 +99,4 @@ pub const VALUE_KIND_STRING: u8 = 0x0c;
 pub const VALUE_KIND_ARRAY: u8 = 0x20; // [T] or [T; N]
 pub const VALUE_KIND_TUPLE: u8 = 0x21; // Any "product type" - Units, Tuples and Structs (T1, T2, T3)
 pub const VALUE_KIND_ENUM: u8 = 0x22;
+pub const VALUE_KIND_MAP: u8 = 0x23;

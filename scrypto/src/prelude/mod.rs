@@ -6,7 +6,8 @@ pub use crate::runtime::*;
 pub use crate::{
     blueprint, borrow_component, borrow_package, borrow_resource_manager, debug, error,
     external_blueprint, external_component, import, include_abi, include_code, info, resource_list,
-    scrypto, this_package, trace, warn, NonFungibleData,
+    this_package, trace, warn, LegacyDescribe, NonFungibleData, ScryptoCategorize, ScryptoDecode,
+    ScryptoEncode,
 };
 pub use num_traits::{
     cast::FromPrimitive, cast::ToPrimitive, identities::One, identities::Zero, pow::Pow,

@@ -1,8 +1,7 @@
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Categorize, Encode, Decode)]
 pub enum MethodAuthorizationError {
@@ -10,8 +9,7 @@ pub enum MethodAuthorizationError {
     UnsupportedMethod,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardDecimal {
     Amount(Decimal),
     InvalidSchemaPath,
@@ -25,8 +23,7 @@ pub enum HardCount {
     DisallowdValueType,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleAddress),
     Resource(ResourceAddress),
@@ -34,16 +31,14 @@ pub enum HardResourceOrNonFungible {
     DisallowdValueType,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardProofRuleResourceList {
     List(Vec<HardResourceOrNonFungible>),
     InvalidSchemaPath,
     DisallowdValueType,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardProofRule {
     Require(HardResourceOrNonFungible),
     AmountOf(HardDecimal, HardResourceOrNonFungible),
@@ -52,8 +47,7 @@ pub enum HardProofRule {
     CountOf(HardCount, HardProofRuleResourceList),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum HardAuthRule {
     ProofRule(HardProofRule),
     AnyOf(Vec<HardAuthRule>),
@@ -61,8 +55,7 @@ pub enum HardAuthRule {
 }
 
 /// Authorization of a method call
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum MethodAuthorization {
     Protected(HardAuthRule),
     AllowAll,

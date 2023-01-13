@@ -112,10 +112,7 @@ pub fn format_scrypto_value<F: fmt::Write>(
                     write!(f, "{}", address.display(context.bech32_encoder))?;
                     f.write_str("\", ")?;
                     match id {
-                        NonFungibleId::U32(v) => {
-                            write!(f, "{}u32", v)?;
-                        }
-                        NonFungibleId::U64(v) => {
+                        NonFungibleId::Number(v) => {
                             write!(f, "{}u64", v)?;
                         }
                         NonFungibleId::UUID(v) => {
@@ -141,24 +138,14 @@ pub fn format_scrypto_value<F: fmt::Write>(
             discriminator,
             fields,
         } => {
-            match (discriminator.as_str(), fields.len()) {
-                // Map aliases
-                ("Some", 1) => format_tuple(f, "Some", fields, context)?,
-                ("None", 0) => f.write_str("None")?,
-                ("Ok", 1) => format_tuple(f, "Ok", fields, context)?,
-                ("Err", 1) => format_tuple(f, "Err", fields, context)?,
-                // Standard
-                (_, _) => {
-                    f.write_str("Enum(\"")?;
-                    f.write_str(discriminator)?;
-                    f.write_str("\"")?;
-                    if !fields.is_empty() {
-                        f.write_str(", ")?;
-                        format_elements(f, fields, context)?;
-                    }
-                    f.write_str(")")?;
-                }
+            f.write_str("Enum(")?;
+            f.write_str(discriminator.to_string().as_str())?;
+            f.write_str("u8")?;
+            if !fields.is_empty() {
+                f.write_str(", ")?;
+                format_elements(f, fields, context)?;
             }
+            f.write_str(")")?;
         }
         Value::Array {
             element_value_kind,
@@ -184,6 +171,19 @@ pub fn format_scrypto_value<F: fmt::Write>(
                 f.write_str(")")?;
             }
         },
+        Value::Map {
+            key_value_kind,
+            value_value_kind,
+            entries,
+        } => {
+            f.write_str("Map<")?;
+            format_value_kind(f, key_value_kind)?;
+            f.write_str(", ")?;
+            format_value_kind(f, value_value_kind)?;
+            f.write_str(">(")?;
+            format_kv_entries(f, entries, context)?;
+            f.write_str(")")?;
+        }
         // custom types
         Value::Custom { value } => {
             format_custom_value(f, value, context)?;
@@ -222,6 +222,7 @@ pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind
         ValueKind::Enum => f.write_str("Enum"),
         ValueKind::Array => f.write_str("Array"),
         ValueKind::Tuple => f.write_str("Tuple"),
+        ValueKind::Map => f.write_str("Map"),
         ValueKind::Custom(value_kind) => match value_kind {
             ScryptoCustomValueKind::PackageAddress => f.write_str("PackageAddress"),
             ScryptoCustomValueKind::ComponentAddress => f.write_str("ComponentAddress"),
@@ -270,6 +271,22 @@ pub fn format_elements<F: fmt::Write>(
             f.write_str(", ")?;
         }
         format_scrypto_value(f, x, context)?;
+    }
+    Ok(())
+}
+
+pub fn format_kv_entries<F: fmt::Write>(
+    f: &mut F,
+    entries: &[(ScryptoValue, ScryptoValue)],
+    context: &ValueFormattingContext,
+) -> fmt::Result {
+    for (i, x) in entries.iter().enumerate() {
+        if i != 0 {
+            f.write_str(", ")?;
+        }
+        format_scrypto_value(f, &x.0, context)?;
+        f.write_str(", ")?;
+        format_scrypto_value(f, &x.1, context)?;
     }
     Ok(())
 }
@@ -390,8 +407,7 @@ pub fn format_non_fungible_id_contents<F: fmt::Write>(
     match value {
         NonFungibleId::Bytes(b) => write!(f, "Bytes(\"{}\")", hex::encode(b)),
         NonFungibleId::String(s) => write!(f, "\"{}\"", s),
-        NonFungibleId::U32(n) => write!(f, "{}u32", n),
-        NonFungibleId::U64(n) => write!(f, "{}u64", n),
+        NonFungibleId::Number(n) => write!(f, "{}u64", n),
         NonFungibleId::UUID(u) => write!(f, "{}u128", u),
     }
 }

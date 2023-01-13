@@ -7,8 +7,7 @@ use radix_engine_interface::api::types::{
     VaultOffset,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AuthError {
     VisibilityError(RENodeId),
     Unauthorized {

@@ -1,15 +1,13 @@
 use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
 use crate::api::api::*;
 use crate::model::*;
-use crate::scrypto;
 use crate::wasm::*;
+use crate::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateInvocation {
     pub validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
     pub initial_epoch: u64,
@@ -30,8 +28,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
     pub receiver: SystemAddress,
 }
@@ -50,8 +47,7 @@ impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerSetEpochInvocation {
     pub receiver: SystemAddress,
     pub epoch: u64,
@@ -71,8 +67,7 @@ impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerNextRoundInvocation {
     pub receiver: SystemAddress,
     pub round: u64,
@@ -92,8 +87,7 @@ impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateValidatorInvocation {
     pub receiver: SystemAddress,
     pub key: EcdsaSecp256k1PublicKey,
@@ -113,8 +107,7 @@ impl Into<SerializedInvocation> for EpochManagerCreateValidatorInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerUpdateValidatorInvocation {
     pub receiver: SystemAddress,
     pub validator_address: SystemAddress,
@@ -137,8 +130,7 @@ impl Into<SerializedInvocation> for EpochManagerUpdateValidatorInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorRegisterInvocation {
     pub receiver: SystemAddress,
 }
@@ -157,8 +149,7 @@ impl Into<SerializedInvocation> for ValidatorRegisterInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorUnregisterInvocation {
     pub receiver: SystemAddress,
 }

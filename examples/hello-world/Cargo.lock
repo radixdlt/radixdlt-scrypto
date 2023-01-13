@@ -828,6 +828,7 @@ version = "0.8.0"
 dependencies = [
  "proc-macro2",
  "quote",
+ "sbor-derive-common",
  "syn",
 ]
 
@@ -953,6 +954,14 @@ dependencies = [
 
 [[package]]
 name = "sbor-derive"
+version = "0.8.0"
+dependencies = [
+ "proc-macro2",
+ "sbor-derive-common",
+]
+
+[[package]]
+name = "sbor-derive-common"
 version = "0.8.0"
 dependencies = [
  "const-sha1",
@@ -1326,6 +1335,7 @@ version = "0.8.0"
 dependencies = [
  "ed25519-dalek",
  "hex",
+ "lazy_static",
  "radix-engine-constants",
  "radix-engine-interface",
  "sbor",

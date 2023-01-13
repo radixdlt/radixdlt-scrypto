@@ -1,5 +1,4 @@
 use crate::rust::collections::BTreeMap;
-use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::*;
 
@@ -76,7 +75,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
         )
     }
 
-    pub fn named_enum(name: &'static str, variants: BTreeMap<String, TypeData<C, L>>) -> Self {
+    pub fn named_enum(name: &'static str, variants: BTreeMap<u8, TypeData<C, L>>) -> Self {
         let (variant_naming, variant_tuple_schemas) = variants
             .into_iter()
             .map(|(k, variant_type_data)| {
@@ -84,10 +83,7 @@ impl<C: CustomTypeKind<L>, L: SchemaTypeLink + Categorize<C::CustomValueKind>> T
                     TypeKind::Tuple { field_types } => field_types,
                     _ => panic!("Only Tuple is allowed in Enum variant TypeData"),
                 };
-                (
-                    (k.clone(), variant_type_data.metadata),
-                    (k, variant_fields_schema),
-                )
+                ((k, variant_type_data.metadata), (k, variant_fields_schema))
             })
             .unzip();
         Self::new(

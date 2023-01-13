@@ -11,7 +11,10 @@ macro_rules! trace {
     }};
 }
 
-pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
+pub fn handle_describe(
+    input: TokenStream,
+    context_custom_value_kind: Option<&'static str>,
+) -> Result<TokenStream> {
     trace!("handle_describe() starts");
 
     let code_hash = get_code_hash_const_array_token_stream(&input);
@@ -24,7 +27,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
         ..
     } = parse2(input)?;
     let (impl_generics, ty_generics, where_clause, custom_type_schema_generic) =
-        build_describe_generics(&generics, &attrs)?;
+        build_describe_generics(&generics, &attrs, context_custom_value_kind)?;
 
     let generic_type_idents = ty_generics
         .type_params()
@@ -136,7 +139,11 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let variant_names: Vec<_> = variants.iter().map(|v| v.ident.to_string()).collect();
+            let n: u8 = variants
+                .len()
+                .try_into()
+                .expect("Too many variants in enum");
+            let variant_indices: Vec<u8> = (0..n).into_iter().collect();
             let mut all_field_types = Vec::new();
 
             let variant_type_data: Vec<_> = {
@@ -209,7 +216,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                         Some(::sbor::TypeData::named_enum(
                             stringify!(#ident),
                             ::sbor::rust::collections::btree_map::btreemap![
-                                #(#variant_names.to_owned() => #variant_type_data,)*
+                                #(#variant_indices => #variant_type_data,)*
                             ],
                         ))
                     }
@@ -246,7 +253,7 @@ mod tests {
     #[test]
     fn test_named_field_struct_schema() {
         let input = TokenStream::from_str("struct Test {a: u32, b: Vec<u8>, c: u32}").unwrap();
-        let output = handle_describe(input).unwrap();
+        let output = handle_describe(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -281,7 +288,7 @@ mod tests {
     #[test]
     fn test_unnamed_field_struct_schema() {
         let input = TokenStream::from_str("struct Test(u32, Vec<u8>, u32);").unwrap();
-        let output = handle_describe(input).unwrap();
+        let output = handle_describe(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -316,7 +323,7 @@ mod tests {
     #[test]
     fn test_unit_struct_schema() {
         let input = TokenStream::from_str("struct Test;").unwrap();
-        let output = handle_describe(input).unwrap();
+        let output = handle_describe(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -340,7 +347,7 @@ mod tests {
     fn test_complex_enum_schema() {
         let input =
             TokenStream::from_str("#[sbor(generic_categorize_bounds = \"T2\")] enum Test<T: SomeTrait, T2> {A, B (T, Vec<T2>, #[sbor(skip)] i32), C {x: [u8; 5]}}").unwrap();
-        let output = handle_describe(input).unwrap();
+        let output = handle_describe(input, None).unwrap();
 
         assert_code_eq(
             output,
@@ -357,15 +364,15 @@ mod tests {
                         Some(::sbor::TypeData::named_enum(
                             stringify!(Test),
                             ::sbor::rust::collections::btree_map::btreemap![
-                                "A".to_owned() => ::sbor::TypeData::named_unit("A"),
-                                "B".to_owned() => ::sbor::TypeData::named_tuple(
+                                0u8 => ::sbor::TypeData::named_unit("A"),
+                                1u8 => ::sbor::TypeData::named_tuple(
                                     "B",
                                     ::sbor::rust::vec![
                                         <T as ::sbor::Describe<C>>::TYPE_ID,
                                         <Vec<T2> as ::sbor::Describe<C>>::TYPE_ID,
                                     ],
                                 ),
-                                "C".to_owned() => ::sbor::TypeData::named_fields_tuple(
+                                2u8 => ::sbor::TypeData::named_fields_tuple(
                                     "C",
                                     ::sbor::rust::vec![
                                         ("x", <[u8; 5] as ::sbor::Describe<C>>::TYPE_ID),

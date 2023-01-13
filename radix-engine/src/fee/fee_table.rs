@@ -147,6 +147,7 @@ impl FeeTable {
                 ResourceManagerFn::CreateNonFungible => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::CreateFungible => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::CreateNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::CreateFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::BurnBucket => self.fixed_low,
                 ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
@@ -154,6 +155,7 @@ impl FeeTable {
                 ResourceManagerFn::CreateVault => self.fixed_medium,
                 ResourceManagerFn::CreateBucket => self.fixed_medium,
                 ResourceManagerFn::MintNonFungible => self.fixed_high,
+                ResourceManagerFn::MintUuidNonFungible => self.fixed_high,
                 ResourceManagerFn::MintFungible => self.fixed_high,
                 ResourceManagerFn::GetResourceType => self.fixed_low,
                 ResourceManagerFn::GetTotalSupply => self.fixed_low,
