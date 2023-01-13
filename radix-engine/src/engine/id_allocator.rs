@@ -83,7 +83,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
+        // println!("Genesis validator {:?}", hash(&data).lower_26_bytes());
 
         Ok(SystemAddress::Validator(hash(data).lower_26_bytes()))
     }
