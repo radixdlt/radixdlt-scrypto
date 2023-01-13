@@ -1,5 +1,4 @@
 use radix_engine_interface::data::ScryptoValueDecodeError;
-use wasmi::HostError;
 
 use crate::fee::FeeReserveError;
 use crate::model::InvokeError;
@@ -100,8 +99,6 @@ impl fmt::Display for WasmError {
     }
 }
 
-impl HostError for WasmError {}
-
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for WasmError {}
 
@@ -110,8 +107,6 @@ impl fmt::Display for InvokeError<WasmError> {
         write!(f, "{:?}", self)
     }
 }
-
-impl HostError for InvokeError<WasmError> {}
 
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for InvokeError<WasmError> {}

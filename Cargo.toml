@@ -30,3 +30,8 @@ members = [
     "radix-engine-constants",
     "utils",
 ]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+

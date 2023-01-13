@@ -12,8 +12,7 @@ use wasmi_validation::{validate_module, PlainValidator};
 use crate::types::*;
 use crate::wasm::{constants::*, errors::*, PrepareError};
 
-use super::WasmiEnvModule;
-
+use super::{WasmiInstanceEnv, WasmiModule};
 #[derive(Debug, PartialEq)]
 pub struct WasmModule {
     module: Module,
@@ -374,13 +373,18 @@ impl WasmModule {
 
         // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
         // we're using the `wasmi` logic as a shortcut.
+        let code = parity_wasm::serialize(self.module.clone())
+            .map_err(|_| PrepareError::SerializationError)?;
 
-        wasmi::ModuleInstance::new(
-            &wasmi::Module::from_parity_wasm_module(self.module.clone())
-                .expect("Failed to convert WASM module from parity to wasmi"),
-            &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
-        )
-        .map_err(|_| PrepareError::NotInstantiatable)?;
+        //println!("ensure_instantiatable WasmiModule::new");
+        let wasmi_module = WasmiModule::new(&code[..]);
+        let env = WasmiInstanceEnv::new();
+
+        let mut store = wasmi::Store::new(wasmi_module.engine(), env);
+
+        wasmi_module
+            .host_funcs_set(&mut store)
+            .map_err(|_| PrepareError::NotInstantiatable)?;
 
         Ok(self)
     }
@@ -489,7 +493,7 @@ mod tests {
         assert_invalid_wasm!(
             r#"
             (module
-                (func (param f64)   
+                (func (param f64)
                 )
             )
             "#,

@@ -1,5 +1,8 @@
 use radix_engine_interface::data::IndexedScryptoValue;
-use sbor::rust::sync::Arc;
+use sbor::rust::sync::{Arc, Mutex};
+//use wasmi::core::Value as WasmiValue;
+use wasmi::core::Trap;
+use wasmi::core::Value;
 use wasmi::*;
 
 use super::InstrumentedCode;
@@ -10,172 +13,235 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
+type HostState = WasmiInstanceEnv;
+
 pub struct WasmiModule {
     module: Module,
     #[allow(dead_code)]
     code_size_bytes: usize,
 }
 
+#[derive(Clone)]
 pub struct WasmiInstance {
-    module_ref: ModuleRef,
-    memory_ref: MemoryRef,
+    instance: Instance,
+    store: Arc<Mutex<Store<HostState>>>,
+    memory: Memory,
+    runtime_ptr: Arc<Mutex<usize>>,
 }
 
-pub struct WasmiExternals<'a, 'b, 'r> {
-    instance: &'a WasmiInstance,
-    runtime: &'b mut Box<dyn WasmRuntime + 'r>,
+pub struct WasmiInstanceEnv {
+    //instance: std::mem::MaybeUninit<WasmiInstance>,
+    runtime_ptr: Arc<Mutex<usize>>,
 }
 
-pub struct WasmiEnvModule {}
-
-impl ModuleImportResolver for WasmiEnvModule {
-    fn resolve_func(
-        &self,
-        field_name: &str,
-        signature: &wasmi::Signature,
-    ) -> Result<FuncRef, Error> {
-        match field_name {
-            RADIX_ENGINE_FUNCTION_NAME => {
-                if signature.params() != [ValueType::I32]
-                    || signature.return_type() != Some(ValueType::I32)
-                {
-                    return Err(Error::Instantiation(
-                        "Function signature does not match".into(),
-                    ));
-                }
-                Ok(FuncInstance::alloc_host(
-                    signature.clone(),
-                    RADIX_ENGINE_FUNCTION_INDEX,
-                ))
-            }
-            CONSUME_COST_UNITS_FUNCTION_NAME => {
-                if signature.params() != [ValueType::I32] || signature.return_type() != None {
-                    return Err(Error::Instantiation(
-                        "Function signature does not match".into(),
-                    ));
-                }
-                Ok(FuncInstance::alloc_host(
-                    signature.clone(),
-                    CONSUME_COST_UNITS_FUNCTION_INDEX,
-                ))
-            }
-            _ => Err(Error::Instantiation(format!(
-                "Function {} not found",
-                field_name
-            ))),
+impl WasmiInstanceEnv {
+    pub fn new() -> Self {
+        Self {
+            runtime_ptr: Arc::new(Mutex::new(0)),
         }
     }
 }
 
-impl From<Error> for InvokeError<WasmError> {
-    fn from(error: Error) -> Self {
-        let e_str = format!("{:?}", error);
-        match error.into_host_error() {
-            // Pass-through invoke errors
-            Some(host_error) => *host_error
-                .downcast::<InvokeError<WasmError>>()
-                .expect("Failed to downcast error into InvokeError<WasmError>"),
-            None => InvokeError::Error(WasmError::WasmError(e_str)),
-        }
-    }
+// native functions
+fn wasmi_radix_engine(
+    mut caller: Caller<'_, HostState>,
+    input_ptr: i32,
+) -> Result<i32, InvokeError<WasmError>> {
+    let memory = match caller.get_export(EXPORT_MEMORY) {
+        Some(Extern::Memory(memory)) => memory,
+        _ => panic!("Failed to find memory export"),
+    };
+
+    let input = read_value(caller.as_context_mut(), memory, input_ptr as usize)
+        .map_err(InvokeError::Error)
+        .unwrap();
+
+    let output = {
+        let env = caller.data();
+        let ptr = env
+            .runtime_ptr
+            .lock()
+            .expect("Failed to lock WASM runtime pointer");
+        let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+
+        runtime.main(input).unwrap()
+    };
+    let alloc_func = caller
+        .get_export(EXPORT_SCRYPTO_ALLOC)
+        .and_then(Extern::into_func)
+        .ok_or_else(|| InvokeError::Error(WasmError::FunctionNotFound))
+        .unwrap();
+
+    send_value(caller.as_context_mut(), memory, alloc_func, &output)
+}
+
+fn consume_cost_units(
+    caller: Caller<'_, HostState>,
+    cost_unit: i32,
+) -> Result<(), InvokeError<WasmError>> {
+    let env = caller.data();
+
+    let ptr = env
+        .runtime_ptr
+        .lock()
+        .expect("Failed to lock WASM runtime pointer");
+    let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+    runtime.consume_cost_units(cost_unit as u32)
 }
 
 impl WasmiModule {
-    fn instantiate(&self) -> WasmiInstance {
-        // link with env module
-        let module_ref = ModuleInstance::new(
-            &self.module,
-            &ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
-        )
-        .expect("Failed to instantiate WASM module")
-        .assert_no_start();
+    pub fn new(code: &[u8]) -> Self {
+        let engine = Engine::default();
+        let module = Module::new(&engine, code).expect("Failed to parse WASM module");
 
-        // find memory ref
-        let memory_ref = match module_ref.export_by_name(EXPORT_MEMORY) {
-            Some(ExternVal::Memory(memory)) => memory,
+        let code_size_bytes = code.len();
+        Self {
+            module,
+            code_size_bytes,
+        }
+    }
+
+    pub fn engine(&self) -> &Engine {
+        self.module.engine()
+    }
+
+    pub fn host_funcs_set(&self, store: &mut Store<HostState>) -> Result<InstancePre, Error> {
+        let host_radix_engine = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, input_ptr: i32| -> Result<i32, Trap> {
+                wasmi_radix_engine(caller, input_ptr).map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let host_consume_cost_units = Func::wrap(
+            store.as_context_mut(),
+            |caller: Caller<'_, HostState>, cost_unit: i32| -> Result<(), Trap> {
+                consume_cost_units(caller, cost_unit).map_err(|e| Trap::new(e.to_string()))
+            },
+        );
+
+        let mut linker = <Linker<HostState>>::new();
+
+        linker
+            .define(
+                MODULE_ENV_NAME,
+                RADIX_ENGINE_FUNCTION_NAME,
+                host_radix_engine,
+            )
+            .expect(stringify!(
+                "Failed to define new linker item {}",
+                RADIX_ENGINE_FUNCTION_NAME
+            ));
+
+        linker
+            .define(
+                MODULE_ENV_NAME,
+                CONSUME_COST_UNITS_FUNCTION_NAME,
+                host_consume_cost_units,
+            )
+            .expect(stringify!(
+                "Failed to define new linker item {}",
+                CONSUME_COST_UNITS_FUNCTION_NAME
+            ));
+
+        let pre_instance = match linker.instantiate(store.as_context_mut(), &self.module) {
+            Ok(result) => result,
+            Err(e) => {
+                panic!("Failed to instantiate WASM module - {}", e.to_string());
+            }
+        };
+
+        Ok(pre_instance)
+    }
+
+    fn instantiate(&self) -> WasmiInstance {
+        let env = WasmiInstanceEnv::new();
+        let runtime_ptr = env.runtime_ptr.clone();
+        let engine = self.module.engine();
+        let mut store = Store::new(engine, env);
+
+        let pre_instance = self.host_funcs_set(&mut store).unwrap();
+        //            expect("Failed to instantiate WASM module");
+
+        let instance = pre_instance
+            .start(store.as_context_mut())
+            .expect("Failed to instantiate WASM module - start function exists");
+
+        let memory = match instance.get_export(store.as_context_mut(), EXPORT_MEMORY) {
+            Some(Extern::Memory(memory)) => memory,
             _ => panic!("Failed to find memory export"),
         };
 
         WasmiInstance {
-            module_ref,
-            memory_ref,
+            instance,
+            store: Arc::new(Mutex::new(store)),
+            memory,
+            runtime_ptr,
         }
     }
 }
 
-impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn send_value(&mut self, value: &[u8]) -> Result<RuntimeValue, InvokeError<WasmError>> {
-        let result = self.instance.module_ref.clone().invoke_export(
-            EXPORT_SCRYPTO_ALLOC,
-            &[RuntimeValue::I32((value.len()) as i32)],
-            self,
-        );
+fn send_value(
+    mut store: impl AsContextMut,
+    memory: Memory,
+    alloc_func: Func,
+    value: &[u8],
+) -> Result<i32, InvokeError<WasmError>> {
+    // TODO: fix this shitty arguments
+    let n = [Value::I32(value.len() as i32)];
+    let mut ret: [Value; 1] = [Value::I32(0)];
 
-        match result {
-            Ok(rtn) => {
-                if let Some(RuntimeValue::I32(ptr)) = rtn {
-                    if self
-                        .instance
-                        .memory_ref
-                        .set((ptr + 4) as u32, value)
-                        .is_ok()
-                    {
-                        return Ok(RuntimeValue::I32(ptr));
-                    }
-                }
+    let result = alloc_func.call(store.as_context_mut(), &n, &mut ret);
 
-                return Err(InvokeError::Error(WasmError::MemoryAllocError));
+    match result {
+        Ok(()) => {
+            let ret: i32 = i32::try_from(ret[0]).unwrap();
+
+            if memory
+                .write(store.as_context_mut(), (ret + 4) as usize, value)
+                .is_ok()
+            {
+                return Ok(ret);
             }
-            Err(e) => {
-                return Err(e.into());
-            }
+
+            return Err(InvokeError::Error(WasmError::MemoryAllocError));
         }
-    }
-
-    pub fn read_value(&self, ptr: usize) -> Result<IndexedScryptoValue, WasmError> {
-        let len = self
-            .instance
-            .memory_ref
-            .get_value::<u32>(ptr as u32)
-            .map_err(|_| WasmError::MemoryAccessError)? as usize;
-
-        let start = ptr.checked_add(4).ok_or(WasmError::MemoryAccessError)?;
-        let end = start.checked_add(len).ok_or(WasmError::MemoryAccessError)?;
-
-        let direct = self.instance.memory_ref.direct_access();
-        let buffer = direct.as_ref();
-        if end > buffer.len() {
-            return Err(WasmError::MemoryAccessError);
-        }
-
-        IndexedScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::InvalidScryptoValue)
+        Err(e) => Err(InvokeError::Error(WasmError::WasmError(e.to_string()))),
     }
 }
 
-impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
-    fn invoke_index(
-        &mut self,
-        index: usize,
-        args: RuntimeArgs,
-    ) -> Result<Option<RuntimeValue>, Trap> {
-        match index {
-            RADIX_ENGINE_FUNCTION_INDEX => {
-                let input_ptr = args.nth_checked::<u32>(0)? as usize;
-                let input = self.read_value(input_ptr)?;
-                let output = self.runtime.main(input)?;
-                self.send_value(&output)
-                    .map(Option::Some)
-                    .map_err(|e| e.into())
-            }
-            CONSUME_COST_UNITS_FUNCTION_INDEX => {
-                let n: u32 = args.nth_checked(0)?;
-                self.runtime
-                    .consume_cost_units(n)
-                    .map(|_| Option::None)
-                    .map_err(|e| e.into())
-            }
-            _ => Err(WasmError::FunctionNotFound.into()),
-        }
+fn read_value(
+    mut store: impl AsContextMut,
+    memory: Memory,
+    ptr: usize,
+) -> Result<IndexedScryptoValue, WasmError> {
+    let mut buf = [0_u8; 4];
+
+    let _result = memory
+        .read(store.as_context_mut(), ptr, &mut buf)
+        .map_err(|_| WasmError::MemoryAccessError);
+
+    let len = u32::from_le_bytes(buf) as usize;
+
+    let start = ptr.checked_add(4).ok_or(WasmError::MemoryAccessError)?;
+    let end = start.checked_add(len).ok_or(WasmError::MemoryAccessError)?;
+
+    let ctx = store.as_context_mut();
+    let data = memory.data(&ctx);
+
+    if end > data.len() {
+        return Err(WasmError::MemoryAccessError);
+    }
+    IndexedScryptoValue::from_slice(&data[start..end]).map_err(WasmError::InvalidScryptoValue)
+}
+
+impl WasmiInstance {
+    fn get_export_func(&mut self, name: &str) -> Result<Func, InvokeError<WasmError>> {
+        let mut store = self.store.lock().unwrap();
+        self.instance
+            .get_export(store.as_context_mut(), name)
+            .and_then(Extern::into_func)
+            .ok_or_else(|| InvokeError::Error(WasmError::FunctionNotFound))
     }
 }
 
@@ -186,32 +252,39 @@ impl WasmInstance for WasmiInstance {
         args: Vec<Vec<u8>>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
-        let mut externals = WasmiExternals {
-            instance: self,
-            runtime,
-        };
+        {
+            // set up runtime pointer
+            let mut guard = self
+                .runtime_ptr
+                .lock()
+                .expect("Failed to lock WASM runtime pointer");
+            *guard = runtime as *mut _ as usize;
+        }
+
+        // get_func() lock store as well, thus we call it before locking here
+        let alloc_func = self.get_export_func(EXPORT_SCRYPTO_ALLOC).unwrap();
+        let func = self.get_export_func(func_name).unwrap();
+
+        let store = self.store.clone();
+        let mut store = store.lock().unwrap();
 
         let mut pointers = Vec::new();
         for arg in args {
-            let pointer = externals.send_value(&arg)?;
-            pointers.push(pointer);
+            let pointer = send_value(store.as_context_mut(), self.memory, alloc_func, &arg)?;
+            pointers.push(Value::I32(pointer));
         }
-        let result = self
-            .module_ref
-            .clone()
-            .invoke_export(func_name, &pointers, &mut externals);
 
-        let rtn = result
-            .map_err(|e| {
-                let err: InvokeError<WasmError> = e.into();
-                err
-            })?
-            .ok_or(InvokeError::Error(WasmError::MissingReturnData))?;
-        match rtn {
-            RuntimeValue::I32(ptr) => externals
-                .read_value(ptr as usize)
-                .map_err(InvokeError::Error),
-            _ => Err(InvokeError::Error(WasmError::InvalidReturnData)),
+        let mut ret = [Value::I32(0)];
+        let result = func.call(store.as_context_mut(), &pointers[..], &mut ret);
+
+        match result {
+            Ok(()) => {
+                let ret: i32 = i32::try_from(ret[0]).unwrap();
+
+                return read_value(store.as_context_mut(), self.memory, ret as usize)
+                    .map_err(InvokeError::Error);
+            }
+            Err(e) => Err(InvokeError::Error(WasmError::WasmError(e.to_string()))),
         }
     }
 }
@@ -271,21 +344,21 @@ impl WasmEngine for WasmiEngine {
             return cached_module.instantiate();
         }
 
-        let code = instrumented_code.code.as_ref();
+        let code = &instrumented_code.code.as_ref()[..];
 
-        let new_module = Arc::new(WasmiModule {
-            module: Module::from_buffer(code).expect("Failed to parse WASM module"),
-            code_size_bytes: code.len(),
-        });
+        let new_module = Arc::new(WasmiModule::new(code));
 
         #[cfg(not(feature = "moka"))]
         self.modules_cache
             .borrow_mut()
             .put(*metered_code_key, new_module.clone());
         #[cfg(feature = "moka")]
-        self.modules_cache
-            .insert(*metered_code_key, new_module.clone());
-
+        // FIXME: Temporary disabling cache
+        // Wasmi::Engine is locked when it executes a function, which makes it impossible to reuse
+        // cached module with locked Engine (case when invoked function tries to instantiate
+        // already cached module).
+        //        self.modules_cache
+        //            .insert(*metered_code_key, new_module.clone());
         new_module.instantiate()
     }
 }
