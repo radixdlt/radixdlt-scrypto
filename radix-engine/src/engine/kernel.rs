@@ -1,5 +1,7 @@
 use native_sdk::resource::SysBucket;
-use radix_engine_interface::api::api::{ActorApi, EngineApi, Invocation, Invokable, InvokableModel, ComponentApi};
+use radix_engine_interface::api::api::{
+    ActorApi, ComponentApi, EngineApi, Invocation, Invokable, InvokableModel,
+};
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
     RENodeId, SubstateId, SubstateOffset, VaultId, WorktopOffset,
@@ -628,13 +630,20 @@ pub trait ExecutableInvocation: Invocation {
 }
 
 impl<'g, 's, W, R, M> ComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
-    where
-        W: WasmEngine,
-        R: FeeReserve,
-        M: BaseModule<R>, {
-    fn invoke_method(&mut self, receiver: ScryptoReceiver, method_name: &str, args: &ScryptoValue) -> Result<ScryptoValue, RuntimeError> {
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+    fn invoke_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        method_name: &str,
+        args: &ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
         // TODO: Use execution mode?
-        let invocation = resolve_method(receiver, method_name, &scrypto_encode(args).unwrap(), self)?;
+        let invocation =
+            resolve_method(receiver, method_name, &scrypto_encode(args).unwrap(), self)?;
         let rtn = invoke_call_table(invocation, self)?;
         Ok(rtn.into())
     }

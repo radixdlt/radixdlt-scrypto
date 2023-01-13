@@ -53,7 +53,8 @@ impl Executor for ScryptoExecutor {
         if let Some(component_id) = self.component_id {
             args.push(scrypto_encode(&component_id).unwrap());
         }
-        let arg = scrypto_encode(&self.args).map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
+        let arg = scrypto_encode(&self.args)
+            .map_err(|_| RuntimeError::InterpreterError(InterpreterError::InvalidInvocation))?;
         args.push(arg);
 
         let output = {

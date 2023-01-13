@@ -70,11 +70,13 @@ impl Runtime {
         method: S,
         args: Vec<u8>,
     ) -> T {
-        let output = ScryptoEnv.invoke_method(
-            ScryptoReceiver::Global(component_address),
-            method.as_ref(),
-            &scrypto_decode(&args).unwrap()
-        ).unwrap();
+        let output = ScryptoEnv
+            .invoke_method(
+                ScryptoReceiver::Global(component_address),
+                method.as_ref(),
+                &scrypto_decode(&args).unwrap(),
+            )
+            .unwrap();
         scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
     }
 

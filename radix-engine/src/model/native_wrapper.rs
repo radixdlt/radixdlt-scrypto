@@ -1,7 +1,7 @@
+use crate::engine::{ApplicationError, LockFlags, RuntimeError, SystemApi};
 use crate::model::{NativeOutput, TransactionProcessorError};
 use crate::types::*;
 use radix_engine_interface::api::api::InvokableModel;
-use crate::engine::{ApplicationError, LockFlags, RuntimeError, SystemApi};
 
 pub fn resolve_method<Y: SystemApi>(
     receiver: ScryptoReceiver,
@@ -17,27 +17,20 @@ pub fn resolve_method<Y: SystemApi>(
                     method_name,
                     args,
                 )
-                    .map_err(|e| {
-                        RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::ResolveError(e),
-                            ),
-                        )
-                    })?;
+                .map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::ResolveError(e),
+                    ))
+                })?;
                 CallTableInvocation::Native(NativeInvocation::EpochManager(invocation))
             }
             ComponentAddress::Clock(..) => {
-                let invocation = ClockPackage::resolve_method_invocation(
-                    component_address,
-                    method_name,
-                    args,
-                )
-                    .map_err(|e| {
-                        RuntimeError::ApplicationError(
-                            ApplicationError::TransactionProcessorError(
-                                TransactionProcessorError::ResolveError(e),
-                            ),
-                        )
+                let invocation =
+                    ClockPackage::resolve_method_invocation(component_address, method_name, args)
+                        .map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::ResolveError(e),
+                        ))
                     })?;
                 CallTableInvocation::Native(NativeInvocation::Clock(invocation))
             }
@@ -45,7 +38,8 @@ pub fn resolve_method<Y: SystemApi>(
             | ComponentAddress::EddsaEd25519VirtualAccount(..)
             | ComponentAddress::Normal(..)
             | ComponentAddress::Account(..) => {
-                let component_node_id = RENodeId::Global(GlobalAddress::Component(component_address));
+                let component_node_id =
+                    RENodeId::Global(GlobalAddress::Component(component_address));
                 let component_info = {
                     let handle = api.lock_substate(
                         component_node_id,
@@ -68,7 +62,7 @@ pub fn resolve_method<Y: SystemApi>(
                 };
                 CallTableInvocation::Scrypto(method_invocation)
             }
-        }
+        },
         ScryptoReceiver::Component(component_id) => {
             let component_node_id = RENodeId::Component(component_id);
             let component_info = {
@@ -101,8 +95,8 @@ pub fn invoke_call_table<Y, E>(
     invocation: CallTableInvocation,
     api: &mut Y,
 ) -> Result<IndexedScryptoValue, E>
-    where
-        Y: InvokableModel<E>,
+where
+    Y: InvokableModel<E>,
 {
     match invocation {
         CallTableInvocation::Scrypto(invocation) => {
@@ -116,7 +110,6 @@ pub fn invoke_call_table<Y, E>(
         }
     }
 }
-
 
 pub fn invoke_native_fn<Y, E>(
     native_invocation: NativeInvocation,

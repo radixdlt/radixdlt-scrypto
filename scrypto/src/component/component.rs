@@ -3,7 +3,9 @@ use radix_engine_interface::api::api::{ComponentApi, Invokable};
 use radix_engine_interface::api::types::{
     ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoReceiver, SubstateOffset,
 };
-use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode};
+use radix_engine_interface::data::{
+    scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode,
+};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt::Debug;
@@ -70,7 +72,12 @@ pub struct Component(pub ComponentId);
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv.invoke_method(ScryptoReceiver::Component(self.0), method, &scrypto_decode(&args).unwrap())
+        let output = ScryptoEnv
+            .invoke_method(
+                ScryptoReceiver::Component(self.0),
+                method,
+                &scrypto_decode(&args).unwrap(),
+            )
             .unwrap();
         scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
     }
@@ -97,11 +104,12 @@ impl Component {
 
     /// Add access check on the component.
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
-        ScryptoEnv.invoke(AccessRulesAddAccessCheckInvocation {
-            receiver: RENodeId::Component(self.0),
-            access_rules,
-        })
-        .unwrap();
+        ScryptoEnv
+            .invoke(AccessRulesAddAccessCheckInvocation {
+                receiver: RENodeId::Component(self.0),
+                access_rules,
+            })
+            .unwrap();
         self
     }
 
@@ -167,7 +175,12 @@ pub struct GlobalComponentRef(pub ComponentAddress);
 impl GlobalComponentRef {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv.invoke_method(ScryptoReceiver::Global(self.0), method, &scrypto_decode(&args).unwrap())
+        let output = ScryptoEnv
+            .invoke_method(
+                ScryptoReceiver::Global(self.0),
+                method,
+                &scrypto_decode(&args).unwrap(),
+            )
             .unwrap();
         scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
     }

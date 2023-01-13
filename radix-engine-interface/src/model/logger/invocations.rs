@@ -1,4 +1,4 @@
-use radix_engine_interface::model::{LoggerInvocation, NativeInvocation, CallTableInvocation};
+use radix_engine_interface::model::{CallTableInvocation, LoggerInvocation, NativeInvocation};
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 

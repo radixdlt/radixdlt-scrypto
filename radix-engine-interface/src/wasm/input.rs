@@ -1,8 +1,8 @@
 use crate::api::types::*;
+use crate::data::ScryptoValue;
 use crate::scrypto;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
-use crate::data::ScryptoValue;
 
 #[derive(Debug)]
 #[scrypto(Categorize, Encode, Decode)]
