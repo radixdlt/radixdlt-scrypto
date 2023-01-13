@@ -286,6 +286,70 @@ mod tests {
     }
 
     #[test]
+    fn test_named_field_struct_schema_custom() {
+        let input = TokenStream::from_str("struct Test {a: u32, b: Vec<u8>, c: u32}").unwrap();
+        let output = handle_describe(
+            input,
+            Some("radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>"),
+        )
+        .unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >
+                    for Test
+                {
+                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                        stringify!(Test),
+                        &[],
+                        &[
+                            63u8, 255u8, 173u8, 220u8, 251u8, 214u8, 95u8, 139u8, 106u8, 20u8, 23u8, 4u8, 15u8,
+                            10u8, 124u8, 49u8, 219u8, 44u8, 235u8, 215u8
+                        ]
+                    );
+                    fn type_data() -> Option<
+                        ::sbor::TypeData<
+                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>,
+                            ::sbor::GlobalTypeId>> {
+                        Some(::sbor::TypeData::named_fields_tuple(
+                            stringify!(Test),
+                            ::sbor::rust::vec![
+                                (
+                                    "a",
+                                    <u32 as ::sbor::Describe<
+                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                                    >>::TYPE_ID
+                                ),
+                                (
+                                    "b",
+                                    <Vec<u8> as ::sbor::Describe<
+                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                                    >>::TYPE_ID
+                                ),
+                                (
+                                    "c",
+                                    <u32 as ::sbor::Describe<
+                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                                    >>::TYPE_ID
+                                ),
+                            ],
+                        ))
+                    }
+                    fn add_all_dependencies(
+                        aggregator: &mut ::sbor::TypeAggregator<
+                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                        >
+                    ) {
+                        aggregator.add_child_type_and_descendents::<u32>();
+                        aggregator.add_child_type_and_descendents::<Vec<u8> >();
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
     fn test_unnamed_field_struct_schema() {
         let input = TokenStream::from_str("struct Test(u32, Vec<u8>, u32);").unwrap();
         let output = handle_describe(input, None).unwrap();

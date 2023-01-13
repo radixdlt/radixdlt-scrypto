@@ -322,7 +322,7 @@ pub fn build_describe_generics<'a>(
         if let Some(path) = custom_type_kind {
             (parse_str(path.as_str())?, false)
         } else if let Some(path) = context_custom_type_kind {
-            (parse_str(path)?, false)
+            (parse_str(&path)?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "C")?;
             (parse_str(&custom_type_label)?, true)

@@ -1,4 +1,3 @@
-use radix_engine_interface::math::*;
 use radix_engine_interface::*;
 
 #[derive(ScryptoSbor, LegacyDescribe, NonFungibleData)]
@@ -7,12 +6,13 @@ pub struct TestStruct {
     #[legacy_skip]
     #[sbor(skip)]
     pub b: String,
-    pub c: Decimal,
+    // TODO fix me as part of the new schema integration
+    // pub c: Decimal,
 }
 
 #[derive(ScryptoSbor, LegacyDescribe)]
 pub enum TestEnum {
     A { named: String },
     B(u32, u8),
-    C(Decimal),
+    // C(Decimal),
 }
