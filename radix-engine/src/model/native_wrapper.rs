@@ -4,13 +4,13 @@ use radix_engine_interface::api::api::InvokableModel;
 use crate::engine::{ApplicationError, LockFlags, RuntimeError, SystemApi};
 
 pub fn resolve_method<Y: SystemApi>(
-    receiver: Receiver,
+    receiver: ScryptoReceiver,
     method_name: &str,
     args: &[u8],
     api: &mut Y,
 ) -> Result<CallTableInvocation, RuntimeError> {
     let invocation = match receiver {
-        Receiver::Global(component_address) => match component_address {
+        ScryptoReceiver::Global(component_address) => match component_address {
             ComponentAddress::EpochManager(..) => {
                 let invocation = EpochManagerPackage::resolve_method_invocation(
                     component_address,
@@ -59,17 +59,17 @@ pub fn resolve_method<Y: SystemApi>(
                     component_info
                 };
 
-                let method_invocation = ScryptoMethodInvocation {
+                let method_invocation = ScryptoInvocation {
                     package_address: component_info.package_address,
                     blueprint_name: component_info.blueprint_name,
-                    receiver: Some(Receiver::Global(component_address.clone())),
-                    method_name: method_name.to_string(),
+                    receiver: Some(ScryptoReceiver::Global(component_address.clone())),
+                    fn_name: method_name.to_string(),
                     args: args.to_owned(),
                 };
-                CallTableInvocation::ScryptoMethod(method_invocation)
+                CallTableInvocation::Scrypto(method_invocation)
             }
         }
-        Receiver::Component(component_id) => {
+        ScryptoReceiver::Component(component_id) => {
             let component_node_id = RENodeId::Component(component_id);
             let component_info = {
                 let handle = api.lock_substate(
@@ -84,11 +84,11 @@ pub fn resolve_method<Y: SystemApi>(
                 component_info
             };
 
-            CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
+            CallTableInvocation::Scrypto(ScryptoInvocation {
                 package_address: component_info.package_address,
                 blueprint_name: component_info.blueprint_name,
-                receiver: Some(Receiver::Component(component_id)),
-                method_name: method_name.to_string(),
+                receiver: Some(ScryptoReceiver::Component(component_id)),
+                fn_name: method_name.to_string(),
                 args: args.to_owned(),
             })
         }
@@ -105,12 +105,7 @@ pub fn invoke_call_table<Y, E>(
         Y: InvokableModel<E>,
 {
     match invocation {
-        CallTableInvocation::ScryptoMethod(invocation) => {
-            let rtn = api.invoke(invocation)?;
-            let rtn = IndexedScryptoValue::from_typed(&rtn);
-            Ok(rtn)
-        }
-        CallTableInvocation::ScryptoFunction(invocation) => {
+        CallTableInvocation::Scrypto(invocation) => {
             let rtn = api.invoke(invocation)?;
             let rtn = IndexedScryptoValue::from_typed(&rtn);
             Ok(rtn)

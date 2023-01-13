@@ -5,7 +5,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel, ComponentApi};
+use radix_engine_interface::api::api::{EngineApi, Invocation, InvokableModel, ComponentApi};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
@@ -235,7 +235,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoFunctionInvocation, RuntimeError>
             + EngineApi<RuntimeError>
             + ComponentApi<RuntimeError>
             + InvokableModel<RuntimeError>,
@@ -399,13 +398,14 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let function_invocation = ScryptoFunctionInvocation {
+                    let invocation = ScryptoInvocation {
                         package_address: package_address.clone(),
                         blueprint_name: blueprint_name.clone(),
-                        function_name: function_name.clone(),
+                        fn_name: function_name.clone(),
+                        receiver: None,
                         args: args.to_vec(),
                     };
-                    let invocation = CallTableInvocation::ScryptoFunction(function_invocation);
+                    let invocation = CallTableInvocation::Scrypto(invocation);
                     let result = invoke_call_table(invocation, api)?;
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
@@ -424,7 +424,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let result = api.invoke_method(Receiver::Global(*component_address), method_name, args.as_value())?;
+                    let result = api.invoke_method(ScryptoReceiver::Global(*component_address), method_name, args.as_value())?;
                     let result = IndexedScryptoValue::from_typed(&result);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
@@ -837,7 +837,6 @@ impl TransactionProcessor {
     ) -> Result<(), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoFunctionInvocation, RuntimeError>
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>,
     {

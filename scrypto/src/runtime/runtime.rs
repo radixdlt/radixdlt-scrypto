@@ -1,6 +1,6 @@
 use radix_engine_interface::api::api::{ActorApi, ComponentApi, EngineApi, Invokable};
 use radix_engine_interface::api::types::{
-    FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, Receiver,
+    FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoReceiver,
 };
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::*;
@@ -53,10 +53,11 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let buffer = ScryptoEnv
-            .invoke(ScryptoFunctionInvocation {
+            .invoke(ScryptoInvocation {
                 package_address,
                 blueprint_name: blueprint_name.as_ref().to_owned(),
-                function_name: function_name.as_ref().to_owned(),
+                fn_name: function_name.as_ref().to_owned(),
+                receiver: None,
                 args,
             })
             .unwrap();
@@ -70,7 +71,7 @@ impl Runtime {
         args: Vec<u8>,
     ) -> T {
         let output = ScryptoEnv.invoke_method(
-            Receiver::Global(component_address),
+            ScryptoReceiver::Global(component_address),
             method.as_ref(),
             &scrypto_decode(&args).unwrap()
         ).unwrap();

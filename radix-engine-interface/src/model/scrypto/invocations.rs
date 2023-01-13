@@ -1,58 +1,41 @@
 use radix_engine_interface::data::ScryptoValue;
 use crate::api::api::Invocation;
-use crate::api::types::Receiver;
-use crate::model::{PackageAddress, CallTableInvocation};
+use crate::model::{PackageAddress, CallTableInvocation, ComponentAddress};
 use crate::scrypto;
 use crate::wasm::SerializableInvocation;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use crate::api::types::ComponentId;
 
-/// Scrypto function/method invocation.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[scrypto(Categorize, Encode, Decode)]
-pub struct ScryptoFunctionInvocation {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
-    pub function_name: String,
-    pub args: Vec<u8>,
-}
-
-impl Invocation for ScryptoFunctionInvocation {
-    type Output = ScryptoValue;
-}
-
-impl SerializableInvocation for ScryptoFunctionInvocation {
-    type ScryptoOutput = ScryptoValue;
-}
-
-impl Into<CallTableInvocation> for ScryptoFunctionInvocation {
-    fn into(self) -> CallTableInvocation {
-        CallTableInvocation::ScryptoFunction(self)
-    }
+pub enum ScryptoReceiver {
+    Global(ComponentAddress),
+    Component(ComponentId),
 }
 
 /// Scrypto function/method invocation.
 #[derive(Debug)]
 #[scrypto(Categorize, Encode, Decode)]
-pub struct ScryptoMethodInvocation {
+pub struct ScryptoInvocation {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
-    pub method_name: String,
-    pub receiver: Option<Receiver>,
+    pub fn_name: String,
+    pub receiver: Option<ScryptoReceiver>,
     pub args: Vec<u8>,
 }
 
-impl Invocation for ScryptoMethodInvocation {
+impl Invocation for ScryptoInvocation {
     type Output = ScryptoValue;
 }
 
-impl SerializableInvocation for ScryptoMethodInvocation {
+impl SerializableInvocation for ScryptoInvocation {
     type ScryptoOutput = ScryptoValue;
 }
 
-impl Into<CallTableInvocation> for ScryptoMethodInvocation {
+impl Into<CallTableInvocation> for ScryptoInvocation {
     fn into(self) -> CallTableInvocation {
-        CallTableInvocation::ScryptoMethod(self)
+        CallTableInvocation::Scrypto(self)
     }
 }

@@ -160,10 +160,11 @@ where
 
                 // TODO: Replace with trusted IndexedScryptoValue
                 let access_rule = rule!(require(non_fungible_address));
-                let result = self.invoke(ScryptoFunctionInvocation {
+                let result = self.invoke(ScryptoInvocation {
                     package_address: ACCOUNT_PACKAGE,
                     blueprint_name: "Account".to_string(),
-                    function_name: "create".to_string(),
+                    fn_name: "create".to_string(),
+                    receiver: None,
                     args: args!(access_rule),
                 })?;
                 let component_id = IndexedScryptoValue::from_typed(&result)
@@ -631,7 +632,7 @@ impl<'g, 's, W, R, M> ComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
         W: WasmEngine,
         R: FeeReserve,
         M: BaseModule<R>, {
-    fn invoke_method(&mut self, receiver: Receiver, method_name: &str, args: &ScryptoValue) -> Result<ScryptoValue, RuntimeError> {
+    fn invoke_method(&mut self, receiver: ScryptoReceiver, method_name: &str, args: &ScryptoValue) -> Result<ScryptoValue, RuntimeError> {
         // TODO: Use execution mode?
         let invocation = resolve_method(receiver, method_name, &scrypto_encode(args).unwrap(), self)?;
         let rtn = invoke_call_table(invocation, self)?;

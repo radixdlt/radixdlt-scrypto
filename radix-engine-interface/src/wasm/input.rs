@@ -8,7 +8,7 @@ use crate::data::ScryptoValue;
 #[scrypto(Categorize, Encode, Decode)]
 pub enum RadixEngineInput {
     // High Level method call
-    InvokeMethod(Receiver, String, ScryptoValue),
+    InvokeMethod(ScryptoReceiver, String, ScryptoValue),
     // Low Level call
     Invoke(CallTableInvocation),
 

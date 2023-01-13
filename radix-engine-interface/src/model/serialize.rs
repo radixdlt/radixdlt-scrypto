@@ -7,8 +7,7 @@ use sbor::rust::fmt::Debug;
 #[scrypto(Categorize, Encode, Decode)]
 pub enum CallTableInvocation {
     Native(NativeInvocation),
-    ScryptoFunction(ScryptoFunctionInvocation),
-    ScryptoMethod(ScryptoMethodInvocation),
+    Scrypto(ScryptoInvocation),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]

@@ -41,15 +41,14 @@ pub trait ActorApi<E: Debug> {
 pub trait ComponentApi<E> {
     fn invoke_method(
         &mut self,
-        receiver: Receiver,
+        receiver: ScryptoReceiver,
         method_name: &str,
         args: &ScryptoValue
     ) -> Result<ScryptoValue, E>;
 }
 
 pub trait InvokableModel<E>:
-    Invokable<ScryptoFunctionInvocation, E>
-    + Invokable<ScryptoMethodInvocation, E>
+    Invokable<ScryptoInvocation, E>
     + Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerNextRoundInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>

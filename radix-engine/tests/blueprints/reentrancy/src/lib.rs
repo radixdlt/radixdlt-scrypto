@@ -15,10 +15,10 @@ blueprint! {
 
         pub fn call_mut_self(&mut self, address: ComponentAddress) {
             let input =
-                RadixEngineInput::Invoke(CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
+                RadixEngineInput::Invoke(CallTableInvocation::Scrypto(ScryptoInvocation {
                     package_address: Runtime::package_address(),
                     blueprint_name: "ReentrantComponent".to_string(),
-                    method_name: "mut_func".to_string(),
+                    fn_name: "mut_func".to_string(),
                     receiver: Some(Receiver::Global(address)),
                     args: args!(),
                 }));
@@ -29,11 +29,11 @@ blueprint! {
 
         pub fn call_self(&self, address: ComponentAddress) {
             let input =
-                RadixEngineInput::Invoke(CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
+                RadixEngineInput::Invoke(CallTableInvocation::Scrypto(ScryptoInvocation {
                     package_address: Runtime::package_address(),
                     blueprint_name: "ReentrantComponent".to_string(),
+                    fn_name: "func".to_string(),
                     receiver: Some(Receiver::Global(address)),
-                    method_name: "func".to_string(),
                     args: args!(),
                 }));
             let _: ScryptoValue = call_engine(input);
@@ -41,10 +41,10 @@ blueprint! {
 
         pub fn call_mut_self_2(&self, address: ComponentAddress) {
             let input =
-                RadixEngineInput::Invoke(CallTableInvocation::ScryptoMethod(ScryptoMethodInvocation {
+                RadixEngineInput::Invoke(CallTableInvocation::Scrypto(ScryptoInvocation {
                     package_address: Runtime::package_address(),
                     blueprint_name: "ReentrantComponent".to_string(),
-                    method_name: "mut_func".to_string(),
+                    fn_name: "mut_func".to_string(),
                     receiver: Some(Receiver::Global(address)),
                     args: args!(),
                 }));

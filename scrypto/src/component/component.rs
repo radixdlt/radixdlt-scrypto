@@ -1,7 +1,7 @@
 use radix_engine_derive::Describe;
 use radix_engine_interface::api::api::{ComponentApi, Invokable};
 use radix_engine_interface::api::types::{
-    ComponentId, ComponentOffset, GlobalAddress, RENodeId, Receiver, SubstateOffset,
+    ComponentId, ComponentOffset, GlobalAddress, RENodeId, ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoCustomValueKind, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::model::*;
@@ -70,7 +70,7 @@ pub struct Component(pub ComponentId);
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv.invoke_method(Receiver::Component(self.0), method, &scrypto_decode(&args).unwrap())
+        let output = ScryptoEnv.invoke_method(ScryptoReceiver::Component(self.0), method, &scrypto_decode(&args).unwrap())
             .unwrap();
         scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
     }
@@ -167,7 +167,7 @@ pub struct GlobalComponentRef(pub ComponentAddress);
 impl GlobalComponentRef {
     /// Invokes a method on this component.
     pub fn call<T: ScryptoDecode>(&self, method: &str, args: Vec<u8>) -> T {
-        let output = ScryptoEnv.invoke_method(Receiver::Global(self.0), method, &scrypto_decode(&args).unwrap())
+        let output = ScryptoEnv.invoke_method(ScryptoReceiver::Global(self.0), method, &scrypto_decode(&args).unwrap())
             .unwrap();
         scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
     }

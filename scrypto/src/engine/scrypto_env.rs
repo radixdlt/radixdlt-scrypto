@@ -1,5 +1,5 @@
 use radix_engine_interface::api::api::{ActorApi, ComponentApi, EngineApi, Invokable};
-use radix_engine_interface::api::types::{FnIdentifier, LockHandle, Receiver, RENodeId, ScryptoRENode, SubstateOffset};
+use radix_engine_interface::api::types::{FnIdentifier, LockHandle, ScryptoReceiver, RENodeId, ScryptoRENode, SubstateOffset};
 use radix_engine_interface::data::{ScryptoDecode, ScryptoValue};
 use radix_engine_interface::wasm::*;
 use sbor::rust::fmt::Debug;
@@ -106,7 +106,7 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
 }
 
 impl ComponentApi<EngineApiError> for ScryptoEnv {
-    fn invoke_method(&mut self, receiver: Receiver, method_name: &str, args: &ScryptoValue) -> Result<ScryptoValue, EngineApiError> {
+    fn invoke_method(&mut self, receiver: ScryptoReceiver, method_name: &str, args: &ScryptoValue) -> Result<ScryptoValue, EngineApiError> {
         let rtn = call_engine(RadixEngineInput::InvokeMethod(receiver, method_name.to_string(), args.clone()));
         Ok(rtn)
     }
