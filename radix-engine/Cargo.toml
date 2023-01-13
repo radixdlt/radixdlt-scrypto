@@ -54,6 +54,10 @@ harness = false
 name = "wasm"
 harness = false
 
+[[bench]]
+name = "resource_usage"
+harness = false
+
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]

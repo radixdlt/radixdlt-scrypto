@@ -11,6 +11,7 @@ mod node;
 mod node_properties;
 mod system_api;
 mod track;
+mod info_mem;
 
 pub use actor::*;
 pub use call_frame::*;
@@ -25,3 +26,4 @@ pub use node::*;
 pub use node_properties::*;
 pub use system_api::*;
 pub use track::*;
+pub use info_mem::*;
