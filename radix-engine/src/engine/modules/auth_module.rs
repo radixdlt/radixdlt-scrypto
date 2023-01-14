@@ -7,8 +7,7 @@ use radix_engine_interface::api::types::{
     VaultOffset,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AuthError {
     VisibilityError(RENodeId),
     Unauthorized {
@@ -56,6 +55,7 @@ impl AuthModule {
                     (method, ..)
                         if matches!(method, NativeFn::Metadata(..))
                             || matches!(method, NativeFn::EpochManager(..))
+                            || matches!(method, NativeFn::Validator(..))
                             || matches!(method, NativeFn::ResourceManager(..))
                             || matches!(method, NativeFn::Package(..))
                             || matches!(method, NativeFn::Clock(..))

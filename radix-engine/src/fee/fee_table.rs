@@ -1,8 +1,4 @@
-use radix_engine_interface::api::types::{
-    AccessRulesChainFn, AuthZoneStackFn, BucketFn, ClockFn, ComponentFn, EpochManagerFn, LoggerFn,
-    MetadataFn, NativeFn, PackageFn, ProofFn, ResourceManagerFn, TransactionProcessorFn,
-    TransactionRuntimeFn, VaultFn, WorktopFn,
-};
+use radix_engine_interface::api::types::*;
 
 pub enum SystemApiCostingEntry {
     /*
@@ -119,8 +115,12 @@ impl FeeTable {
                 EpochManagerFn::GetCurrentEpoch => self.fixed_low,
                 EpochManagerFn::NextRound => self.fixed_low,
                 EpochManagerFn::SetEpoch => self.fixed_low,
-                EpochManagerFn::RegisterValidator => self.fixed_low,
-                EpochManagerFn::UnregisterValidator => self.fixed_low,
+                EpochManagerFn::UpdateValidator => self.fixed_low,
+                EpochManagerFn::CreateValidator => self.fixed_low,
+            },
+            NativeFn::Validator(validator_fn) => match validator_fn {
+                ValidatorFn::Register => self.fixed_low,
+                ValidatorFn::Unregister => self.fixed_low,
             },
             NativeFn::Clock(clock_method) => match clock_method {
                 ClockFn::Create => self.fixed_low,
@@ -147,6 +147,7 @@ impl FeeTable {
                 ResourceManagerFn::CreateNonFungible => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::CreateFungible => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::CreateNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
+                ResourceManagerFn::CreateUuidNonFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::CreateFungibleWithInitialSupply => self.fixed_high, // TODO: more investigation about fungibility
                 ResourceManagerFn::BurnBucket => self.fixed_low,
                 ResourceManagerFn::UpdateVaultAuth => self.fixed_medium,
@@ -154,6 +155,7 @@ impl FeeTable {
                 ResourceManagerFn::CreateVault => self.fixed_medium,
                 ResourceManagerFn::CreateBucket => self.fixed_medium,
                 ResourceManagerFn::MintNonFungible => self.fixed_high,
+                ResourceManagerFn::MintUuidNonFungible => self.fixed_high,
                 ResourceManagerFn::MintFungible => self.fixed_high,
                 ResourceManagerFn::GetResourceType => self.fixed_low,
                 ResourceManagerFn::GetTotalSupply => self.fixed_low,

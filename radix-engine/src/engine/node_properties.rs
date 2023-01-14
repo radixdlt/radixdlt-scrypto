@@ -244,6 +244,7 @@ impl SubstateProperties {
             SubstateOffset::NonFungibleStore(..) => true,
             SubstateOffset::Vault(..) => true,
             SubstateOffset::EpochManager(..) => true,
+            SubstateOffset::Validator(..) => true,
             SubstateOffset::Bucket(..) => false,
             SubstateOffset::Proof(..) => false,
             SubstateOffset::Worktop(..) => false,
@@ -300,6 +301,7 @@ impl SubstateProperties {
                 | RENodeId::Package(..)
                 | RENodeId::ResourceManager(..)
                 | RENodeId::EpochManager(..)
+                | RENodeId::Validator(..)
                 | RENodeId::Clock(..) => Ok(()),
                 _ => Err(RuntimeError::KernelError(KernelError::InvalidOwnership(
                     offset.clone(),

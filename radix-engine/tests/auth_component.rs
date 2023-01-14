@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
@@ -11,7 +10,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account);
-    let auth_id = NonFungibleId::U32(1);
+    let auth_id = NonFungibleId::Number(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     let authorization = AccessRules::new().method(
         "get_component_state",
@@ -73,7 +72,7 @@ fn can_make_cross_component_call_with_authorization() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
-    let auth_id = NonFungibleId::U32(1);
+    let auth_id = NonFungibleId::Number(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
     let authorization = AccessRules::new().method(
         "get_component_state",
@@ -150,7 +149,7 @@ fn root_auth_zone_does_not_carry_over_cross_component_calls() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
-    let auth_id = NonFungibleId::U32(1);
+    let auth_id = NonFungibleId::Number(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     let authorization = AccessRules::new().method(
         "get_component_state",

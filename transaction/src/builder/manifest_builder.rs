@@ -295,7 +295,7 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource
     pub fn create_non_fungible_resource<R, T, V>(
         &mut self,
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, R)>,
         initial_supply: Option<T>,
@@ -327,7 +327,7 @@ impl ManifestBuilder {
     /// Creates a new non-fungible resource with an owner badge
     pub fn create_non_fungible_resource_with_owner<T, V>(
         &mut self,
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleAddress,
         initial_supply: Option<T>,
@@ -351,13 +351,18 @@ impl ManifestBuilder {
         self
     }
 
-    pub fn register_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(BasicInstruction::RegisterValidator { validator });
+    pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateValidator { key });
         self
     }
 
-    pub fn unregister_validator(&mut self, validator: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(BasicInstruction::UnregisterValidator { validator });
+    pub fn register_validator(&mut self, validator_address: SystemAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::RegisterValidator { validator_address });
+        self
+    }
+
+    pub fn unregister_validator(&mut self, validator_address: SystemAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::UnregisterValidator { validator_address });
         self
     }
 
@@ -614,6 +619,26 @@ impl ManifestBuilder {
             .map(|(id, e)| (id, (e.immutable_data().unwrap(), e.mutable_data().unwrap())))
             .collect();
         self.add_instruction(BasicInstruction::MintNonFungible {
+            resource_address,
+            entries,
+        });
+        self
+    }
+
+    pub fn mint_uuid_non_fungible<T, V>(
+        &mut self,
+        resource_address: ResourceAddress,
+        entries: T,
+    ) -> &mut Self
+    where
+        T: IntoIterator<Item = V>,
+        V: NonFungibleData,
+    {
+        let entries = entries
+            .into_iter()
+            .map(|e| (e.immutable_data().unwrap(), e.mutable_data().unwrap()))
+            .collect();
+        self.add_instruction(BasicInstruction::MintUuidNonFungible {
             resource_address,
             entries,
         });

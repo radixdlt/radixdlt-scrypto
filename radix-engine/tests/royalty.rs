@@ -1,7 +1,6 @@
 use radix_engine::fee::u128_to_decimal;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_COST_UNIT_PRICE;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -60,7 +59,7 @@ fn set_up_package_and_component() -> (
 
     // Publish package
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::U32(1));
+    let owner_badge_addr = NonFungibleAddress::new(owner_badge_resource, NonFungibleId::Number(1));
     let package_address =
         test_runner.compile_and_publish_with_owner("./tests/blueprints/royalty", owner_badge_addr);
 

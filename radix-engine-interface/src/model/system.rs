@@ -12,6 +12,7 @@ use crate::scrypto_type;
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum SystemAddress {
     EpochManager([u8; 26]),
+    Validator([u8; 26]),
     Clock([u8; 26]),
 }
 
@@ -28,6 +29,7 @@ impl TryFrom<&[u8]> for SystemAddress {
                 .map_err(|_| AddressError::InvalidEntityTypeId(slice[0]))?
             {
                 EntityType::EpochManager => Ok(Self::EpochManager(copy_u8_array(&slice[1..]))),
+                EntityType::Validator => Ok(Self::Validator(copy_u8_array(&slice[1..]))),
                 EntityType::Clock => Ok(Self::Clock(copy_u8_array(&slice[1..]))),
                 _ => Err(AddressError::InvalidEntityTypeId(slice[0])),
             },
@@ -42,6 +44,7 @@ impl SystemAddress {
         buf.push(EntityType::system(self).id());
         match self {
             Self::EpochManager(v) => buf.extend(v),
+            Self::Validator(v) => buf.extend(v),
             Self::Clock(v) => buf.extend(v),
         }
         buf
@@ -90,6 +93,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for SystemAddress {
         // This could be made more performant by streaming the hex into the formatter
         match self {
             SystemAddress::EpochManager(_) => write!(f, "EpochManagerSystem[{}]", self.to_hex()),
+            SystemAddress::Validator(_) => write!(f, "Validator[{}]", self.to_hex()),
             SystemAddress::Clock(_) => write!(f, "ClockSystem[{}]", self.to_hex()),
         }
         .map_err(|err| AddressError::FormatError(err))

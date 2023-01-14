@@ -40,7 +40,7 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let discriminator = decoder.read_discriminator()?;
-        match discriminator.as_ref() {
+        match discriminator {
             RESULT_VARIANT_OK => {
                 decoder.read_and_check_size(1)?;
                 Ok(Ok(decoder.decode()?))
@@ -65,8 +65,8 @@ impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, E: Describe<C>> Describe<C
         Some(TypeData::named_enum(
             "Result",
             btreemap![
-                "Ok".to_owned() => TypeData::named_tuple("Ok", crate::rust::vec![T::TYPE_ID]),
-                "Err".to_owned() => TypeData::named_tuple("Err", crate::rust::vec![E::TYPE_ID]),
+                RESULT_VARIANT_OK => TypeData::named_tuple("Ok", crate::rust::vec![T::TYPE_ID]),
+                RESULT_VARIANT_ERR => TypeData::named_tuple("Err", crate::rust::vec![E::TYPE_ID]),
             ],
         ))
     }

@@ -3,7 +3,6 @@ use radix_engine::engine::{RejectionError, RuntimeError};
 use radix_engine::model::WorktopError;
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;

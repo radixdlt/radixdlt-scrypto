@@ -143,6 +143,7 @@ pub fn get_unique_types<'a>(types: &[&'a syn::Type]) -> Vec<&'a syn::Type> {
 pub fn build_decode_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
+    context_custom_value_kind: Option<&'static str>,
 ) -> syn::Result<(
     Generics,
     TypeGenerics<'a>,
@@ -161,6 +162,8 @@ pub fn build_decode_generics<'a>(
     let (custom_value_kind_generic, need_to_add_cti_generic): (Path, bool) =
         if let Some(path) = custom_value_kind {
             (parse_str(path.as_str())?, false)
+        } else if let Some(path) = context_custom_value_kind {
+            (parse_str(path)?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "X")?;
             (parse_str(&custom_type_label)?, true)
@@ -210,6 +213,7 @@ pub fn build_decode_generics<'a>(
 pub fn build_encode_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
+    context_custom_value_kind: Option<&'static str>,
 ) -> syn::Result<(
     Generics,
     TypeGenerics<'a>,
@@ -228,6 +232,8 @@ pub fn build_encode_generics<'a>(
     let (custom_value_kind_generic, need_to_add_cti_generic): (Path, bool) =
         if let Some(path) = custom_value_kind {
             (parse_str(path.as_str())?, false)
+        } else if let Some(path) = context_custom_value_kind {
+            (parse_str(path)?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "X")?;
             (parse_str(&custom_type_label)?, true)
@@ -277,6 +283,7 @@ pub fn build_encode_generics<'a>(
 pub fn build_describe_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
+    context_custom_value_kind: Option<&'static str>,
 ) -> syn::Result<(Generics, Generics, Option<&'a WhereClause>, Path)> {
     let custom_type_kind = get_custom_type_kind(attributes);
     let generic_type_names_needing_categorize_bound =
@@ -290,6 +297,8 @@ pub fn build_describe_generics<'a>(
     let (custom_type_kind_generic, need_to_add_ctk_generic): (Path, bool) =
         if let Some(path) = custom_type_kind {
             (parse_str(path.as_str())?, false)
+        } else if let Some(path) = context_custom_value_kind {
+            (parse_str(path)?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "C")?;
             (parse_str(&custom_type_label)?, true)
@@ -333,6 +342,7 @@ pub fn build_describe_generics<'a>(
 pub fn build_custom_categorize_generic<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
+    context_custom_value_kind: Option<&'static str>,
 ) -> syn::Result<(Generics, TypeGenerics<'a>, Option<&'a WhereClause>, Path)> {
     let custom_value_kind = get_custom_value_kind(&attributes);
     let (impl_generics, ty_generics, where_clause) = original_generics.split_for_impl();
@@ -342,6 +352,8 @@ pub fn build_custom_categorize_generic<'a>(
 
     let sbor_cti = if let Some(path) = custom_value_kind {
         parse_str(path.as_str())?
+    } else if let Some(path) = context_custom_value_kind {
+        parse_str(path)?
     } else {
         let custom_type_label = find_free_generic_name(original_generics, "X")?;
         let custom_value_kind_generic = parse_str(&custom_type_label)?;

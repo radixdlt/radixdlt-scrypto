@@ -2,8 +2,7 @@ use crate::types::*;
 use radix_engine_interface::api::types::{BucketId, VaultId};
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceOperationError {
     /// Resource addresses do not match.
     ResourceAddressNotMatching,
@@ -22,8 +21,7 @@ pub enum ResourceOperationError {
 }
 
 /// A raw record of resource persisted in the substate store
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum Resource {
     Fungible {
         /// The resource address.
@@ -39,7 +37,7 @@ pub enum Resource {
         /// The total non-fungible ids.
         ids: BTreeSet<NonFungibleId>,
         /// NonFungible Id type
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
     },
 }
 
@@ -59,7 +57,7 @@ impl Resource {
     pub fn new_non_fungible(
         resource_address: ResourceAddress,
         ids: BTreeSet<NonFungibleId>,
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
     ) -> Self {
         Self::NonFungible {
             resource_address,
@@ -98,7 +96,7 @@ impl Resource {
         self.amount().is_zero()
     }
 
-    pub fn id_type(&self) -> NonFungibleIdType {
+    pub fn id_type(&self) -> NonFungibleIdTypeId {
         match self {
             Resource::Fungible { .. } => panic!("id_type() called on fungible resource"),
             Resource::NonFungible { id_type, .. } => id_type.clone(),
@@ -268,15 +266,14 @@ pub enum LockableResource {
         /// The liquid non-fungible ids.
         liquid_ids: BTreeSet<NonFungibleId>,
         /// The non-fungible ID type.
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
     },
 }
 
 /// The locked amount or non-fungible IDs.
 ///
 /// Invariant: always consistent with resource fungibility.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LockedAmountOrIds {
     Amount(Decimal),
     Ids(BTreeSet<NonFungibleId>),

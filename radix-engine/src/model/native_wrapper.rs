@@ -223,6 +223,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             ResourceInvocation::CreateFungibleWithInitialSupply(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
@@ -252,6 +256,10 @@ where
                 Ok(Box::new(rtn))
             }
             ResourceInvocation::MintNonFungible(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ResourceInvocation::MintUuidNonFungible(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -297,11 +305,21 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            EpochManagerInvocation::RegisterValidator(invocation) => {
+            EpochManagerInvocation::CreateValidator(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            EpochManagerInvocation::UnregisterValidator(invocation) => {
+            EpochManagerInvocation::UpdateValidator(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+        },
+        NativeInvocation::Validator(invocation) => match invocation {
+            ValidatorInvocation::Register(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
+            ValidatorInvocation::Unregister(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
@@ -324,7 +342,7 @@ where
                 Ok(Box::new(rtn))
             }
         },
-        NativeInvocation::Logger(logger_invocation) => match logger_invocation {
+        NativeInvocation::Logger(invocation) => match invocation {
             LoggerInvocation::Log(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))

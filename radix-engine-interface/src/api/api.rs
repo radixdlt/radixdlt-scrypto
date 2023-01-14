@@ -43,8 +43,10 @@ pub trait InvokableModel<E>:
     + Invokable<EpochManagerNextRoundInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>
     + Invokable<EpochManagerSetEpochInvocation, E>
-    + Invokable<EpochManagerRegisterValidatorInvocation, E>
-    + Invokable<EpochManagerUnregisterValidatorInvocation, E>
+    + Invokable<EpochManagerUpdateValidatorInvocation, E>
+    + Invokable<ValidatorRegisterInvocation, E>
+    + Invokable<ValidatorUnregisterInvocation, E>
+    + Invokable<EpochManagerCreateValidatorInvocation, E>
     + Invokable<ClockCreateInvocation, E>
     + Invokable<ClockSetCurrentTimeInvocation, E>
     + Invokable<ClockGetCurrentTimeInvocation, E>
@@ -89,6 +91,7 @@ pub trait InvokableModel<E>:
     + Invokable<ResourceManagerCreateNonFungibleInvocation, E>
     + Invokable<ResourceManagerCreateFungibleInvocation, E>
     + Invokable<ResourceManagerCreateNonFungibleWithInitialSupplyInvocation, E>
+    + Invokable<ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation, E>
     + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>
     + Invokable<ResourceManagerBurnInvocation, E>
     + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>
@@ -96,6 +99,7 @@ pub trait InvokableModel<E>:
     + Invokable<ResourceManagerCreateVaultInvocation, E>
     + Invokable<ResourceManagerCreateBucketInvocation, E>
     + Invokable<ResourceManagerMintNonFungibleInvocation, E>
+    + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>
     + Invokable<ResourceManagerMintFungibleInvocation, E>
     + Invokable<ResourceManagerGetResourceTypeInvocation, E>
     + Invokable<ResourceManagerGetTotalSupplyInvocation, E>

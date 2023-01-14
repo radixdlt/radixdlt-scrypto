@@ -1,18 +1,28 @@
 use super::*;
 use crate::model::*;
-use crate::scrypto;
+use crate::*;
 
 // TODO: Remove and replace with real HeapRENodes
-#[derive(Debug, Clone)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ScryptoRENode {
     Component(PackageAddress, String, Vec<u8>),
     KeyValueStore,
 }
 
 // TODO: Remove when better type system implemented
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum RENodeType {
     Bucket,
     Proof,
@@ -23,6 +33,7 @@ pub enum RENodeType {
     GlobalResourceManager,
     GlobalPackage,
     GlobalEpochManager,
+    GlobalValidator,
     GlobalClock,
     KeyValueStore,
     NonFungibleStore,
@@ -31,13 +42,25 @@ pub enum RENodeType {
     ResourceManager,
     Package,
     EpochManager,
+    Validator,
     Clock,
     TransactionRuntime,
     Logger,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Ord,
+    PartialOrd,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum RENodeId {
     Bucket(BucketId),
     Proof(ProofId),
@@ -54,6 +77,7 @@ pub enum RENodeId {
     Package(PackageId),
     EpochManager(EpochManagerId),
     Clock(ClockId),
+    Validator(ValidatorId),
     TransactionRuntime(TransactionRuntimeId),
 }
 
@@ -67,6 +91,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
             RENodeId::EpochManager(id) => id,
+            RENodeId::Validator(id) => id,
             RENodeId::Clock(id) => id,
             _ => panic!("Not a stored id"),
         }
@@ -117,13 +142,24 @@ impl Into<SystemAddress> for RENodeId {
     fn into(self) -> SystemAddress {
         match self {
             RENodeId::Global(GlobalAddress::System(system_address)) => system_address,
-            _ => panic!("Not a system address"),
+            node_id => panic!("Not a system address {:?}", node_id),
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
@@ -203,8 +239,18 @@ pub enum KeyValueStoreOffset {
     Entry(Vec<u8>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum NonFungibleStoreOffset {
     Entry(NonFungibleId),
 }
@@ -219,6 +265,11 @@ pub enum EpochManagerOffset {
     EpochManager,
     CurrentValidatorSet,
     PreparingValidatorSet,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ValidatorOffset {
+    Validator,
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -257,8 +308,18 @@ pub enum TransactionRuntimeOffset {
 }
 
 /// Specifies a specific Substate into a given RENode
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum SubstateOffset {
     Global(GlobalOffset),
     AuthZoneStack(AuthZoneStackOffset),
@@ -273,6 +334,7 @@ pub enum SubstateOffset {
     NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
     EpochManager(EpochManagerOffset),
+    Validator(ValidatorOffset),
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),
@@ -282,6 +344,16 @@ pub enum SubstateOffset {
 }
 
 /// TODO: separate space addresses?
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub struct SubstateId(pub RENodeId, pub SubstateOffset);

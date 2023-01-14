@@ -2,7 +2,6 @@ use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::model::CostingError;
 use radix_engine::types::*;
 use radix_engine_constants::DEFAULT_MAX_CALL_DEPTH;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 

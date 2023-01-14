@@ -18,8 +18,7 @@ use transaction::errors::ManifestIdAllocationError;
 use transaction::model::*;
 use transaction::validation::*;
 
-#[derive(Debug)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionProcessorRunInvocation<'a> {
     pub transaction_hash: Hash,
     pub runtime_validations: Cow<'a, [RuntimeValidationRequest]>,
@@ -27,8 +26,7 @@ pub struct TransactionProcessorRunInvocation<'a> {
     pub blobs: Cow<'a, [Vec<u8>]>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionProcessorError {
     TransactionEpochNotYetValid {
         valid_from: u64,
@@ -98,9 +96,12 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                     update.add_ref(node_id);
                 }
             }
-            BasicInstruction::RegisterValidator { .. }
-            | BasicInstruction::UnregisterValidator { .. } => {
+            BasicInstruction::CreateValidator { .. } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+            }
+            BasicInstruction::RegisterValidator { validator_address }
+            | BasicInstruction::UnregisterValidator { validator_address } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::System(*validator_address)));
             }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
@@ -162,6 +163,9 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 resource_address, ..
             }
             | BasicInstruction::MintNonFungible {
+                resource_address, ..
+            }
+            | BasicInstruction::MintUuidNonFungible {
                 resource_address, ..
             } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::Resource(*resource_address)));
@@ -389,17 +393,22 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::RegisterValidator { validator }) => {
-                    let rtn = api.invoke(EpochManagerRegisterValidatorInvocation {
+                Instruction::Basic(BasicInstruction::CreateValidator { key }) => {
+                    let rtn = api.invoke(EpochManagerCreateValidatorInvocation {
                         receiver: EPOCH_MANAGER,
-                        validator: *validator,
+                        key: *key,
                     })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::UnregisterValidator { validator }) => {
-                    let rtn = api.invoke(EpochManagerUnregisterValidatorInvocation {
-                        receiver: EPOCH_MANAGER,
-                        validator: *validator,
+                Instruction::Basic(BasicInstruction::RegisterValidator { validator_address }) => {
+                    let rtn = api.invoke(ValidatorRegisterInvocation {
+                        receiver: *validator_address,
+                    })?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::UnregisterValidator { validator_address }) => {
+                    let rtn = api.invoke(ValidatorUnregisterInvocation {
+                        receiver: *validator_address,
                     })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
@@ -655,6 +664,18 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     entries,
                 }) => {
                     let rtn = api.invoke(ResourceManagerMintNonFungibleInvocation {
+                        receiver: resource_address.clone(),
+                        entries: entries.clone(),
+                    })?;
+                    Worktop::sys_put(Bucket(rtn.0), api)?;
+
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::MintUuidNonFungible {
+                    resource_address,
+                    entries,
+                }) => {
+                    let rtn = api.invoke(ResourceManagerMintUuidNonFungibleInvocation {
                         receiver: resource_address.clone(),
                         entries: entries.clone(),
                     })?;

@@ -1,5 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::data::*;
 use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::rule;
 use scrypto_unit::*;

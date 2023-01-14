@@ -12,8 +12,7 @@ use crate::model::*;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
-#[derive(Debug, Clone)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
@@ -42,7 +41,7 @@ pub struct CommitResult {
     pub entity_changes: EntityChanges,
     pub resource_changes: Vec<ResourceChange>,
     pub application_logs: Vec<(Level, String)>,
-    pub next_epoch: Option<(HashSet<EcdsaSecp256k1PublicKey>, u64)>,
+    pub next_epoch: Option<(BTreeSet<Validator>, u64)>,
 }
 
 /// Captures whether a transaction's commit outcome is Success or Failure
@@ -71,8 +70,7 @@ impl TransactionOutcome {
     }
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EntityChanges {
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -110,8 +108,7 @@ impl EntityChanges {
     }
 }
 
-#[derive(Debug, Clone)]
-#[scrypto(Categorize, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct RejectResult {
     pub error: RejectionError,
 }
