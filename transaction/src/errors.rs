@@ -6,7 +6,6 @@ pub enum HeaderValidationError {
     UnknownVersion(u8),
     InvalidEpochRange,
     EpochRangeTooLarge,
-    OutOfEpochRange,
     InvalidNetwork,
     InvalidCostUnitLimit,
     InvalidTipBps,
