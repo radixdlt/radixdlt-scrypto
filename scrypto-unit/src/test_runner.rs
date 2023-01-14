@@ -413,7 +413,7 @@ impl TestRunner {
 
     pub fn deref_system_address(&mut self, system_address: SystemAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .substate_store
+            .substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::System(system_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
