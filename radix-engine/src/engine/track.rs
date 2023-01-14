@@ -642,7 +642,7 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         // Finalize payments
-        let mut actual_fee_payments: IndexMap<VaultId, Decimal> = IndexMap::new();
+        let mut actual_fee_payments: IndexMap<VaultId, Decimal> = index_map_new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;
