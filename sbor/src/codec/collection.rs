@@ -236,7 +236,7 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash +
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let element_value_kind = decoder.read_and_check_value_kind(T::value_kind())?;
         let len = decoder.read_size()?;
-        let mut result = index_set_with_capacity::<T>(if len <= 1024 { len } else { 1024 });
+        let mut result = index_set_with_capacity(if len <= 1024 { len } else { 1024 });
         for _ in 0..len {
             result.insert(decoder.decode_deeper_body_with_value_kind(element_value_kind)?);
         }
@@ -287,7 +287,7 @@ impl<
         let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
         let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
         let size = decoder.read_size()?;
-        let mut map = HashMap::new();
+        let mut map = HashMap::with_capacity(if size <= 1024 { size } else { 1024 });
         for _ in 0..size {
             map.insert(
                 decoder.decode_deeper_body_with_value_kind(key_value_kind)?,
@@ -315,7 +315,7 @@ impl<
         let key_value_kind = decoder.read_and_check_value_kind(K::value_kind())?;
         let value_value_kind = decoder.read_and_check_value_kind(V::value_kind())?;
         let size = decoder.read_size()?;
-        let mut map = indexmap::IndexMap::new();
+        let mut map = index_map_with_capacity(if size <= 1024 { size } else { 1024 });
         for _ in 0..size {
             map.insert(
                 decoder.decode_deeper_body_with_value_kind(key_value_kind)?,

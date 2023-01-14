@@ -212,11 +212,11 @@ pub mod collections {
     #[cfg(feature = "indexmap")]
     /// The methods and macros provided directly in this `index_map` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
     /// corresponding methods on `IndexMap` itself.
-    /// 
+    ///
     /// Unfortunately `IndexMap` is very hard to use from no-std (see [docs](https://docs.rs/indexmap/latest/indexmap/#no-standard-library-targets)
     /// and [relevant github issue](https://github.com/bluss/indexmap/issues/184)). It uses a weird build flag to detect if no-std is present, which
     /// is hard to force unless you explicitly do eg a WASM build and see that it's missing.
-    /// 
+    ///
     /// The recommended way to use IndexMap is to add `use sbor::rust::collections::*` and then reference the type inline as `index_map::IndexMap`
     /// and create new sets using `index_map::new`, `index_map::with_capacity`, or the `index_map::indexmap!` macro. Always putting the `index_map`
     /// mod will help enforce the use of these methods instead of the methods on `IndexMap` itself.
@@ -224,7 +224,7 @@ pub mod collections {
     /// You can use these exports as follows:
     /// ```
     /// use sbor::rust::collections::*;
-    /// 
+    ///
     /// # type K = u32;
     /// # type V = u32;
     /// # let n: usize = 1;
@@ -275,15 +275,15 @@ pub mod collections {
     #[cfg(feature = "indexmap")]
     /// The methods and macros provided directly in this `index_set` module (`new`, `with_capacity`) work in both std and no-std modes - unlike the
     /// corresponding methods on `IndexSet` itself.
-    /// 
+    ///
     /// Unfortunately `IndexSet` is very hard to use from no-std (see [docs](https://docs.rs/indexmap/latest/indexmap/#no-standard-library-targets)
     /// and [relevant github issue](https://github.com/bluss/indexmap/issues/184)). It uses a weird build.rs script to detect if no-std is present, which
     /// is hard to force unless you explicitly do eg a WASM build and see that it's missing.
-    /// 
+    ///
     /// You can use these methods as follows:
     /// ```
     /// use sbor::rust::collections::*;
-    /// 
+    ///
     /// # type K = u32;
     /// # let n: usize = 1;
     /// let index_set: IndexSet<K> = index_set_new();
@@ -330,24 +330,24 @@ pub mod collections {
         pub use indexset;
     }
 
-    pub use btree_map::BTreeMap;
     pub use btree_map::btreemap;
-    pub use btree_set::BTreeSet;
+    pub use btree_map::BTreeMap;
     pub use btree_set::btreeset;
-    pub use hash_map::HashMap;
+    pub use btree_set::BTreeSet;
     pub use hash_map::hashmap;
-    pub use hash_set::HashSet;
+    pub use hash_map::HashMap;
     pub use hash_set::hashset;
-    #[cfg(feature = "indexmap")]
-    pub use index_map::IndexMap;
+    pub use hash_set::HashSet;
     #[cfg(feature = "indexmap")]
     pub use index_map::indexmap;
     #[cfg(feature = "indexmap")]
+    pub use index_map::IndexMap;
+    #[cfg(feature = "indexmap")]
     pub use index_map::{new as index_map_new, with_capacity as index_map_with_capacity};
     #[cfg(feature = "indexmap")]
-    pub use index_set::IndexSet;
-    #[cfg(feature = "indexmap")]
     pub use index_set::indexset;
+    #[cfg(feature = "indexmap")]
+    pub use index_set::IndexSet;
     #[cfg(feature = "indexmap")]
     pub use index_set::{new as index_set_new, with_capacity as index_set_with_capacity};
 }

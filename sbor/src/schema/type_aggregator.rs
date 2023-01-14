@@ -113,7 +113,7 @@ pub struct TypeAggregator<C: CustomTypeKind<GlobalTypeId>> {
 impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     pub fn new() -> Self {
         Self {
-            types: IndexMap::new(),
+            types: index_map_new(),
             already_read_dependencies: HashSet::new(),
         }
     }

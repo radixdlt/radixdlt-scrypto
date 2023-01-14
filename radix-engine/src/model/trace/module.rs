@@ -2,12 +2,12 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use sbor::rust::collections::*;
 use radix_engine_interface::api::types::{
     BucketOffset, ComponentId, RENodeId, SubstateId, SubstateOffset, VaultFn, VaultId, VaultOffset,
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
+use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
