@@ -3,6 +3,7 @@ use crate::*;
 use sbor::rust::collections::HashSet;
 use sbor::rust::fmt::Debug;
 
+// TODO: Remove enum
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum CallTableInvocation {
     Native(NativeInvocation),

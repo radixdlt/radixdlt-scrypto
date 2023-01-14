@@ -336,8 +336,6 @@ mod tests {
         assert_eq!(genesis_receipt.faucet_package, FAUCET_PACKAGE);
         assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
-        println!("{:?}", genesis_receipt.clock.to_vec());
-        println!("{:?}", genesis_receipt.epoch_manager.to_vec());
         assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
     }

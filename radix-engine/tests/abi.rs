@@ -63,14 +63,12 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFunctionInvocation(
-                            _,
-                            _,
-                            _,
-                            ScryptoFnResolvingError::InvalidInput
-                        )
-                    )
+                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
+                        _,
+                        _,
+                        _,
+                        ScryptoFnResolvingError::InvalidInput
+                    ))
                 )
             });
         }

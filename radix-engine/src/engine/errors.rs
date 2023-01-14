@@ -138,7 +138,6 @@ impl From<CallFrameError> for RuntimeError {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
-    FunctionNotFound,
     MethodNotFound,
     InvalidInput,
 }
@@ -146,8 +145,7 @@ pub enum ScryptoFnResolvingError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InterpreterError {
     InvalidInvocation,
-    InvalidScryptoFunctionInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
-    InvalidScryptoMethodInvocation(String, ScryptoFnResolvingError),
+    InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

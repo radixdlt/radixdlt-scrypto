@@ -117,7 +117,7 @@ impl ExecutableInvocation for ScryptoInvocation {
             let package = substate_ref.package_info(); // TODO: Remove clone()
                                                        // Find the abi
             let abi = package.blueprint_abi(&self.blueprint_name).ok_or(
-                RuntimeError::InterpreterError(InterpreterError::InvalidScryptoFunctionInvocation(
+                RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
                     self.package_address,
                     self.blueprint_name.clone(),
                     self.fn_name.clone(),
@@ -127,7 +127,7 @@ impl ExecutableInvocation for ScryptoInvocation {
             let fn_abi = abi
                 .get_fn_abi(&self.fn_name)
                 .ok_or(RuntimeError::InterpreterError(
-                    InterpreterError::InvalidScryptoFunctionInvocation(
+                    InterpreterError::InvalidScryptoInvocation(
                         self.package_address,
                         self.blueprint_name.clone(),
                         self.fn_name.clone(),
@@ -143,7 +143,7 @@ impl ExecutableInvocation for ScryptoInvocation {
 
             if !match_schema_with_value(&fn_abi.input, args.as_value()) {
                 return Err(RuntimeError::InterpreterError(
-                    InterpreterError::InvalidScryptoFunctionInvocation(
+                    InterpreterError::InvalidScryptoInvocation(
                         self.package_address,
                         self.blueprint_name.clone(),
                         self.fn_name.clone(),
