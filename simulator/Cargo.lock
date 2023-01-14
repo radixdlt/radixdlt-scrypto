@@ -1121,7 +1121,6 @@ dependencies = [
  "bitflags",
  "colored",
  "hex",
- "indexmap",
  "moka",
  "native-sdk",
  "parity-wasm",

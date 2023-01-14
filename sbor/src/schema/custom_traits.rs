@@ -1,5 +1,5 @@
 use super::*;
-use crate::rust::collections::IndexSet;
+use crate::rust::collections::*;
 use crate::rust::fmt::Debug;
 use crate::CustomValueKind;
 

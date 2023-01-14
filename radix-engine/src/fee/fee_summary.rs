@@ -1,7 +1,7 @@
 use super::RoyaltyReceiver;
 use crate::model::Resource;
 use crate::types::*;
-use indexmap::IndexMap;
+use sbor::rust::collections::*;
 use radix_engine_interface::api::types::VaultId;
 
 #[derive(Debug, Clone)]

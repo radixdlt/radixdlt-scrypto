@@ -94,7 +94,7 @@ pub use schema::*;
 #[cfg(feature = "schema")]
 mod schema {
     use super::*;
-    use crate::rust::collections::IndexSet;
+    use crate::rust::collections::*;
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum NoCustomTypeKind {}

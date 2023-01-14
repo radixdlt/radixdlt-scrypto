@@ -1,4 +1,4 @@
-use indexmap::IndexMap;
+use sbor::rust::collections::*;
 use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, KeyValueStoreOffset, Level, NonFungibleStoreOffset, RENodeId,
     SubstateId, SubstateOffset, VaultId, VaultOffset,

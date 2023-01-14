@@ -9,12 +9,12 @@ categorize_generic!(Vec<T>, <T>, ValueKind::Array);
 categorize_generic!(BTreeSet<T>, <T>, ValueKind::Array);
 categorize_generic!(HashSet<T>, <T>, ValueKind::Array);
 #[cfg(feature = "indexmap")]
-categorize_generic!(indexmap::IndexSet<T>, <T>, ValueKind::Array);
+categorize_generic!(IndexSet<T>, <T>, ValueKind::Array);
 
 categorize_generic!(BTreeMap<K, V>, <K, V>, ValueKind::Array);
 categorize_generic!(HashMap<K, V>, <K, V>, ValueKind::Array);
 #[cfg(feature = "indexmap")]
-categorize_generic!(indexmap::IndexMap<K, V>, <K, V>, ValueKind::Array);
+categorize_generic!(IndexMap<K, V>, <K, V>, ValueKind::Array);
 
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>> Encode<X, E> for Vec<T> {
     #[inline]
@@ -70,7 +70,7 @@ impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X> + Ord + 
 
 #[cfg(feature = "indexmap")]
 impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X> + Hash> Encode<X, E>
-    for indexmap::IndexSet<T>
+    for IndexSet<T>
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -129,7 +129,7 @@ impl<X: CustomValueKind, E: Encoder<X>, K: Encode<X, E> + Ord + Hash, V: Encode<
 
 #[cfg(feature = "indexmap")]
 impl<X: CustomValueKind, E: Encoder<X>, K: Encode<X, E> + Ord + Hash, V: Encode<X, E>> Encode<X, E>
-    for indexmap::IndexMap<K, V>
+    for IndexMap<K, V>
 {
     #[inline]
     fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -215,7 +215,7 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X> + Hash +
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let element_value_kind = decoder.read_and_check_value_kind(T::value_kind())?;
         let len = decoder.read_size()?;
-        let mut result = IndexSet::<T>::with_capacity(if len <= 1024 { len } else { 1024 });
+        let mut result = index_set_with_capacity::<T>(if len <= 1024 { len } else { 1024 });
         for _ in 0..len {
             result.insert(decoder.decode_deeper_body_with_value_kind(element_value_kind)?);
         }
@@ -254,7 +254,7 @@ impl<X: CustomValueKind, D: Decoder<X>, K: Decode<X, D> + Hash + Eq, V: Decode<X
 
 #[cfg(feature = "indexmap")]
 impl<X: CustomValueKind, D: Decoder<X>, K: Decode<X, D> + Hash + Eq, V: Decode<X, D>> Decode<X, D>
-    for indexmap::IndexMap<K, V>
+    for IndexMap<K, V>
 {
     #[inline]
     fn decode_body_with_value_kind(

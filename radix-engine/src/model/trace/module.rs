@@ -2,7 +2,7 @@ use crate::engine::*;
 use crate::fee::FeeReserve;
 use crate::model::*;
 use crate::types::*;
-use indexmap::IndexMap;
+use sbor::rust::collections::*;
 use radix_engine_interface::api::types::{
     BucketOffset, ComponentId, RENodeId, SubstateId, SubstateOffset, VaultFn, VaultId, VaultOffset,
 };
