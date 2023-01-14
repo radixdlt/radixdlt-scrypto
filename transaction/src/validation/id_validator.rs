@@ -46,7 +46,7 @@ impl ManifestIdValidator {
     ) -> Result<(), ManifestIdValidationError> {
         if let Some(cnt) = self.bucket_ids.get(bucket_id) {
             if *cnt == 0 {
-                self.bucket_ids.remove(&bucket_id);
+                self.bucket_ids.remove(bucket_id);
                 Ok(())
             } else {
                 Err(ManifestIdValidationError::BucketLocked(bucket_id.clone()))
@@ -85,7 +85,7 @@ impl ManifestIdValidator {
     ) -> Result<ManifestProof, ManifestIdValidationError> {
         if let Some(kind) = self.proof_ids.get(proof_id).cloned() {
             if let ProofKind::BucketProof(bucket_id) = &kind {
-                if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
+                if let Some(cnt) = self.bucket_ids.get_mut(bucket_id) {
                     *cnt += 1;
                 } else {
                     panic!("Illegal state");
