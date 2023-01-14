@@ -831,6 +831,10 @@ where
                 .id_allocator
                 .new_component_id()
                 .map(|id| RENodeId::EpochManager(id)),
+            RENodeType::Validator => self
+                .id_allocator
+                .new_validator_id()
+                .map(|id| RENodeId::Validator(id)),
             RENodeType::Clock => self
                 .id_allocator
                 .new_component_id()
@@ -842,6 +846,10 @@ where
             RENodeType::GlobalEpochManager => self
                 .id_allocator
                 .new_epoch_manager_address()
+                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
+            RENodeType::GlobalValidator => self
+                .id_allocator
+                .new_validator_address()
                 .map(|address| RENodeId::Global(GlobalAddress::System(address))),
             RENodeType::GlobalClock => self
                 .id_allocator
@@ -912,6 +920,10 @@ where
                 RENode::Global(GlobalAddressSubstate::Clock(..)),
             ) => {}
             (
+                RENodeId::Global(GlobalAddress::System(..)),
+                RENode::Global(GlobalAddressSubstate::Validator(..)),
+            ) => {}
+            (
                 RENodeId::Global(address),
                 RENode::Global(GlobalAddressSubstate::Component(component)),
             ) => {
@@ -967,6 +979,7 @@ where
             (RENodeId::NonFungibleStore(..), RENode::NonFungibleStore(..)) => {}
             (RENodeId::ResourceManager(..), RENode::ResourceManager(..)) => {}
             (RENodeId::EpochManager(..), RENode::EpochManager(..)) => {}
+            (RENodeId::Validator(..), RENode::Validator(..)) => {}
             (RENodeId::Clock(..), RENode::Clock(..)) => {}
             _ => return Err(RuntimeError::KernelError(KernelError::InvalidId(node_id))),
         }

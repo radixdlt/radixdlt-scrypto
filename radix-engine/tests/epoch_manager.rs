@@ -1,5 +1,6 @@
-use radix_engine::engine::{ApplicationError, ModuleError, RuntimeError};
+use radix_engine::engine::{ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
+use radix_engine::model::Validator;
 use radix_engine::types::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use scrypto_unit::*;
@@ -55,7 +56,7 @@ fn next_round_without_supervisor_auth_fails() {
 fn next_round_with_validator_auth_succeeds() {
     // Arrange
     let rounds_per_epoch = 5u64;
-    let genesis = create_genesis(HashSet::new(), 1u64, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), 1u64, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
 
     // Act
@@ -85,7 +86,7 @@ fn next_epoch_with_validator_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
 
     // Act
@@ -120,14 +121,19 @@ fn register_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let mut validator_set = BTreeSet::new();
+    validator_set.insert(pub_key);
+    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let (pub_key, _, _) = test_runner.new_allocated_account();
 
     // Act
+    let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .register_validator(pub_key)
+        .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -143,23 +149,25 @@ fn register_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let mut validator_set = BTreeSet::new();
+    validator_set.insert(pub_key);
+    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let (pub_key, _, _) = test_runner.new_allocated_account();
 
     // Act
+    let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .register_validator(pub_key)
+        .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(..))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -168,14 +176,19 @@ fn unregister_validator_with_auth_succeeds() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let mut validator_set = BTreeSet::new();
+    validator_set.insert(pub_key);
+    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let (pub_key, _, _) = test_runner.new_allocated_account();
 
     // Act
+    let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .unregister_validator(pub_key)
+        .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -191,23 +204,25 @@ fn unregister_validator_without_auth_fails() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
+        .unwrap()
+        .public_key();
+    let mut validator_set = BTreeSet::new();
+    validator_set.insert(pub_key);
+    let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let (pub_key, _, _) = test_runner.new_allocated_account();
 
     // Act
+    let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .unregister_validator(pub_key)
+        .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(
-            e,
-            RuntimeError::ApplicationError(ApplicationError::AuthZoneError(..))
-        )
+        matches!(e, RuntimeError::ModuleError(ModuleError::AuthError(..)))
     });
 }
 
@@ -216,12 +231,12 @@ fn registered_validator_becomes_part_of_validator_on_epoch_change() {
     // Arrange
     let initial_epoch = 5u64;
     let rounds_per_epoch = 2u64;
-    let genesis = create_genesis(HashSet::new(), initial_epoch, rounds_per_epoch);
+    let genesis = create_genesis(BTreeSet::new(), initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
-    let (pub_key, _, _) = test_runner.new_allocated_account();
+    let (pub_key, validator_address) = test_runner.new_validator();
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .register_validator(pub_key)
+        .register_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -250,7 +265,10 @@ fn registered_validator_becomes_part_of_validator_on_epoch_change() {
     let result = receipt.expect_commit();
     let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
-    assert!(next_epoch.0.contains(&pub_key));
+    assert!(next_epoch.0.contains(&Validator {
+        address: validator_address,
+        key: pub_key
+    }));
 }
 
 #[test]
@@ -261,13 +279,14 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let pub_key = EcdsaSecp256k1PrivateKey::from_u64(1u64)
         .unwrap()
         .public_key();
-    let mut validator_set = HashSet::new();
+    let mut validator_set = BTreeSet::new();
     validator_set.insert(pub_key);
     let genesis = create_genesis(validator_set, initial_epoch, rounds_per_epoch);
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
+    let validator_address = test_runner.get_validator_with_key(&pub_key);
     let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
-        .unregister_validator(pub_key)
+        .unregister_validator(validator_address)
         .build();
     let receipt = test_runner.execute_manifest(
         manifest,
@@ -296,7 +315,10 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     let result = receipt.expect_commit();
     let next_epoch = result.next_epoch.as_ref().expect("Should have next epoch");
     assert_eq!(next_epoch.1, initial_epoch + 1);
-    assert!(!next_epoch.0.contains(&pub_key));
+    assert!(!next_epoch.0.contains(&Validator {
+        address: validator_address,
+        key: pub_key
+    }));
 }
 
 #[test]
@@ -307,7 +329,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     // Act
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
-            validator_set: HashSet::new(),
+            validator_set: BTreeSet::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
         }),
@@ -336,7 +358,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     // Act
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
-            validator_set: HashSet::new(),
+            validator_set: BTreeSet::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
         }),

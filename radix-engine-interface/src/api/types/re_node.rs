@@ -33,6 +33,7 @@ pub enum RENodeType {
     GlobalResourceManager,
     GlobalPackage,
     GlobalEpochManager,
+    GlobalValidator,
     GlobalClock,
     KeyValueStore,
     NonFungibleStore,
@@ -41,6 +42,7 @@ pub enum RENodeType {
     ResourceManager,
     Package,
     EpochManager,
+    Validator,
     Clock,
     TransactionRuntime,
     Logger,
@@ -75,6 +77,7 @@ pub enum RENodeId {
     Package(PackageId),
     EpochManager(EpochManagerId),
     Clock(ClockId),
+    Validator(ValidatorId),
     TransactionRuntime(TransactionRuntimeId),
 }
 
@@ -88,6 +91,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::ResourceManager(id) => id,
             RENodeId::Package(id) => id,
             RENodeId::EpochManager(id) => id,
+            RENodeId::Validator(id) => id,
             RENodeId::Clock(id) => id,
             _ => panic!("Not a stored id"),
         }
@@ -138,7 +142,7 @@ impl Into<SystemAddress> for RENodeId {
     fn into(self) -> SystemAddress {
         match self {
             RENodeId::Global(GlobalAddress::System(system_address)) => system_address,
-            _ => panic!("Not a system address"),
+            node_id => panic!("Not a system address {:?}", node_id),
         }
     }
 }
@@ -264,6 +268,11 @@ pub enum EpochManagerOffset {
 }
 
 #[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum ValidatorOffset {
+    Validator,
+}
+
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum FeeReserveOffset {
     FeeReserve,
 }
@@ -325,6 +334,7 @@ pub enum SubstateOffset {
     NonFungibleStore(NonFungibleStoreOffset),
     Vault(VaultOffset),
     EpochManager(EpochManagerOffset),
+    Validator(ValidatorOffset),
     Bucket(BucketOffset),
     Proof(ProofOffset),
     Worktop(WorktopOffset),

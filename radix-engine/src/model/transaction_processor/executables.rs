@@ -96,9 +96,12 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                     update.add_ref(node_id);
                 }
             }
-            BasicInstruction::RegisterValidator { .. }
-            | BasicInstruction::UnregisterValidator { .. } => {
+            BasicInstruction::CreateValidator { .. } => {
                 update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
+            }
+            BasicInstruction::RegisterValidator { validator_address }
+            | BasicInstruction::UnregisterValidator { validator_address } => {
+                update.add_ref(RENodeId::Global(GlobalAddress::System(*validator_address)));
             }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
@@ -390,17 +393,22 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::RegisterValidator { validator }) => {
-                    let rtn = api.invoke(EpochManagerRegisterValidatorInvocation {
+                Instruction::Basic(BasicInstruction::CreateValidator { key }) => {
+                    let rtn = api.invoke(EpochManagerCreateValidatorInvocation {
                         receiver: EPOCH_MANAGER,
-                        validator: *validator,
+                        key: *key,
                     })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::UnregisterValidator { validator }) => {
-                    let rtn = api.invoke(EpochManagerUnregisterValidatorInvocation {
-                        receiver: EPOCH_MANAGER,
-                        validator: *validator,
+                Instruction::Basic(BasicInstruction::RegisterValidator { validator_address }) => {
+                    let rtn = api.invoke(ValidatorRegisterInvocation {
+                        receiver: *validator_address,
+                    })?;
+                    InstructionOutput::Native(Box::new(rtn))
+                }
+                Instruction::Basic(BasicInstruction::UnregisterValidator { validator_address }) => {
+                    let rtn = api.invoke(ValidatorUnregisterInvocation {
+                        receiver: *validator_address,
                     })?;
                     InstructionOutput::Native(Box::new(rtn))
                 }

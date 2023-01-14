@@ -1,8 +1,4 @@
-use radix_engine_interface::api::types::{
-    AccessRulesChainFn, AuthZoneStackFn, BucketFn, ClockFn, ComponentFn, EpochManagerFn, LoggerFn,
-    MetadataFn, NativeFn, PackageFn, ProofFn, ResourceManagerFn, TransactionProcessorFn,
-    TransactionRuntimeFn, VaultFn, WorktopFn,
-};
+use radix_engine_interface::api::types::*;
 
 pub enum SystemApiCostingEntry {
     /*
@@ -119,8 +115,12 @@ impl FeeTable {
                 EpochManagerFn::GetCurrentEpoch => self.fixed_low,
                 EpochManagerFn::NextRound => self.fixed_low,
                 EpochManagerFn::SetEpoch => self.fixed_low,
-                EpochManagerFn::RegisterValidator => self.fixed_low,
-                EpochManagerFn::UnregisterValidator => self.fixed_low,
+                EpochManagerFn::UpdateValidator => self.fixed_low,
+                EpochManagerFn::CreateValidator => self.fixed_low,
+            },
+            NativeFn::Validator(validator_fn) => match validator_fn {
+                ValidatorFn::Register => self.fixed_low,
+                ValidatorFn::Unregister => self.fixed_low,
             },
             NativeFn::Clock(clock_method) => match clock_method {
                 ClockFn::Create => self.fixed_low,
