@@ -1,11 +1,16 @@
+use super::types::*;
 use crate::model::*;
 use sbor::rust::fmt::Debug;
+use sbor::rust::format;
 use sbor::rust::vec::Vec;
-
-use super::types::*;
 
 pub trait Invocation: Debug {
     type Output: Debug;
+
+    // TODO: temp to unblock large payload display; fix as part of the universal invocation refactor.
+    fn fn_identifier(&self) -> String {
+        format!("{:?}", self)
+    }
 }
 
 pub trait Invokable<I: Invocation, E> {
@@ -25,10 +30,6 @@ pub trait EngineApi<E: Debug> {
     fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, E>;
     fn sys_write(&mut self, lock_handle: LockHandle, buffer: Vec<u8>) -> Result<(), E>;
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), E>;
-}
-
-pub trait BlobApi<E: Debug> {
-    fn get_blob(&mut self, hash: &Hash) -> Result<&[u8], E>;
 }
 
 pub trait ActorApi<E: Debug> {
@@ -89,13 +90,19 @@ pub trait InvokableModel<E>:
     + Invokable<ProofGetNonFungibleIdsInvocation, E>
     + Invokable<ProofGetResourceAddressInvocation, E>
     + Invokable<ResourceManagerBucketBurnInvocation, E>
-    + Invokable<ResourceManagerCreateInvocation, E>
+    + Invokable<ResourceManagerCreateNonFungibleInvocation, E>
+    + Invokable<ResourceManagerCreateFungibleInvocation, E>
+    + Invokable<ResourceManagerCreateNonFungibleWithInitialSupplyInvocation, E>
+    + Invokable<ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation, E>
+    + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>
     + Invokable<ResourceManagerBurnInvocation, E>
     + Invokable<ResourceManagerUpdateVaultAuthInvocation, E>
     + Invokable<ResourceManagerSetVaultAuthMutabilityInvocation, E>
     + Invokable<ResourceManagerCreateVaultInvocation, E>
     + Invokable<ResourceManagerCreateBucketInvocation, E>
-    + Invokable<ResourceManagerMintInvocation, E>
+    + Invokable<ResourceManagerMintNonFungibleInvocation, E>
+    + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>
+    + Invokable<ResourceManagerMintFungibleInvocation, E>
     + Invokable<ResourceManagerGetResourceTypeInvocation, E>
     + Invokable<ResourceManagerGetTotalSupplyInvocation, E>
     + Invokable<ResourceManagerUpdateNonFungibleDataInvocation, E>

@@ -1,23 +1,11 @@
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::fmt;
-use sbor::rust::fmt::Debug;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
-use sbor::*;
-use utils::copy_u8_array;
-
-use crate::abi::*;
 use crate::api::{api::*, types::*};
-use crate::data::ScryptoCustomTypeId;
 use crate::math::*;
-use crate::scrypto;
-use crate::scrypto_type;
 use crate::wasm::*;
+use crate::*;
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::fmt::Debug;
 
-#[derive(Debug, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultPutInvocation {
     pub receiver: VaultId,
     pub bucket: Bucket,
@@ -46,8 +34,7 @@ impl Into<SerializedInvocation> for VaultPutInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultTakeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -67,8 +54,7 @@ impl Into<SerializedInvocation> for VaultTakeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultTakeNonFungiblesInvocation {
     pub receiver: VaultId,
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
@@ -88,8 +74,7 @@ impl Into<SerializedInvocation> for VaultTakeNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultGetAmountInvocation {
     pub receiver: VaultId,
 }
@@ -108,8 +93,7 @@ impl Into<SerializedInvocation> for VaultGetAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultRecallInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -129,8 +113,7 @@ impl Into<SerializedInvocation> for VaultRecallInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultRecallNonFungiblesInvocation {
     pub receiver: VaultId,
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
@@ -150,8 +133,7 @@ impl Into<SerializedInvocation> for VaultRecallNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultGetResourceAddressInvocation {
     pub receiver: VaultId,
 }
@@ -170,8 +152,7 @@ impl Into<SerializedInvocation> for VaultGetResourceAddressInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultGetNonFungibleIdsInvocation {
     pub receiver: VaultId,
 }
@@ -190,8 +171,7 @@ impl Into<SerializedInvocation> for VaultGetNonFungibleIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultCreateProofInvocation {
     pub receiver: VaultId,
 }
@@ -210,8 +190,7 @@ impl Into<SerializedInvocation> for VaultCreateProofInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultCreateProofByAmountInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -231,8 +210,7 @@ impl Into<SerializedInvocation> for VaultCreateProofByAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultCreateProofByIdsInvocation {
     pub receiver: VaultId,
     pub ids: BTreeSet<NonFungibleId>,
@@ -252,8 +230,7 @@ impl Into<SerializedInvocation> for VaultCreateProofByIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultLockFeeInvocation {
     pub receiver: VaultId,
     pub amount: Decimal,
@@ -271,77 +248,5 @@ impl SerializableInvocation for VaultLockFeeInvocation {
 impl Into<SerializedInvocation> for VaultLockFeeInvocation {
     fn into(self) -> SerializedInvocation {
         NativeInvocation::Vault(VaultInvocation::LockFee(self)).into()
-    }
-}
-
-#[derive(PartialEq, Eq, Hash)]
-pub struct Vault(pub VaultId);
-
-//========
-// error
-//========
-
-/// Represents an error when decoding vault.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseVaultError {
-    InvalidHex(String),
-    InvalidLength(usize),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseVaultError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseVaultError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-//========
-// binary
-//========
-
-impl TryFrom<&[u8]> for Vault {
-    type Error = ParseVaultError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            36 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseVaultError::InvalidLength(slice.len())),
-        }
-    }
-}
-
-impl Vault {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
-    }
-}
-
-scrypto_type!(Vault, ScryptoCustomTypeId::Vault, Type::Vault, 36);
-
-//======
-// text
-//======
-
-impl FromStr for Vault {
-    type Err = ParseVaultError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|_| ParseVaultError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-impl fmt::Display for Vault {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(self.to_vec()))
-    }
-}
-
-impl fmt::Debug for Vault {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
     }
 }

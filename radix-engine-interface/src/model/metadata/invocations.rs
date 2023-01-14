@@ -1,11 +1,10 @@
 use sbor::rust::fmt::Debug;
 
 use crate::api::{api::*, types::*};
-use crate::scrypto;
 use crate::wasm::*;
+use crate::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct MetadataSetInvocation {
     pub receiver: RENodeId,
     pub key: String,
@@ -26,8 +25,7 @@ impl Into<SerializedInvocation> for MetadataSetInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct MetadataGetInvocation {
     pub receiver: RENodeId,
     pub key: String,

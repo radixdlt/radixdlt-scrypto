@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -18,16 +19,16 @@ use radix_engine::transaction::{
 use radix_engine::types::*;
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter, WasmMeteringConfig};
 use radix_engine_constants::*;
-use radix_engine_interface::api::types::RENodeId;
+use radix_engine_interface::api::types::{RENodeId, VaultOffset};
 use radix_engine_interface::constants::EPOCH_MANAGER;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::{
-    AccessRule, AccessRules, EpochManagerInvocation, FromPublicKey, NativeInvocation,
-    NonFungibleAddress, NonFungibleIdType,
+    AccessRule, AccessRules, ClockInvocation, EpochManagerInvocation, FromPublicKey,
+    NativeInvocation, NonFungibleAddress, NonFungibleIdTypeId,
 };
 use radix_engine_interface::modules::auth::AuthAddresses;
+use radix_engine_interface::node::NetworkDefinition;
+use radix_engine_interface::time::Instant;
 use radix_engine_interface::{dec, rule};
 use scrypto::component::Mutability;
 use scrypto::component::Mutability::*;
@@ -104,7 +105,7 @@ impl Compile {
 
 pub struct TestRunner {
     scrypto_interpreter: ScryptoInterpreter<DefaultWasmEngine>,
-    substate_store: TypedInMemorySubstateStore,
+    staged_substate_store_manager: StagedSubstateStoreManager<TypedInMemorySubstateStore>,
     intent_hash_manager: TestIntentHashManager,
     next_private_key: u64,
     next_transaction_nonce: u64,
@@ -135,7 +136,7 @@ impl TestRunner {
         commit_result.state_updates.commit(&mut substate_store);
         Self {
             scrypto_interpreter,
-            substate_store,
+            staged_substate_store_manager: StagedSubstateStoreManager::new(substate_store),
             intent_hash_manager: TestIntentHashManager::new(),
             next_private_key: 1, // 0 is invalid
             next_transaction_nonce: 0,
@@ -144,23 +145,11 @@ impl TestRunner {
     }
 
     pub fn substate_store(&self) -> &TypedInMemorySubstateStore {
-        &self.substate_store
+        &self.staged_substate_store_manager.root
     }
 
     pub fn substate_store_mut(&mut self) -> &mut TypedInMemorySubstateStore {
-        &mut self.substate_store
-    }
-
-    pub fn new_staged_substate_store_manager(
-        &mut self,
-    ) -> (
-        StagedSubstateStoreManager<TypedInMemorySubstateStore>,
-        &ScryptoInterpreter<DefaultWasmEngine>,
-    ) {
-        (
-            StagedSubstateStoreManager::new(&mut self.substate_store),
-            &self.scrypto_interpreter,
-        )
+        &mut self.staged_substate_store_manager.root
     }
 
     pub fn next_private_key(&mut self) -> u64 {
@@ -198,7 +187,8 @@ impl TestRunner {
     pub fn get_metadata(&mut self, address: GlobalAddress) -> BTreeMap<String, String> {
         let node_id = RENodeId::Global(address);
         let global = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -209,7 +199,8 @@ impl TestRunner {
         let underlying_node = global.global().node_deref();
 
         let metadata = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 underlying_node,
                 SubstateOffset::Metadata(MetadataOffset::Metadata),
@@ -224,7 +215,8 @@ impl TestRunner {
     pub fn deref_component(&mut self, component_address: ComponentAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let global = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -236,7 +228,8 @@ impl TestRunner {
     pub fn deref_package(&mut self, package_address: PackageAddress) -> Option<RENodeId> {
         let node_id = RENodeId::Global(GlobalAddress::Package(package_address));
         let global = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -251,35 +244,59 @@ impl TestRunner {
     ) -> Option<Decimal> {
         let node_id = self.deref_component(component_address)?;
 
-        self.substate_store
+        if let Some(output) = self
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
             ))
-            .map(|output| {
-                output
-                    .substate
-                    .component_royalty_accumulator()
-                    .royalty
-                    .amount()
-            })
+        {
+            let royalty_vault: Own = output
+                .substate
+                .component_royalty_accumulator()
+                .royalty
+                .clone();
+
+            self.staged_substate_store_manager
+                .root
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(royalty_vault.vault_id()),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ))
+                .map(|output| output.substate.vault().0.amount())
+        } else {
+            None
+        }
     }
 
     pub fn inspect_package_royalty(&mut self, package_address: PackageAddress) -> Option<Decimal> {
         let node_id = self.deref_package(package_address)?;
 
-        self.substate_store
+        if let Some(output) = self
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 node_id,
                 SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
             ))
-            .map(|output| {
-                output
-                    .substate
-                    .package_royalty_accumulator()
-                    .royalty
-                    .amount()
-            })
+        {
+            let royalty_vault: Own = output
+                .substate
+                .package_royalty_accumulator()
+                .royalty
+                .clone();
+
+            self.staged_substate_store_manager
+                .root
+                .get_substate(&SubstateId(
+                    RENodeId::Vault(royalty_vault.vault_id()),
+                    SubstateOffset::Vault(VaultOffset::Vault),
+                ))
+                .map(|output| output.substate.vault().0.amount())
+        } else {
+            None
+        }
     }
 
     pub fn get_component_vaults(
@@ -290,12 +307,24 @@ impl TestRunner {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
         let mut vault_finder = VaultFinder::new(resource_address);
 
-        let mut state_tree_visitor =
-            StateTreeTraverser::new(&self.substate_store, &mut vault_finder, 100);
+        let mut state_tree_visitor = StateTreeTraverser::new(
+            &self.staged_substate_store_manager.root,
+            &mut vault_finder,
+            100,
+        );
         state_tree_visitor
             .traverse_all_descendents(None, node_id)
             .unwrap();
         vault_finder.to_vaults()
+    }
+
+    pub fn inspect_nft_vault(&mut self, vault_id: VaultId) -> Option<BTreeSet<NonFungibleId>> {
+        self.substate_store()
+            .get_substate(&SubstateId(
+                RENodeId::Vault(vault_id),
+                SubstateOffset::Vault(VaultOffset::Vault),
+            ))
+            .map(|output| output.substate.vault().0.ids().clone())
     }
 
     pub fn get_component_resources(
@@ -303,17 +332,17 @@ impl TestRunner {
         component_address: ComponentAddress,
     ) -> HashMap<ResourceAddress, Decimal> {
         let node_id = RENodeId::Global(GlobalAddress::Component(component_address));
-        let mut accounter = ResourceAccounter::new(&self.substate_store);
+        let mut accounter = ResourceAccounter::new(&self.staged_substate_store_manager.root);
         accounter.add_resources(node_id).unwrap();
         accounter.into_map()
     }
 
     pub fn load_account_from_faucet(&mut self, account_address: ComponentAddress) {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.call_method(account_address, "deposit", args!(Bucket(bucket_id)))
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+                builder.call_method(account_address, "deposit", args!(bucket))
             })
             .build();
 
@@ -322,11 +351,11 @@ impl TestRunner {
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .call_method(FAUCET_COMPONENT, "free", args!())
-            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                builder.new_account_with_resource(withdraw_auth, bucket_id)
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket| {
+                builder.new_account_with_resource(withdraw_auth, bucket)
             })
             .build();
 
@@ -356,7 +385,8 @@ impl TestRunner {
 
     pub fn deref_component_address(&mut self, component_address: ComponentAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Component(component_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -369,7 +399,8 @@ impl TestRunner {
 
     pub fn deref_package_address(&mut self, package_address: PackageAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .substate_store
+            .staged_substate_store_manager
+            .root
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::Package(package_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -382,7 +413,7 @@ impl TestRunner {
 
     pub fn deref_system_address(&mut self, system_address: SystemAddress) -> RENodeId {
         let substate: GlobalAddressSubstate = self
-            .substate_store
+            .substate_store()
             .get_substate(&SubstateId(
                 RENodeId::Global(GlobalAddress::System(system_address)),
                 SubstateOffset::Global(GlobalOffset::Global),
@@ -453,7 +484,7 @@ impl TestRunner {
         &mut self,
         pub_key: EcdsaSecp256k1PublicKey,
     ) -> SystemAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 10.into())
             .create_validator(pub_key)
             .build();
@@ -470,7 +501,7 @@ impl TestRunner {
         metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .publish_package(code, abi, royalty_config, metadata, access_rules)
             .build();
@@ -486,7 +517,7 @@ impl TestRunner {
         abi: BTreeMap<String, BlueprintAbi>,
         owner_badge: NonFungibleAddress,
     ) -> PackageAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .publish_package_with_owner(code, abi, owner_badge)
             .build();
@@ -576,7 +607,7 @@ impl TestRunner {
         execution_config: &ExecutionConfig,
     ) -> TransactionReceipt {
         execute_and_commit_transaction(
-            &mut self.substate_store,
+            &mut self.staged_substate_store_manager.root,
             &self.scrypto_interpreter,
             fee_reserve_config,
             execution_config,
@@ -590,7 +621,7 @@ impl TestRunner {
         network: &NetworkDefinition,
     ) -> Result<PreviewResult, PreviewError> {
         execute_preview(
-            &self.substate_store,
+            &self.staged_substate_store_manager.root,
             &mut self.scrypto_interpreter,
             &self.intent_hash_manager,
             network,
@@ -603,12 +634,16 @@ impl TestRunner {
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> BlueprintAbi {
-        export_abi(&self.substate_store, package_address, blueprint_name)
-            .expect("Failed to export ABI")
+        export_abi(
+            &self.staged_substate_store_manager.root,
+            package_address,
+            blueprint_name,
+        )
+        .expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(&mut self, component_address: ComponentAddress) -> BlueprintAbi {
-        export_abi_by_component(&self.substate_store, component_address)
+        export_abi_by_component(&self.staged_substate_store_manager.root, component_address)
             .expect("Failed to export ABI")
     }
 
@@ -621,7 +656,7 @@ impl TestRunner {
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
         let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
             .call_function(package, "ResourceCreator", function, args!(token))
@@ -643,14 +678,14 @@ impl TestRunner {
         signer_public_key: EcdsaSecp256k1PublicKey,
     ) {
         let package = self.compile_and_publish("./tests/blueprints/resource_creator");
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_proof_from_account(account, auth)
             .call_function(package, "ResourceCreator", function, args!(token, set_auth))
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         self.execute_manifest(
@@ -665,10 +700,14 @@ impl TestRunner {
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         to: ComponentAddress,
     ) -> ResourceAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_fungible_resource(0, BTreeMap::new(), access_rules, Some(5.into()))
-            .call_method(to, "deposit_batch", args!(Expression::entire_worktop()))
+            .call_method(
+                to,
+                "deposit_batch",
+                args!(ManifestExpression::EntireWorktop),
+            )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
@@ -798,14 +837,14 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
 
         let mut entries = BTreeMap::new();
-        entries.insert(NonFungibleId::U32(1), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::U32(2), SampleNonFungibleData {});
-        entries.insert(NonFungibleId::U32(3), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::Number(1), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::Number(2), SampleNonFungibleData {});
+        entries.insert(NonFungibleId::Number(3), SampleNonFungibleData {});
 
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_non_fungible_resource(
-                NonFungibleIdType::U32,
+                NonFungibleIdTypeId::Number,
                 BTreeMap::new(),
                 access_rules,
                 Some(entries),
@@ -813,7 +852,7 @@ impl TestRunner {
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -833,13 +872,13 @@ impl TestRunner {
         let mut access_rules = BTreeMap::new();
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -860,13 +899,13 @@ impl TestRunner {
         access_rules.insert(ResourceMethodAuthKey::Withdraw, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Deposit, (rule!(allow_all), LOCKED));
         access_rules.insert(ResourceMethodAuthKey::Mint, (rule!(allow_all), LOCKED));
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+        let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 100u32.into())
             .create_fungible_resource(divisibility, BTreeMap::new(), access_rules, Some(amount))
             .call_method(
                 account,
                 "deposit_batch",
-                args!(Expression::entire_worktop()),
+                args!(ManifestExpression::EntireWorktop),
             )
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
@@ -877,41 +916,22 @@ impl TestRunner {
             .new_resource_addresses[0]
     }
 
-    pub fn instantiate_component(
+    pub fn instantiate_component<F>(
         &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function_name: &str,
-        args: Vec<String>,
-        account: ComponentAddress,
-        signer_public_key: EcdsaSecp256k1PublicKey,
-    ) -> ComponentAddress {
-        let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
-            .lock_fee(FAUCET_COMPONENT, 100u32.into())
-            .call_function_with_abi(
-                package_address,
-                blueprint_name,
-                function_name,
-                args,
-                Some(account),
-                &self.export_abi(package_address, blueprint_name),
-            )
+        initial_proofs: Vec<NonFungibleAddress>,
+        handler: F,
+    ) -> ComponentAddress
+    where
+        F: FnOnce(&mut ManifestBuilder) -> &mut ManifestBuilder,
+    {
+        let manifest = ManifestBuilder::new()
+            .call_method(FAUCET_COMPONENT, "lock_fee", args!(dec!("10")))
+            .borrow_mut(|builder| Result::<_, Infallible>::Ok(handler(builder)))
             .unwrap()
-            .call_method(
-                account,
-                "deposit_batch",
-                args!(Expression::entire_worktop()),
-            )
             .build();
-        let receipt = self.execute_manifest(
-            manifest,
-            vec![NonFungibleAddress::from_public_key(&signer_public_key)],
-        );
-        receipt.expect_commit_success();
-        receipt
-            .expect_commit()
-            .entity_changes
-            .new_component_addresses[0]
+
+        let receipt = self.execute_manifest(manifest, initial_proofs);
+        receipt.new_component_addresses()[0]
     }
 
     pub fn set_current_epoch(&mut self, epoch: u64) {
@@ -939,6 +959,48 @@ impl TestRunner {
         let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
             EpochManagerInvocation::GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation {
                 receiver: EPOCH_MANAGER,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        receipt.output(0)
+    }
+
+    pub fn set_current_time(&mut self, current_time_ms: i64) {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+                current_time_ms,
+                receiver: CLOCK,
+            }),
+        ))];
+        let blobs = vec![];
+        let nonce = self.next_transaction_nonce();
+
+        let receipt = self.execute_transaction(
+            SystemTransaction {
+                instructions,
+                blobs,
+                nonce,
+            }
+            .get_executable(vec![AuthAddresses::validator_role()]),
+        );
+        receipt.output(0)
+    }
+
+    pub fn get_current_time(&mut self, precision: TimePrecision) -> Instant {
+        let instructions = vec![Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
+                precision,
+                receiver: CLOCK,
             }),
         ))];
         let blobs = vec![];
@@ -1013,7 +1075,9 @@ pub fn generate_single_function_abi(
     blueprint_abis.insert(
         blueprint_name.to_string(),
         BlueprintAbi {
-            structure: Type::Unit,
+            structure: Type::Tuple {
+                element_types: vec![],
+            },
             fns: vec![Fn {
                 ident: function_name.to_string(),
                 mutability: Option::None,

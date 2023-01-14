@@ -7,8 +7,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::data::IndexedScryptoValue;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PersistedSubstate {
     Global(GlobalAddressSubstate),
     EpochManager(EpochManagerSubstate),
@@ -39,6 +38,14 @@ impl PersistedSubstate {
         }
     }
 
+    pub fn vault_mut(&mut self) -> &mut VaultSubstate {
+        if let PersistedSubstate::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
     pub fn component_royalty_accumulator(&self) -> &ComponentRoyaltyAccumulatorSubstate {
         if let PersistedSubstate::ComponentRoyaltyAccumulator(state) = self {
             state
@@ -52,6 +59,22 @@ impl PersistedSubstate {
             state
         } else {
             panic!("Not a package royalty accumulator");
+        }
+    }
+
+    pub fn global(&self) -> &GlobalAddressSubstate {
+        if let PersistedSubstate::Global(state) = self {
+            state
+        } else {
+            panic!("Not a global address substate");
+        }
+    }
+
+    pub fn resource_manager(&self) -> &ResourceManagerSubstate {
+        if let PersistedSubstate::ResourceManager(state) = self {
+            state
+        } else {
+            panic!("Not a resource manager substate");
         }
     }
 }
@@ -250,17 +273,17 @@ impl RuntimeSubstate {
         let substate = match offset {
             SubstateOffset::Component(ComponentOffset::State) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::ComponentState(substate)
             }
             SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::KeyValueStoreEntry(substate)
             }
             SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(..)) => {
                 let substate =
-                    scrypto_decode(buffer).map_err(|e| KernelError::InvalidSborValue(e))?;
+                    scrypto_decode(buffer).map_err(|e| KernelError::SborDecodeError(e))?;
                 RuntimeSubstate::NonFungible(substate)
             }
             offset => {
@@ -982,6 +1005,14 @@ impl<'a> SubstateRef<'a> {
 
                 (HashSet::new(), owned_nodes)
             }
+            SubstateRef::Worktop(worktop) => {
+                let nodes = worktop
+                    .resources
+                    .values()
+                    .map(|o| RENodeId::Bucket(o.bucket_id()))
+                    .collect();
+                (HashSet::new(), nodes)
+            }
             SubstateRef::Vault(vault) => {
                 let mut references = HashSet::new();
                 references.insert(GlobalAddress::Resource(vault.resource_address()));
@@ -1016,9 +1047,24 @@ impl<'a> SubstateRef<'a> {
                 owned_nodes.insert(RENodeId::Vault(substate.stake_vault_id));
                 (references, owned_nodes)
             }
+            SubstateRef::PackageRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
+            }
             SubstateRef::ComponentState(substate) => {
                 let scrypto_value = IndexedScryptoValue::from_slice(&substate.raw).unwrap();
-                (scrypto_value.global_references(), scrypto_value.node_ids())
+                (
+                    scrypto_value.global_references(),
+                    scrypto_value
+                        .owned_node_ids()
+                        .expect("No duplicates expected"),
+                )
+            }
+            SubstateRef::ComponentRoyaltyAccumulator(substate) => {
+                let mut owned_nodes = HashSet::new();
+                owned_nodes.insert(RENodeId::Vault(substate.royalty.vault_id()));
+                (HashSet::new(), owned_nodes)
             }
             SubstateRef::KeyValueStoreEntry(substate) => {
                 let maybe_scrypto_value = substate
@@ -1026,7 +1072,12 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|raw| IndexedScryptoValue::from_slice(raw).unwrap());
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                    (
+                        scrypto_value.global_references(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
+                    )
                 } else {
                     (HashSet::new(), HashSet::new())
                 }
@@ -1037,7 +1088,12 @@ impl<'a> SubstateRef<'a> {
                     .as_ref()
                     .map(|non_fungible| IndexedScryptoValue::from_typed(non_fungible));
                 if let Some(scrypto_value) = maybe_scrypto_value {
-                    (scrypto_value.global_references(), scrypto_value.node_ids())
+                    (
+                        scrypto_value.global_references(),
+                        scrypto_value
+                            .owned_node_ids()
+                            .expect("No duplicates expected"),
+                    )
                 } else {
                     (HashSet::new(), HashSet::new())
                 }

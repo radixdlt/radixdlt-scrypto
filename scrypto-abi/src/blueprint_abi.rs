@@ -6,11 +6,11 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::schema_type::Type;
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Categorize, Decode, Encode};
 
 /// Represents a blueprint.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Categorize, Encode, Decode)]
 pub struct Blueprint {
     pub package_address: String,
     pub blueprint_name: String,
@@ -19,7 +19,7 @@ pub struct Blueprint {
 
 /// Represents the ABI of a blueprint.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct BlueprintAbi {
     pub structure: Type,
     pub fns: Vec<Fn>,
@@ -42,7 +42,7 @@ impl BlueprintAbi {
 
 /// Represents a method/function.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct Fn {
     pub ident: String,
     pub mutability: Option<SelfMutability>,
@@ -53,7 +53,7 @@ pub struct Fn {
 
 /// Whether a method is going to change the component state.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub enum SelfMutability {
     /// An immutable method requires an immutable reference to component state.
     Immutable,

@@ -1,7 +1,7 @@
 use super::*;
 
 macro_rules! checked_int_impl_large {
-    (type_id: $t:ident, bytes_len: $bytes_len:literal, MIN: $min: expr, MAX: $max: expr) => {
+    (value_kind: $t:ident, bytes_len: $bytes_len:literal, MIN: $min: expr, MAX: $max: expr) => {
         paste! {
             impl Min for $t {
                 /// Returns the smallest value that can be represented by this integer type.
@@ -28,7 +28,7 @@ macro_rules! checked_unsigned_large {
     ($($t:ident, $bytes_len:literal),*) => {
         $(
             checked_int_impl_large! {
-                type_id: $t,
+                value_kind: $t,
                 bytes_len: $bytes_len,
                 MIN: $t([0u8; $bytes_len]),
                 MAX: $t([0xffu8; $bytes_len])
@@ -41,7 +41,7 @@ macro_rules! checked_signed_large {
     ( $($t:ident, $bytes_len:literal),* ) => {
         $(
             checked_int_impl_large! {
-                type_id: $t,
+                value_kind: $t,
                 bytes_len: $bytes_len,
                 MIN: {
                     let mut arr = [0u8; $bytes_len];

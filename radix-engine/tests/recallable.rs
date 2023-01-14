@@ -5,8 +5,6 @@ use radix_engine::engine::{
 use radix_engine::model::MethodAuthorizationError;
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use std::ops::Sub;
 use transaction::builder::ManifestBuilder;
@@ -20,13 +18,13 @@ fn non_existing_vault_should_cause_error() {
     let non_existing_vault_id = [0; 36];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .recall(non_existing_vault_id, Decimal::one())
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -52,13 +50,13 @@ fn cannot_take_on_non_recallable_vault() {
     let vault_id = vaults[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .recall(vault_id, Decimal::one())
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -94,13 +92,13 @@ fn can_take_on_recallable_vault() {
     let vault_id = vaults[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .recall(vault_id, Decimal::one())
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

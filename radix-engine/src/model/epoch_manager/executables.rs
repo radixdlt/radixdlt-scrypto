@@ -9,7 +9,7 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::NativeVault;
+use native_sdk::resource::Vault;
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
@@ -18,7 +18,7 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
 }

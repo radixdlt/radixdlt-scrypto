@@ -1,21 +1,19 @@
-use radix_engine_interface::crypto::{hash, Hash};
+use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::model::*;
-use radix_engine_interface::scrypto;
-use sbor::rust::collections::{BTreeSet, HashMap};
+use radix_engine_interface::*;
+use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
-use sbor::{Decode, Encode, TypeId};
+use sbor::{Categorize, Decode, Encode};
 
 use crate::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AuthZoneParams {
     pub initial_proofs: Vec<NonFungibleAddress>,
     pub virtualizable_proofs_resource_addresses: BTreeSet<ResourceAddress>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ExecutionContext {
     pub transaction_hash: Hash,
     pub payload_size: usize,
@@ -24,7 +22,7 @@ pub struct ExecutionContext {
     pub runtime_validations: Vec<RuntimeValidationRequest>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum FeePayment {
     User {
         cost_unit_limit: u32,
@@ -43,12 +41,11 @@ pub enum InstructionList<'a> {
 #[derive(Debug)]
 pub struct Executable<'a> {
     instructions: InstructionList<'a>,
-    blobs: HashMap<Hash, &'a [u8]>,
+    blobs: &'a [Vec<u8>],
     context: ExecutionContext,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct RuntimeValidationRequest {
     /// The validation to perform
     pub validation: RuntimeValidation,
@@ -57,8 +54,7 @@ pub struct RuntimeValidationRequest {
     pub skip_assertion: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RuntimeValidation {
     /// To ensure we don't commit a duplicate intent hash
     IntentHashUniqueness { intent_hash: Hash },
@@ -91,7 +87,6 @@ impl<'a> Executable<'a> {
         blobs: &'a [Vec<u8>],
         context: ExecutionContext,
     ) -> Self {
-        let blobs = blobs.iter().map(|b| (hash(b), b.as_slice())).collect();
         Self {
             instructions,
             blobs,
@@ -102,7 +97,7 @@ impl<'a> Executable<'a> {
     pub fn new_no_blobs(instructions: InstructionList<'a>, context: ExecutionContext) -> Self {
         Self {
             instructions,
-            blobs: HashMap::new(),
+            blobs: &[],
             context,
         }
     }
@@ -123,7 +118,7 @@ impl<'a> Executable<'a> {
         &self.context.auth_zone_params
     }
 
-    pub fn blobs(&self) -> &HashMap<Hash, &[u8]> {
+    pub fn blobs(&self) -> &[Vec<u8>] {
         &self.blobs
     }
 

@@ -1,14 +1,12 @@
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
 use crate::api::api::*;
 use crate::api::types::{ComponentId, RENodeId};
 use crate::model::*;
-use crate::scrypto;
 use crate::wasm::*;
+use crate::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ComponentGlobalizeInvocation {
     pub component_id: ComponentId,
 }
@@ -27,8 +25,7 @@ impl Into<SerializedInvocation> for ComponentGlobalizeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ComponentGlobalizeWithOwnerInvocation {
     pub component_id: ComponentId,
     pub owner_badge: NonFungibleAddress,
@@ -48,8 +45,7 @@ impl Into<SerializedInvocation> for ComponentGlobalizeWithOwnerInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ComponentSetRoyaltyConfigInvocation {
     /// TODO: change to component id, after `borrow_component` returns component id
     pub receiver: RENodeId,
@@ -70,8 +66,7 @@ impl Into<SerializedInvocation> for ComponentSetRoyaltyConfigInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ComponentClaimRoyaltyInvocation {
     /// TODO: change to component id, after `borrow_component` returns component id
     pub receiver: RENodeId,

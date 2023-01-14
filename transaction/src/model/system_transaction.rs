@@ -2,12 +2,10 @@ use super::{ExecutionContext, FeePayment, Instruction, InstructionList};
 use crate::model::{AuthZoneParams, Executable};
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::model::NonFungibleAddress;
-use radix_engine_interface::scrypto;
-use sbor::*;
+use radix_engine_interface::*;
 use std::collections::BTreeSet;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
     pub blobs: Vec<Vec<u8>>,

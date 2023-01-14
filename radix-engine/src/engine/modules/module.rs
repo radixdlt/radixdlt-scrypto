@@ -3,14 +3,12 @@ use crate::fee::FeeReserve;
 use crate::model::Resource;
 use crate::types::*;
 use radix_engine_interface::api::types::{LockHandle, RENodeId, SubstateOffset, VaultId};
-use sbor::rust::fmt::Debug;
 
 #[derive(Clone)]
 pub enum SysCallInput<'a> {
     Invoke {
-        invocation: &'a dyn Debug,
+        fn_identifier: String,
         input_size: u32,
-        value_count: u32,
         depth: usize,
     },
     ReadOwnedNodes,

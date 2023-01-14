@@ -167,7 +167,7 @@ macro_rules! include_abi {
 ///     }
 /// }
 ///
-/// #[derive(TypeId, Encode, Decode, Describe)]
+/// #[derive(Categorize, Encode, Decode, LegacyDescribe)]
 /// enum DepositResult {
 ///     Success,
 ///     Failure
@@ -203,7 +203,7 @@ macro_rules! external_blueprint {
         }
     ) => {
 
-        #[scrypto(TypeId, Encode, Decode, Describe)]
+        #[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
         struct $blueprint_ident {
             package_address: ::scrypto::model::PackageAddress,
             blueprint_name: ::sbor::rust::string::String,
@@ -312,7 +312,7 @@ macro_rules! external_blueprint_members {
 /// ```no_run
 /// use scrypto::prelude::*;
 ///
-/// #[derive(TypeId, Encode, Decode, Describe)]
+/// #[derive(Categorize, Encode, Decode, LegacyDescribe)]
 /// enum DepositResult {
 ///     Success,
 ///     Failure
@@ -343,7 +343,7 @@ macro_rules! external_component {
             $($component_methods:tt)*
         }
     ) => {
-        #[scrypto(TypeId, Encode, Decode, Describe)]
+        #[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode, LegacyDescribe)]
         struct $component_ident {
             component_address: ::scrypto::model::ComponentAddress,
         }

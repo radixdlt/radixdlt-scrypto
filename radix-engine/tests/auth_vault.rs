@@ -1,6 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -14,12 +12,12 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw_by_amount(account, 10.into(), Decimal::one(), token_resource_address)
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -41,18 +39,18 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         test_runner.create_restricted_transfer_token(account);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw_by_ids(
             account,
             10u32.into(),
-            BTreeSet::from([NonFungibleId::U32(1)]),
+            BTreeSet::from([NonFungibleId::Number(1)]),
             auth_resource_address,
         )
         .take_from_worktop_by_ids(
-            &BTreeSet::from([NonFungibleId::U32(1)]),
+            &BTreeSet::from([NonFungibleId::Number(1)]),
             auth_resource_address,
             |builder, bucket_id| {
-                builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
+                builder.create_proof_from_bucket(&bucket_id, |builder, proof_id| {
                     builder
                         .push_to_auth_zone(proof_id)
                         .withdraw_from_account_by_amount(
@@ -68,7 +66,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(

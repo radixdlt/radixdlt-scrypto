@@ -1,13 +1,13 @@
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::data::scrypto_encode;
-use radix_engine_interface::{model::*, scrypto};
+use radix_engine_interface::model::*;
+use radix_engine_interface::*;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use std::collections::BTreeSet;
 
 use crate::model::*;
 
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TestTransaction {
     nonce: u64,
     cost_unit_limit: u32,

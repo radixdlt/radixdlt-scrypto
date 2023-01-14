@@ -1,8 +1,19 @@
 use super::InstructionCostRules;
 use crate::types::*;
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+)]
 pub enum WasmMeteringConfig {
     V0,
 }
@@ -21,7 +32,7 @@ impl WasmMeteringConfig {
     }
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Categorize, Encode, Decode)]
 pub struct WasmMeteringParams {
     instruction_cost_rules: InstructionCostRules,
     max_stack_size: u32,

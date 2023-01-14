@@ -1,21 +1,16 @@
 use sbor::rust::collections::BTreeSet;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
-use sbor::rust::vec::Vec;
 use sbor::*;
-use utils::copy_u8_array;
 
 use crate::abi::*;
 use crate::api::{api::*, types::*};
-use crate::data::ScryptoCustomTypeId;
+use crate::data::types::Own;
+use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
-use crate::scrypto;
-use crate::scrypto_type;
 use crate::wasm::*;
+use crate::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketTakeInvocation {
     pub receiver: BucketId,
     pub amount: Decimal,
@@ -35,8 +30,7 @@ impl Into<SerializedInvocation> for BucketTakeInvocation {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketPutInvocation {
     pub receiver: BucketId,
     pub bucket: Bucket,
@@ -65,8 +59,7 @@ impl Into<SerializedInvocation> for BucketPutInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketTakeNonFungiblesInvocation {
     pub receiver: BucketId,
     pub ids: BTreeSet<NonFungibleId>,
@@ -86,8 +79,7 @@ impl Into<SerializedInvocation> for BucketTakeNonFungiblesInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketGetNonFungibleIdsInvocation {
     pub receiver: BucketId,
 }
@@ -106,8 +98,7 @@ impl Into<SerializedInvocation> for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketGetAmountInvocation {
     pub receiver: BucketId,
 }
@@ -126,8 +117,7 @@ impl Into<SerializedInvocation> for BucketGetAmountInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketGetResourceAddressInvocation {
     pub receiver: BucketId,
 }
@@ -146,8 +136,7 @@ impl Into<SerializedInvocation> for BucketGetResourceAddressInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct BucketCreateProofInvocation {
     pub receiver: BucketId,
 }
@@ -166,49 +155,47 @@ impl Into<SerializedInvocation> for BucketCreateProofInvocation {
     }
 }
 
-/// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
-pub struct Bucket(pub BucketId);
-
-//========
-// error
-//========
-
-/// Represents an error when decoding bucket.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseBucketError {
-    InvalidLength(usize),
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseBucketError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseBucketError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
+pub struct Bucket(pub BucketId); // scrypto stub
 
 //========
 // binary
 //========
 
-impl TryFrom<&[u8]> for Bucket {
-    type Error = ParseBucketError;
+impl Categorize<ScryptoCustomValueKind> for Bucket {
+    #[inline]
+    fn value_kind() -> ValueKind<ScryptoCustomValueKind> {
+        ValueKind::Custom(ScryptoCustomValueKind::Own)
+    }
+}
 
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        match slice.len() {
-            4 => Ok(Self(u32::from_le_bytes(copy_u8_array(slice)))),
-            _ => Err(ParseBucketError::InvalidLength(slice.len())),
+impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for Bucket {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
+    }
+
+    #[inline]
+    fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        Own::Bucket(self.0).encode_body(encoder)
+    }
+}
+
+impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for Bucket {
+    fn decode_body_with_value_kind(
+        decoder: &mut D,
+        value_kind: ValueKind<ScryptoCustomValueKind>,
+    ) -> Result<Self, DecodeError> {
+        let o = Own::decode_body_with_value_kind(decoder, value_kind)?;
+        match o {
+            Own::Bucket(bucket_id) => Ok(Self(bucket_id)),
+            _ => Err(DecodeError::InvalidCustomValue),
         }
     }
 }
 
-impl Bucket {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_le_bytes().to_vec()
+impl scrypto_abi::LegacyDescribe for Bucket {
+    fn describe() -> scrypto_abi::Type {
+        Type::Bucket
     }
 }
-
-scrypto_type!(Bucket, ScryptoCustomTypeId::Bucket, Type::Bucket, 4);

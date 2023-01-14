@@ -2,14 +2,12 @@ use crate::api::api::Invocation;
 use crate::api::types::{ScryptoFunctionIdent, ScryptoMethodIdent};
 use crate::data::IndexedScryptoValue;
 use crate::model::SerializedInvocation;
-use crate::scrypto;
 use crate::wasm::SerializableInvocation;
+use crate::*;
 use sbor::rust::vec::Vec;
-use sbor::*;
 
 /// Scrypto function/method invocation.
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ScryptoInvocation {
     Function(ScryptoFunctionIdent, Vec<u8>),
     Method(ScryptoMethodIdent, Vec<u8>),

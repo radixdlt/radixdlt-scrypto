@@ -4,10 +4,9 @@ use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 
 // TODO: de-dup
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum GlobalAddressSubstate {
-    Component(scrypto::component::Component),
+    Component(ComponentId),
     Resource(ResourceManagerId),
     Package(PackageId),
     EpochManager(EpochManagerId),

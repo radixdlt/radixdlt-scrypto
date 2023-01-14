@@ -1,14 +1,12 @@
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
 use crate::api::api::*;
 use crate::model::*;
-use crate::scrypto;
 use crate::time::{Instant, TimeComparisonOperator};
 use crate::wasm::*;
+use crate::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockCreateInvocation {}
 
 impl Invocation for ClockCreateInvocation {
@@ -25,8 +23,7 @@ impl Into<SerializedInvocation> for ClockCreateInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockGetCurrentTimeInvocation {
     pub receiver: SystemAddress,
     pub precision: TimePrecision,
@@ -46,8 +43,7 @@ impl Into<SerializedInvocation> for ClockGetCurrentTimeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockCompareCurrentTimeInvocation {
     pub receiver: SystemAddress,
     pub instant: Instant,
@@ -69,8 +65,7 @@ impl Into<SerializedInvocation> for ClockCompareCurrentTimeInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ClockSetCurrentTimeInvocation {
     pub receiver: SystemAddress,
     pub current_time_ms: i64,

@@ -1,12 +1,10 @@
 use radix_engine_interface::wasm::SerializableInvocation;
 use sbor::rust::fmt::Debug;
-use sbor::*;
 
 use crate::api::{api::*, types::*};
-use crate::scrypto;
+use crate::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessRulesAddAccessCheckInvocation {
     pub receiver: RENodeId,
     pub access_rules: AccessRules,
@@ -26,8 +24,7 @@ impl Into<SerializedInvocation> for AccessRulesAddAccessCheckInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessRulesSetMethodAccessRuleInvocation {
     pub receiver: RENodeId,
     pub index: u32,
@@ -50,8 +47,7 @@ impl Into<SerializedInvocation> for AccessRulesSetMethodAccessRuleInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessRulesSetGroupAccessRuleInvocation {
     pub receiver: RENodeId,
     pub index: u32,
@@ -74,8 +70,7 @@ impl Into<SerializedInvocation> for AccessRulesSetGroupAccessRuleInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessRulesSetMethodMutabilityInvocation {
     pub receiver: RENodeId,
     pub index: u32,
@@ -98,8 +93,7 @@ impl Into<SerializedInvocation> for AccessRulesSetMethodMutabilityInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessRulesSetGroupMutabilityInvocation {
     pub receiver: RENodeId,
     pub index: u32,
@@ -122,8 +116,7 @@ impl Into<SerializedInvocation> for AccessRulesSetGroupMutabilityInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessRulesGetLengthInvocation {
     pub receiver: RENodeId,
 }

@@ -6,7 +6,7 @@ use utils::{copy_u8_array, ContextualDisplay};
 
 use crate::abi::*;
 use crate::address::{AddressDisplayContext, AddressError, EntityType, NO_NETWORK};
-use crate::data::ScryptoCustomTypeId;
+use crate::data::ScryptoCustomValueKind;
 use crate::scrypto_type;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -58,7 +58,7 @@ impl PackageAddress {
 
 scrypto_type!(
     PackageAddress,
-    ScryptoCustomTypeId::PackageAddress,
+    ScryptoCustomValueKind::PackageAddress,
     Type::PackageAddress,
     27
 );

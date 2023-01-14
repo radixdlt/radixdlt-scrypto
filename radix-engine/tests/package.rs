@@ -2,8 +2,6 @@ use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
 use radix_engine::model::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -22,7 +20,7 @@ fn missing_memory_should_cause_error() {
             )
             "#,
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
@@ -54,7 +52,7 @@ fn large_return_len_should_cause_memory_access_error() {
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "LargeReturnSize", "f", args!())
         .build();
@@ -77,7 +75,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "MaxReturnSize", "f", args!())
         .build();
@@ -100,7 +98,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let package = test_runner.compile_and_publish("./tests/blueprints/package");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package, "ZeroReturnSize", "f", args!())
         .build();
@@ -120,7 +118,7 @@ fn test_basic_package() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
@@ -144,12 +142,18 @@ fn test_basic_package_missing_export() {
     blueprints.insert(
         "some_blueprint".to_string(),
         BlueprintAbi {
-            structure: Type::Unit,
+            structure: Type::Tuple {
+                element_types: vec![],
+            },
             fns: vec![Fn {
                 ident: "f".to_string(),
                 mutability: Option::None,
-                input: Type::Unit,
-                output: Type::Unit,
+                input: Type::Tuple {
+                    element_types: vec![],
+                },
+                output: Type::Tuple {
+                    element_types: vec![],
+                },
                 export_name: "f".to_string(),
             }],
         },
@@ -157,7 +161,7 @@ fn test_basic_package_missing_export() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,

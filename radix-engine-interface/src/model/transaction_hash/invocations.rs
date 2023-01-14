@@ -4,12 +4,10 @@ use sbor::rust::fmt::Debug;
 use crate::api::api::*;
 use crate::api::types::TransactionRuntimeId;
 use crate::model::*;
-use crate::scrypto;
 use crate::wasm::*;
-use sbor::*;
+use crate::*;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionRuntimeGetHashInvocation {
     pub receiver: TransactionRuntimeId,
 }
@@ -28,8 +26,7 @@ impl Into<SerializedInvocation> for TransactionRuntimeGetHashInvocation {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionRuntimeGenerateUuidInvocation {
     pub receiver: TransactionRuntimeId,
 }

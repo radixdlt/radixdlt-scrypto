@@ -1,16 +1,14 @@
-use crate::model::Resource;
 use crate::types::*;
 use sbor::rust::fmt::{Debug, Formatter};
 
 /// A collection of blueprints, compiled and published as a single unit.
-#[derive(Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Clone, Categorize, Encode, Decode, PartialEq, Eq)]
 pub struct PackageInfoSubstate {
     pub code: Vec<u8>,
     pub blueprint_abis: BTreeMap<String, BlueprintAbi>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageRoyaltyConfigSubstate {
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,
 }
@@ -33,8 +31,7 @@ impl PackageInfoSubstate {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackageRoyaltyAccumulatorSubstate {
-    pub royalty: Resource, // TODO: wrap with a vault?
+    pub royalty: Own,
 }

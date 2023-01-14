@@ -13,12 +13,12 @@ macro_rules! dec {
             let base = Decimal::from($base);
             if $shift >= 0 {
                 base * Decimal::try_from(
-                    I256::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
+                    BnumI256::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
                 base / Decimal::try_from(
-                    I256::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
+                    BnumI256::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             }
@@ -52,12 +52,12 @@ macro_rules! pdec {
             let base = PreciseDecimal::from($base);
             if $shift >= 0 {
                 base * PreciseDecimal::try_from(
-                    I512::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
+                    BnumI512::from(10u8).pow(u32::try_from($shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             } else {
                 base / PreciseDecimal::try_from(
-                    I512::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
+                    BnumI512::from(10u8).pow(u32::try_from(-$shift).expect("Shift overflow")),
                 )
                 .expect("Shift overflow")
             }
@@ -65,24 +65,24 @@ macro_rules! pdec {
     };
 }
 
-/// A macro for implementing sbor traits.
+/// A macro for implementing sbor traits (for statically sized types).
 #[macro_export]
 macro_rules! scrypto_type {
-    // static size
-    ($t:ty, $type_id:expr, $schema_type: expr, $size: expr) => {
-        impl sbor::TypeId<crate::data::ScryptoCustomTypeId> for $t {
+    // with describe
+    ($t:ty, $value_kind:expr, $schema_type: expr, $size: expr) => {
+        impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
             #[inline]
-            fn type_id() -> sbor::SborTypeId<crate::data::ScryptoCustomTypeId> {
-                sbor::SborTypeId::Custom($type_id)
+            fn value_kind() -> sbor::ValueKind<crate::data::ScryptoCustomValueKind> {
+                sbor::ValueKind::Custom($value_kind)
             }
         }
 
-        impl<E: sbor::Encoder<crate::data::ScryptoCustomTypeId>>
-            sbor::Encode<crate::data::ScryptoCustomTypeId, E> for $t
+        impl<E: sbor::Encoder<crate::data::ScryptoCustomValueKind>>
+            sbor::Encode<crate::data::ScryptoCustomValueKind, E> for $t
         {
             #[inline]
-            fn encode_type_id(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
-                encoder.write_type_id(Self::type_id())
+            fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_value_kind(Self::value_kind())
             }
 
             #[inline]
@@ -91,68 +91,58 @@ macro_rules! scrypto_type {
             }
         }
 
-        impl<D: sbor::Decoder<crate::data::ScryptoCustomTypeId>>
-            sbor::Decode<crate::data::ScryptoCustomTypeId, D> for $t
+        impl<D: sbor::Decoder<crate::data::ScryptoCustomValueKind>>
+            sbor::Decode<crate::data::ScryptoCustomValueKind, D> for $t
         {
-            fn decode_body_with_type_id(
+            fn decode_body_with_value_kind(
                 decoder: &mut D,
-                type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
+                value_kind: sbor::ValueKind<crate::data::ScryptoCustomValueKind>,
             ) -> Result<Self, sbor::DecodeError> {
-                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+                decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
                 let slice = decoder.read_slice($size)?;
                 Self::try_from(slice).map_err(|_| sbor::DecodeError::InvalidCustomValue)
             }
         }
 
-        impl scrypto_abi::Describe for $t {
+        impl scrypto_abi::LegacyDescribe for $t {
             fn describe() -> scrypto_abi::Type {
                 $schema_type
             }
         }
     };
-
-    // dynamic size
-    ($t:ty, $type_id:expr, $schema_type: expr) => {
-        impl sbor::TypeId<crate::data::ScryptoCustomTypeId> for $t {
+    // without describe
+    ($t:ty, $value_kind:expr, $size: expr) => {
+        impl sbor::Categorize<crate::data::ScryptoCustomValueKind> for $t {
             #[inline]
-            fn type_id() -> sbor::SborTypeId<crate::data::ScryptoCustomTypeId> {
-                sbor::SborTypeId::Custom($type_id)
+            fn value_kind() -> sbor::ValueKind<crate::data::ScryptoCustomValueKind> {
+                sbor::ValueKind::Custom($value_kind)
             }
         }
 
-        impl<E: sbor::Encoder<crate::data::ScryptoCustomTypeId>>
-            sbor::Encode<crate::data::ScryptoCustomTypeId, E> for $t
+        impl<E: sbor::Encoder<crate::data::ScryptoCustomValueKind>>
+            sbor::Encode<crate::data::ScryptoCustomValueKind, E> for $t
         {
             #[inline]
-            fn encode_type_id(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
-                encoder.write_type_id(Self::type_id())
+            fn encode_value_kind(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
+                encoder.write_value_kind(Self::value_kind())
             }
 
             #[inline]
             fn encode_body(&self, encoder: &mut E) -> Result<(), sbor::EncodeError> {
-                let bytes = self.to_vec();
-                encoder.write_size(bytes.len())?;
-                encoder.write_slice(&bytes)
+                encoder.write_slice(&self.to_vec())
             }
         }
 
-        impl<D: sbor::Decoder<crate::data::ScryptoCustomTypeId>>
-            sbor::Decode<crate::data::ScryptoCustomTypeId, D> for $t
+        impl<D: sbor::Decoder<crate::data::ScryptoCustomValueKind>>
+            sbor::Decode<crate::data::ScryptoCustomValueKind, D> for $t
         {
-            fn decode_body_with_type_id(
+            fn decode_body_with_value_kind(
                 decoder: &mut D,
-                type_id: sbor::SborTypeId<crate::data::ScryptoCustomTypeId>,
+                value_kind: sbor::ValueKind<crate::data::ScryptoCustomValueKind>,
             ) -> Result<Self, sbor::DecodeError> {
-                decoder.check_preloaded_type_id(type_id, Self::type_id())?;
-                let len = decoder.read_size()?;
-                let slice = decoder.read_slice(len)?;
+                decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+                let slice = decoder.read_slice($size)?;
                 Self::try_from(slice).map_err(|_| sbor::DecodeError::InvalidCustomValue)
-            }
-        }
-
-        impl scrypto_abi::Describe for $t {
-            fn describe() -> scrypto_abi::Type {
-                $schema_type
             }
         }
     };

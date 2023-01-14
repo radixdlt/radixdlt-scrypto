@@ -10,8 +10,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProofError {
     /// Error produced by a resource container.
     ResourceOperationError(ResourceOperationError),

@@ -8,7 +8,7 @@ use sbor::*;
 use serde::Serialize;
 use serde_json::{json, to_string, to_value, Value};
 
-#[derive(TypeId, Encode, Decode)]
+#[derive(Categorize, Encode, Decode)]
 pub struct Sample {
     pub a: (),
     pub b: u32,
@@ -36,14 +36,15 @@ fn test_encode_as_json() {
         d: "5".to_string(),
     };
     let bytes = basic_encode(&sample).unwrap();
-    let any = basic_decode::<BasicSborValue>(&bytes).unwrap();
+    let any = basic_decode::<BasicValue>(&bytes).unwrap();
 
     assert_json_eq(
         any,
         json!({
             "fields": [
                 {
-                    "type": "Unit"
+                    "fields": [],
+                    "type": "Tuple"
                 },
                 {
                     "type": "U32",
@@ -56,7 +57,7 @@ fn test_encode_as_json() {
                             "value": 2
                         },
                         {
-                            "element_type_id": {
+                            "element_value_kind": {
                                 "type": "U8"
                             },
                             "elements": [

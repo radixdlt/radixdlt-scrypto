@@ -8,11 +8,11 @@ pub struct AuthAddresses;
 
 impl AuthAddresses {
     pub fn system_role() -> NonFungibleAddress {
-        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(0))
+        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::Number(0))
     }
 
     pub fn validator_role() -> NonFungibleAddress {
-        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::U32(1))
+        NonFungibleAddress::new(SYSTEM_TOKEN, NonFungibleId::Number(1))
     }
 
     pub fn signer_set(signer_public_keys: &[PublicKey]) -> Vec<NonFungibleAddress> {

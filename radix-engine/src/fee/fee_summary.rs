@@ -4,8 +4,7 @@ use crate::types::*;
 use indexmap::IndexMap;
 use radix_engine_interface::api::types::VaultId;
 
-#[derive(Debug, Clone)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct FeeSummary {
     /// The cost unit price in XRD.
     pub cost_unit_price: Decimal,
