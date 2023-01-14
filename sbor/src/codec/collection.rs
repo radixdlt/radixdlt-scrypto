@@ -372,7 +372,8 @@ mod schema {
         }
 
         fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
-            aggregator.add_child_type_and_descendents::<(K, V)>();
+            aggregator.add_child_type_and_descendents::<K>();
+            aggregator.add_child_type_and_descendents::<V>();
         }
     }
 
