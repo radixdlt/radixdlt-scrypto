@@ -1,7 +1,9 @@
 use wasmi::HostError;
 
+use crate::engine::CanBeAbortion;
 use crate::fee::FeeReserveError;
 use crate::model::InvokeError;
+use crate::transaction::AbortReason;
 use crate::types::*;
 
 /// Represents an error when validating a WASM file.
@@ -90,6 +92,15 @@ pub enum WasmError {
     MissingReturnData,
     InvalidReturnData,
     CostingError(FeeReserveError),
+}
+
+impl CanBeAbortion for WasmError {
+    fn abortion(&self) -> Option<&AbortReason> {
+        match self {
+            WasmError::CostingError(err) => err.abortion(),
+            _ => None,
+        }
+    }
 }
 
 impl fmt::Display for WasmError {

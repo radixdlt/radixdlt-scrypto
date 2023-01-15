@@ -101,6 +101,7 @@ impl StagedSubstateStoreNode {
             // to the weight as well.
             TransactionResult::Commit(commit) => commit.state_updates.up_substates.len(),
             TransactionResult::Reject(_) => 0,
+            TransactionResult::Abort(_) => 0,
         }
     }
 }

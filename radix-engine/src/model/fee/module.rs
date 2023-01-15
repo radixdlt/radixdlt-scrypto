@@ -1,6 +1,7 @@
 use crate::engine::*;
 use crate::fee::{FeeReserve, FeeReserveError, SystemApiCostingEntry};
 use crate::model::Resource;
+use crate::transaction::AbortReason;
 use crate::types::*;
 use radix_engine_interface::api::types::VaultId;
 
@@ -8,6 +9,15 @@ use radix_engine_interface::api::types::VaultId;
 pub enum CostingError {
     FeeReserveError(FeeReserveError),
     MaxCallDepthLimitReached,
+}
+
+impl CanBeAbortion for CostingError {
+    fn abortion(&self) -> Option<&AbortReason> {
+        match self {
+            Self::FeeReserveError(err) => err.abortion(),
+            _ => None,
+        }
+    }
 }
 
 pub struct CostingModule {
@@ -47,7 +57,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                                 .system_api_cost(SystemApiCostingEntry::Invoke { input_size }),
                             1,
                             "invoke",
-                            false,
                         )
                         .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
                 }
@@ -61,7 +70,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::ReadOwnedNodes),
                         1,
                         "read_owned_nodes",
-                        false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
@@ -74,7 +82,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::DropNode { size: 0 }),
                         1,
                         "drop_node",
-                        false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
@@ -90,7 +97,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                             }),
                         1,
                         "create_node",
-                        false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
@@ -106,7 +112,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                             }),
                         1,
                         "lock_substate",
-                        false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
@@ -122,7 +127,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                             }),
                         1,
                         "read_substate",
-                        false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
@@ -138,7 +142,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                             }),
                         1,
                         "write_substate",
-                        false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
@@ -152,7 +155,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::DropLock),
                         1,
                         "drop_lock",
-                        false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
@@ -165,7 +167,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                             .system_api_cost(SystemApiCostingEntry::ReadBlob { size: 0 }), // TODO pass the right size
                         1,
                         "read_blob",
-                        false,
                     )
                     .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))?;
             }
@@ -197,7 +198,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                 track.fee_table.wasm_instantiation_per_byte(),
                 code.len(),
                 "instantiate_wasm",
-                false,
             )
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
@@ -211,7 +211,7 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
     ) -> Result<(), ModuleError> {
         track
             .fee_reserve
-            .consume_execution(units, 1, "run_wasm", false)
+            .consume_execution(units, 1, "run_wasm")
             .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e)))
     }
 
@@ -245,7 +245,6 @@ impl<R: FeeReserve> BaseModule<R> for CostingModule {
                     track.fee_table.run_native_fn_cost(&native_fn),
                     1,
                     "run_native_method",
-                    false,
                 )
                 .map_err(|e| ModuleError::CostingError(CostingError::FeeReserveError(e))),
             _ => Ok(()),

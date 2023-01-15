@@ -1,5 +1,6 @@
 use crate::engine::node_move_module::NodeMoveError;
 use crate::engine::{AuthError, ExecutionMode, LockFlags, ResolvedActor};
+use crate::transaction::AbortReason;
 use radix_engine_interface::api::types::{
     GlobalAddress, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, SubstateOffset,
 };
@@ -15,6 +16,10 @@ use super::TrackError;
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum IdAllocationError {
     OutOfID,
+}
+
+pub trait CanBeAbortion {
+    fn abortion(&self) -> Option<&AbortReason>;
 }
 
 /// Represents an error which causes a tranasction to be rejected.
@@ -63,6 +68,19 @@ pub enum RuntimeError {
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
         RuntimeError::KernelError(error)
+    }
+}
+
+impl CanBeAbortion for RuntimeError {
+    fn abortion(&self) -> Option<&AbortReason> {
+        match self {
+            RuntimeError::KernelError(err) => err.abortion(),
+            RuntimeError::CallFrameError(_) => None,
+            RuntimeError::InterpreterError(_) => None,
+            RuntimeError::ModuleError(err) => err.abortion(),
+            RuntimeError::ApplicationError(_) => None,
+            RuntimeError::UnexpectedError(_) => None,
+        }
     }
 }
 
@@ -121,6 +139,15 @@ pub enum KernelError {
     },
 }
 
+impl CanBeAbortion for KernelError {
+    fn abortion(&self) -> Option<&AbortReason> {
+        match self {
+            KernelError::WasmError(err) => err.abortion(),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum CallFrameError {
     OffsetDoesNotExist(RENodeId, SubstateOffset),
@@ -159,6 +186,15 @@ pub enum ModuleError {
     CostingError(CostingError),
     RoyaltyError(RoyaltyError),
     ExecutionTraceError(ExecutionTraceError),
+}
+
+impl CanBeAbortion for ModuleError {
+    fn abortion(&self) -> Option<&AbortReason> {
+        match self {
+            Self::CostingError(err) => err.abortion(),
+            _ => None,
+        }
+    }
 }
 
 impl Into<ModuleError> for AuthError {
