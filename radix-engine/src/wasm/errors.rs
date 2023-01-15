@@ -1,6 +1,6 @@
 use wasmi::HostError;
 
-use crate::engine::CanBeAbortion;
+use crate::engine::{CanBeAbortion, InvokeWrappedError, KernelError, RuntimeError};
 use crate::fee::FeeReserveError;
 use crate::model::InvokeError;
 use crate::transaction::AbortReason;
@@ -92,6 +92,12 @@ pub enum WasmError {
     MissingReturnData,
     InvalidReturnData,
     CostingError(FeeReserveError),
+}
+
+impl InvokeWrappedError for WasmError {
+    fn into_runtime_error(self) -> RuntimeError {
+        RuntimeError::KernelError(KernelError::WasmError(self))
+    }
 }
 
 impl CanBeAbortion for WasmError {

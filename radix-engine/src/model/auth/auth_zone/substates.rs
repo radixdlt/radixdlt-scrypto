@@ -377,15 +377,7 @@ impl AuthZone {
         resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<ProofSubstate, InvokeError<AuthZoneError>> {
-        let maybe_existing_proof =
-            ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
-                .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)));
-
-        let proof = match maybe_existing_proof {
-            Ok(proof) => proof,
-            Err(e) => Err(e)?,
-        };
-
-        Ok(proof)
+        ProofSubstate::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
+            .map_err(|e| InvokeError::Error(AuthZoneError::ProofError(e)))
     }
 }

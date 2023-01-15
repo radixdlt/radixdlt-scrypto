@@ -14,12 +14,6 @@ pub enum RoyaltyError {
 
 pub struct RoyaltyModule {}
 
-impl From<RoyaltyError> for ModuleError {
-    fn from(error: RoyaltyError) -> Self {
-        Self::RoyaltyError(error)
-    }
-}
-
 impl From<TrackError> for RoyaltyError {
     fn from(error: TrackError) -> Self {
         Self::TrackError(error)

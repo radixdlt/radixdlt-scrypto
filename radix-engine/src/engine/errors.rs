@@ -67,7 +67,31 @@ pub enum RuntimeError {
 
 impl From<KernelError> for RuntimeError {
     fn from(error: KernelError) -> Self {
-        RuntimeError::KernelError(error)
+        RuntimeError::KernelError(error.into())
+    }
+}
+
+impl From<CallFrameError> for RuntimeError {
+    fn from(error: CallFrameError) -> Self {
+        RuntimeError::CallFrameError(error.into())
+    }
+}
+
+impl From<InterpreterError> for RuntimeError {
+    fn from(error: InterpreterError) -> Self {
+        RuntimeError::InterpreterError(error.into())
+    }
+}
+
+impl From<ModuleError> for RuntimeError {
+    fn from(error: ModuleError) -> Self {
+        RuntimeError::ModuleError(error.into())
+    }
+}
+
+impl From<ApplicationError> for RuntimeError {
+    fn from(error: ApplicationError) -> Self {
+        RuntimeError::ApplicationError(error.into())
     }
 }
 
@@ -158,12 +182,6 @@ pub enum CallFrameError {
     CallFrameCleanupAllocatedIdsNotEmpty,
 }
 
-impl From<CallFrameError> for RuntimeError {
-    fn from(error: CallFrameError) -> Self {
-        RuntimeError::CallFrameError(error)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
@@ -197,31 +215,82 @@ impl CanBeAbortion for ModuleError {
     }
 }
 
-impl Into<ModuleError> for AuthError {
-    fn into(self) -> ModuleError {
-        ModuleError::AuthError(self)
+impl From<NodeMoveError> for ModuleError {
+    fn from(error: NodeMoveError) -> Self {
+        Self::NodeMoveError(error)
+    }
+}
+
+impl From<AuthError> for ModuleError {
+    fn from(error: AuthError) -> Self {
+        Self::AuthError(error)
+    }
+}
+
+impl From<CostingError> for ModuleError {
+    fn from(error: CostingError) -> Self {
+        Self::CostingError(error)
+    }
+}
+
+impl From<RoyaltyError> for ModuleError {
+    fn from(error: RoyaltyError) -> Self {
+        Self::RoyaltyError(error)
+    }
+}
+
+impl From<ExecutionTraceError> for ModuleError {
+    fn from(error: ExecutionTraceError) -> Self {
+        Self::ExecutionTraceError(error)
     }
 }
 
 #[derive(Debug)]
-pub enum InvokeError<E> {
+pub enum InvokeError<E: InvokeWrappedError> {
     Error(E),
     Downstream(RuntimeError),
 }
 
-impl<E> From<RuntimeError> for InvokeError<E> {
+/// This is a trait for the non-Downstream part of [`InvokeError`]
+/// We can't use `Into<RuntimeError>` because we need `RuntimeError` _not_ to implement it.
+pub trait InvokeWrappedError {
+    fn into_runtime_error(self) -> RuntimeError;
+}
+
+impl<E: Into<ApplicationError>> InvokeWrappedError for E {
+    fn into_runtime_error(self) -> RuntimeError {
+        self.into().into()
+    }
+}
+
+impl<E: InvokeWrappedError> From<RuntimeError> for InvokeError<E> {
     fn from(runtime_error: RuntimeError) -> Self {
         InvokeError::Downstream(runtime_error)
     }
 }
 
-impl<E> InvokeError<E> {
+impl<E: InvokeWrappedError> From<E> for InvokeError<E> {
+    fn from(error: E) -> Self {
+        InvokeError::Error(error)
+    }
+}
+
+impl<E: InvokeWrappedError> InvokeError<E> {
     pub fn error(error: E) -> Self {
         InvokeError::Error(error)
     }
 
     pub fn downstream(runtime_error: RuntimeError) -> Self {
         InvokeError::Downstream(runtime_error)
+    }
+}
+
+impl<E: InvokeWrappedError> From<InvokeError<E>> for RuntimeError {
+    fn from(error: InvokeError<E>) -> Self {
+        match error {
+            InvokeError::Downstream(runtime_error) => runtime_error,
+            InvokeError::Error(e) => e.into_runtime_error(),
+        }
     }
 }
 
@@ -248,6 +317,72 @@ pub enum ApplicationError {
     WorktopError(WorktopError),
 
     AuthZoneError(AuthZoneError),
+}
+
+impl From<TransactionProcessorError> for ApplicationError {
+    fn from(value: TransactionProcessorError) -> Self {
+        Self::TransactionProcessorError(value)
+    }
+}
+
+impl From<PackageError> for ApplicationError {
+    fn from(value: PackageError) -> Self {
+        Self::PackageError(value)
+    }
+}
+
+impl From<EpochManagerError> for ApplicationError {
+    fn from(value: EpochManagerError) -> Self {
+        Self::EpochManagerError(value)
+    }
+}
+
+impl From<ResourceManagerError> for ApplicationError {
+    fn from(value: ResourceManagerError) -> Self {
+        Self::ResourceManagerError(value)
+    }
+}
+
+impl From<AccessRulesChainError> for ApplicationError {
+    fn from(value: AccessRulesChainError) -> Self {
+        Self::AccessRulesChainError(value)
+    }
+}
+
+impl From<TransactionRuntimeError> for ApplicationError {
+    fn from(value: TransactionRuntimeError) -> Self {
+        Self::TransactionRuntimeError(value)
+    }
+}
+
+impl From<BucketError> for ApplicationError {
+    fn from(value: BucketError) -> Self {
+        Self::BucketError(value)
+    }
+}
+
+impl From<ProofError> for ApplicationError {
+    fn from(value: ProofError) -> Self {
+        Self::ProofError(value)
+    }
+}
+
+impl From<VaultError> for ApplicationError {
+    fn from(value: VaultError) -> Self {
+        Self::VaultError(value)
+    }
+}
+
+impl From<WorktopError> for ApplicationError {
+    fn from(value: WorktopError) -> Self {
+        Self::WorktopError(value)
+    }
+}
+
+impl From<AuthZoneError> for ApplicationError {
+    fn from(value: AuthZoneError) -> Self {
+        Self::AuthZoneError(value)
+    }
 }
 
 impl fmt::Display for RuntimeError {

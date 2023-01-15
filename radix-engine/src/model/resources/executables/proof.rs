@@ -1,8 +1,8 @@
 use crate::engine::{
-    ApplicationError, CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode,
-    ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
+    CallFrameUpdate, ExecutableInvocation, Executor, LockFlags, RENode, ResolvedActor,
+    ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
-use crate::model::{InvokeError, ResourceOperationError};
+use crate::model::ResourceOperationError;
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
@@ -92,12 +92,7 @@ impl Executor for ProofGetNonFungibleIdsInvocation {
         let handle = system_api.lock_substate(node_id, offset, LockFlags::read_only())?;
         let substate_ref = system_api.get_ref(handle)?;
         let proof = substate_ref.proof();
-        let ids = proof.total_ids().map_err(|e| match e {
-            InvokeError::Error(e) => {
-                RuntimeError::ApplicationError(ApplicationError::ProofError(e))
-            }
-            InvokeError::Downstream(runtime_error) => runtime_error,
-        })?;
+        let ids = proof.total_ids()?;
 
         Ok((ids, CallFrameUpdate::empty()))
     }

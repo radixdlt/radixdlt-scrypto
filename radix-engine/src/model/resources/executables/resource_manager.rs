@@ -140,14 +140,7 @@ where
     );
 
     let bucket = {
-        resource_manager
-            .check_fungible_amount(initial_supply)
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(e) => e,
-            })?;
+        resource_manager.check_fungible_amount(initial_supply)?;
         // TODO: refactor this into mint function
         if initial_supply > dec!("1000000000000000000") {
             return Err(RuntimeError::ApplicationError(
@@ -1364,14 +1357,8 @@ impl Executor for ResourceManagerMintFungibleExecutable {
         let resource = {
             let mut substate_mut = api.get_ref_mut(resman_handle)?;
             let resource_manager = substate_mut.resource_manager();
-            let result = resource_manager
-                .mint_fungible(self.1, resource_manager.resource_address)
-                .map_err(|e| match e {
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                    }
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                })?;
+            let result =
+                resource_manager.mint_fungible(self.1, resource_manager.resource_address)?;
             result
         };
 
@@ -1512,13 +1499,7 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
-            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?;
+            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
         let resource_address = resource_manager.resource_address;
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
@@ -1584,13 +1565,7 @@ impl Executor for ResourceManagerNonFungibleExistsExecutable {
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
-            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?;
+            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
 
         let node_id = RENodeId::NonFungibleStore(nf_store_id);
         let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(self.1));
@@ -1641,13 +1616,7 @@ impl Executor for ResourceManagerGetNonFungibleExecutable {
         let resource_manager = substate_ref.resource_manager();
         let nf_store_id = resource_manager
             .nf_store_id
-            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))
-            .map_err(|e| match e {
-                InvokeError::Error(e) => {
-                    RuntimeError::ApplicationError(ApplicationError::ResourceManagerError(e))
-                }
-                InvokeError::Downstream(runtime_error) => runtime_error,
-            })?;
+            .ok_or(InvokeError::Error(ResourceManagerError::NotNonFungible))?;
 
         let non_fungible_address =
             NonFungibleAddress::new(resource_manager.resource_address, self.1.clone());

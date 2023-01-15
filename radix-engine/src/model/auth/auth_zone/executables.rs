@@ -3,7 +3,7 @@ use crate::engine::{
     ResolvedActor, ResolvedReceiver, ResolverApi, RuntimeError, SystemApi,
 };
 use crate::model::{
-    convert_contextless, InvokeError, MethodAuthorization, MethodAuthorizationError, ProofError,
+    convert_contextless, MethodAuthorization, MethodAuthorizationError, ProofError,
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
@@ -60,15 +60,7 @@ impl Executor for AuthZonePopInvocation {
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone_mut()
-                .pop()
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+            let proof = auth_zone_stack.cur_auth_zone_mut().pop()?;
             proof
         };
 
@@ -186,13 +178,7 @@ impl Executor for AuthZoneCreateProofInvocation {
             let auth_zone_stack = substate_mut.auth_zone_stack();
             let proof = auth_zone_stack
                 .cur_auth_zone()
-                .create_proof(self.resource_address, resource_type)
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+                .create_proof(self.resource_address, resource_type)?;
             proof
         };
 
@@ -254,15 +240,11 @@ impl Executor for AuthZoneCreateProofByAmountInvocation {
         let proof = {
             let mut substate_mut = api.get_ref_mut(auth_zone_handle)?;
             let auth_zone_stack = substate_mut.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone()
-                .create_proof_by_amount(self.amount, self.resource_address, resource_type)
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_amount(
+                self.amount,
+                self.resource_address,
+                resource_type,
+            )?;
 
             proof
         };
@@ -325,15 +307,11 @@ impl Executor for AuthZoneCreateProofByIdsInvocation {
         let proof = {
             let substate_ref = api.get_ref(auth_zone_handle)?;
             let auth_zone_stack = substate_ref.auth_zone_stack();
-            let proof = auth_zone_stack
-                .cur_auth_zone()
-                .create_proof_by_ids(&self.ids, self.resource_address, resource_type)
-                .map_err(|e| match e {
-                    InvokeError::Downstream(runtime_error) => runtime_error,
-                    InvokeError::Error(e) => {
-                        RuntimeError::ApplicationError(ApplicationError::AuthZoneError(e))
-                    }
-                })?;
+            let proof = auth_zone_stack.cur_auth_zone().create_proof_by_ids(
+                &self.ids,
+                self.resource_address,
+                resource_type,
+            )?;
 
             proof
         };
