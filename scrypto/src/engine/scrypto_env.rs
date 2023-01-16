@@ -3,7 +3,7 @@ use radix_engine_interface::api::types::{
     FnIdentifier, LockHandle, RENodeId, ScryptoRENode, ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable};
-use radix_engine_interface::data::ScryptoValue;
+use radix_engine_interface::data::scrypto_decode;
 use radix_engine_interface::wasm::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::string::ToString;
@@ -11,13 +11,17 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Debug, Categorize, Encode, Decode)]
-pub struct EngineApiError;
+pub enum EngineApiError {
+    DecodeError(DecodeError),
+}
 
 pub struct ScryptoEnv;
 
 impl<N: SerializableInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
     fn invoke(&mut self, input: N) -> Result<N::Output, EngineApiError> {
-        Ok(call_engine_wasm_api::<Invoke>(input.into()))
+        let return_data = call_engine_wasm_api::<Invoke>(input.into());
+
+        scrypto_decode(&return_data).map_err(EngineApiError::DecodeError)
     }
 }
 

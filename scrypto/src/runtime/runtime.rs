@@ -74,10 +74,10 @@ impl Runtime {
             .invoke_method(
                 ScryptoReceiver::Global(component_address),
                 method.as_ref(),
-                &scrypto_decode(&args).unwrap(),
+                args,
             )
             .unwrap();
-        scrypto_decode(&scrypto_encode(&output).unwrap()).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the transaction hash.

@@ -1,10 +1,8 @@
 use radix_engine_interface::api::types::{
     FnIdentifier, LockHandle, RENodeId, ScryptoRENode, ScryptoReceiver, SubstateOffset,
 };
-use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable};
 use radix_engine_interface::data::{ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::model::CallTableInvocation;
-use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
 
 #[cfg(target_arch = "wasm32")]
@@ -12,7 +10,7 @@ extern "C" {
     pub fn radix_engine(api: u8, input: *mut u8) -> *mut u8;
 }
 
-trait EngineWasmApi {
+pub trait EngineWasmApi {
     const ID: u8 = 0;
     type Input: ScryptoEncode;
     type Output: ScryptoDecode;
@@ -109,6 +107,6 @@ pub fn call_engine_wasm_api<W: EngineWasmApi>(input: W::Input) -> W::Output {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub fn call_engine_wasm_api<W: EngineWasmApi>(input: W::Input) -> W::Output {
+pub fn call_engine_wasm_api<W: EngineWasmApi>(_input: W::Input) -> W::Output {
     todo!()
 }
