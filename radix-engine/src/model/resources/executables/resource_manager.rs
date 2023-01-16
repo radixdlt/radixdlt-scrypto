@@ -743,10 +743,12 @@ impl Executor for ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvoca
         self,
         api: &mut Y,
     ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
-        where
-            Y: SystemApi,
+    where
+        Y: SystemApi,
     {
-        let global_node_id = RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(self.resource_address)));
+        let global_node_id = RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
+            self.resource_address,
+        )));
         let resource_address: ResourceAddress = global_node_id.into();
 
         let (resource_manager_substate, bucket) =

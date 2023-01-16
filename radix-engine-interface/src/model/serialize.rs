@@ -122,7 +122,9 @@ pub enum ResourceInvocation {
         ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
     ),
     CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
-    CreateFungibleWithAddressAndInitialSupply(ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation),
+    CreateFungibleWithAddressAndInitialSupply(
+        ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation,
+    ),
     BurnBucket(ResourceManagerBucketBurnInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),

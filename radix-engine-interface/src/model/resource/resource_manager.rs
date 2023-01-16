@@ -169,13 +169,16 @@ impl SerializableInvocation for ResourceManagerCreateFungibleWithAddressAndIniti
     type ScryptoOutput = Bucket;
 }
 
-impl Into<CallTableInvocation> for ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation {
+impl Into<CallTableInvocation>
+    for ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation
+{
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithAddressAndInitialSupply(self))
-            .into()
+        NativeInvocation::ResourceManager(
+            ResourceInvocation::CreateFungibleWithAddressAndInitialSupply(self),
+        )
+        .into()
     }
 }
-
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {

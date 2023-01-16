@@ -1,17 +1,17 @@
 use radix_engine_interface::api::types::{
-    AuthZoneStackId, BucketId, ComponentId, FeeReserveId, KeyValueStoreId, NonFungibleStoreId,
-    PackageId, ProofId, ResourceManagerId, TransactionRuntimeId, ValidatorId, VaultId,
+    AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress, KeyValueStoreId,
+    NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId,
+    TransactionRuntimeId, ValidatorId, VaultId,
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
-use sbor::rust::ops::Range;
 
 use super::IdAllocationError;
 
 /// An ID allocator defines how identities are generated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
-    available: Range<u32>,
+    next_id: u32,
     transaction_hash: Hash,
 }
 
@@ -19,18 +19,79 @@ impl IdAllocator {
     /// Creates an ID allocator.
     pub fn new(transaction_hash: Hash) -> Self {
         Self {
-            available: 1024..u32::MAX,
+            next_id: 0u32,
             transaction_hash,
         }
     }
 
+    pub fn allocate_node_id(
+        &mut self,
+        node_type: RENodeType,
+    ) -> Result<RENodeId, IdAllocationError> {
+        let node_id = match node_type {
+            RENodeType::AuthZoneStack => self
+                .new_auth_zone_id()
+                .map(|id| RENodeId::AuthZoneStack(id)),
+            RENodeType::Bucket => self.new_bucket_id().map(|id| RENodeId::Bucket(id)),
+            RENodeType::Proof => self.new_proof_id().map(|id| RENodeId::Proof(id)),
+            RENodeType::TransactionRuntime => self
+                .new_transaction_hash_id()
+                .map(|id| RENodeId::TransactionRuntime(id)),
+            RENodeType::Worktop => Ok(RENodeId::Worktop),
+            RENodeType::Logger => Ok(RENodeId::Logger),
+            RENodeType::Vault => self.new_vault_id().map(|id| RENodeId::Vault(id)),
+            RENodeType::KeyValueStore => {
+                self.new_kv_store_id().map(|id| RENodeId::KeyValueStore(id))
+            }
+            RENodeType::NonFungibleStore => self
+                .new_nf_store_id()
+                .map(|id| RENodeId::NonFungibleStore(id)),
+            RENodeType::Package => {
+                // Security Alert: ensure ID allocating will practically never fail
+                self.new_package_id().map(|id| RENodeId::Package(id))
+            }
+            RENodeType::ResourceManager => self
+                .new_resource_manager_id()
+                .map(|id| RENodeId::ResourceManager(id)),
+            RENodeType::Component => self.new_component_id().map(|id| RENodeId::Component(id)),
+            RENodeType::EpochManager => {
+                self.new_component_id().map(|id| RENodeId::EpochManager(id))
+            }
+            RENodeType::Validator => self.new_validator_id().map(|id| RENodeId::Validator(id)),
+            RENodeType::Clock => self.new_component_id().map(|id| RENodeId::Clock(id)),
+            RENodeType::GlobalPackage => self
+                .new_package_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Package(address))),
+            RENodeType::GlobalEpochManager => self
+                .new_epoch_manager_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+            RENodeType::GlobalValidator => self
+                .new_validator_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+            RENodeType::GlobalClock => self
+                .new_clock_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+            RENodeType::GlobalResourceManager => self
+                .new_resource_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Resource(address))),
+            RENodeType::GlobalAccount => self
+                .new_account_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+            RENodeType::GlobalComponent => self
+                .new_component_address()
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
+        }?;
+
+        Ok(node_id)
+    }
+
     fn next(&mut self) -> Result<u32, IdAllocationError> {
-        if self.available.len() > 0 {
-            let id = self.available.start;
-            self.available.start += 1;
-            Ok(id)
-        } else {
+        if self.next_id == u32::MAX {
             Err(IdAllocationError::OutOfID)
+        } else {
+            let rtn = self.next_id;
+            self.next_id += 1;
+            Ok(rtn)
         }
     }
 
