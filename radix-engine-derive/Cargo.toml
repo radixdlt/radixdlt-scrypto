@@ -10,7 +10,7 @@ proc-macro = true
 proc-macro2 = { version = "1.0.38" }
 syn = { version = "1.0.93", features = ["full", "extra-traits"] }
 quote = { version = "1.0.18" }
-sbor-derive-common ={ path = "../sbor-derive-common" }
+sbor-derive-common = { path = "../sbor-derive-common" }
 
 [features]
 # Currenlty, dependencies of procedrual macros are imported to host crates. This may accidentally 
@@ -28,4 +28,4 @@ std = []
 alloc = []
 
 # Enable trace
-trace = []
+trace = ["sbor-derive-common/trace"]

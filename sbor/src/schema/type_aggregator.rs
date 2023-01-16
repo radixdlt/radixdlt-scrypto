@@ -13,19 +13,19 @@ pub fn generate_full_schema_from_single_type<
 pub fn generate_full_schema<C: CustomTypeKind<GlobalTypeId>>(
     aggregator: TypeAggregator<C>,
 ) -> Schema<C::CustomTypeExtension> {
-    let schema_lookup: IndexSet<_> = aggregator.types.keys().map(|k| k.clone()).collect();
+    let mut type_indices = BTreeMap::new();
+    for (hash, (_, index)) in &aggregator.types {
+        type_indices.insert(hash.clone(), index.clone());
+    }
 
-    let mapped = aggregator
-        .types
-        .into_iter()
-        .map(|(type_hash, type_data)| {
-            (
-                linearize::<C::CustomTypeExtension>(type_data.kind, &schema_lookup),
-                type_data.metadata.with_type_hash(type_hash),
-            )
-        })
-        .unzip();
+    let mut sorted_types = BTreeMap::new();
+    for (type_hash, (type_data, type_index)) in aggregator.types {
+        let kind = linearize::<C::CustomTypeExtension>(type_data.kind, &type_indices);
+        let metadata = type_data.metadata.with_type_hash(type_hash);
+        sorted_types.insert(type_index, (kind, metadata));
+    }
 
+    let mapped = sorted_types.into_iter().map(|(_, v)| v).unzip();
     Schema {
         type_kinds: mapped.0,
         type_metadata: mapped.1,
@@ -34,7 +34,7 @@ pub fn generate_full_schema<C: CustomTypeKind<GlobalTypeId>>(
 
 fn linearize<E: CustomTypeExtension>(
     type_kind: TypeKind<E::CustomValueKind, E::CustomTypeKind<GlobalTypeId>, GlobalTypeId>,
-    schemas: &IndexSet<TypeHash>,
+    type_indices: &BTreeMap<TypeHash, usize>,
 ) -> TypeKind<E::CustomValueKind, E::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex> {
     match type_kind {
         TypeKind::Any => TypeKind::Any,
@@ -51,12 +51,12 @@ fn linearize<E: CustomTypeExtension>(
         TypeKind::U128 => TypeKind::U128,
         TypeKind::String => TypeKind::String,
         TypeKind::Array { element_type } => TypeKind::Array {
-            element_type: resolve_local_type_ref(schemas, &element_type),
+            element_type: resolve_local_type_ref(type_indices, &element_type),
         },
         TypeKind::Tuple { field_types } => TypeKind::Tuple {
             field_types: field_types
                 .into_iter()
-                .map(|t| resolve_local_type_ref(schemas, &t))
+                .map(|t| resolve_local_type_ref(type_indices, &t))
                 .collect(),
         },
         TypeKind::Enum { variants } => TypeKind::Enum {
@@ -65,7 +65,7 @@ fn linearize<E: CustomTypeExtension>(
                 .map(|(variant_index, field_types)| {
                     let new_field_types = field_types
                         .into_iter()
-                        .map(|t| resolve_local_type_ref(schemas, &t))
+                        .map(|t| resolve_local_type_ref(type_indices, &t))
                         .collect();
                     (variant_index, new_field_types)
                 })
@@ -75,46 +75,46 @@ fn linearize<E: CustomTypeExtension>(
             key_type,
             value_type,
         } => TypeKind::Map {
-            key_type: resolve_local_type_ref(schemas, &key_type),
-            value_type: resolve_local_type_ref(schemas, &value_type),
+            key_type: resolve_local_type_ref(type_indices, &key_type),
+            value_type: resolve_local_type_ref(type_indices, &value_type),
         },
         TypeKind::Custom(custom_type_kind) => {
-            TypeKind::Custom(E::linearize_type_kind(custom_type_kind, schemas))
+            TypeKind::Custom(E::linearize_type_kind(custom_type_kind, type_indices))
         }
     }
 }
 
 pub fn resolve_local_type_ref(
-    schemas: &IndexSet<TypeHash>,
+    type_indices: &BTreeMap<TypeHash, usize>,
     type_ref: &GlobalTypeId,
 ) -> LocalTypeIndex {
     match type_ref {
         GlobalTypeId::WellKnown([well_known_index]) => LocalTypeIndex::WellKnown(*well_known_index),
         GlobalTypeId::Novel(type_hash) => {
-            LocalTypeIndex::SchemaLocalIndex(resolve_index(schemas, type_hash))
+            LocalTypeIndex::SchemaLocalIndex(resolve_index(type_indices, type_hash))
         }
     }
 }
 
-fn resolve_index(schemas: &IndexSet<TypeHash>, type_hash: &TypeHash) -> usize {
-    schemas.get_index_of(type_hash).unwrap_or_else(|| {
+fn resolve_index(type_indices: &BTreeMap<TypeHash, usize>, type_hash: &TypeHash) -> usize {
+    type_indices.get(type_hash).cloned().unwrap_or_else(|| {
         panic!(
-            "Fatal error in the schema aggregation process - this is likely due to a Schema impl missing a dependent type in add_all_dependencies. The following type hash wasn't added in add_all_dependencies: {:?}",
+            "Fatal error in the type aggregation process - this is likely due to a type impl missing a dependent type in add_all_dependencies. The following type hash wasn't added in add_all_dependencies: {:?}",
             type_hash
         )
     })
 }
 
 pub struct TypeAggregator<C: CustomTypeKind<GlobalTypeId>> {
-    pub already_read_dependencies: HashSet<TypeHash>,
-    pub types: IndexMap<TypeHash, TypeData<C, GlobalTypeId>>,
+    pub already_read_dependencies: BTreeSet<TypeHash>,
+    pub types: BTreeMap<TypeHash, (TypeData<C, GlobalTypeId>, usize)>,
 }
 
 impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     pub fn new() -> Self {
         Self {
-            types: index_map_new(),
-            already_read_dependencies: HashSet::new(),
+            already_read_dependencies: BTreeSet::new(),
+            types: BTreeMap::new(),
         }
     }
 
@@ -147,20 +147,16 @@ impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
             GlobalTypeId::Novel(complex_type_hash) => complex_type_hash,
         };
 
-        if let Some(index) = self.types.get_index_of(&complex_type_hash) {
-            return LocalTypeIndex::SchemaLocalIndex(index);
+        if let Some((_, index)) = self.types.get(&complex_type_hash) {
+            return LocalTypeIndex::SchemaLocalIndex(*index);
         }
 
+        let new_index = self.types.len();
         let local_type_data =
             get_type_data().expect("Schema with a complex TypeRef did not have a TypeData");
-
-        self.types.insert(complex_type_hash, local_type_data);
-        let new_type_index = self
-            .types
-            .get_index_of(&complex_type_hash)
-            .expect("Schema that was just inserted isn't in map");
-
-        LocalTypeIndex::SchemaLocalIndex(new_type_index)
+        self.types
+            .insert(complex_type_hash, (local_type_data, new_index));
+        LocalTypeIndex::SchemaLocalIndex(new_index)
     }
 
     /// Adds the type's descendent types to the `TypeAggregator`, if they've not already been added.

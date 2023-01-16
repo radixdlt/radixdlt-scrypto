@@ -326,10 +326,8 @@ impl<
     }
 }
 
-#[cfg(feature = "schema")]
 pub use schema::*;
 
-#[cfg(feature = "schema")]
 mod schema {
     use super::*;
 

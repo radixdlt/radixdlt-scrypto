@@ -529,7 +529,7 @@ impl ExecutionTraceReceipt {
 
     pub fn new(
         ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
-        actual_fee_payments: &IndexMap<VaultId, Decimal>,
+        actual_fee_payments: &BTreeMap<VaultId, Decimal>,
         to_persist: &mut HashMap<SubstateId, (PersistedSubstate, Option<u32>)>,
         is_commit_success: bool,
     ) -> Self {

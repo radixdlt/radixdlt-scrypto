@@ -1,14 +1,17 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
+use sbor_derive_common::utils::extract_attributes;
 use syn::*;
-
-use crate::utils::*;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
         #[cfg(feature = "trace")]
         println!($($arg),*);
     }};
+}
+
+pub fn is_skipped(f: &Field) -> bool {
+    extract_attributes(&f.attrs, "legacy_skip").is_some()
 }
 
 pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
@@ -34,7 +37,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
         Data::Struct(s) => match s.fields {
             syn::Fields::Named(FieldsNamed { named, .. }) => {
                 // ns: not skipped
-                let ns: Vec<&Field> = named.iter().filter(|f| !is_describing_skipped(f)).collect();
+                let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
 
                 let names = ns.iter().map(|f| {
                     f.ident
@@ -62,10 +65,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                 }
             }
             syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                let ns: Vec<&Field> = unnamed
-                    .iter()
-                    .filter(|f| !is_describing_skipped(f))
-                    .collect();
+                let ns: Vec<&Field> = unnamed.iter().filter(|f| !is_skipped(f)).collect();
 
                 let types = ns.iter().map(|f| &f.ty);
 
@@ -108,8 +108,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
 
                 match f {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
-                        let ns: Vec<&Field> =
-                            named.iter().filter(|f| !is_describing_skipped(f)).collect();
+                        let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
 
                         let names = ns.iter().map(|f| {
                             f.ident
@@ -128,10 +127,7 @@ pub fn handle_describe(input: TokenStream) -> Result<TokenStream> {
                         }
                     }
                     syn::Fields::Unnamed(FieldsUnnamed { unnamed, .. }) => {
-                        let ns: Vec<&Field> = unnamed
-                            .iter()
-                            .filter(|f| !is_describing_skipped(f))
-                            .collect();
+                        let ns: Vec<&Field> = unnamed.iter().filter(|f| !is_skipped(f)).collect();
 
                         let types = ns.iter().map(|f| &f.ty);
 
@@ -265,7 +261,7 @@ mod tests {
 
     #[test]
     fn test_skip_field_1() {
-        let input = TokenStream::from_str("struct Test {#[scrypto(skip)] a: u32}").unwrap();
+        let input = TokenStream::from_str("struct Test {#[legacy_skip] a: u32}").unwrap();
         let output = handle_describe(input).unwrap();
 
         assert_code_eq(
@@ -290,7 +286,7 @@ mod tests {
     #[test]
     fn test_skip_field_2() {
         let input = TokenStream::from_str(
-            "enum Test {A, B (#[scrypto(skip)] u32), C {#[scrypto(skip)] x: u8}}",
+            "enum Test {A, B (#[legacy_skip] u32), C {#[legacy_skip] x: u8}}",
         )
         .unwrap();
         let output = handle_describe(input).unwrap();

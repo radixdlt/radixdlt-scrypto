@@ -24,7 +24,7 @@ pub trait CustomTypeExtension {
 
     fn linearize_type_kind(
         type_kind: Self::CustomTypeKind<GlobalTypeId>,
-        schemas: &IndexSet<TypeHash>,
+        type_indices: &BTreeMap<TypeHash, usize>,
     ) -> Self::CustomTypeKind<LocalTypeIndex>;
 
     fn resolve_custom_well_known_type(

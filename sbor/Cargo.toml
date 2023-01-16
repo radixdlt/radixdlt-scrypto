@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 sbor-derive = { path = "../sbor-derive" }
-hashbrown = { version = "0.13.2", optional = true } # Align with the version indexmap pulls in to reduce the dependency tree
+hashbrown = { version = "0.13.2", optional = true }
 serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
-const-sha1 = { version = "0.2.0", default-features = false, optional = true } # Chosen because of its small size and 0 transitive dependencies
+const-sha1 = { git = "https://github.com/radixdlt/const-sha1", default-features = false } # Chosen because of its small size and 0 transitive dependencies
 
 # INDEXMAP:
 # The v1 version doesn't play well with no-std (or CLion) due to the autocfg build.rs - https://github.com/bluss/indexmap/blob/indexmap-1.x/build.rs
@@ -19,7 +19,6 @@ indexmap = { git = "https://github.com/bluss/indexmap", rev = "eedabaca9f84e520e
 default = ["std"]
 std = ["serde?/std", "indexmap?/std"]
 alloc = ["hashbrown", "serde?/alloc"]
-schema = ["indexmap", "const-sha1"]
 
 # Enable serde derives for SBOR value and type models
 serde = ["dep:serde"]

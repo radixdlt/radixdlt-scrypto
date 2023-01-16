@@ -285,10 +285,8 @@ impl<X: CustomValueKind, D: Decoder<X>, Y: Decode<X, D>> Decode<X, D> for Value<
     }
 }
 
-#[cfg(feature = "schema")]
 pub use schema::*;
 
-#[cfg(feature = "schema")]
 mod schema {
     use super::*;
     use crate::*;

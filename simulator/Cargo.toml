@@ -11,7 +11,7 @@ sbor = { path = "../sbor" }
 radix-engine = { path = "../radix-engine" }
 radix-engine-stores = { path = "../radix-engine-stores", features = ["rocksdb"] }
 radix-engine-constants = { path = "../radix-engine-constants" }
-radix-engine-interface = { path = "../radix-engine-interface", features = ["serde", "schema"] }
+radix-engine-interface = { path = "../radix-engine-interface", features = ["serde"] }
 transaction = { path = "../transaction" }
 utils = { path = "../utils" }
 serde = { version = "1.0.137", features = ["derive"] }

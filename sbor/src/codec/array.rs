@@ -87,10 +87,8 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X>, const N
     }
 }
 
-#[cfg(feature = "schema")]
 pub use schema::*;
 
-#[cfg(feature = "schema")]
 mod schema {
     use super::*;
 
@@ -119,7 +117,6 @@ mod schema {
         }
     }
 
-    #[cfg(feature = "schema")]
     impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, const N: usize> Describe<C> for [T; N] {
         const TYPE_ID: GlobalTypeId = GlobalTypeId::novel_validated(
             "Array",

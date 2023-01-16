@@ -160,10 +160,8 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for RefCel
     }
 }
 
-#[cfg(feature = "schema")]
 pub use schema::*;
 
-#[cfg(feature = "schema")]
 mod schema {
     use super::*;
 
