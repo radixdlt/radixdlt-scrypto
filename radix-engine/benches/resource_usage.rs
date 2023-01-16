@@ -13,14 +13,6 @@ use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use std::alloc::System;
-
-#[cfg(feature = "resource-usage")]
-use radix_engine::engine::InfoAlloc;
-
-
-#[global_allocator]
-static INFO_ALLOC: InfoAlloc<System> = InfoAlloc::new(System);
 
 
 #[derive(Eq, PartialEq, Hash, Clone)]
@@ -56,13 +48,9 @@ impl MemInfoFramework {
             allocations: Vec::new()
         }
     }
-    pub fn start_measure(&mut self) {
-        INFO_ALLOC.reset_counter();
-    }
-    pub fn stop_measure(&mut self) {
-        let x = INFO_ALLOC.get_counters_value().0;
-        self.counter.0 += x;
-        self.allocations.push(Bytes(x));
+    pub fn add_measurement(&mut self, value: usize) {
+        self.counter.0 += value;
+        self.allocations.push(Bytes(value));
     }
 
     pub fn print_report(&self) {
@@ -170,8 +158,6 @@ fn mem_test(c: &mut Criterion) {
     let mut nonce = 3;
     c.bench_function("Transfer", |b| {
         b.iter(|| {
-            fwk.start_measure();
-
             let receipt = execute_and_commit_transaction(
                 &mut substate_store,
                 &mut scrypto_interpreter,
@@ -181,7 +167,7 @@ fn mem_test(c: &mut Criterion) {
                     .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
             );
 
-            fwk.stop_measure();
+            fwk.add_measurement(receipt.execution.resources_heap_memory);
 
             receipt.expect_commit_success();
             nonce += 1;

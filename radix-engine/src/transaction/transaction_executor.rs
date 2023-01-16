@@ -13,6 +13,14 @@ use radix_engine_interface::api::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 
+
+#[cfg(feature = "resource-usage")]
+use std::alloc::System;
+#[cfg(feature = "resource-usage")]
+#[global_allocator]
+static INFO_ALLOC: InfoAlloc<System> = InfoAlloc::new(System);
+
+
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
     pub system_loan: u32,
@@ -120,6 +128,9 @@ where
         let instructions = transaction.instructions();
         let blobs = transaction.blobs();
 
+        #[cfg(feature = "resource-usage")]
+        INFO_ALLOC.reset_counter();
+
         #[cfg(not(feature = "alloc"))]
         if execution_config.trace {
             println!("{:-^80}", "Transaction Metadata");
@@ -142,6 +153,7 @@ where
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         events: vec![],
+                        resources_heap_memory: 0
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
@@ -182,10 +194,16 @@ where
             track.finalize(invoke_result, events)
         };
 
+        #[cfg(not(feature = "resource-usage"))]
+        let resources_heap_memory = 0;
+        #[cfg(feature = "resource-usage")]
+        let resources_heap_memory = INFO_ALLOC.get_counter_value();
+
         let receipt = TransactionReceipt {
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 events: track_receipt.events,
+                resources_heap_memory
             },
             result: track_receipt.result,
         };

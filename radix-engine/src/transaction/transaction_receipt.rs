@@ -16,6 +16,7 @@ use crate::types::*;
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
+    pub resources_heap_memory: usize
 }
 
 /// Captures whether a transaction should be committed, and its other results
