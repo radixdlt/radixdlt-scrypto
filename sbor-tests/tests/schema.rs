@@ -2,7 +2,7 @@
 
 use sbor::rust::borrow::Cow;
 use sbor::rust::boxed::Box;
-use sbor::rust::collections::{BTreeSet, HashMap, IndexMap};
+use sbor::rust::collections::*;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;

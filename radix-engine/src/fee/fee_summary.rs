@@ -1,8 +1,8 @@
 use super::RoyaltyReceiver;
 use crate::model::Resource;
 use crate::types::*;
-use indexmap::IndexMap;
 use radix_engine_interface::api::types::VaultId;
+use sbor::rust::collections::*;
 
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct FeeSummary {

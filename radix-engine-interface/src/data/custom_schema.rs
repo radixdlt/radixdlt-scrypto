@@ -1,5 +1,5 @@
 use super::*;
-use sbor::rust::collections::IndexSet;
+use sbor::rust::collections::*;
 use sbor::*;
 
 pub type ScryptoTypeKind<L> = TypeKind<ScryptoCustomValueKind, ScryptoCustomTypeKind<L>, L>;

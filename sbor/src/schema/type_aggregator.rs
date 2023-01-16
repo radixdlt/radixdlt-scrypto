@@ -13,7 +13,7 @@ pub fn generate_full_schema_from_single_type<
 pub fn generate_full_schema<C: CustomTypeKind<GlobalTypeId>>(
     aggregator: TypeAggregator<C>,
 ) -> Schema<C::CustomTypeExtension> {
-    let schema_lookup = IndexSet::from_iter(aggregator.types.keys().map(|k| k.clone()));
+    let schema_lookup: IndexSet<_> = aggregator.types.keys().map(|k| k.clone()).collect();
 
     let mapped = aggregator
         .types
@@ -113,7 +113,7 @@ pub struct TypeAggregator<C: CustomTypeKind<GlobalTypeId>> {
 impl<C: CustomTypeKind<GlobalTypeId>> TypeAggregator<C> {
     pub fn new() -> Self {
         Self {
-            types: IndexMap::new(),
+            types: index_map_new(),
             already_read_dependencies: HashSet::new(),
         }
     }
