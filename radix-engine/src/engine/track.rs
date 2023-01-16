@@ -4,7 +4,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::model::*;
-use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::*;
 use transaction::model::Executable;
 
 use crate::engine::*;

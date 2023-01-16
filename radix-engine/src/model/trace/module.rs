@@ -7,7 +7,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::*;
 use sbor::rust::fmt::Debug;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
