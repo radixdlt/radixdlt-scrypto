@@ -2,7 +2,7 @@ use radix_engine_interface::model::{CallTableInvocation, LoggerInvocation, Nativ
 use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
-use crate::api::api::*;
+use crate::api::*;
 use crate::wasm::*;
 use crate::*;
 use sbor::rust::string::String;

@@ -7,9 +7,9 @@ use crate::model::{
 use crate::types::*;
 use crate::wasm::*;
 use core::fmt::Debug;
-use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::SubstateOffset;
 use radix_engine_interface::api::types::{NativeFn, PackageFn, PackageId, RENodeId};
+use radix_engine_interface::api::InvokableModel;
 use radix_engine_interface::model::*;
 
 pub struct Package;

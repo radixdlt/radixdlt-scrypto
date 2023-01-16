@@ -9,7 +9,7 @@ use crate::wasm::*;
 use radix_engine_constants::{
     DEFAULT_COST_UNIT_PRICE, DEFAULT_MAX_CALL_DEPTH, DEFAULT_SYSTEM_LOAN,
 };
-use radix_engine_interface::api::api::Invokable;
+use radix_engine_interface::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
 

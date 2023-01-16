@@ -1,7 +1,7 @@
 use crate::engine::{ApplicationError, LockFlags, RuntimeError, SystemApi};
 use crate::model::{NativeOutput, TransactionProcessorError};
 use crate::types::*;
-use radix_engine_interface::api::api::InvokableModel;
+use radix_engine_interface::api::InvokableModel;
 
 pub fn resolve_method<Y: SystemApi>(
     receiver: ScryptoReceiver,

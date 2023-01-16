@@ -1,7 +1,7 @@
 use crate::engine::{CallFrameUpdate, LockFlags, ModuleError, RuntimeError, SystemApi};
 use crate::types::*;
-use radix_engine_interface::api::api::ActorApi;
 use radix_engine_interface::api::types::{BucketOffset, ProofOffset, RENodeId, SubstateOffset};
+use radix_engine_interface::api::ActorApi;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NodeMoveError {

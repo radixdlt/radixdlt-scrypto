@@ -1,5 +1,5 @@
-use crate::api::api::Invocation;
 use crate::api::types::ComponentId;
+use crate::api::Invocation;
 use crate::model::{CallTableInvocation, ComponentAddress, PackageAddress};
 use crate::wasm::SerializableInvocation;
 use crate::*;

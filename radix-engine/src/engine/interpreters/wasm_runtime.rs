@@ -3,9 +3,7 @@ use crate::fee::*;
 use crate::model::{invoke_call_table, InvokeError};
 use crate::types::{scrypto_decode, scrypto_encode};
 use crate::wasm::*;
-use radix_engine_interface::api::api::{
-    ActorApi, ComponentApi, EngineApi, Invokable, InvokableModel,
-};
+use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable, InvokableModel};
 use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
 use radix_engine_interface::model::ScryptoInvocation;
 use radix_engine_interface::wasm::*;

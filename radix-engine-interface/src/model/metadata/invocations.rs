@@ -1,6 +1,6 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::{api::*, types::*};
+use crate::api::{types::*, *};
 use crate::wasm::*;
 use crate::*;
 

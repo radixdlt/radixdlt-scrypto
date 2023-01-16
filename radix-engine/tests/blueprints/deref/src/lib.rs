@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::EngineApi;
+use radix_engine_interface::api::EngineApi;
 use radix_engine_interface::api::types::*;
 use radix_engine_interface::wasm::*;
 use scrypto::engine::scrypto_env::*;

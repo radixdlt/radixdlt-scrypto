@@ -1,4 +1,4 @@
-use radix_engine_interface::api::api::Invocation;
+use radix_engine_interface::api::Invocation;
 
 pub mod input;
 use crate::data::ScryptoDecode;

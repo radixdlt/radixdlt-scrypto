@@ -11,11 +11,11 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::SysBucket;
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, NonFungibleStoreId, NonFungibleStoreOffset, RENodeId,
     ResourceManagerFn, ResourceManagerOffset, SubstateOffset,
 };
+use radix_engine_interface::api::{EngineApi, InvokableModel};
 use radix_engine_interface::data::types::Own;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::AccessRule::{AllowAll, DenyAll};

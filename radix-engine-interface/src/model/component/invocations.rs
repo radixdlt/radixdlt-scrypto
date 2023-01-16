@@ -1,7 +1,7 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::api::*;
 use crate::api::types::{ComponentId, RENodeId};
+use crate::api::*;
 use crate::model::*;
 use crate::wasm::*;
 use crate::*;

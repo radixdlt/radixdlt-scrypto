@@ -1,7 +1,7 @@
-use radix_engine_interface::api::api::Invokable;
 use radix_engine_interface::api::types::{
     GlobalAddress, MetadataFn, NativeFn, RENodeId, ResourceManagerFn,
 };
+use radix_engine_interface::api::Invokable;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::VaultMethodAuthKey::{Deposit, Recall, Withdraw};
 use radix_engine_interface::model::*;

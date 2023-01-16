@@ -5,10 +5,10 @@ use crate::engine::{
 use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ResourceManager, SysBucket};
-use radix_engine_interface::api::api::InvokableModel;
 use radix_engine_interface::api::types::{
     GlobalAddress, NativeFn, RENodeId, SubstateOffset, WorktopFn, WorktopOffset,
 };
+use radix_engine_interface::api::InvokableModel;
 use radix_engine_interface::model::*;
 
 #[derive(Debug)]
