@@ -2,7 +2,6 @@
 pub mod types;
 
 use crate::api::types::*;
-use crate::data::ScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::format;
 use sbor::rust::vec::Vec;
@@ -44,8 +43,8 @@ pub trait ComponentApi<E> {
         &mut self,
         receiver: ScryptoReceiver,
         method_name: &str,
-        args: &ScryptoValue,
-    ) -> Result<ScryptoValue, E>;
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, E>;
 }
 
 pub trait InvokableModel<E>:

@@ -43,7 +43,6 @@ where
         + InvokableModel<RuntimeError>
         + ActorApi<RuntimeError>,
 {
-
     fn main(&mut self, input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(input.as_slice())
             .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;

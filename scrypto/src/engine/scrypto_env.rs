@@ -17,25 +17,21 @@ pub struct ScryptoEnv;
 
 impl<N: SerializableInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
     fn invoke(&mut self, input: N) -> Result<N::Output, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::Invoke(input.into()));
-        Ok(rtn)
+        Ok(call_engine_wasm_api::<Invoke>(input.into()))
     }
 }
 
 impl EngineApi<EngineApiError> for ScryptoEnv {
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::CreateNode(node));
-        Ok(rtn)
+        Ok(call_engine_wasm_api::<CreateNode>(node))
     }
 
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::DropNode(node_id));
-        Ok(rtn)
+        Ok(call_engine_wasm_api::<DropNode>(node_id))
     }
 
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::GetVisibleNodeIds());
-        Ok(rtn)
+        Ok(call_engine_wasm_api::<GetVisibleNodeIds>(()))
     }
 
     fn sys_lock_substate(
@@ -44,13 +40,13 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         offset: SubstateOffset,
         mutable: bool,
     ) -> Result<LockHandle, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::LockSubstate(node_id, offset, mutable));
-        Ok(rtn)
+        Ok(call_engine_wasm_api::<LockSubstate>((
+            node_id, offset, mutable,
+        )))
     }
 
     fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, EngineApiError> {
-        let rtn = call_engine_to_raw(RadixEngineInput::Read(lock_handle));
-        Ok(rtn)
+        Ok(call_engine_wasm_api::<Read>(lock_handle))
     }
 
     fn sys_write(
@@ -58,13 +54,11 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::Write(lock_handle, buffer));
-        Ok(rtn)
+        Ok(call_engine_wasm_api::<Write>((lock_handle, buffer)))
     }
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::DropLock(lock_handle));
-        Ok(rtn)
+        Ok(call_engine_wasm_api::<DropLock>(lock_handle))
     }
 }
 
@@ -73,21 +67,19 @@ impl ComponentApi<EngineApiError> for ScryptoEnv {
         &mut self,
         receiver: ScryptoReceiver,
         method_name: &str,
-        args: &ScryptoValue,
-    ) -> Result<ScryptoValue, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::InvokeMethod(
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, EngineApiError> {
+        Ok(call_engine_wasm_api::<InvokeMethod>((
             receiver,
             method_name.to_string(),
-            args.clone(),
-        ));
-        Ok(rtn)
+            args,
+        )))
     }
 }
 
 impl ActorApi<EngineApiError> for ScryptoEnv {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, EngineApiError> {
-        let rtn = call_engine(RadixEngineInput::GetActor());
-        Ok(rtn)
+        Ok(call_engine_wasm_api::<GetActor>(()))
     }
 }
 
