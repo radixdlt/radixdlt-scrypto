@@ -13,8 +13,10 @@ use radix_engine_interface::rule;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
-use radix_engine::engine::InfoAlloc;
 use std::alloc::System;
+
+#[cfg(feature = "resource-usage")]
+use radix_engine::engine::InfoAlloc;
 
 
 #[global_allocator]

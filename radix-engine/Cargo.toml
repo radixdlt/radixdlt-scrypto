@@ -57,12 +57,14 @@ harness = false
 [[bench]]
 name = "resource_usage"
 harness = false
+required-features = ["resource-usage"]
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
 std = ["sbor/std", "native-sdk/std", "wasmi/std", "transaction/std", "radix-engine-interface/std", "utils/std", "moka", "scrypto/std", "scrypto-unit/std"]
 alloc = ["sbor/alloc", "native-sdk/alloc", "transaction/alloc", "radix-engine-interface/alloc", "utils/alloc", "lru/hashbrown", "scrypto/alloc", "scrypto-unit/alloc"]
+resource-usage = []
 
 # Use `wasmer` as WASM engine, otherwise `wasmi`
 wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]
