@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::engine::ScryptoInterpreter;
 use radix_engine::ledger::*;
 use radix_engine::transaction::execute_and_commit_transaction;
-use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig};
+use radix_engine::transaction::{ExecutionConfig, FeeReserveConfig, ResourcesUsage};
 use radix_engine::types::*;
 use radix_engine::wasm::WasmInstrumenter;
 use radix_engine::wasm::{DefaultWasmEngine, WasmMeteringConfig};
@@ -48,9 +48,9 @@ impl MemInfoFramework {
             allocations: Vec::new()
         }
     }
-    pub fn add_measurement(&mut self, value: usize) {
-        self.counter.0 += value;
-        self.allocations.push(Bytes(value));
+    pub fn add_measurement(&mut self, value: &ResourcesUsage) {
+        self.counter.0 += value.heap_memory;
+        self.allocations.push(Bytes(value.heap_memory));
     }
 
     pub fn print_report(&self) {
@@ -167,7 +167,7 @@ fn mem_test(c: &mut Criterion) {
                     .get_executable(vec![NonFungibleAddress::from_public_key(&public_key)]),
             );
 
-            fwk.add_measurement(receipt.execution.resources_heap_memory);
+            fwk.add_measurement(&receipt.execution.resources_usage);
 
             receipt.expect_commit_success();
             nonce += 1;

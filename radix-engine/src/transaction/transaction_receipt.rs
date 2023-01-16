@@ -12,11 +12,18 @@ use crate::model::*;
 use crate::state_manager::StateDiff;
 use crate::types::*;
 
+
+#[derive(Debug, Clone, ScryptoEncode, ScryptoDecode)]
+pub struct ResourcesUsage {
+    pub heap_memory: usize
+}
+
+
 #[derive(Debug, Clone, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct TransactionExecution {
     pub fee_summary: FeeSummary,
     pub events: Vec<TrackedEvent>,
-    pub resources_heap_memory: usize
+    pub resources_usage: ResourcesUsage
 }
 
 /// Captures whether a transaction should be committed, and its other results
