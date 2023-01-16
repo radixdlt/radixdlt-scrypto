@@ -10,10 +10,10 @@ pub enum TransactionRuntimeError {
     OutOfUUid,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGetHashInvocation {
+impl ExecutableInvocation for TransactionRuntimeGetHashInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -33,7 +33,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGetHashInvocat
 impl Executor for TransactionRuntimeGetHashInvocation {
     type Output = Hash;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
@@ -50,10 +53,10 @@ impl Executor for TransactionRuntimeGetHashInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGenerateUuidInvocation {
+impl ExecutableInvocation for TransactionRuntimeGenerateUuidInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -74,7 +77,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for TransactionRuntimeGenerateUuidIn
 impl Executor for TransactionRuntimeGenerateUuidInvocation {
     type Output = u128;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {

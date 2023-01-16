@@ -138,15 +138,6 @@ impl Into<ResourceAddress> for RENodeId {
     }
 }
 
-impl Into<SystemAddress> for RENodeId {
-    fn into(self) -> SystemAddress {
-        match self {
-            RENodeId::Global(GlobalAddress::System(system_address)) => system_address,
-            node_id => panic!("Not a system address {:?}", node_id),
-        }
-    }
-}
-
 #[derive(
     Debug,
     Clone,
@@ -164,7 +155,6 @@ pub enum GlobalAddress {
     Component(ComponentAddress),
     Package(PackageAddress),
     Resource(ResourceAddress),
-    System(SystemAddress),
 }
 
 impl Into<ComponentAddress> for GlobalAddress {

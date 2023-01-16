@@ -1,11 +1,15 @@
 use crate::api::types::*;
+use crate::data::ScryptoValue;
 use crate::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum RadixEngineInput {
-    Invoke(SerializedInvocation),
+    // High Level method call
+    InvokeMethod(ScryptoReceiver, String, ScryptoValue),
+    // Low Level call
+    Invoke(CallTableInvocation),
 
     CreateNode(ScryptoRENode),
     GetVisibleNodeIds(),

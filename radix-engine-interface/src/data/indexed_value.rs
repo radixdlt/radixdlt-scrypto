@@ -35,7 +35,6 @@ pub struct IndexedScryptoValue {
     component_addresses: HashSet<ComponentAddress>,
     resource_addresses: HashSet<ResourceAddress>,
     package_addresses: HashSet<PackageAddress>,
-    system_addresses: HashSet<SystemAddress>,
     owned_nodes: Vec<(Own, SborPath)>,
 
     // TX interpreted
@@ -45,6 +44,12 @@ pub struct IndexedScryptoValue {
     blobs: Vec<(ManifestBlobRef, SborPath)>,
     arrays: Vec<(ScryptoValueKind, SborPath)>,
     maps: Vec<(ScryptoValueKind, ScryptoValueKind, SborPath)>,
+}
+
+impl Into<ScryptoValue> for IndexedScryptoValue {
+    fn into(self) -> ScryptoValue {
+        self.value
+    }
 }
 
 impl IndexedScryptoValue {
@@ -78,7 +83,6 @@ impl IndexedScryptoValue {
             component_addresses: visitor.component_addresses,
             resource_addresses: visitor.resource_addresses,
             package_addresses: visitor.package_addresses,
-            system_addresses: visitor.system_addresses,
 
             owned_nodes: visitor.owned_nodes,
             blobs: visitor.blobs,
@@ -152,9 +156,6 @@ impl IndexedScryptoValue {
         }
         for package_address in &self.package_addresses {
             node_ids.insert(GlobalAddress::Package(*package_address));
-        }
-        for system_address in &self.system_addresses {
-            node_ids.insert(GlobalAddress::System(*system_address));
         }
 
         node_ids
@@ -355,7 +356,6 @@ pub struct ScryptoValueVisitor {
     pub component_addresses: HashSet<ComponentAddress>,
     pub resource_addresses: HashSet<ResourceAddress>,
     pub package_addresses: HashSet<PackageAddress>,
-    pub system_addresses: HashSet<SystemAddress>,
     pub owned_nodes: Vec<(Own, SborPath)>,
     // TX interpreted
     pub buckets: Vec<(ManifestBucket, SborPath)>,
@@ -379,7 +379,6 @@ impl ScryptoValueVisitor {
             component_addresses: HashSet::new(),
             resource_addresses: HashSet::new(),
             package_addresses: HashSet::new(),
-            system_addresses: HashSet::new(),
 
             owned_nodes: Vec::new(),
             blobs: Vec::new(),
@@ -437,9 +436,6 @@ impl ValueVisitor<ScryptoCustomValueKind, ScryptoCustomValue> for ScryptoValueVi
             }
             ScryptoCustomValue::ResourceAddress(value) => {
                 self.resource_addresses.insert(value.clone());
-            }
-            ScryptoCustomValue::SystemAddress(value) => {
-                self.system_addresses.insert(value.clone());
             }
             ScryptoCustomValue::Own(value) => {
                 self.owned_nodes.push((value.clone(), path.clone().into()));

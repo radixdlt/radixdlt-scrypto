@@ -1,11 +1,10 @@
 use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::{
-    ActorApi, EngineApi, Invocation, Invokable, InvokableModel,
+    ActorApi, ComponentApi, EngineApi, Invocation, Invokable, InvokableModel,
 };
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
-    RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset, VaultId,
-    WorktopOffset,
+    RENodeId, SubstateId, SubstateOffset, VaultId, WorktopOffset,
 };
 use radix_engine_interface::data::*;
 use radix_engine_interface::rule;
@@ -115,11 +114,11 @@ where
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::System(CLOCK)),
+            RENodeId::Global(GlobalAddress::Component(CLOCK)),
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
@@ -163,15 +162,14 @@ where
 
                 // TODO: Replace with trusted IndexedScryptoValue
                 let access_rule = rule!(require(non_fungible_address));
-                let result = self.invoke(ParsedScryptoInvocation::Function(
-                    ScryptoFunctionIdent {
-                        package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
-                        blueprint_name: "Account".to_string(),
-                        function_name: "create".to_string(),
-                    },
-                    IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
-                ))?;
-                let component_id = result
+                let result = self.invoke(ScryptoInvocation {
+                    package_address: ACCOUNT_PACKAGE,
+                    blueprint_name: "Account".to_string(),
+                    fn_name: "create".to_string(),
+                    receiver: None,
+                    args: args!(access_rule),
+                })?;
+                let component_id = IndexedScryptoValue::from_typed(&result)
                     .owned_node_ids()
                     .expect("No duplicates expected")
                     .into_iter()
@@ -578,16 +576,12 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ResolverApi<W> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> VmApi<W> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
-        self.node_method_deref(node_id)
-    }
-
     fn vm(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
     }
@@ -601,24 +595,58 @@ where
     }
 }
 
+impl<'g, 's, W, R, M> ResolverApi for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
+        self.node_method_deref(node_id)
+    }
+}
+
 pub trait Executor {
     type Output: Debug;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
-            + ActorApi<RuntimeError>;
+            + ActorApi<RuntimeError>
+            + ComponentApi<RuntimeError>
+            + VmApi<W>,
+        W: WasmEngine;
 }
 
-pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
+pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: ResolverApi<W> + SystemApi>(
+    fn resolve<Y: ResolverApi + SystemApi>(
         self,
         api: &mut Y,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+}
+
+impl<'g, 's, W, R, M> ComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+    fn invoke_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        method_name: &str,
+        args: &ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        // TODO: Use execution mode?
+        let invocation =
+            resolve_method(receiver, method_name, &scrypto_encode(args).unwrap(), self)?;
+        let rtn = invoke_call_table(invocation, self)?;
+        Ok(rtn.into())
+    }
 }
 
 impl<'g, 's, W, R, N, M> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R, M>
@@ -626,7 +654,7 @@ where
     W: WasmEngine,
     R: FeeReserve,
     M: BaseModule<R>,
-    N: ExecutableInvocation<W>,
+    N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         self.module
@@ -846,15 +874,15 @@ where
             RENodeType::GlobalEpochManager => self
                 .id_allocator
                 .new_epoch_manager_address()
-                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
             RENodeType::GlobalValidator => self
                 .id_allocator
                 .new_validator_address()
-                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
             RENodeType::GlobalClock => self
                 .id_allocator
                 .new_clock_address()
-                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
+                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
             RENodeType::GlobalResourceManager => self
                 .id_allocator
                 .new_resource_address()
@@ -912,15 +940,15 @@ where
                 RENode::Global(GlobalAddressSubstate::Resource(..)),
             ) => {}
             (
-                RENodeId::Global(GlobalAddress::System(..)),
+                RENodeId::Global(GlobalAddress::Component(..)),
                 RENode::Global(GlobalAddressSubstate::EpochManager(..)),
             ) => {}
             (
-                RENodeId::Global(GlobalAddress::System(..)),
+                RENodeId::Global(GlobalAddress::Component(..)),
                 RENode::Global(GlobalAddressSubstate::Clock(..)),
             ) => {}
             (
-                RENodeId::Global(GlobalAddress::System(..)),
+                RENodeId::Global(GlobalAddress::Component(..)),
                 RENode::Global(GlobalAddressSubstate::Validator(..)),
             ) => {}
             (

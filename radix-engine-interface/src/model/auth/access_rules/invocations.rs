@@ -18,8 +18,8 @@ impl SerializableInvocation for AccessRulesAddAccessCheckInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for AccessRulesAddAccessCheckInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AccessRulesAddAccessCheckInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::AddAccessCheck(self)).into()
     }
 }
@@ -40,8 +40,8 @@ impl SerializableInvocation for AccessRulesSetMethodAccessRuleInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for AccessRulesSetMethodAccessRuleInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AccessRulesSetMethodAccessRuleInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::SetMethodAccessRule(self))
             .into()
     }
@@ -63,8 +63,8 @@ impl SerializableInvocation for AccessRulesSetGroupAccessRuleInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for AccessRulesSetGroupAccessRuleInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AccessRulesSetGroupAccessRuleInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::SetGroupAccessRule(self))
             .into()
     }
@@ -86,8 +86,8 @@ impl SerializableInvocation for AccessRulesSetMethodMutabilityInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for AccessRulesSetMethodMutabilityInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AccessRulesSetMethodMutabilityInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::SetMethodMutability(self))
             .into()
     }
@@ -109,8 +109,8 @@ impl SerializableInvocation for AccessRulesSetGroupMutabilityInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for AccessRulesSetGroupMutabilityInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AccessRulesSetGroupMutabilityInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::SetGroupMutability(self))
             .into()
     }
@@ -129,8 +129,8 @@ impl SerializableInvocation for AccessRulesGetLengthInvocation {
     type ScryptoOutput = u32;
 }
 
-impl Into<SerializedInvocation> for AccessRulesGetLengthInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for AccessRulesGetLengthInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::AccessRulesChain(AccessRulesChainInvocation::GetLength(self)).into()
     }
 }

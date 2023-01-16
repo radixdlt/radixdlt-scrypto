@@ -49,29 +49,6 @@ impl Bech32Encoder {
         }
     }
 
-    /// Encodes a system address in Bech32 and returns a String or panics on failure.
-    pub fn encode_system_address_to_string(&self, system_address: &SystemAddress) -> String {
-        let mut buf = String::new();
-        self.encode_system_address_to_fmt(&mut buf, system_address)
-            .expect("Failed to encode system address as Bech32");
-        buf
-    }
-
-    /// Encodes a system address in Bech32 to the given fmt, or returns an `AddressError` on failure.
-    pub fn encode_system_address_to_fmt<F: fmt::Write>(
-        &self,
-        fmt: &mut F,
-        system_address: &SystemAddress,
-    ) -> Result<(), AddressError> {
-        let data = match system_address {
-            SystemAddress::EpochManager(data) => data,
-            SystemAddress::Validator(data) => data,
-            SystemAddress::Clock(data) => data,
-        };
-
-        self.encode_to_fmt(fmt, EntityType::system(system_address), data)
-    }
-
     /// Encodes a component address in Bech32 and returns a String or panics on failure.
     pub fn encode_component_address_to_string(
         &self,
@@ -92,6 +69,9 @@ impl Bech32Encoder {
         match component_address {
             ComponentAddress::Normal(data)
             | ComponentAddress::Account(data)
+            | ComponentAddress::Clock(data)
+            | ComponentAddress::EpochManager(data)
+            | ComponentAddress::Validator(data)
             | ComponentAddress::EcdsaSecp256k1VirtualAccount(data)
             | ComponentAddress::EddsaEd25519VirtualAccount(data) => {
                 self.encode_to_fmt(fmt, EntityType::component(component_address), data)

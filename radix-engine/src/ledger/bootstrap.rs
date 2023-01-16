@@ -30,10 +30,10 @@ pub struct GenesisReceipt {
     pub system_token: ResourceAddress,
     pub xrd_token: ResourceAddress,
     pub faucet_component: ComponentAddress,
-    pub clock: SystemAddress,
+    pub clock: ComponentAddress,
     pub eddsa_ed25519_token: ResourceAddress,
     pub package_token: ResourceAddress,
-    pub epoch_manager: SystemAddress,
+    pub epoch_manager: ComponentAddress,
 }
 
 pub fn create_genesis(
@@ -230,8 +230,8 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     let faucet_package: PackageAddress = receipt.output(5);
     let account_package: PackageAddress = receipt.output(6);
     let faucet_component: ComponentAddress = receipt.output(8);
-    let clock: SystemAddress = receipt.output(9);
-    let epoch_manager: SystemAddress = receipt.output(10);
+    let clock: ComponentAddress = receipt.output(9);
+    let epoch_manager: ComponentAddress = receipt.output(10);
 
     GenesisReceipt {
         faucet_package,

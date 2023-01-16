@@ -13,7 +13,6 @@ pub enum ScryptoCustomValue {
     PackageAddress(PackageAddress),
     ComponentAddress(ComponentAddress),
     ResourceAddress(ResourceAddress),
-    SystemAddress(SystemAddress),
     Own(Own),
 
     // TX interpreted types
@@ -43,9 +42,6 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
                 .write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::ComponentAddress)),
             ScryptoCustomValue::ResourceAddress(_) => {
                 encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::ResourceAddress))
-            }
-            ScryptoCustomValue::SystemAddress(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::SystemAddress))
             }
             ScryptoCustomValue::Own(_) => {
                 encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::Own))
@@ -95,7 +91,6 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
             ScryptoCustomValue::PackageAddress(v) => v.encode_body(encoder),
             ScryptoCustomValue::ComponentAddress(v) => v.encode_body(encoder),
             ScryptoCustomValue::ResourceAddress(v) => v.encode_body(encoder),
-            ScryptoCustomValue::SystemAddress(v) => v.encode_body(encoder),
             ScryptoCustomValue::Own(v) => v.encode_body(encoder),
             ScryptoCustomValue::Bucket(v) => v.encode_body(encoder),
             ScryptoCustomValue::Proof(v) => v.encode_body(encoder),
@@ -131,10 +126,6 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for S
                 ScryptoCustomValueKind::ResourceAddress => {
                     ResourceAddress::decode_body_with_value_kind(decoder, value_kind)
                         .map(Self::ResourceAddress)
-                }
-                ScryptoCustomValueKind::SystemAddress => {
-                    SystemAddress::decode_body_with_value_kind(decoder, value_kind)
-                        .map(Self::SystemAddress)
                 }
                 ScryptoCustomValueKind::Own => {
                     Own::decode_body_with_value_kind(decoder, value_kind).map(Self::Own)
@@ -202,7 +193,7 @@ mod tests {
             PackageAddress::Normal([1u8; 26]),
             ComponentAddress::Normal([2u8; 26]),
             ResourceAddress::Normal([3u8; 26]),
-            SystemAddress::EpochManager([4u8; 26]),
+            ComponentAddress::EpochManager([4u8; 26]),
         );
         let bytes = scrypto_encode(&values).unwrap();
         assert_eq!(
@@ -211,7 +202,7 @@ mod tests {
                 92, 33, 4, 128, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
                 1, 1, 1, 1, 1, 129, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
                 2, 2, 2, 2, 2, 2, 130, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-                3, 3, 3, 3, 3, 3, 3, 131, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+                3, 3, 3, 3, 3, 3, 3, 129, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
                 4, 4, 4, 4, 4, 4, 4, 4
             ]
         );
@@ -235,9 +226,9 @@ mod tests {
                         )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::SystemAddress(SystemAddress::EpochManager(
-                            [4u8; 26]
-                        )),
+                        value: ScryptoCustomValue::ComponentAddress(
+                            ComponentAddress::EpochManager([4u8; 26])
+                        ),
                     },
                 ]
             }

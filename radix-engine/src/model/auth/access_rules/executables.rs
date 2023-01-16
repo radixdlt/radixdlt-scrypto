@@ -19,10 +19,10 @@ pub enum AccessRulesChainError {
     ProtectedMethod(AccessRuleKey),
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocation {
+impl ExecutableInvocation for AccessRulesAddAccessCheckInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -49,7 +49,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesAddAccessCheckInvocat
 impl Executor for AccessRulesAddAccessCheckInvocation {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
@@ -105,10 +108,10 @@ impl Executor for AccessRulesAddAccessCheckInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleInvocation {
+impl ExecutableInvocation for AccessRulesSetMethodAccessRuleInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -137,7 +140,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodAccessRuleIn
 impl Executor for AccessRulesSetMethodAccessRuleInvocation {
     type Output = ();
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -220,10 +223,10 @@ impl Executor for AccessRulesSetMethodAccessRuleInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInvocation {
+impl ExecutableInvocation for AccessRulesSetGroupAccessRuleInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -252,7 +255,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupAccessRuleInv
 impl Executor for AccessRulesSetGroupAccessRuleInvocation {
     type Output = ();
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -309,10 +312,10 @@ impl Executor for AccessRulesSetGroupAccessRuleInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityInvocation {
+impl ExecutableInvocation for AccessRulesSetMethodMutabilityInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -341,7 +344,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetMethodMutabilityIn
 impl Executor for AccessRulesSetMethodMutabilityInvocation {
     type Output = ();
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -424,10 +427,10 @@ impl Executor for AccessRulesSetMethodMutabilityInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInvocation {
+impl ExecutableInvocation for AccessRulesSetGroupMutabilityInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -456,7 +459,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesSetGroupMutabilityInv
 impl Executor for AccessRulesSetGroupMutabilityInvocation {
     type Output = ();
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
@@ -513,10 +516,10 @@ impl Executor for AccessRulesSetGroupMutabilityInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
+impl ExecutableInvocation for AccessRulesGetLengthInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         mut self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -545,7 +548,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for AccessRulesGetLengthInvocation {
 impl Executor for AccessRulesGetLengthInvocation {
     type Output = u32;
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(<Self as Invocation>::Output, CallFrameUpdate), RuntimeError>
