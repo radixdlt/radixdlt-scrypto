@@ -155,7 +155,7 @@ where
         // Invoke the function/method
         let track_receipt = {
             let mut module = KernelModule::new(execution_config);
-            let mut id_allocator = IdAllocator::new(IdSpace::Application, transaction_hash.clone());
+            let mut id_allocator = IdAllocator::new(transaction_hash.clone());
 
             let mut kernel = Kernel::new(
                 auth_zone_params.clone(),

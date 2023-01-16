@@ -903,7 +903,7 @@ where
         Ok(node_id)
     }
 
-    fn create_node(&mut self, node_id: RENodeId, re_node: RENode) -> Result<(), RuntimeError> {
+   fn create_node(&mut self, node_id: RENodeId, re_node: RENode) -> Result<(), RuntimeError> {
         self.module
             .pre_sys_call(
                 &self.current_frame,

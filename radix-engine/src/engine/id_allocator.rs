@@ -8,12 +8,6 @@ use sbor::rust::ops::Range;
 
 use super::IdAllocationError;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IdSpace {
-    System,
-    Application,
-}
-
 /// An ID allocator defines how identities are generated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
@@ -23,12 +17,9 @@ pub struct IdAllocator {
 
 impl IdAllocator {
     /// Creates an ID allocator.
-    pub fn new(kind: IdSpace, transaction_hash: Hash) -> Self {
+    pub fn new(transaction_hash: Hash) -> Self {
         Self {
-            available: match kind {
-                IdSpace::System => 0..1024,
-                IdSpace::Application => 1024..u32::MAX,
-            },
+            available: 1024..u32::MAX,
             transaction_hash,
         }
     }
