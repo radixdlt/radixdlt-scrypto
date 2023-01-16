@@ -1,8 +1,6 @@
 use crate::engine::node_move_module::NodeMoveError;
 use crate::engine::{AuthError, ExecutionMode, LockFlags, ResolvedActor};
-use radix_engine_interface::api::types::{
-    GlobalAddress, LockHandle, RENodeId, ScryptoFunctionIdent, ScryptoMethodIdent, SubstateOffset,
-};
+use radix_engine_interface::api::types::{GlobalAddress, LockHandle, RENodeId, SubstateOffset};
 use radix_engine_interface::data::ReadOwnedNodesError;
 use sbor::*;
 
@@ -140,7 +138,6 @@ impl From<CallFrameError> for RuntimeError {
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum ScryptoFnResolvingError {
     BlueprintNotFound,
-    FunctionNotFound,
     MethodNotFound,
     InvalidInput,
 }
@@ -148,8 +145,7 @@ pub enum ScryptoFnResolvingError {
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum InterpreterError {
     InvalidInvocation,
-    InvalidScryptoFunctionInvocation(ScryptoFunctionIdent, ScryptoFnResolvingError),
-    InvalidScryptoMethodInvocation(ScryptoMethodIdent, ScryptoFnResolvingError),
+    InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

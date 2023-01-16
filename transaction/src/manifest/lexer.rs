@@ -62,7 +62,6 @@ pub enum TokenKind {
 
     /* RE global address types */
     PackageAddress,
-    SystemAddress,
     ComponentAddress,
     ResourceAddress,
 
@@ -130,9 +129,6 @@ pub enum TokenKind {
     CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithOwner,
-    CreateValidator,
-    RegisterValidator,
-    UnregisterValidator,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -415,7 +411,6 @@ impl Lexer {
             "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
 
             "PackageAddress" => Ok(TokenKind::PackageAddress),
-            "SystemAddress" => Ok(TokenKind::SystemAddress),
             "ComponentAddress" => Ok(TokenKind::ComponentAddress),
             "ResourceAddress" => Ok(TokenKind::ResourceAddress),
 
@@ -475,9 +470,6 @@ impl Lexer {
             "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
                 Ok(TokenKind::CreateNonFungibleResourceWithOwner)
             }
-            "CREATE_VALIDATOR" => Ok(TokenKind::CreateValidator),
-            "REGISTER_VALIDATOR" => Ok(TokenKind::RegisterValidator),
-            "UNREGISTER_VALIDATOR" => Ok(TokenKind::UnregisterValidator),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

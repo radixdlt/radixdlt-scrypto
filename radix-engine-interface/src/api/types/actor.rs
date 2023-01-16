@@ -1,6 +1,8 @@
 use crate::api::types::*;
+use crate::data::scrypto_decode;
 use crate::model::*;
 use crate::*;
+use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
@@ -294,6 +296,108 @@ pub enum ValidatorFn {
     Unregister,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum ResolveError {
+    DecodeError(DecodeError),
+    NotAMethod,
+}
+
+pub struct EpochManagerPackage;
+
+impl EpochManagerPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<NativeInvocation, ResolveError> {
+        let invocation = match receiver {
+            ComponentAddress::EpochManager(..) => {
+                let epoch_manager_fn =
+                    EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+                match epoch_manager_fn {
+                    EpochManagerFn::Create => {
+                        return Err(ResolveError::NotAMethod);
+                    }
+                    EpochManagerFn::GetCurrentEpoch => {
+                        let _args: EpochManagerGetCurrentEpochMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(
+                            EpochManagerGetCurrentEpochInvocation { receiver },
+                        ))
+                    }
+                    EpochManagerFn::NextRound => {
+                        let args: EpochManagerNextRoundMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(
+                            EpochManagerNextRoundInvocation {
+                                receiver,
+                                round: args.round,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::SetEpoch => {
+                        let args: EpochManagerSetEpochMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
+                            EpochManagerSetEpochInvocation {
+                                receiver,
+                                epoch: args.epoch,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::CreateValidator => {
+                        let args: EpochManagerCreateValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(
+                            EpochManagerCreateValidatorInvocation {
+                                receiver,
+                                key: args.validator,
+                            },
+                        ))
+                    }
+                    EpochManagerFn::UpdateValidator => {
+                        let args: EpochManagerUpdateValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(
+                            EpochManagerUpdateValidatorInvocation {
+                                receiver,
+                                validator_address: args.validator_address,
+                                register: args.register,
+                                key: args.key,
+                            },
+                        ))
+                    }
+                }
+            }
+            ComponentAddress::Validator(..) => {
+                let validator_fn =
+                    ValidatorFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+                match validator_fn {
+                    ValidatorFn::Register => {
+                        let _args: ValidatorRegisterMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Register(
+                            ValidatorRegisterInvocation { receiver },
+                        ))
+                    }
+                    ValidatorFn::Unregister => {
+                        let _args: ValidatorUnregisterValidatorMethodArgs =
+                            scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::Validator(ValidatorInvocation::Unregister(
+                            ValidatorUnregisterInvocation { receiver },
+                        ))
+                    }
+                }
+            }
+            _ => return Err(ResolveError::NotAMethod),
+        };
+
+        Ok(invocation)
+    }
+}
+
 #[derive(
     Debug,
     Clone,
@@ -515,6 +619,51 @@ pub enum ClockFn {
     SetCurrentTime,
     GetCurrentTime,
     CompareCurrentTime,
+}
+
+pub struct ClockPackage;
+
+impl ClockPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<ClockInvocation, ResolveError> {
+        let clock_fn = ClockFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+        let invocation = match clock_fn {
+            ClockFn::Create => {
+                return Err(ResolveError::NotAMethod);
+            }
+            ClockFn::CompareCurrentTime => {
+                let args: ClockCompareCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::CompareCurrentTime(ClockCompareCurrentTimeInvocation {
+                    receiver,
+                    instant: args.instant,
+                    precision: args.precision,
+                    operator: args.operator,
+                })
+            }
+            ClockFn::GetCurrentTime => {
+                let args: ClockGetCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::GetCurrentTime(ClockGetCurrentTimeInvocation {
+                    receiver,
+                    precision: args.precision,
+                })
+            }
+            ClockFn::SetCurrentTime => {
+                let args: ClockSetCurrentTimeMethodArgs =
+                    scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+                ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
+                    receiver,
+                    current_time_ms: args.current_time_ms,
+                })
+            }
+        };
+
+        Ok(invocation)
+    }
 }
 
 #[derive(

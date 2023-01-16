@@ -1,6 +1,115 @@
-use crate::model::NativeOutput;
+use crate::engine::{ApplicationError, LockFlags, RuntimeError, SystemApi};
+use crate::model::{NativeOutput, TransactionProcessorError};
 use crate::types::*;
 use radix_engine_interface::api::api::InvokableModel;
+
+pub fn resolve_method<Y: SystemApi>(
+    receiver: ScryptoReceiver,
+    method_name: &str,
+    args: &[u8],
+    api: &mut Y,
+) -> Result<CallTableInvocation, RuntimeError> {
+    let invocation = match receiver {
+        ScryptoReceiver::Global(component_address) => match component_address {
+            ComponentAddress::EpochManager(..) | ComponentAddress::Validator(..) => {
+                let invocation = EpochManagerPackage::resolve_method_invocation(
+                    component_address,
+                    method_name,
+                    args,
+                )
+                .map_err(|e| {
+                    RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                        TransactionProcessorError::ResolveError(e),
+                    ))
+                })?;
+                CallTableInvocation::Native(invocation)
+            }
+            ComponentAddress::Clock(..) => {
+                let invocation =
+                    ClockPackage::resolve_method_invocation(component_address, method_name, args)
+                        .map_err(|e| {
+                        RuntimeError::ApplicationError(ApplicationError::TransactionProcessorError(
+                            TransactionProcessorError::ResolveError(e),
+                        ))
+                    })?;
+                CallTableInvocation::Native(NativeInvocation::Clock(invocation))
+            }
+            ComponentAddress::EcdsaSecp256k1VirtualAccount(..)
+            | ComponentAddress::EddsaEd25519VirtualAccount(..)
+            | ComponentAddress::Normal(..)
+            | ComponentAddress::Account(..) => {
+                let component_node_id =
+                    RENodeId::Global(GlobalAddress::Component(component_address));
+                let component_info = {
+                    let handle = api.lock_substate(
+                        component_node_id,
+                        SubstateOffset::Component(ComponentOffset::Info),
+                        LockFlags::read_only(),
+                    )?;
+                    let substate_ref = api.get_ref(handle)?;
+                    let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+                    api.drop_lock(handle)?;
+
+                    component_info
+                };
+
+                let method_invocation = ScryptoInvocation {
+                    package_address: component_info.package_address,
+                    blueprint_name: component_info.blueprint_name,
+                    receiver: Some(ScryptoReceiver::Global(component_address.clone())),
+                    fn_name: method_name.to_string(),
+                    args: args.to_owned(),
+                };
+                CallTableInvocation::Scrypto(method_invocation)
+            }
+        },
+        ScryptoReceiver::Component(component_id) => {
+            let component_node_id = RENodeId::Component(component_id);
+            let component_info = {
+                let handle = api.lock_substate(
+                    component_node_id,
+                    SubstateOffset::Component(ComponentOffset::Info),
+                    LockFlags::read_only(),
+                )?;
+                let substate_ref = api.get_ref(handle)?;
+                let component_info = substate_ref.component_info().clone(); // TODO: Remove clone()
+                api.drop_lock(handle)?;
+
+                component_info
+            };
+
+            CallTableInvocation::Scrypto(ScryptoInvocation {
+                package_address: component_info.package_address,
+                blueprint_name: component_info.blueprint_name,
+                receiver: Some(ScryptoReceiver::Component(component_id)),
+                fn_name: method_name.to_string(),
+                args: args.to_owned(),
+            })
+        }
+    };
+
+    Ok(invocation)
+}
+
+pub fn invoke_call_table<Y, E>(
+    invocation: CallTableInvocation,
+    api: &mut Y,
+) -> Result<IndexedScryptoValue, E>
+where
+    Y: InvokableModel<E>,
+{
+    match invocation {
+        CallTableInvocation::Scrypto(invocation) => {
+            let rtn = api.invoke(invocation)?;
+            let rtn = IndexedScryptoValue::from_typed(&rtn);
+            Ok(rtn)
+        }
+        CallTableInvocation::Native(invocation) => {
+            let rtn = invoke_native_fn(invocation, api)?;
+            Ok(IndexedScryptoValue::from_typed(rtn.as_ref()))
+        }
+    }
+}
 
 pub fn invoke_native_fn<Y, E>(
     native_invocation: NativeInvocation,

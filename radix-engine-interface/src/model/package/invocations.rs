@@ -29,8 +29,8 @@ impl SerializableInvocation for PackagePublishInvocation {
     type ScryptoOutput = PackageAddress;
 }
 
-impl Into<SerializedInvocation> for PackagePublishInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for PackagePublishInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Package(PackageInvocation::Publish(self)).into()
     }
 }
@@ -49,8 +49,8 @@ impl SerializableInvocation for PackageSetRoyaltyConfigInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for PackageSetRoyaltyConfigInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for PackageSetRoyaltyConfigInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Package(PackageInvocation::SetRoyaltyConfig(self)).into()
     }
 }
@@ -74,8 +74,8 @@ impl SerializableInvocation for PackageClaimRoyaltyInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for PackageClaimRoyaltyInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for PackageClaimRoyaltyInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Package(PackageInvocation::ClaimRoyalty(self)).into()
     }
 }

@@ -192,18 +192,6 @@ pub enum Instruction {
         owner_badge: Value,
         initial_supply: Value,
     },
-
-    CreateValidator {
-        key: Value,
-    },
-
-    RegisterValidator {
-        validator: Value,
-    },
-
-    UnregisterValidator {
-        validator: Value,
-    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -243,7 +231,6 @@ pub enum Type {
     PackageAddress,
     ComponentAddress,
     ResourceAddress,
-    SystemAddress,
     Own,
 
     // TX interpreted types
@@ -296,7 +283,6 @@ impl Type {
             Type::ResourceAddress => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::ResourceAddress)
             }
-            Type::SystemAddress => ScryptoValueKind::Custom(ScryptoCustomValueKind::SystemAddress),
             Type::Own => ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
 
             // Tx interpreted types
@@ -369,7 +355,6 @@ pub enum Value {
     PackageAddress(Box<Value>),
     ComponentAddress(Box<Value>),
     ResourceAddress(Box<Value>),
-    SystemAddress(Box<Value>),
     Own(Box<Value>),
 
     // TX interpreted types
@@ -435,9 +420,6 @@ impl Value {
             }
             Value::ResourceAddress(_) => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::ResourceAddress)
-            }
-            Value::SystemAddress(_) => {
-                ScryptoValueKind::Custom(ScryptoCustomValueKind::SystemAddress)
             }
             Value::Own(_) => ScryptoValueKind::Custom(ScryptoCustomValueKind::Own),
 

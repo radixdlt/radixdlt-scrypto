@@ -2,7 +2,7 @@ use crate::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerSubstate {
-    pub address: SystemAddress, // TODO: Does it make sense for this to be stored here?
+    pub address: ComponentAddress, // TODO: Does it make sense for this to be stored here?
     pub epoch: u64,
     pub round: u64,
     pub rounds_per_epoch: u64,
@@ -12,7 +12,7 @@ pub struct EpochManagerSubstate {
     Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
 )]
 pub struct Validator {
-    pub address: SystemAddress,
+    pub address: ComponentAddress,
     pub key: EcdsaSecp256k1PublicKey,
 }
 
@@ -24,7 +24,7 @@ pub struct ValidatorSetSubstate {
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorSubstate {
-    pub manager: SystemAddress,
-    pub address: SystemAddress,
+    pub manager: ComponentAddress,
+    pub address: ComponentAddress,
     pub key: EcdsaSecp256k1PublicKey,
 }

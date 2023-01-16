@@ -28,8 +28,8 @@ impl SerializableInvocation for VaultPutInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for VaultPutInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultPutInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::Put(self)).into()
     }
 }
@@ -48,8 +48,8 @@ impl SerializableInvocation for VaultTakeInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for VaultTakeInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultTakeInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::Take(self)).into()
     }
 }
@@ -68,8 +68,8 @@ impl SerializableInvocation for VaultTakeNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for VaultTakeNonFungiblesInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultTakeNonFungiblesInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::TakeNonFungibles(self)).into()
     }
 }
@@ -87,8 +87,8 @@ impl SerializableInvocation for VaultGetAmountInvocation {
     type ScryptoOutput = Decimal;
 }
 
-impl Into<SerializedInvocation> for VaultGetAmountInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultGetAmountInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::GetAmount(self)).into()
     }
 }
@@ -107,8 +107,8 @@ impl SerializableInvocation for VaultRecallInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for VaultRecallInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultRecallInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::Recall(self)).into()
     }
 }
@@ -127,8 +127,8 @@ impl SerializableInvocation for VaultRecallNonFungiblesInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for VaultRecallNonFungiblesInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultRecallNonFungiblesInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::RecallNonFungibles(self)).into()
     }
 }
@@ -146,8 +146,8 @@ impl SerializableInvocation for VaultGetResourceAddressInvocation {
     type ScryptoOutput = ResourceAddress;
 }
 
-impl Into<SerializedInvocation> for VaultGetResourceAddressInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultGetResourceAddressInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::GetResourceAddress(self)).into()
     }
 }
@@ -165,8 +165,8 @@ impl SerializableInvocation for VaultGetNonFungibleIdsInvocation {
     type ScryptoOutput = BTreeSet<NonFungibleId>;
 }
 
-impl Into<SerializedInvocation> for VaultGetNonFungibleIdsInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultGetNonFungibleIdsInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::GetNonFungibleIds(self)).into()
     }
 }
@@ -184,8 +184,8 @@ impl SerializableInvocation for VaultCreateProofInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for VaultCreateProofInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultCreateProofInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::CreateProof(self)).into()
     }
 }
@@ -204,8 +204,8 @@ impl SerializableInvocation for VaultCreateProofByAmountInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for VaultCreateProofByAmountInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultCreateProofByAmountInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::CreateProofByAmount(self)).into()
     }
 }
@@ -224,8 +224,8 @@ impl SerializableInvocation for VaultCreateProofByIdsInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for VaultCreateProofByIdsInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultCreateProofByIdsInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::CreateProofByIds(self)).into()
     }
 }
@@ -245,8 +245,8 @@ impl SerializableInvocation for VaultLockFeeInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for VaultLockFeeInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for VaultLockFeeInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Vault(VaultInvocation::LockFee(self)).into()
     }
 }

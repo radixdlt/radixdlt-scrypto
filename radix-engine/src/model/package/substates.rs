@@ -26,6 +26,19 @@ impl PackageInfoSubstate {
         self.blueprint_abis.get(blueprint_name)
     }
 
+    // TODO: Reorganize structure
+    pub fn fn_abi(&self, export_name: &str) -> Option<&Fn> {
+        for (_, abi) in &self.blueprint_abis {
+            for function in &abi.fns {
+                if export_name.eq(&function.export_name) {
+                    return Some(function);
+                }
+            }
+        }
+
+        return None;
+    }
+
     pub fn code(&self) -> &[u8] {
         &self.code
     }

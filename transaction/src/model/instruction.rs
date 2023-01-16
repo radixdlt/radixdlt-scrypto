@@ -1,5 +1,4 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::*;
@@ -194,18 +193,6 @@ pub enum BasicInstruction {
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
-    // TODO: Integrate the following with CallMethod
-    CreateValidator {
-        key: EcdsaSecp256k1PublicKey,
-    },
-    RegisterValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ComponentAddress
-    },
-    UnregisterValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ComponentAddress
-    },
-
-    /// Calls a scrypto function.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallFunction {
@@ -215,7 +202,7 @@ pub enum BasicInstruction {
         args: Vec<u8>,
     },
 
-    /// Calls a scrypto method.
+    /// Calls a method.
     ///
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {

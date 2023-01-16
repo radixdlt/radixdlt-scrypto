@@ -227,7 +227,6 @@ pub fn format_value_kind<F: fmt::Write>(f: &mut F, value_kind: &ScryptoValueKind
             ScryptoCustomValueKind::PackageAddress => f.write_str("PackageAddress"),
             ScryptoCustomValueKind::ComponentAddress => f.write_str("ComponentAddress"),
             ScryptoCustomValueKind::ResourceAddress => f.write_str("ResourceAddress"),
-            ScryptoCustomValueKind::SystemAddress => f.write_str("SystemAddress"),
             ScryptoCustomValueKind::Own => f.write_str("Own"),
             ScryptoCustomValueKind::Bucket => f.write_str("Bucket"),
             ScryptoCustomValueKind::Proof => f.write_str("Proof"),
@@ -326,13 +325,6 @@ pub fn format_custom_value<F: fmt::Write>(
         }
         ScryptoCustomValue::ResourceAddress(value) => {
             f.write_str("ResourceAddress(\"")?;
-            value
-                .format(f, context.bech32_encoder)
-                .expect("Failed to format address");
-            f.write_str("\")")?;
-        }
-        ScryptoCustomValue::SystemAddress(value) => {
-            f.write_str("SystemAddress(\"")?;
             value
                 .format(f, context.bech32_encoder)
                 .expect("Failed to format address");

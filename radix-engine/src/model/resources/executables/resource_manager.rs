@@ -37,10 +37,10 @@ pub enum ResourceManagerError {
     InvalidNonFungibleIdTypeId,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBucketBurnInvocation {
+impl ExecutableInvocation for ResourceManagerBucketBurnInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -54,7 +54,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBucketBurnInvocat
 impl Executor for ResourceManagerBucketBurnInvocation {
     type Output = ();
 
-    fn execute<Y>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, env: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -361,10 +361,10 @@ fn build_substates(
     (substate, vault_substate)
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateNonFungibleInvocation {
+impl ExecutableInvocation for ResourceManagerCreateNonFungibleInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -379,7 +379,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateNonFungible
 impl Executor for ResourceManagerCreateNonFungibleInvocation {
     type Output = ResourceAddress;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -426,10 +429,10 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateFungibleInvocation {
+impl ExecutableInvocation for ResourceManagerCreateFungibleInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -443,7 +446,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateFungibleInv
 impl Executor for ResourceManagerCreateFungibleInvocation {
     type Output = ResourceAddress;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -484,12 +490,10 @@ impl Executor for ResourceManagerCreateFungibleInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W>
-    for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation
-{
+impl ExecutableInvocation for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -504,7 +508,7 @@ impl<W: WasmEngine> ExecutableInvocation<W>
 impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
@@ -567,12 +571,10 @@ impl Executor for ResourceManagerCreateNonFungibleWithInitialSupplyInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W>
-    for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation
-{
+impl ExecutableInvocation for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -587,7 +589,7 @@ impl<W: WasmEngine> ExecutableInvocation<W>
 impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
@@ -647,12 +649,10 @@ impl Executor for ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocatio
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W>
-    for ResourceManagerCreateFungibleWithInitialSupplyInvocation
-{
+impl ExecutableInvocation for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -667,7 +667,7 @@ impl<W: WasmEngine> ExecutableInvocation<W>
 impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     type Output = (ResourceAddress, Bucket);
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<((ResourceAddress, Bucket), CallFrameUpdate), RuntimeError>
@@ -723,10 +723,10 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
 
 pub struct ResourceManagerBurnExecutable(RENodeId, Bucket);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBurnInvocation {
+impl ExecutableInvocation for ResourceManagerBurnInvocation {
     type Exec = ResourceManagerBurnExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -748,7 +748,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerBurnInvocation {
 impl Executor for ResourceManagerBurnExecutable {
     type Output = ();
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -808,10 +811,10 @@ impl Executor for ResourceManagerBurnExecutable {
 
 pub struct ResourceManagerUpdateVaultAuthExecutable(RENodeId, VaultMethodAuthKey, AccessRule);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateVaultAuthInvocation {
+impl ExecutableInvocation for ResourceManagerUpdateVaultAuthInvocation {
     type Exec = ResourceManagerUpdateVaultAuthExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -838,7 +841,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateVaultAuthIn
 impl Executor for ResourceManagerUpdateVaultAuthExecutable {
     type Output = ();
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -895,10 +901,10 @@ impl Executor for ResourceManagerUpdateVaultAuthExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerSetVaultAuthMutabilityInvocation {
+impl ExecutableInvocation for ResourceManagerSetVaultAuthMutabilityInvocation {
     type Exec = ResourceManagerLockVaultAuthExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -926,7 +932,10 @@ pub struct ResourceManagerLockVaultAuthExecutable(RENodeId, VaultMethodAuthKey, 
 impl Executor for ResourceManagerLockVaultAuthExecutable {
     type Output = ();
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -983,10 +992,10 @@ impl Executor for ResourceManagerLockVaultAuthExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateVaultInvocation {
+impl ExecutableInvocation for ResourceManagerCreateVaultInvocation {
     type Exec = ResourceManagerCreateVaultExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1010,7 +1019,10 @@ pub struct ResourceManagerCreateVaultExecutable(RENodeId);
 impl Executor for ResourceManagerCreateVaultExecutable {
     type Output = Own;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Own, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Own, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1035,10 +1047,10 @@ impl Executor for ResourceManagerCreateVaultExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerCreateBucketInvocation {
+impl ExecutableInvocation for ResourceManagerCreateBucketInvocation {
     type Exec = ResourceManagerCreateBucketExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1062,7 +1074,10 @@ pub struct ResourceManagerCreateBucketExecutable(RENodeId);
 impl Executor for ResourceManagerCreateBucketExecutable {
     type Output = Bucket;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1092,10 +1107,10 @@ pub struct ResourceManagerMintNonFungibleExecutable(
     BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
 );
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintNonFungibleInvocation {
+impl ExecutableInvocation for ResourceManagerMintNonFungibleInvocation {
     type Exec = ResourceManagerMintNonFungibleExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1118,7 +1133,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintNonFungibleIn
 impl Executor for ResourceManagerMintNonFungibleExecutable {
     type Output = Bucket;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1224,10 +1242,10 @@ impl Executor for ResourceManagerMintNonFungibleExecutable {
 
 pub struct ResourceManagerMintUuidNonFungibleExecutable(RENodeId, Vec<(Vec<u8>, Vec<u8>)>);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintUuidNonFungibleInvocation {
+impl ExecutableInvocation for ResourceManagerMintUuidNonFungibleInvocation {
     type Exec = ResourceManagerMintUuidNonFungibleExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1250,7 +1268,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintUuidNonFungib
 impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
     type Output = Bucket;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
@@ -1328,10 +1349,10 @@ impl Executor for ResourceManagerMintUuidNonFungibleExecutable {
 
 pub struct ResourceManagerMintFungibleExecutable(RENodeId, Decimal);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintFungibleInvocation {
+impl ExecutableInvocation for ResourceManagerMintFungibleInvocation {
     type Exec = ResourceManagerMintFungibleExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1354,7 +1375,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerMintFungibleInvoc
 impl Executor for ResourceManagerMintFungibleExecutable {
     type Output = Bucket;
 
-    fn execute<'a, Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1386,10 +1410,10 @@ impl Executor for ResourceManagerMintFungibleExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetResourceTypeInvocation {
+impl ExecutableInvocation for ResourceManagerGetResourceTypeInvocation {
     type Exec = ResourceManagerGetResourceTypeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1413,7 +1437,7 @@ pub struct ResourceManagerGetResourceTypeExecutable(RENodeId);
 impl Executor for ResourceManagerGetResourceTypeExecutable {
     type Output = ResourceType;
 
-    fn execute<'a, Y>(
+    fn execute<'a, Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(ResourceType, CallFrameUpdate), RuntimeError>
@@ -1430,10 +1454,10 @@ impl Executor for ResourceManagerGetResourceTypeExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetTotalSupplyInvocation {
+impl ExecutableInvocation for ResourceManagerGetTotalSupplyInvocation {
     type Exec = ResourceManagerGetTotalSupplyExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1457,7 +1481,10 @@ pub struct ResourceManagerGetTotalSupplyExecutable(RENodeId);
 impl Executor for ResourceManagerGetTotalSupplyExecutable {
     type Output = Decimal;
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1470,10 +1497,10 @@ impl Executor for ResourceManagerGetTotalSupplyExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerUpdateNonFungibleDataInvocation {
+impl ExecutableInvocation for ResourceManagerUpdateNonFungibleDataInvocation {
     type Exec = ResourceManagerUpdateNonFungibleDataExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1501,7 +1528,10 @@ pub struct ResourceManagerUpdateNonFungibleDataExecutable(RENodeId, NonFungibleI
 impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
     type Output = ();
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1545,10 +1575,10 @@ impl Executor for ResourceManagerUpdateNonFungibleDataExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerNonFungibleExistsInvocation {
+impl ExecutableInvocation for ResourceManagerNonFungibleExistsInvocation {
     type Exec = ResourceManagerNonFungibleExistsExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1573,7 +1603,10 @@ pub struct ResourceManagerNonFungibleExistsExecutable(RENodeId, NonFungibleId);
 impl Executor for ResourceManagerNonFungibleExistsExecutable {
     type Output = bool;
 
-    fn execute<'a, Y>(self, system_api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
+    fn execute<'a, Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -1603,10 +1636,10 @@ impl Executor for ResourceManagerNonFungibleExistsExecutable {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ResourceManagerGetNonFungibleInvocation {
+impl ExecutableInvocation for ResourceManagerGetNonFungibleInvocation {
     type Exec = ResourceManagerGetNonFungibleExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -1630,7 +1663,10 @@ pub struct ResourceManagerGetNonFungibleExecutable(RENodeId, NonFungibleId);
 impl Executor for ResourceManagerGetNonFungibleExecutable {
     type Output = [Vec<u8>; 2];
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<([Vec<u8>; 2], CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

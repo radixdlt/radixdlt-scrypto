@@ -5,7 +5,7 @@ use crate::types::*;
 use crate::wasm::WasmEngine;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, Invocation, Invokable, InvokableModel};
+use radix_engine_interface::api::api::{ComponentApi, EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
@@ -43,6 +43,7 @@ pub enum TransactionProcessorError {
     InvalidCallData(DecodeError),
     ReadOwnedNodesError(ReadOwnedNodesError),
     ReplaceManifestValuesError(ReplaceManifestValuesError),
+    ResolveError(ResolveError),
 }
 
 pub trait NativeOutput: ScryptoEncode + Debug {}
@@ -95,13 +96,6 @@ fn instruction_get_update(instruction: &Instruction, update: &mut CallFrameUpdat
                 for node_id in slice_to_global_references(args) {
                     update.add_ref(node_id);
                 }
-            }
-            BasicInstruction::CreateValidator { .. } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-            }
-            BasicInstruction::RegisterValidator { validator_address }
-            | BasicInstruction::UnregisterValidator { validator_address } => {
-                update.add_ref(RENodeId::Global(GlobalAddress::System(*validator_address)));
             }
             BasicInstruction::SetMetadata { entity_address, .. }
             | BasicInstruction::SetMethodAccessRule { entity_address, .. } => {
@@ -203,10 +197,10 @@ fn slice_to_global_references(slice: &[u8]) -> Vec<RENodeId> {
         .collect()
 }
 
-impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvocation<'a> {
+impl<'a> ExecutableInvocation for TransactionProcessorRunInvocation<'a> {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -216,8 +210,8 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
             instruction_get_update(instruction, &mut call_frame_update);
         }
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)));
-        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::System(CLOCK)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
+        call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Component(CLOCK)));
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(
             ECDSA_SECP256K1_TOKEN,
         )));
@@ -236,14 +230,14 @@ impl<'a, W: WasmEngine> ExecutableInvocation<W> for TransactionProcessorRunInvoc
 impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
     type Output = Vec<InstructionOutput>;
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         api: &mut Y,
     ) -> Result<(Vec<InstructionOutput>, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
-            + Invokable<ScryptoInvocation, RuntimeError>
             + EngineApi<RuntimeError>
+            + ComponentApi<RuntimeError>
             + InvokableModel<RuntimeError>,
     {
         for request in self.runtime_validations.as_ref() {
@@ -393,25 +387,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let rtn = ComponentAuthZone::sys_clear(api)?;
                     InstructionOutput::Native(Box::new(rtn))
                 }
-                Instruction::Basic(BasicInstruction::CreateValidator { key }) => {
-                    let rtn = api.invoke(EpochManagerCreateValidatorInvocation {
-                        receiver: EPOCH_MANAGER,
-                        key: *key,
-                    })?;
-                    InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::RegisterValidator { validator_address }) => {
-                    let rtn = api.invoke(ValidatorRegisterInvocation {
-                        receiver: *validator_address,
-                    })?;
-                    InstructionOutput::Native(Box::new(rtn))
-                }
-                Instruction::Basic(BasicInstruction::UnregisterValidator { validator_address }) => {
-                    let rtn = api.invoke(ValidatorUnregisterInvocation {
-                        receiver: *validator_address,
-                    })?;
-                    InstructionOutput::Native(Box::new(rtn))
-                }
                 Instruction::Basic(BasicInstruction::CallFunction {
                     package_address,
                     blueprint_name,
@@ -424,15 +399,15 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let result = api.invoke(ParsedScryptoInvocation::Function(
-                        ScryptoFunctionIdent {
-                            package: ScryptoPackage::Global(package_address.clone()),
-                            blueprint_name: blueprint_name.clone(),
-                            function_name: function_name.clone(),
-                        },
-                        args,
-                    ))?;
-
+                    let invocation = ScryptoInvocation {
+                        package_address: package_address.clone(),
+                        blueprint_name: blueprint_name.clone(),
+                        fn_name: function_name.clone(),
+                        receiver: None,
+                        args: args.to_vec(),
+                    };
+                    let invocation = CallTableInvocation::Scrypto(invocation);
+                    let result = invoke_call_table(invocation, api)?;
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;
@@ -450,14 +425,12 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         api,
                     )?;
 
-                    let result = api.invoke(ParsedScryptoInvocation::Method(
-                        ScryptoMethodIdent {
-                            receiver: ScryptoReceiver::Global(component_address.clone()),
-                            method_name: method_name.clone(),
-                        },
-                        args,
-                    ))?;
-
+                    let result = api.invoke_method(
+                        ScryptoReceiver::Global(*component_address),
+                        method_name,
+                        args.as_value(),
+                    )?;
+                    let result = IndexedScryptoValue::from_typed(&result);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;
@@ -880,10 +853,7 @@ impl TransactionProcessor {
         api: &mut Y,
     ) -> Result<(), RuntimeError>
     where
-        Y: SystemApi
-            + Invokable<ScryptoInvocation, RuntimeError>
-            + EngineApi<RuntimeError>
-            + InvokableModel<RuntimeError>,
+        Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         // Auto move into worktop & auth_zone
         for owned_node in &value
