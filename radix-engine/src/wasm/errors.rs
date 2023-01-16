@@ -82,14 +82,15 @@ pub enum InvalidTable {
 pub enum WasmError {
     MemoryAllocError,
     MemoryAccessError,
+
+    FunctionExportNotFound,
+    InvalidReturn,
     SborDecodeError(DecodeError),
     SborEncodeError(EncodeError),
-    WasmError(String),
-    FunctionNotFound,
-    InvalidRadixEngineInput,
-    MissingReturnData,
-    InvalidReturnData,
+
     CostingError(FeeReserveError),
+
+    RuntimeError(String),
 }
 
 impl fmt::Display for WasmError {

@@ -159,7 +159,11 @@ impl WasmerEnv for WasmerInstanceEnv {
 impl WasmerModule {
     fn instantiate(&self) -> WasmerInstance {
         // native functions
-        fn radix_engine(env: &WasmerInstanceEnv, input_ptr: i32) -> Result<i32, RuntimeError> {
+        fn radix_engine(
+            env: &WasmerInstanceEnv,
+            id: u8,
+            input_ptr: i32,
+        ) -> Result<i32, RuntimeError> {
             let instance = unsafe { env.instance.get_unchecked() };
             let input = read_value(&instance, input_ptr as usize)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
@@ -171,11 +175,11 @@ impl WasmerModule {
                     .expect("Failed to lock WASM runtime pointer");
                 let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
                 runtime
-                    .main(input)
+                    .main(id, input)
                     .map_err(|e| RuntimeError::user(Box::new(e)))?
             };
 
-            send_value(&instance, &output)
+            send_value(&instance, output.as_slice())
                 .map(|ptr| ptr as i32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
@@ -221,7 +225,7 @@ impl From<RuntimeError> for InvokeError<WasmError> {
         let e_str = format!("{:?}", error);
         match error.downcast::<InvokeError<WasmError>>() {
             Ok(e) => e,
-            _ => InvokeError::Error(WasmError::WasmError(e_str)),
+            _ => InvokeError::Error(WasmError::RuntimeError(e_str)),
         }
     }
 }
@@ -251,7 +255,7 @@ impl WasmInstance for WasmerInstance {
             .instance
             .exports
             .get_function(func_name)
-            .map_err(|_| InvokeError::Error(WasmError::FunctionNotFound))?
+            .map_err(|_| InvokeError::Error(WasmError::FunctionExportNotFound))?
             .call(&pointers);
 
         match result {
@@ -259,9 +263,9 @@ impl WasmInstance for WasmerInstance {
                 let ptr = return_data
                     .as_ref()
                     .get(0)
-                    .ok_or(InvokeError::Error(WasmError::MissingReturnData))?
+                    .ok_or(InvokeError::Error(WasmError::InvalidReturn))?
                     .i32()
-                    .ok_or(InvokeError::Error(WasmError::InvalidReturnData))?;
+                    .ok_or(InvokeError::Error(WasmError::InvalidReturn))?;
                 read_value(&self.instance, ptr as usize).map_err(InvokeError::Error)
             }
             Err(e) => Err(e.into()),

@@ -428,7 +428,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     let result = api.invoke_method(
                         ScryptoReceiver::Global(*component_address),
                         method_name,
-                        args.as_value(),
+                        args.into_vec(),
                     )?;
                     let result = IndexedScryptoValue::from_typed(&result);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(

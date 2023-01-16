@@ -43,33 +43,64 @@ where
         + InvokableModel<RuntimeError>
         + ActorApi<RuntimeError>,
 {
-    fn main(&mut self, input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
-        let input: RadixEngineInput = scrypto_decode(input.as_slice())
-            .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
-        let rtn = match input {
-            RadixEngineInput::Invoke(invocation) => {
-                invoke_call_table(invocation, self.api)?.into_vec()
+    fn main(
+        &mut self,
+        id: u8,
+        input: IndexedScryptoValue,
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
+        match id {
+            Invoke::ID => {
+                let input : <Invoke as EngineWasmApi>::Input = input.as_typed().map_err(|e| InvokeError::Error(WasmError::SborDecodeError(e)))?;
+                let return_data = self.api.invoke(input.into())?;
+                let output:  <Invoke as EngineWasmApi>::Output = scrypto_encode(&return_data).map_err(|e| InvokeError::Error(WasmError::SborEncodeError(e)))?;
+                 Ok(IndexedScryptoValue::from(_))
             }
-            RadixEngineInput::InvokeMethod(receiver, method, args) => {
+            InvokeMethod::ID => {(receiver, method, args) => {
                 encode(self.api.invoke_method(receiver, &method, &args)?)?
             }
-            RadixEngineInput::CreateNode(node) => encode(self.api.sys_create_node(node)?)?,
-            RadixEngineInput::GetVisibleNodeIds() => encode(self.api.sys_get_visible_nodes()?)?,
-            RadixEngineInput::DropNode(node_id) => encode(self.api.sys_drop_node(node_id)?)?,
-            RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
+            CreateNode::ID => {(node) => encode(self.api.sys_create_node(node)?)?,
+            GetVisibleNodeIds::ID => {() => encode(self.api.sys_get_visible_nodes()?)?,
+            DropNode::ID => {(node_id) => encode(self.api.sys_drop_node(node_id)?)?,
+            LockSubstate::ID => {(node_id, offset, mutable) => {
                 encode(self.api.sys_lock_substate(node_id, offset, mutable)?)?
             }
-            RadixEngineInput::Read(lock_handle) => self.api.sys_read(lock_handle)?,
-            RadixEngineInput::Write(lock_handle, value) => {
+            Read::ID => {(lock_handle) => self.api.sys_read(lock_handle)?,
+            Write::ID => {(lock_handle, value) => {
                 encode(self.api.sys_write(lock_handle, value)?)?
             }
-            RadixEngineInput::DropLock(lock_handle) => {
+            DropLock::ID => {(lock_handle) => {
                 encode(self.api.sys_drop_lock(lock_handle)?)?
             }
-            RadixEngineInput::GetActor() => encode(self.api.fn_identifier()?)?,
-        };
+            GetActor::ID => {() => encode(self.api.fn_identifier()?)?,
+        }
 
-        Ok(rtn)
+
+        // // let input: RadixEngineInput = scrypto_decode(input.as_slice())
+        // //     .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
+        // // let rtn = match input {
+        // //     RadixEngineInput::Invoke(invocation) => {
+        // //         invoke_call_table(invocation, self.api)?.into_vec()
+        // //     }
+        // //     RadixEngineInput::InvokeMethod(receiver, method, args) => {
+        // //         encode(self.api.invoke_method(receiver, &method, &args)?)?
+        // //     }
+        // //     RadixEngineInput::CreateNode(node) => encode(self.api.sys_create_node(node)?)?,
+        // //     RadixEngineInput::GetVisibleNodeIds() => encode(self.api.sys_get_visible_nodes()?)?,
+        // //     RadixEngineInput::DropNode(node_id) => encode(self.api.sys_drop_node(node_id)?)?,
+        // //     RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
+        // //         encode(self.api.sys_lock_substate(node_id, offset, mutable)?)?
+        // //     }
+        // //     RadixEngineInput::Read(lock_handle) => self.api.sys_read(lock_handle)?,
+        // //     RadixEngineInput::Write(lock_handle, value) => {
+        // //         encode(self.api.sys_write(lock_handle, value)?)?
+        // //     }
+        // //     RadixEngineInput::DropLock(lock_handle) => {
+        // //         encode(self.api.sys_drop_lock(lock_handle)?)?
+        // //     }
+        // //     RadixEngineInput::GetActor() => encode(self.api.fn_identifier()?)?,
+        // // };
+
+        // Ok(rtn)
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {
@@ -91,8 +122,12 @@ impl NopWasmRuntime {
 }
 
 impl WasmRuntime for NopWasmRuntime {
-    fn main(&mut self, _input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
-        Ok(IndexedScryptoValue::unit().into_vec())
+    fn main(
+        &mut self,
+        _id: u8,
+        _input: IndexedScryptoValue,
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
+        Ok(IndexedScryptoValue::unit())
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {

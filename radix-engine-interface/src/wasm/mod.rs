@@ -4,6 +4,7 @@ use crate::api::types::{
 use crate::api::Invocation;
 use crate::data::{ScryptoDecode, ScryptoEncode};
 use crate::model::CallTableInvocation;
+use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 
 pub trait SerializableInvocation:

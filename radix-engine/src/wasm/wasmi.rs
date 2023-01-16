@@ -75,7 +75,7 @@ impl From<Error> for InvokeError<WasmError> {
             Some(host_error) => *host_error
                 .downcast::<InvokeError<WasmError>>()
                 .expect("Failed to downcast error into InvokeError<WasmError>"),
-            None => InvokeError::Error(WasmError::WasmError(e_str)),
+            None => InvokeError::Error(WasmError::RuntimeError(e_str)),
         }
     }
 }
@@ -160,10 +160,11 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
     ) -> Result<Option<RuntimeValue>, Trap> {
         match index {
             RADIX_ENGINE_FUNCTION_ID => {
-                let input_ptr = args.nth_checked::<u32>(0)? as usize;
+                let id = args.nth_checked::<u8>(0)?;
+                let input_ptr = args.nth_checked::<u32>(1)? as usize;
                 let input = self.read_value(input_ptr)?;
-                let output = self.runtime.main(input)?;
-                self.send_value(&output)
+                let output = self.runtime.main(id, input)?;
+                self.send_value(output.as_slice())
                     .map(Option::Some)
                     .map_err(|e| e.into())
             }
@@ -174,7 +175,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }
-            _ => Err(WasmError::FunctionNotFound.into()),
+            _ => Err(WasmError::FunctionExportNotFound.into()),
         }
     }
 }
@@ -206,12 +207,12 @@ impl WasmInstance for WasmiInstance {
                 let err: InvokeError<WasmError> = e.into();
                 err
             })?
-            .ok_or(InvokeError::Error(WasmError::MissingReturnData))?;
+            .ok_or(InvokeError::Error(WasmError::InvalidReturn))?;
         match rtn {
             RuntimeValue::I32(ptr) => externals
                 .read_value(ptr as usize)
                 .map_err(InvokeError::Error),
-            _ => Err(InvokeError::Error(WasmError::InvalidReturnData)),
+            _ => Err(InvokeError::Error(WasmError::InvalidReturn)),
         }
     }
 }

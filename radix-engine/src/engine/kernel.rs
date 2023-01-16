@@ -639,13 +639,12 @@ where
         &mut self,
         receiver: ScryptoReceiver,
         method_name: &str,
-        args: &ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError> {
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
         // TODO: Use execution mode?
-        let invocation =
-            resolve_method(receiver, method_name, &scrypto_encode(args).unwrap(), self)?;
+        let invocation = resolve_method(receiver, method_name, &args, self)?;
         let rtn = invoke_call_table(invocation, self)?;
-        Ok(rtn.into())
+        Ok(rtn.into_vec())
     }
 }
 

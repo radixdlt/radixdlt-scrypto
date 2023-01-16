@@ -7,7 +7,11 @@ use sbor::rust::vec::Vec;
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {
-    fn main(&mut self, input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>>;
+    fn main(
+        &mut self,
+        id: u8,
+        input: IndexedScryptoValue,
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>>;
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>>;
 }
