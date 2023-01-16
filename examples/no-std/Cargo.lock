@@ -59,7 +59,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "const-sha1"
 version = "0.2.0"
-source = "git+https://github.com/iamyulong/const-sha1#5e9ae2a99e9c76e85aa67f42e4b62e7f7ce8dad4"
+source = "git+https://github.com/radixdlt/const-sha1#5e9ae2a99e9c76e85aa67f42e4b62e7f7ce8dad4"
 
 [[package]]
 name = "cpufeatures"
