@@ -1,11 +1,11 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
-use scrypto::prelude::*;
+use radix_engine_interface::abi::*;
+use radix_engine_interface::model::NonFungibleData;
+use radix_engine_interface::*;
 
 #[derive(NonFungibleData, Debug, Eq, PartialEq)]
 pub struct Sample {
     pub a: u32,
-    #[scrypto(mutable)]
+    #[mutable]
     pub b: String,
 }
 

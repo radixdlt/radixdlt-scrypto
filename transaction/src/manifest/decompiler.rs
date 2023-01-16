@@ -158,7 +158,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "RETURN_TO_WORKTOP\n    Bucket({});",
                 context
                     .bucket_names
-                    .get(&bucket_id)
+                    .get(bucket_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id.0))
             )?;
@@ -211,7 +211,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "PUSH_TO_AUTH_ZONE\n    Proof({});",
                 context
                     .proof_names
-                    .get(&proof_id)
+                    .get(proof_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", proof_id.0))
             )?;
@@ -283,7 +283,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "CREATE_PROOF_FROM_BUCKET\n    Bucket({})\n    Proof(\"{}\");",
                 context
                     .bucket_names
-                    .get(&bucket_id)
+                    .get(bucket_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id.0)),
                 name
@@ -301,7 +301,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "CLONE_PROOF\n    Proof({})\n    Proof(\"{}\");",
                 context
                     .proof_names
-                    .get(&proof_id)
+                    .get(proof_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", proof_id.0)),
                 name
@@ -313,7 +313,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "DROP_PROOF\n    Proof({});",
                 context
                     .proof_names
-                    .get(&proof_id)
+                    .get(proof_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", proof_id.0)),
             )?;
@@ -382,7 +382,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "BURN_RESOURCE\n    Bucket({});",
                 context
                     .bucket_names
-                    .get(&bucket_id)
+                    .get(bucket_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id.0)),
             )?;

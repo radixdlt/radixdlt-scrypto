@@ -13,7 +13,7 @@ macro_rules! trace {
 
 pub fn handle_describe(
     input: TokenStream,
-    context_custom_value_kind: Option<&'static str>,
+    context_custom_type_kind: Option<&'static str>,
 ) -> Result<TokenStream> {
     trace!("handle_describe() starts");
 
@@ -26,8 +26,8 @@ pub fn handle_describe(
         generics,
         ..
     } = parse2(input)?;
-    let (impl_generics, ty_generics, where_clause, custom_type_schema_generic) =
-        build_describe_generics(&generics, &attrs, context_custom_value_kind)?;
+    let (impl_generics, ty_generics, where_clause, custom_type_kind_generic) =
+        build_describe_generics(&generics, &attrs, context_custom_type_kind)?;
 
     let generic_type_idents = ty_generics
         .type_params()
@@ -51,7 +51,7 @@ pub fn handle_describe(
                     })
                     .collect();
                 quote! {
-                    impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                         const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
@@ -68,16 +68,16 @@ pub fn handle_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<C, ::sbor::GlobalTypeId>> {
+                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
                             Some(::sbor::TypeData::named_fields_tuple(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
-                                    #((#field_names, <#field_types as ::sbor::Describe<C>>::TYPE_ID),)*
+                                    #((#field_names, <#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                 ],
                             ))
                         }
 
-                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
+                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
                             #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                         }
                     }
@@ -90,7 +90,7 @@ pub fn handle_describe(
                 let unique_field_types: Vec<_> = get_unique_types(&field_types);
 
                 quote! {
-                    impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                         const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
                             // Here we really want to cause distinct types to have distinct hashes, whilst still supporting (most) recursive types.
@@ -107,16 +107,16 @@ pub fn handle_describe(
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<C, ::sbor::GlobalTypeId>> {
+                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
                             Some(::sbor::TypeData::named_tuple(
                                 stringify!(#ident),
                                 ::sbor::rust::vec![
-                                    #(<#field_types as ::sbor::Describe<C>>::TYPE_ID,)*
+                                    #(<#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                 ],
                             ))
                         }
 
-                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
+                        fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
                             #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                         }
                     }
@@ -124,14 +124,14 @@ pub fn handle_describe(
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                    impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                         const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                             stringify!(#ident),
                             &[#(#generic_type_idents::TYPE_ID,)*],
                             &#code_hash
                         );
 
-                        fn type_data() -> Option<::sbor::TypeData<C, ::sbor::GlobalTypeId>> {
+                        fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
                             Some(::sbor::TypeData::named_unit(stringify!(#ident)))
                         }
                     }
@@ -171,7 +171,7 @@ pub fn handle_describe(
                                     ::sbor::TypeData::named_fields_tuple(
                                         #variant_name,
                                         ::sbor::rust::vec![
-                                            #((#field_names, <#field_types as ::sbor::Describe<C>>::TYPE_ID),)*
+                                            #((#field_names, <#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID),)*
                                         ],
                                     )
                                 }
@@ -186,7 +186,7 @@ pub fn handle_describe(
                                     ::sbor::TypeData::named_tuple(
                                         #variant_name,
                                         ::sbor::rust::vec![
-                                            #(<#field_types as ::sbor::Describe<C>>::TYPE_ID,)*
+                                            #(<#field_types as ::sbor::Describe<#custom_type_kind_generic>>::TYPE_ID,)*
                                         ],
                                     )
                                 }
@@ -204,14 +204,14 @@ pub fn handle_describe(
             let unique_field_types: Vec<_> = get_unique_types(&all_field_types);
 
             quote! {
-                impl #impl_generics ::sbor::Describe <#custom_type_schema_generic> for #ident #ty_generics #where_clause {
+                impl #impl_generics ::sbor::Describe <#custom_type_kind_generic> for #ident #ty_generics #where_clause {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(#ident),
                         &[#(#generic_type_idents::TYPE_ID,)*],
                         &#code_hash
                     );
 
-                    fn type_data() -> Option<::sbor::TypeData<C, ::sbor::GlobalTypeId>> {
+                    fn type_data() -> Option<::sbor::TypeData<#custom_type_kind_generic, ::sbor::GlobalTypeId>> {
                         use ::sbor::rust::borrow::ToOwned;
                         Some(::sbor::TypeData::named_enum(
                             stringify!(#ident),
@@ -221,7 +221,7 @@ pub fn handle_describe(
                         ))
                     }
 
-                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<C>) {
+                    fn add_all_dependencies(aggregator: &mut ::sbor::TypeAggregator<#custom_type_kind_generic>) {
                         #(aggregator.add_child_type_and_descendents::<#unique_field_types>();)*
                     }
                 }
@@ -262,7 +262,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[63u8, 255u8, 173u8, 220u8, 251u8, 214u8, 95u8, 139u8, 106u8, 20u8, 23u8, 4u8, 15u8, 10u8, 124u8, 49u8, 219u8, 44u8, 235u8, 215u8]
+                        &[159u8 , 209u8 , 242u8 , 94u8 , 4u8 , 85u8 , 29u8 , 88u8 , 103u8 , 42u8 , 6u8 , 107u8 , 55u8 , 82u8 , 41u8 , 37u8 , 138u8 , 251u8 , 115u8 , 188u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -286,6 +286,69 @@ mod tests {
     }
 
     #[test]
+    fn test_named_field_struct_schema_custom() {
+        let input = TokenStream::from_str("struct Test {a: u32, b: Vec<u8>, c: u32}").unwrap();
+        let output = handle_describe(
+            input,
+            Some("radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>"),
+        )
+        .unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                impl ::sbor::Describe<radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId> >
+                    for Test
+                {
+                    const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
+                        stringify!(Test),
+                        &[],
+                        &[
+                            159u8 , 209u8 , 242u8 , 94u8 , 4u8 , 85u8 , 29u8 , 88u8 , 103u8 , 42u8 , 6u8 , 107u8 , 55u8 , 82u8 , 41u8 , 37u8 , 138u8 , 251u8 , 115u8 , 188u8
+                        ]
+                    );
+                    fn type_data() -> Option<
+                        ::sbor::TypeData<
+                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>,
+                            ::sbor::GlobalTypeId>> {
+                        Some(::sbor::TypeData::named_fields_tuple(
+                            stringify!(Test),
+                            ::sbor::rust::vec![
+                                (
+                                    "a",
+                                    <u32 as ::sbor::Describe<
+                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                                    >>::TYPE_ID
+                                ),
+                                (
+                                    "b",
+                                    <Vec<u8> as ::sbor::Describe<
+                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                                    >>::TYPE_ID
+                                ),
+                                (
+                                    "c",
+                                    <u32 as ::sbor::Describe<
+                                        radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                                    >>::TYPE_ID
+                                ),
+                            ],
+                        ))
+                    }
+                    fn add_all_dependencies(
+                        aggregator: &mut ::sbor::TypeAggregator<
+                            radix_engine_interface::data::ScryptoCustomTypeKind<::sbor::GlobalTypeId>
+                        >
+                    ) {
+                        aggregator.add_child_type_and_descendents::<u32>();
+                        aggregator.add_child_type_and_descendents::<Vec<u8> >();
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
     fn test_unnamed_field_struct_schema() {
         let input = TokenStream::from_str("struct Test(u32, Vec<u8>, u32);").unwrap();
         let output = handle_describe(input, None).unwrap();
@@ -297,7 +360,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[85u8, 53u8, 15u8, 85u8, 176u8, 230u8, 4u8, 110u8, 15u8, 96u8, 35u8, 64u8, 192u8, 210u8, 254u8, 146u8, 192u8, 7u8, 246u8, 5u8]
+                        &[34u8 , 114u8 , 203u8 , 221u8 , 124u8 , 31u8 , 95u8 , 225u8 , 232u8 , 133u8 , 214u8 , 82u8 , 163u8 , 166u8 , 47u8 , 94u8 , 1u8 , 45u8 , 24u8 , 85u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -332,7 +395,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[],
-                        &[167u8, 108u8, 181u8, 130u8, 168u8, 229u8, 85u8, 237u8, 66u8, 69u8, 34u8, 138u8, 113u8, 220u8, 225u8, 107u8, 0u8, 247u8, 189u8, 58u8]
+                        &[191u8 , 160u8 , 163u8 , 134u8 , 72u8 , 226u8 , 165u8 , 105u8 , 145u8 , 247u8 , 102u8 , 49u8 , 49u8 , 92u8 , 177u8 , 109u8 , 66u8 , 111u8 , 153u8 , 93u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {
@@ -356,7 +419,7 @@ mod tests {
                     const TYPE_ID: ::sbor::GlobalTypeId = ::sbor::GlobalTypeId::novel_with_code(
                         stringify!(Test),
                         &[T::TYPE_ID, T2::TYPE_ID,],
-                        &[107u8, 144u8, 17u8, 82u8, 110u8, 162u8, 58u8, 11u8, 170u8, 99u8, 11u8, 157u8, 132u8, 243u8, 106u8, 138u8, 8u8, 152u8, 239u8, 22u8]
+                        &[128u8 , 130u8 , 11u8 , 0u8 , 197u8 , 86u8 , 125u8 , 186u8 , 15u8 , 144u8 , 196u8 , 61u8 , 236u8 , 39u8 , 235u8 , 228u8 , 7u8 , 225u8 , 251u8 , 25u8]
                     );
 
                     fn type_data() -> Option<::sbor::TypeData <C, ::sbor::GlobalTypeId>> {

@@ -24,22 +24,22 @@ pub fn handle_categorize(
         generics,
         ..
     } = parse2(input)?;
-    let (impl_generics, ty_generics, where_clause, sbor_cti) =
+    let (impl_generics, ty_generics, where_clause, sbor_cvk) =
         build_custom_categorize_generic(&generics, &attrs, context_custom_value_kind)?;
 
     let output = match data {
         Data::Struct(_) => quote! {
-            impl #impl_generics ::sbor::Categorize <#sbor_cti> for #ident #ty_generics #where_clause {
+            impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
                 #[inline]
-                fn value_kind() -> ::sbor::ValueKind <#sbor_cti> {
+                fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
                     ::sbor::ValueKind::Tuple
                 }
             }
         },
         Data::Enum(_) => quote! {
-            impl #impl_generics ::sbor::Categorize <#sbor_cti> for #ident #ty_generics #where_clause {
+            impl #impl_generics ::sbor::Categorize <#sbor_cvk> for #ident #ty_generics #where_clause {
                 #[inline]
-                fn value_kind() -> ::sbor::ValueKind <#sbor_cti> {
+                fn value_kind() -> ::sbor::ValueKind <#sbor_cvk> {
                     ::sbor::ValueKind::Enum
                 }
             }

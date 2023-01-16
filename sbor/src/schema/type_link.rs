@@ -53,21 +53,21 @@ const fn generate_type_hash(
     type_data: &[(&str, &[u8])],
     dependencies: &[GlobalTypeId],
 ) -> GlobalTypeId {
-    let buffer = const_sha1::ConstBuffer::new();
+    let buffer = const_sha1::ConstSlice::new();
 
     // Const looping isn't allowed - but we can use recursion instead
     let buffer = capture_names(buffer, 0, names);
     let buffer = capture_type_data(buffer, 0, type_data);
     let buffer = capture_dependent_type_ids(buffer, 0, dependencies);
 
-    GlobalTypeId::Novel(const_sha1::sha1(&buffer).bytes())
+    GlobalTypeId::Novel(const_sha1::sha1(buffer.as_slice()).as_bytes())
 }
 
 const fn capture_names(
-    buffer: const_sha1::ConstBuffer,
+    buffer: const_sha1::ConstSlice,
     next: usize,
     names: &[&str],
-) -> const_sha1::ConstBuffer {
+) -> const_sha1::ConstSlice {
     if next == names.len() {
         return buffer;
     }
@@ -76,10 +76,10 @@ const fn capture_names(
 }
 
 const fn capture_type_data(
-    buffer: const_sha1::ConstBuffer,
+    buffer: const_sha1::ConstSlice,
     next: usize,
     type_data: &[(&str, &[u8])],
-) -> const_sha1::ConstBuffer {
+) -> const_sha1::ConstSlice {
     if next == type_data.len() {
         return buffer;
     }
@@ -89,10 +89,10 @@ const fn capture_type_data(
 }
 
 const fn capture_dependent_type_ids(
-    buffer: const_sha1::ConstBuffer,
+    buffer: const_sha1::ConstSlice,
     next: usize,
     dependencies: &[GlobalTypeId],
-) -> const_sha1::ConstBuffer {
+) -> const_sha1::ConstSlice {
     if next == dependencies.len() {
         return buffer;
     }

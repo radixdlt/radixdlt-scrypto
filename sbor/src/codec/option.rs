@@ -50,7 +50,6 @@ impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>> Decode<X, D> for Option
     }
 }
 
-#[cfg(feature = "schema")]
 impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for Option<T> {
     const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Option", &[T::TYPE_ID]);
 
