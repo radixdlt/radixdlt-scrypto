@@ -153,6 +153,31 @@ impl Into<CallTableInvocation> for ResourceManagerCreateUuidNonFungibleWithIniti
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation {
+    pub resource_address: [u8; 26], // TODO: Clean this up
+    pub divisibility: u8,
+    pub metadata: BTreeMap<String, String>,
+    pub access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+    pub initial_supply: Decimal,
+}
+
+impl Invocation for ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation {
+    type Output = Bucket;
+}
+
+impl SerializableInvocation for ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation {
+    type ScryptoOutput = Bucket;
+}
+
+impl Into<CallTableInvocation> for ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation {
+    fn into(self) -> CallTableInvocation {
+        NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithAddressAndInitialSupply(self))
+            .into()
+    }
+}
+
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     pub divisibility: u8,
     pub metadata: BTreeMap<String, String>,

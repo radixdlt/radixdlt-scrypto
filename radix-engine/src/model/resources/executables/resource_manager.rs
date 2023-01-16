@@ -721,6 +721,78 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
     }
 }
 
+impl ExecutableInvocation for ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation {
+    type Exec = Self;
+
+    fn resolve<D: ResolverApi>(
+        self,
+        _api: &mut D,
+    ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
+        let call_frame_update = CallFrameUpdate::empty();
+        let actor = ResolvedActor::function(NativeFn::ResourceManager(
+            ResourceManagerFn::CreateFungibleWithAddressAndInitialSupply,
+        ));
+        Ok((actor, call_frame_update, self))
+    }
+}
+
+impl Executor for ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation {
+    type Output = Bucket;
+
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+        where
+            Y: SystemApi,
+    {
+        let global_node_id = RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(self.resource_address)));
+        let resource_address: ResourceAddress = global_node_id.into();
+
+        let (resource_manager_substate, bucket) =
+            build_fungible_resource_manager_substate_with_initial_supply(
+                resource_address,
+                self.divisibility,
+                self.initial_supply,
+                api,
+            )?;
+        let (substate, vault_substate) = build_substates(self.access_rules);
+        let metadata_substate = MetadataSubstate {
+            metadata: self.metadata,
+        };
+
+        let underlying_node_id = api.allocate_node_id(RENodeType::ResourceManager)?;
+        api.create_node(
+            underlying_node_id,
+            RENode::ResourceManager(
+                resource_manager_substate,
+                metadata_substate,
+                substate,
+                vault_substate,
+            ),
+        )?;
+
+        api.create_node(
+            global_node_id,
+            RENode::Global(GlobalAddressSubstate::Resource(underlying_node_id.into())),
+        )?;
+
+        let mut nodes_to_move = vec![];
+        nodes_to_move.push(RENodeId::Bucket(bucket.0));
+
+        let mut node_refs_to_copy = HashSet::new();
+        node_refs_to_copy.insert(RENodeId::Global(GlobalAddress::Resource(resource_address)));
+
+        Ok((
+            bucket,
+            CallFrameUpdate {
+                nodes_to_move,
+                node_refs_to_copy,
+            },
+        ))
+    }
+}
+
 pub struct ResourceManagerBurnExecutable(RENodeId, Bucket);
 
 impl ExecutableInvocation for ResourceManagerBurnInvocation {

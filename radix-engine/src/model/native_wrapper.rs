@@ -340,6 +340,10 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
+            ResourceInvocation::CreateFungibleWithAddressAndInitialSupply(invocation) => {
+                let rtn = api.invoke(invocation)?;
+                Ok(Box::new(rtn))
+            }
             ResourceInvocation::BurnBucket(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
