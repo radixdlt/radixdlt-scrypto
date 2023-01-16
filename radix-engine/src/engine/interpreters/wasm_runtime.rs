@@ -43,9 +43,6 @@ where
         + InvokableModel<RuntimeError>
         + ActorApi<RuntimeError>,
 {
-    // TODO: expose API for reading blobs
-    // TODO: do we want to allow dynamic creation of blobs?
-    // TODO: do we check existence of blobs when being passed as arguments/return?
 
     fn main(&mut self, input: IndexedScryptoValue) -> Result<Vec<u8>, InvokeError<WasmError>> {
         let input: RadixEngineInput = scrypto_decode(input.as_slice())
