@@ -141,16 +141,18 @@ pub fn create_genesis(
     {
         let faucet_code = include_bytes!("../../../assets/faucet.wasm").to_vec();
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
-        instructions.push(Instruction::Basic(BasicInstruction::PublishPackage {
-            code: ManifestBlobRef(hash(&faucet_code)),
-            abi: ManifestBlobRef(hash(&faucet_abi)),
-            royalty_config: BTreeMap::new(),
-            metadata: BTreeMap::new(),
-            access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-        }));
-
-        blobs.push(faucet_code);
-        blobs.push(faucet_abi);
+        let package_address = FAUCET_PACKAGE.raw();
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)));
+        instructions.push(Instruction::System(NativeInvocation::Package(PackageInvocation::Publish(
+            PackagePublishInvocation {
+                package_address: Some(package_address),
+                code: faucet_code, // TODO: Use blob here instead?
+                abi: faucet_abi, // TODO: Use blob here instead?
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
+            }
+        ))));
     }
 
     {

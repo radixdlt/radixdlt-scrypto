@@ -460,6 +460,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         ))?;
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
+                        package_address: None,
                         code: code.clone().clone(),
                         abi: abi.clone().clone(),
                         royalty_config: royalty_config.clone(),
@@ -490,6 +491,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         ))?;
                     // TODO: remove clone by allowing invocation to have references, like in TransactionProcessorRunInvocation.
                     let rtn = api.invoke(PackagePublishInvocation {
+                        package_address: None,
                         code: code.clone().clone(),
                         abi: abi.clone().clone(),
                         royalty_config: BTreeMap::new(),

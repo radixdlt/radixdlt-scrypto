@@ -24,31 +24,28 @@ pub const SYSTEM_TOKEN: ResourceAddress = address!(EntityType::Resource, 3);
 pub const PACKAGE_TOKEN: ResourceAddress = address!(EntityType::Resource, 4);
 
 /// The address of the faucet package.
-pub const FAUCET_PACKAGE: PackageAddress = construct_address!(
-    EntityType::Package,
-    89, 100, 160, 56, 236, 141, 48, 10, 204, 4, 212, 116, 206, 163, 82, 50, 91, 137, 94, 1, 191, 236, 15, 125, 121, 66
-);
+pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the account package.
 pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
     EntityType::Package,
-    213, 161, 133, 56, 35, 0, 134, 18, 95, 85, 106, 231, 194, 125, 161, 89, 8, 192, 242, 188, 20, 25, 128, 43, 55, 160
+    207, 236, 86, 95, 3, 195, 152, 29, 79, 149, 88, 154, 46, 145, 227, 3, 124, 205, 101, 35, 246, 126, 64, 75, 176, 175
 );
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
-    68, 85, 49, 134, 195, 96, 197, 209, 94, 115, 234, 233, 202, 98, 101, 192, 200, 249, 60, 15, 10, 240, 94, 121, 160, 14
+    185, 97, 245, 214, 187, 182, 109, 5, 245, 67, 89, 29, 143, 159, 167, 177, 194, 186, 135, 12, 32, 227, 114, 156, 61, 150
 );
 
 pub const EPOCH_MANAGER: ComponentAddress = construct_address!(
     EntityType::EpochManager,
-    44, 201, 216, 26, 12, 130, 244, 40, 246, 101, 231, 56, 157, 150, 155, 85, 99, 116, 124, 101, 220, 228, 216, 136, 204, 65
+    176, 10, 0, 75, 205, 239, 112, 228, 194, 134, 77, 97, 49, 158, 52, 119, 229, 181, 108, 197, 4, 27, 45, 0, 196, 52
 );
 
 pub const CLOCK: ComponentAddress = construct_address!(
     EntityType::Clock,
-    227, 163, 118, 15, 127, 189, 22, 95, 36, 41, 56, 156, 128, 25, 19, 116, 9, 130, 179, 131, 64, 103, 79, 48, 161, 181
+    30, 175, 126, 217, 126, 105, 54, 141, 50, 230, 89, 92, 255, 39, 106, 43, 186, 185, 13, 165, 15, 193, 113, 158, 82, 4
 );
