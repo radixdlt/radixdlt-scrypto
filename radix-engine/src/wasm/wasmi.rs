@@ -1,4 +1,4 @@
-use radix_engine_interface::api::wasm::VecLeak;
+use radix_engine_interface::api::wasm::ReturnData;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::sync::Arc;
 use wasmi::*;
@@ -138,9 +138,9 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
         Ok(buffer[ptr..ptr + len].to_vec())
     }
 
-    pub fn read_vec(&self, v: VecLeak) -> Result<Vec<u8>, WasmShimError> {
-        let ptr = vec_ptr!(v);
-        let len = vec_len!(v);
+    pub fn read_return_data(&self, v: ReturnData) -> Result<Vec<u8>, WasmShimError> {
+        let ptr = return_data_ptr!(v);
+        let len = return_data_len!(v);
 
         self.read_memory(ptr, len)
     }

@@ -32,17 +32,17 @@ macro_rules! buffer {
     };
 }
 
-pub type VecLeak = u64;
+pub type ReturnData = u64;
 
 #[macro_export]
-macro_rules! vec_ptr {
+macro_rules! return_data_ptr {
     ($buf: expr) => {
         ($buf >> 32) as usize
     };
 }
 
 #[macro_export]
-macro_rules! vec_len {
+macro_rules! return_data_len {
     ($buf: expr) => {
         ($buf & 0xffffffff) as usize
     };

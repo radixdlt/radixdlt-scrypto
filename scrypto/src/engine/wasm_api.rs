@@ -24,9 +24,9 @@ pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
     vec
 }
 
-pub type VecLeak = u64;
+pub type ReturnData = u64;
 
-pub fn forget_vec(vec: Vec<u8>) -> VecLeak {
+pub fn forget_vec(vec: Vec<u8>) -> ReturnData {
     let ptr = vec.as_ptr() as u64;
     let len = vec.len() as u64;
     assert!(ptr < 0xffffffff && ptr < 0xffffffff);
