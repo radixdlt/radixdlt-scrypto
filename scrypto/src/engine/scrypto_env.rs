@@ -1,12 +1,13 @@
 use crate::engine::wasm_api::*;
+use crate::{buffer_id, buffer_size};
 use radix_engine_interface::api::types::{
     FnIdentifier, LockHandle, RENodeId, ScryptoRENode, ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable};
-use radix_engine_interface::data::scrypto_decode;
+use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
+use radix_engine_interface::model::CallTableInvocation;
 use radix_engine_interface::wasm::*;
 use sbor::rust::fmt::Debug;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
@@ -17,9 +18,20 @@ pub enum EngineApiError {
 
 pub struct ScryptoEnv;
 
+fn copy_buffer(buffer: Buffer) -> Vec<u8> {
+    let mut vec = Vec::<u8>::with_capacity(buffer_size!(buffer));
+    unsafe {
+        consume_buffer(buffer_id!(buffer), vec.as_mut_ptr());
+        vec.set_len(buffer_size!(buffer));
+    };
+    vec
+}
+
 impl<N: SerializableInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
     fn invoke(&mut self, input: N) -> Result<N::Output, EngineApiError> {
-        let return_data = call_engine_wasm_api::<Invoke>(input.into());
+        let invocation = scrypto_encode(&Into::<CallTableInvocation>::into(input)).unwrap();
+
+        let return_data = copy_buffer(unsafe { invoke(invocation.as_ptr(), invocation.len()) });
 
         scrypto_decode(&return_data).map_err(EngineApiError::DecodeError)
     }
@@ -27,15 +39,25 @@ impl<N: SerializableInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
 
 impl EngineApi<EngineApiError> for ScryptoEnv {
     fn sys_create_node(&mut self, node: ScryptoRENode) -> Result<RENodeId, EngineApiError> {
-        Ok(call_engine_wasm_api::<CreateNode>(node))
+        let node = scrypto_encode(&node).unwrap();
+
+        let node_id = copy_buffer(unsafe { create_node(node.as_ptr(), node.len()) });
+
+        scrypto_decode(&node_id).map_err(EngineApiError::DecodeError)
     }
 
     fn sys_drop_node(&mut self, node_id: RENodeId) -> Result<(), EngineApiError> {
-        Ok(call_engine_wasm_api::<DropNode>(node_id))
+        let node_id = scrypto_encode(&node_id).unwrap();
+
+        unsafe { drop_node(node_id.as_ptr(), node_id.len()) };
+
+        Ok(())
     }
 
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, EngineApiError> {
-        Ok(call_engine_wasm_api::<GetVisibleNodeIds>(()))
+        let node_ids = copy_buffer(unsafe { get_visible_node_ids() });
+
+        scrypto_decode(&node_ids).map_err(EngineApiError::DecodeError)
     }
 
     fn sys_lock_substate(
@@ -44,13 +66,26 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         offset: SubstateOffset,
         mutable: bool,
     ) -> Result<LockHandle, EngineApiError> {
-        Ok(call_engine_wasm_api::<LockSubstate>((
-            node_id, offset, mutable,
-        )))
+        let node_id = scrypto_encode(&node_id).unwrap();
+        let offset = scrypto_encode(&offset).unwrap();
+
+        let handle = unsafe {
+            lock_substate(
+                node_id.as_ptr(),
+                node_id.len(),
+                offset.as_ptr(),
+                offset.len(),
+                mutable,
+            )
+        };
+
+        Ok(handle)
     }
 
     fn sys_read(&mut self, lock_handle: LockHandle) -> Result<Vec<u8>, EngineApiError> {
-        Ok(call_engine_wasm_api::<Read>(lock_handle))
+        let substate = copy_buffer(unsafe { read_substate(lock_handle) });
+
+        Ok(substate)
     }
 
     fn sys_write(
@@ -58,11 +93,15 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         lock_handle: LockHandle,
         buffer: Vec<u8>,
     ) -> Result<(), EngineApiError> {
-        Ok(call_engine_wasm_api::<Write>((lock_handle, buffer)))
+        unsafe { write_substate(lock_handle, buffer.as_ptr(), buffer.len()) };
+
+        Ok(())
     }
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), EngineApiError> {
-        Ok(call_engine_wasm_api::<DropLock>(lock_handle))
+        unsafe { unlock(lock_handle) };
+
+        Ok(())
     }
 }
 
@@ -73,17 +112,28 @@ impl ComponentApi<EngineApiError> for ScryptoEnv {
         method_name: &str,
         args: Vec<u8>,
     ) -> Result<Vec<u8>, EngineApiError> {
-        Ok(call_engine_wasm_api::<InvokeMethod>((
-            receiver,
-            method_name.to_string(),
-            args,
-        )))
+        let receiver = scrypto_encode(&receiver).unwrap();
+
+        let return_data = copy_buffer(unsafe {
+            invoke_method(
+                receiver.as_ptr(),
+                receiver.len(),
+                method_name.as_ptr(),
+                method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        });
+
+        scrypto_decode(&return_data).map_err(EngineApiError::DecodeError)
     }
 }
 
 impl ActorApi<EngineApiError> for ScryptoEnv {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, EngineApiError> {
-        Ok(call_engine_wasm_api::<GetActor>(()))
+        let actor = copy_buffer(unsafe { get_actor() });
+
+        scrypto_decode(&actor).map_err(EngineApiError::DecodeError)
     }
 }
 

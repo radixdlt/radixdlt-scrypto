@@ -3,6 +3,20 @@ use radix_engine_interface::api::types::LockHandle;
 pub type BufferId = u32;
 pub type Buffer = u64;
 
+#[macro_export]
+macro_rules! buffer_size {
+    ($buf: expr) => {
+        ($buf & 0xffffffffu64) as usize
+    };
+}
+
+#[macro_export]
+macro_rules! buffer_id {
+    ($buf: expr) => {
+        ($buf >> 32) as u32
+    };
+}
+
 extern "C" {
     //===============
     // Buffer API
