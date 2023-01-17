@@ -7,3 +7,27 @@ pub trait SerializableInvocation:
 {
     type ScryptoOutput: ScryptoDecode;
 }
+
+pub type BufferId = u32;
+pub type Buffer = u64;
+
+#[macro_export]
+macro_rules! buffer_id {
+    ($buf: expr) => {
+        ($buf >> 32) as u32
+    };
+}
+
+#[macro_export]
+macro_rules! buffer_len {
+    ($buf: expr) => {
+        ($buf & 0xffffffff) as usize
+    };
+}
+
+#[macro_export]
+macro_rules! buffer {
+    ($id: expr, $len: expr) => {
+        (($id as u64) << 32) | ($len as u64)
+    };
+}

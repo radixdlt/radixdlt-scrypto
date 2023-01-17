@@ -1,12 +1,12 @@
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::{invoke_call_table, InvokeError};
-use crate::types::{scrypto_decode, scrypto_encode};
+use crate::types::{scrypto_encode, *};
 use crate::wasm::*;
+use radix_engine_interface::api::wasm::*;
 use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable, InvokableModel};
-use radix_engine_interface::data::{IndexedScryptoValue, ScryptoEncode};
+use radix_engine_interface::data::ScryptoEncode;
 use radix_engine_interface::model::ScryptoInvocation;
-use radix_engine_interface::wasm::*;
 use sbor::rust::vec::Vec;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
@@ -18,6 +18,8 @@ where
     Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
 {
     api: &'y mut Y,
+    buffers: BTreeMap<BufferId, Vec<u8>>,
+    next_buffer_id: BufferId,
 }
 
 impl<'y, Y> RadixEngineWasmRuntime<'y, Y>
@@ -25,11 +27,22 @@ where
     Y: SystemApi + EngineApi<RuntimeError> + Invokable<ScryptoInvocation, RuntimeError>,
 {
     pub fn new(api: &'y mut Y) -> Self {
-        RadixEngineWasmRuntime { api }
+        RadixEngineWasmRuntime {
+            api,
+            buffers: BTreeMap::new(),
+            next_buffer_id: 0,
+        }
+    }
+
+    pub fn insert_buffer(&mut self, buffer: Vec<u8>) -> Buffer {
+        let id = self.next_buffer_id;
+        let len = buffer.len();
+        self.buffers.insert(id, buffer);
+        buffer!(id, len)
     }
 }
 
-fn encode<T: ScryptoEncode>(output: T) -> Result<Vec<u8>, InvokeError<WasmError>> {
+fn encode<T: ScryptoEncode>(output: T) -> Result<Vec<u8>, InvokeError<WasmShimError>> {
     scrypto_encode(&output).map_err(|err| {
         InvokeError::Downstream(RuntimeError::KernelError(KernelError::SborEncodeError(err)))
     })
@@ -43,67 +56,112 @@ where
         + InvokableModel<RuntimeError>
         + ActorApi<RuntimeError>,
 {
-    fn main(
-        &mut self,
-        id: u8,
-        input: IndexedScryptoValue,
-    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
-        match id {
-            Invoke::ID => {
-                let input : <Invoke as EngineWasmApi>::Input = input.as_typed().map_err(|e| InvokeError::Error(WasmError::SborDecodeError(e)))?;
-                let return_data = self.api.invoke(input.into())?;
-                let output:  <Invoke as EngineWasmApi>::Output = scrypto_encode(&return_data).map_err(|e| InvokeError::Error(WasmError::SborEncodeError(e)))?;
-                 Ok(IndexedScryptoValue::from(_))
-            }
-            InvokeMethod::ID => {(receiver, method, args) => {
-                encode(self.api.invoke_method(receiver, &method, &args)?)?
-            }
-            CreateNode::ID => {(node) => encode(self.api.sys_create_node(node)?)?,
-            GetVisibleNodeIds::ID => {() => encode(self.api.sys_get_visible_nodes()?)?,
-            DropNode::ID => {(node_id) => encode(self.api.sys_drop_node(node_id)?)?,
-            LockSubstate::ID => {(node_id, offset, mutable) => {
-                encode(self.api.sys_lock_substate(node_id, offset, mutable)?)?
-            }
-            Read::ID => {(lock_handle) => self.api.sys_read(lock_handle)?,
-            Write::ID => {(lock_handle, value) => {
-                encode(self.api.sys_write(lock_handle, value)?)?
-            }
-            DropLock::ID => {(lock_handle) => {
-                encode(self.api.sys_drop_lock(lock_handle)?)?
-            }
-            GetActor::ID => {() => encode(self.api.fn_identifier()?)?,
-        }
-
-
-        // // let input: RadixEngineInput = scrypto_decode(input.as_slice())
-        // //     .map_err(|_| InvokeError::Error(WasmError::InvalidRadixEngineInput))?;
-        // // let rtn = match input {
-        // //     RadixEngineInput::Invoke(invocation) => {
-        // //         invoke_call_table(invocation, self.api)?.into_vec()
-        // //     }
-        // //     RadixEngineInput::InvokeMethod(receiver, method, args) => {
-        // //         encode(self.api.invoke_method(receiver, &method, &args)?)?
-        // //     }
-        // //     RadixEngineInput::CreateNode(node) => encode(self.api.sys_create_node(node)?)?,
-        // //     RadixEngineInput::GetVisibleNodeIds() => encode(self.api.sys_get_visible_nodes()?)?,
-        // //     RadixEngineInput::DropNode(node_id) => encode(self.api.sys_drop_node(node_id)?)?,
-        // //     RadixEngineInput::LockSubstate(node_id, offset, mutable) => {
-        // //         encode(self.api.sys_lock_substate(node_id, offset, mutable)?)?
-        // //     }
-        // //     RadixEngineInput::Read(lock_handle) => self.api.sys_read(lock_handle)?,
-        // //     RadixEngineInput::Write(lock_handle, value) => {
-        // //         encode(self.api.sys_write(lock_handle, value)?)?
-        // //     }
-        // //     RadixEngineInput::DropLock(lock_handle) => {
-        // //         encode(self.api.sys_drop_lock(lock_handle)?)?
-        // //     }
-        // //     RadixEngineInput::GetActor() => encode(self.api.fn_identifier()?)?,
-        // // };
-
-        // Ok(rtn)
+    fn get_buffer(&mut self, buffer_id: BufferId) -> Result<&[u8], InvokeError<WasmShimError>> {
+        self.buffers
+            .get(&buffer_id)
+            .map(|b| b.as_slice())
+            .ok_or(InvokeError::Error(WasmShimError::BufferNotFound(buffer_id)))
     }
 
-    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {
+    fn invoke_method(
+        &mut self,
+        receiver: Vec<u8>,
+        ident: String,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmShimError>> {
+        let receiver = scrypto_decode::<ScryptoReceiver>(&receiver)
+            .map_err(WasmShimError::InvalidReceiver)
+            .map_err(InvokeError::Error)?;
+
+        let return_data = self.api.invoke_method(receiver, ident.as_str(), args)?;
+
+        Ok(self.insert_buffer(return_data))
+    }
+
+    fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmShimError>> {
+        let invocation = scrypto_decode::<CallTableInvocation>(&invocation)
+            .map_err(WasmShimError::InvalidInvocation)
+            .map_err(InvokeError::Error)?;
+
+        let return_data = invoke_call_table(invocation, self.api)?.into_vec();
+
+        Ok(self.insert_buffer(return_data))
+    }
+
+    fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmShimError>> {
+        let node = scrypto_decode::<ScryptoRENode>(&node)
+            .map_err(WasmShimError::InvalidNode)
+            .map_err(InvokeError::Error)?;
+
+        let node_id = self.api.sys_create_node(node)?;
+
+        let buffer = scrypto_encode(&node_id).expect("Failed to encode node id");
+        Ok(self.insert_buffer(buffer))
+    }
+
+    fn get_visible_node_ids(&mut self) -> Result<Buffer, InvokeError<WasmShimError>> {
+        let node_ids = self.api.sys_get_visible_nodes()?;
+
+        let buffer = scrypto_encode(&node_ids).expect("Failed to encode node id list");
+        Ok(self.insert_buffer(buffer))
+    }
+
+    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmShimError>> {
+        let node_id = scrypto_decode::<RENodeId>(&node_id)
+            .map_err(WasmShimError::InvalidNodeId)
+            .map_err(InvokeError::Error)?;
+
+        Ok(())
+    }
+
+    fn lock_substate(
+        &mut self,
+        node_id: Vec<u8>,
+        offset: Vec<u8>,
+        mutable: bool,
+    ) -> Result<u32, InvokeError<WasmShimError>> {
+        let node_id = scrypto_decode::<RENodeId>(&node_id)
+            .map_err(WasmShimError::InvalidNodeId)
+            .map_err(InvokeError::Error)?;
+
+        let offset = scrypto_decode::<SubstateOffset>(&offset)
+            .map_err(WasmShimError::InvalidOffset)
+            .map_err(InvokeError::Error)?;
+
+        let handle = self.api.sys_lock_substate(node_id, offset, mutable)?;
+        Ok(handle)
+    }
+
+    fn read_substate(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmShimError>> {
+        let substate = self.api.sys_read(handle)?;
+
+        Ok(self.insert_buffer(substate))
+    }
+
+    fn write_substate(
+        &mut self,
+        handle: u32,
+        data: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmShimError>> {
+        self.api.sys_write(handle, data)?;
+
+        Ok(())
+    }
+
+    fn unlock_substate(&mut self, handle: u32) -> Result<(), InvokeError<WasmShimError>> {
+        self.api.sys_drop_lock(handle)?;
+
+        Ok(())
+    }
+
+    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmShimError>> {
+        let actor = self.api.fn_identifier()?;
+
+        let buffer = scrypto_encode(&actor).expect("Failed to encode actor");
+        Ok(self.insert_buffer(buffer))
+    }
+
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmShimError>> {
         self.api
             .consume_cost_units(n)
             .map_err(InvokeError::downstream)
@@ -122,17 +180,67 @@ impl NopWasmRuntime {
 }
 
 impl WasmRuntime for NopWasmRuntime {
-    fn main(
-        &mut self,
-        _id: u8,
-        _input: IndexedScryptoValue,
-    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
-        Ok(IndexedScryptoValue::unit())
+    fn get_buffer(&mut self, buffer_id: BufferId) -> Result<&[u8], InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
     }
 
-    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmError>> {
+    fn invoke_method(
+        &mut self,
+        receiver: Vec<u8>,
+        ident: String,
+        args: Vec<u8>,
+    ) -> Result<Buffer, InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn get_visible_node_ids(&mut self) -> Result<Buffer, InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn lock_substate(
+        &mut self,
+        node_id: Vec<u8>,
+        offset: Vec<u8>,
+        mutable: bool,
+    ) -> Result<u32, InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn read_substate(&mut self, handle: u32) -> Result<Buffer, InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn write_substate(
+        &mut self,
+        handle: u32,
+        data: Vec<u8>,
+    ) -> Result<(), InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn unlock_substate(&mut self, handle: u32) -> Result<(), InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmShimError>> {
+        Err(InvokeError::Error(WasmShimError::NotImplemented))
+    }
+
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmShimError>> {
         self.fee_reserve
             .consume_execution(n, 1, "run_wasm", false)
-            .map_err(|e| InvokeError::Error(WasmError::CostingError(e)))
+            .map_err(|e| InvokeError::Error(WasmShimError::CostingError(e)))
     }
 }

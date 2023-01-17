@@ -68,6 +68,11 @@ impl IndexedScryptoValue {
         Ok(Self::new(slice.to_vec(), value))
     }
 
+    pub fn from_vec(vec: Vec<u8>) -> Result<Self, DecodeError> {
+        let value = scrypto_decode(&vec)?;
+        Ok(Self::new(vec, value))
+    }
+
     pub fn from_value(value: ScryptoValue) -> Self {
         let bytes = scrypto_encode(&value).expect("Failed to decode scrypto value");
         Self::new(bytes, value)
