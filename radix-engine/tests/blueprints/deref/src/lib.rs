@@ -19,8 +19,7 @@ blueprint! {
                 )
                 .unwrap();
 
-            let visible_node_ids: Vec<RENodeId> =
-                call_engine(RadixEngineInput::GetVisibleNodeIds());
+            let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
 
             for node_id in visible_node_ids {
                 if let RENodeId::Component(..) = node_id {
@@ -44,8 +43,7 @@ blueprint! {
                 syscalls.sys_drop_lock(lock_handle).unwrap();
             }
 
-            let visible_node_ids: Vec<RENodeId> =
-                call_engine(RadixEngineInput::GetVisibleNodeIds());
+            let visible_node_ids = ScryptoEnv.sys_get_visible_nodes().unwrap();
 
             for node_id in visible_node_ids {
                 if let RENodeId::Component(..) = node_id {

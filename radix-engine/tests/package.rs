@@ -1,4 +1,4 @@
-use radix_engine::engine::{ApplicationError, KernelError, RuntimeError};
+use radix_engine::engine::{ApplicationError, InterpreterError, KernelError, RuntimeError};
 use radix_engine::model::PackageError;
 use radix_engine::types::*;
 use radix_engine::wasm::*;
@@ -109,7 +109,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
+            RuntimeError::InterpreterError(InterpreterError::InvalidReturn(..))
         )
     });
 }
@@ -125,7 +125,7 @@ fn test_basic_package() {
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .publish_package(
             code,
-            BTreeMap::new(),
+            generate_single_function_abi("Test", "f", Type::Any),
             BTreeMap::new(),
             BTreeMap::new(),
             AccessRules::new(),

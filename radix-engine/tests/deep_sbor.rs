@@ -1,7 +1,6 @@
-use radix_engine::engine::{KernelError, RuntimeError};
+use radix_engine::engine::{InterpreterError, KernelError, RuntimeError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine::wasm::WasmRuntimeError;
 use radix_engine_interface::data::MAX_SCRYPTO_SBOR_DEPTH;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -108,8 +107,8 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     receipt.expect_specific_failure(|f| {
         matches!(
             f,
-            RuntimeError::KernelError(KernelError::WasmRuntimeError(
-                WasmRuntimeError::SborDecodeError(DecodeError::MaxDepthExceeded(_))
+            RuntimeError::InterpreterError(InterpreterError::InvalidReturn(
+                DecodeError::MaxDepthExceeded(_)
             ))
         )
     });

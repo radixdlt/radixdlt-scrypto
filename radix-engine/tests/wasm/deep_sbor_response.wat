@@ -2,39 +2,47 @@
 
   ;; Simple function that always returns `()`
   ;; Need to replace ${depth} with the depth
-  (func $Test_f (param $0 i32) (result i32)
+  (func $Test_f (param $0 i64) (result i64)
     ;; Loop starts!
     (local $i i32)
+    (local $payload i32)
+    (local $payload_length i32)
     (local $curr_pointer i32)
-    (local $return_length i32)
 
-    ;; Return length needs 2 * depth
-    ;; It needs (depth-1) * 2 bytes in the middle, plus 2 bytes for the end
-    (local.set
-      $return_length
-      (i32.mul
-        (i32.const 2)
-        (i32.const ${depth})
-      )
-    )
-
-    ;; Get the pointer to write the response at
+    ;; Get the pointer to paylod
     (local.set 
-      $0
-      (call $scrypto_alloc
-        (i32.add
-          (local.get $return_length)
-          (i32.const 1)
+      $payload
+      (i32.const 0)
+    )
+
+    ;; Paylod length = 2 * depth + 1
+    (local.set
+      $payload_length
+      (i32.add
+        (i32.mul
+            (i32.const 2)
+            (i32.const ${depth})
         )
+        (i32.const 1)
       )
     )
 
-    ;; But skip the first 5 padder bytes before writing the response!
+    ;; Set up current pointer
+    (local.set
+      $curr_pointer
+      (i32.const 0)
+    )
+
+    ;; Write SBOR prefix
+    local.get $curr_pointer
+    i32.const 92
+    i32.store8
+
     (local.set
       $curr_pointer
       (i32.add
-        (local.get $0)
-        (i32.const 5)
+        (local.get $payload)
+        (i32.const 1)
       )
     )
 
@@ -52,7 +60,7 @@
       i32.add
       local.set $i
 
-      ;; Write Tuple Type, and push the pointer forward one
+      ;; Write Tuple value kind, and push the pointer forward one
       local.get $curr_pointer
       i32.const 33
       i32.store8
@@ -89,15 +97,12 @@
     local.get $curr_pointer
     i32.const 0x0021
     i32.store16
-    (local.get $0)
+    
+    ;; Return slice (ptr = 0, len)
+    (i64.extend_i32_s (local.get $payload_length))
   )
 
   (memory $0 1)
   (export "memory" (memory $0))
-  (export "scrypto_alloc" (func $scrypto_alloc))
-  (export "scrypto_free" (func $scrypto_free))
   (export "Test_f" (func $Test_f))
-
-  ${memcpy}
-  ${buffer}
 )

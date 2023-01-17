@@ -23,17 +23,17 @@ blueprint! {
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_invalid_output(_input: *mut u8) -> *mut u8 {
-    ::scrypto::buffer::scrypto_encode_to_buffer(&()).unwrap()
+pub extern "C" fn AbiComponent2_invalid_output(_input: u64) -> u64 {
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&()).unwrap())
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_main(_input: *mut u8) -> *mut u8 {
-    ::scrypto::buffer::scrypto_encode_to_buffer(&()).unwrap()
+pub extern "C" fn AbiComponent2_valid_output(_input: u64) -> u64 {
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&()).unwrap())
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
+pub extern "C" fn AbiComponent2_abi() -> u64 {
     let structure = Type::Struct {
         name: "AbiComponent2".to_string(),
         fields: Fields::Unit,
@@ -43,7 +43,7 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
         fns: vec![
             Fn {
                 ident: "invalid_output".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::Tuple {
                     element_types: vec![],
                 },
@@ -52,117 +52,117 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
             },
             Fn {
                 ident: "unit".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::Tuple {
                     element_types: vec![],
                 },
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "bool".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::Bool,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "i8".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::I8,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "i16".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::I16,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "i32".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::I32,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "i64".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::I64,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "i128".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::I128,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "u8".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::U8,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "u16".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::U16,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "u32".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::U32,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "u64".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::U64,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "u128".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::U128,
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "result".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::Result {
                     okay_type: Box::new(Type::Tuple {
                         element_types: vec![],
@@ -174,11 +174,11 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "tree_map".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::TreeMap {
                     key_type: Box::new(Type::Tuple {
                         element_types: vec![],
@@ -190,11 +190,11 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
             Fn {
                 ident: "hash_set".to_string(),
-                mutability: Option::None,
+                mutability: None,
                 input: Type::HashSet {
                     element_type: Box::new(Type::Tuple {
                         element_types: vec![],
@@ -203,10 +203,10 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
                 output: Type::Tuple {
                     element_types: vec![],
                 },
-                export_name: "AbiComponent2_main".to_string(),
+                export_name: "AbiComponent2_valid_output".to_string(),
             },
         ],
     };
 
-    ::scrypto::buffer::scrypto_encode_to_buffer(&abi).unwrap()
+    ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
 }
