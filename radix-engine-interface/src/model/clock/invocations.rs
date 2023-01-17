@@ -3,7 +3,6 @@ use sbor::rust::fmt::Debug;
 use crate::api::*;
 use crate::model::*;
 use crate::time::{Instant, TimeComparisonOperator};
-use crate::wasm::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

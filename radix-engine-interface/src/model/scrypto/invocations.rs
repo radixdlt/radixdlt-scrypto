@@ -1,7 +1,7 @@
 use crate::api::types::ComponentId;
 use crate::api::Invocation;
+use crate::api::SerializableInvocation;
 use crate::model::{CallTableInvocation, ComponentAddress, PackageAddress};
-use crate::wasm::SerializableInvocation;
 use crate::*;
 use radix_engine_interface::data::ScryptoValue;
 use sbor::rust::string::String;

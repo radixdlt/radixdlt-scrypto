@@ -13,7 +13,6 @@ use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
 use crate::model::*;
 use crate::scrypto_type;
-use crate::wasm::*;
 
 use crate::*;
 

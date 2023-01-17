@@ -3,7 +3,6 @@ use sbor::rust::fmt;
 use sbor::rust::fmt::Debug;
 
 use crate::api::*;
-use crate::wasm::*;
 use crate::*;
 use sbor::rust::string::String;
 use sbor::*;

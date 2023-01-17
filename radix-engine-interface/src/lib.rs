@@ -31,8 +31,6 @@ pub mod node;
 /// RE time library.
 pub mod time;
 
-pub mod wasm;
-
 mod macros;
 pub use macros::*;
 

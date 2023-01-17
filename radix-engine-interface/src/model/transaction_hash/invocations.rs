@@ -4,7 +4,6 @@ use sbor::rust::fmt::Debug;
 use crate::api::types::TransactionRuntimeId;
 use crate::api::*;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

@@ -1,7 +1,7 @@
 use crate::api::types::RENodeId;
 use crate::api::Invocation;
+use crate::api::*;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::BTreeMap;

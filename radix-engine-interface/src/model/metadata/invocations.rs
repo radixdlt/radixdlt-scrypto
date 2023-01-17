@@ -1,7 +1,7 @@
 use sbor::rust::fmt::Debug;
 
-use crate::api::{types::*, *};
-use crate::wasm::*;
+use crate::api::types::*;
+use crate::api::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

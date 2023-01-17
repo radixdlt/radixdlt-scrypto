@@ -1,10 +1,13 @@
 /// Data types used by Radix Engine API.
 pub mod types;
+pub mod wasm;
 
-use crate::api::types::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::format;
 use sbor::rust::vec::Vec;
+use types::*;
+
+pub use wasm::SerializableInvocation;
 
 pub trait Invocation: Debug {
     type Output: Debug;

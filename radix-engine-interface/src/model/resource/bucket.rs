@@ -3,11 +3,11 @@ use sbor::rust::fmt::Debug;
 use sbor::*;
 
 use crate::abi::*;
-use crate::api::{types::*, *};
+use crate::api::types::*;
+use crate::api::*;
 use crate::data::types::Own;
 use crate::data::ScryptoCustomValueKind;
 use crate::math::*;
-use crate::wasm::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

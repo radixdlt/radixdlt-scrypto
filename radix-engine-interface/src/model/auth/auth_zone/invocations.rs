@@ -6,7 +6,6 @@ use crate::api::types::AuthZoneStackId;
 use crate::api::*;
 use crate::math::Decimal;
 use crate::model::*;
-use crate::wasm::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

@@ -1,7 +1,7 @@
-use radix_engine_interface::wasm::SerializableInvocation;
 use sbor::rust::fmt::Debug;
 
-use crate::api::{types::*, *};
+use crate::api::types::*;
+use crate::api::*;
 use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
