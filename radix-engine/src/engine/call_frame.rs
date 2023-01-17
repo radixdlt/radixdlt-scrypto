@@ -388,7 +388,6 @@ impl CallFrame {
         track: &'f mut Track<'s, R>,
         push_to_store: bool,
     ) -> Result<(), RuntimeError> {
-
         let substates = re_node.to_substates();
 
         for (offset, substate) in &substates {

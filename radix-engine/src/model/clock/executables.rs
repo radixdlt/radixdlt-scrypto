@@ -79,7 +79,7 @@ impl Executor for ClockCreateInvocation {
         )?;
 
         let global_node_id = RENodeId::Global(GlobalAddress::Component(ComponentAddress::Clock(
-            self.component_address
+            self.component_address,
         )));
         system_api.create_node(
             global_node_id,

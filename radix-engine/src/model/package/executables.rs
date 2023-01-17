@@ -113,9 +113,7 @@ impl Executor for PackagePublishInvocation {
 
         // Globalize
         let global_node_id = if let Some(address) = self.package_address {
-            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(
-                address,
-            )))
+            RENodeId::Global(GlobalAddress::Package(PackageAddress::Normal(address)))
         } else {
             api.allocate_node_id(RENodeType::GlobalPackage)?
         };

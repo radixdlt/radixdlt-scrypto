@@ -1,3 +1,4 @@
+use crate::engine::{KernelError, RuntimeError};
 use radix_engine_interface::api::types::{
     AuthZoneStackId, BucketId, ComponentId, FeeReserveId, GlobalAddress, KeyValueStoreId,
     NonFungibleStoreId, PackageId, ProofId, RENodeId, RENodeType, ResourceManagerId,
@@ -5,11 +6,10 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
-use crate::engine::{KernelError, RuntimeError};
-use sbor::rust::string::ToString;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::vec::Vec;
+use sbor::rust::string::ToString;
 use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 
 use super::IdAllocationError;
 
@@ -40,7 +40,9 @@ impl IdAllocator {
     pub fn post_execute_invocation(&mut self) -> Result<(), RuntimeError> {
         if let Some(ids) = self.frame_allocated_ids.pop() {
             if !ids.is_empty() {
-                return Err(RuntimeError::KernelError(KernelError::IdAllocationError(IdAllocationError::AllocatedIDsNotEmpty)));
+                return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
+                    IdAllocationError::AllocatedIDsNotEmpty,
+                )));
             }
             Ok(())
         } else {
@@ -53,7 +55,9 @@ impl IdAllocator {
             let frame_allocated = ids.remove(&node_id);
             let pre_allocated = self.pre_allocated_ids.remove(&node_id);
             if !frame_allocated && !pre_allocated {
-                return Err(RuntimeError::KernelError(KernelError::IdAllocationError(IdAllocationError::RENodeIdWasNotAllocated(node_id))));
+                return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
+                    IdAllocationError::RENodeIdWasNotAllocated(node_id),
+                )));
             }
             Ok(())
         } else {
@@ -61,10 +65,7 @@ impl IdAllocator {
         }
     }
 
-    pub fn allocate_node_id(
-        &mut self,
-        node_type: RENodeType,
-    ) -> Result<RENodeId, RuntimeError> {
+    pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
             RENodeType::AuthZoneStack => self
                 .new_auth_zone_id()
@@ -117,7 +118,8 @@ impl IdAllocator {
             RENodeType::GlobalComponent => self
                 .new_component_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
-        }.map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+        }
+        .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
         if let Some(ids) = self.frame_allocated_ids.last_mut() {
             ids.insert(node_id);
@@ -150,7 +152,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        println!("Genesis package {:?}", hash(&data).lower_26_bytes());
+        // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
 
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
     }
@@ -159,7 +161,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        println!("Genesis account {:?}", hash(&data).lower_26_bytes());
+        // println!("Genesis account {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
     }
@@ -169,7 +171,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        println!("Genesis component {:?}", hash(&data).lower_26_bytes());
+        // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
     }
@@ -178,7 +180,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        println!("Genesis validator {:?}", hash(&data).lower_26_bytes());
+        // println!("Genesis validator {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::Validator(hash(data).lower_26_bytes()))
     }
@@ -187,7 +189,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
+        // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::EpochManager(hash(data).lower_26_bytes()))
     }
@@ -196,7 +198,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        println!("Genesis clock {:?}", hash(&data).lower_26_bytes());
+        // println!("Genesis clock {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::Clock(hash(data).lower_26_bytes()))
     }
@@ -206,7 +208,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
+        // println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
 
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }

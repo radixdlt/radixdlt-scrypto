@@ -15,7 +15,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
     let instructions = vec![Instruction::System(NativeInvocation::Clock(
         ClockInvocation::Create(ClockCreateInvocation {
-            component_address: CLOCK.raw()
+            component_address: CLOCK.raw(),
         }),
     ))];
     let blobs = vec![];
@@ -43,7 +43,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
     pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
     let instructions = vec![Instruction::System(NativeInvocation::Clock(
         ClockInvocation::Create(ClockCreateInvocation {
-            component_address: CLOCK.raw()
+            component_address: CLOCK.raw(),
         }),
     ))];
     let blobs = vec![];

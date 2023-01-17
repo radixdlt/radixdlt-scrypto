@@ -27,7 +27,32 @@ pub const ACCOUNT_BLUEPRINT: &str = "Account";
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
-    57, 78, 78, 153, 179, 175, 144, 54, 157, 76, 67, 70, 161, 216, 233, 38, 187, 32, 234, 127, 84, 0, 140, 48, 198, 110
+    57,
+    78,
+    78,
+    153,
+    179,
+    175,
+    144,
+    54,
+    157,
+    76,
+    67,
+    70,
+    161,
+    216,
+    233,
+    38,
+    187,
+    32,
+    234,
+    127,
+    84,
+    0,
+    140,
+    48,
+    198,
+    110
 );
 
 pub const CLOCK: ComponentAddress = address!(EntityType::Clock, 0);

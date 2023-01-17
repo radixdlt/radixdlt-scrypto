@@ -808,9 +808,7 @@ where
 
     fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
-        let node_id = self
-            .id_allocator
-            .allocate_node_id(node_type)?;
+        let node_id = self.id_allocator.allocate_node_id(node_type)?;
 
         Ok(node_id)
     }

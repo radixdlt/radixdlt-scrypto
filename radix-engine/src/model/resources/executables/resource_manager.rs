@@ -387,9 +387,7 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
         Y: SystemApi,
     {
         let global_node_id = if let Some(address) = self.resource_address {
-            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
-                address,
-            )))
+            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(address)))
         } else {
             api.allocate_node_id(RENodeType::GlobalResourceManager)?
         };
@@ -681,9 +679,7 @@ impl Executor for ResourceManagerCreateFungibleWithInitialSupplyInvocation {
         Y: SystemApi,
     {
         let global_node_id = if let Some(address) = self.resource_address {
-            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
-                address,
-            )))
+            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(address)))
         } else {
             api.allocate_node_id(RENodeType::GlobalResourceManager)?
         };

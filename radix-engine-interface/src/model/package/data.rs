@@ -38,7 +38,7 @@ impl TryFrom<&[u8]> for PackageAddress {
 impl PackageAddress {
     pub fn raw(&self) -> [u8; 26] {
         match self {
-            Self::Normal(v) => v.clone()
+            Self::Normal(v) => v.clone(),
         }
     }
 

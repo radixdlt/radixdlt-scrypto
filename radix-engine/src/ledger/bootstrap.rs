@@ -50,15 +50,17 @@ pub fn create_genesis(
         let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
         let resource_address = RADIX_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithInitialSupply(
-            ResourceManagerCreateFungibleWithInitialSupplyInvocation {
-                resource_address: Some(resource_address),
-                divisibility: 18,
-                metadata,
-                access_rules,
-                initial_supply,
-            }
-        ))));
+        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
+            ResourceInvocation::CreateFungibleWithInitialSupply(
+                ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                    resource_address: Some(resource_address),
+                    divisibility: 18,
+                    metadata,
+                    access_rules,
+                    initial_supply,
+                },
+            ),
+        )));
     }
 
     // ECDSA
@@ -67,15 +69,17 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = ECDSA_SECP256K1_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungible(
-            ResourceManagerCreateNonFungibleInvocation {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
+            ECDSA_SECP256K1_TOKEN,
+        )));
+        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
+            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
                 resource_address: Some(resource_address),
                 id_type: NonFungibleIdTypeId::Bytes,
                 metadata,
                 access_rules,
-            }
-        ))));
+            }),
+        )));
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -85,15 +89,17 @@ pub fn create_genesis(
         let mut access_rules = BTreeMap::new();
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = EDDSA_ED25519_TOKEN.raw();
-        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(EDDSA_ED25519_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungible(
-            ResourceManagerCreateNonFungibleInvocation {
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(
+            EDDSA_ED25519_TOKEN,
+        )));
+        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
+            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
                 resource_address: Some(resource_address),
                 id_type: NonFungibleIdTypeId::Bytes,
                 metadata,
                 access_rules,
-            }
-        ))));
+            }),
+        )));
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -104,14 +110,14 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = SYSTEM_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(SYSTEM_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungible(
-            ResourceManagerCreateNonFungibleInvocation {
+        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
+            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
                 resource_address: Some(resource_address),
                 id_type: NonFungibleIdTypeId::Bytes,
                 metadata,
                 access_rules,
-            }
-        ))));
+            }),
+        )));
     }
 
     // Package Token
@@ -121,14 +127,14 @@ pub fn create_genesis(
         access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         let resource_address = PACKAGE_TOKEN.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(PACKAGE_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungible(
-            ResourceManagerCreateNonFungibleInvocation {
+        instructions.push(Instruction::System(NativeInvocation::ResourceManager(
+            ResourceInvocation::CreateNonFungible(ResourceManagerCreateNonFungibleInvocation {
                 resource_address: Some(resource_address),
                 id_type: NonFungibleIdTypeId::Bytes,
                 metadata,
                 access_rules,
-            }
-        ))));
+            }),
+        )));
     }
 
     {
@@ -136,16 +142,16 @@ pub fn create_genesis(
         let faucet_abi = include_bytes!("../../../assets/faucet.abi").to_vec();
         let package_address = FAUCET_PACKAGE.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(FAUCET_PACKAGE)));
-        instructions.push(Instruction::System(NativeInvocation::Package(PackageInvocation::Publish(
-            PackagePublishInvocation {
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::Publish(PackagePublishInvocation {
                 package_address: Some(package_address),
                 code: faucet_code, // TODO: Use blob here instead?
-                abi: faucet_abi, // TODO: Use blob here instead?
+                abi: faucet_abi,   // TODO: Use blob here instead?
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            }
-        ))));
+            }),
+        )));
     }
 
     {
@@ -153,16 +159,16 @@ pub fn create_genesis(
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
         let package_address = ACCOUNT_PACKAGE.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
-        instructions.push(Instruction::System(NativeInvocation::Package(PackageInvocation::Publish(
-            PackagePublishInvocation {
+        instructions.push(Instruction::System(NativeInvocation::Package(
+            PackageInvocation::Publish(PackagePublishInvocation {
                 package_address: Some(package_address),
                 code: account_code, // TODO: Use blob here instead?
-                abi: account_abi, // TODO: Use blob here instead?
+                abi: account_abi,   // TODO: Use blob here instead?
                 royalty_config: BTreeMap::new(),
                 metadata: BTreeMap::new(),
                 access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-            }
-        ))));
+            }),
+        )));
     }
 
     instructions.push(
@@ -186,12 +192,9 @@ pub fn create_genesis(
         let component_address = CLOCK.raw();
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
         instructions.push(Instruction::System(NativeInvocation::Clock(
-            ClockInvocation::Create(ClockCreateInvocation {
-                component_address
-            }),
+            ClockInvocation::Create(ClockCreateInvocation { component_address }),
         )));
     }
-
 
     {
         let component_address = EPOCH_MANAGER.raw();
@@ -206,7 +209,6 @@ pub fn create_genesis(
         )));
     }
 
-
     SystemTransaction {
         instructions,
         blobs: Vec::new(),
@@ -217,9 +219,7 @@ pub fn create_genesis(
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     let faucet_component: ComponentAddress = receipt.output(8);
-    GenesisReceipt {
-        faucet_component,
-    }
+    GenesisReceipt { faucet_component }
 }
 
 pub fn bootstrap<S, W>(
