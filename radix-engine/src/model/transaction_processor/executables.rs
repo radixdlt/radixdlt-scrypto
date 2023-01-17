@@ -47,8 +47,8 @@ pub enum TransactionProcessorError {
     ResolveError(ResolveError),
 }
 
-pub trait NativeOutput: ScryptoEncode + Debug + DynClone {}
-impl<T: ScryptoEncode + Debug + Clone> NativeOutput for T {}
+pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync + DynClone {}
+impl<T: ScryptoEncode + Debug + Send + Sync + DynClone> NativeOutput for T {}
 
 dyn_clone::clone_trait_object!(NativeOutput);
 
