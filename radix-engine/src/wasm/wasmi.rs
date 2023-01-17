@@ -324,7 +324,7 @@ impl WasmInstance for WasmiInstance {
 
 #[derive(Debug, Clone)]
 pub struct EngineOptions {
-    max_cache_size_bytes: u32,
+    max_cache_size_bytes: usize,
 }
 
 pub struct WasmiEngine {
