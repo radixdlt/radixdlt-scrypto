@@ -4,10 +4,12 @@ use radix_engine_interface::crypto::hash;
 use radix_engine_interface::model::NonFungibleAddress;
 use radix_engine_interface::*;
 use std::collections::BTreeSet;
+use radix_engine_interface::api::types::RENodeId;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct SystemTransaction {
     pub instructions: Vec<Instruction>,
+    pub pre_allocated_ids: BTreeSet<RENodeId>,
     pub blobs: Vec<Vec<u8>>,
     pub nonce: u64,
 }
@@ -31,7 +33,7 @@ impl SystemTransaction {
                 auth_zone_params,
                 fee_payment: FeePayment::NoFee,
                 runtime_validations: vec![],
-                pre_allocated_ids: BTreeSet::new(),
+                pre_allocated_ids: self.pre_allocated_ids.clone(),
             },
         )
     }

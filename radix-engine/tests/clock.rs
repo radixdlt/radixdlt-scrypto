@@ -20,6 +20,7 @@ fn a_new_clock_instance_can_be_created_by_the_system() {
             instructions,
             blobs,
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::system_role()]),
     );
@@ -43,6 +44,7 @@ fn a_new_clock_instance_cannot_be_created_by_a_validator() {
             instructions,
             blobs,
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![]),
     );

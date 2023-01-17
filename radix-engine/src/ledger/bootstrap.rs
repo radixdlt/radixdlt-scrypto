@@ -217,6 +217,7 @@ pub fn create_genesis(
     SystemTransaction {
         instructions,
         blobs,
+        pre_allocated_ids: BTreeSet::new(),
         nonce: 0,
     }
 }
