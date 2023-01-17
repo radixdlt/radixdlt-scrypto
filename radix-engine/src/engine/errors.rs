@@ -12,6 +12,8 @@ use super::TrackError;
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum IdAllocationError {
+    RENodeIdWasNotAllocated(RENodeId),
+    AllocatedIDsNotEmpty,
     OutOfID,
 }
 
@@ -125,8 +127,6 @@ pub enum CallFrameError {
     RENodeNotVisible(RENodeId),
     RENodeNotOwned(RENodeId),
     MovingLockedRENode(RENodeId),
-    RENodeIdWasNotAllocated(RENodeId),
-    CallFrameCleanupAllocatedIdsNotEmpty,
 }
 
 impl From<CallFrameError> for RuntimeError {

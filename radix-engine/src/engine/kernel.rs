@@ -187,7 +187,6 @@ where
                     &mut self.heap,
                     &mut self.track,
                     true,
-                    true,
                 )?;
 
                 Ok(true)
@@ -288,8 +287,6 @@ where
             Ok(())
         })?;
 
-        self.current_frame.verify_allocated_ids_empty()?;
-
         Ok(())
     }
 
@@ -347,6 +344,7 @@ where
                     &mut self.track,
                 )
                 .map_err(RuntimeError::ModuleError)?;
+            self.id_allocator.pre_execute_invocation();
         }
 
         // Call Frame Push
@@ -371,6 +369,7 @@ where
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
 
+            self.id_allocator.post_execute_invocation()?;
             self.module
                 .post_execute_invocation(
                     &self.prev_frame_stack.last().unwrap().actor,
@@ -811,9 +810,7 @@ where
         // TODO: Add costing
         let node_id = self
             .id_allocator
-            .allocate_node_id(node_type)
-            .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-        self.current_frame.add_allocated_id(node_id);
+            .allocate_node_id(node_type)?;
 
         Ok(node_id)
     }
@@ -934,13 +931,13 @@ where
             _ => false,
         };
 
+        self.id_allocator.take_node_id(node_id)?;
         self.current_frame.create_node(
             node_id,
             re_node,
             &mut self.heap,
             &mut self.track,
             push_to_store,
-            false,
         )?;
 
         // Restore current mode

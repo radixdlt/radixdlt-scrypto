@@ -5,12 +5,18 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
+use crate::engine::{KernelError, RuntimeError};
+use sbor::rust::string::ToString;
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::vec::Vec;
 
 use super::IdAllocationError;
 
 /// An ID allocator defines how identities are generated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
+    pre_allocated_resource_addresses: BTreeSet<ResourceAddress>,
+    frame_allocated_ids: Vec<BTreeSet<RENodeId>>,
     next_id: u32,
     transaction_hash: Hash,
 }
@@ -19,15 +25,43 @@ impl IdAllocator {
     /// Creates an ID allocator.
     pub fn new(transaction_hash: Hash) -> Self {
         Self {
+            pre_allocated_resource_addresses: BTreeSet::new(),
+            frame_allocated_ids: vec![BTreeSet::new()],
             next_id: 0u32,
             transaction_hash,
+        }
+    }
+
+    pub fn pre_execute_invocation(&mut self) {
+        self.frame_allocated_ids.push(BTreeSet::new());
+    }
+
+    pub fn post_execute_invocation(&mut self) -> Result<(), RuntimeError> {
+        if let Some(ids) = self.frame_allocated_ids.pop() {
+            if !ids.is_empty() {
+                return Err(RuntimeError::KernelError(KernelError::IdAllocationError(IdAllocationError::AllocatedIDsNotEmpty)));
+            }
+            Ok(())
+        } else {
+            Err(RuntimeError::UnexpectedError("No frame found.".to_string()))
+        }
+    }
+
+    pub fn take_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
+        if let Some(ids) = self.frame_allocated_ids.last_mut() {
+            if !ids.remove(&node_id) {
+                return Err(RuntimeError::KernelError(KernelError::IdAllocationError(IdAllocationError::RENodeIdWasNotAllocated(node_id))));
+            }
+            Ok(())
+        } else {
+            Err(RuntimeError::UnexpectedError("No frame found.".to_string()))
         }
     }
 
     pub fn allocate_node_id(
         &mut self,
         node_type: RENodeType,
-    ) -> Result<RENodeId, IdAllocationError> {
+    ) -> Result<RENodeId, RuntimeError> {
         let node_id = match node_type {
             RENodeType::AuthZoneStack => self
                 .new_auth_zone_id()
@@ -80,7 +114,13 @@ impl IdAllocator {
             RENodeType::GlobalComponent => self
                 .new_component_address()
                 .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
-        }?;
+        }.map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
+
+        if let Some(ids) = self.frame_allocated_ids.last_mut() {
+            ids.insert(node_id);
+        } else {
+            return Err(RuntimeError::UnexpectedError("No frame found.".to_string()));
+        }
 
         Ok(node_id)
     }
