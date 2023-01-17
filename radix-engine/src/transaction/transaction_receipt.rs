@@ -15,7 +15,16 @@ use crate::types::*;
 
 #[derive(Debug, Clone, ScryptoEncode, ScryptoDecode)]
 pub struct ResourcesUsage {
-    pub heap_memory: usize
+    pub heap_allocations_sum: usize,
+    pub heap_peak_memory: usize
+}
+impl ResourcesUsage {
+    pub fn new() -> Self {
+        Self {
+            heap_allocations_sum: 0,
+            heap_peak_memory: 0
+        }
+    }
 }
 
 

@@ -153,7 +153,7 @@ where
                     execution: TransactionExecution {
                         fee_summary: err.fee_summary,
                         events: vec![],
-                        resources_usage: ResourcesUsage { heap_memory: 0 }
+                        resources_usage: ResourcesUsage::new()
                     },
                     result: TransactionResult::Reject(RejectResult {
                         error: RejectionError::ErrorBeforeFeeLoanRepaid(RuntimeError::ModuleError(
@@ -195,15 +195,18 @@ where
         };
 
         #[cfg(not(feature = "resource-usage"))]
-        let heap_memory = 0;
+        let (heap_allocations_sum, heap_peak_memory) = (0,0);
         #[cfg(feature = "resource-usage")]
-        let heap_memory = INFO_ALLOC.get_counter_value();
+        let (heap_allocations_sum, _heap_current_level, heap_peak_memory) = INFO_ALLOC.get_counters_value();
 
         let receipt = TransactionReceipt {
             execution: TransactionExecution {
                 fee_summary: track_receipt.fee_summary,
                 events: track_receipt.events,
-                resources_usage: ResourcesUsage { heap_memory }
+                resources_usage: ResourcesUsage { 
+                    heap_allocations_sum,
+                    heap_peak_memory
+                }
             },
             result: track_receipt.result,
         };

@@ -15,7 +15,7 @@ use transaction::model::TestTransaction;
 use transaction::signing::EcdsaSecp256k1PrivateKey;
 
 
-#[derive(Eq, PartialEq, Hash, Clone)]
+#[derive(Eq, PartialEq, Hash, Clone, Copy)]
 struct Bytes(usize);
 impl std::fmt::Display for Bytes {
     fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::result::Result<(), std::fmt::Error> { 
@@ -35,35 +35,53 @@ impl std::fmt::Debug for Bytes {
         write!(fmt, "{}", self) 
     }
 }
+impl AddAssign for Bytes {
+    fn add_assign(&mut self, other: Self) {
+        self.0 += other.0
+    }
+}
 
 
 struct MemInfoFramework {
     counter: Bytes,
-    allocations: Vec<Bytes>
+    sum_allocations: Vec<Bytes>,
+    peak_allocations: Vec<Bytes>,
 }
 impl MemInfoFramework {
     pub fn new() -> Self {
         Self {
             counter: Bytes(0),
-            allocations: Vec::new()
+            sum_allocations: Vec::new(),
+            peak_allocations: Vec::new()
         }
     }
     pub fn add_measurement(&mut self, value: &ResourcesUsage) {
-        self.counter.0 += value.heap_memory;
-        self.allocations.push(Bytes(value.heap_memory));
+        self.counter += Bytes(value.heap_allocations_sum);
+        self.sum_allocations.push(Bytes(value.heap_allocations_sum));
+        self.peak_allocations.push(Bytes(value.heap_peak_memory));
     }
 
     pub fn print_report(&self) {
         let mut map: HashMap<Bytes, usize> = HashMap::new();
-        for i in self.allocations.iter() {
+        for i in self.sum_allocations.iter() {
             map.entry(i.clone()).and_modify(|e| { *e += 1; }).or_insert(1);
         }
 
-        println!("Iterations: {}", self.allocations.len());
+        let mut sum_peak = Bytes(0);
+        let mut map_peak: HashMap<Bytes, usize> = HashMap::new();
+        for i in self.peak_allocations.iter() {
+            map_peak.entry(i.clone()).and_modify(|e| { *e += 1; }).or_insert(1);
+            sum_peak += *i;
+        }
+
+        println!("Iterations: {}", self.sum_allocations.len());
         println!("Sum of allocated heap memory in all iterations: {}", self.counter);
-        let x = Bytes(self.counter.0.div_euclid(self.allocations.len()));
+        let x = Bytes(self.counter.0.div_euclid(self.sum_allocations.len()));
         println!("Average allocation per iteration: {}", x);
+        let x = Bytes(sum_peak.0.div_euclid(self.peak_allocations.len()));
+        println!("Average peak allocation per iteration: {}", x);
         println!("Alocated memory chunks (size: count): {:#?}", map);
+        println!("Peak allocations (size: count): {:#?}", map_peak);
     }
 }
 
