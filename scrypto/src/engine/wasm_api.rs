@@ -51,7 +51,7 @@ extern "C" {
     // Invocation API
     //===============
 
-    /// Invokes a method on a scrypto component.
+    /// Invokes a method on a component.
     pub fn invoke_method(
         receiver: *const u8,
         receive_len: usize,

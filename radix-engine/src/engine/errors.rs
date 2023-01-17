@@ -146,6 +146,7 @@ pub enum ScryptoFnResolvingError {
 pub enum InterpreterError {
     InvalidInvocation,
     InvalidScryptoInvocation(PackageAddress, String, String, ScryptoFnResolvingError),
+    InvalidReturn(DecodeError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]

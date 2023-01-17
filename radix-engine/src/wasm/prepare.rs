@@ -174,8 +174,8 @@ impl WasmModule {
         if let Some(sec) = self.module.import_section() {
             for entry in sec.entries() {
                 if entry.module() == MODULE_ENV_NAME {
-                    let matches = match entry.field() {
-                        GET_BUFFER_FUNCTION_NAME => {
+                    match entry.field() {
+                        CONSUME_BUFFER_FUNCTION_NAME => {
                             if let External::Function(type_index) = entry.external() {
                                 if Self::function_type_matches(
                                     &self.module,

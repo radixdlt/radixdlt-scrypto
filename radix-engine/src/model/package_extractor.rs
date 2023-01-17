@@ -33,11 +33,7 @@ pub fn extract_abi(code: &[u8]) -> Result<BTreeMap<String, BlueprintAbi>, Extrac
     let mut blueprints = BTreeMap::new();
     for method_name in function_exports {
         let rtn = instance
-            .invoke_export(
-                &method_name,
-                vec![scrypto_encode(&()).unwrap()],
-                &mut runtime,
-            )
+            .invoke_export(&method_name, vec![], &mut runtime)
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: BlueprintAbi =

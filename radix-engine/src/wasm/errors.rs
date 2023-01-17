@@ -90,6 +90,9 @@ pub enum WasmShimError {
     /// WASM interpreter error, such as traps.
     InterpreterError(String),
 
+    /// WASM function doesn't return a valid data.
+    InvalidReturn,
+
     //=============
     // SHIM ERRORS
     //=============
@@ -99,6 +102,8 @@ pub enum WasmShimError {
     BufferNotFound(BufferId),
     /// Invalid scrypto receiver
     InvalidReceiver(DecodeError),
+    /// Invalid method ident
+    InvalidIdent,
     /// Invalid invocation
     InvalidInvocation(DecodeError),
     /// Invalid RE node data
@@ -107,6 +112,8 @@ pub enum WasmShimError {
     InvalidNodeId(DecodeError),
     /// Invalid substate offset
     InvalidOffset(DecodeError),
+    /// Costing error
+    CostingError(FeeReserveError),
 }
 
 impl fmt::Display for WasmShimError {

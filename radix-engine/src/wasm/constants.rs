@@ -1,5 +1,5 @@
-pub const GET_BUFFER_FUNCTION_ID: usize = 0;
-pub const GET_BUFFER_FUNCTION_NAME: &str = "get_buffer";
+pub const CONSUME_BUFFER_FUNCTION_ID: usize = 0;
+pub const CONSUME_BUFFER_FUNCTION_NAME: &str = "consume_buffer";
 pub const INVOKE_METHOD_FUNCTION_ID: usize = 1;
 pub const INVOKE_METHOD_FUNCTION_NAME: &str = "invoke_method";
 pub const INVOKE_FUNCTION_ID: usize = 2;

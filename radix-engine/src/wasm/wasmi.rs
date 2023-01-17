@@ -1,5 +1,4 @@
 use radix_engine_interface::api::wasm::ReturnData;
-use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::sync::Arc;
 use wasmi::*;
 
@@ -36,9 +35,9 @@ impl ModuleImportResolver for WasmiEnvModule {
         signature: &wasmi::Signature,
     ) -> Result<FuncRef, Error> {
         match field_name {
-            GET_BUFFER_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+            CONSUME_BUFFER_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
-                GET_BUFFER_FUNCTION_ID,
+                CONSUME_BUFFER_FUNCTION_ID,
             )),
             INVOKE_METHOD_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
                 signature.clone(),
@@ -138,6 +137,16 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
         Ok(buffer[ptr..ptr + len].to_vec())
     }
 
+    pub fn write_memory(&self, ptr: usize, data: &[u8]) -> Result<(), WasmShimError> {
+        let mut direct = self.instance.memory_ref.direct_access_mut();
+        let buffer = direct.as_mut();
+        if ptr > buffer.len() || ptr + data.len() > buffer.len() {
+            return Err(WasmShimError::MemoryAccessError);
+        }
+        buffer[ptr..ptr + data.len()].copy_from_slice(data);
+        Ok(())
+    }
+
     pub fn read_return_data(&self, v: ReturnData) -> Result<Vec<u8>, WasmShimError> {
         let ptr = return_data_ptr!(v);
         let len = return_data_len!(v);
@@ -153,14 +162,108 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
         match index {
-            RADIX_ENGINE_FUNCTION_ID => {
-                let id = args.nth_checked::<u8>(0)?;
-                let input_ptr = args.nth_checked::<u32>(1)? as usize;
-                let input = self.read_value(input_ptr)?;
-                let output = self.runtime.main(id, input)?;
-                self.send_value(output.as_slice())
-                    .map(Option::Some)
-                    .map_err(|e| e.into())
+            CONSUME_BUFFER_FUNCTION_ID => {
+                let buffer_id = args.nth_checked::<u32>(0)?;
+                let destination = args.nth_checked::<u32>(1)? as usize;
+
+                let slice = self.runtime.consume_buffer(buffer_id)?;
+                self.write_memory(destination, &slice)?;
+
+                Ok(None)
+            }
+            INVOKE_METHOD_FUNCTION_ID => {
+                let receiver_ptr = args.nth_checked::<u32>(0)? as usize;
+                let receiver_len = args.nth_checked::<u32>(1)? as usize;
+                let ident_ptr = args.nth_checked::<u32>(2)? as usize;
+                let ident_len = args.nth_checked::<u32>(3)? as usize;
+                let args_ptr = args.nth_checked::<u32>(4)? as usize;
+                let args_len = args.nth_checked::<u32>(5)? as usize;
+
+                let buffer = self.runtime.invoke_method(
+                    self.read_memory(receiver_ptr, receiver_len)?,
+                    self.read_memory(ident_ptr, ident_len)?,
+                    self.read_memory(args_ptr, args_len)?,
+                )?;
+
+                Ok(Some(RuntimeValue::I64(buffer as i64)))
+            }
+            INVOKE_FUNCTION_ID => {
+                let invocation_ptr = args.nth_checked::<u32>(0)? as usize;
+                let invocation_len = args.nth_checked::<u32>(1)? as usize;
+
+                let buffer = self
+                    .runtime
+                    .invoke(self.read_memory(invocation_ptr, invocation_len)?)?;
+
+                Ok(Some(RuntimeValue::I64(buffer as i64)))
+            }
+            CREATE_NODE_FUNCTION_ID => {
+                let node_ptr = args.nth_checked::<u32>(0)? as usize;
+                let node_len = args.nth_checked::<u32>(1)? as usize;
+
+                let buffer = self
+                    .runtime
+                    .create_node(self.read_memory(node_ptr, node_len)?)?;
+
+                Ok(Some(RuntimeValue::I64(buffer as i64)))
+            }
+            GET_VISIBLE_NODES_FUNCTION_ID => {
+                let buffer = self.runtime.get_visible_nodes()?;
+
+                Ok(Some(RuntimeValue::I64(buffer as i64)))
+            }
+            DROP_NODE_FUNCTION_ID => {
+                let node_id_ptr = args.nth_checked::<u32>(0)? as usize;
+                let node_id_len = args.nth_checked::<u32>(1)? as usize;
+
+                self.runtime
+                    .drop_node(self.read_memory(node_id_ptr, node_id_len)?)?;
+
+                Ok(None)
+            }
+            LOCK_SUBSTATE_FUNCTION_ID => {
+                let node_id_ptr = args.nth_checked::<u32>(0)? as usize;
+                let node_id_len = args.nth_checked::<u32>(1)? as usize;
+                let offset_ptr = args.nth_checked::<u32>(2)? as usize;
+                let offset_len = args.nth_checked::<u32>(3)? as usize;
+                let mutable = args.nth_checked::<u32>(4)? != 0;
+
+                let handle = self.runtime.lock_substate(
+                    self.read_memory(node_id_ptr, node_id_len)?,
+                    self.read_memory(offset_ptr, offset_len)?,
+                    mutable,
+                )?;
+
+                Ok(Some(RuntimeValue::I32(handle as i32)))
+            }
+            READ_SUBSTATE_FUNCTION_ID => {
+                let handle = args.nth_checked::<u32>(0)?;
+
+                let buffer = self.runtime.read_substate(handle)?;
+
+                Ok(Some(RuntimeValue::I64(buffer as i64)))
+            }
+            WRITE_SUBSTATE_FUNCTION_ID => {
+                let handle = args.nth_checked::<u32>(0)?;
+                let data_ptr = args.nth_checked::<u32>(1)? as usize;
+                let data_len = args.nth_checked::<u32>(2)? as usize;
+
+                self.runtime
+                    .write_substate(handle, self.read_memory(data_ptr, data_len)?)?;
+
+                Ok(None)
+            }
+            UNLOCK_SUBSTATE_FUNCTION_ID => {
+                let handle = args.nth_checked::<u32>(0)?;
+
+                self.runtime.unlock_substate(handle)?;
+
+                Ok(None)
+            }
+            GET_ACTOR_FUNCTION_ID => {
+                let buffer = self.runtime.get_actor()?;
+
+                Ok(Some(RuntimeValue::I64(buffer as i64)))
             }
             CONSUME_COST_UNITS_FUNCTION_ID => {
                 let n: u32 = args.nth_checked(0)?;
@@ -178,36 +281,34 @@ impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: Vec<Vec<u8>>,
+        args: Vec<u32>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<IndexedScryptoValue, InvokeError<WasmShimError>> {
+    ) -> Result<Vec<u8>, InvokeError<WasmShimError>> {
         let mut externals = WasmiExternals {
             instance: self,
             runtime,
         };
 
-        let mut pointers = Vec::new();
-        for arg in args {
-            let pointer = externals.send_value(&arg)?;
-            pointers.push(pointer);
-        }
+        let args: Vec<RuntimeValue> = args
+            .into_iter()
+            .map(|a| RuntimeValue::I32(a as i32))
+            .collect();
+
         let result = self
             .module_ref
             .clone()
-            .invoke_export(func_name, &pointers, &mut externals);
-
-        let rtn = result
+            .invoke_export(func_name, &args, &mut externals)
             .map_err(|e| {
                 let err: InvokeError<WasmShimError> = e.into();
                 err
-            })?
-            .ok_or(InvokeError::Error(WasmShimError::InvalidReturn))?;
-        match rtn {
-            RuntimeValue::I32(ptr) => externals
-                .read_value(ptr as usize)
-                .map_err(InvokeError::Error),
-            _ => Err(InvokeError::Error(WasmShimError::InvalidReturn)),
+            })?;
+
+        if let Some(RuntimeValue::I64(v)) = result {
+            externals.read_return_data(v as u64)
+        } else {
+            Err(WasmShimError::InvalidReturn)
         }
+        .map_err(InvokeError::Error)
     }
 }
 
