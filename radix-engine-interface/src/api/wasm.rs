@@ -35,14 +35,14 @@ macro_rules! buffer {
 pub type Slice = u64;
 
 #[macro_export]
-macro_rules! return_data_ptr {
+macro_rules! slice_ptr {
     ($buf: expr) => {
         ($buf >> 32) as usize
     };
 }
 
 #[macro_export]
-macro_rules! return_data_len {
+macro_rules! slice_len {
     ($buf: expr) => {
         ($buf & 0xffffffff) as usize
     };

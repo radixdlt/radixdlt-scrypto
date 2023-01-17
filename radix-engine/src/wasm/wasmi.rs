@@ -148,8 +148,8 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
     }
 
     pub fn read_slice(&self, v: Slice) -> Result<Vec<u8>, WasmRuntimeError> {
-        let ptr = return_data_ptr!(v);
-        let len = return_data_len!(v);
+        let ptr = slice_ptr!(v);
+        let len = slice_len!(v);
 
         self.read_memory(ptr, len)
     }
