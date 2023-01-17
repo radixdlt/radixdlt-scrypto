@@ -2,9 +2,8 @@ use crate::engine::wasm_api::*;
 use radix_engine_interface::api::types::{
     FnIdentifier, LockHandle, RENodeId, ScryptoRENode, ScryptoReceiver, SubstateOffset,
 };
-use radix_engine_interface::api::{
-    ActorApi, ComponentApi, EngineApi, Invokable, SerializableInvocation,
-};
+use radix_engine_interface::api::wasm::SerializableInvocation;
+use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::model::CallTableInvocation;
 use sbor::rust::fmt::Debug;

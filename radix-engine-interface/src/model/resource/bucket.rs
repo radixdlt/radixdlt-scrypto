@@ -4,6 +4,7 @@ use sbor::*;
 
 use crate::abi::*;
 use crate::api::types::*;
+use crate::api::wasm::*;
 use crate::api::*;
 use crate::data::types::Own;
 use crate::data::ScryptoCustomValueKind;

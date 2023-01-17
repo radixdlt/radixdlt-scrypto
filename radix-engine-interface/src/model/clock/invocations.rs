@@ -1,5 +1,6 @@
 use sbor::rust::fmt::Debug;
 
+use crate::api::wasm::*;
 use crate::api::*;
 use crate::model::*;
 use crate::time::{Instant, TimeComparisonOperator};

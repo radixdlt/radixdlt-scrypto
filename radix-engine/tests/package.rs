@@ -60,8 +60,8 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmShimError(b)) = e {
-            matches!(*b, WasmShimError::MemoryAccessError)
+        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+            matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
         }
@@ -83,8 +83,8 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        if let RuntimeError::KernelError(KernelError::WasmShimError(b)) = e {
-            matches!(*b, WasmShimError::MemoryAccessError)
+        if let RuntimeError::KernelError(KernelError::WasmRuntimeError(b)) = e {
+            matches!(*b, WasmRuntimeError::MemoryAccessError)
         } else {
             false
         }
@@ -107,7 +107,10 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Assert
     receipt.expect_specific_failure(|e| {
-        matches!(e, RuntimeError::KernelError(KernelError::WasmShimError(..)))
+        matches!(
+            e,
+            RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
+        )
     });
 }
 

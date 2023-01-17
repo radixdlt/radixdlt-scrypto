@@ -2,6 +2,7 @@ use radix_engine_interface::crypto::Hash;
 use sbor::rust::fmt::Debug;
 
 use crate::api::types::TransactionRuntimeId;
+use crate::api::wasm::*;
 use crate::api::*;
 use crate::model::*;
 use crate::*;

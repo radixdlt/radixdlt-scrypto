@@ -7,8 +7,6 @@ use sbor::rust::format;
 use sbor::rust::vec::Vec;
 use types::*;
 
-pub use wasm::SerializableInvocation;
-
 pub trait Invocation: Debug {
     type Output: Debug;
 

@@ -8,48 +8,52 @@ use sbor::rust::vec::Vec;
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {
-    fn allocate_buffer(&mut self, buffer: Vec<u8>) -> Result<Buffer, InvokeError<WasmShimError>>;
+    fn allocate_buffer(&mut self, buffer: Vec<u8>)
+        -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn consume_buffer(
         &mut self,
         buffer_id: BufferId,
-    ) -> Result<Vec<u8>, InvokeError<WasmShimError>>;
+    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
 
     fn invoke_method(
         &mut self,
         receiver: Vec<u8>,
         ident: Vec<u8>,
         args: Vec<u8>,
-    ) -> Result<Buffer, InvokeError<WasmShimError>>;
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmShimError>>;
+    fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmShimError>>;
+    fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmShimError>>;
+    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmShimError>>;
+    fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmRuntimeError>>;
 
     fn lock_substate(
         &mut self,
         node_id: Vec<u8>,
         offset: Vec<u8>,
         mutable: bool,
-    ) -> Result<LockHandle, InvokeError<WasmShimError>>;
+    ) -> Result<LockHandle, InvokeError<WasmRuntimeError>>;
 
-    fn read_substate(&mut self, handle: LockHandle) -> Result<Buffer, InvokeError<WasmShimError>>;
+    fn read_substate(
+        &mut self,
+        handle: LockHandle,
+    ) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
     fn write_substate(
         &mut self,
         handle: LockHandle,
         data: Vec<u8>,
-    ) -> Result<(), InvokeError<WasmShimError>>;
+    ) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn unlock_substate(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmShimError>>;
+    fn unlock_substate(&mut self, handle: LockHandle) -> Result<(), InvokeError<WasmRuntimeError>>;
 
-    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmShimError>>;
+    fn get_actor(&mut self) -> Result<Buffer, InvokeError<WasmRuntimeError>>;
 
-    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmShimError>>;
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError<WasmRuntimeError>>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.
@@ -64,7 +68,7 @@ pub trait WasmInstance {
         func_name: &str,
         args: Vec<u32>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<Vec<u8>, InvokeError<WasmShimError>>;
+    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
 }
 
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.

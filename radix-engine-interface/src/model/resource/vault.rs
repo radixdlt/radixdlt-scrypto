@@ -1,4 +1,5 @@
 use crate::api::types::*;
+use crate::api::wasm::*;
 use crate::api::*;
 use crate::math::*;
 use crate::*;

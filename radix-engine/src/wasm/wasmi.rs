@@ -91,15 +91,15 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
-impl From<Error> for InvokeError<WasmShimError> {
+impl From<Error> for InvokeError<WasmRuntimeError> {
     fn from(error: Error) -> Self {
         let e_str = format!("{:?}", error);
         match error.into_host_error() {
             // Pass-through invoke errors
             Some(host_error) => *host_error
-                .downcast::<InvokeError<WasmShimError>>()
-                .expect("Failed to downcast error into InvokeError<WasmShimError>"),
-            None => InvokeError::Error(WasmShimError::InterpreterError(e_str)),
+                .downcast::<InvokeError<WasmRuntimeError>>()
+                .expect("Failed to downcast error into InvokeError<WasmRuntimeError>"),
+            None => InvokeError::Error(WasmRuntimeError::InterpreterError(e_str)),
         }
     }
 }
@@ -128,26 +128,26 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn read_memory(&self, ptr: usize, len: usize) -> Result<Vec<u8>, WasmShimError> {
+    pub fn read_memory(&self, ptr: usize, len: usize) -> Result<Vec<u8>, WasmRuntimeError> {
         let direct = self.instance.memory_ref.direct_access();
         let buffer = direct.as_ref();
         if ptr > buffer.len() || ptr + len > buffer.len() {
-            return Err(WasmShimError::MemoryAccessError);
+            return Err(WasmRuntimeError::MemoryAccessError);
         }
         Ok(buffer[ptr..ptr + len].to_vec())
     }
 
-    pub fn write_memory(&self, ptr: usize, data: &[u8]) -> Result<(), WasmShimError> {
+    pub fn write_memory(&self, ptr: usize, data: &[u8]) -> Result<(), WasmRuntimeError> {
         let mut direct = self.instance.memory_ref.direct_access_mut();
         let buffer = direct.as_mut();
         if ptr > buffer.len() || ptr + data.len() > buffer.len() {
-            return Err(WasmShimError::MemoryAccessError);
+            return Err(WasmRuntimeError::MemoryAccessError);
         }
         buffer[ptr..ptr + data.len()].copy_from_slice(data);
         Ok(())
     }
 
-    pub fn read_return_data(&self, v: ReturnData) -> Result<Vec<u8>, WasmShimError> {
+    pub fn read_return_data(&self, v: ReturnData) -> Result<Vec<u8>, WasmRuntimeError> {
         let ptr = return_data_ptr!(v);
         let len = return_data_len!(v);
 
@@ -272,7 +272,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }
-            _ => Err(WasmShimError::UnknownFunctionIndex(index).into()),
+            _ => Err(WasmRuntimeError::UnknownFunctionIndex(index).into()),
         }
     }
 }
@@ -283,7 +283,7 @@ impl WasmInstance for WasmiInstance {
         func_name: &str,
         args: Vec<u32>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<Vec<u8>, InvokeError<WasmShimError>> {
+    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         let mut externals = WasmiExternals {
             instance: self,
             runtime,
@@ -299,14 +299,14 @@ impl WasmInstance for WasmiInstance {
             .clone()
             .invoke_export(func_name, &args, &mut externals)
             .map_err(|e| {
-                let err: InvokeError<WasmShimError> = e.into();
+                let err: InvokeError<WasmRuntimeError> = e.into();
                 err
             })?;
 
         if let Some(RuntimeValue::I64(v)) = result {
             externals.read_return_data(v as u64)
         } else {
-            Err(WasmShimError::InvalidReturn)
+            Err(WasmRuntimeError::InvalidReturn)
         }
         .map_err(InvokeError::Error)
     }

@@ -3,6 +3,7 @@ use sbor::rust::fmt::Debug;
 use sbor::rust::vec::Vec;
 
 use crate::api::types::AuthZoneStackId;
+use crate::api::wasm::*;
 use crate::api::*;
 use crate::math::Decimal;
 use crate::model::*;

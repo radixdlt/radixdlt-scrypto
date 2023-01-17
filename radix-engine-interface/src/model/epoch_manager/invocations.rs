@@ -2,6 +2,7 @@ use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::fmt::Debug;
 
+use crate::api::wasm::*;
 use crate::api::*;
 use crate::model::*;
 use crate::*;

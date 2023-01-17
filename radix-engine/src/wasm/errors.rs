@@ -80,7 +80,7 @@ pub enum InvalidTable {
 
 /// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum WasmShimError {
+pub enum WasmRuntimeError {
     /// Error when reading from wasm memory.
     MemoryAccessError,
 
@@ -116,24 +116,24 @@ pub enum WasmShimError {
     CostingError(FeeReserveError),
 }
 
-impl fmt::Display for WasmShimError {
+impl fmt::Display for WasmRuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for WasmShimError {}
+impl HostError for WasmRuntimeError {}
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for WasmShimError {}
+impl std::error::Error for WasmRuntimeError {}
 
-impl fmt::Display for InvokeError<WasmShimError> {
+impl fmt::Display for InvokeError<WasmRuntimeError> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for InvokeError<WasmShimError> {}
+impl HostError for InvokeError<WasmRuntimeError> {}
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for InvokeError<WasmShimError> {}
+impl std::error::Error for InvokeError<WasmRuntimeError> {}

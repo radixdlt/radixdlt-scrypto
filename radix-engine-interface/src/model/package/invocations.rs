@@ -1,6 +1,6 @@
 use crate::api::types::RENodeId;
+use crate::api::wasm::*;
 use crate::api::Invocation;
-use crate::api::*;
 use crate::model::*;
 use crate::*;
 use sbor::rust::borrow::ToOwned;

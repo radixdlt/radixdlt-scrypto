@@ -1010,7 +1010,10 @@ pub fn is_costing_error(e: &RuntimeError) -> bool {
 }
 
 pub fn is_wasm_error(e: &RuntimeError) -> bool {
-    matches!(e, RuntimeError::KernelError(KernelError::WasmShimError(..)))
+    matches!(
+        e,
+        RuntimeError::KernelError(KernelError::WasmRuntimeError(..))
+    )
 }
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {

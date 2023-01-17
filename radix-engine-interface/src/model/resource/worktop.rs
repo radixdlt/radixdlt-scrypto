@@ -1,5 +1,5 @@
+use crate::api::wasm::*;
 use crate::api::Invocation;
-use crate::api::*;
 use crate::math::Decimal;
 use crate::model::*;
 use crate::*;
