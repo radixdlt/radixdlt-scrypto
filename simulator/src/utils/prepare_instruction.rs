@@ -824,7 +824,7 @@ mod test {
     #[serial] // Performs ledger lookups. Can not be run in parallel to avoid lock contention on the RocksDB.
     pub fn parsing_of_bytes_non_fungible_address_succeeds() {
         // Arrange
-        let arg = "resource_sim1qr3pgvfkptfjr3d80qqg404j73ceddmffezzfhnejn5sghlxde:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
+        let arg = "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
         let arg_type = Type::NonFungibleAddress;
 
         // Act
@@ -874,7 +874,7 @@ mod test {
     pub fn parsing_of_single_non_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =
-            "resource_sim1qr3pgvfkptfjr3d80qqg404j73ceddmffezzfhnejn5sghlxde:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
+            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
         let bech32_decoder = Bech32Decoder::for_simulator();
 
         // Act
@@ -900,7 +900,7 @@ mod test {
     pub fn parsing_of_multiple_non_fungible_resource_specifier_succeeds() {
         // Arrange
         let resource_specifier_string =
-            "resource_sim1qr3pgvfkptfjr3d80qqg404j73ceddmffezzfhnejn5sghlxde:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c,d85dc446d8e5eff48db25b56f6b5001d14627b5a199598485a8d,005d1ae87b0e7c5401d38e58d43291ffbd9ba6e1da54f87504a7";
+            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqshxgp7h:1f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c,d85dc446d8e5eff48db25b56f6b5001d14627b5a199598485a8d,005d1ae87b0e7c5401d38e58d43291ffbd9ba6e1da54f87504a7";
         let bech32_decoder = Bech32Decoder::for_simulator();
 
         // Act

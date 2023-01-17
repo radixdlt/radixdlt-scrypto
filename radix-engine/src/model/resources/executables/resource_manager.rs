@@ -386,7 +386,13 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
     where
         Y: SystemApi,
     {
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalResourceManager)?;
+        let global_node_id = if let Some(address) = self.resource_address {
+            RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(
+                address,
+            )))
+        } else {
+            api.allocate_node_id(RENodeType::GlobalResourceManager)?
+        };
         let resource_address: ResourceAddress = global_node_id.into();
 
         let nf_store_node_id = api.allocate_node_id(RENodeType::NonFungibleStore)?;

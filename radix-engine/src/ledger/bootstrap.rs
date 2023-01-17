@@ -26,7 +26,6 @@ const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 pub struct GenesisReceipt {
     pub faucet_package: PackageAddress,
     pub account_package: PackageAddress,
-    pub ecdsa_secp256k1_token: ResourceAddress,
     pub system_token: ResourceAddress,
     pub faucet_component: ComponentAddress,
     pub clock: ComponentAddress,
@@ -78,20 +77,19 @@ pub fn create_genesis(
     {
         let metadata: BTreeMap<String, String> = BTreeMap::new();
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-
-        // TODO: Create token at a specific address
-        instructions.push(Instruction::Basic(
-            BasicInstruction::CreateNonFungibleResource {
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let resource_address = match ECDSA_SECP256K1_TOKEN {
+            ResourceAddress::Normal(raw) => raw.clone(),
+        };
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(ECDSA_SECP256K1_TOKEN)));
+        instructions.push(Instruction::System(NativeInvocation::ResourceManager(ResourceInvocation::CreateNonFungible(
+            ResourceManagerCreateNonFungibleInvocation {
+                resource_address: Some(resource_address),
                 id_type: NonFungibleIdTypeId::Bytes,
                 metadata,
                 access_rules,
-                initial_supply: None,
-            },
-        ));
+            }
+        ))));
     }
 
     // TODO: Perhaps combine with ecdsa token?
@@ -225,7 +223,6 @@ pub fn create_genesis(
 }
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
-    let ecdsa_secp256k1_token: ResourceAddress = receipt.output(1);
     let eddsa_ed25519_token: ResourceAddress = receipt.output(2);
     let system_token: ResourceAddress = receipt.output(3);
     let package_token: ResourceAddress = receipt.output(4);
@@ -238,7 +235,6 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     GenesisReceipt {
         faucet_package,
         account_package,
-        ecdsa_secp256k1_token,
         system_token,
         faucet_component,
         clock,
@@ -329,7 +325,6 @@ mod tests {
 
         let genesis_receipt = genesis_result(&transaction_receipt);
 
-        assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
         assert_eq!(genesis_receipt.package_token, PACKAGE_TOKEN);
         assert_eq!(genesis_receipt.system_token, SYSTEM_TOKEN);

@@ -21,7 +21,6 @@ macro_rules! construct_address {
     };
 }
 
-/// (Deprecated) Constructs an RE address.
 #[macro_export]
 macro_rules! address {
     (EntityType::$entity_type:tt, $last_byte:literal) => {

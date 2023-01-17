@@ -150,7 +150,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis package {:?}", hash(&data).lower_26_bytes());
+        println!("Genesis package {:?}", hash(&data).lower_26_bytes());
 
         Ok(PackageAddress::Normal(hash(data).lower_26_bytes()))
     }
@@ -159,7 +159,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis account {:?}", hash(&data).lower_26_bytes());
+        println!("Genesis account {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::Account(hash(data).lower_26_bytes()))
     }
@@ -169,7 +169,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis component {:?}", hash(&data).lower_26_bytes());
+        println!("Genesis component {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::Normal(hash(data).lower_26_bytes()))
     }
@@ -178,7 +178,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis validator {:?}", hash(&data).lower_26_bytes());
+        println!("Genesis validator {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::Validator(hash(data).lower_26_bytes()))
     }
@@ -187,7 +187,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
+        println!("Genesis epoch manager {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::EpochManager(hash(data).lower_26_bytes()))
     }
@@ -196,7 +196,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis clock {:?}", hash(&data).lower_26_bytes());
+        println!("Genesis clock {:?}", hash(&data).lower_26_bytes());
 
         Ok(ComponentAddress::Clock(hash(data).lower_26_bytes()))
     }
@@ -206,7 +206,7 @@ impl IdAllocator {
         let mut data = self.transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        // println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
+        println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
 
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }

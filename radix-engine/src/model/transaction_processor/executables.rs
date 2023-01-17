@@ -579,6 +579,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         InstructionOutput::Native(Box::new(rtn))
                     } else {
                         let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            resource_address: None,
                             id_type: *id_type,
                             metadata: metadata.clone(),
                             access_rules: access_rules.clone(),
@@ -608,6 +609,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         InstructionOutput::Native(Box::new(rtn))
                     } else {
                         let rtn = api.invoke(ResourceManagerCreateNonFungibleInvocation {
+                            resource_address: None,
                             id_type: *id_type,
                             metadata: metadata.clone(),
                             access_rules: resource_access_rules_from_owner_badge(owner_badge),
