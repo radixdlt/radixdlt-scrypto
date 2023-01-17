@@ -9,13 +9,14 @@ use crate::engine::{KernelError, RuntimeError};
 use sbor::rust::string::ToString;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
+use sbor::rust::vec;
 
 use super::IdAllocationError;
 
 /// An ID allocator defines how identities are generated.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
-    pre_allocated_resource_addresses: BTreeSet<ResourceAddress>,
+    pre_allocated_ids: BTreeSet<RENodeId>,
     frame_allocated_ids: Vec<BTreeSet<RENodeId>>,
     next_id: u32,
     transaction_hash: Hash,
@@ -23,9 +24,9 @@ pub struct IdAllocator {
 
 impl IdAllocator {
     /// Creates an ID allocator.
-    pub fn new(transaction_hash: Hash) -> Self {
+    pub fn new(transaction_hash: Hash, pre_allocated_ids: BTreeSet<RENodeId>) -> Self {
         Self {
-            pre_allocated_resource_addresses: BTreeSet::new(),
+            pre_allocated_ids,
             frame_allocated_ids: vec![BTreeSet::new()],
             next_id: 0u32,
             transaction_hash,
@@ -49,7 +50,9 @@ impl IdAllocator {
 
     pub fn take_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
         if let Some(ids) = self.frame_allocated_ids.last_mut() {
-            if !ids.remove(&node_id) {
+            let frame_allocated = ids.remove(&node_id);
+            let pre_allocated = self.pre_allocated_ids.remove(&node_id);
+            if !frame_allocated && !pre_allocated {
                 return Err(RuntimeError::KernelError(KernelError::IdAllocationError(IdAllocationError::RENodeIdWasNotAllocated(node_id))));
             }
             Ok(())
