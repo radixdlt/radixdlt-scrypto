@@ -24,6 +24,21 @@ pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
     vec
 }
 
+pub type VecLeak = u64;
+
+pub fn forget_vec(vec: Vec<u8>) -> VecLeak {
+    let ptr = vec.as_ptr() as u64;
+    let len = vec.len() as u64;
+    assert!(ptr < 0xffffffff && ptr < 0xffffffff);
+
+    // Note that hhe memory used by the Vec is forever leaked.
+    // However, it's not an issue since the wasm instance will be destroyed after engine
+    // consuming the data.
+    sbor::rust::mem::forget(vec);
+
+    (ptr << 32) | len
+}
+
 extern "C" {
     //===============
     // Buffer API
