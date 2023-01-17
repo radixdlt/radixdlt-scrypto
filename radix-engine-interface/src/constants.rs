@@ -1,3 +1,4 @@
+use crate::address;
 use crate::construct_address;
 use crate::model::*;
 
@@ -9,310 +10,56 @@ use crate::model::*;
 // We've arranged the addresses in the order they're created in the genesis transaction.
 
 /// The XRD resource address.
-pub const RADIX_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    43,
-    184,
-    178,
-    243,
-    32,
-    242,
-    32,
-    82,
-    252,
-    147,
-    168,
-    128,
-    171,
-    228,
-    23,
-    93,
-    104,
-    143,
-    6,
-    112,
-    157,
-    220,
-    41,
-    97,
-    164,
-    99
-);
+pub const RADIX_TOKEN: ResourceAddress = address!(EntityType::Resource, 0);
 
 /// The ECDSA virtual resource address.
-pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    246,
-    61,
-    231,
-    132,
-    81,
-    172,
-    8,
-    116,
-    95,
-    46,
-    249,
-    248,
-    141,
-    43,
-    62,
-    26,
-    193,
-    120,
-    75,
-    61,
-    180,
-    246,
-    249,
-    103,
-    61,
-    215
+pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = address!(EntityType::Resource,
+    226, 20, 49, 54, 10, 211, 33, 197, 167, 120, 0, 138, 190, 178, 244, 113, 150, 183, 105, 78, 68, 36, 222, 121, 148, 233
 );
 
 /// The ED25519 virtual resource address.
 pub const EDDSA_ED25519_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
-    150,
-    171,
-    255,
-    213,
-    229,
-    176,
-    195,
-    43,
-    97,
-    33,
-    100,
-    75,
-    61,
-    162,
-    201,
-    85,
-    154,
-    1,
-    142,
-    153,
-    250,
-    16,
-    234,
-    197,
-    209,
-    7
+    225, 129, 131, 180, 138, 36, 112, 43, 200, 17, 98, 3, 254, 48, 235, 0, 250, 44, 30, 232, 206, 16, 250, 109, 171, 172
 );
 
 /// The system token which allows access to system resources (e.g. setting epoch)
 pub const SYSTEM_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
-    226,
-    196,
-    140,
-    102,
-    147,
-    211,
-    253,
-    230,
-    212,
-    153,
-    196,
-    189,
-    36,
-    44,
-    208,
-    77,
-    215,
-    144,
-    187,
-    76,
-    204,
-    207,
-    51,
-    74,
-    84,
-    175
+    94, 243, 82, 38, 121, 134, 34, 59, 99, 8, 244, 59, 24, 113, 244, 1, 9, 180, 42, 187, 103, 88, 187, 89, 25, 242
 );
 
 pub const PACKAGE_TOKEN: ResourceAddress = construct_address!(
     EntityType::Resource,
-    89,
-    100,
-    160,
-    56,
-    236,
-    141,
-    48,
-    10,
-    204,
-    4,
-    212,
-    116,
-    206,
-    163,
-    82,
-    50,
-    91,
-    137,
-    94,
-    1,
-    191,
-    236,
-    15,
-    125,
-    121,
-    66
+    92, 79, 54, 236, 171, 112, 227, 86, 75, 146, 40, 60, 170, 136, 15, 136, 203, 76, 237, 63, 25, 68, 145, 30, 190, 244
 );
 
 /// The address of the faucet package.
 pub const FAUCET_PACKAGE: PackageAddress = construct_address!(
     EntityType::Package,
-    226,
-    132,
-    230,
-    81,
-    135,
-    189,
-    73,
-    5,
-    237,
-    140,
-    69,
-    245,
-    29,
-    167,
-    105,
-    50,
-    140,
-    141,
-    135,
-    211,
-    163,
-    82,
-    178,
-    214,
-    91,
-    175
+    91, 209, 29, 27, 30, 180, 28, 133, 167, 1, 118, 177, 96, 131, 149, 140, 172, 94, 195, 71, 227, 13, 108, 137, 236, 242
 );
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the account package.
 pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
     EntityType::Package,
-    185,
-    97,
-    245,
-    214,
-    187,
-    182,
-    109,
-    5,
-    245,
-    67,
-    89,
-    29,
-    143,
-    159,
-    167,
-    177,
-    194,
-    186,
-    135,
-    12,
-    32,
-    227,
-    114,
-    156,
-    61,
-    150
+    57, 78, 78, 153, 179, 175, 144, 54, 157, 76, 67, 70, 161, 216, 233, 38, 187, 32, 234, 127, 84, 0, 140, 48, 198, 110
 );
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
-    113,
-    179,
-    235,
-    101,
-    238,
-    110,
-    3,
-    172,
-    128,
-    140,
-    185,
-    116,
-    251,
-    175,
-    151,
-    172,
-    131,
-    26,
-    147,
-    148,
-    218,
-    207,
-    211,
-    218,
-    56,
-    107
+    44, 201, 216, 26, 12, 130, 244, 40, 246, 101, 231, 56, 157, 150, 155, 85, 99, 116, 124, 101, 220, 228, 216, 136, 204, 65
 );
 
 pub const EPOCH_MANAGER: ComponentAddress = construct_address!(
     EntityType::EpochManager,
-    130,
-    47,
-    77,
-    13,
-    99,
-    236,
-    176,
-    88,
-    31,
-    204,
-    135,
-    236,
-    252,
-    237,
-    77,
-    41,
-    28,
-    186,
-    32,
-    98,
-    152,
-    62,
-    7,
-    79,
-    170,
-    105
+    138, 74, 99, 90, 238, 68, 188, 90, 51, 2, 91, 141, 166, 61, 140, 75, 226, 206, 4, 77, 132, 149, 103, 82, 83, 171
 );
 
 pub const CLOCK: ComponentAddress = construct_address!(
     EntityType::Clock,
-    234,
-    179,
-    239,
-    19,
-    250,
-    229,
-    160,
-    188,
-    178,
-    152,
-    196,
-    66,
-    133,
-    204,
-    37,
-    144,
-    243,
-    45,
-    76,
-    85,
-    249,
-    85,
-    205,
-    212,
-    31,
-    23
+    58, 117, 34, 241, 164, 99, 21, 98, 149, 118, 85, 226, 89, 114, 5, 179, 129, 206, 228, 174, 209, 252, 96, 28, 102, 178
 );

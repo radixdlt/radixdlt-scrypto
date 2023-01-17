@@ -741,6 +741,13 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                 }
                 Instruction::System(invocation) => {
                     let rtn = invoke_native_fn(invocation.clone(), api)?;
+
+                    // TODO: Move buckets/proofs to worktop/authzone without serialization
+                    let result = IndexedScryptoValue::from_typed(rtn.as_ref());
+                    TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
+                        &result, api,
+                    )?;
+
                     InstructionOutput::Native(rtn)
                 }
             };

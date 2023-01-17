@@ -28,7 +28,6 @@ pub struct GenesisReceipt {
     pub account_package: PackageAddress,
     pub ecdsa_secp256k1_token: ResourceAddress,
     pub system_token: ResourceAddress,
-    pub xrd_token: ResourceAddress,
     pub faucet_component: ComponentAddress,
     pub clock: ComponentAddress,
     pub eddsa_ed25519_token: ResourceAddress,
@@ -47,6 +46,7 @@ pub fn create_genesis(
     let mut blobs = Vec::new();
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
+    let mut pre_allocated_ids = BTreeSet::new();
 
     // XRD
     {
@@ -57,19 +57,21 @@ pub fn create_genesis(
         metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
         let mut access_rules = BTreeMap::new();
-        access_rules.insert(
-            ResourceMethodAuthKey::Withdraw,
-            (rule!(allow_all), rule!(deny_all)),
-        );
-        let initial_supply: Option<Decimal> = Some(XRD_MAX_SUPPLY.into());
-        instructions.push(Instruction::Basic(
-            BasicInstruction::CreateFungibleResource {
+        access_rules.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
+        let initial_supply: Decimal = XRD_MAX_SUPPLY.into();
+        let resource_address = match RADIX_TOKEN {
+            ResourceAddress::Normal(raw) => raw.clone(),
+        };
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
+        instructions.push(Instruction::System(NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithAddressAndInitialSupply(
+            ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation {
+                resource_address,
                 divisibility: 18,
                 metadata,
                 access_rules,
                 initial_supply,
-            },
-        ));
+            }
+        ))));
     }
 
     // ECDSA
@@ -217,13 +219,12 @@ pub fn create_genesis(
     SystemTransaction {
         instructions,
         blobs,
-        pre_allocated_ids: BTreeSet::new(),
+        pre_allocated_ids,
         nonce: 0,
     }
 }
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
-    let (xrd_token, _): (ResourceAddress, Own) = receipt.output(0);
     let ecdsa_secp256k1_token: ResourceAddress = receipt.output(1);
     let eddsa_ed25519_token: ResourceAddress = receipt.output(2);
     let system_token: ResourceAddress = receipt.output(3);
@@ -239,7 +240,6 @@ pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
         account_package,
         ecdsa_secp256k1_token,
         system_token,
-        xrd_token,
         faucet_component,
         clock,
         eddsa_ed25519_token,
@@ -329,7 +329,6 @@ mod tests {
 
         let genesis_receipt = genesis_result(&transaction_receipt);
 
-        assert_eq!(genesis_receipt.xrd_token, RADIX_TOKEN);
         assert_eq!(genesis_receipt.ecdsa_secp256k1_token, ECDSA_SECP256K1_TOKEN);
         assert_eq!(genesis_receipt.eddsa_ed25519_token, EDDSA_ED25519_TOKEN);
         assert_eq!(genesis_receipt.package_token, PACKAGE_TOKEN);

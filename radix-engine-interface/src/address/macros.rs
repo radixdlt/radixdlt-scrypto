@@ -1,4 +1,4 @@
-/// Constructs an RE address.
+/// Constructs an address.
 #[macro_export]
 macro_rules! construct_address {
     (EntityType::Resource, $($bytes:expr),*) => {
