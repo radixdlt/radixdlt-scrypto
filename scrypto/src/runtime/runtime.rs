@@ -1,7 +1,7 @@
 use radix_engine_interface::api::types::{
     FnIdentifier, PackageIdentifier, RENodeId, ScryptoFnIdentifier, ScryptoReceiver,
 };
-use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable};
+use radix_engine_interface::api::{ActorApi, EngineApi, Invokable};
 use radix_engine_interface::constants::{EPOCH_MANAGER, PACKAGE_TOKEN};
 use radix_engine_interface::crypto::*;
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode};

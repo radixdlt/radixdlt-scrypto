@@ -452,15 +452,15 @@ impl WasmModule {
                                 Self::function_matches(
                                     &self.module,
                                     *func_index as usize,
-                                    vec![ValueType::I32, ValueType::I32],
-                                    vec![ValueType::I32],
+                                    vec![ValueType::I64, ValueType::I64],
+                                    vec![ValueType::I64],
                                 )
                             } else {
                                 Self::function_matches(
                                     &self.module,
                                     *func_index as usize,
-                                    vec![ValueType::I32],
-                                    vec![ValueType::I32],
+                                    vec![ValueType::I64],
+                                    vec![ValueType::I64],
                                 )
                             }
                         } else {

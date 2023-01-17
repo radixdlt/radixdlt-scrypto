@@ -2,6 +2,7 @@
 pub mod types;
 pub mod wasm;
 
+use crate::data::IndexedScryptoValue;
 use sbor::rust::fmt::Debug;
 use sbor::rust::format;
 use sbor::rust::vec::Vec;
@@ -45,7 +46,7 @@ pub trait ComponentApi<E> {
         receiver: ScryptoReceiver,
         method_name: &str,
         args: Vec<u8>,
-    ) -> Result<Vec<u8>, E>;
+    ) -> Result<IndexedScryptoValue, E>;
 }
 
 pub trait InvokableModel<E>:

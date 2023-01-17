@@ -430,7 +430,6 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                         method_name,
                         args.into_vec(),
                     )?;
-                    let result = IndexedScryptoValue::from_typed(&result);
                     TransactionProcessor::move_proofs_to_authzone_and_buckets_to_worktop(
                         &result, api,
                     )?;

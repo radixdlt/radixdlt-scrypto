@@ -91,7 +91,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         let abi_functions = generate_abi(bp_ident, bp_items)?;
         quote! {
             #[no_mangle]
-            pub extern "C" fn #abi_ident() -> ::scrypto::engine::wasm_api::ReturnData {
+            pub extern "C" fn #abi_ident() -> ::scrypto::engine::wasm_api::Slice {
                 use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                 use ::sbor::rust::borrow::ToOwned;
                 use ::sbor::rust::vec;
@@ -272,7 +272,7 @@ fn generate_dispatcher(
                     if is_method {
                         quote! {
                             #[no_mangle]
-                            pub extern "C" fn #fn_ident(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::ReturnData {
+                            pub extern "C" fn #fn_ident(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                                 use ::sbor::rust::ops::{Deref, DerefMut};
 
                                 // Set up panic hook
@@ -288,7 +288,7 @@ fn generate_dispatcher(
                     } else {
                         quote! {
                             #[no_mangle]
-                            pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::ReturnData {
+                            pub extern "C" fn #fn_ident(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                                 use ::sbor::rust::ops::{Deref, DerefMut};
 
                                 // Set up panic hook
@@ -664,7 +664,7 @@ mod tests {
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_x(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::ReturnData {
+                pub extern "C" fn Test_x(component_id: ::scrypto::engine::wasm_api::Buffer, args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
@@ -687,7 +687,7 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_y(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::ReturnData {
+                pub extern "C" fn Test_y(args: ::scrypto::engine::wasm_api::Buffer) -> ::scrypto::engine::wasm_api::Slice {
                     use ::sbor::rust::ops::{Deref, DerefMut};
 
                     // Set up panic hook
@@ -703,7 +703,7 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::ReturnData {
+                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
                     use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
@@ -859,7 +859,7 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::ReturnData {
+                pub extern "C" fn Test_abi() -> ::scrypto::engine::wasm_api::Slice {
                     use ::scrypto::abi::{BlueprintAbi, LegacyDescribe, Fn, Type};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;

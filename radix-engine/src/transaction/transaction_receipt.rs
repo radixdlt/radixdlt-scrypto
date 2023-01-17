@@ -222,11 +222,12 @@ impl TransactionReceipt {
         match &self.expect_commit_success()[nth] {
             InstructionOutput::Native(native) => {
                 // TODO: Use downcast
-                let value = IndexedScryptoValue::from_typed(&native.as_ref());
-                scrypto_decode::<T>(value.as_slice())
+                IndexedScryptoValue::from_typed(&native.as_ref())
+                    .as_typed()
                     .expect("Wrong native instruction output type!")
             }
-            InstructionOutput::Scrypto(value) => scrypto_decode::<T>(value.as_slice())
+            InstructionOutput::Scrypto(value) => value
+                .as_typed()
                 .expect("Wrong scrypto instruction output type!"),
         }
     }

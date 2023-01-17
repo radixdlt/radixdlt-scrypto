@@ -169,7 +169,7 @@ where
                     receiver: None,
                     args: args!(access_rule),
                 })?;
-                let component_id = IndexedScryptoValue::from_typed(&result)
+                let component_id = IndexedScryptoValue::from_value(result)
                     .owned_node_ids()
                     .expect("No duplicates expected")
                     .into_iter()
@@ -640,11 +640,10 @@ where
         receiver: ScryptoReceiver,
         method_name: &str,
         args: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    ) -> Result<IndexedScryptoValue, RuntimeError> {
         // TODO: Use execution mode?
         let invocation = resolve_method(receiver, method_name, &args, self)?;
-        let rtn = invoke_call_table(invocation, self)?;
-        Ok(rtn.into_vec())
+        invoke_call_table(invocation, self)
     }
 }
 

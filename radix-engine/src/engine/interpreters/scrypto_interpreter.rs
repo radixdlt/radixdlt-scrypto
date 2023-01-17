@@ -54,15 +54,19 @@ impl Executor for ScryptoExecutor {
 
             let mut input = Vec::new();
             if let Some(component_id) = self.component_id {
-                input.push(buffer_id!(runtime
-                    .allocate_buffer(
-                        scrypto_encode(&component_id).expect("Failed to encode component id"),
-                    )
-                    .expect("Failed to allocate buffer")));
+                input.push(
+                    runtime
+                        .allocate_buffer(
+                            scrypto_encode(&component_id).expect("Failed to encode component id"),
+                        )
+                        .expect("Failed to allocate buffer"),
+                );
             }
-            input.push(buffer_id!(runtime
-                .allocate_buffer(scrypto_encode(&self.args).expect("Failed to encode args"))
-                .expect("Failed to allocate buffer")));
+            input.push(
+                runtime
+                    .allocate_buffer(scrypto_encode(&self.args).expect("Failed to encode args"))
+                    .expect("Failed to allocate buffer"),
+            );
 
             instance
                 .invoke_export(&self.export_name, input, &mut runtime)

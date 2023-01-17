@@ -3,7 +3,7 @@ use radix_engine_interface::api::types::{
     FnIdentifier, LockHandle, RENodeId, ScryptoRENode, ScryptoReceiver, SubstateOffset,
 };
 use radix_engine_interface::api::wasm::SerializableInvocation;
-use radix_engine_interface::api::{ActorApi, ComponentApi, EngineApi, Invokable};
+use radix_engine_interface::api::{ActorApi, EngineApi, Invokable};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode};
 use radix_engine_interface::model::CallTableInvocation;
 use sbor::rust::fmt::Debug;
@@ -16,6 +16,32 @@ pub enum EngineApiError {
 }
 
 pub struct ScryptoEnv;
+
+impl ScryptoEnv {
+    // Slightly different from ComponentApi::invoke_method
+
+    pub fn invoke_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        method_name: &str,
+        args: Vec<u8>,
+    ) -> Result<Vec<u8>, EngineApiError> {
+        let receiver = scrypto_encode(&receiver).unwrap();
+
+        let return_data = copy_buffer(unsafe {
+            invoke_method(
+                receiver.as_ptr(),
+                receiver.len(),
+                method_name.as_ptr(),
+                method_name.len(),
+                args.as_ptr(),
+                args.len(),
+            )
+        });
+
+        Ok(return_data)
+    }
+}
 
 impl<N: SerializableInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
     fn invoke(&mut self, input: N) -> Result<N::Output, EngineApiError> {
@@ -92,30 +118,6 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
         unsafe { unlock_substate(lock_handle) };
 
         Ok(())
-    }
-}
-
-impl ComponentApi<EngineApiError> for ScryptoEnv {
-    fn invoke_method(
-        &mut self,
-        receiver: ScryptoReceiver,
-        method_name: &str,
-        args: Vec<u8>,
-    ) -> Result<Vec<u8>, EngineApiError> {
-        let receiver = scrypto_encode(&receiver).unwrap();
-
-        let return_data = copy_buffer(unsafe {
-            invoke_method(
-                receiver.as_ptr(),
-                receiver.len(),
-                method_name.as_ptr(),
-                method_name.len(),
-                args.as_ptr(),
-                args.len(),
-            )
-        });
-
-        scrypto_decode(&return_data).map_err(EngineApiError::DecodeError)
     }
 }
 

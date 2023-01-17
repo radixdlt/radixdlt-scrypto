@@ -1,4 +1,4 @@
-use radix_engine_interface::api::wasm::ReturnData;
+use radix_engine_interface::api::wasm::Slice;
 use sbor::rust::sync::Arc;
 use wasmi::*;
 
@@ -147,7 +147,7 @@ impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
         Ok(())
     }
 
-    pub fn read_return_data(&self, v: ReturnData) -> Result<Vec<u8>, WasmRuntimeError> {
+    pub fn read_slice(&self, v: Slice) -> Result<Vec<u8>, WasmRuntimeError> {
         let ptr = return_data_ptr!(v);
         let len = return_data_len!(v);
 
@@ -281,7 +281,7 @@ impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: Vec<u32>,
+        args: Vec<u64>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         let mut externals = WasmiExternals {
@@ -291,7 +291,7 @@ impl WasmInstance for WasmiInstance {
 
         let args: Vec<RuntimeValue> = args
             .into_iter()
-            .map(|a| RuntimeValue::I32(a as i32))
+            .map(|a| RuntimeValue::I64(a as i64))
             .collect();
 
         let result = self
@@ -304,7 +304,7 @@ impl WasmInstance for WasmiInstance {
             })?;
 
         if let Some(RuntimeValue::I64(v)) = result {
-            externals.read_return_data(v as u64)
+            externals.read_slice(v as u64)
         } else {
             Err(WasmRuntimeError::InvalidReturn)
         }

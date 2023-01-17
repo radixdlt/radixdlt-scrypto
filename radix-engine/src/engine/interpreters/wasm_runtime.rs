@@ -49,6 +49,7 @@ where
         let id = self.next_buffer_id;
         let len = buffer.len();
         self.buffers.insert(id, buffer);
+        self.next_buffer_id += 1;
         Ok(buffer!(id, len))
     }
 
@@ -79,7 +80,7 @@ where
 
         let return_data = self.api.invoke_method(receiver, ident.as_str(), args)?;
 
-        self.allocate_buffer(return_data)
+        self.allocate_buffer(return_data.into_vec())
     }
 
     fn invoke(&mut self, invocation: Vec<u8>) -> Result<Buffer, InvokeError<WasmRuntimeError>> {

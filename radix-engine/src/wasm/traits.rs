@@ -61,12 +61,12 @@ pub trait WasmInstance {
     /// Invokes an export defined in this module.
     ///
     /// The expected signature is as follows:
-    /// - The argument list is variable number of U32/U32
+    /// - The argument list is variable number of U64, which encapsulates a buffer ID and a buffer length.
     /// - The return data is a U64/I64, which encapsulates a pointer and a length.
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: Vec<u32>,
+        args: Vec<u64>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>>;
 }

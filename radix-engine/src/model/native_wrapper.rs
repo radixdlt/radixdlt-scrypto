@@ -101,8 +101,7 @@ where
     match invocation {
         CallTableInvocation::Scrypto(invocation) => {
             let rtn = api.invoke(invocation)?;
-            let rtn = IndexedScryptoValue::from_typed(&rtn);
-            Ok(rtn)
+            Ok(IndexedScryptoValue::from_value(rtn))
         }
         CallTableInvocation::Native(invocation) => {
             let rtn = invoke_native_fn(invocation, api)?;

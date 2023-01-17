@@ -32,7 +32,7 @@ macro_rules! buffer {
     };
 }
 
-pub type ReturnData = u64;
+pub type Slice = u64;
 
 #[macro_export]
 macro_rules! return_data_ptr {
