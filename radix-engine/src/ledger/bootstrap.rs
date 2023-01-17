@@ -63,9 +63,9 @@ pub fn create_genesis(
             ResourceAddress::Normal(raw) => raw.clone(),
         };
         pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
-        instructions.push(Instruction::System(NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithAddressAndInitialSupply(
-            ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation {
-                resource_address,
+        instructions.push(Instruction::System(NativeInvocation::ResourceManager(ResourceInvocation::CreateFungibleWithInitialSupply(
+            ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                resource_address: Some(resource_address),
                 divisibility: 18,
                 metadata,
                 access_rules,

@@ -509,6 +509,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     if let Some(amount) = initial_supply {
                         let rtn =
                             api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                resource_address: None,
                                 divisibility: *divisibility,
                                 metadata: metadata.clone(),
                                 access_rules: access_rules.clone(),
@@ -537,6 +538,7 @@ impl<'a> Executor for TransactionProcessorRunInvocation<'a> {
                     if let Some(amount) = initial_supply {
                         let rtn =
                             api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+                                resource_address: None,
                                 divisibility: *divisibility,
                                 metadata: metadata.clone(),
                                 access_rules: resource_access_rules_from_owner_badge(owner_badge),

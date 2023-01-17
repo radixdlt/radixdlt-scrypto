@@ -122,9 +122,6 @@ pub enum ResourceInvocation {
         ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
     ),
     CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
-    CreateFungibleWithAddressAndInitialSupply(
-        ResourceManagerCreateFungibleWithAddressAndInitialSupplyInvocation,
-    ),
     BurnBucket(ResourceManagerBucketBurnInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
@@ -288,7 +285,6 @@ impl NativeInvocation {
                 ResourceInvocation::CreateNonFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::CreateFungibleWithInitialSupply(..) => {}
-                ResourceInvocation::CreateFungibleWithAddressAndInitialSupply(..) => {}
                 ResourceInvocation::BurnBucket(..) => {}
                 ResourceInvocation::Burn(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
