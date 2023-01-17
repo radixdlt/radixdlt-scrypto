@@ -210,3 +210,32 @@ pub extern "C" fn AbiComponent2_abi() -> u64 {
 
     ::scrypto::engine::wasm_api::forget_vec(::scrypto::data::scrypto_encode(&abi).unwrap())
 }
+
+
+blueprint! {
+    struct Simple {
+        state: u32,
+    }
+
+    impl Simple {
+        pub fn new() -> ComponentAddress {
+            Self {
+                state: 0
+            }
+            .instantiate()
+            .globalize()
+        }
+
+        pub fn get_state(&self) -> u32 {
+            self.state
+        }
+
+        pub fn set_state(&mut self, new_state: u32) {
+            self.state = new_state;
+        }
+
+        pub fn custom_types() -> (Decimal, PackageAddress, KeyValueStore<String, String>, Hash, Bucket, Proof, Vault) {
+            todo!()
+        }
+    }
+}

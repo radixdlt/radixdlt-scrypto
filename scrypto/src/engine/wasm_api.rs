@@ -1,3 +1,5 @@
+use sbor::rust::vec::Vec;
+
 pub type BufferId = u32;
 pub type Buffer = u64;
 
@@ -31,7 +33,7 @@ pub fn forget_vec(vec: Vec<u8>) -> Slice {
     let len = vec.len() as u64;
     assert!(ptr < 0xffffffff && ptr < 0xffffffff);
 
-    // Note that hhe memory used by the Vec is forever leaked.
+    // Note that the memory used by the Vec is forever leaked.
     // However, it's not an issue since the wasm instance will be destroyed after engine
     // consuming the data.
     sbor::rust::mem::forget(vec);
