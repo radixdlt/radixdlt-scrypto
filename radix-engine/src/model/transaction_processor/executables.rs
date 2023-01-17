@@ -3,6 +3,7 @@ use crate::model::WorktopSubstate;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmEngine;
+use dyn_clone::DynClone;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{ComponentApi, EngineApi, Invocation, InvokableModel};
@@ -46,10 +47,12 @@ pub enum TransactionProcessorError {
     ResolveError(ResolveError),
 }
 
-pub trait NativeOutput: ScryptoEncode + Debug {}
-impl<T: ScryptoEncode + Debug> NativeOutput for T {}
+pub trait NativeOutput: ScryptoEncode + Debug + DynClone {}
+impl<T: ScryptoEncode + Debug + Clone> NativeOutput for T {}
 
-#[derive(Debug)]
+dyn_clone::clone_trait_object!(NativeOutput);
+
+#[derive(Debug, Clone)]
 pub enum InstructionOutput {
     Native(Box<dyn NativeOutput>),
     Scrypto(IndexedScryptoValue),

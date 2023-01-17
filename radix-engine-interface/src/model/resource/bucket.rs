@@ -155,7 +155,7 @@ impl Into<CallTableInvocation> for BucketCreateProofInvocation {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Bucket(pub BucketId); // scrypto stub
 
 //========

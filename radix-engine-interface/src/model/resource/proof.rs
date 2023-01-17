@@ -140,7 +140,7 @@ impl fmt::Display for ProofValidationError {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Proof(pub ProofId); // scrypto stub
 
 //========
