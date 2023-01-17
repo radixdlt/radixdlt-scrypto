@@ -99,7 +99,7 @@ where
     }
 
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
-        self.get_visible_node_ids()
+        self.get_visible_nodes()
     }
 
     fn sys_lock_substate(

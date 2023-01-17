@@ -9,17 +9,17 @@ macro_rules! buffer_id {
 }
 
 #[macro_export]
-macro_rules! buffer_size {
+macro_rules! buffer_len {
     ($buf: expr) => {
-        ($buf & 0xffffffffu64) as usize
+        ($buf & 0xffffffff) as usize
     };
 }
 
 pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
-    let mut vec = Vec::<u8>::with_capacity(buffer_size!(buffer));
+    let mut vec = Vec::<u8>::with_capacity(buffer_len!(buffer));
     unsafe {
         consume_buffer(buffer_id!(buffer), vec.as_mut_ptr());
-        vec.set_len(buffer_size!(buffer));
+        vec.set_len(buffer_len!(buffer));
     };
     vec
 }
@@ -69,10 +69,10 @@ extern "C" {
     //===============
 
     /// Creates a node with the given initial data.
-    pub fn create_node(init_data: *const u8, init_data_len: usize) -> Buffer;
+    pub fn create_node(node: *const u8, node_len: usize) -> Buffer;
 
     /// Retrieves IDs of visible nodes.
-    pub fn get_visible_node_ids() -> Buffer;
+    pub fn get_visible_nodes() -> Buffer;
 
     /// Destroys a node.
     pub fn drop_node(node_id: *const u8, node_id_len: usize);
@@ -97,7 +97,7 @@ extern "C" {
     pub fn write_substate(handle: u32, data: *const u8, data_len: usize);
 
     // Releases a lock
-    pub fn unlock(handle: u32);
+    pub fn unlock_substate(handle: u32);
 
     //===============
     // Actor API

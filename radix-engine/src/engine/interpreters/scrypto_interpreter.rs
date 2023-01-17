@@ -62,7 +62,7 @@ impl Executor for ScryptoExecutor {
             instance
                 .invoke_export(&self.export_name, args, &mut runtime)
                 .map_err(|e| match e {
-                    InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmError(e)),
+                    InvokeError::Error(e) => RuntimeError::KernelError(KernelError::WasmShimError(e)),
                     InvokeError::Downstream(runtime_error) => runtime_error,
                 })?
         };

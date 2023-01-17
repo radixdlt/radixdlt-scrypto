@@ -21,7 +21,7 @@ pub trait WasmRuntime {
 
     fn create_node(&mut self, node: Vec<u8>) -> Result<Buffer, InvokeError<WasmShimError>>;
 
-    fn get_visible_node_ids(&mut self) -> Result<Buffer, InvokeError<WasmShimError>>;
+    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmShimError>>;
 
     fn drop_node(&mut self, node_id: Vec<u8>) -> Result<(), InvokeError<WasmShimError>>;
 

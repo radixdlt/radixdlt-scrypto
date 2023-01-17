@@ -46,7 +46,7 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
     }
 
     fn sys_get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, EngineApiError> {
-        let node_ids = copy_buffer(unsafe { get_visible_node_ids() });
+        let node_ids = copy_buffer(unsafe { get_visible_nodes() });
 
         scrypto_decode(&node_ids).map_err(EngineApiError::DecodeError)
     }
@@ -90,7 +90,7 @@ impl EngineApi<EngineApiError> for ScryptoEnv {
     }
 
     fn sys_drop_lock(&mut self, lock_handle: LockHandle) -> Result<(), EngineApiError> {
-        unsafe { unlock(lock_handle) };
+        unsafe { unlock_substate(lock_handle) };
 
         Ok(())
     }

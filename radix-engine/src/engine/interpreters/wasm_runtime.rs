@@ -99,7 +99,7 @@ where
         Ok(self.insert_buffer(buffer))
     }
 
-    fn get_visible_node_ids(&mut self) -> Result<Buffer, InvokeError<WasmShimError>> {
+    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmShimError>> {
         let node_ids = self.api.sys_get_visible_nodes()?;
 
         let buffer = scrypto_encode(&node_ids).expect("Failed to encode node id list");
@@ -201,7 +201,7 @@ impl WasmRuntime for NopWasmRuntime {
         Err(InvokeError::Error(WasmShimError::NotImplemented))
     }
 
-    fn get_visible_node_ids(&mut self) -> Result<Buffer, InvokeError<WasmShimError>> {
+    fn get_visible_nodes(&mut self) -> Result<Buffer, InvokeError<WasmShimError>> {
         Err(InvokeError::Error(WasmShimError::NotImplemented))
     }
 

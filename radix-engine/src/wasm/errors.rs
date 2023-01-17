@@ -1,3 +1,4 @@
+use radix_engine_interface::api::wasm::BufferId;
 use wasmi::HostError;
 
 use crate::fee::FeeReserveError;
@@ -79,38 +80,53 @@ pub enum InvalidTable {
 
 /// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum WasmError {
-    MemoryAllocError,
+pub enum WasmShimError {
+    /// Error when reading from wasm memory.
     MemoryAccessError,
 
-    FunctionExportNotFound,
-    InvalidReturn,
-    SborDecodeError(DecodeError),
-    SborEncodeError(EncodeError),
+    /// WASM attempted to call undefined function index.
+    UnknownFunctionIndex(usize),
 
-    CostingError(FeeReserveError),
+    /// WASM interpreter error, such as traps.
+    InterpreterError(String),
 
-    RuntimeError(String),
+    //=============
+    // SHIM ERRORS
+    //=============
+    /// Not implemented, no-op wasm runtime
+    NotImplemented,
+    /// Buffer not found
+    BufferNotFound(BufferId),
+    /// Invalid scrypto receiver
+    InvalidReceiver(DecodeError),
+    /// Invalid invocation
+    InvalidInvocation(DecodeError),
+    /// Invalid RE node data
+    InvalidNode(DecodeError),
+    /// Invalid RE node ID
+    InvalidNodeId(DecodeError),
+    /// Invalid substate offset
+    InvalidOffset(DecodeError),
 }
 
-impl fmt::Display for WasmError {
+impl fmt::Display for WasmShimError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for WasmError {}
+impl HostError for WasmShimError {}
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for WasmError {}
+impl std::error::Error for WasmShimError {}
 
-impl fmt::Display for InvokeError<WasmError> {
+impl fmt::Display for InvokeError<WasmShimError> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl HostError for InvokeError<WasmError> {}
+impl HostError for InvokeError<WasmShimError> {}
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for InvokeError<WasmError> {}
+impl std::error::Error for InvokeError<WasmShimError> {}

@@ -1,3 +1,4 @@
+use radix_engine_interface::api::wasm::VecLeak;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::sync::Arc;
 use wasmi::*;
@@ -35,30 +36,54 @@ impl ModuleImportResolver for WasmiEnvModule {
         signature: &wasmi::Signature,
     ) -> Result<FuncRef, Error> {
         match field_name {
-            RADIX_ENGINE_FUNCTION_NAME => {
-                if signature.params() != [ValueType::I32]
-                    || signature.return_type() != Some(ValueType::I32)
-                {
-                    return Err(Error::Instantiation(
-                        "Function signature does not match".into(),
-                    ));
-                }
-                Ok(FuncInstance::alloc_host(
-                    signature.clone(),
-                    RADIX_ENGINE_FUNCTION_ID,
-                ))
-            }
-            CONSUME_COST_UNITS_FUNCTION_NAME => {
-                if signature.params() != [ValueType::I32] || signature.return_type() != None {
-                    return Err(Error::Instantiation(
-                        "Function signature does not match".into(),
-                    ));
-                }
-                Ok(FuncInstance::alloc_host(
-                    signature.clone(),
-                    CONSUME_COST_UNITS_FUNCTION_ID,
-                ))
-            }
+            GET_BUFFER_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                GET_BUFFER_FUNCTION_ID,
+            )),
+            INVOKE_METHOD_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                INVOKE_METHOD_FUNCTION_ID,
+            )),
+            INVOKE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                INVOKE_FUNCTION_ID,
+            )),
+            CREATE_NODE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                CREATE_NODE_FUNCTION_ID,
+            )),
+            GET_VISIBLE_NODES_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                GET_VISIBLE_NODES_FUNCTION_ID,
+            )),
+            DROP_NODE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                DROP_NODE_FUNCTION_ID,
+            )),
+            LOCK_SUBSTATE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                LOCK_SUBSTATE_FUNCTION_ID,
+            )),
+            READ_SUBSTATE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                READ_SUBSTATE_FUNCTION_ID,
+            )),
+            WRITE_SUBSTATE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                WRITE_SUBSTATE_FUNCTION_ID,
+            )),
+            UNLOCK_SUBSTATE_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                UNLOCK_SUBSTATE_FUNCTION_ID,
+            )),
+            GET_ACTOR_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                GET_ACTOR_FUNCTION_ID,
+            )),
+            CONSUME_COST_UNITS_FUNCTION_NAME => Ok(FuncInstance::alloc_host(
+                signature.clone(),
+                CONSUME_COST_UNITS_FUNCTION_ID,
+            )),
             _ => Err(Error::Instantiation(format!(
                 "Function {} not found",
                 field_name
@@ -67,15 +92,15 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
-impl From<Error> for InvokeError<WasmError> {
+impl From<Error> for InvokeError<WasmShimError> {
     fn from(error: Error) -> Self {
         let e_str = format!("{:?}", error);
         match error.into_host_error() {
             // Pass-through invoke errors
             Some(host_error) => *host_error
-                .downcast::<InvokeError<WasmError>>()
-                .expect("Failed to downcast error into InvokeError<WasmError>"),
-            None => InvokeError::Error(WasmError::RuntimeError(e_str)),
+                .downcast::<InvokeError<WasmShimError>>()
+                .expect("Failed to downcast error into InvokeError<WasmShimError>"),
+            None => InvokeError::Error(WasmShimError::InterpreterError(e_str)),
         }
     }
 }
@@ -104,51 +129,20 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn send_value(&mut self, value: &[u8]) -> Result<RuntimeValue, InvokeError<WasmError>> {
-        let result = self.instance.module_ref.clone().invoke_export(
-            EXPORT_SCRYPTO_ALLOC,
-            &[RuntimeValue::I32((value.len()) as i32)],
-            self,
-        );
-
-        match result {
-            Ok(rtn) => {
-                if let Some(RuntimeValue::I32(ptr)) = rtn {
-                    if self
-                        .instance
-                        .memory_ref
-                        .set((ptr + 4) as u32, value)
-                        .is_ok()
-                    {
-                        return Ok(RuntimeValue::I32(ptr));
-                    }
-                }
-
-                return Err(InvokeError::Error(WasmError::MemoryAllocError));
-            }
-            Err(e) => {
-                return Err(e.into());
-            }
-        }
-    }
-
-    pub fn read_value(&self, ptr: usize) -> Result<IndexedScryptoValue, WasmError> {
-        let len = self
-            .instance
-            .memory_ref
-            .get_value::<u32>(ptr as u32)
-            .map_err(|_| WasmError::MemoryAccessError)? as usize;
-
-        let start = ptr.checked_add(4).ok_or(WasmError::MemoryAccessError)?;
-        let end = start.checked_add(len).ok_or(WasmError::MemoryAccessError)?;
-
+    pub fn read_memory(&self, ptr: usize, len: usize) -> Result<Vec<u8>, WasmShimError> {
         let direct = self.instance.memory_ref.direct_access();
         let buffer = direct.as_ref();
-        if end > buffer.len() {
-            return Err(WasmError::MemoryAccessError);
+        if ptr > buffer.len() || ptr + len > buffer.len() {
+            return Err(WasmShimError::MemoryAccessError);
         }
+        Ok(buffer[ptr..ptr + len].to_vec())
+    }
 
-        IndexedScryptoValue::from_slice(&buffer[start..end]).map_err(WasmError::SborDecodeError)
+    pub fn read_vec(&self, v: VecLeak) -> Result<Vec<u8>, WasmShimError> {
+        let ptr = vec_ptr!(v);
+        let len = vec_len!(v);
+
+        self.read_memory(ptr, len)
     }
 }
 
@@ -175,7 +169,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }
-            _ => Err(WasmError::FunctionExportNotFound.into()),
+            _ => Err(WasmShimError::UnknownFunctionIndex(index).into()),
         }
     }
 }
@@ -186,7 +180,7 @@ impl WasmInstance for WasmiInstance {
         func_name: &str,
         args: Vec<Vec<u8>>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmShimError>> {
         let mut externals = WasmiExternals {
             instance: self,
             runtime,
@@ -204,15 +198,15 @@ impl WasmInstance for WasmiInstance {
 
         let rtn = result
             .map_err(|e| {
-                let err: InvokeError<WasmError> = e.into();
+                let err: InvokeError<WasmShimError> = e.into();
                 err
             })?
-            .ok_or(InvokeError::Error(WasmError::InvalidReturn))?;
+            .ok_or(InvokeError::Error(WasmShimError::InvalidReturn))?;
         match rtn {
             RuntimeValue::I32(ptr) => externals
                 .read_value(ptr as usize)
                 .map_err(InvokeError::Error),
-            _ => Err(InvokeError::Error(WasmError::InvalidReturn)),
+            _ => Err(InvokeError::Error(WasmShimError::InvalidReturn)),
         }
     }
 }

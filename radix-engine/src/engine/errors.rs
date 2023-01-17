@@ -6,7 +6,7 @@ use sbor::*;
 
 use crate::model::*;
 use crate::types::*;
-use crate::wasm::WasmError;
+use crate::wasm::WasmShimError;
 
 use super::TrackError;
 
@@ -69,7 +69,7 @@ pub enum KernelError {
     InvalidModeTransition(ExecutionMode, ExecutionMode),
 
     // invocation
-    WasmError(WasmError),
+    WasmShimError(WasmShimError),
 
     InvalidReferenceWrite(GlobalAddress),
 

@@ -1,3 +1,4 @@
+use super::types::ManifestExpression;
 use crate::api::types::*;
 use crate::data::*;
 use sbor::rust::format;
@@ -5,8 +6,6 @@ use sbor::rust::vec;
 use serde::ser::*;
 use serde::*;
 use utils::{ContextSerializable, ContextualDisplay, ContextualSerialize};
-
-use super::types::ManifestExpression;
 
 // TODO - Add a deserializer for invertible JSON, and tests that the process is invertible
 // TODO - Rewrite value formatter as a serializer/deserializer variant?

@@ -31,3 +31,19 @@ macro_rules! buffer {
         (($id as u64) << 32) | ($len as u64)
     };
 }
+
+pub type VecLeak = u64;
+
+#[macro_export]
+macro_rules! vec_ptr {
+    ($buf: expr) => {
+        ($buf >> 32) as usize
+    };
+}
+
+#[macro_export]
+macro_rules! vec_len {
+    ($buf: expr) => {
+        ($buf & 0xffffffff) as usize
+    };
+}

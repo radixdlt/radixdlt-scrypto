@@ -1,5 +1,4 @@
 use radix_engine_interface::time::*;
-use radix_engine_interface::wasm::*;
 use scrypto::engine::scrypto_env::*;
 use scrypto::prelude::*;
 

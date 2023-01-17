@@ -729,7 +729,7 @@ where
         Ok(fee)
     }
 
-    fn get_visible_node_ids(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
+    fn get_visible_nodes(&mut self) -> Result<Vec<RENodeId>, RuntimeError> {
         self.module
             .pre_sys_call(
                 &self.current_frame,

@@ -195,7 +195,7 @@ impl AuthModule {
             _ => vec![],
         };
 
-        let refed = system_api.get_visible_node_ids()?;
+        let refed = system_api.get_visible_nodes()?;
         let auth_zone_id = refed
             .into_iter()
             .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
@@ -231,7 +231,7 @@ impl AuthModule {
         actor: &ResolvedActor,
         system_api: &mut Y,
     ) -> Result<(), RuntimeError> {
-        let refed = system_api.get_visible_node_ids()?;
+        let refed = system_api.get_visible_nodes()?;
         let auth_zone_id = refed
             .into_iter()
             .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))
@@ -290,7 +290,7 @@ impl AuthModule {
             return Ok(());
         }
 
-        let refed = api.get_visible_node_ids()?;
+        let refed = api.get_visible_nodes()?;
         let auth_zone_id = refed
             .into_iter()
             .find(|e| matches!(e, RENodeId::AuthZoneStack(..)))

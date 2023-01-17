@@ -85,7 +85,7 @@ pub struct WasmerEngine {
     modules_cache: moka::sync::Cache<MeteredCodeKey, Arc<WasmerModule>>,
 }
 
-pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeError<WasmError>> {
+pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeError<WasmShimError>> {
     let n = value.len();
 
     let result = instance
@@ -94,7 +94,7 @@ pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeErro
         .expect("ScryptoAlloc not found")
         .call(&[Val::I32(n as i32)])
         .map_err(|e| {
-            let error: InvokeError<WasmError> = e.into();
+            let error: InvokeError<WasmShimError> = e.into();
             error
         })?;
 
@@ -103,7 +103,7 @@ pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeErro
         let memory = instance
             .exports
             .get_memory(EXPORT_MEMORY)
-            .map_err(|_| InvokeError::Error(WasmError::MemoryAllocError))?;
+            .map_err(|_| InvokeError::Error(WasmShimError::MemoryAllocError))?;
         let size = memory.size().bytes().0;
         if size > ptr && size - ptr >= n {
             unsafe {
@@ -114,14 +114,14 @@ pub fn send_value(instance: &Instance, value: &[u8]) -> Result<usize, InvokeErro
         }
     }
 
-    Err(InvokeError::Error(WasmError::MemoryAllocError))
+    Err(InvokeError::Error(WasmShimError::MemoryAllocError))
 }
 
-pub fn read_value(instance: &Instance, ptr: usize) -> Result<IndexedScryptoValue, WasmError> {
+pub fn read_value(instance: &Instance, ptr: usize) -> Result<IndexedScryptoValue, WasmShimError> {
     let memory = instance
         .exports
         .get_memory(EXPORT_MEMORY)
-        .map_err(|_| WasmError::MemoryAccessError)?;
+        .map_err(|_| WasmShimError::MemoryAccessError)?;
     let size = memory.size().bytes().0;
     if size > ptr && size - ptr >= 4 {
         // read len
@@ -142,11 +142,11 @@ pub fn read_value(instance: &Instance, ptr: usize) -> Result<IndexedScryptoValue
                 temp.set_len(n);
             }
 
-            return IndexedScryptoValue::from_slice(&temp).map_err(WasmError::SborDecodeError);
+            return IndexedScryptoValue::from_slice(&temp).map_err(WasmShimError::SborDecodeError);
         }
     }
 
-    Err(WasmError::MemoryAccessError)
+    Err(WasmShimError::MemoryAccessError)
 }
 
 impl WasmerEnv for WasmerInstanceEnv {
@@ -220,12 +220,12 @@ impl WasmerModule {
     }
 }
 
-impl From<RuntimeError> for InvokeError<WasmError> {
+impl From<RuntimeError> for InvokeError<WasmShimError> {
     fn from(error: RuntimeError) -> Self {
         let e_str = format!("{:?}", error);
-        match error.downcast::<InvokeError<WasmError>>() {
+        match error.downcast::<InvokeError<WasmShimError>>() {
             Ok(e) => e,
-            _ => InvokeError::Error(WasmError::RuntimeError(e_str)),
+            _ => InvokeError::Error(WasmShimError::RuntimeError(e_str)),
         }
     }
 }
@@ -236,7 +236,7 @@ impl WasmInstance for WasmerInstance {
         func_name: &str,
         args: Vec<Vec<u8>>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<IndexedScryptoValue, InvokeError<WasmError>> {
+    ) -> Result<IndexedScryptoValue, InvokeError<WasmShimError>> {
         {
             // set up runtime pointer
             let mut guard = self
@@ -255,7 +255,7 @@ impl WasmInstance for WasmerInstance {
             .instance
             .exports
             .get_function(func_name)
-            .map_err(|_| InvokeError::Error(WasmError::FunctionExportNotFound))?
+            .map_err(|_| InvokeError::Error(WasmShimError::FunctionExportNotFound))?
             .call(&pointers);
 
         match result {
@@ -263,9 +263,9 @@ impl WasmInstance for WasmerInstance {
                 let ptr = return_data
                     .as_ref()
                     .get(0)
-                    .ok_or(InvokeError::Error(WasmError::InvalidReturn))?
+                    .ok_or(InvokeError::Error(WasmShimError::InvalidReturn))?
                     .i32()
-                    .ok_or(InvokeError::Error(WasmError::InvalidReturn))?;
+                    .ok_or(InvokeError::Error(WasmShimError::InvalidReturn))?;
                 read_value(&self.instance, ptr as usize).map_err(InvokeError::Error)
             }
             Err(e) => Err(e.into()),
