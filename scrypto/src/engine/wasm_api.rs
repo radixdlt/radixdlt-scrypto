@@ -33,7 +33,7 @@ extern "C" {
     //===============
 
     /// Consumes a buffer by copying the contents into the specified destination.
-    pub fn consume_buffer(buffer_id: BufferId, destination: *mut u8);
+    pub fn consume_buffer(buffer_id: BufferId, destination_ptr: *mut u8);
 
     //===============
     // Invocation API
@@ -41,29 +41,29 @@ extern "C" {
 
     /// Invokes a method on a component.
     pub fn invoke_method(
-        receiver: *const u8,
+        receiver_ptr: *const u8,
         receive_len: usize,
-        ident: *const u8,
+        ident_ptr: *const u8,
         ident_len: usize,
-        args: *const u8,
+        args_ptr: *const u8,
         args_len: usize,
     ) -> Buffer;
 
     /// Invokes any function, either scrypto or native.
-    pub fn invoke(invocation: *const u8, invocation_len: usize) -> Buffer;
+    pub fn invoke(invocation_ptr: *const u8, invocation_len: usize) -> Buffer;
 
     //===============
     // Node API
     //===============
 
     /// Creates a node with the given initial data.
-    pub fn create_node(node: *const u8, node_len: usize) -> Buffer;
+    pub fn create_node(node_ptr: *const u8, node_len: usize) -> Buffer;
 
     /// Retrieves IDs of visible nodes.
     pub fn get_visible_nodes() -> Buffer;
 
     /// Destroys a node.
-    pub fn drop_node(node_id: *const u8, node_id_len: usize);
+    pub fn drop_node(node_id_ptr: *const u8, node_id_len: usize);
 
     //===============
     // Substate API
@@ -82,7 +82,7 @@ extern "C" {
     pub fn read_substate(handle: u32) -> Buffer;
 
     // Writes into a substate
-    pub fn write_substate(handle: u32, data: *const u8, data_len: usize);
+    pub fn write_substate(handle: u32, data_ptr: *const u8, data_len: usize);
 
     // Releases a lock
     pub fn unlock_substate(handle: u32);

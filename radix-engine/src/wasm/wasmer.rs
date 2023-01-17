@@ -1,20 +1,17 @@
+use super::InstrumentedCode;
+use super::MeteredCodeKey;
 use crate::model::InvokeError;
+use crate::types::*;
+use crate::wasm::constants::*;
+use crate::wasm::errors::*;
+use crate::wasm::traits::*;
 use radix_engine_interface::api::wasm::*;
-use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
     imports, Function, HostEnvInitError, Instance, LazyInit, Module, RuntimeError, Store,
     Universal, Val, WasmerEnv,
 };
 use wasmer_compiler_singlepass::Singlepass;
-
-use crate::types::*;
-use crate::wasm::constants::*;
-use crate::wasm::errors::*;
-use crate::wasm::traits::*;
-
-use super::InstrumentedCode;
-use super::MeteredCodeKey;
 
 // IMPORTANT:
 // The below integration of Wasmer is not yet checked rigorously enough for production use
@@ -135,92 +132,189 @@ impl WasmerEnv for WasmerInstanceEnv {
     }
 }
 
+macro_rules! grab_runtime {
+    ($env: expr) => {{
+        let instance = unsafe { $env.instance.get_unchecked() };
+        let ptr = $env.runtime_ptr.lock().expect("Runtime ptr unavailable");
+        let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+        (instance, runtime)
+    }};
+}
+
+impl From<WasmRuntimeError> for RuntimeError {
+    fn from(error: WasmRuntimeError) -> Self {
+        RuntimeError::user(Box::new(error))
+    }
+}
+
 impl WasmerModule {
     fn instantiate(&self) -> WasmerInstance {
         // native functions starts
-        pub fn consume_buffer(env: &WasmerInstanceEnv, buffer_id: BufferId, destination: u32) {
-            // let instance = unsafe { env.instance.get_unchecked() };
-            // let input = read_value(&instance, input_ptr as usize)
-            //     .map_err(|e| RuntimeError::user(Box::new(e)))?;
+        pub fn consume_buffer(
+            env: &WasmerInstanceEnv,
+            buffer_id: BufferId,
+            destination_ptr: u32,
+        ) -> Result<(), RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
 
-            // let output = {
-            //     let ptr = env
-            //         .runtime_ptr
-            //         .lock()
-            //         .expect("Failed to lock WASM runtime pointer");
-            //     let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
-            //     runtime
-            //         .main(id, input)
-            //         .map_err(|e| RuntimeError::user(Box::new(e)))?
-            // };
+            let slice = runtime
+                .consume_buffer(buffer_id)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            // send_value(&instance, output.as_slice())
-            //     .map(|ptr| ptr as i32)
-            //     .map_err(|e| RuntimeError::user(Box::new(e)))
-            todo!()
+            write_memory(&instance, destination_ptr, &slice)?;
+
+            Ok(())
         }
 
         pub fn invoke_method(
             env: &WasmerInstanceEnv,
-            receiver: u32,
-            receive_len: u32,
-            ident: u32,
+            receiver_ptr: u32,
+            receiver_len: u32,
+            ident_ptr: u32,
             ident_len: u32,
-            args: u32,
+            args_ptr: u32,
             args_len: u32,
-        ) -> Buffer {
-            todo!()
+        ) -> Result<Buffer, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let receiver = read_memory(&instance, receiver_ptr, receiver_len)?;
+            let ident = read_memory(&instance, ident_ptr, ident_len)?;
+            let args = read_memory(&instance, args_ptr, args_len)?;
+
+            let buffer = runtime
+                .invoke_method(receiver, ident, args)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer)
         }
 
-        pub fn invoke(env: &WasmerInstanceEnv, invocation: u32, invocation_len: u32) -> Buffer {
-            todo!()
+        pub fn invoke(
+            env: &WasmerInstanceEnv,
+            invocation_ptr: u32,
+            invocation_len: u32,
+        ) -> Result<Buffer, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let invocation = read_memory(&instance, invocation_ptr, invocation_len)?;
+
+            let buffer = runtime
+                .invoke(invocation)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer)
         }
 
-        pub fn create_node(env: &WasmerInstanceEnv, node: u32, node_len: u32) -> Buffer {
-            todo!()
+        pub fn create_node(
+            env: &WasmerInstanceEnv,
+            node_ptr: u32,
+            node_len: u32,
+        ) -> Result<Buffer, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let node = read_memory(&instance, node_ptr, node_len)?;
+
+            let buffer = runtime
+                .create_node(node)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer)
         }
 
-        pub fn get_visible_nodes(env: &WasmerInstanceEnv) -> Buffer {
-            todo!()
+        pub fn get_visible_nodes(env: &WasmerInstanceEnv) -> Result<Buffer, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .get_visible_nodes()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer)
         }
 
-        pub fn drop_node(env: &WasmerInstanceEnv, node_id: u32, node_id_len: u32) {
-            todo!()
+        pub fn drop_node(
+            env: &WasmerInstanceEnv,
+            node_id_ptr: u32,
+            node_id_len: u32,
+        ) -> Result<(), RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let node_id = read_memory(&instance, node_id_ptr, node_id_len)?;
+
+            runtime
+                .drop_node(node_id)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(())
         }
 
         pub fn lock_substate(
             env: &WasmerInstanceEnv,
-            node_id: u32,
+            node_id_ptr: u32,
             node_id_len: u32,
-            offset: u32,
+            offset_ptr: u32,
             offset_len: u32,
             mutable: u32,
-        ) -> u32 {
-            todo!()
+        ) -> Result<u32, RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let node_id = read_memory(&instance, node_id_ptr, node_id_len)?;
+            let offset = read_memory(&instance, offset_ptr, offset_len)?;
+
+            let handle = runtime
+                .lock_substate(node_id, offset, mutable != 0)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(handle)
         }
 
-        pub fn read_substate(env: &WasmerInstanceEnv, handle: u32) -> Buffer {
-            todo!()
+        pub fn read_substate(env: &WasmerInstanceEnv, handle: u32) -> Result<Buffer, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .read_substate(handle)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer)
         }
 
-        pub fn write_substate(env: &WasmerInstanceEnv, handle: u32, data: u32, data_len: u32) {
-            todo!()
+        pub fn write_substate(
+            env: &WasmerInstanceEnv,
+            handle: u32,
+            data_ptr: u32,
+            data_len: u32,
+        ) -> Result<(), RuntimeError> {
+            let (instance, runtime) = grab_runtime!(env);
+
+            let data = read_memory(&instance, data_ptr, data_len)?;
+
+            runtime
+                .write_substate(handle, data)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(())
         }
 
-        pub fn unlock_substate(env: &WasmerInstanceEnv, handle: u32) {
-            todo!()
+        pub fn unlock_substate(env: &WasmerInstanceEnv, handle: u32) -> Result<(), RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            runtime
+                .unlock_substate(handle)
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(())
         }
 
-        pub fn get_actor(env: &WasmerInstanceEnv) -> Buffer {
-            todo!()
+        pub fn get_actor(env: &WasmerInstanceEnv) -> Result<Buffer, RuntimeError> {
+            let (_instance, runtime) = grab_runtime!(env);
+
+            let buffer = runtime
+                .get_actor()
+                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+
+            Ok(buffer)
         }
 
         fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: u32) -> Result<(), RuntimeError> {
-            let ptr = env
-                .runtime_ptr
-                .lock()
-                .expect("Failed to lock WASM runtime pointer");
-            let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+            let (_instance, runtime) = grab_runtime!(env);
             runtime
                 .consume_cost_units(cost_unit)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
@@ -267,7 +361,7 @@ impl From<RuntimeError> for InvokeError<WasmRuntimeError> {
         let e_str = format!("{:?}", error);
         match error.downcast::<InvokeError<WasmRuntimeError>>() {
             Ok(e) => e,
-            _ => InvokeError::Error(WasmRuntimeError::RuntimeError(e_str)),
+            _ => InvokeError::Error(WasmRuntimeError::InterpreterError(e_str)),
         }
     }
 }
@@ -276,42 +370,32 @@ impl WasmInstance for WasmerInstance {
     fn invoke_export<'r>(
         &mut self,
         func_name: &str,
-        args: Vec<Vec<u8>>,
+        args: Vec<u64>,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<IndexedScryptoValue, InvokeError<WasmRuntimeError>> {
+    ) -> Result<Vec<u8>, InvokeError<WasmRuntimeError>> {
         {
             // set up runtime pointer
-            let mut guard = self
-                .runtime_ptr
-                .lock()
-                .expect("Failed to lock WASM runtime pointer");
+            let mut guard = self.runtime_ptr.lock().expect("Runtime ptr unavailable");
             *guard = runtime as *mut _ as usize;
         }
 
-        let mut pointers = Vec::new();
-        for arg in args {
-            let pointer = send_value(&self.instance, &arg)?;
-            pointers.push(Val::I32(pointer as i32));
-        }
+        let input: Vec<Val> = args.into_iter().map(|a| Val::I64(a as i64)).collect();
         let result = self
             .instance
             .exports
             .get_function(func_name)
-            .map_err(|_| InvokeError::Error(WasmRuntimeError::FunctionExportNotFound))?
-            .call(&pointers);
+            .map_err(|_| {
+                InvokeError::Error(WasmRuntimeError::UnknownWasmFunction(func_name.to_string()))
+            })?
+            .call(&input);
 
-        match result {
-            Ok(return_data) => {
-                let ptr = return_data
-                    .as_ref()
-                    .get(0)
-                    .ok_or(InvokeError::Error(WasmRuntimeError::InvalidReturn))?
-                    .i32()
-                    .ok_or(InvokeError::Error(WasmRuntimeError::InvalidReturn))?;
-                read_value(&self.instance, ptr as usize).map_err(InvokeError::Error)
+        if let Ok(return_data) = result {
+            if let Some(v) = return_data.as_ref().get(0).and_then(|x| x.i64()) {
+                return read_slice(&self.instance, v as u64).map_err(InvokeError::Error);
             }
-            Err(e) => Err(e.into()),
         }
+
+        Err(InvokeError::Error(WasmRuntimeError::InvalidReturn))
     }
 }
 

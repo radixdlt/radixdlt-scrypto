@@ -85,7 +85,10 @@ pub enum WasmRuntimeError {
     MemoryAccessError,
 
     /// WASM attempted to call undefined function index.
-    UnknownFunctionIndex(usize),
+    UnknownHostFunctionIndex(usize),
+
+    /// Host attempted to call unknown function.
+    UnknownWasmFunction(String),
 
     /// WASM interpreter error, such as traps.
     InterpreterError(String),
