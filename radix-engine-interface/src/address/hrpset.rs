@@ -30,6 +30,7 @@ impl HrpSet {
             EntityType::EpochManager => &self.system,
             EntityType::Validator => &self.system,
             EntityType::Clock => &self.system,
+            EntityType::AccessController => &self.normal_component,
         }
     }
 }

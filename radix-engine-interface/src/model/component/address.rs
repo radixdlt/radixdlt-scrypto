@@ -20,6 +20,7 @@ pub enum ComponentAddress {
     Clock([u8; 26]),
     EpochManager([u8; 26]),
     Validator([u8; 26]),
+    AccessController([u8; 26]),
 }
 
 //========
@@ -75,7 +76,8 @@ impl ComponentAddress {
             | Self::EcdsaSecp256k1VirtualAccount(v)
             | Self::Clock(v)
             | Self::EpochManager(v)
-            | Self::Validator(v) => buf.extend(v),
+            | Self::Validator(v)
+            | Self::AccessController(v) => buf.extend(v),
         }
         buf
     }
@@ -161,6 +163,9 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for ComponentAddress {
             }
             ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 write!(f, "EddsaEd25519VirtualAccountComponent[{}]", self.to_hex())
+            }
+            ComponentAddress::AccessController(_) => {
+                write!(f, "AccessControllerComponent[{}]", self.to_hex())
             }
         }
         .map_err(|err| AddressError::FormatError(err))

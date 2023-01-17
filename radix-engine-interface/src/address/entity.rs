@@ -27,6 +27,9 @@ pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0
 /// A unique identifier used in the addressing of a virtual Account Component Addresses.
 pub const EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x08;
 
+/// A unique identifier used in the addressing of Access Controllers.
+pub const ACCESS_CONTROLLER_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x09;
+
 /// An enum which represents the different addressable entities.
 #[derive(PartialEq, Eq)]
 pub enum EntityType {
@@ -39,6 +42,7 @@ pub enum EntityType {
     EpochManager,
     Validator,
     Clock,
+    AccessController,
 }
 
 impl EntityType {
@@ -61,6 +65,7 @@ impl EntityType {
             ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 Self::EddsaEd25519VirtualAccountComponent
             }
+            ComponentAddress::AccessController(_) => Self::EddsaEd25519VirtualAccountComponent,
         }
     }
 
@@ -79,6 +84,7 @@ impl EntityType {
             Self::EpochManager => EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID,
             Self::Validator => VALIDATOR_SYSTEM_ADDRESS_ENTITY_ID,
             Self::Clock => CLOCK_SYSTEM_ADDRESS_ENTITY_ID,
+            Self::AccessController => ACCESS_CONTROLLER_COMPONENT_ADDRESS_ENTITY_ID,
         }
     }
 }

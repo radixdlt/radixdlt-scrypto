@@ -206,6 +206,17 @@ impl IdAllocator {
         Ok(ResourceAddress::Normal(hash(data).lower_26_bytes()))
     }
 
+    pub fn new_access_controller(&mut self) -> Result<ComponentAddress, IdAllocationError> {
+        let mut data = self.transaction_hash.to_vec();
+        data.extend(self.next()?.to_le_bytes());
+
+        // println!("Genesis resource {:?}", hash(&data).lower_26_bytes());
+
+        Ok(ComponentAddress::AccessController(
+            hash(data).lower_26_bytes(),
+        ))
+    }
+
     pub fn new_auth_zone_id(&mut self) -> Result<AuthZoneStackId, IdAllocationError> {
         Ok(self.next()?)
     }
