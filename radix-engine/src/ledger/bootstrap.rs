@@ -8,8 +8,6 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::types::{
     GlobalAddress, RENodeId, ResourceManagerOffset, SubstateId, SubstateOffset,
 };
-use radix_engine_interface::crypto::hash;
-use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::*;
 use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
@@ -24,8 +22,6 @@ const XRD_URL: &str = "https://tokens.radixdlt.com";
 const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
 pub struct GenesisReceipt {
-    pub faucet_package: PackageAddress,
-    pub account_package: PackageAddress,
     pub faucet_component: ComponentAddress,
     pub clock: ComponentAddress,
     pub epoch_manager: ComponentAddress,
@@ -39,7 +35,6 @@ pub fn create_genesis(
     // NOTES
     // * Create resources before packages to avoid circular dependencies.
 
-    let mut blobs = Vec::new();
     let mut id_allocator = ManifestIdAllocator::new();
     let mut instructions = Vec::new();
     let mut pre_allocated_ids = BTreeSet::new();
@@ -158,16 +153,18 @@ pub fn create_genesis(
     {
         let account_code = include_bytes!("../../../assets/account.wasm").to_vec();
         let account_abi = include_bytes!("../../../assets/account.abi").to_vec();
-        instructions.push(Instruction::Basic(BasicInstruction::PublishPackage {
-            code: ManifestBlobRef(hash(&account_code)),
-            abi: ManifestBlobRef(hash(&account_abi)),
-            royalty_config: BTreeMap::new(),
-            metadata: BTreeMap::new(),
-            access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
-        }));
-
-        blobs.push(account_code);
-        blobs.push(account_abi);
+        let package_address = ACCOUNT_PACKAGE.raw();
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Package(ACCOUNT_PACKAGE)));
+        instructions.push(Instruction::System(NativeInvocation::Package(PackageInvocation::Publish(
+            PackagePublishInvocation {
+                package_address: Some(package_address),
+                code: account_code, // TODO: Use blob here instead?
+                abi: account_abi, // TODO: Use blob here instead?
+                royalty_config: BTreeMap::new(),
+                metadata: BTreeMap::new(),
+                access_rules: AccessRules::new().default(AccessRule::DenyAll, AccessRule::DenyAll),
+            }
+        ))));
     }
 
     instructions.push(
@@ -201,22 +198,18 @@ pub fn create_genesis(
 
     SystemTransaction {
         instructions,
-        blobs,
+        blobs: Vec::new(),
         pre_allocated_ids,
         nonce: 0,
     }
 }
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
-    let faucet_package: PackageAddress = receipt.output(5);
-    let account_package: PackageAddress = receipt.output(6);
     let faucet_component: ComponentAddress = receipt.output(8);
     let clock: ComponentAddress = receipt.output(9);
     let epoch_manager: ComponentAddress = receipt.output(10);
 
     GenesisReceipt {
-        faucet_package,
-        account_package,
         faucet_component,
         clock,
         epoch_manager,
@@ -304,8 +297,6 @@ mod tests {
 
         let genesis_receipt = genesis_result(&transaction_receipt);
 
-        assert_eq!(genesis_receipt.faucet_package, FAUCET_PACKAGE);
-        assert_eq!(genesis_receipt.account_package, ACCOUNT_PACKAGE);
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
         assert_eq!(genesis_receipt.clock, CLOCK);
         assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
