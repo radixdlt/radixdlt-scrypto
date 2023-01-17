@@ -499,6 +499,12 @@ impl TryFrom<&[u8]> for ResourceAddress {
 }
 
 impl ResourceAddress {
+    pub fn raw(&self) -> [u8; 26] {
+        match self {
+            Self::Normal(v) => v.clone()
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.push(EntityType::resource(self).id());

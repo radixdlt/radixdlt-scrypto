@@ -16,48 +16,39 @@ pub const RADIX_TOKEN: ResourceAddress = address!(EntityType::Resource, 0);
 pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = address!(EntityType::Resource, 1);
 
 /// The ED25519 virtual resource address.
-pub const EDDSA_ED25519_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    128, 50, 110, 40, 98, 18, 169, 58, 222, 243, 237, 202, 58, 215, 189, 84, 183, 148, 228, 180, 27, 162, 232, 107, 209, 51
-);
+pub const EDDSA_ED25519_TOKEN: ResourceAddress = address!(EntityType::Resource, 2);
 
 /// The system token which allows access to system resources (e.g. setting epoch)
-pub const SYSTEM_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    16, 250, 14, 218, 250, 139, 223, 121, 98, 118, 191, 143, 238, 42, 51, 138, 34, 133, 68, 18, 22, 144, 110, 7, 63, 181
-);
+pub const SYSTEM_TOKEN: ResourceAddress = address!(EntityType::Resource, 3);
 
-pub const PACKAGE_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    146, 6, 99, 0, 115, 208, 107, 199, 180, 60, 202, 219, 152, 23, 53, 221, 20, 90, 49, 191, 126, 126, 178, 3, 223, 36
-);
+pub const PACKAGE_TOKEN: ResourceAddress = address!(EntityType::Resource, 4);
 
 /// The address of the faucet package.
 pub const FAUCET_PACKAGE: PackageAddress = construct_address!(
     EntityType::Package,
-    213, 161, 133, 56, 35, 0, 134, 18, 95, 85, 106, 231, 194, 125, 161, 89, 8, 192, 242, 188, 20, 25, 128, 43, 55, 160
+    89, 100, 160, 56, 236, 141, 48, 10, 204, 4, 212, 116, 206, 163, 82, 50, 91, 137, 94, 1, 191, 236, 15, 125, 121, 66
 );
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the account package.
 pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
     EntityType::Package,
-    94, 194, 206, 3, 11, 106, 209, 227, 27, 93, 166, 179, 102, 75, 2, 249, 237, 248, 184, 98, 92, 161, 250, 159, 159, 234
+    213, 161, 133, 56, 35, 0, 134, 18, 95, 85, 106, 231, 194, 125, 161, 89, 8, 192, 242, 188, 20, 25, 128, 43, 55, 160
 );
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
-    176, 10, 0, 75, 205, 239, 112, 228, 194, 134, 77, 97, 49, 158, 52, 119, 229, 181, 108, 197, 4, 27, 45, 0, 196, 52
+    68, 85, 49, 134, 195, 96, 197, 209, 94, 115, 234, 233, 202, 98, 101, 192, 200, 249, 60, 15, 10, 240, 94, 121, 160, 14
 );
 
 pub const EPOCH_MANAGER: ComponentAddress = construct_address!(
     EntityType::EpochManager,
-    234, 179, 239, 19, 250, 229, 160, 188, 178, 152, 196, 66, 133, 204, 37, 144, 243, 45, 76, 85, 249, 85, 205, 212, 31, 23
+    44, 201, 216, 26, 12, 130, 244, 40, 246, 101, 231, 56, 157, 150, 155, 85, 99, 116, 124, 101, 220, 228, 216, 136, 204, 65
 );
 
 pub const CLOCK: ComponentAddress = construct_address!(
     EntityType::Clock,
-    113, 179, 235, 101, 238, 110, 3, 172, 128, 140, 185, 116, 251, 175, 151, 172, 131, 26, 147, 148, 218, 207, 211, 218, 56, 107
+    227, 163, 118, 15, 127, 189, 22, 95, 36, 41, 56, 156, 128, 25, 19, 116, 9, 130, 179, 131, 64, 103, 79, 48, 161, 181
 );
