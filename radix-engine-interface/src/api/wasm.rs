@@ -21,7 +21,7 @@ macro_rules! buffer_id {
 #[macro_export]
 macro_rules! buffer_len {
     ($buf: expr) => {
-        ($buf & 0xffffffff) as usize
+        ($buf & 0xffffffff) as u32
     };
 }
 
@@ -37,13 +37,13 @@ pub type Slice = u64;
 #[macro_export]
 macro_rules! slice_ptr {
     ($buf: expr) => {
-        ($buf >> 32) as usize
+        ($buf >> 32) as u32
     };
 }
 
 #[macro_export]
 macro_rules! slice_len {
     ($buf: expr) => {
-        ($buf & 0xffffffff) as usize
+        ($buf & 0xffffffff) as u32
     };
 }

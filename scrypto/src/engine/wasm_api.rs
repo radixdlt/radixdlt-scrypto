@@ -1,37 +1,23 @@
+// Re-export
+pub use radix_engine_interface::api::wasm::{Buffer, BufferId, Slice};
+
+use radix_engine_interface::{buffer_id, buffer_len};
 use sbor::rust::vec::Vec;
 
-pub type BufferId = u32;
-pub type Buffer = u64;
-
-#[macro_export]
-macro_rules! buffer_id {
-    ($buf: expr) => {
-        ($buf >> 32) as u32
-    };
-}
-
-#[macro_export]
-macro_rules! buffer_len {
-    ($buf: expr) => {
-        ($buf & 0xffffffff) as usize
-    };
-}
-
 pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
-    let mut vec = Vec::<u8>::with_capacity(buffer_len!(buffer));
+    let len = buffer_len!(buffer) as usize;
+    let mut vec = Vec::<u8>::with_capacity(len);
     unsafe {
         consume_buffer(buffer_id!(buffer), vec.as_mut_ptr());
-        vec.set_len(buffer_len!(buffer));
+        vec.set_len(len);
     };
     vec
 }
 
-pub type Slice = u64;
-
 pub fn forget_vec(vec: Vec<u8>) -> Slice {
     let ptr = vec.as_ptr() as u64;
     let len = vec.len() as u64;
-    assert!(ptr < 0xffffffff && ptr < 0xffffffff);
+    assert!(ptr < 0xffffffff && len < 0xffffffff);
 
     // Note that the memory used by the Vec is forever leaked.
     // However, it's not an issue since the wasm instance will be destroyed after engine

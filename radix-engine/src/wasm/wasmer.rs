@@ -1,4 +1,5 @@
 use crate::model::InvokeError;
+use radix_engine_interface::api::wasm::*;
 use radix_engine_interface::data::IndexedScryptoValue;
 use sbor::rust::sync::{Arc, Mutex};
 use wasmer::{
@@ -85,75 +86,46 @@ pub struct WasmerEngine {
     modules_cache: moka::sync::Cache<MeteredCodeKey, Arc<WasmerModule>>,
 }
 
-pub fn send_value(
-    instance: &Instance,
-    value: &[u8],
-) -> Result<usize, InvokeError<WasmRuntimeError>> {
-    let n = value.len();
+pub fn read_memory(instance: &Instance, ptr: u32, len: u32) -> Result<Vec<u8>, WasmRuntimeError> {
+    let ptr = ptr as usize;
+    let len = len as usize;
 
-    let result = instance
-        .exports
-        .get_function(EXPORT_SCRYPTO_ALLOC)
-        .expect("ScryptoAlloc not found")
-        .call(&[Val::I32(n as i32)])
-        .map_err(|e| {
-            let error: InvokeError<WasmRuntimeError> = e.into();
-            error
-        })?;
-
-    if let Some(wasmer::Value::I32(ptr)) = result.as_ref().get(0) {
-        let ptr = *ptr as usize;
-        let memory = instance
-            .exports
-            .get_memory(EXPORT_MEMORY)
-            .map_err(|_| InvokeError::Error(WasmRuntimeError::MemoryAllocError))?;
-        let size = memory.size().bytes().0;
-        if size > ptr && size - ptr >= n {
-            unsafe {
-                let dest = memory.data_ptr().add(ptr + 4);
-                ptr::copy(value.as_ptr(), dest, n);
-            }
-            return Ok(ptr);
-        }
-    }
-
-    Err(InvokeError::Error(WasmRuntimeError::MemoryAllocError))
-}
-
-pub fn read_value(
-    instance: &Instance,
-    ptr: usize,
-) -> Result<IndexedScryptoValue, WasmRuntimeError> {
     let memory = instance
         .exports
         .get_memory(EXPORT_MEMORY)
         .map_err(|_| WasmRuntimeError::MemoryAccessError)?;
-    let size = memory.size().bytes().0;
-    if size > ptr && size - ptr >= 4 {
-        // read len
-        let mut temp = [0u8; 4];
-        unsafe {
-            let from = memory.data_ptr().add(ptr);
-            ptr::copy(from, temp.as_mut_ptr(), 4);
-        }
-        let n = u32::from_le_bytes(temp) as usize;
-
-        // read value
-        if size - ptr - 4 >= (n as usize) {
-            // TODO: avoid copying
-            let mut temp = Vec::with_capacity(n);
-            unsafe {
-                let from = memory.data_ptr().add(ptr).add(4);
-                ptr::copy(from, temp.as_mut_ptr(), n);
-                temp.set_len(n);
-            }
-
-            return IndexedScryptoValue::from_slice(&temp)
-                .map_err(WasmRuntimeError::SborDecodeError);
-        }
+    let memory_slice = unsafe { memory.data_unchecked() };
+    let memory_size = memory_slice.len();
+    if ptr > memory_size || ptr + len > memory_size {
+        return Err(WasmRuntimeError::MemoryAccessError);
     }
 
-    Err(WasmRuntimeError::MemoryAccessError)
+    Ok(memory_slice[ptr..ptr + len].to_vec())
+}
+
+pub fn write_memory(instance: &Instance, ptr: u32, data: &[u8]) -> Result<(), WasmRuntimeError> {
+    let ptr = ptr as usize;
+    let len = data.len();
+
+    let memory = instance
+        .exports
+        .get_memory(EXPORT_MEMORY)
+        .map_err(|_| WasmRuntimeError::MemoryAccessError)?;
+    let memory_slice = unsafe { memory.data_unchecked_mut() };
+    let memory_size = memory_slice.len();
+    if ptr > memory_size || ptr + len > memory_size {
+        return Err(WasmRuntimeError::MemoryAccessError);
+    }
+
+    memory_slice[ptr..ptr + data.len()].copy_from_slice(data);
+    Ok(())
+}
+
+pub fn read_slice(instance: &Instance, v: Slice) -> Result<Vec<u8>, WasmRuntimeError> {
+    let ptr = slice_ptr!(v);
+    let len = slice_len!(v);
+
+    read_memory(instance, ptr, len)
 }
 
 impl WasmerEnv for WasmerInstanceEnv {
@@ -165,42 +137,95 @@ impl WasmerEnv for WasmerInstanceEnv {
 
 impl WasmerModule {
     fn instantiate(&self) -> WasmerInstance {
-        // native functions
-        fn radix_engine(
-            env: &WasmerInstanceEnv,
-            id: u8,
-            input_ptr: i32,
-        ) -> Result<i32, RuntimeError> {
-            let instance = unsafe { env.instance.get_unchecked() };
-            let input = read_value(&instance, input_ptr as usize)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+        // native functions starts
+        pub fn consume_buffer(env: &WasmerInstanceEnv, buffer_id: BufferId, destination: u32) {
+            // let instance = unsafe { env.instance.get_unchecked() };
+            // let input = read_value(&instance, input_ptr as usize)
+            //     .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            let output = {
-                let ptr = env
-                    .runtime_ptr
-                    .lock()
-                    .expect("Failed to lock WASM runtime pointer");
-                let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
-                runtime
-                    .main(id, input)
-                    .map_err(|e| RuntimeError::user(Box::new(e)))?
-            };
+            // let output = {
+            //     let ptr = env
+            //         .runtime_ptr
+            //         .lock()
+            //         .expect("Failed to lock WASM runtime pointer");
+            //     let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+            //     runtime
+            //         .main(id, input)
+            //         .map_err(|e| RuntimeError::user(Box::new(e)))?
+            // };
 
-            send_value(&instance, output.as_slice())
-                .map(|ptr| ptr as i32)
-                .map_err(|e| RuntimeError::user(Box::new(e)))
+            // send_value(&instance, output.as_slice())
+            //     .map(|ptr| ptr as i32)
+            //     .map_err(|e| RuntimeError::user(Box::new(e)))
+            todo!()
         }
 
-        fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: i32) -> Result<(), RuntimeError> {
+        pub fn invoke_method(
+            env: &WasmerInstanceEnv,
+            receiver: u32,
+            receive_len: u32,
+            ident: u32,
+            ident_len: u32,
+            args: u32,
+            args_len: u32,
+        ) -> Buffer {
+            todo!()
+        }
+
+        pub fn invoke(env: &WasmerInstanceEnv, invocation: u32, invocation_len: u32) -> Buffer {
+            todo!()
+        }
+
+        pub fn create_node(env: &WasmerInstanceEnv, node: u32, node_len: u32) -> Buffer {
+            todo!()
+        }
+
+        pub fn get_visible_nodes(env: &WasmerInstanceEnv) -> Buffer {
+            todo!()
+        }
+
+        pub fn drop_node(env: &WasmerInstanceEnv, node_id: u32, node_id_len: u32) {
+            todo!()
+        }
+
+        pub fn lock_substate(
+            env: &WasmerInstanceEnv,
+            node_id: u32,
+            node_id_len: u32,
+            offset: u32,
+            offset_len: u32,
+            mutable: u32,
+        ) -> u32 {
+            todo!()
+        }
+
+        pub fn read_substate(env: &WasmerInstanceEnv, handle: u32) -> Buffer {
+            todo!()
+        }
+
+        pub fn write_substate(env: &WasmerInstanceEnv, handle: u32, data: u32, data_len: u32) {
+            todo!()
+        }
+
+        pub fn unlock_substate(env: &WasmerInstanceEnv, handle: u32) {
+            todo!()
+        }
+
+        pub fn get_actor(env: &WasmerInstanceEnv) -> Buffer {
+            todo!()
+        }
+
+        fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: u32) -> Result<(), RuntimeError> {
             let ptr = env
                 .runtime_ptr
                 .lock()
                 .expect("Failed to lock WASM runtime pointer");
             let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             runtime
-                .consume_cost_units(cost_unit as u32)
+                .consume_cost_units(cost_unit)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
+        // native functions ends
 
         // env
         let env = WasmerInstanceEnv {
@@ -211,7 +236,17 @@ impl WasmerModule {
         // imports
         let import_object = imports! {
             MODULE_ENV_NAME => {
-                RADIX_ENGINE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), radix_engine),
+                CONSUME_BUFFER_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_buffer),
+                INVOKE_METHOD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), invoke_method),
+                INVOKE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), invoke),
+                CREATE_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), create_node),
+                GET_VISIBLE_NODES_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_visible_nodes),
+                DROP_NODE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), drop_node),
+                LOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), lock_substate),
+                READ_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), read_substate),
+                WRITE_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), write_substate),
+                UNLOCK_SUBSTATE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), unlock_substate),
+                GET_ACTOR_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), get_actor),
                 CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
             }
         };

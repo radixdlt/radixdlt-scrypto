@@ -128,22 +128,32 @@ impl WasmiModule {
 }
 
 impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
-    pub fn read_memory(&self, ptr: usize, len: usize) -> Result<Vec<u8>, WasmRuntimeError> {
-        let direct = self.instance.memory_ref.direct_access();
-        let buffer = direct.as_ref();
-        if ptr > buffer.len() || ptr + len > buffer.len() {
+    pub fn read_memory(&self, ptr: u32, len: u32) -> Result<Vec<u8>, WasmRuntimeError> {
+        let ptr = ptr as usize;
+        let len = len as usize;
+
+        let memory = self.instance.memory_ref.direct_access();
+        let memory_slice = memory.as_ref();
+        let memory_size = memory_slice.len();
+        if ptr > memory_size || ptr + len > memory_size {
             return Err(WasmRuntimeError::MemoryAccessError);
         }
-        Ok(buffer[ptr..ptr + len].to_vec())
+
+        Ok(memory_slice[ptr..ptr + len].to_vec())
     }
 
-    pub fn write_memory(&self, ptr: usize, data: &[u8]) -> Result<(), WasmRuntimeError> {
-        let mut direct = self.instance.memory_ref.direct_access_mut();
-        let buffer = direct.as_mut();
-        if ptr > buffer.len() || ptr + data.len() > buffer.len() {
+    pub fn write_memory(&self, ptr: u32, data: &[u8]) -> Result<(), WasmRuntimeError> {
+        let ptr = ptr as usize;
+        let len = data.len();
+
+        let mut memory = self.instance.memory_ref.direct_access_mut();
+        let memory_slice = memory.as_mut();
+        let memory_size = memory_slice.len();
+        if ptr > memory_size || ptr + len > memory_size {
             return Err(WasmRuntimeError::MemoryAccessError);
         }
-        buffer[ptr..ptr + data.len()].copy_from_slice(data);
+
+        memory_slice[ptr..ptr + len].copy_from_slice(data);
         Ok(())
     }
 
@@ -164,7 +174,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
         match index {
             CONSUME_BUFFER_FUNCTION_ID => {
                 let buffer_id = args.nth_checked::<u32>(0)?;
-                let destination = args.nth_checked::<u32>(1)? as usize;
+                let destination = args.nth_checked::<u32>(1)?;
 
                 let slice = self.runtime.consume_buffer(buffer_id)?;
                 self.write_memory(destination, &slice)?;
@@ -172,12 +182,12 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                 Ok(None)
             }
             INVOKE_METHOD_FUNCTION_ID => {
-                let receiver_ptr = args.nth_checked::<u32>(0)? as usize;
-                let receiver_len = args.nth_checked::<u32>(1)? as usize;
-                let ident_ptr = args.nth_checked::<u32>(2)? as usize;
-                let ident_len = args.nth_checked::<u32>(3)? as usize;
-                let args_ptr = args.nth_checked::<u32>(4)? as usize;
-                let args_len = args.nth_checked::<u32>(5)? as usize;
+                let receiver_ptr = args.nth_checked::<u32>(0)?;
+                let receiver_len = args.nth_checked::<u32>(1)?;
+                let ident_ptr = args.nth_checked::<u32>(2)?;
+                let ident_len = args.nth_checked::<u32>(3)?;
+                let args_ptr = args.nth_checked::<u32>(4)?;
+                let args_len = args.nth_checked::<u32>(5)?;
 
                 let buffer = self.runtime.invoke_method(
                     self.read_memory(receiver_ptr, receiver_len)?,
@@ -188,8 +198,8 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                 Ok(Some(RuntimeValue::I64(buffer as i64)))
             }
             INVOKE_FUNCTION_ID => {
-                let invocation_ptr = args.nth_checked::<u32>(0)? as usize;
-                let invocation_len = args.nth_checked::<u32>(1)? as usize;
+                let invocation_ptr = args.nth_checked::<u32>(0)?;
+                let invocation_len = args.nth_checked::<u32>(1)?;
 
                 let buffer = self
                     .runtime
@@ -198,8 +208,8 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                 Ok(Some(RuntimeValue::I64(buffer as i64)))
             }
             CREATE_NODE_FUNCTION_ID => {
-                let node_ptr = args.nth_checked::<u32>(0)? as usize;
-                let node_len = args.nth_checked::<u32>(1)? as usize;
+                let node_ptr = args.nth_checked::<u32>(0)?;
+                let node_len = args.nth_checked::<u32>(1)?;
 
                 let buffer = self
                     .runtime
@@ -213,8 +223,8 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                 Ok(Some(RuntimeValue::I64(buffer as i64)))
             }
             DROP_NODE_FUNCTION_ID => {
-                let node_id_ptr = args.nth_checked::<u32>(0)? as usize;
-                let node_id_len = args.nth_checked::<u32>(1)? as usize;
+                let node_id_ptr = args.nth_checked::<u32>(0)?;
+                let node_id_len = args.nth_checked::<u32>(1)?;
 
                 self.runtime
                     .drop_node(self.read_memory(node_id_ptr, node_id_len)?)?;
@@ -222,10 +232,10 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                 Ok(None)
             }
             LOCK_SUBSTATE_FUNCTION_ID => {
-                let node_id_ptr = args.nth_checked::<u32>(0)? as usize;
-                let node_id_len = args.nth_checked::<u32>(1)? as usize;
-                let offset_ptr = args.nth_checked::<u32>(2)? as usize;
-                let offset_len = args.nth_checked::<u32>(3)? as usize;
+                let node_id_ptr = args.nth_checked::<u32>(0)?;
+                let node_id_len = args.nth_checked::<u32>(1)?;
+                let offset_ptr = args.nth_checked::<u32>(2)?;
+                let offset_len = args.nth_checked::<u32>(3)?;
                 let mutable = args.nth_checked::<u32>(4)? != 0;
 
                 let handle = self.runtime.lock_substate(
@@ -245,8 +255,8 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
             }
             WRITE_SUBSTATE_FUNCTION_ID => {
                 let handle = args.nth_checked::<u32>(0)?;
-                let data_ptr = args.nth_checked::<u32>(1)? as usize;
-                let data_len = args.nth_checked::<u32>(2)? as usize;
+                let data_ptr = args.nth_checked::<u32>(1)?;
+                let data_len = args.nth_checked::<u32>(2)?;
 
                 self.runtime
                     .write_substate(handle, self.read_memory(data_ptr, data_len)?)?;
@@ -314,7 +324,7 @@ impl WasmInstance for WasmiInstance {
 
 #[derive(Debug, Clone)]
 pub struct EngineOptions {
-    max_cache_size_bytes: usize,
+    max_cache_size_bytes: u32,
 }
 
 pub struct WasmiEngine {
@@ -336,7 +346,7 @@ impl WasmiEngine {
     pub fn new(options: EngineOptions) -> Self {
         #[cfg(not(feature = "moka"))]
         let modules_cache = RefCell::new(lru::LruCache::new(
-            NonZeroUsize::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
+            NonZerou32::new(options.max_cache_size_bytes / (1024 * 1024)).unwrap(),
         ));
         #[cfg(feature = "moka")]
         let modules_cache = moka::sync::Cache::builder()
