@@ -331,8 +331,11 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
+    let mut pre_allocated_ids = BTreeSet::new();
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            component_address: EPOCH_MANAGER.raw(),
             validator_set: BTreeSet::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
@@ -344,7 +347,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
             instructions,
             blobs,
             nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
+            pre_allocated_ids,
         }
         .get_executable(vec![]),
     );
@@ -361,8 +364,11 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
+    let mut pre_allocated_ids = BTreeSet::new();
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            component_address: EPOCH_MANAGER.raw(),
             validator_set: BTreeSet::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
@@ -374,7 +380,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             instructions,
             blobs,
             nonce: 0,
-            pre_allocated_ids: BTreeSet::new(),
+            pre_allocated_ids,
         }
         .get_executable(vec![AuthAddresses::system_role()]),
     );

@@ -9,6 +9,7 @@ use crate::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateInvocation {
+    pub component_address: [u8; 26], // TODO: Clean this up
     pub validator_set: BTreeSet<EcdsaSecp256k1PublicKey>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,

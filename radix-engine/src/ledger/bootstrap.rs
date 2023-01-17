@@ -23,8 +23,6 @@ const XRD_MAX_SUPPLY: i128 = 1_000_000_000_000i128;
 
 pub struct GenesisReceipt {
     pub faucet_component: ComponentAddress,
-    pub clock: ComponentAddress,
-    pub epoch_manager: ComponentAddress,
 }
 
 pub fn create_genesis(
@@ -184,17 +182,30 @@ pub fn create_genesis(
         }));
     };
 
-    instructions.push(Instruction::System(NativeInvocation::Clock(
-        ClockInvocation::Create(ClockCreateInvocation {}),
-    )));
+    {
+        let component_address = CLOCK.raw();
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(CLOCK)));
+        instructions.push(Instruction::System(NativeInvocation::Clock(
+            ClockInvocation::Create(ClockCreateInvocation {
+                component_address
+            }),
+        )));
+    }
 
-    instructions.push(Instruction::System(NativeInvocation::EpochManager(
-        EpochManagerInvocation::Create(EpochManagerCreateInvocation {
-            validator_set: validator_set.clone(),
-            initial_epoch,
-            rounds_per_epoch,
-        }),
-    )));
+
+    {
+        let component_address = EPOCH_MANAGER.raw();
+        pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
+        instructions.push(Instruction::System(NativeInvocation::EpochManager(
+            EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+                component_address,
+                validator_set: validator_set.clone(),
+                initial_epoch,
+                rounds_per_epoch,
+            }),
+        )));
+    }
+
 
     SystemTransaction {
         instructions,
@@ -206,13 +217,8 @@ pub fn create_genesis(
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
     let faucet_component: ComponentAddress = receipt.output(8);
-    let clock: ComponentAddress = receipt.output(9);
-    let epoch_manager: ComponentAddress = receipt.output(10);
-
     GenesisReceipt {
         faucet_component,
-        clock,
-        epoch_manager,
     }
 }
 
@@ -298,7 +304,5 @@ mod tests {
         let genesis_receipt = genesis_result(&transaction_receipt);
 
         assert_eq!(genesis_receipt.faucet_component, FAUCET_COMPONENT);
-        assert_eq!(genesis_receipt.clock, CLOCK);
-        assert_eq!(genesis_receipt.epoch_manager, EPOCH_MANAGER);
     }
 }
