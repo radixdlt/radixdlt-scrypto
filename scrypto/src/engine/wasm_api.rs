@@ -1,7 +1,12 @@
-use radix_engine_interface::api::types::LockHandle;
-
 pub type BufferId = u32;
 pub type Buffer = u64;
+
+#[macro_export]
+macro_rules! buffer_id {
+    ($buf: expr) => {
+        ($buf >> 32) as u32
+    };
+}
 
 #[macro_export]
 macro_rules! buffer_size {
@@ -10,11 +15,13 @@ macro_rules! buffer_size {
     };
 }
 
-#[macro_export]
-macro_rules! buffer_id {
-    ($buf: expr) => {
-        ($buf >> 32) as u32
+pub fn copy_buffer(buffer: Buffer) -> Vec<u8> {
+    let mut vec = Vec::<u8>::with_capacity(buffer_size!(buffer));
+    unsafe {
+        consume_buffer(buffer_id!(buffer), vec.as_mut_ptr());
+        vec.set_len(buffer_size!(buffer));
     };
+    vec
 }
 
 extern "C" {
@@ -66,16 +73,16 @@ extern "C" {
         offset: *const u8,
         offset_len: usize,
         mutable: bool,
-    ) -> LockHandle;
+    ) -> u32;
 
     // Reads a substate
-    pub fn read_substate(handle: LockHandle) -> Buffer;
+    pub fn read_substate(handle: u32) -> Buffer;
 
     // Writes into a substate
-    pub fn write_substate(handle: LockHandle, data: *const u8, data_len: usize);
+    pub fn write_substate(handle: u32, data: *const u8, data_len: usize);
 
     // Releases a lock
-    pub fn unlock(handle: LockHandle);
+    pub fn unlock(handle: u32);
 
     //===============
     // Actor API

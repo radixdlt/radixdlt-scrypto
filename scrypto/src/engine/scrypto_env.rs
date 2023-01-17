@@ -1,5 +1,4 @@
 use crate::engine::wasm_api::*;
-use crate::{buffer_id, buffer_size};
 use radix_engine_interface::api::types::{
     FnIdentifier, LockHandle, RENodeId, ScryptoRENode, ScryptoReceiver, SubstateOffset,
 };
@@ -17,15 +16,6 @@ pub enum EngineApiError {
 }
 
 pub struct ScryptoEnv;
-
-fn copy_buffer(buffer: Buffer) -> Vec<u8> {
-    let mut vec = Vec::<u8>::with_capacity(buffer_size!(buffer));
-    unsafe {
-        consume_buffer(buffer_id!(buffer), vec.as_mut_ptr());
-        vec.set_len(buffer_size!(buffer));
-    };
-    vec
-}
 
 impl<N: SerializableInvocation> Invokable<N, EngineApiError> for ScryptoEnv {
     fn invoke(&mut self, input: N) -> Result<N::Output, EngineApiError> {
