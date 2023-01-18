@@ -218,6 +218,7 @@ pub fn create_genesis(
 }
 
 pub fn genesis_result(receipt: &TransactionReceipt) -> GenesisReceipt {
+    // TODO: Remove this when appropriate syscalls are implemented for Scrypto
     let faucet_component: ComponentAddress = receipt.output(8);
     GenesisReceipt { faucet_component }
 }

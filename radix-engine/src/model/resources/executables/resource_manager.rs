@@ -387,6 +387,8 @@ impl Executor for ResourceManagerCreateNonFungibleInvocation {
         Y: SystemApi,
     {
         let global_node_id = if let Some(address) = self.resource_address {
+            // If address isn't user frame allocated or pre_allocated then
+            // using this node_id will fail on create_node below
             RENodeId::Global(GlobalAddress::Resource(ResourceAddress::Normal(address)))
         } else {
             api.allocate_node_id(RENodeType::GlobalResourceManager)?

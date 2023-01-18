@@ -7,7 +7,6 @@ use radix_engine_interface::api::types::{
 use radix_engine_interface::crypto::{hash, Hash};
 use radix_engine_interface::model::*;
 use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 
@@ -38,31 +37,25 @@ impl IdAllocator {
     }
 
     pub fn post_execute_invocation(&mut self) -> Result<(), RuntimeError> {
-        if let Some(ids) = self.frame_allocated_ids.pop() {
-            if !ids.is_empty() {
-                return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
-                    IdAllocationError::AllocatedIDsNotEmpty,
-                )));
-            }
-            Ok(())
-        } else {
-            Err(RuntimeError::UnexpectedError("No frame found.".to_string()))
+        let ids = self.frame_allocated_ids.pop().expect("No frame found");
+        if !ids.is_empty() {
+            return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
+                IdAllocationError::AllocatedIDsNotEmpty,
+            )));
         }
+        Ok(())
     }
 
     pub fn take_node_id(&mut self, node_id: RENodeId) -> Result<(), RuntimeError> {
-        if let Some(ids) = self.frame_allocated_ids.last_mut() {
-            let frame_allocated = ids.remove(&node_id);
-            let pre_allocated = self.pre_allocated_ids.remove(&node_id);
-            if !frame_allocated && !pre_allocated {
-                return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
-                    IdAllocationError::RENodeIdWasNotAllocated(node_id),
-                )));
-            }
-            Ok(())
-        } else {
-            Err(RuntimeError::UnexpectedError("No frame found.".to_string()))
+        let ids = self.frame_allocated_ids.last_mut().expect("No frame found");
+        let frame_allocated = ids.remove(&node_id);
+        let pre_allocated = self.pre_allocated_ids.remove(&node_id);
+        if !frame_allocated && !pre_allocated {
+            return Err(RuntimeError::KernelError(KernelError::IdAllocationError(
+                IdAllocationError::RENodeIdWasNotAllocated(node_id),
+            )));
         }
+        Ok(())
     }
 
     pub fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
@@ -121,11 +114,11 @@ impl IdAllocator {
         }
         .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
 
-        if let Some(ids) = self.frame_allocated_ids.last_mut() {
-            ids.insert(node_id);
-        } else {
-            return Err(RuntimeError::UnexpectedError("No frame found.".to_string()));
-        }
+        let ids = self
+            .frame_allocated_ids
+            .last_mut()
+            .expect("No frame found.");
+        ids.insert(node_id);
 
         Ok(node_id)
     }
