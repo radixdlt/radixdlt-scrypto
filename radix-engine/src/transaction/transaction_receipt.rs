@@ -109,6 +109,7 @@ pub struct RejectResult {
 }
 
 /// Represents a transaction receipt.
+#[derive(Clone)]
 pub struct TransactionReceipt {
     pub execution: TransactionExecution, // THIS FIELD IS USEFUL FOR DEBUGGING EVEN IF THE TRANSACTION IS REJECTED
     pub result: TransactionResult,
