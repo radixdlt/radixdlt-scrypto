@@ -1,52 +1,34 @@
 use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
+use radix_engine_interface::api::types::VaultId;
 use radix_engine_interface::data::ScryptoDecode;
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
 use sbor::rust::fmt::Debug;
 
-pub trait NativeVault: Sized {
-    fn sys_new<Y, E: Debug + ScryptoDecode>(
-        resource_address: ResourceAddress,
-        api: &mut Y,
-    ) -> Result<Self, E>
-    where
-        Y: EngineApi<E> + InvokableModel<E>;
+pub struct Vault(pub VaultId); // native stub
 
-    fn sys_put<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        bucket: Bucket,
-        api: &mut Y,
-    ) -> Result<(), E>
-    where
-        Y: EngineApi<E> + InvokableModel<E>;
-
-    fn sys_take<Y, E: Debug + ScryptoDecode>(
-        &mut self,
-        amount: Decimal,
-        api: &mut Y,
-    ) -> Result<Bucket, E>
-    where
-        Y: EngineApi<E> + InvokableModel<E>;
-
-    fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Decimal, E>
-    where
-        Y: EngineApi<E> + Invokable<VaultGetAmountInvocation, E>;
-}
-
-impl NativeVault for Vault {
-    fn sys_new<Y, E: Debug + ScryptoDecode>(
+impl Vault {
+    pub fn sys_new<Y, E: Debug + ScryptoDecode>(
         resource_address: ResourceAddress,
         api: &mut Y,
     ) -> Result<Self, E>
     where
         Y: EngineApi<E> + InvokableModel<E>,
     {
-        api.invoke(ResourceManagerCreateVaultInvocation {
-            receiver: resource_address,
-        })
+        let vault_id = api
+            .invoke(ResourceManagerCreateVaultInvocation {
+                receiver: resource_address,
+            })?
+            .vault_id();
+
+        Ok(Self(vault_id))
     }
 
-    fn sys_put<Y, E: Debug + ScryptoDecode>(&mut self, bucket: Bucket, api: &mut Y) -> Result<(), E>
+    pub fn sys_put<Y, E: Debug + ScryptoDecode>(
+        &mut self,
+        bucket: Bucket,
+        api: &mut Y,
+    ) -> Result<(), E>
     where
         Y: EngineApi<E> + InvokableModel<E>,
     {
@@ -56,7 +38,7 @@ impl NativeVault for Vault {
         })
     }
 
-    fn sys_take<Y, E: Debug + ScryptoDecode>(
+    pub fn sys_take<Y, E: Debug + ScryptoDecode>(
         &mut self,
         amount: Decimal,
         api: &mut Y,
@@ -70,7 +52,7 @@ impl NativeVault for Vault {
         })
     }
 
-    fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
+    pub fn sys_amount<Y, E: Debug + ScryptoDecode>(&self, sys_calls: &mut Y) -> Result<Decimal, E>
     where
         Y: EngineApi<E> + Invokable<VaultGetAmountInvocation, E>,
     {

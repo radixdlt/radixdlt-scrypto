@@ -1,24 +1,22 @@
 use radix_engine_interface::address::Bech32Decoder;
-use radix_engine_interface::api::types::{
-    BucketId, ComponentId, GlobalAddress, KeyValueStoreId, ProofId,
-};
+use radix_engine_interface::api::types::GlobalAddress;
 use radix_engine_interface::crypto::{
-    Blob, EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey,
-    EddsaEd25519Signature, Hash,
+    EcdsaSecp256k1PublicKey, EcdsaSecp256k1Signature, EddsaEd25519PublicKey, EddsaEd25519Signature,
+    Hash,
 };
+use radix_engine_interface::data::types::*;
 use radix_engine_interface::data::{
-    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomTypeId, ScryptoCustomValue,
-    ScryptoDecode, ScryptoSborTypeId, ScryptoValue, ScryptoValueDecodeError,
+    scrypto_decode, scrypto_encode, IndexedScryptoValue, ScryptoCustomValue, ScryptoDecode,
+    ScryptoValue, ScryptoValueKind,
 };
 use radix_engine_interface::math::{Decimal, PreciseDecimal};
 use radix_engine_interface::model::*;
 use sbor::rust::borrow::Borrow;
-
-use radix_engine_interface::core::Expression;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::str::FromStr;
-use sbor::type_id::*;
+use sbor::rust::vec;
+use sbor::value_kind::*;
 use sbor::*;
 
 use crate::errors::*;
@@ -28,16 +26,19 @@ use crate::validation::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
-    InvalidType {
+    InvalidAstType {
         expected_type: ast::Type,
         actual: ast::Type,
     },
-    InvalidValue {
+    InvalidAstValue {
         expected_type: Vec<ast::Type>,
         actual: ast::Value,
     },
+    UnexpectedValue {
+        expected_type: ScryptoValueKind,
+        actual: ast::Value,
+    },
     InvalidPackageAddress(String),
-    InvalidSystemAddress(String),
     InvalidComponentAddress(String),
     InvalidResourceAddress(String),
     InvalidDecimal(String),
@@ -47,7 +48,7 @@ pub enum GeneratorError {
     InvalidKeyValueStoreId(String),
     InvalidVaultId(String),
     InvalidNonFungibleId(String),
-    InvalidNonFungibleAddress(String),
+    InvalidNonFungibleAddress,
     InvalidExpression(String),
     InvalidComponent(String),
     InvalidKeyValueStore(String),
@@ -61,16 +62,16 @@ pub enum GeneratorError {
     InvalidBytesHex(String),
     SborEncodeError(EncodeError),
     NameResolverError(NameResolverError),
-    IdValidationError(IdValidationError),
+    IdValidationError(ManifestIdValidationError),
     ArgumentEncodingError(EncodeError),
     ArgumentDecodingError(DecodeError),
-    ArgumentIndexingError(ScryptoValueDecodeError),
     InvalidEntityAddress(String),
     InvalidLength {
         value_type: ast::Type,
         expected_length: usize,
         actual: usize,
     },
+    OddNumberOfElements,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -81,8 +82,8 @@ pub enum NameResolverError {
 }
 
 pub struct NameResolver {
-    named_buckets: BTreeMap<String, BucketId>,
-    named_proofs: BTreeMap<String, ProofId>,
+    named_buckets: BTreeMap<String, ManifestBucket>,
+    named_proofs: BTreeMap<String, ManifestProof>,
 }
 
 impl NameResolver {
@@ -96,7 +97,7 @@ impl NameResolver {
     pub fn insert_bucket(
         &mut self,
         name: String,
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     ) -> Result<(), NameResolverError> {
         if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
@@ -109,7 +110,7 @@ impl NameResolver {
     pub fn insert_proof(
         &mut self,
         name: String,
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     ) -> Result<(), NameResolverError> {
         if self.named_buckets.contains_key(&name) || self.named_proofs.contains_key(&name) {
             Err(NameResolverError::NamedAlreadyDefined(name))
@@ -119,14 +120,14 @@ impl NameResolver {
         }
     }
 
-    pub fn resolve_bucket(&mut self, name: &str) -> Result<BucketId, NameResolverError> {
+    pub fn resolve_bucket(&mut self, name: &str) -> Result<ManifestBucket, NameResolverError> {
         match self.named_buckets.get(name).cloned() {
             Some(bucket_id) => Ok(bucket_id),
             None => Err(NameResolverError::UndefinedBucket(name.into())),
         }
     }
 
-    pub fn resolve_proof(&mut self, name: &str) -> Result<ProofId, NameResolverError> {
+    pub fn resolve_proof(&mut self, name: &str) -> Result<ManifestProof, NameResolverError> {
         match self.named_proofs.get(name).cloned() {
             Some(proof_id) => Ok(proof_id),
             None => Err(NameResolverError::UndefinedProof(name.into())),
@@ -139,7 +140,7 @@ pub fn generate_manifest(
     bech32_decoder: &Bech32Decoder,
     blobs: BTreeMap<Hash, Vec<u8>>,
 ) -> Result<TransactionManifest, GeneratorError> {
-    let mut id_validator = IdValidator::new();
+    let mut id_validator = ManifestIdValidator::new();
     let mut name_resolver = NameResolver::new();
     let mut output = Vec::new();
 
@@ -161,7 +162,7 @@ pub fn generate_manifest(
 
 pub fn generate_instruction(
     instruction: &ast::Instruction,
-    id_validator: &mut IdValidator,
+    id_validator: &mut ManifestIdValidator,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
@@ -213,7 +214,7 @@ pub fn generate_instruction(
         ast::Instruction::ReturnToWorktop { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
-                .drop_bucket(bucket_id)
+                .drop_bucket(&bucket_id)
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::ReturnToWorktop { bucket_id }
         }
@@ -247,7 +248,7 @@ pub fn generate_instruction(
         ast::Instruction::PushToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
-                .drop_proof(proof_id)
+                .drop_proof(&proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::PushToAuthZone { proof_id }
         }
@@ -302,7 +303,7 @@ pub fn generate_instruction(
         ast::Instruction::CreateProofFromBucket { bucket, new_proof } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
-                .new_proof(ProofKind::BucketProof(bucket_id))
+                .new_proof(ProofKind::BucketProof(bucket_id.clone()))
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
@@ -311,7 +312,7 @@ pub fn generate_instruction(
         ast::Instruction::CloneProof { proof, new_proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             let proof_id2 = id_validator
-                .clone_proof(proof_id)
+                .clone_proof(&proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id2)?;
 
@@ -320,7 +321,7 @@ pub fn generate_instruction(
         ast::Instruction::DropProof { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
-                .drop_proof(proof_id)
+                .drop_proof(&proof_id)
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::DropProof { proof_id }
         }
@@ -341,19 +342,16 @@ pub fn generate_instruction(
             let function_name = generate_string(&function_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
 
-            let args_encoded =
-                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
-            let args_indexed = IndexedScryptoValue::from_value(args.clone())
-                .map_err(GeneratorError::ArgumentIndexingError)?;
+            let indexed_args = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&args_indexed)
+                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallFunction {
                 package_address,
                 blueprint_name,
                 function_name,
-                args: args_encoded,
+                args: indexed_args.to_vec(),
             }
         }
         ast::Instruction::CallMethod {
@@ -365,18 +363,15 @@ pub fn generate_instruction(
             let method_name = generate_string(&method_name)?;
             let args = generate_args(args, resolver, bech32_decoder, blobs)?;
 
-            let args_encoded =
-                scrypto_encode(&args).map_err(GeneratorError::ArgumentEncodingError)?;
-            let args_indexed = IndexedScryptoValue::from_value(args.clone())
-                .map_err(GeneratorError::ArgumentIndexingError)?;
+            let indexed_args = IndexedScryptoValue::from_value(args);
             id_validator
-                .move_resources(&args_indexed)
+                .move_resources(&indexed_args.buckets(), &indexed_args.proofs())
                 .map_err(GeneratorError::IdValidationError)?;
 
             BasicInstruction::CallMethod {
                 component_address,
                 method_name,
-                args: args_encoded,
+                args: indexed_args.into_vec(),
             }
         }
         ast::Instruction::PublishPackage {
@@ -404,7 +399,7 @@ pub fn generate_instruction(
         ast::Instruction::BurnResource { bucket } => {
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
-                .drop_bucket(bucket_id)
+                .drop_bucket(&bucket_id)
                 .map_err(GeneratorError::IdValidationError)?;
             BasicInstruction::BurnResource { bucket_id }
         }
@@ -471,6 +466,18 @@ pub fn generate_instruction(
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             entries: generate_non_fungible_mint_params(entries, resolver, bech32_decoder, blobs)?,
         },
+        ast::Instruction::MintUuidNonFungible {
+            resource_address,
+            entries,
+        } => BasicInstruction::MintUuidNonFungible {
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
+            entries: generate_uuid_non_fungible_mint_params(
+                entries,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
+        },
 
         ast::Instruction::CreateFungibleResource {
             divisibility,
@@ -529,52 +536,13 @@ pub fn generate_instruction(
                 generate_non_fungible_mint_params,
             )?,
         },
-        ast::Instruction::CreateValidator { key } => BasicInstruction::CreateValidator {
-            key: generate_ecdsa_secp256k1_public_key(key)?,
-        },
-        ast::Instruction::RegisterValidator { validator } => BasicInstruction::RegisterValidator {
-            validator_address: generate_system_address(validator, bech32_decoder)?,
-        },
-        ast::Instruction::UnregisterValidator { validator } => {
-            BasicInstruction::UnregisterValidator {
-                validator_address: generate_system_address(validator, bech32_decoder)?,
-            }
-        }
-        ast::Instruction::StakeValidator { validator, stake } => {
-            let bucket_id = generate_bucket(stake, resolver)?;
-            id_validator
-                .drop_bucket(bucket_id)
-                .map_err(GeneratorError::IdValidationError)?;
-            BasicInstruction::StakeValidator {
-                validator_address: generate_system_address(validator, bech32_decoder)?,
-                stake: bucket_id,
-            }
-        }
-
-        ast::Instruction::UnstakeValidator { validator, amount } => {
-            BasicInstruction::UnstakeValidator {
-                validator_address: generate_system_address(validator, bech32_decoder)?,
-                amount: generate_decimal(amount)?,
-            }
-        }
-
-        ast::Instruction::ClaimXrd { validator, claim } => {
-            let bucket_id = generate_bucket(claim, resolver)?;
-            id_validator
-                .drop_bucket(bucket_id)
-                .map_err(GeneratorError::IdValidationError)?;
-            BasicInstruction::ClaimXrd {
-                validator_address: generate_system_address(validator, bech32_decoder)?,
-                claim_bucket: bucket_id,
-            }
-        }
     })
 }
 
 #[macro_export]
 macro_rules! invalid_type {
     ( $v:expr, $($exp:expr),+ ) => {
-        Err(GeneratorError::InvalidValue {
+        Err(GeneratorError::InvalidAstValue {
             expected_type: vec!($($exp),+),
             actual: $v.clone(),
         })
@@ -711,21 +679,6 @@ fn generate_package_address(
     }
 }
 
-fn generate_system_address(
-    value: &ast::Value,
-    bech32_decoder: &Bech32Decoder,
-) -> Result<SystemAddress, GeneratorError> {
-    match value {
-        ast::Value::SystemAddress(inner) => match &**inner {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_system_address(s)
-                .map_err(|_| GeneratorError::InvalidSystemAddress(s.into())),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::SystemAddress),
-    }
-}
-
 fn generate_component_address(
     value: &ast::Value,
     bech32_decoder: &Bech32Decoder,
@@ -791,19 +744,11 @@ fn generate_entity_address(
                 .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
             v => return invalid_type!(v, ast::Type::String),
         },
-        ast::Value::SystemAddress(value) => match value.borrow() {
-            ast::Value::String(s) => bech32_decoder
-                .validate_and_decode_system_address(s)
-                .map(|a| GlobalAddress::System(a))
-                .map_err(|_| GeneratorError::InvalidEntityAddress(s.into())),
-            v => return invalid_type!(v, ast::Type::String),
-        },
         v => invalid_type!(
             v,
             ast::Type::PackageAddress,
             ast::Type::ResourceAddress,
-            ast::Type::ComponentAddress,
-            ast::Type::SystemAddress
+            ast::Type::ComponentAddress
         ),
     }
 }
@@ -820,40 +765,22 @@ fn generate_hash(value: &ast::Value) -> Result<Hash, GeneratorError> {
     }
 }
 
-fn generate_component_id(value: &ast::Value) -> Result<ComponentId, GeneratorError> {
+fn generate_ownership(value: &ast::Value) -> Result<Own, GeneratorError> {
     match value {
-        ast::Value::Component(inner) => match &**inner {
-            ast::Value::String(s) => hex::decode(s)
-                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                .and_then(|x| {
-                    x.try_into()
-                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                }),
+        ast::Value::Own(inner) => match &**inner {
+            ast::Value::String(_) => {
+                todo!()
+            }
             v => invalid_type!(v, ast::Type::String),
         },
-        v => invalid_type!(v, ast::Type::Component),
-    }
-}
-
-fn generate_key_value_store_id(value: &ast::Value) -> Result<KeyValueStoreId, GeneratorError> {
-    match value {
-        ast::Value::KeyValueStore(inner) => match &**inner {
-            ast::Value::String(s) => hex::decode(s)
-                .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                .and_then(|x| {
-                    x.try_into()
-                        .map_err(|_| GeneratorError::InvalidComponent(s.into()))
-                }),
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::KeyValueStore),
+        v => invalid_type!(v, ast::Type::Own),
     }
 }
 
 fn declare_bucket(
     value: &ast::Value,
     resolver: &mut NameResolver,
-    bucket_id: BucketId,
+    bucket_id: ManifestBucket,
 ) -> Result<(), GeneratorError> {
     match value {
         ast::Value::Bucket(inner) => match &**inner {
@@ -869,10 +796,10 @@ fn declare_bucket(
 fn generate_bucket(
     value: &ast::Value,
     resolver: &mut NameResolver,
-) -> Result<BucketId, GeneratorError> {
+) -> Result<ManifestBucket, GeneratorError> {
     match value {
         ast::Value::Bucket(inner) => match &**inner {
-            ast::Value::U32(n) => Ok(*n),
+            ast::Value::U32(n) => Ok(ManifestBucket(*n)),
             ast::Value::String(s) => resolver
                 .resolve_bucket(&s)
                 .map_err(GeneratorError::NameResolverError),
@@ -885,7 +812,7 @@ fn generate_bucket(
 fn declare_proof(
     value: &ast::Value,
     resolver: &mut NameResolver,
-    proof_id: ProofId,
+    proof_id: ManifestProof,
 ) -> Result<(), GeneratorError> {
     match value {
         ast::Value::Proof(inner) => match &**inner {
@@ -901,10 +828,10 @@ fn declare_proof(
 fn generate_proof(
     value: &ast::Value,
     resolver: &mut NameResolver,
-) -> Result<ProofId, GeneratorError> {
+) -> Result<ManifestProof, GeneratorError> {
     match value {
         ast::Value::Proof(inner) => match &**inner {
-            ast::Value::U32(n) => Ok(*n),
+            ast::Value::U32(n) => Ok(ManifestProof(*n)),
             ast::Value::String(s) => resolver
                 .resolve_proof(&s)
                 .map_err(GeneratorError::NameResolverError),
@@ -914,33 +841,13 @@ fn generate_proof(
     }
 }
 
-fn generate_vault(value: &ast::Value) -> Result<Vault, GeneratorError> {
-    match value {
-        ast::Value::Vault(inner) => match &**inner {
-            ast::Value::String(s) => {
-                Vault::from_str(s).map_err(|_| GeneratorError::InvalidVault(s.into()))
-            }
-            v => invalid_type!(v, ast::Type::String),
-        },
-        v => invalid_type!(v, ast::Type::Vault),
-    }
-}
-
 fn generate_non_fungible_id_internal(value: &ast::Value) -> Result<NonFungibleId, GeneratorError> {
     let non_fungible_id = match value {
-        ast::Value::U32(u) => NonFungibleId::U32(*u),
-        ast::Value::U64(u) => NonFungibleId::U64(*u),
+        ast::Value::U64(u) => NonFungibleId::Number(*u),
         ast::Value::U128(u) => NonFungibleId::UUID(*u),
         ast::Value::String(s) => NonFungibleId::String(s.clone()),
         ast::Value::Bytes(v) => NonFungibleId::Bytes(generate_byte_vec_from_hex(v)?),
-        v => invalid_type!(
-            v,
-            ast::Type::U32,
-            ast::Type::U64,
-            ast::Type::U128,
-            ast::Type::String,
-            ast::Type::Bytes
-        )?,
+        v => invalid_type!(v, ast::Type::U64, ast::Type::String, ast::Type::Bytes)?,
     };
     non_fungible_id.validate_contents().map_err(|_| {
         GeneratorError::InvalidNonFungibleId(non_fungible_id.to_combined_simple_string())
@@ -960,21 +867,31 @@ fn generate_non_fungible_address(
     bech32_decoder: &Bech32Decoder,
 ) -> Result<NonFungibleAddress, GeneratorError> {
     match value {
+        ast::Value::Tuple(elements) => {
+            if elements.len() != 2 {
+                return Err(GeneratorError::InvalidNonFungibleAddress);
+            }
+            let resource_address = generate_resource_address(&elements[0], bech32_decoder)?;
+            let nfid = generate_non_fungible_id(&elements[1])?;
+            Ok(NonFungibleAddress::new(resource_address, nfid))
+        }
         ast::Value::NonFungibleAddress(value1, value2) => {
             let resource_address = generate_resource_address_internal(&value1, bech32_decoder)?;
             let nfid = generate_non_fungible_id_internal(&value2)?;
             Ok(NonFungibleAddress::new(resource_address, nfid))
         }
-        v => invalid_type!(v, ast::Type::NonFungibleAddress),
+        v => invalid_type!(v, ast::Type::NonFungibleAddress, ast::Type::Tuple),
     }
 }
 
-fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError> {
+fn generate_expression(value: &ast::Value) -> Result<ManifestExpression, GeneratorError> {
     match value {
         ast::Value::Expression(inner) => match &**inner {
-            ast::Value::String(s) => {
-                Expression::from_str(s).map_err(|_| GeneratorError::InvalidExpression(s.into()))
-            }
+            ast::Value::String(s) => match s.as_str() {
+                "ENTIRE_WORKTOP" => Ok(ManifestExpression::EntireWorktop),
+                "ENTIRE_AUTH_ZONE" => Ok(ManifestExpression::EntireAuthZone),
+                _ => Err(GeneratorError::InvalidExpression(s.into())),
+            },
             v => invalid_type!(v, ast::Type::String),
         },
         v => invalid_type!(v, ast::Type::Expression),
@@ -984,7 +901,7 @@ fn generate_expression(value: &ast::Value) -> Result<Expression, GeneratorError>
 fn generate_blob(
     value: &ast::Value,
     blobs: &BTreeMap<Hash, Vec<u8>>,
-) -> Result<Blob, GeneratorError> {
+) -> Result<ManifestBlobRef, GeneratorError> {
     match value {
         ast::Value::Blob(inner) => match &**inner {
             ast::Value::String(s) => {
@@ -992,7 +909,7 @@ fn generate_blob(
                 blobs
                     .get(&hash)
                     .ok_or(GeneratorError::BlobNotFound(s.clone()))?;
-                Ok(Blob(hash))
+                Ok(ManifestBlobRef(hash))
             }
             v => invalid_type!(v, ast::Type::String),
         },
@@ -1006,7 +923,7 @@ fn generate_non_fungible_ids(
     match value {
         ast::Value::Array(kind, values) => {
             if kind != &ast::Type::NonFungibleId {
-                return Err(GeneratorError::InvalidType {
+                return Err(GeneratorError::InvalidAstType {
                     expected_type: ast::Type::String,
                     actual: kind.clone(),
                 });
@@ -1058,14 +975,20 @@ where
     ) -> Result<T, GeneratorError>,
 {
     let value = match value {
-        ast::Value::Enum(variant, fields) if variant == "None" && fields.len() == 0 => {
-            return Ok(None);
-        }
         ast::Value::None => {
             return Ok(None);
         }
+        ast::Value::Enum(variant, fields)
+            if *variant == OPTION_VARIANT_NONE && fields.len() == 0 =>
+        {
+            return Ok(None);
+        }
         ast::Value::Some(value) => &**value,
-        ast::Value::Enum(variant, fields) if variant == "Some" && fields.len() == 1 => &fields[0],
+        ast::Value::Enum(variant, fields)
+            if *variant == OPTION_VARIANT_SOME && fields.len() == 1 =>
+        {
+            &fields[0]
+        }
         v => invalid_type!(v, ast::Type::Enum)?,
     };
     Ok(Some(generator(value, resolver, bech32_decoder, blobs)?))
@@ -1074,12 +997,11 @@ where
 /// This function generates the mint parameters of a non fungible resource from an array which has
 /// the following structure:
 ///
-/// Value::Array (element_type: Type::Tuple)
-///     - Value::Tuple:
-///         - Value::NonFungibleId
-///         - Value::Tuple
-///             - Value::Tuple (Args tuple of immutable data)
-///             - Value::Tuple (Args tuple of mutable data)
+/// Map<NonFungibleId, Tuple>
+/// - Every key is a NonFungibleId
+/// - Every value is a Tuple of length 2
+///    - [0] Tuple (immutable data)
+///    - [1] Tuple (mutable data)
 fn generate_non_fungible_mint_params(
     value: &ast::Value,
     resolver: &mut NameResolver,
@@ -1087,15 +1009,80 @@ fn generate_non_fungible_mint_params(
     blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>, GeneratorError> {
     match value {
+        ast::Value::Map(key_type, value_type, elements) => {
+            if key_type != &ast::Type::NonFungibleId {
+                return Err(GeneratorError::InvalidAstType {
+                    expected_type: ast::Type::NonFungibleId,
+                    actual: key_type.clone(),
+                });
+            };
+            if value_type != &ast::Type::Tuple {
+                return Err(GeneratorError::InvalidAstType {
+                    expected_type: ast::Type::Tuple,
+                    actual: value_type.clone(),
+                });
+            };
+            if elements.len() % 2 != 0 {
+                return Err(GeneratorError::OddNumberOfElements);
+            }
+
+            let mut mint_params = BTreeMap::new();
+            for i in 0..elements.len() / 2 {
+                let non_fungible_id = generate_non_fungible_id(&elements[i * 2])?;
+                let non_fungible_data = match elements[i * 2 + 1].clone() {
+                    ast::Value::Tuple(values) => {
+                        if values.len() != 2 {
+                            return Err(GeneratorError::InvalidLength {
+                                value_type: ast::Type::Tuple,
+                                expected_length: 2,
+                                actual: values.len(),
+                            });
+                        }
+
+                        let immutable_data = scrypto_encode(&generate_args_from_tuple(
+                            &values[0],
+                            resolver,
+                            bech32_decoder,
+                            blobs,
+                        )?)
+                        .map_err(GeneratorError::ArgumentEncodingError)?;
+                        let mutable_data = scrypto_encode(&generate_args_from_tuple(
+                            &values[1],
+                            resolver,
+                            bech32_decoder,
+                            blobs,
+                        )?)
+                        .map_err(GeneratorError::ArgumentEncodingError)?;
+
+                        (immutable_data, mutable_data)
+                    }
+                    v => invalid_type!(v, ast::Type::Tuple)?,
+                };
+                mint_params.insert(non_fungible_id, non_fungible_data);
+            }
+
+            Ok(mint_params)
+        }
+        v => invalid_type!(v, ast::Type::Array)?,
+    }
+}
+
+fn generate_uuid_non_fungible_mint_params(
+    value: &ast::Value,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<Vec<(Vec<u8>, Vec<u8>)>, GeneratorError> {
+    match value {
         ast::Value::Array(kind, elements) => {
             if kind != &ast::Type::Tuple {
-                return Err(GeneratorError::InvalidType {
+                return Err(GeneratorError::InvalidAstType {
                     expected_type: ast::Type::Tuple,
                     actual: kind.clone(),
                 });
             };
 
-            let mut mint_params = BTreeMap::new();
+            let mut mint_params = Vec::new();
             for element in elements.into_iter() {
                 match element {
                     ast::Value::Tuple(values) => {
@@ -1107,40 +1094,22 @@ fn generate_non_fungible_mint_params(
                             });
                         }
 
-                        let non_fungible_id = generate_non_fungible_id(&values[0])?;
-                        let non_fungible_data = {
-                            let non_fungible_data_value = values[1].clone();
-                            match non_fungible_data_value {
-                                ast::Value::Tuple(values) => {
-                                    if values.len() != 2 {
-                                        return Err(GeneratorError::InvalidLength {
-                                            value_type: ast::Type::Tuple,
-                                            expected_length: 2,
-                                            actual: values.len(),
-                                        });
-                                    }
+                        let immutable_data = scrypto_encode(&generate_args_from_tuple(
+                            &values[0],
+                            resolver,
+                            bech32_decoder,
+                            blobs,
+                        )?)
+                        .map_err(GeneratorError::ArgumentEncodingError)?;
+                        let mutable_data = scrypto_encode(&generate_args_from_tuple(
+                            &values[1],
+                            resolver,
+                            bech32_decoder,
+                            blobs,
+                        )?)
+                        .map_err(GeneratorError::ArgumentEncodingError)?;
 
-                                    let immutable_data = scrypto_encode(&generate_args_from_tuple(
-                                        &values[0],
-                                        resolver,
-                                        bech32_decoder,
-                                        blobs,
-                                    )?)
-                                    .map_err(GeneratorError::ArgumentEncodingError)?;
-                                    let mutable_data = scrypto_encode(&generate_args_from_tuple(
-                                        &values[1],
-                                        resolver,
-                                        bech32_decoder,
-                                        blobs,
-                                    )?)
-                                    .map_err(GeneratorError::ArgumentEncodingError)?;
-
-                                    (immutable_data, mutable_data)
-                                }
-                                v => invalid_type!(v, ast::Type::Tuple)?,
-                            }
-                        };
-                        mint_params.insert(non_fungible_id, non_fungible_data);
+                        mint_params.push((immutable_data, mutable_data));
                     }
                     v => invalid_type!(v, ast::Type::Tuple)?,
                 }
@@ -1154,15 +1123,15 @@ fn generate_non_fungible_mint_params(
 
 pub fn generate_value(
     value: &ast::Value,
-    expected: Option<ast::Type>,
+    expected_type: Option<ScryptoValueKind>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
 ) -> Result<ScryptoValue, GeneratorError> {
-    if let Some(ty) = expected {
-        if ty != value.kind() {
-            return Err(GeneratorError::InvalidValue {
-                expected_type: vec![ty],
+    if let Some(ty) = expected_type {
+        if ty != value.type_id() {
+            return Err(GeneratorError::UnexpectedValue {
+                expected_type: ty,
                 actual: value.clone(),
             });
         }
@@ -1172,43 +1141,61 @@ pub fn generate_value(
         // ==============
         // Basic types
         // ==============
-        ast::Value::Unit => Ok(SborValue::Unit),
-        ast::Value::Bool(value) => Ok(SborValue::Bool { value: *value }),
-        ast::Value::I8(value) => Ok(SborValue::I8 { value: *value }),
-        ast::Value::I16(value) => Ok(SborValue::I16 { value: *value }),
-        ast::Value::I32(value) => Ok(SborValue::I32 { value: *value }),
-        ast::Value::I64(value) => Ok(SborValue::I64 { value: *value }),
-        ast::Value::I128(value) => Ok(SborValue::I128 { value: *value }),
-        ast::Value::U8(value) => Ok(SborValue::U8 { value: *value }),
-        ast::Value::U16(value) => Ok(SborValue::U16 { value: *value }),
-        ast::Value::U32(value) => Ok(SborValue::U32 { value: *value }),
-        ast::Value::U64(value) => Ok(SborValue::U64 { value: *value }),
-        ast::Value::U128(value) => Ok(SborValue::U128 { value: *value }),
-        ast::Value::String(value) => Ok(SborValue::String {
+        ast::Value::Bool(value) => Ok(Value::Bool { value: *value }),
+        ast::Value::I8(value) => Ok(Value::I8 { value: *value }),
+        ast::Value::I16(value) => Ok(Value::I16 { value: *value }),
+        ast::Value::I32(value) => Ok(Value::I32 { value: *value }),
+        ast::Value::I64(value) => Ok(Value::I64 { value: *value }),
+        ast::Value::I128(value) => Ok(Value::I128 { value: *value }),
+        ast::Value::U8(value) => Ok(Value::U8 { value: *value }),
+        ast::Value::U16(value) => Ok(Value::U16 { value: *value }),
+        ast::Value::U32(value) => Ok(Value::U32 { value: *value }),
+        ast::Value::U64(value) => Ok(Value::U64 { value: *value }),
+        ast::Value::U128(value) => Ok(Value::U128 { value: *value }),
+        ast::Value::String(value) => Ok(Value::String {
             value: value.clone(),
         }),
-        ast::Value::Tuple(fields) => Ok(SborValue::Tuple {
+        ast::Value::Tuple(fields) => Ok(Value::Tuple {
             fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
         }),
-        ast::Value::Enum(discriminator, fields) => Ok(SborValue::Enum {
+        ast::Value::Enum(discriminator, fields) => Ok(Value::Enum {
             discriminator: discriminator.clone(),
             fields: generate_singletons(fields, None, resolver, bech32_decoder, blobs)?,
         }),
-        ast::Value::Array(element_type, elements) => Ok(SborValue::Array {
-            element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(
-                elements,
-                Some(*element_type),
-                resolver,
-                bech32_decoder,
-                blobs,
-            )?,
-        }),
+        ast::Value::Array(element_type, elements) => {
+            let element_value_kind = element_type.type_id();
+            Ok(Value::Array {
+                element_value_kind,
+                elements: generate_singletons(
+                    elements,
+                    Some(element_value_kind),
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            })
+        }
+        ast::Value::Map(key_type, value_type, entries) => {
+            let key_value_kind = key_type.type_id();
+            let value_value_kind = value_type.type_id();
+            Ok(Value::Map {
+                key_value_kind,
+                value_value_kind,
+                entries: generate_kv_entries(
+                    entries,
+                    key_value_kind,
+                    value_value_kind,
+                    resolver,
+                    bech32_decoder,
+                    blobs,
+                )?,
+            })
+        }
         // ==============
         // Aliases
         // ==============
-        ast::Value::Some(value) => Ok(SborValue::Enum {
-            discriminator: "Some".to_owned(),
+        ast::Value::Some(value) => Ok(Value::Enum {
+            discriminator: OPTION_VARIANT_SOME,
             fields: vec![generate_value(
                 value,
                 None,
@@ -1217,12 +1204,12 @@ pub fn generate_value(
                 blobs,
             )?],
         }),
-        ast::Value::None => Ok(SborValue::Enum {
-            discriminator: "None".to_owned(),
+        ast::Value::None => Ok(Value::Enum {
+            discriminator: OPTION_VARIANT_NONE,
             fields: vec![],
         }),
-        ast::Value::Ok(value) => Ok(SborValue::Enum {
-            discriminator: "Ok".to_owned(),
+        ast::Value::Ok(value) => Ok(Value::Enum {
+            discriminator: RESULT_VARIANT_OK,
             fields: vec![generate_value(
                 value,
                 None,
@@ -1231,8 +1218,8 @@ pub fn generate_value(
                 blobs,
             )?],
         }),
-        ast::Value::Err(value) => Ok(SborValue::Enum {
-            discriminator: "Err".to_owned(),
+        ast::Value::Err(value) => Ok(Value::Enum {
+            discriminator: RESULT_VARIANT_ERR,
             fields: vec![generate_value(
                 value,
                 None,
@@ -1243,107 +1230,100 @@ pub fn generate_value(
         }),
         ast::Value::Bytes(value) => {
             let bytes = generate_byte_vec_from_hex(value)?;
-            Ok(SborValue::Array {
-                element_type_id: SborTypeId::U8,
-                elements: bytes.iter().map(|i| SborValue::U8 { value: *i }).collect(),
+            Ok(Value::Array {
+                element_value_kind: ValueKind::U8,
+                elements: bytes.iter().map(|i| Value::U8 { value: *i }).collect(),
             })
         }
+        ast::Value::NonFungibleAddress(resource_address, nfid) => Ok(Value::Tuple {
+            fields: vec![
+                Value::Custom {
+                    value: ScryptoCustomValue::ResourceAddress(generate_resource_address_internal(
+                        resource_address,
+                        bech32_decoder,
+                    )?),
+                },
+                Value::Custom {
+                    value: ScryptoCustomValue::NonFungibleId(generate_non_fungible_id_internal(
+                        nfid,
+                    )?),
+                },
+            ],
+        }),
         // ==============
         // Custom Types
         // ==============
         ast::Value::PackageAddress(_) => {
-            generate_package_address(value, bech32_decoder).map(|v| SborValue::Custom {
+            generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
                 value: ScryptoCustomValue::PackageAddress(v),
             })
         }
-        ast::Value::SystemAddress(_) => {
-            generate_system_address(value, bech32_decoder).map(|v| SborValue::Custom {
-                value: ScryptoCustomValue::SystemAddress(v),
-            })
-        }
         ast::Value::ComponentAddress(_) => {
-            generate_component_address(value, bech32_decoder).map(|v| SborValue::Custom {
+            generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
                 value: ScryptoCustomValue::ComponentAddress(v),
             })
         }
         ast::Value::ResourceAddress(_) => {
-            generate_resource_address(value, bech32_decoder).map(|v| SborValue::Custom {
+            generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
                 value: ScryptoCustomValue::ResourceAddress(v),
             })
         }
 
-        ast::Value::Component(_) => generate_component_id(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Component(v),
+        ast::Value::Own(_) => generate_ownership(value).map(|v| Value::Custom {
+            value: ScryptoCustomValue::Own(v),
         }),
-        ast::Value::KeyValueStore(_) => {
-            generate_key_value_store_id(value).map(|v| SborValue::Custom {
-                value: ScryptoCustomValue::KeyValueStore(v),
-            })
-        }
-        ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Bucket(v),
-        }),
-        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Proof(v),
-        }),
-        ast::Value::Vault(_) => generate_vault(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Vault(v.0),
-        }),
-
-        ast::Value::Expression(_) => generate_expression(value).map(|v| SborValue::Custom {
-            value: ScryptoCustomValue::Expression(v),
-        }),
-        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| SborValue::Custom {
+        ast::Value::Blob(_) => generate_blob(value, blobs).map(|v| Value::Custom {
             value: ScryptoCustomValue::Blob(v),
         }),
-        ast::Value::NonFungibleAddress(_, _) => {
-            generate_non_fungible_address(value, bech32_decoder).map(|v| SborValue::Custom {
-                value: ScryptoCustomValue::NonFungibleAddress(v),
-            })
-        }
 
-        ast::Value::Hash(_) => generate_hash(value).map(|v| SborValue::Custom {
+        ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
+            value: ScryptoCustomValue::Bucket(v),
+        }),
+        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| Value::Custom {
+            value: ScryptoCustomValue::Proof(v),
+        }),
+        ast::Value::Expression(_) => generate_expression(value).map(|v| Value::Custom {
+            value: ScryptoCustomValue::Expression(v),
+        }),
+
+        ast::Value::Hash(_) => generate_hash(value).map(|v| Value::Custom {
             value: ScryptoCustomValue::Hash(v),
         }),
-        ast::Value::Decimal(_) => generate_decimal(value).map(|v| SborValue::Custom {
+        ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
             value: ScryptoCustomValue::Decimal(v),
         }),
-        ast::Value::PreciseDecimal(_) => {
-            generate_precise_decimal(value).map(|v| SborValue::Custom {
-                value: ScryptoCustomValue::PreciseDecimal(v),
-            })
-        }
+        ast::Value::PreciseDecimal(_) => generate_precise_decimal(value).map(|v| Value::Custom {
+            value: ScryptoCustomValue::PreciseDecimal(v),
+        }),
         ast::Value::EcdsaSecp256k1PublicKey(_) => {
-            generate_ecdsa_secp256k1_public_key(value).map(|v| SborValue::Custom {
+            generate_ecdsa_secp256k1_public_key(value).map(|v| Value::Custom {
                 value: ScryptoCustomValue::EcdsaSecp256k1PublicKey(v),
             })
         }
         ast::Value::EcdsaSecp256k1Signature(_) => {
-            generate_ecdsa_secp256k1_signature(value).map(|v| SborValue::Custom {
+            generate_ecdsa_secp256k1_signature(value).map(|v| Value::Custom {
                 value: ScryptoCustomValue::EcdsaSecp256k1Signature(v),
             })
         }
         ast::Value::EddsaEd25519PublicKey(_) => {
-            generate_eddsa_ed25519_public_key(value).map(|v| SborValue::Custom {
+            generate_eddsa_ed25519_public_key(value).map(|v| Value::Custom {
                 value: ScryptoCustomValue::EddsaEd25519PublicKey(v),
             })
         }
         ast::Value::EddsaEd25519Signature(_) => {
-            generate_eddsa_ed25519_signature(value).map(|v| SborValue::Custom {
+            generate_eddsa_ed25519_signature(value).map(|v| Value::Custom {
                 value: ScryptoCustomValue::EddsaEd25519Signature(v),
             })
         }
-        ast::Value::NonFungibleId(_) => {
-            generate_non_fungible_id(value).map(|v| SborValue::Custom {
-                value: ScryptoCustomValue::NonFungibleId(v),
-            })
-        }
+        ast::Value::NonFungibleId(_) => generate_non_fungible_id(value).map(|v| Value::Custom {
+            value: ScryptoCustomValue::NonFungibleId(v),
+        }),
     }
 }
 
 fn generate_singletons(
     elements: &Vec<ast::Value>,
-    ty: Option<ast::Type>,
+    expected_type: Option<ScryptoValueKind>,
     resolver: &mut NameResolver,
     bech32_decoder: &Bech32Decoder,
     blobs: &BTreeMap<Hash, Vec<u8>>,
@@ -1352,7 +1332,7 @@ fn generate_singletons(
     for element in elements {
         result.push(generate_value(
             element,
-            ty,
+            expected_type,
             resolver,
             bech32_decoder,
             blobs,
@@ -1361,64 +1341,37 @@ fn generate_singletons(
     Ok(result)
 }
 
-fn generate_type_id(ty: &ast::Type) -> ScryptoSborTypeId {
-    match ty {
-        ast::Type::Unit => SborTypeId::Unit,
-        ast::Type::Bool => SborTypeId::Bool,
-        ast::Type::I8 => SborTypeId::I8,
-        ast::Type::I16 => SborTypeId::I16,
-        ast::Type::I32 => SborTypeId::I32,
-        ast::Type::I64 => SborTypeId::I64,
-        ast::Type::I128 => SborTypeId::I128,
-        ast::Type::U8 => SborTypeId::U8,
-        ast::Type::U16 => SborTypeId::U16,
-        ast::Type::U32 => SborTypeId::U32,
-        ast::Type::U64 => SborTypeId::U64,
-        ast::Type::U128 => SborTypeId::U128,
-        ast::Type::String => SborTypeId::String,
-        ast::Type::Enum => SborTypeId::Enum,
-        ast::Type::Array => SborTypeId::Array,
-        ast::Type::Tuple => SborTypeId::Tuple,
-
-        // Globals
-        ast::Type::PackageAddress => SborTypeId::Custom(ScryptoCustomTypeId::PackageAddress),
-        ast::Type::ComponentAddress => SborTypeId::Custom(ScryptoCustomTypeId::ComponentAddress),
-        ast::Type::ResourceAddress => SborTypeId::Custom(ScryptoCustomTypeId::ResourceAddress),
-        ast::Type::SystemAddress => SborTypeId::Custom(ScryptoCustomTypeId::SystemAddress),
-
-        // RE Nodes
-        ast::Type::Component => SborTypeId::Custom(ScryptoCustomTypeId::Component),
-        ast::Type::KeyValueStore => SborTypeId::Custom(ScryptoCustomTypeId::KeyValueStore),
-        ast::Type::Bucket => SborTypeId::Custom(ScryptoCustomTypeId::Bucket),
-        ast::Type::Proof => SborTypeId::Custom(ScryptoCustomTypeId::Proof),
-        ast::Type::Vault => SborTypeId::Custom(ScryptoCustomTypeId::Vault),
-
-        // Other interpreted types
-        ast::Type::Expression => SborTypeId::Custom(ScryptoCustomTypeId::Expression),
-        ast::Type::Blob => SborTypeId::Custom(ScryptoCustomTypeId::Blob),
-        ast::Type::NonFungibleAddress => {
-            SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleAddress)
-        }
-
-        // Uninterpreted=> SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
-        ast::Type::Hash => SborTypeId::Custom(ScryptoCustomTypeId::Hash),
-        ast::Type::EcdsaSecp256k1PublicKey => {
-            SborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1PublicKey)
-        }
-        ast::Type::EcdsaSecp256k1Signature => {
-            SborTypeId::Custom(ScryptoCustomTypeId::EcdsaSecp256k1Signature)
-        }
-        ast::Type::EddsaEd25519PublicKey => {
-            SborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519PublicKey)
-        }
-        ast::Type::EddsaEd25519Signature => {
-            SborTypeId::Custom(ScryptoCustomTypeId::EddsaEd25519Signature)
-        }
-        ast::Type::Decimal => SborTypeId::Custom(ScryptoCustomTypeId::Decimal),
-        ast::Type::PreciseDecimal => SborTypeId::Custom(ScryptoCustomTypeId::PreciseDecimal),
-        ast::Type::NonFungibleId => SborTypeId::Custom(ScryptoCustomTypeId::NonFungibleId),
-        ast::Type::Bytes => SborTypeId::Array,
+fn generate_kv_entries(
+    elements: &Vec<ast::Value>,
+    key_value_kind: ScryptoValueKind,
+    value_value_kind: ScryptoValueKind,
+    resolver: &mut NameResolver,
+    bech32_decoder: &Bech32Decoder,
+    blobs: &BTreeMap<Hash, Vec<u8>>,
+) -> Result<Vec<(ScryptoValue, ScryptoValue)>, GeneratorError> {
+    if elements.len() % 2 != 0 {
+        return Err(GeneratorError::OddNumberOfElements);
     }
+
+    let mut result = vec![];
+    for i in 0..elements.len() / 2 {
+        let key = generate_value(
+            &elements[i * 2],
+            Some(key_value_kind),
+            resolver,
+            bech32_decoder,
+            blobs,
+        )?;
+        let value = generate_value(
+            &elements[i * 2 + 1],
+            Some(value_value_kind),
+            resolver,
+            bech32_decoder,
+            blobs,
+        )?;
+        result.push((key, value));
+    }
+    Ok(result)
 }
 
 #[cfg(test)]
@@ -1428,7 +1381,7 @@ mod tests {
     use crate::manifest::parser::Parser;
     use radix_engine_interface::address::Bech32Decoder;
     use radix_engine_interface::args;
-    use radix_engine_interface::core::NetworkDefinition;
+    use radix_engine_interface::node::NetworkDefinition;
     use radix_engine_interface::pdec;
 
     #[macro_export]
@@ -1452,10 +1405,12 @@ mod tests {
     #[macro_export]
     macro_rules! generate_instruction_ok {
         ( $s:expr, $expected:expr, $($blob_hash: expr),* ) => {{
+            // If you use the following output for test cases, make sure you've checked the diff
+            // println!("{}", crate::manifest::decompile(&[$expected.clone()], &NetworkDefinition::simulator()).unwrap());
             let instruction = Parser::new(tokenize($s).unwrap())
                 .parse_instruction()
                 .unwrap();
-            let mut id_validator = IdValidator::new();
+            let mut id_validator = ManifestIdValidator::new();
             let mut resolver = NameResolver::new();
             assert_eq!(
                 generate_instruction(
@@ -1497,37 +1452,37 @@ mod tests {
 
     #[test]
     fn test_value() {
-        generate_value_ok!(r#"()"#, SborValue::Unit);
-        generate_value_ok!(r#"true"#, SborValue::Bool { value: true });
-        generate_value_ok!(r#"false"#, SborValue::Bool { value: false });
-        generate_value_ok!(r#"1i8"#, SborValue::I8 { value: 1 });
-        generate_value_ok!(r#"1i128"#, SborValue::I128 { value: 1 });
-        generate_value_ok!(r#"1u8"#, SborValue::U8 { value: 1 });
-        generate_value_ok!(r#"1u128"#, SborValue::U128 { value: 1 });
+        generate_value_ok!(r#"Tuple()"#, Value::Tuple { fields: vec![] });
+        generate_value_ok!(r#"true"#, Value::Bool { value: true });
+        generate_value_ok!(r#"false"#, Value::Bool { value: false });
+        generate_value_ok!(r#"1i8"#, Value::I8 { value: 1 });
+        generate_value_ok!(r#"1i128"#, Value::I128 { value: 1 });
+        generate_value_ok!(r#"1u8"#, Value::U8 { value: 1 });
+        generate_value_ok!(r#"1u128"#, Value::U128 { value: 1 });
         generate_value_ok!(
             r#"Tuple(Bucket(1u32), Proof(2u32), "bar")"#,
-            SborValue::Tuple {
+            Value::Tuple {
                 fields: vec![
-                    SborValue::Custom {
-                        value: ScryptoCustomValue::Bucket(1)
+                    Value::Custom {
+                        value: ScryptoCustomValue::Bucket(ManifestBucket(1))
                     },
-                    SborValue::Custom {
-                        value: ScryptoCustomValue::Proof(2)
+                    Value::Custom {
+                        value: ScryptoCustomValue::Proof(ManifestProof(2))
                     },
-                    SborValue::String {
+                    Value::String {
                         value: "bar".into()
                     }
                 ]
             }
         );
         generate_value_ok!(
-            r#"Tuple(Decimal("1.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
-            SborValue::Tuple {
+            r#"Tuple(Decimal("1"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
+            Value::Tuple {
                 fields: vec![
-                    SborValue::Custom {
-                        value: ScryptoCustomValue::Decimal(Decimal::from_str("1.0").unwrap())
+                    Value::Custom {
+                        value: ScryptoCustomValue::Decimal(Decimal::from_str("1").unwrap())
                     },
-                    SborValue::Custom {
+                    Value::Custom {
                         value: ScryptoCustomValue::Hash(
                             Hash::from_str(
                                 "aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"
@@ -1538,27 +1493,34 @@ mod tests {
                 ]
             }
         );
-        generate_value_ok!(r#"Tuple()"#, SborValue::Tuple { fields: vec![] });
+        generate_value_ok!(r#"Tuple()"#, Value::Tuple { fields: vec![] });
         generate_value_ok!(
-            r#"Enum("Variant", "abc")"#,
-            SborValue::Enum {
-                discriminator: "Variant".to_string(),
-                fields: vec![SborValue::String {
+            r#"Enum(0u8, "abc")"#,
+            Value::Enum {
+                discriminator: 0,
+                fields: vec![Value::String {
                     value: "abc".to_owned()
                 }]
             }
         );
         generate_value_ok!(
-            r#"Enum("Variant")"#,
-            SborValue::Enum {
-                discriminator: "Variant".to_string(),
+            r#"Enum(1u8)"#,
+            Value::Enum {
+                discriminator: 1,
+                fields: vec![]
+            }
+        );
+        generate_value_ok!(
+            r#"Enum("AccessRule::AllowAll")"#,
+            Value::Enum {
+                discriminator: 0,
                 fields: vec![]
             }
         );
         generate_value_ok!(
             r#"Expression("ENTIRE_WORKTOP")"#,
-            SborValue::Custom {
-                value: ScryptoCustomValue::Expression(Expression("ENTIRE_WORKTOP".to_owned()))
+            Value::Custom {
+                value: ScryptoCustomValue::Expression(ManifestExpression::EntireWorktop)
             }
         );
     }
@@ -1567,7 +1529,7 @@ mod tests {
     fn test_failures() {
         generate_value_error!(
             r#"ComponentAddress(100u32)"#,
-            GeneratorError::InvalidValue {
+            GeneratorError::InvalidAstValue {
                 expected_type: vec![ast::Type::String],
                 actual: ast::Value::U32(100),
             }
@@ -1595,10 +1557,10 @@ mod tests {
                 "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
             )
             .unwrap();
-        let owner_badge = NonFungibleAddress::new(resource, NonFungibleId::U32(1));
+        let owner_badge = NonFungibleAddress::new(resource, NonFungibleId::Number(1));
 
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             BasicInstruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
@@ -1611,7 +1573,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             BasicInstruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: resource,
@@ -1639,14 +1601,14 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Tuple(Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"), Array<Tuple>(), Array<Tuple>(), Enum("DenyAll"));"#,
+            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Map<String, Tuple>() Map<String, String>() Tuple(Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"), Map<Enum, Enum>(), Map<String, Enum>(), Enum("AccessRule::DenyAll"));"#,
             BasicInstruction::PublishPackage {
-                code: Blob(
+                code: ManifestBlobRef(
                     "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
                         .parse()
                         .unwrap()
                 ),
-                abi: Blob(
+                abi: ManifestBlobRef(
                     "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
                         .parse()
                         .unwrap()
@@ -1659,14 +1621,14 @@ mod tests {
             "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
         );
         generate_instruction_ok!(
-            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32);"#,
+            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64);"#,
             BasicInstruction::PublishPackageWithOwner {
-                code: Blob(
+                code: ManifestBlobRef(
                     "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618"
                         .parse()
                         .unwrap()
                 ),
-                abi: Blob(
+                abi: ManifestBlobRef(
                     "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d"
                         .parse()
                         .unwrap()
@@ -1678,7 +1640,7 @@ mod tests {
         );
 
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("500"));"#,
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Some(Decimal("500"));"#,
             BasicInstruction::CreateFungibleResource {
                 divisibility: 18,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1696,7 +1658,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) None;"#,
             BasicInstruction::CreateFungibleResource {
                 divisibility: 18,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1714,7 +1676,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) Some(Decimal("500"));"#,
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) Some(Decimal("500"));"#,
             BasicInstruction::CreateFungibleResourceWithOwner {
                 divisibility: 18,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1723,7 +1685,7 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Map<String, String>("name", "Token") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) None;"#,
             BasicInstruction::CreateFungibleResourceWithOwner {
                 divisibility: 18,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
@@ -1733,25 +1695,9 @@ mod tests {
         );
 
         generate_instruction_ok!(
-            r#"
-            CREATE_NON_FUNGIBLE_RESOURCE 
-                Enum("U32") 
-                Array<Tuple>(Tuple("name", "Token")) 
-                Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) 
-                Some(
-                    Array<Tuple>(
-                        Tuple(
-                            NonFungibleId(1u32), 
-                            Tuple(
-                                Tuple("Hello World", Decimal("12")),
-                                Tuple(12u8, 19u128)
-                            )
-                        )
-                    )
-                );
-            "#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdKind::Number") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) Some(Map<NonFungibleId, Tuple>(NonFungibleId(1u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"#,
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::U32,
+                id_type: NonFungibleIdTypeId::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                 access_rules: BTreeMap::from([
                     (
@@ -1764,7 +1710,7 @@ mod tests {
                     ),
                 ]),
                 initial_supply: Some(BTreeMap::from([(
-                    NonFungibleId::U32(1),
+                    NonFungibleId::Number(1),
                     (
                         args!(String::from("Hello World"), Decimal::from("12")),
                         args!(12u8, 19u128)
@@ -1773,9 +1719,9 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("NonFungibleIdKind::Number") Map<String, String>("name", "Token") Map<Enum, Tuple>(Enum("ResourceMethodAuthKey::Withdraw"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll")), Enum("ResourceMethodAuthKey::Deposit"), Tuple(Enum("AccessRule::AllowAll"), Enum("AccessRule::DenyAll"))) None;"#,
             BasicInstruction::CreateNonFungibleResource {
-                id_type: NonFungibleIdType::U32,
+                id_type: NonFungibleIdTypeId::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                 access_rules: BTreeMap::from([
                     (
@@ -1792,29 +1738,13 @@ mod tests {
         );
 
         generate_instruction_ok!(
-            r#"
-            CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER 
-                Enum("U32") 
-                Array<Tuple>(Tuple("name", "Token")) 
-                NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) 
-                Some(
-                    Array<Tuple>(
-                        Tuple(
-                            NonFungibleId(1u32), 
-                            Tuple(
-                                Tuple("Hello World", Decimal("12")),
-                                Tuple(12u8, 19u128)
-                            )
-                        )
-                    )
-                );
-            "#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleIdKind::Number") Map<String, String>("name", "Token") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) Some(Map<NonFungibleId, Tuple>(NonFungibleId(1u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128))));"#,
             BasicInstruction::CreateNonFungibleResourceWithOwner {
-                id_type: NonFungibleIdType::U32,
+                id_type: NonFungibleIdTypeId::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                 owner_badge: owner_badge.clone(),
                 initial_supply: Some(BTreeMap::from([(
-                    NonFungibleId::U32(1),
+                    NonFungibleId::Number(1),
                     (
                         args!(String::from("Hello World"), Decimal::from("12")),
                         args!(12u8, 19u128)
@@ -1823,9 +1753,9 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("U32") Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
+            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("NonFungibleIdKind::Number") Map<String, String>("name", "Token") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u64) None;"#,
             BasicInstruction::CreateNonFungibleResourceWithOwner {
-                id_type: NonFungibleIdType::U32,
+                id_type: NonFungibleIdTypeId::Number,
                 metadata: BTreeMap::from([("name".to_string(), "Token".to_string())]),
                 owner_badge: owner_badge.clone(),
                 initial_supply: None
@@ -1840,27 +1770,44 @@ mod tests {
             },
         );
         generate_instruction_ok!(
-            r#"
-            MINT_NON_FUNGIBLE 
-                ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") 
-                Array<Tuple>(
-                    Tuple(
-                        NonFungibleId(1u32), 
-                        Tuple(
-                            Tuple("Hello World", Decimal("12")),
-                            Tuple(12u8, 19u128)
-                        )
-                    )
-                );
-            "#,
+            r#"MINT_NON_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Map<NonFungibleId, Tuple>(NonFungibleId(1u64), Tuple(Tuple("Hello World", Decimal("12")), Tuple(12u8, 19u128)));"#,
             BasicInstruction::MintNonFungible {
                 resource_address: resource,
                 entries: BTreeMap::from([(
-                    NonFungibleId::U32(1),
+                    NonFungibleId::Number(1),
                     (
                         args!(String::from("Hello World"), Decimal::from("12")),
                         args!(12u8, 19u128)
                     )
+                )])
+            },
+        );
+    }
+
+    #[test]
+    fn test_mint_uuid_non_fungible_instruction() {
+        let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
+        let resource = bech32_decoder
+            .validate_and_decode_resource_address(
+                "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak",
+            )
+            .unwrap();
+        generate_instruction_ok!(
+            r#"
+            MINT_UUID_NON_FUNGIBLE
+                ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")
+                Array<Tuple>(
+                    Tuple(
+                        Tuple("Hello World", Decimal("12")),
+                        Tuple(12u8, 19u128)
+                    )
+                );
+            "#,
+            BasicInstruction::MintUuidNonFungible {
+                resource_address: resource,
+                entries: Vec::from([(
+                    args!(String::from("Hello World"), Decimal::from("12")),
+                    args!(12u8, 19u128)
                 )])
             },
         );

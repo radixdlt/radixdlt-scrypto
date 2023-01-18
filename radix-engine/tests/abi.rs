@@ -4,8 +4,6 @@ use radix_engine::engine::{
 };
 use radix_engine::model::AccessRulesChainError;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -16,7 +14,7 @@ fn test_invalid_access_rule_methods() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -50,7 +48,7 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/abi");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "AbiComponent2", method_name, args)
         .build();
@@ -65,12 +63,12 @@ fn test_arg(method_name: &str, args: Vec<u8>, expected_result: ExpectedResult) {
             receipt.expect_specific_failure(|e| {
                 matches!(
                     e,
-                    RuntimeError::InterpreterError(
-                        InterpreterError::InvalidScryptoFunctionInvocation(
-                            _,
-                            ScryptoFnResolvingError::InvalidInput
-                        )
-                    )
+                    RuntimeError::InterpreterError(InterpreterError::InvalidScryptoInvocation(
+                        _,
+                        _,
+                        _,
+                        ScryptoFnResolvingError::InvalidInput
+                    ))
                 )
             });
         }

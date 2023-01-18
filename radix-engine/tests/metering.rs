@@ -1,6 +1,4 @@
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -14,12 +12,18 @@ fn test_loop() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -40,12 +44,18 @@ fn test_loop_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "200000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 45.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -65,12 +75,18 @@ fn test_recursion() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "256"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -89,12 +105,18 @@ fn test_recursion_stack_overflow() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "257"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -113,12 +135,18 @@ fn test_grow_memory() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -137,12 +165,18 @@ fn test_grow_memory_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package(
         code,
-        generate_single_function_abi("Test", "f", Type::Unit),
+        generate_single_function_abi(
+            "Test",
+            "f",
+            Type::Tuple {
+                element_types: vec![],
+            },
+        ),
         BTreeMap::new(),
         BTreeMap::new(),
         AccessRules::new(),
     );
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "Test", "f", args!())
         .build();
@@ -160,13 +194,13 @@ fn test_basic_transfer() {
     let (_, _, account2) = test_runner.new_allocated_account();
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10u32.into())
         .withdraw_from_account_by_amount(account1, 100u32.into(), RADIX_TOKEN)
         .call_method(
             account2,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -181,19 +215,18 @@ fn test_basic_transfer() {
     // (cd radix-engine && cargo test --test metering -- test_basic_transfer)
     assert_eq!(
         3000 /* create_node */
-        + 6900 /* drop_lock */
-        + 2500 /* drop_node */
-        + 900 /* invoke */
-        + 8700 /* lock_substate */
-        + 5000 /* read_owned_nodes */
-        + 28500 /* read_substate */
-        + 1000 /* run_native_function */
-        + 2200 /* run_native_method */
-        + 296913 /* run_wasm */
+        + 8800 /* drop_lock */
+        + 2000 /* drop_node */
+        + 1300 /* invoke */
+        + 11900 /* lock_substate */
+        + 7000 /* read_owned_nodes */
+        + 40000 /* read_substate */
+        + 4000 /* run_native_method */
+        + 278111 /* run_wasm */
         + 10000 /* tx_base_fee */
-        + 318 /* tx_payload_cost */
+        + 274 /* tx_payload_cost */
         + 3750 /* tx_signature_verification */
-        + 18500, /* write_substate */
+        + 23000, /* write_substate */
         receipt.execution.fee_summary.cost_unit_consumed
     );
 }
@@ -215,7 +248,7 @@ fn test_publish_large_package() {
         "i".repeat(4 * 1024 * 1024)
     ));
     assert_eq!(4194343, code.len());
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100.into())
         .publish_package(
             code,
@@ -242,7 +275,7 @@ fn should_be_able_run_large_manifest() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     builder.withdraw_from_account_by_amount(account, 100u32.into(), RADIX_TOKEN);
     for _ in 0..500 {
@@ -253,7 +286,7 @@ fn should_be_able_run_large_manifest() {
     builder.call_method(
         account,
         "deposit_batch",
-        args!(Expression::entire_worktop()),
+        args!(ManifestExpression::EntireWorktop),
     );
     let manifest = builder.build();
     let receipt = test_runner.execute_manifest(
@@ -272,7 +305,7 @@ fn should_be_able_invoke_account_balance_50_times() {
     let (public_key, _, account) = test_runner.new_allocated_account();
 
     // Act
-    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    let mut builder = ManifestBuilder::new();
     builder.lock_fee(account, 100u32.into());
     for _ in 0..50 {
         builder.call_method(account, "balance", args!(RADIX_TOKEN));
@@ -295,7 +328,7 @@ fn should_be_able_to_generate_5_proofs_and_then_lock_fee() {
     let resource_address = test_runner.create_fungible_resource(100.into(), 0, account);
 
     // Act
-    let mut builder = ManifestBuilder::new(&NetworkDefinition::simulator());
+    let mut builder = ManifestBuilder::new();
     for _ in 0..5 {
         builder.create_proof_from_account_by_amount(account, 1.into(), resource_address);
     }

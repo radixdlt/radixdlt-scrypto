@@ -1,13 +1,12 @@
 use radix_engine_interface::api::types::*;
-use radix_engine_interface::crypto::*;
+use radix_engine_interface::data::types::{ManifestBlobRef, ManifestBucket, ManifestProof};
 use radix_engine_interface::math::Decimal;
-use radix_engine_interface::scrypto;
+use radix_engine_interface::*;
 use sbor::rust::collections::BTreeMap;
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BasicInstruction {
     /// Takes resource from worktop.
     TakeFromWorktop {
@@ -28,7 +27,7 @@ pub enum BasicInstruction {
 
     /// Returns a bucket of resource to worktop.
     ReturnToWorktop {
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     },
 
     /// Asserts worktop contains resource.
@@ -53,7 +52,7 @@ pub enum BasicInstruction {
 
     /// Adds a proof to the auth zone.
     PushToAuthZone {
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     },
 
     /// Drops all proofs in the auth zone
@@ -79,45 +78,26 @@ pub enum BasicInstruction {
 
     /// Creates a proof from a bucket.
     CreateProofFromBucket {
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     },
 
     /// Clones a proof.
     CloneProof {
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     },
 
     /// Drops a proof.
     DropProof {
-        proof_id: ProofId,
+        proof_id: ManifestProof,
     },
 
     /// Drops all of the proofs in the transaction.
     DropAllProofs,
 
-    /// Calls a scrypto function.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        function_name: String,
-        args: Vec<u8>,
-    },
-
-    /// Calls a scrypto method.
-    ///
-    /// Buckets and proofs in arguments moves from transaction context to the callee.
-    CallMethod {
-        component_address: ComponentAddress,
-        method_name: String,
-        args: Vec<u8>,
-    },
-
     /// Publish a package.
     PublishPackage {
-        code: Blob,
-        abi: Blob,
+        code: ManifestBlobRef,
+        abi: ManifestBlobRef,
         royalty_config: BTreeMap<String, RoyaltyConfig>,
         metadata: BTreeMap<String, String>,
         access_rules: AccessRules,
@@ -125,13 +105,13 @@ pub enum BasicInstruction {
 
     /// Publish a package with owner.
     PublishPackageWithOwner {
-        code: Blob,
-        abi: Blob,
+        code: ManifestBlobRef,
+        abi: ManifestBlobRef,
         owner_badge: NonFungibleAddress,
     },
 
     BurnResource {
-        bucket_id: BucketId,
+        bucket_id: ManifestBucket,
     },
 
     RecallResource {
@@ -180,6 +160,11 @@ pub enum BasicInstruction {
         entries: BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
     },
 
+    MintUuidNonFungible {
+        resource_address: ResourceAddress,
+        entries: Vec<(Vec<u8>, Vec<u8>)>,
+    },
+
     CreateFungibleResource {
         divisibility: u8,
         metadata: BTreeMap<String, String>,
@@ -195,49 +180,39 @@ pub enum BasicInstruction {
     },
 
     CreateNonFungibleResource {
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
     CreateNonFungibleResourceWithOwner {
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         metadata: BTreeMap<String, String>,
         owner_badge: NonFungibleAddress,
         initial_supply: Option<BTreeMap<NonFungibleId, (Vec<u8>, Vec<u8>)>>,
     },
 
-    CreateValidator {
-        key: EcdsaSecp256k1PublicKey,
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallFunction {
+        package_address: PackageAddress,
+        blueprint_name: String,
+        function_name: String,
+        args: Vec<u8>,
     },
 
-    RegisterValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
-    },
-
-    UnregisterValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
-    },
-
-    StakeValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
-        stake: BucketId,
-    },
-
-    UnstakeValidator {
-        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
-        amount: Decimal,
-    },
-
-    ClaimXrd {
-        validator_address: SystemAddress, // TODO: Replace this with ValidatorAddress
-        claim_bucket: BucketId,
+    /// Calls a method.
+    ///
+    /// Buckets and proofs in arguments moves from transaction context to the callee.
+    CallMethod {
+        component_address: ComponentAddress,
+        method_name: String,
+        args: Vec<u8>,
     },
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum Instruction {
     Basic(BasicInstruction),
     System(NativeInvocation),

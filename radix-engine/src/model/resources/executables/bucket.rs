@@ -10,8 +10,7 @@ use radix_engine_interface::api::types::{
 };
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BucketError {
     InvalidDivisibility,
     InvalidRequestData(DecodeError),
@@ -23,10 +22,10 @@ pub enum BucketError {
     MethodNotFound(BucketFn),
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
+impl ExecutableInvocation for BucketTakeInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -43,7 +42,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeInvocation {
 impl Executor for BucketTakeInvocation {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -69,10 +71,10 @@ impl Executor for BucketTakeInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketCreateProofInvocation {
+impl ExecutableInvocation for BucketCreateProofInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -89,7 +91,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketCreateProofInvocation {
 impl Executor for BucketCreateProofInvocation {
     type Output = Proof;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Proof, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Proof, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -116,10 +121,10 @@ impl Executor for BucketCreateProofInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeNonFungiblesInvocation {
+impl ExecutableInvocation for BucketTakeNonFungiblesInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -136,7 +141,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketTakeNonFungiblesInvocation
 impl Executor for BucketTakeNonFungiblesInvocation {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -162,10 +170,10 @@ impl Executor for BucketTakeNonFungiblesInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetNonFungibleIdsInvocation {
+impl ExecutableInvocation for BucketGetNonFungibleIdsInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -182,7 +190,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetNonFungibleIdsInvocatio
 impl Executor for BucketGetNonFungibleIdsInvocation {
     type Output = BTreeSet<NonFungibleId>;
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(BTreeSet<NonFungibleId>, CallFrameUpdate), RuntimeError>
@@ -204,10 +212,10 @@ impl Executor for BucketGetNonFungibleIdsInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetAmountInvocation {
+impl ExecutableInvocation for BucketGetAmountInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -224,7 +232,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetAmountInvocation {
 impl Executor for BucketGetAmountInvocation {
     type Output = Decimal;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Decimal, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -238,10 +249,10 @@ impl Executor for BucketGetAmountInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketPutInvocation {
+impl ExecutableInvocation for BucketPutInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -261,7 +272,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketPutInvocation {
 impl Executor for BucketPutInvocation {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -284,10 +298,10 @@ impl Executor for BucketPutInvocation {
     }
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetResourceAddressInvocation {
+impl ExecutableInvocation for BucketGetResourceAddressInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _api: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError> {
@@ -304,7 +318,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for BucketGetResourceAddressInvocati
 impl Executor for BucketGetResourceAddressInvocation {
     type Output = ResourceAddress;
 
-    fn execute<Y>(
+    fn execute<Y, W: WasmEngine>(
         self,
         system_api: &mut Y,
     ) -> Result<(ResourceAddress, CallFrameUpdate), RuntimeError>

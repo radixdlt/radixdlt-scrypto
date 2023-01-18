@@ -8,7 +8,7 @@ use crate::model::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::{NativeVault, ResourceManager};
+use native_sdk::resource::{ResourceManager, Vault};
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{
     EpochManagerFn, EpochManagerOffset, GlobalAddress, NativeFn, RENodeId, SubstateOffset,
@@ -17,10 +17,9 @@ use radix_engine_interface::model::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use radix_engine_interface::rule;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerSubstate {
-    pub address: SystemAddress, // TODO: Does it make sense for this to be stored here?
+    pub address: ComponentAddress, // TODO: Does it make sense for this to be stored here?
     pub epoch: u64,
     pub round: u64,
 
@@ -29,31 +28,31 @@ pub struct EpochManagerSubstate {
     pub num_unstake_epochs: u64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
 pub struct Validator {
     pub key: EcdsaSecp256k1PublicKey,
     pub stake: Decimal,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorSetSubstate {
-    pub validator_set: BTreeMap<SystemAddress, Validator>,
+    pub validator_set: BTreeMap<ComponentAddress, Validator>,
     pub epoch: u64,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
 pub enum EpochManagerError {
     InvalidRoundUpdate { from: u64, to: u64 },
 }
 
 pub struct EpochManager;
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
+impl ExecutableInvocation for EpochManagerCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -75,14 +74,19 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateInvocation {
 }
 
 impl Executor for EpochManagerCreateInvocation {
-    type Output = SystemAddress;
+    type Output = ComponentAddress;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let underlying_node_id = api.allocate_node_id(RENodeType::EpochManager)?;
-        let global_node_id = api.allocate_node_id(RENodeType::GlobalEpochManager)?;
+        let global_node_id = RENodeId::Global(GlobalAddress::Component(
+            ComponentAddress::EpochManager(self.component_address),
+        ));
 
         let epoch_manager = EpochManagerSubstate {
             address: global_node_id.into(),
@@ -162,7 +166,7 @@ impl Executor for EpochManagerCreateInvocation {
             )),
         )?;
 
-        let system_address: SystemAddress = global_node_id.into();
+        let component_address: ComponentAddress = global_node_id.into();
         let mut node_refs_to_copy = HashSet::new();
         node_refs_to_copy.insert(global_node_id);
 
@@ -171,16 +175,16 @@ impl Executor for EpochManagerCreateInvocation {
             nodes_to_move: vec![],
         };
 
-        Ok((system_address, update))
+        Ok((component_address, update))
     }
 }
 
 pub struct EpochManagerGetCurrentEpochExecutable(RENodeId);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvocation {
+impl ExecutableInvocation for EpochManagerGetCurrentEpochInvocation {
     type Exec = EpochManagerGetCurrentEpochExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -188,7 +192,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvoc
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -204,7 +208,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerGetCurrentEpochInvoc
 impl Executor for EpochManagerGetCurrentEpochExecutable {
     type Output = u64;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(u64, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(u64, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -221,10 +228,10 @@ pub struct EpochManagerNextRoundExecutable {
     round: u64,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerNextRoundInvocation {
+impl ExecutableInvocation for EpochManagerNextRoundInvocation {
     type Exec = EpochManagerNextRoundExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -232,7 +239,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerNextRoundInvocation 
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -251,7 +258,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerNextRoundInvocation 
 impl Executor for EpochManagerNextRoundExecutable {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -299,10 +309,10 @@ impl Executor for EpochManagerNextRoundExecutable {
 
 pub struct EpochManagerSetEpochExecutable(RENodeId, u64);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
+impl ExecutableInvocation for EpochManagerSetEpochInvocation {
     type Exec = EpochManagerSetEpochExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -310,7 +320,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -326,7 +336,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerSetEpochInvocation {
 impl Executor for EpochManagerSetEpochExecutable {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -340,10 +353,10 @@ impl Executor for EpochManagerSetEpochExecutable {
 
 pub struct EpochManagerCreateValidatorExecutable(RENodeId, EcdsaSecp256k1PublicKey);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateValidatorInvocation {
+impl ExecutableInvocation for EpochManagerCreateValidatorInvocation {
     type Exec = EpochManagerCreateValidatorExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -351,7 +364,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateValidatorInvoc
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
         call_frame_update.add_ref(RENodeId::Global(GlobalAddress::Resource(RADIX_TOKEN)));
 
@@ -366,9 +379,12 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerCreateValidatorInvoc
 }
 
 impl Executor for EpochManagerCreateValidatorExecutable {
-    type Output = SystemAddress;
+    type Output = ComponentAddress;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(SystemAddress, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(ComponentAddress, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
@@ -383,17 +399,19 @@ impl Executor for EpochManagerCreateValidatorExecutable {
         let validator_address = EpochManager::create_validator(manager, self.1, None, false, api)?;
         Ok((
             validator_address,
-            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::System(validator_address))),
+            CallFrameUpdate::copy_ref(RENodeId::Global(GlobalAddress::Component(
+                validator_address,
+            ))),
         ))
     }
 }
 
-pub struct EpochManagerUpdateValidatorExecutable(RENodeId, SystemAddress, UpdateValidator);
+pub struct EpochManagerUpdateValidatorExecutable(RENodeId, ComponentAddress, UpdateValidator);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUpdateValidatorInvocation {
+impl ExecutableInvocation for EpochManagerUpdateValidatorInvocation {
     type Exec = EpochManagerUpdateValidatorExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -401,7 +419,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUpdateValidatorInvoc
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -421,7 +439,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for EpochManagerUpdateValidatorInvoc
 impl Executor for EpochManagerUpdateValidatorExecutable {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -446,18 +464,18 @@ impl Executor for EpochManagerUpdateValidatorExecutable {
 
 impl EpochManager {
     pub fn create_validator<Y>(
-        manager: SystemAddress,
+        manager: ComponentAddress,
         key: EcdsaSecp256k1PublicKey,
         bucket: Option<Bucket>,
         is_registered: bool,
         api: &mut Y,
-    ) -> Result<SystemAddress, RuntimeError>
+    ) -> Result<ComponentAddress, RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
         let node_id = api.allocate_node_id(RENodeType::Validator)?;
         let global_node_id = api.allocate_node_id(RENodeType::GlobalValidator)?;
-        let address: SystemAddress = global_node_id.into();
+        let address: ComponentAddress = global_node_id.into();
         let mut access_rules = AccessRules::new();
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::Validator(ValidatorFn::Register)),
@@ -505,13 +523,10 @@ impl EpochManager {
         unstake_token_auth.insert(Withdraw, (rule!(allow_all), rule!(deny_all)));
         unstake_token_auth.insert(Deposit, (rule!(allow_all), rule!(deny_all)));
 
-        let (unstake_resource_manager, _) = ResourceManager::sys_new(
-            ResourceType::NonFungible {
-                id_type: NonFungibleIdType::UUID,
-            },
+        let unstake_resource_manager = ResourceManager::sys_new_non_fungible(
+            NonFungibleIdTypeId::UUID,
             BTreeMap::new(),
             unstake_token_auth,
-            None,
             api,
         )?;
         let unstake_nft_address = unstake_resource_manager.0;

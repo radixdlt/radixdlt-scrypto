@@ -3,13 +3,13 @@ use crate::rust::vec::Vec;
 use crate::*;
 
 /// Represents an error occurred during encoding.
-#[derive(Debug, Clone, PartialEq, Eq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Categorize, Encode, Decode)]
 pub enum EncodeError {
     MaxDepthExceeded(u8),
     SizeTooLarge { actual: usize, max_allowed: usize },
 }
 
-pub trait Encoder<X: CustomTypeId>: Sized {
+pub trait Encoder<X: CustomValueKind>: Sized {
     /// Consumes the Encoder and encodes the value as a full payload
     ///
     /// It starts by writing the payload prefix: It's the intention that each version of SBOR
@@ -26,9 +26,9 @@ pub trait Encoder<X: CustomTypeId>: Sized {
 
     /// Encodes the value as part of a larger payload
     ///
-    /// This method encodes the value's SBOR type id, and then its SBOR body.
+    /// This method encodes the SBOR value's kind and then its body.
     fn encode<T: Encode<X, Self> + ?Sized>(&mut self, value: &T) -> Result<(), EncodeError> {
-        value.encode_type_id(self)?;
+        value.encode_value_kind(self)?;
         self.encode_deeper_body(value)
     }
 
@@ -41,20 +41,20 @@ pub trait Encoder<X: CustomTypeId>: Sized {
     ///
     /// In order to avoid SBOR depth differentials and disagreement about whether a payload
     /// is valid, typed codec implementations should ensure that the SBOR depth as measured
-    /// during the encoding/decoding process agrees with the SborValue codec.
+    /// during the encoding/decoding process agrees with the Value codec.
     ///
-    /// Each layer of the SborValue counts as one depth.
+    /// Each layer of the Value counts as one depth.
     ///
     /// If the encoder you're writing is embedding a child type (and is represented as such
-    /// in the SborValue type), then you should call `encoder.encode_body` to increment
+    /// in the Value type), then you should call `encoder.encode_body` to increment
     /// the SBOR depth tracker.
     ///
     /// You should call `value.encode_body` directly when the encoding of that type
-    /// into an SborValue doesn't increase the SBOR depth in the encoder, that is:
-    /// * When the wrapping type is invisible to the SborValue, ie:
+    /// into an Value doesn't increase the SBOR depth in the encoder, that is:
+    /// * When the wrapping type is invisible to the Value, ie:
     ///   * Smart pointers
     ///   * Transparent wrappers
-    /// * Where the use of the inner type is invisible to SborValue, ie:
+    /// * Where the use of the inner type is invisible to Value, ie:
     ///   * Where the use of `value.encode_body` is coincidental / code re-use
     fn encode_deeper_body<T: Encode<X, Self> + ?Sized>(
         &mut self,
@@ -67,13 +67,12 @@ pub trait Encoder<X: CustomTypeId>: Sized {
     }
 
     #[inline]
-    fn write_type_id(&mut self, ty: SborTypeId<X>) -> Result<(), EncodeError> {
+    fn write_value_kind(&mut self, ty: ValueKind<X>) -> Result<(), EncodeError> {
         self.write_byte(ty.as_u8())
     }
 
-    fn write_discriminator(&mut self, discriminator: &str) -> Result<(), EncodeError> {
-        self.write_size(discriminator.len())?;
-        self.write_slice(discriminator.as_bytes())
+    fn write_discriminator(&mut self, discriminator: u8) -> Result<(), EncodeError> {
+        self.write_byte(discriminator)
     }
 
     fn write_size(&mut self, mut size: usize) -> Result<(), EncodeError> {
@@ -104,13 +103,13 @@ pub trait Encoder<X: CustomTypeId>: Sized {
 }
 
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
-pub struct VecEncoder<'a, X: CustomTypeId, const MAX_DEPTH: u8> {
+pub struct VecEncoder<'a, X: CustomValueKind, const MAX_DEPTH: u8> {
     buf: &'a mut Vec<u8>,
     stack_depth: u8,
     phantom: PhantomData<X>,
 }
 
-impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
+impl<'a, X: CustomValueKind, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
     pub fn new(buf: &'a mut Vec<u8>) -> Self {
         Self {
             buf,
@@ -135,7 +134,7 @@ impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> VecEncoder<'a, X, MAX_DEPTH> {
     }
 }
 
-impl<'a, X: CustomTypeId, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, MAX_DEPTH> {
+impl<'a, X: CustomValueKind, const MAX_DEPTH: u8> Encoder<X> for VecEncoder<'a, X, MAX_DEPTH> {
     fn encode_deeper_body<T: Encode<X, Self> + ?Sized>(
         &mut self,
         value: &T,
@@ -196,8 +195,8 @@ mod tests {
         map.insert(3, 4);
         encoder.encode(&map)?;
 
-        encoder.encode(&Some(1u32))?;
         encoder.encode(&Option::<u32>::None)?;
+        encoder.encode(&Some(1u32))?;
         encoder.encode(&Result::<u32, String>::Ok(1u32))?;
         encoder.encode(&Result::<u32, String>::Err("hello".to_owned()))?;
 
@@ -212,7 +211,7 @@ mod tests {
 
         assert_eq!(
             vec![
-                0, 0, // unit
+                33, 0, // unit (encoded as empty tuple)
                 1, 1, // bool
                 2, 1, // i8
                 3, 1, 0, // i16
@@ -229,11 +228,11 @@ mod tests {
                 33, 2, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
                 32, 9, 3, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
                 32, 7, 2, 1, 2, // set
-                32, 33, 2, 2, 7, 1, 7, 2, 2, 7, 3, 7, 4, // map
-                17, 4, 83, 111, 109, 101, 1, 9, 1, 0, 0, 0, // Some<T>
-                17, 4, 78, 111, 110, 101, 0, // None
-                17, 2, 79, 107, 1, 9, 1, 0, 0, 0, // Ok<T>
-                17, 3, 69, 114, 114, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
+                35, 7, 7, 2, 1, 2, 3, 4, // map
+                34, 0, 0, // None
+                34, 1, 1, 9, 1, 0, 0, 0, // Some<T>
+                34, 0, 1, 9, 1, 0, 0, 0, // Ok<T>
+                34, 1, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
             ],
             bytes
         );
@@ -259,11 +258,11 @@ mod tests {
     pub fn test_encode_index_map_and_set() {
         let mut bytes = Vec::with_capacity(512);
         let mut encoder = BasicEncoder::new(&mut bytes);
-        let mut set = IndexSet::<u8>::new();
+        let mut set = index_set_new::<u8>();
         set.insert(1);
         set.insert(2);
         encoder.encode(&set).unwrap();
-        let mut map = IndexMap::<u8, u8>::new();
+        let mut map = index_map_new::<u8, u8>();
         map.insert(1, 2);
         map.insert(3, 4);
         encoder.encode(&map).unwrap();
@@ -271,7 +270,7 @@ mod tests {
         assert_eq!(
             vec![
                 32, 7, 2, 1, 2, // set
-                32, 33, 2, 2, 7, 1, 7, 2, 2, 7, 3, 7, 4, // map
+                35, 7, 7, 2, 1, 2, 3, 4, // map
             ],
             bytes
         );

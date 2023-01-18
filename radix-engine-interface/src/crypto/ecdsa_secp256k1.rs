@@ -103,7 +103,7 @@ impl EcdsaSecp256k1PublicKey {
 
 scrypto_type!(
     EcdsaSecp256k1PublicKey,
-    ScryptoCustomTypeId::EcdsaSecp256k1PublicKey,
+    ScryptoCustomValueKind::EcdsaSecp256k1PublicKey,
     Type::EcdsaSecp256k1PublicKey,
     EcdsaSecp256k1PublicKey::LENGTH
 );
@@ -130,7 +130,7 @@ impl EcdsaSecp256k1Signature {
 
 scrypto_type!(
     EcdsaSecp256k1Signature,
-    ScryptoCustomTypeId::EcdsaSecp256k1Signature,
+    ScryptoCustomValueKind::EcdsaSecp256k1Signature,
     Type::EcdsaSecp256k1Signature,
     EcdsaSecp256k1Signature::LENGTH
 );

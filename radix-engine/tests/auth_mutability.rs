@@ -4,8 +4,6 @@ use radix_engine::engine::{ApplicationError, RuntimeError};
 use radix_engine::model::{AccessRulesChainError, AuthZoneError};
 use radix_engine::transaction::TransactionReceipt;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -64,14 +62,14 @@ fn lock_resource_auth_and_try_update(action: ResourceAuth, lock: bool) -> Transa
     };
 
     let package = test_runner.compile_and_publish("./tests/blueprints/resource_creator");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 100u32.into())
         .create_proof_from_account(account, admin_auth)
         .call_function(package, "ResourceCreator", function, args)
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(

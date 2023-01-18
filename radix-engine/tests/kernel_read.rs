@@ -1,8 +1,6 @@
 use radix_engine::engine::{KernelError, ResolvedActor, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -14,7 +12,7 @@ fn should_not_be_able_to_read_global_substate() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kernel");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,

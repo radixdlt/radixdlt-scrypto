@@ -12,7 +12,6 @@ use radix_engine_constants::{
 use radix_engine_interface::api::api::Invokable;
 use sbor::rust::borrow::Cow;
 use transaction::model::*;
-use transaction::validation::{IdAllocator, IdSpace};
 
 pub struct FeeReserveConfig {
     pub cost_unit_price: u128,
@@ -118,6 +117,7 @@ where
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
+        let pre_allocated_ids = transaction.pre_allocated_ids();
         let instructions = transaction.instructions();
         let blobs = transaction.blobs();
 
@@ -156,12 +156,12 @@ where
         // Invoke the function/method
         let track_receipt = {
             let mut module = KernelModule::new(execution_config);
-            let mut id_allocator = IdAllocator::new(IdSpace::Application, transaction_hash.clone());
+            let mut id_allocator =
+                IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
             let mut kernel = Kernel::new(
                 auth_zone_params.clone(),
                 &mut id_allocator,
-                blobs,
                 &mut track,
                 self.scrypto_interpreter,
                 &mut module,
@@ -177,6 +177,7 @@ where
                     InstructionList::Any(instructions) => Cow::Borrowed(instructions),
                     InstructionList::AnyOwned(instructions) => Cow::Borrowed(instructions),
                 },
+                blobs: Cow::Borrowed(blobs),
             });
 
             let events = module.collect_events();

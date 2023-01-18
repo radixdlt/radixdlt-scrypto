@@ -10,8 +10,8 @@ blueprint! {
             Runtime::current_epoch()
         }
 
-        pub fn next_round(epoch_manager: SystemAddress, round: u64) {
-            let input = RadixEngineInput::Invoke(SerializedInvocation::Native(
+        pub fn next_round(epoch_manager: ComponentAddress, round: u64) {
+            let input = RadixEngineInput::Invoke(CallTableInvocation::Native(
                 NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(
                     EpochManagerNextRoundInvocation {
                         receiver: epoch_manager,

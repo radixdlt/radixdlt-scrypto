@@ -1,7 +1,7 @@
 use bech32::{self, ToBase32, Variant};
 use scrypto::radix_engine_interface::address::*;
-use scrypto::radix_engine_interface::core::NetworkDefinition;
 use scrypto::radix_engine_interface::model::*;
+use scrypto::radix_engine_interface::node::NetworkDefinition;
 
 fn generate_u8_array(entity_byte: u8) -> [u8; 27] {
     [
@@ -171,29 +171,6 @@ fn decode_matching_account_address_entity_id_succeeds() {
 
     // Assert
     assert!(matches!(decoded_account_address, Ok(_)));
-}
-
-#[test]
-fn decode_matching_epoch_manager_system_address_entity_id_succeeds() {
-    // Arrange
-    let bech32_encoder = Bech32Encoder::new(&NetworkDefinition::simulator());
-    let bech32_decoder = Bech32Decoder::new(&NetworkDefinition::simulator());
-
-    // Act
-    let encoded_system_address = bech32::encode(
-        bech32_encoder
-            .hrp_set
-            .get_entity_hrp(&EntityType::EpochManager),
-        generate_u8_array(EPOCH_MANAGER_SYSTEM_ADDRESS_ENTITY_ID).to_base32(),
-        Variant::Bech32m,
-    )
-    .unwrap();
-
-    let decoded_system_address =
-        bech32_decoder.validate_and_decode_system_address(&encoded_system_address);
-
-    // Assert
-    assert!(matches!(decoded_system_address, Ok(_)));
 }
 
 #[test]

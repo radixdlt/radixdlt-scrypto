@@ -1,19 +1,16 @@
+use native_sdk::resource::SysBucket;
 use radix_engine_interface::api::api::{
-    ActorApi, BlobApi, EngineApi, Invocation, Invokable, InvokableModel,
+    ActorApi, ComponentApi, EngineApi, Invocation, Invokable, InvokableModel,
 };
 use radix_engine_interface::api::types::{
     AuthZoneStackOffset, ComponentOffset, GlobalAddress, GlobalOffset, LockHandle, ProofOffset,
-    RENodeId, ScryptoFunctionIdent, ScryptoPackage, SubstateId, SubstateOffset, VaultId,
-    WorktopOffset,
+    RENodeId, SubstateId, SubstateOffset, VaultId, WorktopOffset,
 };
-use radix_engine_interface::crypto::Hash;
 use radix_engine_interface::data::*;
-
 use radix_engine_interface::rule;
 use sbor::rust::fmt::Debug;
 use sbor::rust::mem;
 use transaction::model::AuthZoneParams;
-use transaction::validation::*;
 
 use crate::engine::node_move_module::NodeMoveModule;
 use crate::engine::system_api::LockInfo;
@@ -47,8 +44,6 @@ pub struct Kernel<
     /// Store
     track: &'g mut Track<'s, R>,
 
-    /// Blobs attached to the transaction
-    blobs: &'g HashMap<Hash, &'g [u8]>,
     /// ID allocator
     id_allocator: &'g mut IdAllocator,
     /// Interpreter capable of running scrypto programs
@@ -66,14 +61,12 @@ where
     pub fn new(
         auth_zone_params: AuthZoneParams,
         id_allocator: &'g mut IdAllocator,
-        blobs: &'g HashMap<Hash, &'g [u8]>,
         track: &'g mut Track<'s, R>,
         scrypto_interpreter: &'g ScryptoInterpreter<W>,
         module: &'g mut M,
     ) -> Self {
         let mut kernel = Self {
             execution_mode: ExecutionMode::Kernel,
-            blobs,
             heap: Heap::new(),
             track,
             scrypto_interpreter,
@@ -121,11 +114,11 @@ where
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::System(EPOCH_MANAGER)),
+            RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)),
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
-            RENodeId::Global(GlobalAddress::System(CLOCK)),
+            RENodeId::Global(GlobalAddress::Component(CLOCK)),
             RENodeVisibilityOrigin::Normal,
         );
         kernel.current_frame.add_stored_ref(
@@ -169,15 +162,20 @@ where
 
                 // TODO: Replace with trusted IndexedScryptoValue
                 let access_rule = rule!(require(non_fungible_address));
-                let result = self.invoke(ParsedScryptoInvocation::Function(
-                    ScryptoFunctionIdent {
-                        package: ScryptoPackage::Global(ACCOUNT_PACKAGE),
-                        blueprint_name: "Account".to_string(),
-                        function_name: "create".to_string(),
-                    },
-                    IndexedScryptoValue::from_slice(&args!(access_rule)).unwrap(),
-                ))?;
-                let component_id = result.component_ids.into_iter().next().unwrap();
+                let result = self.invoke(ScryptoInvocation {
+                    package_address: ACCOUNT_PACKAGE,
+                    blueprint_name: "Account".to_string(),
+                    fn_name: "create".to_string(),
+                    receiver: None,
+                    args: args!(access_rule),
+                })?;
+                let component_id = IndexedScryptoValue::from_typed(&result)
+                    .owned_node_ids()
+                    .expect("No duplicates expected")
+                    .into_iter()
+                    .next()
+                    .unwrap()
+                    .into();
 
                 // TODO: Use system_api to globalize component when create_node is refactored
                 // TODO: to allow for address selection
@@ -188,7 +186,6 @@ where
                     RENode::Global(global_substate),
                     &mut self.heap,
                     &mut self.track,
-                    true,
                     true,
                 )?;
 
@@ -232,11 +229,21 @@ where
                         SubstateOffset::Worktop(WorktopOffset::Worktop),
                         LockFlags::MUTABLE,
                     )?;
-                    let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
-                    let worktop = substate_ref_mut.worktop();
-                    worktop.drop().map_err(|_| {
-                        RuntimeError::KernelError(KernelError::DropNodeFailure(node_id))
-                    })?;
+
+                    let buckets = {
+                        let mut substate_ref_mut = system_api.get_ref_mut(handle)?;
+                        let worktop = substate_ref_mut.worktop();
+                        mem::replace(&mut worktop.resources, BTreeMap::new())
+                    };
+                    for (_, bucket) in buckets {
+                        let bucket = Bucket(bucket.bucket_id());
+                        if !bucket.sys_is_empty(system_api)? {
+                            return Err(RuntimeError::KernelError(KernelError::DropNodeFailure(
+                                RENodeId::Worktop,
+                            )));
+                        }
+                    }
+
                     system_api.drop_lock(handle)?;
                     Ok(())
                 }
@@ -279,8 +286,6 @@ where
 
             Ok(())
         })?;
-
-        self.current_frame.verify_allocated_ids_empty()?;
 
         Ok(())
     }
@@ -339,6 +344,7 @@ where
                     &mut self.track,
                 )
                 .map_err(RuntimeError::ModuleError)?;
+            self.id_allocator.pre_execute_invocation();
         }
 
         // Call Frame Push
@@ -363,6 +369,7 @@ where
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
 
+            self.id_allocator.post_execute_invocation()?;
             self.module
                 .post_execute_invocation(
                     &self.prev_frame_stack.last().unwrap().actor,
@@ -568,16 +575,12 @@ where
     }
 }
 
-impl<'g, 's, W, R, M> ResolverApi<W> for Kernel<'g, 's, W, R, M>
+impl<'g, 's, W, R, M> VmApi<W> for Kernel<'g, 's, W, R, M>
 where
     W: WasmEngine,
     R: FeeReserve,
     M: BaseModule<R>,
 {
-    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
-        self.node_method_deref(node_id)
-    }
-
     fn vm(&mut self) -> &ScryptoInterpreter<W> {
         self.scrypto_interpreter
     }
@@ -591,25 +594,58 @@ where
     }
 }
 
+impl<'g, 's, W, R, M> ResolverApi for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+    fn deref(&mut self, node_id: RENodeId) -> Result<Option<(RENodeId, LockHandle)>, RuntimeError> {
+        self.node_method_deref(node_id)
+    }
+}
+
 pub trait Executor {
     type Output: Debug;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W>(self, api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi
             + EngineApi<RuntimeError>
             + InvokableModel<RuntimeError>
             + ActorApi<RuntimeError>
-            + BlobApi<RuntimeError>;
+            + ComponentApi<RuntimeError>
+            + VmApi<W>,
+        W: WasmEngine;
 }
 
-pub trait ExecutableInvocation<W: WasmEngine>: Invocation {
+pub trait ExecutableInvocation: Invocation {
     type Exec: Executor<Output = Self::Output>;
 
-    fn resolve<Y: ResolverApi<W> + SystemApi>(
+    fn resolve<Y: ResolverApi + SystemApi>(
         self,
         api: &mut Y,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>;
+}
+
+impl<'g, 's, W, R, M> ComponentApi<RuntimeError> for Kernel<'g, 's, W, R, M>
+where
+    W: WasmEngine,
+    R: FeeReserve,
+    M: BaseModule<R>,
+{
+    fn invoke_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        method_name: &str,
+        args: &ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        // TODO: Use execution mode?
+        let invocation =
+            resolve_method(receiver, method_name, &scrypto_encode(args).unwrap(), self)?;
+        let rtn = invoke_call_table(invocation, self)?;
+        Ok(rtn.into())
+    }
 }
 
 impl<'g, 's, W, R, N, M> Invokable<N, RuntimeError> for Kernel<'g, 's, W, R, M>
@@ -617,7 +653,7 @@ where
     W: WasmEngine,
     R: FeeReserve,
     M: BaseModule<R>,
-    N: ExecutableInvocation<W>,
+    N: ExecutableInvocation,
 {
     fn invoke(&mut self, invocation: N) -> Result<<N as Invocation>::Output, RuntimeError> {
         self.module
@@ -626,9 +662,8 @@ where
                 &mut self.heap,
                 &mut self.track,
                 SysCallInput::Invoke {
-                    invocation: &invocation,
-                    input_size: 0,  // TODO: Fix this
-                    value_count: 0, // TODO: Fix this
+                    fn_identifier: invocation.fn_identifier(),
+                    input_size: 0, // TODO: Fix this
                     depth: self.current_frame.depth,
                 },
             )
@@ -773,96 +808,7 @@ where
 
     fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
-
-        let node_id = match node_type {
-            RENodeType::AuthZoneStack => self
-                .id_allocator
-                .new_auth_zone_id()
-                .map(|id| RENodeId::AuthZoneStack(id)),
-            RENodeType::Bucket => self
-                .id_allocator
-                .new_bucket_id()
-                .map(|id| RENodeId::Bucket(id)),
-            RENodeType::Proof => self
-                .id_allocator
-                .new_proof_id()
-                .map(|id| RENodeId::Proof(id)),
-            RENodeType::TransactionRuntime => self
-                .id_allocator
-                .new_transaction_hash_id()
-                .map(|id| RENodeId::TransactionRuntime(id)),
-            RENodeType::Worktop => Ok(RENodeId::Worktop),
-            RENodeType::Logger => Ok(RENodeId::Logger),
-            RENodeType::Vault => self
-                .id_allocator
-                .new_vault_id()
-                .map(|id| RENodeId::Vault(id)),
-            RENodeType::KeyValueStore => self
-                .id_allocator
-                .new_kv_store_id()
-                .map(|id| RENodeId::KeyValueStore(id)),
-            RENodeType::NonFungibleStore => self
-                .id_allocator
-                .new_nf_store_id()
-                .map(|id| RENodeId::NonFungibleStore(id)),
-            RENodeType::Package => {
-                // Security Alert: ensure ID allocating will practically never fail
-                self.id_allocator
-                    .new_package_id()
-                    .map(|id| RENodeId::Package(id))
-            }
-            RENodeType::ResourceManager => self
-                .id_allocator
-                .new_resource_manager_id()
-                .map(|id| RENodeId::ResourceManager(id)),
-            RENodeType::Component => self
-                .id_allocator
-                .new_component_id()
-                .map(|id| RENodeId::Component(id)),
-            RENodeType::EpochManager => self
-                .id_allocator
-                .new_component_id()
-                .map(|id| RENodeId::EpochManager(id)),
-            RENodeType::Validator => self
-                .id_allocator
-                .new_validator_id()
-                .map(|id| RENodeId::Validator(id)),
-            RENodeType::Clock => self
-                .id_allocator
-                .new_component_id()
-                .map(|id| RENodeId::Clock(id)),
-            RENodeType::GlobalPackage => self
-                .id_allocator
-                .new_package_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Package(address))),
-            RENodeType::GlobalEpochManager => self
-                .id_allocator
-                .new_epoch_manager_address()
-                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
-            RENodeType::GlobalValidator => self
-                .id_allocator
-                .new_validator_address()
-                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
-            RENodeType::GlobalClock => self
-                .id_allocator
-                .new_clock_address()
-                .map(|address| RENodeId::Global(GlobalAddress::System(address))),
-            RENodeType::GlobalResourceManager => self
-                .id_allocator
-                .new_resource_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Resource(address))),
-            RENodeType::GlobalAccount => self
-                .id_allocator
-                .new_account_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
-            RENodeType::GlobalComponent => self
-                .id_allocator
-                .new_component_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
-        }
-        .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-
-        self.current_frame.add_allocated_id(node_id);
+        let node_id = self.id_allocator.allocate_node_id(node_type)?;
 
         Ok(node_id)
     }
@@ -904,15 +850,15 @@ where
                 RENode::Global(GlobalAddressSubstate::Resource(..)),
             ) => {}
             (
-                RENodeId::Global(GlobalAddress::System(..)),
+                RENodeId::Global(GlobalAddress::Component(..)),
                 RENode::Global(GlobalAddressSubstate::EpochManager(..)),
             ) => {}
             (
-                RENodeId::Global(GlobalAddress::System(..)),
+                RENodeId::Global(GlobalAddress::Component(..)),
                 RENode::Global(GlobalAddressSubstate::Clock(..)),
             ) => {}
             (
-                RENodeId::Global(GlobalAddress::System(..)),
+                RENodeId::Global(GlobalAddress::Component(..)),
                 RENode::Global(GlobalAddressSubstate::Validator(..)),
             ) => {}
             (
@@ -983,13 +929,13 @@ where
             _ => false,
         };
 
+        self.id_allocator.take_node_id(node_id)?;
         self.current_frame.create_node(
             node_id,
             re_node,
             &mut self.heap,
             &mut self.track,
             push_to_store,
-            false,
         )?;
 
         // Restore current mode
@@ -1235,41 +1181,6 @@ where
                 .get_ref_mut(lock_handle, &mut self.heap, &mut self.track)?;
 
         Ok(substate_ref_mut)
-    }
-}
-
-impl<'g, 's, W, R, M> BlobApi<RuntimeError> for Kernel<'g, 's, W, R, M>
-where
-    W: WasmEngine,
-    R: FeeReserve,
-    M: BaseModule<R>,
-{
-    fn get_blob(&mut self, blob_hash: &Hash) -> Result<&[u8], RuntimeError> {
-        self.module
-            .pre_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallInput::ReadBlob { blob_hash },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        let blob = self
-            .blobs
-            .get(blob_hash)
-            .ok_or(KernelError::BlobNotFound(blob_hash.clone()))
-            .map_err(RuntimeError::KernelError)?;
-
-        self.module
-            .post_sys_call(
-                &self.current_frame,
-                &mut self.heap,
-                &mut self.track,
-                SysCallOutput::ReadBlob { blob: &blob },
-            )
-            .map_err(RuntimeError::ModuleError)?;
-
-        Ok(blob)
     }
 }
 

@@ -2,8 +2,6 @@ use radix_engine::engine::{ApplicationError, ModuleError, RuntimeError};
 use radix_engine::ledger::create_genesis;
 use radix_engine::model::{Validator, ValidatorError};
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use radix_engine_interface::modules::auth::AuthAddresses;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -17,7 +15,7 @@ fn get_epoch_should_succeed() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/epoch_manager");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "EpochManagerTest", "get_epoch", args![])
         .build();
@@ -36,7 +34,7 @@ fn next_round_without_supervisor_auth_fails() {
 
     // Act
     let round = 9876u64;
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -74,6 +72,7 @@ fn next_round_with_validator_auth_succeeds() {
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -110,6 +109,7 @@ fn next_epoch_with_validator_auth_succeeds() {
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -146,7 +146,7 @@ fn register_validator_with_auth_succeeds() {
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .register_validator(validator_address)
         .build();
@@ -180,7 +180,7 @@ fn register_validator_without_auth_fails() {
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .register_validator(validator_address)
         .build();
@@ -213,7 +213,7 @@ fn unregister_validator_with_auth_succeeds() {
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -247,7 +247,7 @@ fn unregister_validator_without_auth_fails() {
 
     // Act
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -273,7 +273,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
     );
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (pub_key, validator_address) = test_runner.new_validator();
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .register_validator(validator_address)
         .build();
@@ -295,6 +295,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -322,7 +323,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (pub_key, _, account_address) = test_runner.new_account(false);
     let validator_address = test_runner.new_validator_with_pub_key(pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account_by_amount(account_address, Decimal::one(), RADIX_TOKEN)
         .register_validator(validator_address)
@@ -348,6 +349,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -385,7 +387,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
     );
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unregister_validator(validator_address)
         .build();
@@ -407,6 +409,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -442,7 +445,7 @@ fn cannot_claim_unstake_immediately() {
     let validator_substate = test_runner.get_validator_info(validator_address);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unstake_validator(validator_address, Decimal::one())
         .take_from_worktop(validator_substate.unstake_nft_address, |builder, bucket| {
@@ -451,7 +454,7 @@ fn cannot_claim_unstake_immediately() {
         .call_method(
             account_address,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -490,13 +493,13 @@ fn can_claim_unstake_after_epochs() {
     let (_, _, account_address) = test_runner.new_account(true);
     let validator_address = test_runner.get_validator_with_key(&pub_key);
     let validator_substate = test_runner.get_validator_info(validator_address);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unstake_validator(validator_address, Decimal::one())
         .call_method(
             account_address,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -507,7 +510,7 @@ fn can_claim_unstake_after_epochs() {
     test_runner.set_current_epoch(initial_epoch + 1 + num_unstake_epochs);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .withdraw_from_account(account_address, validator_substate.unstake_nft_address)
         .take_from_worktop(validator_substate.unstake_nft_address, |builder, bucket| {
@@ -516,7 +519,7 @@ fn can_claim_unstake_after_epochs() {
         .call_method(
             account_address,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -548,13 +551,13 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
     let mut test_runner = TestRunner::new_with_genesis(true, genesis);
     let (_, _, account_address) = test_runner.new_account(true);
     let validator_address = test_runner.get_validator_with_key(&pub_key);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .unstake_validator(validator_address, Decimal::one())
         .call_method(
             account_address,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -575,6 +578,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -599,8 +603,11 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
+    let mut pre_allocated_ids = BTreeSet::new();
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            component_address: EPOCH_MANAGER.raw(),
             validator_set: BTreeMap::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
@@ -613,6 +620,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
             instructions,
             blobs,
             nonce: 0,
+            pre_allocated_ids,
         }
         .get_executable(vec![]),
     );
@@ -629,8 +637,11 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
+    let mut pre_allocated_ids = BTreeSet::new();
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            component_address: EPOCH_MANAGER.raw(),
             validator_set: BTreeMap::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
@@ -643,6 +654,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             instructions,
             blobs,
             nonce: 0,
+            pre_allocated_ids,
         }
         .get_executable(vec![AuthAddresses::system_role()]),
     );

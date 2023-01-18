@@ -1,115 +1,48 @@
+use crate::address::*;
+use crate::constants::*;
+use crate::crypto::*;
+use crate::model::*;
+use radix_engine_derive::*;
 use sbor::rust::fmt;
 use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::*;
-
-use crate::abi::*;
-use crate::address::*;
-use crate::constants::*;
-use crate::crypto::*;
-use crate::data::ScryptoCustomTypeId;
-use crate::model::*;
-use crate::scrypto_type;
+use scrypto_abi::LegacyDescribe;
+use scrypto_abi::Type;
 use utils::ContextualDisplay;
 
-/// Identifier for a non-fungible unit.
-#[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub struct NonFungibleAddress {
-    resource_address: ResourceAddress,
-    non_fungible_id: NonFungibleId,
-}
+#[derive(
+    Clone, PartialEq, Eq, Hash, Ord, PartialOrd, ScryptoCategorize, ScryptoEncode, ScryptoDecode,
+)]
+pub struct NonFungibleAddress(ResourceAddress, NonFungibleId);
 
-//=======
-// error
-//=======
-
-/// Represents an error when parsing non-fungible address.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseNonFungibleAddressError {
-    InvalidLength(usize),
-    InvalidResourceAddress(AddressError),
-    InvalidNonFungibleId(ParseNonFungibleIdError),
-    InvalidHex(String),
-    InvalidPrefix,
-    RequiresTwoParts,
-}
-
-impl From<AddressError> for ParseNonFungibleAddressError {
-    fn from(err: AddressError) -> Self {
-        Self::InvalidResourceAddress(err)
-    }
-}
-
-impl From<ParseNonFungibleIdError> for ParseNonFungibleAddressError {
-    fn from(err: ParseNonFungibleIdError) -> Self {
-        Self::InvalidNonFungibleId(err)
-    }
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseNonFungibleAddressError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseNonFungibleAddressError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-//========
-// binary
-//========
-
-impl TryFrom<&[u8]> for NonFungibleAddress {
-    type Error = ParseNonFungibleAddressError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() < 27 {
-            return Err(ParseNonFungibleAddressError::InvalidLength(slice.len()));
-        }
-
-        let (resource_address_slice, non_fungible_id_slice) = slice.split_at(27);
-        let resource_address = ResourceAddress::try_from(resource_address_slice)?;
-        let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)?;
-        Ok(NonFungibleAddress {
-            resource_address,
-            non_fungible_id,
-        })
+impl LegacyDescribe for NonFungibleAddress {
+    fn describe() -> scrypto_abi::Type {
+        Type::NonFungibleAddress
     }
 }
 
 impl NonFungibleAddress {
     pub const fn new(resource_address: ResourceAddress, non_fungible_id: NonFungibleId) -> Self {
-        Self {
-            resource_address,
-            non_fungible_id,
-        }
+        Self(resource_address, non_fungible_id)
     }
 
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
-        self.resource_address
+        self.0
     }
 
     /// Returns the non-fungible id.
     pub fn non_fungible_id(&self) -> &NonFungibleId {
-        &self.non_fungible_id
-    }
-
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut vec = self.resource_address.to_vec();
-        let mut other_vec = self.non_fungible_id.to_vec();
-        vec.append(&mut other_vec);
-        vec
+        &self.1
     }
 
     /// Returns canonical representation of this NonFungibleAddress.
     pub fn to_canonical_string(&self, bech32_encoder: &Bech32Encoder) -> String {
         format!(
             "{}:{}",
-            bech32_encoder.encode_resource_address_to_string(&self.resource_address),
-            self.non_fungible_id.to_simple_string()
+            bech32_encoder.encode_resource_address_to_string(&self.resource_address()),
+            self.non_fungible_id().to_simple_string()
         )
     }
 
@@ -118,7 +51,7 @@ impl NonFungibleAddress {
     /// This is composed of `resource_address:id_simple_representation`
     pub fn try_from_canonical_string(
         bech32_decoder: &Bech32Decoder,
-        id_type: NonFungibleIdType,
+        id_type: NonFungibleIdTypeId,
         s: &str,
     ) -> Result<Self, ParseNonFungibleAddressError> {
         let v = s
@@ -137,8 +70,8 @@ impl NonFungibleAddress {
     pub fn to_canonical_combined_string(&self, bech32_encoder: &Bech32Encoder) -> String {
         format!(
             "{}:{}",
-            bech32_encoder.encode_resource_address_to_string(&self.resource_address),
-            self.non_fungible_id.to_combined_simple_string()
+            bech32_encoder.encode_resource_address_to_string(&self.resource_address()),
+            self.non_fungible_id().to_combined_simple_string()
         )
     }
 
@@ -164,11 +97,39 @@ impl NonFungibleAddress {
     }
 }
 
-scrypto_type!(
-    NonFungibleAddress,
-    ScryptoCustomTypeId::NonFungibleAddress,
-    Type::NonFungibleAddress
-);
+//======
+// error
+//======
+
+/// Represents an error when parsing non-fungible address.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseNonFungibleAddressError {
+    InvalidResourceAddress(AddressError),
+    InvalidNonFungibleId(ParseNonFungibleIdError),
+    RequiresTwoParts,
+}
+
+impl From<AddressError> for ParseNonFungibleAddressError {
+    fn from(err: AddressError) -> Self {
+        Self::InvalidResourceAddress(err)
+    }
+}
+
+impl From<ParseNonFungibleIdError> for ParseNonFungibleAddressError {
+    fn from(err: ParseNonFungibleIdError) -> Self {
+        Self::InvalidNonFungibleId(err)
+    }
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseNonFungibleAddressError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseNonFungibleAddressError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 //======
 // text
@@ -211,7 +172,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NonFungibleAddress {
         write!(
             f,
             "{}:{}",
-            self.resource_address.display(*context),
+            self.resource_address().display(*context),
             self.non_fungible_id()
         )
     }
@@ -234,7 +195,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::U32,
+                NonFungibleIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
             )
             .unwrap()
@@ -245,7 +206,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::U64,
+                NonFungibleIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:10",
             )
             .unwrap()
@@ -256,7 +217,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::UUID,
+                NonFungibleIdTypeId::UUID,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1234567890",
             )
             .unwrap()
@@ -267,7 +228,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::String,
+                NonFungibleIdTypeId::String,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:test",
             )
             .unwrap()
@@ -278,7 +239,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &dec,
-                NonFungibleIdType::Bytes,
+                NonFungibleIdTypeId::Bytes,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:010a",
             )
             .unwrap()
@@ -293,7 +254,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::U32,
+                NonFungibleIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p",
             ),
             Err(ParseNonFungibleAddressError::RequiresTwoParts)
@@ -302,7 +263,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::String,
+                NonFungibleIdTypeId::String,
                 // : is not currently allowed in non-fungible ids
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1:2",
             ),
@@ -314,7 +275,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::U32,
+                NonFungibleIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:",
             ),
             Err(ParseNonFungibleAddressError::RequiresTwoParts)
@@ -323,7 +284,7 @@ mod tests {
         assert_eq!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::U32,
+                NonFungibleIdTypeId::Number,
                 ":",
             ),
             Err(ParseNonFungibleAddressError::RequiresTwoParts)
@@ -332,7 +293,7 @@ mod tests {
         assert!(matches!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::U32,
+                NonFungibleIdTypeId::Number,
                 "3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:1",
             ),
             Err(ParseNonFungibleAddressError::InvalidResourceAddress(_))
@@ -341,7 +302,7 @@ mod tests {
         assert!(matches!(
             NonFungibleAddress::try_from_canonical_string(
                 &bech32_decoder,
-                NonFungibleIdType::U32,
+                NonFungibleIdTypeId::Number,
                 "resource_sim1qzntya3nlyju8zsj8h86fz8ma5yl8smwjlg9tckkqvrs520k2p:notnumber",
             ),
             Err(ParseNonFungibleAddressError::InvalidNonFungibleId(

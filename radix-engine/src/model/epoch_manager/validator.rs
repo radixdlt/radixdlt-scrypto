@@ -4,16 +4,15 @@ use crate::engine::{
 };
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use native_sdk::resource::{NativeVault, ResourceManager, SysBucket};
+use native_sdk::resource::{ResourceManager, SysBucket, Vault};
 use radix_engine_interface::api::api::{EngineApi, InvokableModel};
 use radix_engine_interface::api::types::{GlobalAddress, NativeFn, RENodeId, SubstateOffset};
 use radix_engine_interface::model::*;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorSubstate {
-    pub manager: SystemAddress,
-    pub address: SystemAddress,
+    pub manager: ComponentAddress,
+    pub address: ComponentAddress,
     pub unstake_nft_address: ResourceAddress,
     pub key: EcdsaSecp256k1PublicKey,
     pub stake_vault_id: VaultId,
@@ -21,7 +20,7 @@ pub struct ValidatorSubstate {
     pub is_registered: bool,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ValidatorError {
     InvalidClaimResource,
     EpochUnlockHasNotOccurredYet,
@@ -29,10 +28,10 @@ pub enum ValidatorError {
 
 pub struct ValidatorRegisterExecutable(RENodeId);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorRegisterInvocation {
+impl ExecutableInvocation for ValidatorRegisterInvocation {
     type Exec = ValidatorRegisterExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -40,7 +39,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorRegisterInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -55,7 +54,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorRegisterInvocation {
 impl Executor for ValidatorRegisterExecutable {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
@@ -98,10 +97,10 @@ impl Executor for ValidatorRegisterExecutable {
 
 pub struct ValidatorUnregisterExecutable(RENodeId);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnregisterInvocation {
+impl ExecutableInvocation for ValidatorUnregisterInvocation {
     type Exec = ValidatorUnregisterExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -109,7 +108,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnregisterInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
         let actor = ResolvedActor::method(
             NativeFn::Validator(ValidatorFn::Unregister),
@@ -123,7 +122,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnregisterInvocation {
 impl Executor for ValidatorUnregisterExecutable {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + InvokableModel<RuntimeError>,
     {
@@ -158,10 +157,10 @@ impl Executor for ValidatorUnregisterExecutable {
 
 pub struct ValidatorStakeExecutable(RENodeId, Bucket);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorStakeInvocation {
+impl ExecutableInvocation for ValidatorStakeInvocation {
     type Exec = ValidatorStakeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -169,7 +168,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorStakeInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
         call_frame_update
             .nodes_to_move
@@ -185,7 +184,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorStakeInvocation {
 impl Executor for ValidatorStakeExecutable {
     type Output = ();
 
-    fn execute<Y>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(self, api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
@@ -225,10 +224,10 @@ impl Executor for ValidatorStakeExecutable {
 
 pub struct ValidatorUnstakeExecutable(RENodeId, Decimal);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnstakeInvocation {
+impl ExecutableInvocation for ValidatorUnstakeInvocation {
     type Exec = ValidatorUnstakeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -236,7 +235,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnstakeInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor =
@@ -246,8 +245,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorUnstakeInvocation {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct UnstakeData {
     epoch_unlocked: u64,
     amount: Decimal,
@@ -256,7 +254,10 @@ pub struct UnstakeData {
 impl Executor for ValidatorUnstakeExecutable {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
@@ -273,7 +274,7 @@ impl Executor for ValidatorUnstakeExecutable {
             let mut unstake_vault = Vault(validator.unstake_vault_id);
             let mut nft_resman = ResourceManager(validator.unstake_nft_address);
             let manager_handle = api.lock_substate(
-                RENodeId::Global(GlobalAddress::System(manager)),
+                RENodeId::Global(GlobalAddress::Component(manager)),
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;
@@ -324,10 +325,10 @@ impl Executor for ValidatorUnstakeExecutable {
 
 pub struct ValidatorClaimXrdExecutable(RENodeId, Bucket);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorClaimXrdInvocation {
+impl ExecutableInvocation for ValidatorClaimXrdInvocation {
     type Exec = ValidatorClaimXrdExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -335,7 +336,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorClaimXrdInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
         call_frame_update
             .nodes_to_move
@@ -353,7 +354,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ValidatorClaimXrdInvocation {
 impl Executor for ValidatorClaimXrdExecutable {
     type Output = Bucket;
 
-    fn execute<Y>(self, api: &mut Y) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        api: &mut Y,
+    ) -> Result<(Bucket, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError> + InvokableModel<RuntimeError>,
     {
@@ -376,7 +380,7 @@ impl Executor for ValidatorClaimXrdExecutable {
 
         let current_epoch = {
             let mgr_handle = api.lock_substate(
-                RENodeId::Global(GlobalAddress::System(manager)),
+                RENodeId::Global(GlobalAddress::Component(manager)),
                 SubstateOffset::EpochManager(EpochManagerOffset::EpochManager),
                 LockFlags::read_only(),
             )?;

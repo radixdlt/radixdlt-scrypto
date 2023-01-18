@@ -28,7 +28,7 @@ pub const ECDSA_SECP_256K1_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x0
 pub const EDDSA_ED_25519_VIRTUAL_ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x08;
 
 /// An enum which represents the different addressable entities.
-#[derive(PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub enum EntityType {
     Resource,
     Package,
@@ -52,20 +52,15 @@ impl EntityType {
         match address {
             ComponentAddress::Normal(_) => Self::NormalComponent,
             ComponentAddress::Account(_) => Self::AccountComponent,
+            ComponentAddress::Clock(_) => Self::Clock,
+            ComponentAddress::EpochManager(_) => Self::EpochManager,
+            ComponentAddress::Validator(_) => Self::Validator,
             ComponentAddress::EcdsaSecp256k1VirtualAccount(_) => {
                 Self::EcdsaSecp256k1VirtualAccountComponent
             }
             ComponentAddress::EddsaEd25519VirtualAccount(_) => {
                 Self::EddsaEd25519VirtualAccountComponent
             }
-        }
-    }
-
-    pub fn system(address: &SystemAddress) -> Self {
-        match address {
-            SystemAddress::EpochManager(_) => Self::EpochManager,
-            SystemAddress::Clock(_) => Self::Clock,
-            SystemAddress::Validator(_) => Self::Validator,
         }
     }
 
