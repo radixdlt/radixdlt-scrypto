@@ -2,6 +2,8 @@ use std::sync::atomic::{AtomicIsize, Ordering};
 use std::alloc::{GlobalAlloc, Layout};
 
 
+/// Heap allocations tracker
+/// 
 /// This allocator information provider can count allocations up to isize::MAX (9_223_372_036_854_775_807),
 /// in case if anyone will try to alocate more memory it will panice with message: 'Value out of range'.
 pub struct InfoAlloc<T: GlobalAlloc> {
@@ -14,7 +16,6 @@ pub struct InfoAlloc<T: GlobalAlloc> {
     /// Maximum level (peak) of allocated bytes (allocation and deallocation is counted)
     max_level: AtomicIsize
 }
-
 
 impl<T: GlobalAlloc> InfoAlloc<T> {
 
@@ -62,7 +63,6 @@ impl<T: GlobalAlloc> InfoAlloc<T> {
         self.max_level.load(Ordering::Acquire).max(0) as usize)
     }
 }
-
 
 unsafe impl<T: GlobalAlloc> GlobalAlloc for InfoAlloc<T> {
 

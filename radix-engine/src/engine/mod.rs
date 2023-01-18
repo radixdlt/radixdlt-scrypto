@@ -13,7 +13,7 @@ mod system_api;
 mod track;
 
 #[cfg(feature = "resource-usage")]
-mod info_mem;
+mod resources_tracker;
 
 pub use actor::*;
 pub use call_frame::*;
@@ -30,4 +30,4 @@ pub use system_api::*;
 pub use track::*;
 
 #[cfg(feature = "resource-usage")]
-pub use info_mem::*;
+pub use resources_tracker::*;
