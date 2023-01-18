@@ -1,10 +1,10 @@
-use indexmap::IndexMap;
 use radix_engine_interface::api::types::{
     GlobalAddress, GlobalOffset, KeyValueStoreOffset, Level, NonFungibleStoreOffset, RENodeId,
     SubstateId, SubstateOffset, VaultId, VaultOffset,
 };
 use radix_engine_interface::crypto::hash;
 use radix_engine_interface::model::*;
+use sbor::rust::collections::*;
 use transaction::model::Executable;
 
 use crate::engine::*;
@@ -27,7 +27,7 @@ use crate::transaction::TransactionOutcome;
 use crate::transaction::TransactionResult;
 use crate::types::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum LockState {
     Read(usize),
     Write,
@@ -72,8 +72,7 @@ pub struct Track<'s, R: FeeReserve> {
     pub vault_ops: Vec<(ResolvedActor, VaultId, VaultOp)>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TrackError {
     NotFound(SubstateId),
     SubstateLocked(SubstateId, LockState),
@@ -643,7 +642,7 @@ impl<'s> FinalizingTrack<'s> {
         }
 
         // Finalize payments
-        let mut actual_fee_payments: IndexMap<VaultId, Decimal> = IndexMap::new();
+        let mut actual_fee_payments: BTreeMap<VaultId, Decimal> = BTreeMap::new();
         let mut required = fee_summary.total_execution_cost_xrd
             + fee_summary.total_royalty_cost_xrd
             - fee_summary.bad_debt_xrd;
@@ -697,38 +696,54 @@ impl<'s> FinalizingTrack<'s> {
                         node_id.clone(),
                         SubstateOffset::Package(PackageOffset::RoyaltyAccumulator),
                     );
-
-                    let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-                    let mut runtime_substate = substate.to_runtime();
-                    runtime_substate
-                        .to_ref_mut()
+                    let accumulator_substate = to_persist.get(&substate_id).unwrap();
+                    let royalty_vault_id = accumulator_substate
+                        .0
                         .package_royalty_accumulator()
                         .royalty
+                        .vault_id();
+                    let royalty_vault_substate = to_persist
+                        .get_mut(&SubstateId(
+                            RENodeId::Vault(royalty_vault_id),
+                            SubstateOffset::Vault(VaultOffset::Vault),
+                        ))
+                        .unwrap();
+                    royalty_vault_substate
+                        .0
+                        .vault_mut()
+                        .0
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),
                         )
                         .unwrap();
-                    to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
                 }
                 RoyaltyReceiver::Component(_, node_id) => {
                     let substate_id = SubstateId(
                         node_id.clone(),
                         SubstateOffset::Component(ComponentOffset::RoyaltyAccumulator),
                     );
-
-                    let (substate, old_version) = to_persist.remove(&substate_id).unwrap();
-                    let mut runtime_substate = substate.to_runtime();
-                    runtime_substate
-                        .to_ref_mut()
+                    let accumulator_substate = to_persist.get(&substate_id).unwrap();
+                    let royalty_vault_id = accumulator_substate
+                        .0
                         .component_royalty_accumulator()
                         .royalty
+                        .vault_id();
+                    let royalty_vault_substate = to_persist
+                        .get_mut(&SubstateId(
+                            RENodeId::Vault(royalty_vault_id),
+                            SubstateOffset::Vault(VaultOffset::Vault),
+                        ))
+                        .unwrap();
+                    royalty_vault_substate
+                        .0
+                        .vault_mut()
+                        .0
                         .put(
                             fees.take_by_amount(fee_summary.cost_unit_price * amount.clone())
                                 .unwrap(),
                         )
                         .unwrap();
-                    to_persist.insert(substate_id, (runtime_substate.to_persisted(), old_version));
                 }
             }
         }

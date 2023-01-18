@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 #[derive(NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
-    #[scrypto(mutable)]
+    #[mutable]
     pub available: bool,
 }
 
@@ -12,11 +12,10 @@ blueprint! {
 
     impl ResourceTest {
         pub fn set_mintable_with_self_resource_address() {
-            let super_admin_badge: ResourceAddress =
-                ResourceBuilder::new_non_fungible(NonFungibleIdType::UUID)
-                    .metadata("name", "Super Admin Badge")
-                    .mintable(rule!(allow_all), rule!(allow_all))
-                    .no_initial_supply();
+            let super_admin_badge: ResourceAddress = ResourceBuilder::new_non_fungible::<u128>()
+                .metadata("name", "Super Admin Badge")
+                .mintable(rule!(allow_all), rule!(allow_all))
+                .no_initial_supply();
 
             let super_admin_manager: &mut ResourceManager =
                 borrow_resource_manager!(super_admin_badge);
@@ -104,16 +103,15 @@ blueprint! {
         }
 
         pub fn update_resource_metadata() -> Bucket {
-            let badge =
-                ResourceBuilder::new_non_fungible(NonFungibleIdType::U32).initial_supply(vec![(
-                    NonFungibleId::U32(0),
-                    Sandwich {
-                        name: "name".to_string(),
-                        available: false,
-                    },
-                )]);
+            let badge = ResourceBuilder::new_non_fungible::<u64>().initial_supply(vec![(
+                0u64,
+                Sandwich {
+                    name: "name".to_string(),
+                    available: false,
+                },
+            )]);
             let manager_address =
-                NonFungibleAddress::new(badge.resource_address(), NonFungibleId::U32(0));
+                NonFungibleAddress::new(badge.resource_address(), NonFungibleId::Number(0));
 
             let resource_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)

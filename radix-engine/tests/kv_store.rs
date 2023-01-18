@@ -1,8 +1,6 @@
 use radix_engine::engine::{CallFrameError, KernelError, RuntimeError};
 use radix_engine::types::*;
 use radix_engine_interface::api::types::RENodeId;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
 
@@ -13,7 +11,7 @@ fn can_insert_in_child_nodes() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "SuperKeyValueStore", "new", args!())
         .build();
@@ -30,7 +28,7 @@ fn create_mutable_kv_store_into_map_and_referencing_before_storing() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -52,7 +50,7 @@ fn cyclic_map_fails_execution() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "CyclicMap", "new", args!())
         .build();
@@ -74,7 +72,7 @@ fn self_cyclic_map_fails_execution() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "CyclicMap", "new_self_cyclic", args!())
         .build();
@@ -94,7 +92,7 @@ fn cannot_remove_kv_stores() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -110,7 +108,7 @@ fn cannot_remove_kv_stores() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(component_address, "clear_vector", args!())
         .build();
@@ -130,7 +128,7 @@ fn cannot_overwrite_kv_stores() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -146,7 +144,7 @@ fn cannot_overwrite_kv_stores() {
         .new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_method(component_address, "overwrite_kv_store", args!())
         .build();
@@ -168,7 +166,7 @@ fn create_kv_store_and_get() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -190,7 +188,7 @@ fn create_kv_store_and_put() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -212,7 +210,7 @@ fn can_reference_in_memory_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -234,7 +232,7 @@ fn can_reference_deep_in_memory_value() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -256,7 +254,7 @@ fn can_reference_deep_in_memory_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -278,7 +276,7 @@ fn cannot_directly_reference_inserted_vault() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(
             package_address,
@@ -305,7 +303,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             package_address,
@@ -332,7 +330,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10u32.into())
         .call_function(
             package_address,
@@ -359,7 +357,7 @@ fn multiple_reads_should_work() {
     let package_address = test_runner.compile_and_publish("./tests/blueprints/kv_store");
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .call_function(package_address, "MultipleReads", "multiple_reads", args!())
         .build();

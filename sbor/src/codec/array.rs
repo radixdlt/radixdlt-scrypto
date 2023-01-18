@@ -1,18 +1,32 @@
 use crate::rust::mem::MaybeUninit;
-use crate::type_id::*;
+use crate::value_kind::*;
 use crate::*;
 
-impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> for [T] {
+impl<X: CustomValueKind, T> Categorize<X> for [T] {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn value_kind() -> ValueKind<X> {
+        ValueKind::Array
+    }
+}
+
+impl<X: CustomValueKind, T, const N: usize> Categorize<X> for [T; N] {
+    #[inline]
+    fn value_kind() -> ValueKind<X> {
+        ValueKind::Array
+    }
+}
+
+impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>> Encode<X, E> for [T] {
+    #[inline]
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(T::type_id())?;
+        encoder.write_value_kind(T::value_kind())?;
         encoder.write_size(self.len())?;
-        if T::type_id() == SborTypeId::U8 || T::type_id() == SborTypeId::I8 {
+        if T::value_kind() == ValueKind::U8 || T::value_kind() == ValueKind::I8 {
             let ptr = self.as_ptr().cast::<u8>();
             let slice = unsafe { sbor::rust::slice::from_raw_parts(ptr, self.len()) };
             encoder.write_slice(slice)?;
@@ -25,12 +39,12 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>> Encode<X, E> f
     }
 }
 
-impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>, const N: usize> Encode<X, E>
-    for [T; N]
+impl<X: CustomValueKind, E: Encoder<X>, T: Encode<X, E> + Categorize<X>, const N: usize>
+    Encode<X, E> for [T; N]
 {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut E) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut E) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
     #[inline]
     fn encode_body(&self, encoder: &mut E) -> Result<(), EncodeError> {
@@ -38,16 +52,16 @@ impl<X: CustomTypeId, E: Encoder<X>, T: Encode<X, E> + TypeId<X>, const N: usize
     }
 }
 
-impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, const N: usize> Decode<X, D>
-    for [T; N]
+impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D> + Categorize<X>, const N: usize>
+    Decode<X, D> for [T; N]
 {
     #[inline]
-    fn decode_body_with_type_id(
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<X>,
+        value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
-        let element_type_id = decoder.read_and_check_type_id(T::type_id())?;
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
+        let element_value_kind = decoder.read_and_check_value_kind(T::value_kind())?;
         decoder.read_and_check_size(N)?;
 
         // Please read:
@@ -61,7 +75,7 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, const N: usize
 
         // Decode element by element
         for elem in &mut data[..] {
-            elem.write(decoder.decode_deeper_body_with_type_id(element_type_id)?);
+            elem.write(decoder.decode_deeper_body_with_value_kind(element_value_kind)?);
         }
 
         // Use &mut as an assertion of unique "ownership"
@@ -70,5 +84,72 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D> + TypeId<X>, const N: usize
         core::mem::forget(data);
 
         Ok(res)
+    }
+}
+
+pub use schema::*;
+
+mod schema {
+    use super::*;
+
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>> Describe<C> for [T] {
+        const TYPE_ID: GlobalTypeId = match T::TYPE_ID {
+            GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => {
+                GlobalTypeId::well_known(basic_well_known_types::BYTES_ID)
+            }
+            _ => GlobalTypeId::novel("Array", &[T::TYPE_ID]),
+        };
+
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            match T::TYPE_ID {
+                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => None,
+                _ => Some(TypeData::new(
+                    TypeMetadata::named_no_child_names("Array"),
+                    TypeKind::Array {
+                        element_type: T::TYPE_ID,
+                    },
+                )),
+            }
+        }
+
+        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+            aggregator.add_child_type_and_descendents::<T>();
+        }
+    }
+
+    impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, const N: usize> Describe<C> for [T; N] {
+        const TYPE_ID: GlobalTypeId = GlobalTypeId::novel_validated(
+            "Array",
+            &[T::TYPE_ID],
+            &[("min", &N.to_le_bytes()), ("max", &N.to_le_bytes())],
+        );
+
+        fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+            let size = N
+                .try_into()
+                .expect("The array length is too large for a u32 for the SBOR schema");
+            let type_name = match T::TYPE_ID {
+                GlobalTypeId::WellKnown([basic_well_known_types::U8_ID]) => "Bytes",
+                _ => "Array",
+            };
+            Some(
+                TypeData::new(
+                    TypeMetadata::named_no_child_names(type_name),
+                    TypeKind::Array {
+                        element_type: T::TYPE_ID,
+                    },
+                )
+                .with_validation(TypeValidation::Array {
+                    length_validation: LengthValidation {
+                        min: Some(size),
+                        max: Some(size),
+                    },
+                }),
+            )
+        }
+
+        fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+            aggregator.add_child_type_and_descendents::<T>();
+        }
     }
 }

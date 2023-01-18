@@ -6,8 +6,7 @@ use crate::model::{
 use crate::types::*;
 use sbor::rust::ops::Deref;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultSubstate(pub Resource);
 
 impl VaultSubstate {

@@ -1,33 +1,70 @@
-use crate::runtime::Runtime;
-use radix_engine_interface::api::api::{EngineApi, Invokable, InvokableModel};
+use radix_engine_interface::api::api::{EngineApi, Invokable};
 use radix_engine_interface::data::{scrypto_decode, scrypto_encode, ScryptoDecode, ScryptoEncode};
 use radix_engine_interface::math::Decimal;
 use radix_engine_interface::model::*;
-use std::collections::BTreeMap;
-use std::fmt::Debug;
+use sbor::rust::collections::BTreeMap;
+use sbor::rust::fmt::Debug;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 /// Represents a resource manager.
 #[derive(Debug)]
 pub struct ResourceManager(pub ResourceAddress);
 
 impl ResourceManager {
-    pub fn sys_new<Y, E: Debug + ScryptoDecode>(
-        resource_type: ResourceType,
+    pub fn new_fungible<Y, E: Debug + ScryptoDecode>(
+        divisibility: u8,
         metadata: BTreeMap<String, String>,
         access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
-        mint_params: Option<MintParams>,
         api: &mut Y,
-    ) -> Result<(Self, Option<Bucket>), E>
-    where
-        Y: EngineApi<E> + InvokableModel<E>,
+    ) -> Result<Self, E>
+        where
+            Y: EngineApi<E> + Invokable<ResourceManagerCreateFungibleInvocation, E>,
     {
-        api.invoke(ResourceManagerCreateInvocation {
-            resource_type,
+        api.invoke(ResourceManagerCreateFungibleInvocation {
             metadata,
             access_rules,
-            mint_params,
+            divisibility,
         })
-        .map(|(address, bucket)| (ResourceManager(address), bucket))
+            .map(|address| ResourceManager(address))
+    }
+
+    pub fn new_fungible_with_initial_supply<Y, E: Debug + ScryptoDecode>(
+        divisibility: u8,
+        amount: Decimal,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        api: &mut Y,
+    ) -> Result<(Self, Bucket), E>
+        where
+            Y: EngineApi<E> + Invokable<ResourceManagerCreateFungibleWithInitialSupplyInvocation, E>,
+    {
+        api.invoke(ResourceManagerCreateFungibleWithInitialSupplyInvocation {
+            resource_address: None,
+            metadata,
+            access_rules,
+            divisibility,
+            initial_supply: amount
+        })
+            .map(|(address, bucket)| (ResourceManager(address), bucket))
+    }
+
+    pub fn new_non_fungible<Y, E: Debug + ScryptoDecode>(
+        id_type: NonFungibleIdTypeId,
+        metadata: BTreeMap<String, String>,
+        access_rules: BTreeMap<ResourceMethodAuthKey, (AccessRule, AccessRule)>,
+        api: &mut Y,
+    ) -> Result<Self, E>
+    where
+        Y: EngineApi<E> + Invokable<ResourceManagerCreateNonFungibleInvocation, E>,
+    {
+        api.invoke(ResourceManagerCreateNonFungibleInvocation {
+            resource_address: None,
+            id_type,
+            metadata,
+            access_rules,
+        })
+        .map(|address| ResourceManager(address))
     }
 
     /// Mints non-fungible resources
@@ -37,18 +74,14 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: EngineApi<E> + InvokableModel<E>,
+        Y: EngineApi<E> + Invokable<ResourceManagerMintUuidNonFungibleInvocation, E>,
     {
         // TODO: Implement UUID generation in ResourceManager
-        let uuid = Runtime::generate_uuid(api)?;
-        let mut entries = BTreeMap::new();
-        entries.insert(
-            NonFungibleId::UUID(uuid),
-            (scrypto_encode(&data).unwrap(), scrypto_encode(&()).unwrap()),
-        );
+        let mut entries = Vec::new();
+        entries.push((scrypto_encode(&data).unwrap(), scrypto_encode(&()).unwrap()));
 
-        api.invoke(ResourceManagerMintInvocation {
-            mint_params: MintParams::NonFungible { entries },
+        api.invoke(ResourceManagerMintUuidNonFungibleInvocation {
+            entries,
             receiver: self.0,
         })
     }
@@ -60,11 +93,11 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<Bucket, E>
     where
-        Y: EngineApi<E> + Invokable<ResourceManagerMintInvocation, E>,
+        Y: EngineApi<E> + Invokable<ResourceManagerMintFungibleInvocation, E>,
     {
-        api.invoke(ResourceManagerMintInvocation {
-            mint_params: MintParams::Fungible { amount },
+        api.invoke(ResourceManagerMintFungibleInvocation {
             receiver: self.0,
+            amount,
         })
     }
 
@@ -74,7 +107,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<T, E>
     where
-        Y: EngineApi<E> + InvokableModel<E>,
+        Y: EngineApi<E> + Invokable<ResourceManagerGetNonFungibleInvocation, E>,
     {
         let output = api.invoke(ResourceManagerGetNonFungibleInvocation {
             id,
@@ -91,7 +124,7 @@ impl ResourceManager {
         api: &mut Y,
     ) -> Result<(), E>
     where
-        Y: EngineApi<E> + InvokableModel<E>,
+        Y: EngineApi<E> + Invokable<ResourceManagerBurnInvocation, E>,
     {
         api.invoke(ResourceManagerBurnInvocation {
             receiver: self.0,
@@ -104,5 +137,12 @@ impl ResourceManager {
         Y: EngineApi<E> + Invokable<ResourceManagerGetTotalSupplyInvocation, E>,
     {
         api.invoke(ResourceManagerGetTotalSupplyInvocation { receiver: self.0 })
+    }
+
+    pub fn new_empty_bucket<Y, E: Debug + ScryptoDecode>(&self, api: &mut Y) -> Result<Bucket, E>
+    where
+        Y: Invokable<ResourceManagerCreateBucketInvocation, E>,
+    {
+        api.invoke(ResourceManagerCreateBucketInvocation { receiver: self.0 })
     }
 }

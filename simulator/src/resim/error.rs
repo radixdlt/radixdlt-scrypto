@@ -5,7 +5,7 @@ use radix_engine::engine::*;
 use radix_engine::model::{ExportError, ExtractAbiError};
 use radix_engine::types::{AddressError, ParseNonFungibleAddressError};
 use radix_engine::wasm::PrepareError;
-use radix_engine_interface::core::ParseNetworkError;
+use radix_engine_interface::node::ParseNetworkError;
 use sbor::*;
 use transaction::errors::*;
 
@@ -66,4 +66,6 @@ pub enum Error {
     ParseNetworkError(ParseNetworkError),
 
     OwnerBadgeNotSpecified,
+
+    LedgerLookupError(LedgerLookupError),
 }

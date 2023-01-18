@@ -1,5 +1,0 @@
-SET_METHOD_ACCESS_RULE
-    ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")
-    0u32
-    Enum("ScryptoMethod", "test")
-    Enum("AllowAll");

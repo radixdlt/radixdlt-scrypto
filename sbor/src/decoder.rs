@@ -1,10 +1,9 @@
 use crate::rust::marker::PhantomData;
-use crate::rust::string::String;
-use crate::type_id::*;
+use crate::value_kind::*;
 use crate::*;
 
 /// Represents an error ocurred during decoding.
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, Categorize)]
 pub enum DecodeError {
     ExtraTrailingBytes(usize),
 
@@ -12,17 +11,15 @@ pub enum DecodeError {
 
     UnexpectedPayloadPrefix { expected: u8, actual: u8 },
 
-    UnexpectedTypeId { expected: u8, actual: u8 },
+    UnexpectedValueKind { expected: u8, actual: u8 },
 
-    UnexpectedCustomTypeId { actual: u8 },
+    UnexpectedCustomValueKind { actual: u8 },
 
     UnexpectedSize { expected: usize, actual: usize },
 
-    UnknownTypeId(u8),
+    UnknownValueKind(u8),
 
-    UnknownDiscriminator(String),
-
-    InvalidUnit(u8),
+    UnknownDiscriminator(u8),
 
     InvalidBool(u8),
 
@@ -35,7 +32,7 @@ pub enum DecodeError {
     InvalidCustomValue, // TODO: generify custom error codes
 }
 
-pub trait Decoder<X: CustomTypeId>: Sized {
+pub trait Decoder<X: CustomValueKind>: Sized {
     /// Consumes the Decoder and decodes the value as a full payload
     ///
     /// This includes a check of the payload prefix byte: It's the intention that each version of SBOR
@@ -50,51 +47,49 @@ pub trait Decoder<X: CustomTypeId>: Sized {
 
     /// Decodes the value as part of a larger payload
     ///
-    /// This method decodes the value's SBOR type id, and then its SBOR body.
+    /// This method decodes the SBOR value's kind, and then its body.
     fn decode<T: Decode<X, Self>>(&mut self) -> Result<T, DecodeError> {
-        let type_id = self.read_type_id()?;
-        self.decode_deeper_body_with_type_id(type_id)
+        let value_kind = self.read_value_kind()?;
+        self.decode_deeper_body_with_value_kind(value_kind)
     }
 
     /// Decodes the SBOR body of a child value as part of a larger payload.
     ///
-    /// In many cases, you may wish to directly call `T::decode_body_with_type_id` instead of this method.
+    /// In many cases, you may wish to directly call `T::decode_body_with_value_kind` instead of this method.
     /// See the below section for details.
     ///
     /// ## Direct calls and SBOR Depth
     ///
     /// In order to avoid SBOR depth differentials and disagreement about whether a payload
     /// is valid, typed codec implementations should ensure that the SBOR depth as measured
-    /// during the encoding/decoding process agrees with the SborValue codec.
+    /// during the encoding/decoding process agrees with the SBOR [`Value`] codec.
     ///
-    /// Each layer of the SborValue counts as one depth.
+    /// Each layer of the SBOR `Value` counts as one depth.
     ///
     /// If the decoder you're writing is embedding a child type (and is represented as such
-    /// in the SborValue type), then you should call `decoder.decode_body_with_type_id` to increment
+    /// in the SBOR `Value` type), then you should call `decoder.decode_body_with_value_kind` to increment
     /// the SBOR depth tracker.
     ///
-    /// You should call `T::decode_body_with_type_id` directly when the decoding of that type
-    /// into an SborValue doesn't increase the SBOR depth in the decoder, that is:
-    /// * When the wrapping type is invisible to the SborValue, ie:
+    /// You should call `T::decode_body_with_value_kind` directly when the decoding of that type
+    /// into an SBOR `Value` doesn't increase the SBOR depth in the decoder, that is:
+    /// * When the wrapping type is invisible to the SBOR `Value`, ie:
     ///   * Smart pointers
     ///   * Transparent wrappers
-    /// * Where the use of the inner type is invisible to SborValue, ie:
-    ///   * Where the use of `T::decode_body_with_type_id` is coincidental / code re-use
-    fn decode_deeper_body_with_type_id<T: Decode<X, Self>>(
+    /// * Where the use of the inner type is invisible to SBOR `Value`, ie:
+    ///   * Where the use of `T::decode_body_with_value_kind` is coincidental / code re-use
+    fn decode_deeper_body_with_value_kind<T: Decode<X, Self>>(
         &mut self,
-        type_id: SborTypeId<X>,
+        value_kind: ValueKind<X>,
     ) -> Result<T, DecodeError>;
 
     #[inline]
-    fn read_type_id(&mut self) -> Result<SborTypeId<X>, DecodeError> {
+    fn read_value_kind(&mut self) -> Result<ValueKind<X>, DecodeError> {
         let id = self.read_byte()?;
-        SborTypeId::from_u8(id).ok_or(DecodeError::UnknownTypeId(id))
+        ValueKind::from_u8(id).ok_or(DecodeError::UnknownValueKind(id))
     }
 
-    fn read_discriminator(&mut self) -> Result<String, DecodeError> {
-        let n = self.read_size()?;
-        let slice = self.read_slice(n)?;
-        String::from_utf8(slice.to_vec()).map_err(|_| DecodeError::InvalidUtf8)
+    fn read_discriminator(&mut self) -> Result<u8, DecodeError> {
+        self.read_byte()
     }
 
     fn read_size(&mut self) -> Result<usize, DecodeError> {
@@ -116,16 +111,16 @@ pub trait Decoder<X: CustomTypeId>: Sized {
     }
 
     #[inline]
-    fn check_preloaded_type_id(
+    fn check_preloaded_value_kind(
         &self,
-        type_id: SborTypeId<X>,
-        expected: SborTypeId<X>,
-    ) -> Result<SborTypeId<X>, DecodeError> {
-        if type_id == expected {
-            Ok(type_id)
+        value_kind: ValueKind<X>,
+        expected: ValueKind<X>,
+    ) -> Result<ValueKind<X>, DecodeError> {
+        if value_kind == expected {
+            Ok(value_kind)
         } else {
-            Err(DecodeError::UnexpectedTypeId {
-                actual: type_id.as_u8(),
+            Err(DecodeError::UnexpectedValueKind {
+                actual: value_kind.as_u8(),
                 expected: expected.as_u8(),
             })
         }
@@ -145,12 +140,12 @@ pub trait Decoder<X: CustomTypeId>: Sized {
     }
 
     #[inline]
-    fn read_and_check_type_id(
+    fn read_and_check_value_kind(
         &mut self,
-        expected: SborTypeId<X>,
-    ) -> Result<SborTypeId<X>, DecodeError> {
-        let type_id = self.read_type_id()?;
-        self.check_preloaded_type_id(type_id, expected)
+        expected: ValueKind<X>,
+    ) -> Result<ValueKind<X>, DecodeError> {
+        let value_kind = self.read_value_kind()?;
+        self.check_preloaded_value_kind(value_kind, expected)
     }
 
     #[inline]
@@ -174,14 +169,14 @@ pub trait Decoder<X: CustomTypeId>: Sized {
 }
 
 /// A `Decoder` abstracts the logic for decoding basic types.
-pub struct VecDecoder<'de, X: CustomTypeId, const MAX_DEPTH: u8> {
+pub struct VecDecoder<'de, X: CustomValueKind, const MAX_DEPTH: u8> {
     input: &'de [u8],
     offset: usize,
     stack_depth: u8,
     phantom: PhantomData<X>,
 }
 
-impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH> {
+impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH> {
     pub fn new(input: &'de [u8]) -> Self {
         Self {
             input,
@@ -224,13 +219,13 @@ impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> VecDecoder<'de, X, MAX_DEPTH> {
     }
 }
 
-impl<'de, X: CustomTypeId, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X, MAX_DEPTH> {
-    fn decode_deeper_body_with_type_id<T: Decode<X, Self>>(
+impl<'de, X: CustomValueKind, const MAX_DEPTH: u8> Decoder<X> for VecDecoder<'de, X, MAX_DEPTH> {
+    fn decode_deeper_body_with_value_kind<T: Decode<X, Self>>(
         &mut self,
-        type_id: SborTypeId<X>,
+        value_kind: ValueKind<X>,
     ) -> Result<T, DecodeError> {
         self.track_stack_depth_increase()?;
-        let decoded = T::decode_body_with_type_id(self, type_id)?;
+        let decoded = T::decode_body_with_value_kind(self, value_kind)?;
         self.track_stack_depth_decrease()?;
         Ok(decoded)
     }
@@ -334,8 +329,8 @@ mod tests {
         map.insert(3, 4);
         assert_eq!(map, dec.decode::<BTreeMap<u8, u8>>().unwrap());
 
-        assert_eq!(Some(1u32), dec.decode::<Option<u32>>().unwrap());
         assert_eq!(None, dec.decode::<Option<u32>>().unwrap());
+        assert_eq!(Some(1u32), dec.decode::<Option<u32>>().unwrap());
         assert_eq!(Ok(1u32), dec.decode::<Result<u32, String>>().unwrap());
         assert_eq!(
             Err("hello".to_owned()),
@@ -346,7 +341,7 @@ mod tests {
     #[test]
     pub fn test_decoding() {
         let bytes = vec![
-            0, 0, // unit
+            33, 0, // unit (encoded as empty tuple)
             1, 1, // bool
             2, 1, // i8
             3, 1, 0, // i16
@@ -363,11 +358,11 @@ mod tests {
             33, 2, 9, 1, 0, 0, 0, 9, 2, 0, 0, 0, // tuple
             32, 9, 3, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, // vec
             32, 7, 2, 1, 2, // set
-            32, 33, 2, 2, 7, 1, 7, 2, 2, 7, 3, 7, 4, // map
-            17, 4, 83, 111, 109, 101, 1, 9, 1, 0, 0, 0, // Some<T>
-            17, 4, 78, 111, 110, 101, 0, // None
-            17, 2, 79, 107, 1, 9, 1, 0, 0, 0, // Ok<T>
-            17, 3, 69, 114, 114, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
+            35, 7, 7, 2, 1, 2, 3, 4, // map
+            34, 0, 0, // None
+            34, 1, 1, 9, 1, 0, 0, 0, // Some<T>
+            34, 0, 1, 9, 1, 0, 0, 0, // Ok<T>
+            34, 1, 1, 12, 5, 104, 101, 108, 108, 111, // Err<T>
         ];
         let mut dec = BasicDecoder::new(&bytes);
         assert_decoding(&mut dec);
@@ -397,7 +392,7 @@ mod tests {
         assert_eq!(RefCell::new(5u8), x);
     }
 
-    #[derive(sbor::TypeId, sbor::Encode, sbor::Decode, PartialEq, Eq, Debug)]
+    #[derive(sbor::Categorize, sbor::Encode, sbor::Decode, PartialEq, Eq, Debug)]
     struct NFA {
         a: [u8; 32],
         b: Vec<u8>,

@@ -1,13 +1,15 @@
 use crate::constants::*;
-use crate::type_id::*;
+use crate::value_kind::*;
 use crate::*;
 
-impl<X: CustomTypeId, Enc: Encoder<X>, T: Encode<X, Enc>, E: Encode<X, Enc>> Encode<X, Enc>
+categorize_generic!(Result<T, E>, <T, E>, ValueKind::Enum);
+
+impl<X: CustomValueKind, Enc: Encoder<X>, T: Encode<X, Enc>, E: Encode<X, Enc>> Encode<X, Enc>
     for Result<T, E>
 {
     #[inline]
-    fn encode_type_id(&self, encoder: &mut Enc) -> Result<(), EncodeError> {
-        encoder.write_type_id(Self::type_id())
+    fn encode_value_kind(&self, encoder: &mut Enc) -> Result<(), EncodeError> {
+        encoder.write_value_kind(Self::value_kind())
     }
 
     #[inline]
@@ -28,17 +30,17 @@ impl<X: CustomTypeId, Enc: Encoder<X>, T: Encode<X, Enc>, E: Encode<X, Enc>> Enc
     }
 }
 
-impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode<X, D>
+impl<X: CustomValueKind, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode<X, D>
     for Result<T, E>
 {
     #[inline]
-    fn decode_body_with_type_id(
+    fn decode_body_with_value_kind(
         decoder: &mut D,
-        type_id: SborTypeId<X>,
+        value_kind: ValueKind<X>,
     ) -> Result<Self, DecodeError> {
-        decoder.check_preloaded_type_id(type_id, Self::type_id())?;
+        decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
         let discriminator = decoder.read_discriminator()?;
-        match discriminator.as_ref() {
+        match discriminator {
             RESULT_VARIANT_OK => {
                 decoder.read_and_check_size(1)?;
                 Ok(Ok(decoder.decode()?))
@@ -49,5 +51,27 @@ impl<X: CustomTypeId, D: Decoder<X>, T: Decode<X, D>, E: Decode<X, D>> Decode<X,
             }
             _ => Err(DecodeError::UnknownDiscriminator(discriminator)),
         }
+    }
+}
+
+impl<C: CustomTypeKind<GlobalTypeId>, T: Describe<C>, E: Describe<C>> Describe<C> for Result<T, E> {
+    const TYPE_ID: GlobalTypeId = GlobalTypeId::novel("Result", &[T::TYPE_ID, E::TYPE_ID]);
+
+    fn type_data() -> Option<TypeData<C, GlobalTypeId>> {
+        #[allow(unused_imports)]
+        use crate::rust::borrow::ToOwned;
+        use crate::rust::collections::*;
+        Some(TypeData::named_enum(
+            "Result",
+            btreemap![
+                RESULT_VARIANT_OK => TypeData::named_tuple("Ok", crate::rust::vec![T::TYPE_ID]),
+                RESULT_VARIANT_ERR => TypeData::named_tuple("Err", crate::rust::vec![E::TYPE_ID]),
+            ],
+        ))
+    }
+
+    fn add_all_dependencies(aggregator: &mut TypeAggregator<C>) {
+        aggregator.add_child_type_and_descendents::<T>();
+        aggregator.add_child_type_and_descendents::<E>();
     }
 }

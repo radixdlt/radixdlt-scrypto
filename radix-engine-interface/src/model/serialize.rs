@@ -1,18 +1,18 @@
 use crate::api::types::*;
-use crate::scrypto;
-use radix_engine_interface::data::ValueReplacingError;
+use crate::data::types::{ManifestBucket, ManifestProof};
+use crate::*;
+use radix_engine_interface::data::ReplaceManifestValuesError;
 use sbor::rust::collections::{HashMap, HashSet};
 use sbor::rust::fmt::Debug;
 
-#[derive(Debug)]
-#[scrypto(TypeId, Encode, Decode)]
-pub enum SerializedInvocation {
+// TODO: Remove enum
+#[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum CallTableInvocation {
     Native(NativeInvocation),
     Scrypto(ScryptoInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum NativeInvocation {
     AccessRulesChain(AccessRulesChainInvocation),
     Metadata(MetadataInvocation),
@@ -34,15 +34,17 @@ pub enum NativeInvocation {
 impl NativeInvocation {
     pub fn replace_ids(
         &mut self,
-        _proof_replacements: &mut HashMap<ProofId, ProofId>,
-        bucket_replacements: &mut HashMap<BucketId, BucketId>,
-    ) -> Result<(), ValueReplacingError> {
+        _proof_replacements: &mut HashMap<ManifestProof, ProofId>,
+        bucket_replacements: &mut HashMap<ManifestBucket, BucketId>,
+    ) -> Result<(), ReplaceManifestValuesError> {
         match self {
             NativeInvocation::EpochManager(EpochManagerInvocation::Create(invocation)) => {
                 for (_, (bucket, _)) in &mut invocation.validator_set {
                     let next_id = bucket_replacements
-                        .remove(&bucket.0)
-                        .ok_or(ValueReplacingError::BucketIdNotFound(bucket.0))?;
+                        .remove(&ManifestBucket(bucket.0))
+                        .ok_or(ReplaceManifestValuesError::BucketNotFound(ManifestBucket(
+                            bucket.0,
+                        )))?;
                     bucket.0 = next_id;
                 }
             }
@@ -52,21 +54,19 @@ impl NativeInvocation {
     }
 }
 
-impl Into<SerializedInvocation> for NativeInvocation {
-    fn into(self) -> SerializedInvocation {
-        SerializedInvocation::Native(self)
+impl Into<CallTableInvocation> for NativeInvocation {
+    fn into(self) -> CallTableInvocation {
+        CallTableInvocation::Native(self)
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum TransactionRuntimeInvocation {
     Get(TransactionRuntimeGetHashInvocation),
     GenerateUuid(TransactionRuntimeGenerateUuidInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AccessRulesChainInvocation {
     AddAccessCheck(AccessRulesAddAccessCheckInvocation),
     SetMethodAccessRule(AccessRulesSetMethodAccessRuleInvocation),
@@ -76,15 +76,13 @@ pub enum AccessRulesChainInvocation {
     GetLength(AccessRulesGetLengthInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum MetadataInvocation {
     Set(MetadataSetInvocation),
     Get(MetadataGetInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ClockInvocation {
     Create(ClockCreateInvocation),
     GetCurrentTime(ClockGetCurrentTimeInvocation),
@@ -92,14 +90,12 @@ pub enum ClockInvocation {
     SetCurrentTime(ClockSetCurrentTimeInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum LoggerInvocation {
     Log(LoggerLogInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ComponentInvocation {
     Globalize(ComponentGlobalizeInvocation),
     GlobalizeWithOwner(ComponentGlobalizeWithOwnerInvocation),
@@ -107,16 +103,14 @@ pub enum ComponentInvocation {
     ClaimRoyalty(ComponentClaimRoyaltyInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum PackageInvocation {
     Publish(PackagePublishInvocation),
     SetRoyaltyConfig(PackageSetRoyaltyConfigInvocation),
     ClaimRoyalty(PackageClaimRoyaltyInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum EpochManagerInvocation {
     Create(EpochManagerCreateInvocation),
     GetCurrentEpoch(EpochManagerGetCurrentEpochInvocation),
@@ -126,8 +120,7 @@ pub enum EpochManagerInvocation {
     UpdateValidator(EpochManagerUpdateValidatorInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ValidatorInvocation {
     Register(ValidatorRegisterInvocation),
     Unregister(ValidatorUnregisterInvocation),
@@ -136,8 +129,7 @@ pub enum ValidatorInvocation {
     ClaimXrd(ValidatorClaimXrdInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum AuthZoneStackInvocation {
     Pop(AuthZonePopInvocation),
     Push(AuthZonePushInvocation),
@@ -149,14 +141,21 @@ pub enum AuthZoneStackInvocation {
     AssertAuthRule(AuthZoneAssertAccessRuleInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ResourceInvocation {
-    Create(ResourceManagerCreateInvocation),
+    CreateNonFungible(ResourceManagerCreateNonFungibleInvocation),
+    CreateFungible(ResourceManagerCreateFungibleInvocation),
+    CreateNonFungibleWithInitialSupply(ResourceManagerCreateNonFungibleWithInitialSupplyInvocation),
+    CreateUuidNonFungibleWithInitialSupply(
+        ResourceManagerCreateUuidNonFungibleWithInitialSupplyInvocation,
+    ),
+    CreateFungibleWithInitialSupply(ResourceManagerCreateFungibleWithInitialSupplyInvocation),
     BurnBucket(ResourceManagerBucketBurnInvocation),
     GetResourceType(ResourceManagerGetResourceTypeInvocation),
     Burn(ResourceManagerBurnInvocation),
-    Mint(ResourceManagerMintInvocation),
+    MintNonFungible(ResourceManagerMintNonFungibleInvocation),
+    MintUuidNonFungible(ResourceManagerMintUuidNonFungibleInvocation),
+    MintFungible(ResourceManagerMintFungibleInvocation),
     CreateBucket(ResourceManagerCreateBucketInvocation),
     CreateVault(ResourceManagerCreateVaultInvocation),
     UpdateVaultAuth(ResourceManagerUpdateVaultAuthInvocation),
@@ -167,8 +166,7 @@ pub enum ResourceInvocation {
     NonFungibleExists(ResourceManagerNonFungibleExistsInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum BucketInvocation {
     Take(BucketTakeInvocation),
     TakeNonFungibles(BucketTakeNonFungiblesInvocation),
@@ -179,8 +177,7 @@ pub enum BucketInvocation {
     CreateProof(BucketCreateProofInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum VaultInvocation {
     Take(VaultTakeInvocation),
     LockFee(VaultLockFeeInvocation),
@@ -196,8 +193,7 @@ pub enum VaultInvocation {
     RecallNonFungibles(VaultRecallNonFungiblesInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum ProofInvocation {
     Clone(ProofCloneInvocation),
     GetAmount(ProofGetAmountInvocation),
@@ -205,8 +201,7 @@ pub enum ProofInvocation {
     GetResourceAddress(ProofGetResourceAddressInvocation),
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-#[scrypto(TypeId, Encode, Decode)]
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum WorktopInvocation {
     TakeAll(WorktopTakeAllInvocation),
     TakeAmount(WorktopTakeAmountInvocation),
@@ -313,7 +308,11 @@ impl NativeInvocation {
                 }
             },
             NativeInvocation::ResourceManager(resman_method) => match resman_method {
-                ResourceInvocation::Create(..) => {}
+                ResourceInvocation::CreateNonFungible(..) => {}
+                ResourceInvocation::CreateFungible(..) => {}
+                ResourceInvocation::CreateNonFungibleWithInitialSupply(..) => {}
+                ResourceInvocation::CreateUuidNonFungibleWithInitialSupply(..) => {}
+                ResourceInvocation::CreateFungibleWithInitialSupply(..) => {}
                 ResourceInvocation::BurnBucket(..) => {}
                 ResourceInvocation::Burn(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
@@ -340,7 +339,17 @@ impl NativeInvocation {
                         invocation.receiver,
                     )));
                 }
-                ResourceInvocation::Mint(invocation) => {
+                ResourceInvocation::MintNonFungible(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::MintUuidNonFungible(invocation) => {
+                    refs.insert(RENodeId::Global(GlobalAddress::Resource(
+                        invocation.receiver,
+                    )));
+                }
+                ResourceInvocation::MintFungible(invocation) => {
                     refs.insert(RENodeId::Global(GlobalAddress::Resource(
                         invocation.receiver,
                     )));
@@ -378,48 +387,74 @@ impl NativeInvocation {
                     }
                 }
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 EpochManagerInvocation::NextRound(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 EpochManagerInvocation::SetEpoch(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 EpochManagerInvocation::CreateValidator(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 EpochManagerInvocation::UpdateValidator(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
             },
             NativeInvocation::Validator(method) => match method {
                 ValidatorInvocation::Register(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ValidatorInvocation::Unregister(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ValidatorInvocation::Stake(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ValidatorInvocation::Unstake(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ValidatorInvocation::ClaimXrd(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {
                 ClockInvocation::Create(..) => {}
                 ClockInvocation::SetCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ClockInvocation::GetCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ClockInvocation::CompareCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
             },
             NativeInvocation::Logger(method) => match method {

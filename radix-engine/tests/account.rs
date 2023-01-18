@@ -1,8 +1,5 @@
 use radix_engine::model::ResourceChange;
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::IndexedScryptoValue;
-use radix_engine_interface::data::*;
 use radix_engine_interface::model::FromPublicKey;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,12 +12,12 @@ fn can_withdraw_from_my_account_internal(use_virtual: bool) {
     let (_, _, other_account) = test_runner.new_account(use_virtual);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 10.into(), RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .call_method(other_account, "balance", args!(RADIX_TOKEN))
         .build();
@@ -60,12 +57,12 @@ fn can_withdraw_non_fungible_from_my_account_internal(use_virtual: bool) {
     let resource_address = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 10.into(), resource_address)
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
     let receipt = test_runner.execute_manifest(
@@ -92,13 +89,13 @@ fn cannot_withdraw_from_other_account_internal(is_virtual: bool) {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account(is_virtual);
     let (_, _, other_account) = test_runner.new_account(is_virtual);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10u32.into())
         .withdraw_from_account(other_account, RADIX_TOKEN)
         .call_method(
             account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 
@@ -126,14 +123,14 @@ fn account_to_bucket_to_account_internal(use_virtual: bool) {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account(use_virtual);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee_and_withdraw(account, 10u32.into(), RADIX_TOKEN)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(BasicInstruction::CallMethod {
                     component_address: account,
                     method_name: "deposit".to_string(),
-                    args: args!(Bucket(bucket_id)),
+                    args: args!(bucket_id),
                 })
                 .0
         })
@@ -165,7 +162,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account1) = test_runner.new_account(use_virtual);
     let (_, _, account2) = test_runner.new_account(use_virtual);
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account1, 10.into())
         .call_method(account2, "balance", args!(RADIX_TOKEN))
         .build();
@@ -181,7 +178,7 @@ fn test_account_balance_internal(use_virtual: bool) {
     assert_eq!(1, receipt.expect_commit().resource_changes.len()); // Just the fee payment
     assert_eq!(
         outputs[1].as_vec(),
-        IndexedScryptoValue::from_typed(&Decimal::from(1000)).raw
+        IndexedScryptoValue::from_typed(&Decimal::from(1000)).into_vec()
     );
 }
 

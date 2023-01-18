@@ -1,6 +1,5 @@
 use radix_engine::types::*;
-use radix_engine_interface::core::NetworkDefinition;
-use radix_engine_interface::data::*;
+use radix_engine_interface::node::NetworkDefinition;
 use radix_engine_interface::rule;
 use scrypto_unit::*;
 use transaction::builder::ManifestBuilder;
@@ -15,7 +14,7 @@ fn test_transaction_preview_cost_estimate() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let network = NetworkDefinition::simulator();
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(FAUCET_COMPONENT, 10.into())
         .clear_auth_zone()
         .build();
@@ -68,13 +67,13 @@ fn test_assume_all_signature_proofs_flag_method_authorization() {
     };
 
     // Check method authorization (withdrawal) without a proof in the auth zone
-    let manifest = ManifestBuilder::new(&NetworkDefinition::simulator())
+    let manifest = ManifestBuilder::new()
         .lock_fee(account, 10.into())
         .withdraw_from_account(account, RADIX_TOKEN)
         .call_method(
             other_account,
             "deposit_batch",
-            args!(Expression::entire_worktop()),
+            args!(ManifestExpression::EntireWorktop),
         )
         .build();
 

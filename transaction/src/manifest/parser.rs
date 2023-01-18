@@ -1,4 +1,5 @@
 use crate::manifest::ast::{Instruction, Type, Value};
+use crate::manifest::enums::KNOWN_ENUM_DISCRIMINATORS;
 use crate::manifest::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -8,7 +9,9 @@ pub enum ParserError {
     InvalidNumberOfValues { actual: usize, expected: usize },
     InvalidNumberOfTypes { actual: usize, expected: usize },
     InvalidHex(String),
-    MissingEnumName,
+    MissingEnumDiscriminator,
+    InvalidEnumDiscriminator,
+    UnknownEnumDiscriminator(String),
 }
 
 pub struct Parser {
@@ -210,6 +213,10 @@ impl Parser {
                 resource_address: self.parse_value()?,
                 entries: self.parse_value()?,
             },
+            TokenKind::MintUuidNonFungible => Instruction::MintUuidNonFungible {
+                resource_address: self.parse_value()?,
+                entries: self.parse_value()?,
+            },
             TokenKind::CreateFungibleResource => Instruction::CreateFungibleResource {
                 divisibility: self.parse_value()?,
                 metadata: self.parse_value()?,
@@ -238,27 +245,6 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
-            TokenKind::CreateValidator => Instruction::CreateValidator {
-                key: self.parse_value()?,
-            },
-            TokenKind::RegisterValidator => Instruction::RegisterValidator {
-                validator: self.parse_value()?,
-            },
-            TokenKind::UnregisterValidator => Instruction::UnregisterValidator {
-                validator: self.parse_value()?,
-            },
-            TokenKind::StakeValidator => Instruction::StakeValidator {
-                validator: self.parse_value()?,
-                stake: self.parse_value()?,
-            },
-            TokenKind::UnstakeValidator => Instruction::UnstakeValidator {
-                validator: self.parse_value()?,
-                lp_tokens: self.parse_value()?,
-            },
-            TokenKind::ClaimXrd => Instruction::ClaimXrd {
-                validator: self.parse_value()?,
-                claim: self.parse_value()?,
-            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }
@@ -273,11 +259,6 @@ impl Parser {
             // ==============
             // Basic Types
             // ==============
-            TokenKind::OpenParenthesis => {
-                advance_match!(self, TokenKind::OpenParenthesis);
-                advance_match!(self, TokenKind::CloseParenthesis);
-                Ok(Value::Unit)
-            }
             TokenKind::BoolLiteral(value) => advance_ok!(self, Value::Bool(value)),
             TokenKind::U8Literal(value) => advance_ok!(self, Value::U8(value)),
             TokenKind::U16Literal(value) => advance_ok!(self, Value::U16(value)),
@@ -293,6 +274,7 @@ impl Parser {
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Array => self.parse_array(),
             TokenKind::Tuple => self.parse_tuple(),
+            TokenKind::Map => self.parse_map(),
 
             // ==============
             // Aliases
@@ -301,7 +283,7 @@ impl Parser {
             TokenKind::None |
             TokenKind::Ok |
             TokenKind::Err |
-            TokenKind::Bytes => self.parse_alias(),
+            TokenKind::Bytes | TokenKind::NonFungibleAddress => self.parse_alias(),
 
             // ==============
             // Custom Types
@@ -309,19 +291,15 @@ impl Parser {
 
             /* Global address */
             TokenKind::PackageAddress |
-            TokenKind::SystemAddress |
             TokenKind::ComponentAddress |
             TokenKind::ResourceAddress |
-            /* RE Nodes */
-            TokenKind::Component |
-            TokenKind::KeyValueStore |
+            /* RE types */
+            TokenKind::Own |
+            TokenKind::Blob |
+            /* TX types */
             TokenKind::Bucket |
             TokenKind::Proof |
-            TokenKind::Vault |
-            /* Other interpreted */
             TokenKind::Expression |
-            TokenKind::Blob |
-            TokenKind::NonFungibleAddress |
             /* Uninterpreted */
             TokenKind::Hash |
             TokenKind::EcdsaSecp256k1PublicKey |
@@ -337,16 +315,19 @@ impl Parser {
 
     pub fn parse_enum(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Enum);
-        let mut name_and_fields =
+        let mut discriminator_and_fields =
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        let name = match name_and_fields.get(0) {
-            Some(Value::String(name)) => name.clone(),
-            _ => {
-                return Err(ParserError::MissingEnumName);
-            }
-        };
-        name_and_fields.remove(0);
-        Ok(Value::Enum(name, name_and_fields))
+        let discriminator = match discriminator_and_fields.get(0) {
+            Some(Value::U8(discriminator)) => Ok(*discriminator),
+            Some(Value::String(discriminator)) => KNOWN_ENUM_DISCRIMINATORS
+                .get(discriminator.as_str())
+                .cloned()
+                .ok_or(ParserError::UnknownEnumDiscriminator(discriminator.clone())),
+            Some(_) => Err(ParserError::InvalidEnumDiscriminator),
+            None => Err(ParserError::MissingEnumDiscriminator),
+        }?;
+        discriminator_and_fields.remove(0);
+        Ok(Value::Enum(discriminator, discriminator_and_fields))
     }
 
     pub fn parse_array(&mut self) -> Result<Value, ParserError> {
@@ -366,6 +347,16 @@ impl Parser {
         )?))
     }
 
+    pub fn parse_map(&mut self) -> Result<Value, ParserError> {
+        advance_match!(self, TokenKind::Map);
+        let generics = self.parse_generics(2)?;
+        Ok(Value::Map(
+            generics[0],
+            generics[1],
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
+        ))
+    }
+
     pub fn parse_alias(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
@@ -374,6 +365,13 @@ impl Parser {
             TokenKind::Ok => Ok(Value::Ok(Box::new(self.parse_values_one()?))),
             TokenKind::Err => Ok(Value::Err(Box::new(self.parse_values_one()?))),
             TokenKind::Bytes => Ok(Value::Bytes(Box::new(self.parse_values_one()?))),
+            TokenKind::NonFungibleAddress => {
+                let tuple = self.parse_values_two()?;
+                Ok(Value::NonFungibleAddress(
+                    Box::new(tuple.0),
+                    Box::new(tuple.1),
+                ))
+            }
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -381,30 +379,21 @@ impl Parser {
     pub fn parse_scrypto_types(&mut self) -> Result<Value, ParserError> {
         let token = self.advance()?;
         match token.kind {
-            // Global address types
+            // RE interpreted types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
-            TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
                 Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
             }
             TokenKind::ResourceAddress => {
                 Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
             }
+            TokenKind::Own => Ok(Value::Own(self.parse_values_one()?.into())),
 
-            // RE nodes
-            TokenKind::Component => Ok(Value::Component(self.parse_values_one()?.into())),
-            TokenKind::KeyValueStore => Ok(Value::KeyValueStore(self.parse_values_one()?.into())),
+            // TX interpreted types
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
-            TokenKind::Vault => Ok(Value::Vault(self.parse_values_one()?.into())),
-
-            // Interpreted
             TokenKind::Expression => Ok(Value::Expression(self.parse_values_one()?.into())),
             TokenKind::Blob => Ok(Value::Blob(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleAddress => {
-                let values = self.parse_values_two()?;
-                Ok(Value::NonFungibleAddress(values.0.into(), values.1.into()))
-            }
 
             // Uninterpreted
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
@@ -496,7 +485,6 @@ impl Parser {
     fn parse_type(&mut self) -> Result<Type, ParserError> {
         let token = self.advance()?;
         match &token.kind {
-            TokenKind::Unit => Ok(Type::Unit),
             TokenKind::Bool => Ok(Type::Bool),
             TokenKind::I8 => Ok(Type::I8),
             TokenKind::I16 => Ok(Type::I16),
@@ -513,23 +501,21 @@ impl Parser {
             TokenKind::Array => Ok(Type::Array),
             TokenKind::Tuple => Ok(Type::Tuple),
 
-            // Globals
+            // Alias
+            TokenKind::Bytes => Ok(Type::Bytes),
+            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
+
+            // RE interpreted types
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::SystemAddress => Ok(Type::SystemAddress),
+            TokenKind::Own => Ok(Type::Own),
 
-            // RE Nodes
-            TokenKind::Component => Ok(Type::Component),
-            TokenKind::KeyValueStore => Ok(Type::KeyValueStore),
+            // TX interpreted types
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
-            TokenKind::Vault => Ok(Type::Vault),
-
-            // Other interpreted types
             TokenKind::Expression => Ok(Type::Expression),
             TokenKind::Blob => Ok(Type::Blob),
-            TokenKind::NonFungibleAddress => Ok(Type::NonFungibleAddress),
 
             // Uninterpreted
             TokenKind::Hash => Ok(Type::Hash),
@@ -550,7 +536,6 @@ impl Parser {
 mod tests {
     use super::*;
     use crate::manifest::lexer::{tokenize, Span};
-    use radix_engine_interface::crypto::EcdsaSecp256k1PublicKey;
 
     #[macro_export]
     macro_rules! parse_instruction_ok {
@@ -587,7 +572,6 @@ mod tests {
 
     #[test]
     fn test_literals() {
-        parse_value_ok!(r#"()"#, Value::Unit);
         parse_value_ok!(r#"true"#, Value::Bool(true));
         parse_value_ok!(r#"false"#, Value::Bool(false));
         parse_value_ok!(r#"1i8"#, Value::I8(1));
@@ -606,16 +590,10 @@ mod tests {
     #[test]
     fn test_enum() {
         parse_value_ok!(
-            r#"Enum("Variant", "Hello", 123u8)"#,
-            Value::Enum(
-                "Variant".to_string(),
-                vec![Value::String("Hello".into()), Value::U8(123)],
-            )
+            r#"Enum(0u8, "Hello", 123u8)"#,
+            Value::Enum(0, vec![Value::String("Hello".into()), Value::U8(123)],)
         );
-        parse_value_ok!(
-            r#"Enum("Variant")"#,
-            Value::Enum("Variant".to_string(), Vec::new())
-        );
+        parse_value_ok!(r#"Enum(0u8)"#, Value::Enum(0, Vec::new()));
     }
 
     #[test]
@@ -636,6 +614,18 @@ mod tests {
         parse_value_ok!(
             r#"Tuple(1u8, 2u8)"#,
             Value::Tuple(vec![Value::U8(1), Value::U8(2)])
+        );
+    }
+
+    #[test]
+    fn test_map() {
+        parse_value_ok!(
+            r#"Map<String, U8>("Hello", 123u8)"#,
+            Value::Map(
+                Type::String,
+                Type::U8,
+                vec![Value::String("Hello".into()), Value::U8(123)]
+            )
         );
     }
 
@@ -661,504 +651,10 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_transaction() {
-        parse_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromWorktopByAmount {
-                amount: Value::Decimal(Value::String("1.0".into()).into()),
-                resource_address: Value::ResourceAddress(
-                    Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
-                        .into()
-                ),
-                new_bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
-            }
-        );
-        parse_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
-            Instruction::TakeFromWorktop {
-                resource_address: Value::ResourceAddress(
-                    Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
-                        .into()
-                ),
-                new_bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
-            }
-        );
-        parse_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
-            Instruction::AssertWorktopContainsByAmount {
-                amount: Value::Decimal(Value::String("1.0".into()).into()),
-                resource_address: Value::ResourceAddress(
-                    Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
-                        .into()
-                ),
-            }
-        );
-        parse_instruction_ok!(
-            r#"CREATE_PROOF_FROM_BUCKET  Bucket("xrd_bucket")  Proof("admin_auth");"#,
-            Instruction::CreateProofFromBucket {
-                bucket: Value::Bucket(Value::String("xrd_bucket".into()).into()),
-                new_proof: Value::Proof(Value::String("admin_auth".into()).into()),
-            }
-        );
-        parse_instruction_ok!(
-            r#"CLONE_PROOF  Proof("admin_auth")  Proof("admin_auth2");"#,
-            Instruction::CloneProof {
-                proof: Value::Proof(Value::String("admin_auth".into()).into()),
-                new_proof: Value::Proof(Value::String("admin_auth2".into()).into()),
-            }
-        );
-        parse_instruction_ok!(
-            r#"DROP_PROOF Proof("admin_auth");"#,
-            Instruction::DropProof {
-                proof: Value::Proof(Value::String("admin_auth".into()).into()),
-            }
-        );
-        parse_instruction_ok!(r#"DROP_ALL_PROOFS;"#, Instruction::DropAllProofs);
-        parse_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32;"#,
-            Instruction::CallFunction {
-                package_address: Value::PackageAddress(
-                    Value::String("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into())
-                        .into()
-                ),
-                blueprint_name: Value::String("Airdrop".into()),
-                function_name: Value::String("new".into()),
-                args: vec![Value::U32(500),]
-            }
-        );
-        parse_instruction_ok!(
-            r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
-            Instruction::CallMethod {
-                component_address: Value::ComponentAddress(
-                    Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
-                        .into()
-                ),
-                method_name: Value::String("refill".into()),
-                args: vec![
-                    Value::Bucket(Value::String("xrd_bucket".into()).into()),
-                    Value::Proof(Value::String("admin_auth".into()).into())
-                ]
-            }
-        );
-        parse_instruction_ok!(
-            r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleId("00")  Proof("admin_auth");"#,
-            Instruction::CallMethod {
-                component_address: Value::ComponentAddress(
-                    Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
-                        .into()
-                ),
-                method_name: Value::String("withdraw_non_fungible".into()),
-                args: vec![
-                    Value::NonFungibleId(Value::String("00".into()).into()),
-                    Value::Proof(Value::String("admin_auth".into()).into())
-                ]
-            }
-        );
-
-        parse_instruction_ok!(
-            r#"PUBLISH_PACKAGE Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") Array<Tuple>() Array<Tuple>() Array<Tuple>(Tuple(Enum("SetMetadata"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("GetMetadata"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("SetRoyaltyConfig"), Tuple(Enum("DenyAll"), Enum("DenyAll"))), Tuple(Enum("ClaimRoyalty"), Tuple(Enum("DenyAll"), Enum("DenyAll"))));"#,
-            Instruction::PublishPackage {
-                code: Value::Blob(Box::new(Value::String(
-                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618".into()
-                ))),
-                abi: Value::Blob(Box::new(Value::String(
-                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d".into()
-                ))),
-                royalty_config: Value::Array(Type::Tuple, Vec::new()),
-                metadata: Value::Array(Type::Tuple, Vec::new()),
-                access_rules: Value::Array(
-                    Type::Tuple,
-                    vec![
-                        Value::Tuple(vec![
-                            Value::Enum("SetMetadata".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                        Value::Tuple(vec![
-                            Value::Enum("GetMetadata".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                        Value::Tuple(vec![
-                            Value::Enum("SetRoyaltyConfig".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                        Value::Tuple(vec![
-                            Value::Enum("ClaimRoyalty".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                    ]
-                )
-            }
-        );
-        parse_instruction_ok!(
-            r#"PUBLISH_PACKAGE_WITH_OWNER Blob("36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618") Blob("15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d") NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32);"#,
-            Instruction::PublishPackageWithOwner {
-                code: Value::Blob(Box::new(Value::String(
-                    "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618".into()
-                ))),
-                abi: Value::Blob(Box::new(Value::String(
-                    "15e8699a6d63a96f66f6feeb609549be2688b96b02119f260ae6dfd012d16a5d".into()
-                ))),
-                owner_badge: Value::NonFungibleAddress(
-                    Box::new(Value::String(
-                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
-                    )),
-                    Box::new(Value::U32(1))
-                )
-            }
-        );
-
-        parse_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) Some(Decimal("500"));"#,
-            Instruction::CreateFungibleResource {
-                divisibility: Value::U8(18),
-                metadata: Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::String("name".into()),
-                        Value::String("Token".into()),
-                    ])]
-                ),
-                access_rules: Value::Array(
-                    Type::Tuple,
-                    vec![
-                        Value::Tuple(vec![
-                            Value::Enum("Withdraw".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                        Value::Tuple(vec![
-                            Value::Enum("Deposit".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                    ]
-                ),
-                initial_supply: Value::Some(Box::new(Value::Decimal(Box::new(Value::String(
-                    "500".into()
-                )))))
-            }
-        );
-        parse_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE 18u8 Array<Tuple>( Tuple("name", "Token")) Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
-            Instruction::CreateFungibleResource {
-                divisibility: Value::U8(18),
-                metadata: Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::String("name".into()),
-                        Value::String("Token".into()),
-                    ])]
-                ),
-                access_rules: Value::Array(
-                    Type::Tuple,
-                    vec![
-                        Value::Tuple(vec![
-                            Value::Enum("Withdraw".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                        Value::Tuple(vec![
-                            Value::Enum("Deposit".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                    ]
-                ),
-                initial_supply: Value::None
-            }
-        );
-        parse_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) Some(Decimal("500"));"#,
-            Instruction::CreateFungibleResourceWithOwner {
-                divisibility: Value::U8(18),
-                metadata: Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::String("name".into()),
-                        Value::String("Token".into()),
-                    ])]
-                ),
-                owner_badge: Value::NonFungibleAddress(
-                    Box::new(Value::String(
-                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
-                    )),
-                    Box::new(Value::U32(1))
-                ),
-                initial_supply: Value::Some(Box::new(Value::Decimal(Box::new(Value::String(
-                    "500".into()
-                )))))
-            }
-        );
-        parse_instruction_ok!(
-            r#"CREATE_FUNGIBLE_RESOURCE_WITH_OWNER 18u8 Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
-            Instruction::CreateFungibleResourceWithOwner {
-                divisibility: Value::U8(18),
-                metadata: Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::String("name".into()),
-                        Value::String("Token".into()),
-                    ])]
-                ),
-                owner_badge: Value::NonFungibleAddress(
-                    Box::new(Value::String(
-                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
-                    )),
-                    Box::new(Value::U32(1))
-                ),
-                initial_supply: Value::None
-            }
-        );
-
-        parse_instruction_ok!(
-            r#"
-            CREATE_NON_FUNGIBLE_RESOURCE 
-                Enum("U32") 
-                Array<Tuple>(Tuple("name", "Token")) 
-                Array<Tuple>(Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) 
-                Some(
-                    Array<Tuple>(
-                        Tuple(
-                            NonFungibleId(1u32), 
-                            Tuple(
-                                Tuple("Hello World", Decimal("12")),
-                                Tuple(12u8, 19u128)
-                            )
-                        )
-                    )
-                );
-            "#,
-            Instruction::CreateNonFungibleResource {
-                id_type: Value::Enum("U32".into(), Vec::new()),
-                metadata: Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::String("name".into()),
-                        Value::String("Token".into()),
-                    ])]
-                ),
-                access_rules: Value::Array(
-                    Type::Tuple,
-                    vec![
-                        Value::Tuple(vec![
-                            Value::Enum("Withdraw".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                        Value::Tuple(vec![
-                            Value::Enum("Deposit".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                    ]
-                ),
-                initial_supply: Value::Some(Box::new(Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::NonFungibleId(Box::new(Value::U32(1))),
-                        Value::Tuple(vec![
-                            Value::Tuple(vec![
-                                Value::String("Hello World".into()),
-                                Value::Decimal(Box::new(Value::String("12".into())))
-                            ]),
-                            Value::Tuple(vec![Value::U8(12), Value::U128(19),]),
-                        ])
-                    ])]
-                )))
-            }
-        );
-        parse_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE Enum("U32") Array<Tuple>( Tuple("name", "Token")) Array<Tuple>( Tuple(Enum("Withdraw"), Tuple(Enum("AllowAll"), Enum("DenyAll"))), Tuple(Enum("Deposit"), Tuple(Enum("AllowAll"), Enum("DenyAll")))) None;"#,
-            Instruction::CreateNonFungibleResource {
-                id_type: Value::Enum("U32".into(), Vec::new()),
-                metadata: Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::String("name".into()),
-                        Value::String("Token".into()),
-                    ])]
-                ),
-                access_rules: Value::Array(
-                    Type::Tuple,
-                    vec![
-                        Value::Tuple(vec![
-                            Value::Enum("Withdraw".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                        Value::Tuple(vec![
-                            Value::Enum("Deposit".into(), Vec::new()),
-                            Value::Tuple(vec![
-                                Value::Enum("AllowAll".into(), Vec::new()),
-                                Value::Enum("DenyAll".into(), Vec::new()),
-                            ])
-                        ]),
-                    ]
-                ),
-                initial_supply: Value::None
-            }
-        );
-        parse_instruction_ok!(
-            r#"
-            CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER 
-                Enum("U32") 
-                Array<Tuple>(Tuple("name", "Token")) 
-                NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) 
-                Some(
-                    Array<Tuple>(
-                        Tuple(
-                            NonFungibleId(1u32), 
-                            Tuple(
-                                Tuple("Hello World", Decimal("12")),
-                                Tuple(12u8, 19u128)
-                            )
-                        )
-                    )
-                );
-            "#,
-            Instruction::CreateNonFungibleResourceWithOwner {
-                id_type: Value::Enum("U32".into(), Vec::new()),
-                metadata: Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::String("name".into()),
-                        Value::String("Token".into()),
-                    ])]
-                ),
-                owner_badge: Value::NonFungibleAddress(
-                    Box::new(Value::String(
-                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
-                    )),
-                    Box::new(Value::U32(1))
-                ),
-                initial_supply: Value::Some(Box::new(Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::NonFungibleId(Box::new(Value::U32(1))),
-                        Value::Tuple(vec![
-                            Value::Tuple(vec![
-                                Value::String("Hello World".into()),
-                                Value::Decimal(Box::new(Value::String("12".into())))
-                            ]),
-                            Value::Tuple(vec![Value::U8(12), Value::U128(19),]),
-                        ])
-                    ])]
-                )))
-            }
-        );
-        parse_instruction_ok!(
-            r#"CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER Enum("U32") Array<Tuple>( Tuple("name", "Token")) NonFungibleAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak", 1u32) None;"#,
-            Instruction::CreateNonFungibleResourceWithOwner {
-                id_type: Value::Enum("U32".into(), Vec::new()),
-                metadata: Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::String("name".into()),
-                        Value::String("Token".into()),
-                    ])]
-                ),
-                owner_badge: Value::NonFungibleAddress(
-                    Box::new(Value::String(
-                        "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
-                    )),
-                    Box::new(Value::U32(1))
-                ),
-                initial_supply: Value::None
-            }
-        );
-
-        parse_instruction_ok!(
-            r#"MINT_FUNGIBLE ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") Decimal("100");"#,
-            Instruction::MintFungible {
-                resource_address: Value::ResourceAddress(Box::new(Value::String(
-                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
-                ))),
-                amount: Value::Decimal(Box::new(Value::String("100".into())))
-            }
-        );
-        parse_instruction_ok!(
-            r#"
-            MINT_NON_FUNGIBLE 
-                ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak") 
-                Array<Tuple>(
-                    Tuple(
-                        NonFungibleId(1u32), 
-                        Tuple(
-                            Tuple("Hello World", Decimal("12")),
-                            Tuple(12u8, 19u128)
-                        )
-                    )
-                );
-            "#,
-            Instruction::MintNonFungible {
-                resource_address: Value::ResourceAddress(Box::new(Value::String(
-                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak".into()
-                ))),
-                entries: Value::Array(
-                    Type::Tuple,
-                    vec![Value::Tuple(vec![
-                        Value::NonFungibleId(Box::new(Value::U32(1))),
-                        Value::Tuple(vec![
-                            Value::Tuple(vec![
-                                Value::String("Hello World".into()),
-                                Value::Decimal(Box::new(Value::String("12".into())))
-                            ]),
-                            Value::Tuple(vec![Value::U8(12), Value::U128(19),]),
-                        ])
-                    ])]
-                )
-            }
-        );
-    }
-
-    #[test]
-    fn test_register_validator_instruction() {
-        parse_instruction_ok!(
-            r#"REGISTER_VALIDATOR EcdsaSecp256k1PublicKey("000000000000000000000000000000000000000000000000000000000000000000");"#,
-            Instruction::RegisterValidator {
-                validator: Value::EcdsaSecp256k1PublicKey(Box::new(Value::String(hex::encode(
-                    [0u8; EcdsaSecp256k1PublicKey::LENGTH]
-                ))))
-            }
-        );
-    }
-
-    #[test]
-    fn test_unregister_validator_instruction() {
-        parse_instruction_ok!(
-            r#"UNREGISTER_VALIDATOR EcdsaSecp256k1PublicKey("000000000000000000000000000000000000000000000000000000000000000000");"#,
-            Instruction::UnregisterValidator {
-                validator: Value::EcdsaSecp256k1PublicKey(Box::new(Value::String(hex::encode(
-                    [0u8; EcdsaSecp256k1PublicKey::LENGTH]
-                ))))
-            }
-        );
-    }
+    // Instruction parsing tests have been removed as they're largely outdated (inconsistent with the data model),
+    // which may lead developers to invalid syntax.
+    //
+    // It's also not very useful as instruction parsing basically calls `parse_value` recursively
+    //
+    // That said, all manifest instructions should be tested in `generator.rs` and `e2e.rs`.
 }

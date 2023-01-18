@@ -16,8 +16,6 @@ pub mod address;
 pub mod api;
 /// RE constants
 pub mod constants;
-/// RE core abstractions.
-pub mod core;
 /// RE crypto library
 pub mod crypto;
 /// RE data model.
@@ -28,6 +26,7 @@ pub mod math;
 /// RE node models.
 pub mod model;
 pub mod modules;
+pub mod node;
 
 /// RE time library.
 pub mod time;
@@ -39,11 +38,14 @@ pub use macros::*;
 
 // Re-export SBOR derive.
 extern crate sbor;
-pub use sbor::{Decode, Encode, TypeId};
+pub use sbor::{Categorize, Decode, Encode};
 
 // Re-export Engine derive.
 extern crate radix_engine_derive;
-pub use radix_engine_derive::{scrypto, Describe};
+pub use radix_engine_derive::{
+    LegacyDescribe, NonFungibleData, ScryptoCategorize, ScryptoDecode, ScryptoDescribe,
+    ScryptoEncode, ScryptoSbor,
+};
 
 // This is to make derives work within this crate.
 // See: https://users.rust-lang.org/t/how-can-i-use-my-derive-macro-from-the-crate-that-declares-the-trait/60502

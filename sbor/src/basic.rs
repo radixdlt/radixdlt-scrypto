@@ -7,7 +7,7 @@ use crate::*;
     serde(tag = "type") // See https://serde.rs/enum-representations.html
 )]
 #[derive(Copy, Debug, Clone, PartialEq, Eq)]
-pub enum NoCustomTypeId {}
+pub enum NoCustomValueKind {}
 
 #[cfg_attr(
     feature = "serde",
@@ -18,10 +18,10 @@ pub enum NoCustomTypeId {}
 pub enum NoCustomValue {}
 
 pub const DEFAULT_BASIC_MAX_DEPTH: u8 = 64;
-pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEPTH>;
-pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomTypeId, DEFAULT_BASIC_MAX_DEPTH>;
-pub type BasicSborValue = SborValue<NoCustomTypeId, NoCustomValue>;
-pub type BasicSborTypeId = SborTypeId<NoCustomTypeId>;
+pub type BasicEncoder<'a> = VecEncoder<'a, NoCustomValueKind, DEFAULT_BASIC_MAX_DEPTH>;
+pub type BasicDecoder<'a> = VecDecoder<'a, NoCustomValueKind, DEFAULT_BASIC_MAX_DEPTH>;
+pub type BasicValue = Value<NoCustomValueKind, NoCustomValue>;
+pub type BasicValueKind = ValueKind<NoCustomValueKind>;
 
 // 5b for (basic) [5b]or - (90 in decimal)
 pub const BASIC_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5b;
@@ -32,19 +32,19 @@ pub const BASIC_SBOR_V1_PAYLOAD_PREFIX: u8 = 0x5b;
 // via blanket impls, they can only be used for parameters, but cannot be used for implementations.
 //
 // Implementations should instead implement the underlying traits:
-// * TypeId<X> (impl over all X: CustomTypeId)
-// * Encode<X, E> (impl over all X: CustomTypeId, E: Encoder<X>)
-// * Decode<X, D> (impl over all X: CustomTypeId, D: Decoder<X>)
+// * Categorize<X> (impl over all X: CustomValueKind)
+// * Encode<X, E> (impl over all X: CustomValueKind, E: Encoder<X>)
+// * Decode<X, D> (impl over all X: CustomValueKind, D: Decoder<X>)
 //
 // TODO: Change these to be Trait aliases once stable in rust: https://github.com/rust-lang/rust/issues/41517
-pub trait BasicTypeId: TypeId<NoCustomTypeId> {}
-impl<T: TypeId<NoCustomTypeId> + ?Sized> BasicTypeId for T {}
+pub trait BasicCategorize: Categorize<NoCustomValueKind> {}
+impl<T: Categorize<NoCustomValueKind> + ?Sized> BasicCategorize for T {}
 
-pub trait BasicDecode: for<'a> Decode<NoCustomTypeId, BasicDecoder<'a>> {}
-impl<T: for<'a> Decode<NoCustomTypeId, BasicDecoder<'a>>> BasicDecode for T {}
+pub trait BasicDecode: for<'a> Decode<NoCustomValueKind, BasicDecoder<'a>> {}
+impl<T: for<'a> Decode<NoCustomValueKind, BasicDecoder<'a>>> BasicDecode for T {}
 
-pub trait BasicEncode: for<'a> Encode<NoCustomTypeId, BasicEncoder<'a>> {}
-impl<T: for<'a> Encode<NoCustomTypeId, BasicEncoder<'a>> + ?Sized> BasicEncode for T {}
+pub trait BasicEncode: for<'a> Encode<NoCustomValueKind, BasicEncoder<'a>> {}
+impl<T: for<'a> Encode<NoCustomValueKind, BasicEncoder<'a>> + ?Sized> BasicEncode for T {}
 
 /// Encode a `T` into byte array.
 pub fn basic_encode<T: BasicEncode + ?Sized>(v: &T) -> Result<Vec<u8>, EncodeError> {
@@ -59,7 +59,7 @@ pub fn basic_decode<T: BasicDecode>(buf: &[u8]) -> Result<T, DecodeError> {
     BasicDecoder::new(buf).decode_payload(BASIC_SBOR_V1_PAYLOAD_PREFIX)
 }
 
-impl CustomTypeId for NoCustomTypeId {
+impl CustomValueKind for NoCustomValueKind {
     fn as_u8(&self) -> u8 {
         panic!("No custom type")
     }
@@ -69,8 +69,8 @@ impl CustomTypeId for NoCustomTypeId {
     }
 }
 
-impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for NoCustomValue {
-    fn encode_type_id(&self, _encoder: &mut E) -> Result<(), EncodeError> {
+impl<X: CustomValueKind, E: Encoder<X>> Encode<X, E> for NoCustomValue {
+    fn encode_value_kind(&self, _encoder: &mut E) -> Result<(), EncodeError> {
         panic!("No custom value")
     }
 
@@ -79,14 +79,56 @@ impl<X: CustomTypeId, E: Encoder<X>> Encode<X, E> for NoCustomValue {
     }
 }
 
-impl<X: CustomTypeId, D: Decoder<X>> Decode<X, D> for NoCustomValue {
-    fn decode_body_with_type_id(
-        _decoder: &mut D,
-        _type_id: SborTypeId<X>,
-    ) -> Result<Self, DecodeError>
+impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for NoCustomValue {
+    fn decode_body_with_value_kind(_: &mut D, _: ValueKind<X>) -> Result<Self, DecodeError>
     where
         Self: Sized,
     {
         panic!("No custom value")
     }
+}
+
+pub use schema::*;
+
+mod schema {
+    use super::*;
+    use crate::rust::collections::BTreeMap;
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum NoCustomTypeKind {}
+
+    impl<L: SchemaTypeLink> CustomTypeKind<L> for NoCustomTypeKind {
+        type CustomValueKind = NoCustomValueKind;
+
+        type CustomTypeExtension = NoCustomTypeExtension;
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum NoCustomTypeValidation {}
+
+    impl CustomTypeValidation for NoCustomTypeValidation {}
+
+    pub enum NoCustomTypeExtension {}
+
+    impl CustomTypeExtension for NoCustomTypeExtension {
+        type CustomValueKind = NoCustomValueKind;
+        type CustomTypeKind<L: SchemaTypeLink> = NoCustomTypeKind;
+        type CustomTypeValidation = NoCustomTypeValidation;
+
+        fn linearize_type_kind(
+            _: Self::CustomTypeKind<GlobalTypeId>,
+            _: &BTreeMap<TypeHash, usize>,
+        ) -> Self::CustomTypeKind<LocalTypeIndex> {
+            unreachable!("No custom type kinds exist")
+        }
+
+        fn resolve_custom_well_known_type(
+            _: u8,
+        ) -> Option<TypeData<Self::CustomTypeKind<LocalTypeIndex>, LocalTypeIndex>> {
+            None
+        }
+    }
+
+    pub type BasicTypeKind<L> = TypeKind<NoCustomValueKind, NoCustomTypeKind, L>;
+    pub type BasicSchema = Schema<NoCustomTypeExtension>;
 }
