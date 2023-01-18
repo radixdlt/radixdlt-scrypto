@@ -236,7 +236,7 @@ impl ExecutableInvocation for VaultRecallNonFungiblesInvocation {
         );
         let executor = VaultTakeNonFungiblesInvocation {
             receiver: self.receiver,
-            non_fungible_ids: self.non_fungible_ids,
+            non_fungible_local_ids: self.non_fungible_local_ids,
         };
         Ok((actor, call_frame_update, executor))
     }
@@ -277,7 +277,7 @@ impl Executor for VaultTakeNonFungiblesInvocation {
             let mut substate_mut = api.get_ref_mut(vault_handle)?;
             let vault = substate_mut.vault();
             vault
-                .take_non_fungibles(&self.non_fungible_ids)
+                .take_non_fungibles(&self.non_fungible_local_ids)
                 .map_err(|e| match e {
                     InvokeError::Error(e) => {
                         RuntimeError::ApplicationError(ApplicationError::VaultError(e))

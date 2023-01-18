@@ -386,14 +386,14 @@ pub fn format_custom_value<F: fmt::Write>(
         }
         ScryptoCustomValue::NonFungibleLocalId(value) => {
             f.write_str("NonFungibleLocalId(")?;
-            format_non_fungible_id_contents(f, value)?;
+            format_non_fungible_local_id_contents(f, value)?;
             write!(f, ")")?;
         }
     }
     Ok(())
 }
 
-pub fn format_non_fungible_id_contents<F: fmt::Write>(
+pub fn format_non_fungible_local_id_contents<F: fmt::Write>(
     f: &mut F,
     value: &NonFungibleLocalId,
 ) -> fmt::Result {

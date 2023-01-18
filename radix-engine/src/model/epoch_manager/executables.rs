@@ -92,10 +92,10 @@ impl Executor for EpochManagerCreateInvocation {
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::CreateValidator)),
             rule!(allow_all),
         );
-        let non_fungible_id = NonFungibleLocalId::Bytes(
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(
             scrypto_encode(&PackageIdentifier::Native(NativePackage::EpochManager)).unwrap(),
         );
-        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_id);
+        let non_fungible_address = NonFungibleAddress::new(PACKAGE_TOKEN, non_fungible_local_id);
         access_rules.set_method_access_rule(
             AccessRuleKey::Native(NativeFn::EpochManager(EpochManagerFn::UpdateValidator)),
             rule!(require(non_fungible_address)),

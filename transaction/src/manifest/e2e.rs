@@ -606,7 +606,7 @@ CALL_METHOD
                 "${owner_badge_resource_address}",
                 "resource_sim1qqgvpz8q7ypeueqcv4qthsv7ezt8h9m3depmqqw7pc4sfmucfx",
             ),
-            ("${owner_badge_non_fungible_id}", "1u64"),
+            ("${owner_badge_non_fungible_local_id}", "1u64"),
             (
                 "${code_blob_hash}",
                 "36dae540b7889956f1f1d8d46ba23e5e44bf5723aef2a8e6b698686c02583618",
@@ -617,12 +617,12 @@ CALL_METHOD
             ),
             ("${initial_supply}", "12"),
             ("${mint_amount}", "12"),
-            ("${non_fungible_id}", "12u64"),
+            ("${non_fungible_local_id}", "12u64"),
             (
                 "${auth_badge_resource_address}",
                 "resource_sim1qpflrslzpnprsd27ywcpmm9mqzncshp2sfjg6h59n48smx5k0v",
             ),
-            ("${auth_badge_non_fungible_id}", "1u64"),
+            ("${auth_badge_non_fungible_local_id}", "1u64"),
         ]);
         for (of, with) in replacement_vectors.into_iter() {
             manifest = manifest.replace(of, with);

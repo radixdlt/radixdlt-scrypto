@@ -10,7 +10,7 @@ use radix_engine_stores::rocks_db::RadixEngineDB;
 
 use crate::resim::get_data_dir;
 
-pub fn lookup_non_fungible_id_type(
+pub fn lookup_non_fungible_local_id_type(
     resource_address: &ResourceAddress,
 ) -> Result<NonFungibleLocalIdTypeId, LedgerLookupError> {
     let scrypto_interpreter = ScryptoInterpreter::<DefaultWasmEngine>::default();
@@ -78,18 +78,18 @@ mod tests {
     use radix_engine::types::{NonFungibleLocalIdTypeId, ECDSA_SECP256K1_TOKEN};
     use serial_test::serial;
 
-    use super::lookup_non_fungible_id_type;
+    use super::lookup_non_fungible_local_id_type;
 
     #[test]
     #[serial]
-    pub fn non_fungible_id_type_ledger_lookup_matches_expected() {
+    pub fn non_fungible_local_id_type_ledger_lookup_matches_expected() {
         // Arrange
         let resource_address = ECDSA_SECP256K1_TOKEN;
 
         // Act
-        let non_fungible_id_type = lookup_non_fungible_id_type(&resource_address).unwrap();
+        let non_fungible_local_id_type = lookup_non_fungible_local_id_type(&resource_address).unwrap();
 
         // Assert
-        assert_eq!(non_fungible_id_type, NonFungibleLocalIdTypeId::Bytes)
+        assert_eq!(non_fungible_local_id_type, NonFungibleLocalIdTypeId::Bytes)
     }
 }

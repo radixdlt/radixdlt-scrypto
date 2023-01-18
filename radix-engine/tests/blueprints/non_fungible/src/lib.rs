@@ -53,7 +53,7 @@ blueprint! {
             let proof = proof.unsafe_skip_proof_validation();
             mint_badge.authorize(|| {
                 borrow_resource_manager!(proof.resource_address()).update_non_fungible_data(
-                    &proof.non_fungible_id(),
+                    &proof.non_fungible_local_id(),
                     Sandwich {
                         name: "Test".to_owned(),
                         available: true,
@@ -111,7 +111,7 @@ blueprint! {
         pub fn verify_does_not_exist(address: NonFungibleAddress) {
             assert_eq!(
                 borrow_resource_manager!(address.resource_address())
-                    .non_fungible_exists(&address.non_fungible_id()),
+                    .non_fungible_exists(&address.non_fungible_local_id()),
                 false
             );
         }
@@ -201,40 +201,40 @@ blueprint! {
             non_fungible
         }
 
-        pub fn get_non_fungible_ids_bucket() -> (Bucket, Bucket) {
+        pub fn get_non_fungible_local_ids_bucket() -> (Bucket, Bucket) {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_ids(),
+                non_fungible_bucket.non_fungible_local_ids(),
                 BTreeSet::from([NonFungibleLocalId::Number(1)])
             );
             assert_eq!(
-                bucket.non_fungible_ids(),
+                bucket.non_fungible_local_ids(),
                 BTreeSet::from([NonFungibleLocalId::Number(2), NonFungibleLocalId::Number(3)])
             );
             (bucket, non_fungible_bucket)
         }
 
-        pub fn get_non_fungible_id_bucket() -> (Bucket, Bucket) {
+        pub fn get_non_fungible_local_id_bucket() -> (Bucket, Bucket) {
             let mut bucket = Self::create_non_fungible_fixed();
             let non_fungible_bucket = bucket.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_id(),
+                non_fungible_bucket.non_fungible_local_id(),
                 NonFungibleLocalId::Number(1)
             );
-            assert_eq!(bucket.non_fungible_id(), NonFungibleLocalId::Number(2));
+            assert_eq!(bucket.non_fungible_local_id(), NonFungibleLocalId::Number(2));
             (bucket, non_fungible_bucket)
         }
 
-        pub fn get_non_fungible_ids_vault() -> Bucket {
+        pub fn get_non_fungible_local_ids_vault() -> Bucket {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_ids(),
+                non_fungible_bucket.non_fungible_local_ids(),
                 BTreeSet::from([NonFungibleLocalId::Number(1)])
             );
             assert_eq!(
-                vault.non_fungible_ids(),
+                vault.non_fungible_local_ids(),
                 BTreeSet::from([NonFungibleLocalId::Number(2), NonFungibleLocalId::Number(3)])
             );
 
@@ -243,14 +243,14 @@ blueprint! {
             non_fungible_bucket
         }
 
-        pub fn get_non_fungible_id_vault() -> Bucket {
+        pub fn get_non_fungible_local_id_vault() -> Bucket {
             let mut vault = Vault::with_bucket(Self::create_non_fungible_fixed());
             let non_fungible_bucket = vault.take(1);
             assert_eq!(
-                non_fungible_bucket.non_fungible_id(),
+                non_fungible_bucket.non_fungible_local_id(),
                 NonFungibleLocalId::Number(1)
             );
-            assert_eq!(vault.non_fungible_id(), NonFungibleLocalId::Number(2));
+            assert_eq!(vault.non_fungible_local_id(), NonFungibleLocalId::Number(2));
 
             NonFungibleTest { vault }.instantiate().globalize();
 
@@ -280,7 +280,7 @@ blueprint! {
             NonFungibleTest { vault }.instantiate().globalize();
         }
 
-        pub fn create_wrong_non_fungible_id_type() -> Bucket {
+        pub fn create_wrong_non_fungible_local_id_type() -> Bucket {
             let mut encoded = BTreeMap::new();
             encoded.insert(
                 NonFungibleLocalId::Number(0),

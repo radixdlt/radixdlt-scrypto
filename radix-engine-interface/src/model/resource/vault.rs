@@ -58,7 +58,7 @@ impl Into<CallTableInvocation> for VaultTakeInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultTakeNonFungiblesInvocation {
     pub receiver: VaultId,
-    pub non_fungible_ids: BTreeSet<NonFungibleLocalId>,
+    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for VaultTakeNonFungiblesInvocation {
@@ -117,7 +117,7 @@ impl Into<CallTableInvocation> for VaultRecallInvocation {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct VaultRecallNonFungiblesInvocation {
     pub receiver: VaultId,
-    pub non_fungible_ids: BTreeSet<NonFungibleLocalId>,
+    pub non_fungible_local_ids: BTreeSet<NonFungibleLocalId>,
 }
 
 impl Invocation for VaultRecallNonFungiblesInvocation {

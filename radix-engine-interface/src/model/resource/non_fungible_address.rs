@@ -23,8 +23,8 @@ impl LegacyDescribe for NonFungibleAddress {
 }
 
 impl NonFungibleAddress {
-    pub const fn new(resource_address: ResourceAddress, non_fungible_id: NonFungibleLocalId) -> Self {
-        Self(resource_address, non_fungible_id)
+    pub const fn new(resource_address: ResourceAddress, non_fungible_local_id: NonFungibleLocalId) -> Self {
+        Self(resource_address, non_fungible_local_id)
     }
 
     /// Returns the resource address.
@@ -33,7 +33,7 @@ impl NonFungibleAddress {
     }
 
     /// Returns the non-fungible id.
-    pub fn non_fungible_id(&self) -> &NonFungibleLocalId {
+    pub fn non_fungible_local_id(&self) -> &NonFungibleLocalId {
         &self.1
     }
 
@@ -42,7 +42,7 @@ impl NonFungibleAddress {
         format!(
             "{}:{}",
             bech32_encoder.encode_resource_address_to_string(&self.resource_address()),
-            self.non_fungible_id().to_simple_string()
+            self.non_fungible_local_id().to_simple_string()
         )
     }
 
@@ -62,8 +62,8 @@ impl NonFungibleAddress {
             return Err(ParseNonFungibleAddressError::RequiresTwoParts);
         }
         let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
-        let non_fungible_id = NonFungibleLocalId::try_from_simple_string(id_type, v[1])?;
-        Ok(NonFungibleAddress::new(resource_address, non_fungible_id))
+        let non_fungible_local_id = NonFungibleLocalId::try_from_simple_string(id_type, v[1])?;
+        Ok(NonFungibleAddress::new(resource_address, non_fungible_local_id))
     }
 
     /// Returns canonical representation of this NonFungibleAddress.
@@ -71,7 +71,7 @@ impl NonFungibleAddress {
         format!(
             "{}:{}",
             bech32_encoder.encode_resource_address_to_string(&self.resource_address()),
-            self.non_fungible_id().to_combined_simple_string()
+            self.non_fungible_local_id().to_combined_simple_string()
         )
     }
 
@@ -92,8 +92,8 @@ impl NonFungibleAddress {
             return Err(ParseNonFungibleAddressError::RequiresTwoParts);
         }
         let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
-        let non_fungible_id = NonFungibleLocalId::try_from_combined_simple_string(v[1])?;
-        Ok(NonFungibleAddress::new(resource_address, non_fungible_id))
+        let non_fungible_local_id = NonFungibleLocalId::try_from_combined_simple_string(v[1])?;
+        Ok(NonFungibleAddress::new(resource_address, non_fungible_local_id))
     }
 }
 
@@ -173,7 +173,7 @@ impl<'a> ContextualDisplay<AddressDisplayContext<'a>> for NonFungibleAddress {
             f,
             "{}:{}",
             self.resource_address().display(*context),
-            self.non_fungible_id()
+            self.non_fungible_local_id()
         )
     }
 }

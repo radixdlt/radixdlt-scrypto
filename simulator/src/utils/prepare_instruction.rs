@@ -10,7 +10,7 @@ use radix_engine_interface::math::{ParseDecimalError, PreciseDecimal};
 use transaction::builder::ManifestBuilder;
 use transaction::model::BasicInstruction;
 
-use crate::ledger::{lookup_non_fungible_id_type, LedgerLookupError};
+use crate::ledger::{lookup_non_fungible_local_id_type, LedgerLookupError};
 use crate::resim::SimulatorNonFungibleAddress;
 
 // =======
@@ -133,8 +133,8 @@ pub fn add_create_proof_instruction_from_account_with_resource_specifier<'a>(
         ResourceSpecifier::Amount(amount, resource_address) => {
             manifest_builder.create_proof_from_account_by_amount(account, amount, resource_address)
         }
-        ResourceSpecifier::Ids(non_fungible_ids, resource_address) => manifest_builder
-            .create_proof_from_account_by_ids(account, &non_fungible_ids, resource_address),
+        ResourceSpecifier::Ids(non_fungible_local_ids, resource_address) => manifest_builder
+            .create_proof_from_account_by_ids(account, &non_fungible_local_ids, resource_address),
     };
     Ok(builder)
 }
@@ -375,7 +375,7 @@ where
 /// The format of the string representation of non-fungible resource specifiers is:
 ///
 /// ```txt
-/// <resource_address>:<non_fungible_id_1>,<non_fungible_id_2>,...,<non_fungible_id_n>
+/// <resource_address>:<non_fungible_local_id_1>,<non_fungible_local_id_2>,...,<non_fungible_local_id_n>
 /// ```
 ///
 /// As an example, say that `resource_sim1qqw9095s39kq2vxnzymaecvtpywpkughkcltw4pzd4pse7dvr0` is a
@@ -443,18 +443,18 @@ fn parse_resource_specifier(
         let resource_address = bech32_decoder
             .validate_and_decode_resource_address(resource_address_string)
             .map_err(ParseResourceSpecifierError::InvalidResourceAddress)?;
-        let non_fungible_id_type = lookup_non_fungible_id_type(&resource_address)
+        let non_fungible_local_id_type = lookup_non_fungible_local_id_type(&resource_address)
             .map_err(ParseResourceSpecifierError::LedgerLookupError)?;
 
         // Parsing the non-fungible ids with the available id type
-        let non_fungible_ids = tokens[1]
+        let non_fungible_local_ids = tokens[1]
             .split(',')
             .map(|s| s.trim())
-            .map(|s| NonFungibleLocalId::try_from_simple_string(non_fungible_id_type, s))
+            .map(|s| NonFungibleLocalId::try_from_simple_string(non_fungible_local_id_type, s))
             .collect::<Result<BTreeSet<_>, _>>()
             .map_err(ParseResourceSpecifierError::InvalidNonFungibleLocalId)?;
 
-        Ok(ResourceSpecifier::Ids(non_fungible_ids, resource_address))
+        Ok(ResourceSpecifier::Ids(non_fungible_local_ids, resource_address))
     }
 }
 
@@ -750,7 +750,7 @@ mod test {
     }
 
     #[test]
-    pub fn parsing_of_string_non_fungible_id_succeeds() {
+    pub fn parsing_of_string_non_fungible_local_id_succeeds() {
         // Arrange
         let arg = "String#HelloWorld";
         let arg_type = Type::NonFungibleLocalId;
@@ -763,7 +763,7 @@ mod test {
     }
 
     #[test]
-    pub fn parsing_of_bytes_non_fungible_id_succeeds() {
+    pub fn parsing_of_bytes_non_fungible_local_id_succeeds() {
         // Arrange
         let arg = "Bytes#c41fa9ef2ab31f5db2614c1c4c626e9c279349b240af7cb939ead29058fdff2c";
         let arg_type = Type::NonFungibleLocalId;
@@ -782,7 +782,7 @@ mod test {
     }
 
     #[test]
-    pub fn parsing_of_u64_non_fungible_id_succeeds() {
+    pub fn parsing_of_u64_non_fungible_local_id_succeeds() {
         // Arrange
         let arg = "U64#12";
         let arg_type = Type::NonFungibleLocalId;
@@ -795,7 +795,7 @@ mod test {
     }
 
     #[test]
-    pub fn parsing_of_u128_non_fungible_id_succeeds() {
+    pub fn parsing_of_u128_non_fungible_local_id_succeeds() {
         // Arrange
         let arg = "U128#12";
         let arg_type = Type::NonFungibleLocalId;
@@ -808,7 +808,7 @@ mod test {
     }
 
     #[test]
-    pub fn parsing_of_uuid_non_fungible_id_succeeds() {
+    pub fn parsing_of_uuid_non_fungible_local_id_succeeds() {
         // Arrange
         let arg = "UUID#12";
         let arg_type = Type::NonFungibleLocalId;

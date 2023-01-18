@@ -53,9 +53,9 @@ blueprint! {
             let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
             let clone = proof.clone();
 
-            assert_eq!(self.vault.non_fungible_ids(), total_ids);
-            assert_eq!(proof.non_fungible_ids(), proof_ids);
-            assert_eq!(clone.non_fungible_ids(), proof_ids);
+            assert_eq!(self.vault.non_fungible_local_ids(), total_ids);
+            assert_eq!(proof.non_fungible_local_ids(), proof_ids);
+            assert_eq!(clone.non_fungible_local_ids(), proof_ids);
 
             clone.drop();
             proof.drop();
@@ -116,7 +116,7 @@ blueprint! {
                     let proof =
                         ComponentAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
                     let proof = proof.validate_proof(self.vault.resource_address()).unwrap();
-                    assert_eq!(proof.non_fungible_ids(), ids);
+                    assert_eq!(proof.non_fungible_local_ids(), ids);
                     proof.drop();
                 })
             });

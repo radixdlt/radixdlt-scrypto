@@ -190,13 +190,13 @@ fn test_non_fungible() {
         .call_function(
             package_address,
             "NonFungibleTest",
-            "get_non_fungible_ids_bucket",
+            "get_non_fungible_local_ids_bucket",
             args!(),
         )
         .call_function(
             package_address,
             "NonFungibleTest",
-            "get_non_fungible_ids_vault",
+            "get_non_fungible_local_ids_vault",
             args!(),
         )
         .call_method(
@@ -333,7 +333,7 @@ fn create_non_fungible_with_id_type_different_than_in_initial_supply() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_wrong_non_fungible_id_type",
+            "create_wrong_non_fungible_local_id_type",
             args!(),
         )
         .call_method(
@@ -518,7 +518,7 @@ fn can_mint_uuid_non_fungible_in_manifest() {
 }
 
 #[test]
-fn cant_burn_non_fungible_with_wrong_non_fungible_id_type() {
+fn cant_burn_non_fungible_with_wrong_non_fungible_local_id_type() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();

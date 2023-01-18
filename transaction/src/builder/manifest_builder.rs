@@ -664,7 +664,7 @@ impl ManifestBuilder {
 
     pub fn burn_non_fungible(&mut self, non_fungible_address: NonFungibleAddress) -> &mut Self {
         let mut ids = BTreeSet::new();
-        ids.insert(non_fungible_address.non_fungible_id().clone());
+        ids.insert(non_fungible_address.non_fungible_local_id().clone());
         self.take_from_worktop_by_ids(
             &ids,
             non_fungible_address.resource_address().clone(),

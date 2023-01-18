@@ -8,7 +8,7 @@ use radix_engine::types::{
 };
 use utils::ContextualDisplay;
 
-use crate::ledger::{lookup_non_fungible_id_type, LedgerLookupError};
+use crate::ledger::{lookup_non_fungible_local_id_type, LedgerLookupError};
 
 #[derive(Clone)]
 pub struct SimulatorPackageAddress(pub PackageAddress);
@@ -176,16 +176,16 @@ impl FromStr for SimulatorNonFungibleAddress {
         let resource_address = Bech32Decoder::for_simulator()
             .validate_and_decode_resource_address(resource_address_string)
             .map_err(ParseNonFungibleAddressError::InvalidResourceAddress)?;
-        let non_fungible_id_type = lookup_non_fungible_id_type(&resource_address)
+        let non_fungible_local_id_type = lookup_non_fungible_local_id_type(&resource_address)
             .map_err(ParseNonFungibleAddressError::LedgerLookupError)?;
 
         // Parsing the non-fungible id given the non-fungible id type above
-        let non_fungible_id =
-            NonFungibleLocalId::try_from_simple_string(non_fungible_id_type, tokens[1])
+        let non_fungible_local_id =
+            NonFungibleLocalId::try_from_simple_string(non_fungible_local_id_type, tokens[1])
                 .map_err(ParseNonFungibleAddressError::InvalidNonFungibleLocalId)?;
         Ok(Self(NonFungibleAddress::new(
             resource_address,
-            non_fungible_id,
+            non_fungible_local_id,
         )))
     }
 }

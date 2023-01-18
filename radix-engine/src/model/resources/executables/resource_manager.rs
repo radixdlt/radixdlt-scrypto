@@ -88,12 +88,12 @@ where
     );
 
     let bucket = {
-        for (non_fungible_id, data) in &entries {
-            if non_fungible_id.id_type() != id_type {
+        for (non_fungible_local_id, data) in &entries {
+            if non_fungible_local_id.id_type() != id_type {
                 return Err(RuntimeError::ApplicationError(
                     ApplicationError::ResourceManagerError(
                         ResourceManagerError::NonFungibleLocalIdTypeDoesNotMatch(
-                            non_fungible_id.id_type(),
+                            non_fungible_local_id.id_type(),
                             id_type,
                         ),
                     ),
@@ -101,7 +101,7 @@ where
             }
 
             let offset = SubstateOffset::NonFungibleStore(NonFungibleStoreOffset::Entry(
-                non_fungible_id.clone(),
+                non_fungible_local_id.clone(),
             ));
             let non_fungible_handle =
                 api.lock_substate(nf_store_node_id, offset, LockFlags::MUTABLE)?;

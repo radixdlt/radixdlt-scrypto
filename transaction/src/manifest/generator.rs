@@ -207,7 +207,7 @@ pub fn generate_instruction(
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             BasicInstruction::TakeFromWorktopByIds {
-                ids: generate_non_fungible_ids(ids)?,
+                ids: generate_non_fungible_local_ids(ids)?,
                 resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
@@ -234,7 +234,7 @@ pub fn generate_instruction(
             ids,
             resource_address,
         } => BasicInstruction::AssertWorktopContainsByIds {
-            ids: generate_non_fungible_ids(ids)?,
+            ids: generate_non_fungible_local_ids(ids)?,
             resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
         ast::Instruction::PopFromAuthZone { new_proof } => {
@@ -288,7 +288,7 @@ pub fn generate_instruction(
             resource_address,
             new_proof,
         } => {
-            let ids = generate_non_fungible_ids(ids)?;
+            let ids = generate_non_fungible_local_ids(ids)?;
             let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
@@ -841,23 +841,23 @@ fn generate_proof(
     }
 }
 
-fn generate_non_fungible_id_internal(value: &ast::Value) -> Result<NonFungibleLocalId, GeneratorError> {
-    let non_fungible_id = match value {
+fn generate_non_fungible_local_id_internal(value: &ast::Value) -> Result<NonFungibleLocalId, GeneratorError> {
+    let non_fungible_local_id = match value {
         ast::Value::U64(u) => NonFungibleLocalId::Number(*u),
         ast::Value::U128(u) => NonFungibleLocalId::UUID(*u),
         ast::Value::String(s) => NonFungibleLocalId::String(s.clone()),
         ast::Value::Bytes(v) => NonFungibleLocalId::Bytes(generate_byte_vec_from_hex(v)?),
         v => invalid_type!(v, ast::Type::U64, ast::Type::String, ast::Type::Bytes)?,
     };
-    non_fungible_id.validate_contents().map_err(|_| {
-        GeneratorError::InvalidNonFungibleLocalId(non_fungible_id.to_combined_simple_string())
+    non_fungible_local_id.validate_contents().map_err(|_| {
+        GeneratorError::InvalidNonFungibleLocalId(non_fungible_local_id.to_combined_simple_string())
     })?;
-    Ok(non_fungible_id)
+    Ok(non_fungible_local_id)
 }
 
-fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleLocalId, GeneratorError> {
+fn generate_non_fungible_local_id(value: &ast::Value) -> Result<NonFungibleLocalId, GeneratorError> {
     match value {
-        ast::Value::NonFungibleLocalId(inner) => generate_non_fungible_id_internal(inner),
+        ast::Value::NonFungibleLocalId(inner) => generate_non_fungible_local_id_internal(inner),
         v => invalid_type!(v, ast::Type::NonFungibleLocalId),
     }
 }
@@ -872,13 +872,13 @@ fn generate_non_fungible_address(
                 return Err(GeneratorError::InvalidNonFungibleAddress);
             }
             let resource_address = generate_resource_address(&elements[0], bech32_decoder)?;
-            let nfid = generate_non_fungible_id(&elements[1])?;
-            Ok(NonFungibleAddress::new(resource_address, nfid))
+            let non_fungible_local_id = generate_non_fungible_local_id(&elements[1])?;
+            Ok(NonFungibleAddress::new(resource_address, non_fungible_local_id))
         }
         ast::Value::NonFungibleAddress(value1, value2) => {
             let resource_address = generate_resource_address_internal(&value1, bech32_decoder)?;
-            let nfid = generate_non_fungible_id_internal(&value2)?;
-            Ok(NonFungibleAddress::new(resource_address, nfid))
+            let non_fungible_local_id = generate_non_fungible_local_id_internal(&value2)?;
+            Ok(NonFungibleAddress::new(resource_address, non_fungible_local_id))
         }
         v => invalid_type!(v, ast::Type::NonFungibleAddress, ast::Type::Tuple),
     }
@@ -917,7 +917,7 @@ fn generate_blob(
     }
 }
 
-fn generate_non_fungible_ids(
+fn generate_non_fungible_local_ids(
     value: &ast::Value,
 ) -> Result<BTreeSet<NonFungibleLocalId>, GeneratorError> {
     match value {
@@ -929,7 +929,7 @@ fn generate_non_fungible_ids(
                 });
             }
 
-            values.iter().map(|v| generate_non_fungible_id(v)).collect()
+            values.iter().map(|v| generate_non_fungible_local_id(v)).collect()
         }
         v => invalid_type!(v, ast::Type::Array),
     }
@@ -1028,7 +1028,7 @@ fn generate_non_fungible_mint_params(
 
             let mut mint_params = BTreeMap::new();
             for i in 0..elements.len() / 2 {
-                let non_fungible_id = generate_non_fungible_id(&elements[i * 2])?;
+                let non_fungible_local_id = generate_non_fungible_local_id(&elements[i * 2])?;
                 let non_fungible_data = match elements[i * 2 + 1].clone() {
                     ast::Value::Tuple(values) => {
                         if values.len() != 2 {
@@ -1058,7 +1058,7 @@ fn generate_non_fungible_mint_params(
                     }
                     v => invalid_type!(v, ast::Type::Tuple)?,
                 };
-                mint_params.insert(non_fungible_id, non_fungible_data);
+                mint_params.insert(non_fungible_local_id, non_fungible_data);
             }
 
             Ok(mint_params)
@@ -1235,7 +1235,7 @@ pub fn generate_value(
                 elements: bytes.iter().map(|i| Value::U8 { value: *i }).collect(),
             })
         }
-        ast::Value::NonFungibleAddress(resource_address, nfid) => Ok(Value::Tuple {
+        ast::Value::NonFungibleAddress(resource_address, non_fungible_local_id) => Ok(Value::Tuple {
             fields: vec![
                 Value::Custom {
                     value: ScryptoCustomValue::ResourceAddress(generate_resource_address_internal(
@@ -1244,8 +1244,8 @@ pub fn generate_value(
                     )?),
                 },
                 Value::Custom {
-                    value: ScryptoCustomValue::NonFungibleLocalId(generate_non_fungible_id_internal(
-                        nfid,
+                    value: ScryptoCustomValue::NonFungibleLocalId(generate_non_fungible_local_id_internal(
+                        non_fungible_local_id,
                     )?),
                 },
             ],
@@ -1315,7 +1315,7 @@ pub fn generate_value(
                 value: ScryptoCustomValue::EddsaEd25519Signature(v),
             })
         }
-        ast::Value::NonFungibleLocalId(_) => generate_non_fungible_id(value).map(|v| Value::Custom {
+        ast::Value::NonFungibleLocalId(_) => generate_non_fungible_local_id(value).map(|v| Value::Custom {
             value: ScryptoCustomValue::NonFungibleLocalId(v),
         }),
     }

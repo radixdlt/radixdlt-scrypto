@@ -86,7 +86,7 @@ pub enum NonFungibleLocalIdTypeId {
     UUID,
 }
 
-pub const NON_FUNGIBLE_ID_MAX_LENGTH: usize = 64;
+pub const non_fungible_local_id_MAX_LENGTH: usize = 64;
 
 impl NonFungibleLocalId {
     /// Returns non-fungible ID type.
@@ -114,16 +114,16 @@ impl NonFungibleLocalId {
         id_type: NonFungibleLocalIdTypeId,
         s: &str,
     ) -> Result<Self, ParseNonFungibleLocalIdError> {
-        let non_fungible_id = match id_type {
+        let non_fungible_local_id = match id_type {
             NonFungibleLocalIdTypeId::Bytes => NonFungibleLocalId::Bytes(hex::decode(s)?),
             NonFungibleLocalIdTypeId::Number => NonFungibleLocalId::Number(s.parse::<u64>()?),
             NonFungibleLocalIdTypeId::String => NonFungibleLocalId::String(s.to_string()),
             NonFungibleLocalIdTypeId::UUID => NonFungibleLocalId::UUID(s.parse::<u128>()?),
         };
 
-        non_fungible_id.validate_contents()?;
+        non_fungible_local_id.validate_contents()?;
 
-        Ok(non_fungible_id)
+        Ok(non_fungible_local_id)
     }
 
     /// Returns the simple string representation of non-fungible ID value.
@@ -170,16 +170,16 @@ impl NonFungibleLocalId {
                 if value.len() == 0 {
                     return Err(ParseNonFungibleLocalIdError::Empty);
                 }
-                if value.len() > NON_FUNGIBLE_ID_MAX_LENGTH {
+                if value.len() > non_fungible_local_id_MAX_LENGTH {
                     return Err(ParseNonFungibleLocalIdError::TooLong);
                 }
-                validate_non_fungible_id_string(value)?;
+                validate_non_fungible_local_id_string(value)?;
             }
             NonFungibleLocalId::Bytes(value) => {
                 if value.len() == 0 {
                     return Err(ParseNonFungibleLocalIdError::Empty);
                 }
-                if value.len() > NON_FUNGIBLE_ID_MAX_LENGTH {
+                if value.len() > non_fungible_local_id_MAX_LENGTH {
                     return Err(ParseNonFungibleLocalIdError::TooLong);
                 }
             }
@@ -189,7 +189,7 @@ impl NonFungibleLocalId {
     }
 }
 
-fn validate_non_fungible_id_string(string: &str) -> Result<(), ParseNonFungibleLocalIdError> {
+fn validate_non_fungible_local_id_string(string: &str) -> Result<(), ParseNonFungibleLocalIdError> {
     for char in string.chars() {
         if !matches!(char, '0'..='9' | 'A'..='Z' | 'a'..='z' | '_') {
             return Err(ParseNonFungibleLocalIdError::InvalidCharacter(char));
@@ -300,7 +300,7 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
         value_kind: ValueKind<ScryptoCustomValueKind>,
     ) -> Result<Self, DecodeError> {
         decoder.check_preloaded_value_kind(value_kind, Self::value_kind())?;
-        let non_fungible_id = match decoder.read_byte()? {
+        let non_fungible_local_id = match decoder.read_byte()? {
             0 => Self::Number(u64::from_le_bytes(copy_u8_array(decoder.read_slice(8)?))),
             1 => Self::UUID(u128::from_le_bytes(copy_u8_array(decoder.read_slice(16)?))),
             2 => {
@@ -317,11 +317,11 @@ impl<D: Decoder<ScryptoCustomValueKind>> Decode<ScryptoCustomValueKind, D> for N
             _ => return Err(DecodeError::InvalidCustomValue),
         };
 
-        non_fungible_id
+        non_fungible_local_id
             .validate_contents()
             .map_err(|_| DecodeError::InvalidCustomValue)?;
 
-        Ok(non_fungible_id)
+        Ok(non_fungible_local_id)
     }
 }
 
@@ -390,32 +390,32 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_non_fungible_id_type_and_display() {
-        let nfid = NonFungibleLocalId::Number(100);
-        assert_eq!(nfid.id_type(), NonFungibleLocalIdTypeId::Number);
-        assert_eq!(nfid.to_string(), "100");
+    fn test_non_fungible_local_id_type_and_display() {
+        let non_fungible_local_id = NonFungibleLocalId::Number(100);
+        assert_eq!(non_fungible_local_id.id_type(), NonFungibleLocalIdTypeId::Number);
+        assert_eq!(non_fungible_local_id.to_string(), "100");
 
-        let nfid = NonFungibleLocalId::String(String::from("test"));
-        assert_eq!(nfid.id_type(), NonFungibleLocalIdTypeId::String);
-        assert_eq!(nfid.to_string(), "test");
+        let non_fungible_local_id = NonFungibleLocalId::String(String::from("test"));
+        assert_eq!(non_fungible_local_id.id_type(), NonFungibleLocalIdTypeId::String);
+        assert_eq!(non_fungible_local_id.to_string(), "test");
 
-        let nfid = NonFungibleLocalId::UUID(1_u128);
-        assert_eq!(nfid.id_type(), NonFungibleLocalIdTypeId::UUID);
-        assert_eq!(nfid.to_string(), "1");
+        let non_fungible_local_id = NonFungibleLocalId::UUID(1_u128);
+        assert_eq!(non_fungible_local_id.id_type(), NonFungibleLocalIdTypeId::UUID);
+        assert_eq!(non_fungible_local_id.to_string(), "1");
 
-        let nfid = NonFungibleLocalId::Bytes(vec![1, 2, 3, 255]);
-        assert_eq!(nfid.id_type(), NonFungibleLocalIdTypeId::Bytes);
-        assert_eq!(nfid.to_string(), "010203ff");
+        let non_fungible_local_id = NonFungibleLocalId::Bytes(vec![1, 2, 3, 255]);
+        assert_eq!(non_fungible_local_id.id_type(), NonFungibleLocalIdTypeId::Bytes);
+        assert_eq!(non_fungible_local_id.to_string(), "010203ff");
     }
 
     #[test]
     fn test_non_fungible_length_validation() {
         // Bytes length
         let validation_result =
-            NonFungibleLocalId::Bytes([0; NON_FUNGIBLE_ID_MAX_LENGTH].to_vec()).validate_contents();
+            NonFungibleLocalId::Bytes([0; non_fungible_local_id_MAX_LENGTH].to_vec()).validate_contents();
         assert!(matches!(validation_result, Ok(_)));
         let validation_result =
-            NonFungibleLocalId::Bytes([0; 1 + NON_FUNGIBLE_ID_MAX_LENGTH].to_vec()).validate_contents();
+            NonFungibleLocalId::Bytes([0; 1 + non_fungible_local_id_MAX_LENGTH].to_vec()).validate_contents();
         assert!(matches!(
             validation_result,
             Err(ParseNonFungibleLocalIdError::TooLong)
@@ -428,10 +428,10 @@ mod tests {
 
         // String length
         let validation_result =
-            NonFungibleLocalId::String(string_of_length(NON_FUNGIBLE_ID_MAX_LENGTH)).validate_contents();
+            NonFungibleLocalId::String(string_of_length(non_fungible_local_id_MAX_LENGTH)).validate_contents();
         assert!(matches!(validation_result, Ok(_)));
         let validation_result =
-            NonFungibleLocalId::String(string_of_length(1 + NON_FUNGIBLE_ID_MAX_LENGTH))
+            NonFungibleLocalId::String(string_of_length(1 + non_fungible_local_id_MAX_LENGTH))
                 .validate_contents();
         assert!(matches!(
             validation_result,
@@ -486,7 +486,7 @@ mod tests {
     }
 
     #[test]
-    fn test_non_fungible_id_simple_conversion() {
+    fn test_non_fungible_local_id_simple_conversion() {
         assert_eq!(
             NonFungibleLocalId::try_from_simple_string(NonFungibleLocalIdTypeId::Number, "1").unwrap(),
             NonFungibleLocalId::Number(1)
