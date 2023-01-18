@@ -3,13 +3,13 @@ use crate::model::WorktopSubstate;
 use crate::model::*;
 use crate::types::*;
 use crate::wasm::WasmEngine;
-use dyn_clone::DynClone;
 use native_sdk::resource::{ComponentAuthZone, SysBucket, SysProof, Worktop};
 use native_sdk::runtime::Runtime;
 use radix_engine_interface::api::api::{ComponentApi, EngineApi, Invocation, InvokableModel};
 use radix_engine_interface::api::types::{
     BucketId, GlobalAddress, ProofId, RENodeId, TransactionProcessorFn,
 };
+use radix_engine_interface::data::ScryptoValue;
 use radix_engine_interface::data::{
     IndexedScryptoValue, ReadOwnedNodesError, ReplaceManifestValuesError,
 };
@@ -47,12 +47,10 @@ pub enum TransactionProcessorError {
     ResolveError(ResolveError),
 }
 
-pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync + DynClone {}
-impl<T: ScryptoEncode + Debug + Send + Sync + DynClone> NativeOutput for T {}
+pub trait NativeOutput: ScryptoEncode + Debug + Send + Sync {}
+impl<T: ScryptoEncode + Debug + Send + Sync> NativeOutput for T {}
 
-dyn_clone::clone_trait_object!(NativeOutput);
-
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum InstructionOutput {
     Native(Box<dyn NativeOutput>),
     Scrypto(IndexedScryptoValue),
@@ -63,6 +61,25 @@ impl InstructionOutput {
         match self {
             InstructionOutput::Native(o) => IndexedScryptoValue::from_typed(o.as_ref()).into_vec(),
             InstructionOutput::Scrypto(value) => value.as_slice().to_owned(),
+        }
+    }
+}
+
+impl Clone for InstructionOutput {
+    fn clone(&self) -> Self {
+        match self {
+            InstructionOutput::Scrypto(output) => InstructionOutput::Scrypto(output.clone()),
+            InstructionOutput::Native(output) => {
+                // SBOR Encode the output
+                let encoded_output = scrypto_encode(&**output)
+                    .expect("Impossible Case! Instruction output is not SBOR encodable!");
+
+                // Decode to a ScryptoValue
+                let decoded = scrypto_decode::<ScryptoValue>(&encoded_output)
+                    .expect("Impossible Case! We literally just encoded this above");
+
+                InstructionOutput::Native(Box::new(decoded))
+            }
         }
     }
 }
