@@ -232,7 +232,7 @@ impl FeeTable {
                 AccessControllerFn::InitiateRecovery => self.fixed_low,
                 AccessControllerFn::QuickConfirmRecovery => self.fixed_low,
                 AccessControllerFn::TimedConfirmRecovery => self.fixed_low,
-                AccessControllerFn::CancelRecovery => self.fixed_low,
+                AccessControllerFn::CancelRecoveryAttempt => self.fixed_low,
                 AccessControllerFn::LockPrimaryRole => self.fixed_low,
                 AccessControllerFn::UnlockPrimaryRole => self.fixed_low,
             },

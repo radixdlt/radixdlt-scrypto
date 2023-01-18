@@ -769,7 +769,7 @@ pub enum AccessControllerFn {
     InitiateRecovery,
     QuickConfirmRecovery,
     TimedConfirmRecovery,
-    CancelRecovery,
+    CancelRecoveryAttempt,
     LockPrimaryRole,
     UnlockPrimaryRole,
 }
@@ -838,6 +838,7 @@ impl AccessControllerPackage {
                             AccessControllerInvocation::QuickConfirmRecovery(
                                 AccessControllerQuickConfirmRecoveryInvocation {
                                     receiver,
+                                    confirmor: args.confirmor,
                                     proposer: args.proposer,
                                     proposed_primary_role: args.proposed_primary_role,
                                     proposed_recovery_role: args.proposed_recovery_role,
@@ -854,6 +855,7 @@ impl AccessControllerPackage {
                             AccessControllerInvocation::TimedConfirmRecovery(
                                 AccessControllerTimedConfirmRecoveryInvocation {
                                     receiver,
+                                    confirmor: args.confirmor,
                                     proposer: args.proposer,
                                     proposed_primary_role: args.proposed_primary_role,
                                     proposed_recovery_role: args.proposed_recovery_role,
@@ -862,14 +864,18 @@ impl AccessControllerPackage {
                             ),
                         )
                     }
-                    AccessControllerFn::CancelRecovery => {
-                        let args = scrypto_decode::<AccessControllerCancelRecoveryMethodArgs>(args)
-                            .map_err(ResolveError::DecodeError)?;
+                    AccessControllerFn::CancelRecoveryAttempt => {
+                        let args =
+                            scrypto_decode::<AccessControllerCancelRecoveryAttemptMethodArgs>(args)
+                                .map_err(ResolveError::DecodeError)?;
                         NativeInvocation::AccessController(
-                            AccessControllerInvocation::CancelRecovery(
-                                AccessControllerCancelRecoveryInvocation {
+                            AccessControllerInvocation::CancelRecoveryAttempt(
+                                AccessControllerCancelRecoveryAttemptInvocation {
                                     receiver,
                                     proposer: args.proposer,
+                                    proposed_primary_role: args.proposed_primary_role,
+                                    proposed_recovery_role: args.proposed_recovery_role,
+                                    proposed_confirmation_role: args.proposed_confirmation_role,
                                 },
                             ),
                         )

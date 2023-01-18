@@ -12,7 +12,7 @@ pub struct AccessControllerCreateGlobalInvocation {
     pub primary_role: AccessRule,
     pub recovery_role: AccessRule,
     pub confirmation_role: AccessRule,
-    pub timed_recovery_delay_in_hours: u64,
+    pub timed_recovery_delay_in_hours: u16,
 }
 
 impl Invocation for AccessControllerCreateGlobalInvocation {
@@ -53,13 +53,13 @@ impl Into<CallTableInvocation> for AccessControllerCreateProofInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerUpdateTimedRecoveryDelayMethodArgs {
-    pub timed_recovery_delay_in_hours: u64,
+    pub timed_recovery_delay_in_hours: u16,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerUpdateTimedRecoveryDelayInvocation {
     pub receiver: ComponentAddress,
-    pub timed_recovery_delay_in_hours: u64,
+    pub timed_recovery_delay_in_hours: u16,
 }
 
 impl Invocation for AccessControllerUpdateTimedRecoveryDelayInvocation {
@@ -113,7 +113,8 @@ impl Into<CallTableInvocation> for AccessControllerInitiateRecoveryInvocation {
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmRecoveryMethodArgs {
-    pub proposer: (Role, Role),
+    pub proposer: Role,
+    pub confirmor: Role,
     pub proposed_primary_role: AccessRule,
     pub proposed_recovery_role: AccessRule,
     pub proposed_confirmation_role: AccessRule,
@@ -122,7 +123,8 @@ pub struct AccessControllerQuickConfirmRecoveryMethodArgs {
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerQuickConfirmRecoveryInvocation {
     pub receiver: ComponentAddress,
-    pub proposer: (Role, Role),
+    pub proposer: Role,
+    pub confirmor: Role,
     pub proposed_primary_role: AccessRule,
     pub proposed_recovery_role: AccessRule,
     pub proposed_confirmation_role: AccessRule,
@@ -146,6 +148,7 @@ impl Into<CallTableInvocation> for AccessControllerQuickConfirmRecoveryInvocatio
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerTimedConfirmRecoveryMethodArgs {
     pub proposer: Role,
+    pub confirmor: Role,
     pub proposed_primary_role: AccessRule,
     pub proposed_recovery_role: AccessRule,
     pub proposed_confirmation_role: AccessRule,
@@ -155,6 +158,7 @@ pub struct AccessControllerTimedConfirmRecoveryMethodArgs {
 pub struct AccessControllerTimedConfirmRecoveryInvocation {
     pub receiver: ComponentAddress,
     pub proposer: Role,
+    pub confirmor: Role,
     pub proposed_primary_role: AccessRule,
     pub proposed_recovery_role: AccessRule,
     pub proposed_confirmation_role: AccessRule,
@@ -176,34 +180,39 @@ impl Into<CallTableInvocation> for AccessControllerTimedConfirmRecoveryInvocatio
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryMethodArgs {
+pub struct AccessControllerCancelRecoveryAttemptMethodArgs {
     pub proposer: Role,
+    pub proposed_primary_role: AccessRule,
+    pub proposed_recovery_role: AccessRule,
+    pub proposed_confirmation_role: AccessRule,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerCancelRecoveryInvocation {
+pub struct AccessControllerCancelRecoveryAttemptInvocation {
     pub receiver: ComponentAddress,
     pub proposer: Role,
+    pub proposed_primary_role: AccessRule,
+    pub proposed_recovery_role: AccessRule,
+    pub proposed_confirmation_role: AccessRule,
 }
 
-impl Invocation for AccessControllerCancelRecoveryInvocation {
+impl Invocation for AccessControllerCancelRecoveryAttemptInvocation {
     type Output = ();
 }
 
-impl SerializableInvocation for AccessControllerCancelRecoveryInvocation {
+impl SerializableInvocation for AccessControllerCancelRecoveryAttemptInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<CallTableInvocation> for AccessControllerCancelRecoveryInvocation {
+impl Into<CallTableInvocation> for AccessControllerCancelRecoveryAttemptInvocation {
     fn into(self) -> CallTableInvocation {
-        NativeInvocation::AccessController(AccessControllerInvocation::CancelRecovery(self)).into()
+        NativeInvocation::AccessController(AccessControllerInvocation::CancelRecoveryAttempt(self))
+            .into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerLockPrimaryRoleMethodArgs {
-    pub receiver: ComponentAddress,
-}
+pub struct AccessControllerLockPrimaryRoleMethodArgs {}
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerLockPrimaryRoleInvocation {
@@ -225,9 +234,7 @@ impl Into<CallTableInvocation> for AccessControllerLockPrimaryRoleInvocation {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub struct AccessControllerUnlockPrimaryRoleMethodArgs {
-    pub receiver: ComponentAddress,
-}
+pub struct AccessControllerUnlockPrimaryRoleMethodArgs {}
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct AccessControllerUnlockPrimaryRoleInvocation {

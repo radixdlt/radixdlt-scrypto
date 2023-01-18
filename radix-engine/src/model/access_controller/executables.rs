@@ -7,6 +7,10 @@ use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{GlobalAddress, NativeFn, RENodeId};
 use radix_engine_interface::model::*;
+use radix_engine_interface::{Categorize, Decode, Encode};
+
+#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
+pub enum AccessControllerError {}
 
 impl ExecutableInvocation for AccessControllerCreateGlobalInvocation {
     type Exec = Self;
@@ -224,7 +228,7 @@ impl Executor for AccessControllerTimedConfirmRecoveryInvocation {
     }
 }
 
-impl ExecutableInvocation for AccessControllerCancelRecoveryInvocation {
+impl ExecutableInvocation for AccessControllerCancelRecoveryAttemptInvocation {
     type Exec = Self;
 
     fn resolve<D: ResolverApi>(
@@ -239,7 +243,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryInvocation {
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
-            NativeFn::AccessController(AccessControllerFn::CancelRecovery),
+            NativeFn::AccessController(AccessControllerFn::CancelRecoveryAttempt),
             resolved_receiver,
         );
 
@@ -247,7 +251,7 @@ impl ExecutableInvocation for AccessControllerCancelRecoveryInvocation {
     }
 }
 
-impl Executor for AccessControllerCancelRecoveryInvocation {
+impl Executor for AccessControllerCancelRecoveryAttemptInvocation {
     type Output = ();
 
     fn execute<Y, W: WasmEngine>(

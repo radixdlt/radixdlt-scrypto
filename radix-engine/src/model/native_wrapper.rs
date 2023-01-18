@@ -539,7 +539,7 @@ where
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }
-            AccessControllerInvocation::CancelRecovery(invocation) => {
+            AccessControllerInvocation::CancelRecoveryAttempt(invocation) => {
                 let rtn = api.invoke(invocation)?;
                 Ok(Box::new(rtn))
             }

@@ -199,7 +199,7 @@ pub enum BasicInstruction {
         primary_role: AccessRule,
         recovery_role: AccessRule,
         confirmation_role: AccessRule,
-        timed_recovery_delay_in_hours: u64,
+        timed_recovery_delay_in_hours: u16,
     },
 
     ///
