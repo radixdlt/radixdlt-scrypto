@@ -15,7 +15,8 @@ fn set_up_package_and_component() -> (
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_allocated_account();
     let owner_badge_resource = test_runner.create_non_fungible_resource(account);
-    let owner_badge_addr = NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Number(1));
+    let owner_badge_addr =
+        NonFungibleGlobalId::new(owner_badge_resource, NonFungibleLocalId::Number(1));
 
     // Publish package
     let (code, abi) = Compile::compile("./tests/blueprints/royalty-auth");

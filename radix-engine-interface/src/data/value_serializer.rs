@@ -876,20 +876,24 @@ mod tests {
                             value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ZERO),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::String(
-                                "hello".to_string(),
-                            )),
+                            value: ScryptoCustomValue::NonFungibleLocalId(
+                                NonFungibleLocalId::String("hello".to_string()),
+                            ),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Number(123)),
+                            value: ScryptoCustomValue::NonFungibleLocalId(
+                                NonFungibleLocalId::Number(123),
+                            ),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Bytes(vec![
-                                0x23, 0x45,
-                            ])),
+                            value: ScryptoCustomValue::NonFungibleLocalId(
+                                NonFungibleLocalId::Bytes(vec![0x23, 0x45]),
+                            ),
                         },
                         Value::Custom {
-                            value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::UUID(371)),
+                            value: ScryptoCustomValue::NonFungibleLocalId(
+                                NonFungibleLocalId::UUID(371),
+                            ),
                         },
                     ],
                 },

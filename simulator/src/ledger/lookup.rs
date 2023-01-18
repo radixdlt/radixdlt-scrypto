@@ -87,7 +87,8 @@ mod tests {
         let resource_address = ECDSA_SECP256K1_TOKEN;
 
         // Act
-        let non_fungible_local_id_type = lookup_non_fungible_local_id_type(&resource_address).unwrap();
+        let non_fungible_local_id_type =
+            lookup_non_fungible_local_id_type(&resource_address).unwrap();
 
         // Assert
         assert_eq!(non_fungible_local_id_type, NonFungibleLocalIdTypeId::Bytes)

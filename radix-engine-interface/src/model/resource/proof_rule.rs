@@ -141,8 +141,8 @@ pub enum SoftResourceOrNonFungible {
 }
 
 impl From<NonFungibleGlobalId> for SoftResourceOrNonFungible {
-    fn from(address: NonFungibleGlobalId) -> Self {
-        SoftResourceOrNonFungible::StaticNonFungible(address)
+    fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
+        SoftResourceOrNonFungible::StaticNonFungible(non_fungible_global_id)
     }
 }
 

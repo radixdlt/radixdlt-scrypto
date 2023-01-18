@@ -213,8 +213,8 @@ fn parse_args<'a>(
                         Ok(scrypto_encode(&value).unwrap())
                     }
                     Type::NonFungibleLocalId => {
-                        let value =
-                            NonFungibleLocalId::try_from_combined_simple_string(arg).map_err(|_| {
+                        let value = NonFungibleLocalId::try_from_combined_simple_string(arg)
+                            .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
                         Ok(scrypto_encode(&value).unwrap())
@@ -224,7 +224,9 @@ fn parse_args<'a>(
                         // `SimulatorNonFungibleGlobalId` type since it is identical.
                         let value = arg
                             .parse::<SimulatorNonFungibleGlobalId>()
-                            .map(|simulator_non_fungible_global_id| simulator_non_fungible_global_id.0)
+                            .map(|simulator_non_fungible_global_id| {
+                                simulator_non_fungible_global_id.0
+                            })
                             .map_err(|_| {
                                 BuildArgsError::FailedToParse(i, t.clone(), arg.to_owned())
                             })?;
@@ -454,7 +456,10 @@ fn parse_resource_specifier(
             .collect::<Result<BTreeSet<_>, _>>()
             .map_err(ParseResourceSpecifierError::InvalidNonFungibleLocalId)?;
 
-        Ok(ResourceSpecifier::Ids(non_fungible_local_ids, resource_address))
+        Ok(ResourceSpecifier::Ids(
+            non_fungible_local_ids,
+            resource_address,
+        ))
     }
 }
 
@@ -828,7 +833,8 @@ mod test {
         let arg_type = Type::NonFungibleGlobalId;
 
         // Act
-        let parsed_arg: NonFungibleGlobalId = parse_arg(arg, arg_type).expect("Failed to parse arg");
+        let parsed_arg: NonFungibleGlobalId =
+            parse_arg(arg, arg_type).expect("Failed to parse arg");
 
         // Assert
         assert_eq!(

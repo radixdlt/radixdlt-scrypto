@@ -126,7 +126,9 @@ impl ScryptoProof for Proof {
             }
             ProofValidationMode::ValidateContainsNonFungible(non_fungible_global_id) => {
                 self.validate_resource_address(non_fungible_global_id.resource_address())?;
-                self.validate_contains_non_fungible_local_id(non_fungible_global_id.non_fungible_local_id())?;
+                self.validate_contains_non_fungible_local_id(
+                    non_fungible_global_id.non_fungible_local_id(),
+                )?;
                 Ok(())
             }
             ProofValidationMode::ValidateContainsNonFungibles(
@@ -173,7 +175,11 @@ impl ScryptoProof for Proof {
         &self,
         non_fungible_local_id: &NonFungibleLocalId,
     ) -> Result<(), ProofValidationError> {
-        if self.non_fungible_local_ids().get(non_fungible_local_id).is_some() {
+        if self
+            .non_fungible_local_ids()
+            .get(non_fungible_local_id)
+            .is_some()
+        {
             Ok(())
         } else {
             Err(ProofValidationError::NonFungibleLocalIdNotFound)
@@ -185,9 +191,14 @@ impl ScryptoProof for Proof {
         expected_non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
     ) -> Result<(), ProofValidationError> {
         let actual_non_fungible_local_ids = self.non_fungible_local_ids();
-        let contains_all_non_fungible_local_ids = expected_non_fungible_local_ids
-            .iter()
-            .all(|non_fungible_local_id| actual_non_fungible_local_ids.get(non_fungible_local_id).is_some());
+        let contains_all_non_fungible_local_ids =
+            expected_non_fungible_local_ids
+                .iter()
+                .all(|non_fungible_local_id| {
+                    actual_non_fungible_local_ids
+                        .get(non_fungible_local_id)
+                        .is_some()
+                });
         if contains_all_non_fungible_local_ids {
             Ok(())
         } else {

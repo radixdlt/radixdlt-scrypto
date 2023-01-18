@@ -453,7 +453,10 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                     "compose_vault_and_bucket_proof_by_ids",
                     args!(
                         bucket_id,
-                        BTreeSet::from([NonFungibleLocalId::Number(1), NonFungibleLocalId::Number(2),])
+                        BTreeSet::from([
+                            NonFungibleLocalId::Number(1),
+                            NonFungibleLocalId::Number(2),
+                        ])
                     ),
                 )
             },
@@ -532,7 +535,10 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                     "assert_ids",
                     args!(
                         proof_id,
-                        BTreeSet::from([NonFungibleLocalId::Number(2), NonFungibleLocalId::Number(3)]),
+                        BTreeSet::from([
+                            NonFungibleLocalId::Number(2),
+                            NonFungibleLocalId::Number(3)
+                        ]),
                         resource_address
                     ),
                 )

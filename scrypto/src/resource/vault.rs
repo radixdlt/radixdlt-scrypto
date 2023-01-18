@@ -68,7 +68,10 @@ pub trait ScryptoVault {
     fn lock_fee_internal(&mut self, amount: Decimal) -> ();
     fn lock_contingent_fee_internal(&mut self, amount: Decimal) -> ();
     fn put(&mut self, bucket: Bucket) -> ();
-    fn take_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) -> Bucket;
+    fn take_non_fungibles(
+        &mut self,
+        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+    ) -> Bucket;
     fn resource_address(&self) -> ResourceAddress;
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
     fn create_proof(&self) -> Proof;

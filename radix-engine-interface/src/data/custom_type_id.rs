@@ -19,7 +19,7 @@ pub const TYPE_EDDSA_ED25519_PUBIC_KEY: u8 = 0xb3;
 pub const TYPE_EDDSA_ED25519_SIGNATURE: u8 = 0xb4;
 pub const TYPE_DECIMAL: u8 = 0xb5;
 pub const TYPE_PRECISE_DECIMAL: u8 = 0xb6;
-pub const TYPE_non_fungible_local_id: u8 = 0xb7;
+pub const TYPE_NON_FUNGIBLE_LOCAL_ID: u8 = 0xb7;
 
 #[cfg_attr(
     feature = "serde",
@@ -77,7 +77,7 @@ impl CustomTypeId for ScryptoCustomTypeId {
             Self::EddsaEd25519Signature => TYPE_EDDSA_ED25519_SIGNATURE,
             Self::Decimal => TYPE_DECIMAL,
             Self::PreciseDecimal => TYPE_PRECISE_DECIMAL,
-            Self::NonFungibleLocalId => TYPE_non_fungible_local_id,
+            Self::NonFungibleLocalId => TYPE_NON_FUNGIBLE_LOCAL_ID,
         }
     }
 
@@ -99,7 +99,7 @@ impl CustomTypeId for ScryptoCustomTypeId {
             TYPE_EDDSA_ED25519_SIGNATURE => Some(ScryptoCustomTypeId::EddsaEd25519Signature),
             TYPE_DECIMAL => Some(ScryptoCustomTypeId::Decimal),
             TYPE_PRECISE_DECIMAL => Some(ScryptoCustomTypeId::PreciseDecimal),
-            TYPE_non_fungible_local_id => Some(ScryptoCustomTypeId::NonFungibleLocalId),
+            TYPE_NON_FUNGIBLE_LOCAL_ID => Some(ScryptoCustomTypeId::NonFungibleLocalId),
             _ => None,
         }
     }

@@ -1,7 +1,7 @@
 mod access_rules;
 mod bucket;
-mod non_fungible_global_id;
 mod non_fungible_data;
+mod non_fungible_global_id;
 mod non_fungible_local_id;
 mod proof;
 mod proof_rule;
@@ -12,8 +12,8 @@ mod worktop;
 
 pub use access_rules::*;
 pub use bucket::*;
-pub use non_fungible_global_id::*;
 pub use non_fungible_data::*;
+pub use non_fungible_global_id::*;
 pub use non_fungible_local_id::*;
 pub use proof::*;
 pub use proof_rule::*;

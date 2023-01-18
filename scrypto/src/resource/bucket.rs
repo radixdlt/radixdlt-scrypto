@@ -13,7 +13,10 @@ pub trait ScryptoBucket {
     fn create_proof(&self) -> Proof;
     fn resource_address(&self) -> ResourceAddress;
     fn take_internal(&mut self, amount: Decimal) -> Bucket;
-    fn take_non_fungibles(&mut self, non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>) -> Bucket;
+    fn take_non_fungibles(
+        &mut self,
+        non_fungible_local_ids: &BTreeSet<NonFungibleLocalId>,
+    ) -> Bucket;
     fn put(&mut self, other: Self) -> ();
     fn non_fungible_local_ids(&self) -> BTreeSet<NonFungibleLocalId>;
     fn amount(&self) -> Decimal;

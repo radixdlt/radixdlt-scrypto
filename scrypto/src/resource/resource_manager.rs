@@ -246,7 +246,11 @@ impl ResourceManager {
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleLocalId, data: T) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(
+        &mut self,
+        id: &NonFungibleLocalId,
+        data: T,
+    ) -> Bucket {
         let mut entries = BTreeMap::new();
         entries.insert(
             id.clone(),

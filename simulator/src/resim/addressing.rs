@@ -4,7 +4,8 @@ use std::str::FromStr;
 
 use radix_engine::types::{
     require, AccessRule, AddressError, Bech32Decoder, Bech32Encoder, ComponentAddress,
-    NonFungibleGlobalId, NonFungibleLocalId, PackageAddress, ParseNonFungibleLocalIdError, ResourceAddress,
+    NonFungibleGlobalId, NonFungibleLocalId, PackageAddress, ParseNonFungibleLocalIdError,
+    ResourceAddress,
 };
 use utils::ContextualDisplay;
 

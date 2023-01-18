@@ -841,7 +841,9 @@ fn generate_proof(
     }
 }
 
-fn generate_non_fungible_local_id_internal(value: &ast::Value) -> Result<NonFungibleLocalId, GeneratorError> {
+fn generate_non_fungible_local_id_internal(
+    value: &ast::Value,
+) -> Result<NonFungibleLocalId, GeneratorError> {
     let non_fungible_local_id = match value {
         ast::Value::U64(u) => NonFungibleLocalId::Number(*u),
         ast::Value::U128(u) => NonFungibleLocalId::UUID(*u),
@@ -855,7 +857,9 @@ fn generate_non_fungible_local_id_internal(value: &ast::Value) -> Result<NonFung
     Ok(non_fungible_local_id)
 }
 
-fn generate_non_fungible_local_id(value: &ast::Value) -> Result<NonFungibleLocalId, GeneratorError> {
+fn generate_non_fungible_local_id(
+    value: &ast::Value,
+) -> Result<NonFungibleLocalId, GeneratorError> {
     match value {
         ast::Value::NonFungibleLocalId(inner) => generate_non_fungible_local_id_internal(inner),
         v => invalid_type!(v, ast::Type::NonFungibleLocalId),
@@ -873,12 +877,18 @@ fn generate_non_fungible_global_id(
             }
             let resource_address = generate_resource_address(&elements[0], bech32_decoder)?;
             let non_fungible_local_id = generate_non_fungible_local_id(&elements[1])?;
-            Ok(NonFungibleGlobalId::new(resource_address, non_fungible_local_id))
+            Ok(NonFungibleGlobalId::new(
+                resource_address,
+                non_fungible_local_id,
+            ))
         }
         ast::Value::NonFungibleGlobalId(value1, value2) => {
             let resource_address = generate_resource_address_internal(&value1, bech32_decoder)?;
             let non_fungible_local_id = generate_non_fungible_local_id_internal(&value2)?;
-            Ok(NonFungibleGlobalId::new(resource_address, non_fungible_local_id))
+            Ok(NonFungibleGlobalId::new(
+                resource_address,
+                non_fungible_local_id,
+            ))
         }
         v => invalid_type!(v, ast::Type::NonFungibleGlobalId, ast::Type::Tuple),
     }
@@ -929,7 +939,10 @@ fn generate_non_fungible_local_ids(
                 });
             }
 
-            values.iter().map(|v| generate_non_fungible_local_id(v)).collect()
+            values
+                .iter()
+                .map(|v| generate_non_fungible_local_id(v))
+                .collect()
         }
         v => invalid_type!(v, ast::Type::Array),
     }
@@ -1235,21 +1248,22 @@ pub fn generate_value(
                 elements: bytes.iter().map(|i| Value::U8 { value: *i }).collect(),
             })
         }
-        ast::Value::NonFungibleGlobalId(resource_address, non_fungible_local_id) => Ok(Value::Tuple {
-            fields: vec![
-                Value::Custom {
-                    value: ScryptoCustomValue::ResourceAddress(generate_resource_address_internal(
-                        resource_address,
-                        bech32_decoder,
-                    )?),
-                },
-                Value::Custom {
-                    value: ScryptoCustomValue::NonFungibleLocalId(generate_non_fungible_local_id_internal(
-                        non_fungible_local_id,
-                    )?),
-                },
-            ],
-        }),
+        ast::Value::NonFungibleGlobalId(resource_address, non_fungible_local_id) => {
+            Ok(Value::Tuple {
+                fields: vec![
+                    Value::Custom {
+                        value: ScryptoCustomValue::ResourceAddress(
+                            generate_resource_address_internal(resource_address, bech32_decoder)?,
+                        ),
+                    },
+                    Value::Custom {
+                        value: ScryptoCustomValue::NonFungibleLocalId(
+                            generate_non_fungible_local_id_internal(non_fungible_local_id)?,
+                        ),
+                    },
+                ],
+            })
+        }
         // ==============
         // Custom Types
         // ==============
@@ -1315,9 +1329,11 @@ pub fn generate_value(
                 value: ScryptoCustomValue::EddsaEd25519Signature(v),
             })
         }
-        ast::Value::NonFungibleLocalId(_) => generate_non_fungible_local_id(value).map(|v| Value::Custom {
-            value: ScryptoCustomValue::NonFungibleLocalId(v),
-        }),
+        ast::Value::NonFungibleLocalId(_) => {
+            generate_non_fungible_local_id(value).map(|v| Value::Custom {
+                value: ScryptoCustomValue::NonFungibleLocalId(v),
+            })
+        }
     }
 }
 

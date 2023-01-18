@@ -411,7 +411,9 @@ impl Parser {
             )),
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
             TokenKind::PreciseDecimal => Ok(Value::PreciseDecimal(self.parse_values_one()?.into())),
-            TokenKind::NonFungibleLocalId => Ok(Value::NonFungibleLocalId(self.parse_values_one()?.into())),
+            TokenKind::NonFungibleLocalId => {
+                Ok(Value::NonFungibleLocalId(self.parse_values_one()?.into()))
+            }
 
             _ => Err(ParserError::UnexpectedToken(token)),
         }

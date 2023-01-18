@@ -309,7 +309,9 @@ impl Type {
             Type::PreciseDecimal => {
                 ScryptoValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)
             }
-            Type::NonFungibleLocalId => ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId),
+            Type::NonFungibleLocalId => {
+                ScryptoValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)
+            }
         }
     }
 }

@@ -77,7 +77,8 @@ impl AuthVerification {
             barrier_crossings_allowed,
             auth_zone,
             |auth_zone, rev_index| {
-                if let HardResourceOrNonFungible::NonFungible(non_fungible_global_id) = resource_rule
+                if let HardResourceOrNonFungible::NonFungible(non_fungible_global_id) =
+                    resource_rule
                 {
                     if rev_index == 0 {
                         if auth_zone

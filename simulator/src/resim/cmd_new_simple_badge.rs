@@ -135,8 +135,12 @@ impl NewSimpleBadge {
                 resource_address.to_string(&bech32_encoder).green()
             )
             .map_err(Error::IOError)?;
-            writeln!(out, "non_fungible_local_id: {}", NonFungibleLocalId::Number(1).to_simple_string())
-                .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "non_fungible_local_id: {}",
+                NonFungibleLocalId::Number(1).to_simple_string()
+            )
+            .map_err(Error::IOError)?;
         };
 
         Ok(())

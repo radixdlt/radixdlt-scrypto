@@ -60,7 +60,9 @@ pub fn get_value_kind(ty: &Type) -> Option<ScryptoValueKind> {
         )),
         Type::Decimal => Some(ValueKind::Custom(ScryptoCustomValueKind::Decimal)),
         Type::PreciseDecimal => Some(ValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal)),
-        Type::NonFungibleLocalId => Some(ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId)),
+        Type::NonFungibleLocalId => Some(ValueKind::Custom(
+            ScryptoCustomValueKind::NonFungibleLocalId,
+        )),
 
         Type::Any => None,
     }

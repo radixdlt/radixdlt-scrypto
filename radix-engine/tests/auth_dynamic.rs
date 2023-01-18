@@ -27,7 +27,9 @@ fn test_dynamic_auth(
         .collect();
     let initial_proofs: Vec<NonFungibleGlobalId> = signer_public_keys
         .iter()
-        .map(|index| NonFungibleGlobalId::from_public_key(&key_and_addresses.get(*index).unwrap().0))
+        .map(|index| {
+            NonFungibleGlobalId::from_public_key(&key_and_addresses.get(*index).unwrap().0)
+        })
         .collect();
 
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
@@ -96,7 +98,9 @@ fn test_dynamic_authlist(
         .collect();
     let initial_proofs: Vec<NonFungibleGlobalId> = signer_public_keys
         .iter()
-        .map(|index| NonFungibleGlobalId::from_public_key(&key_and_addresses.get(*index).unwrap().0))
+        .map(|index| {
+            NonFungibleGlobalId::from_public_key(&key_and_addresses.get(*index).unwrap().0)
+        })
         .collect();
     let authorization = AccessRules::new().method("get_secret", auth_rule, rule!(deny_all));
 
@@ -224,8 +228,10 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let (pk, _, _) = test_runner.new_allocated_account();
     let (other_public_key, _, _) = test_runner.new_allocated_account();
     let package = test_runner.compile_and_publish("./tests/blueprints/component");
-    let non_fungible_global_id =
-        NonFungibleGlobalId::new(ECDSA_SECP256K1_TOKEN, NonFungibleLocalId::Bytes(pk.to_vec()));
+    let non_fungible_global_id = NonFungibleGlobalId::new(
+        ECDSA_SECP256K1_TOKEN,
+        NonFungibleLocalId::Bytes(pk.to_vec()),
+    );
     let other_non_fungible_global_id = NonFungibleGlobalId::new(
         ECDSA_SECP256K1_TOKEN,
         NonFungibleLocalId::Bytes(other_public_key.to_vec()),

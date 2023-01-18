@@ -108,10 +108,10 @@ blueprint! {
                 ])
         }
 
-        pub fn verify_does_not_exist(address: NonFungibleGlobalId) {
+        pub fn verify_does_not_exist(non_fungible_global_id: NonFungibleGlobalId) {
             assert_eq!(
-                borrow_resource_manager!(address.resource_address())
-                    .non_fungible_exists(&address.non_fungible_local_id()),
+                borrow_resource_manager!(non_fungible_global_id.resource_address())
+                    .non_fungible_exists(&non_fungible_global_id.non_fungible_local_id()),
                 false
             );
         }
@@ -222,7 +222,10 @@ blueprint! {
                 non_fungible_bucket.non_fungible_local_id(),
                 NonFungibleLocalId::Number(1)
             );
-            assert_eq!(bucket.non_fungible_local_id(), NonFungibleLocalId::Number(2));
+            assert_eq!(
+                bucket.non_fungible_local_id(),
+                NonFungibleLocalId::Number(2)
+            );
             (bucket, non_fungible_bucket)
         }
 

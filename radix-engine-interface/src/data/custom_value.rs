@@ -79,9 +79,9 @@ impl<E: Encoder<ScryptoCustomValueKind>> Encode<ScryptoCustomValueKind, E> for S
             ScryptoCustomValue::PreciseDecimal(_) => {
                 encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::PreciseDecimal))
             }
-            ScryptoCustomValue::NonFungibleLocalId(_) => {
-                encoder.write_value_kind(ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId))
-            }
+            ScryptoCustomValue::NonFungibleLocalId(_) => encoder.write_value_kind(
+                ValueKind::Custom(ScryptoCustomValueKind::NonFungibleLocalId),
+            ),
         }
     }
 
@@ -383,10 +383,14 @@ mod tests {
                         value: ScryptoCustomValue::PreciseDecimal(PreciseDecimal::ONE),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Number(1)),
+                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Number(
+                            1
+                        )),
                     },
                     ScryptoValue::Custom {
-                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Bytes(vec![2, 3])),
+                        value: ScryptoCustomValue::NonFungibleLocalId(NonFungibleLocalId::Bytes(
+                            vec![2, 3]
+                        )),
                     },
                 ]
             }

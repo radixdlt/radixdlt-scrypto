@@ -72,7 +72,9 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ScryptoCustomTypeKind::Own => ScryptoCustomTypeKind::Own,
             ScryptoCustomTypeKind::Expression => ScryptoCustomTypeKind::Expression,
             ScryptoCustomTypeKind::Blob => ScryptoCustomTypeKind::Blob,
-            ScryptoCustomTypeKind::NonFungibleGlobalId => ScryptoCustomTypeKind::NonFungibleGlobalId,
+            ScryptoCustomTypeKind::NonFungibleGlobalId => {
+                ScryptoCustomTypeKind::NonFungibleGlobalId
+            }
             ScryptoCustomTypeKind::Hash => ScryptoCustomTypeKind::Hash,
             ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey => {
                 ScryptoCustomTypeKind::EcdsaSecp256k1PublicKey
@@ -126,7 +128,10 @@ impl CustomTypeExtension for ScryptoCustomTypeExtension {
             ),
             DECIMAL_ID => ("Decimal", ScryptoCustomTypeKind::Decimal),
             PRECISE_DECIMAL_ID => ("PreciseDecimal", ScryptoCustomTypeKind::PreciseDecimal),
-            non_fungible_local_id_ID => ("NonFungibleLocalId", ScryptoCustomTypeKind::NonFungibleLocalId),
+            NON_FUNGIBLE_LOCAL_ID_ID => (
+                "NonFungibleLocalId",
+                ScryptoCustomTypeKind::NonFungibleLocalId,
+            ),
             _ => return None,
         };
 
@@ -161,5 +166,5 @@ mod well_known_scrypto_types {
     pub const EDDSA_ED25519_SIGNATURE_ID: u8 = VALUE_KIND_EDDSA_ED25519_SIGNATURE;
     pub const DECIMAL_ID: u8 = VALUE_KIND_DECIMAL;
     pub const PRECISE_DECIMAL_ID: u8 = VALUE_KIND_PRECISE_DECIMAL;
-    pub const non_fungible_local_id_ID: u8 = VALUE_KIND_non_fungible_local_id;
+    pub const NON_FUNGIBLE_LOCAL_ID_ID: u8 = VALUE_KIND_NON_FUNGIBLE_LOCAL_ID;
 }

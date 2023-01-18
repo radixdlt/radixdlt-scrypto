@@ -23,7 +23,10 @@ impl LegacyDescribe for NonFungibleGlobalId {
 }
 
 impl NonFungibleGlobalId {
-    pub const fn new(resource_address: ResourceAddress, non_fungible_local_id: NonFungibleLocalId) -> Self {
+    pub const fn new(
+        resource_address: ResourceAddress,
+        non_fungible_local_id: NonFungibleLocalId,
+    ) -> Self {
         Self(resource_address, non_fungible_local_id)
     }
 
@@ -63,7 +66,10 @@ impl NonFungibleGlobalId {
         }
         let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
         let non_fungible_local_id = NonFungibleLocalId::try_from_simple_string(id_type, v[1])?;
-        Ok(NonFungibleGlobalId::new(resource_address, non_fungible_local_id))
+        Ok(NonFungibleGlobalId::new(
+            resource_address,
+            non_fungible_local_id,
+        ))
     }
 
     /// Returns canonical representation of this NonFungibleGlobalId.
@@ -93,7 +99,10 @@ impl NonFungibleGlobalId {
         }
         let resource_address = bech32_decoder.validate_and_decode_resource_address(v[0])?;
         let non_fungible_local_id = NonFungibleLocalId::try_from_combined_simple_string(v[1])?;
-        Ok(NonFungibleGlobalId::new(resource_address, non_fungible_local_id))
+        Ok(NonFungibleGlobalId::new(
+            resource_address,
+            non_fungible_local_id,
+        ))
     }
 }
 

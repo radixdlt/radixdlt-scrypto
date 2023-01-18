@@ -321,7 +321,8 @@ fn user_can_not_mutate_auth_on_methods_that_control_auth() {
     ] {
         let private_key = EcdsaSecp256k1PrivateKey::from_u64(709).unwrap();
         let public_key = private_key.public_key();
-        let virtual_badge_non_fungible_global_id = NonFungibleGlobalId::from_public_key(&public_key);
+        let virtual_badge_non_fungible_global_id =
+            NonFungibleGlobalId::from_public_key(&public_key);
 
         let access_rules = vec![scrypto_decode::<AccessRules>(&args!(
             HashMap::<AccessRuleKey, AccessRuleEntry>::new(),

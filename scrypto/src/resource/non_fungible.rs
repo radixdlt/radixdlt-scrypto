@@ -19,14 +19,14 @@ impl ScryptoNonFungibleLocalId for NonFungibleLocalId {
 /// Represents a non-fungible unit.
 #[derive(Debug)]
 pub struct NonFungible<T: NonFungibleData> {
-    address: NonFungibleGlobalId,
+    non_fungible_global_id: NonFungibleGlobalId,
     data: PhantomData<T>,
 }
 
 impl<T: NonFungibleData> From<NonFungibleGlobalId> for NonFungible<T> {
-    fn from(address: NonFungibleGlobalId) -> Self {
+    fn from(non_fungible_global_id: NonFungibleGlobalId) -> Self {
         Self {
-            address,
+            non_fungible_global_id,
             data: PhantomData,
         }
     }
@@ -35,27 +35,28 @@ impl<T: NonFungibleData> From<NonFungibleGlobalId> for NonFungible<T> {
 impl<T: NonFungibleData> NonFungible<T> {
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
-        self.address.resource_address().clone()
+        self.non_fungible_global_id.resource_address().clone()
     }
 
     /// Returns a reference to the non-fungible address.
-    pub fn address(&self) -> &NonFungibleGlobalId {
-        &self.address
+    pub fn global_id(&self) -> &NonFungibleGlobalId {
+        &self.non_fungible_global_id
     }
 
     /// Returns a reference to the the non-fungible ID.
-    pub fn id(&self) -> &NonFungibleLocalId {
-        self.address.non_fungible_local_id()
+    pub fn local_id(&self) -> &NonFungibleLocalId {
+        self.non_fungible_global_id.non_fungible_local_id()
     }
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        borrow_resource_manager!(self.resource_address().clone()).get_non_fungible_data(self.id())
+        borrow_resource_manager!(self.resource_address().clone())
+            .get_non_fungible_data(self.local_id())
     }
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: T) {
         borrow_resource_manager!(self.resource_address().clone())
-            .update_non_fungible_data(self.id(), new_data);
+            .update_non_fungible_data(self.local_id(), new_data);
     }
 }
