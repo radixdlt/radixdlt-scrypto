@@ -3,14 +3,16 @@ use crate::engine::{
     RuntimeError, SystemApi,
 };
 use crate::types::AccessControllerFn;
+use crate::types::*;
 use crate::wasm::WasmEngine;
 use radix_engine_interface::api::api::EngineApi;
 use radix_engine_interface::api::types::{GlobalAddress, NativeFn, RENodeId};
 use radix_engine_interface::model::*;
-use radix_engine_interface::{Categorize, Decode, Encode};
 
-#[derive(Debug, Clone, Eq, PartialEq, Categorize, Encode, Decode)]
-pub enum AccessControllerError {}
+#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum AccessControllerError {
+    RuleAssertionFailed { asserted_against: AccessRule },
+}
 
 impl ExecutableInvocation for AccessControllerCreateGlobalInvocation {
     type Exec = Self;

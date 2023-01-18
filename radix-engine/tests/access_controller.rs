@@ -1,19 +1,380 @@
-use radix_engine::{transaction::TransactionReceipt, types::*};
-use radix_engine_interface::*;
+use radix_engine::{
+    engine::{ApplicationError, AuthError, ModuleError, RuntimeError},
+    model::AccessControllerError,
+    transaction::TransactionReceipt,
+    types::*,
+};
 use scrypto_unit::TestRunner;
 use transaction::{builder::ManifestBuilder, model::TransactionManifest};
 
+#[test]
+pub fn creating_proof_as_primary_during_normal_operations_with_unlocked_primary_succeeds() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    // Act
+    let receipt = test_runner.create_proof([Role::Primary].into());
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn creating_proof_as_recovery_during_normal_operations_with_unlocked_primary_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    // Act
+    let receipt = test_runner.create_proof([Role::Recovery].into());
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. })),
+        )
+    });
+}
+
+#[test]
+pub fn creating_proof_as_confirmation_during_normal_operations_with_unlocked_primary_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    // Act
+    let receipt = test_runner.create_proof([Role::Confirmation].into());
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. })),
+        )
+    });
+}
+
+#[test]
+pub fn update_timed_recovery_delay_as_primary_during_normal_operations_with_unlocked_primary_succeeds(
+) {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    // Act
+    let receipt = test_runner.update_timed_recovery_delay([Role::Primary].into(), 5);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn update_timed_recovery_delay_as_recovery_during_normal_operations_with_unlocked_primary_fails(
+) {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    // Act
+    let receipt = test_runner.update_timed_recovery_delay([Role::Recovery].into(), 5);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. })),
+        )
+    });
+}
+
+#[test]
+pub fn update_timed_recovery_delay_as_confirmation_during_normal_operations_with_unlocked_primary_fails(
+) {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    // Act
+    let receipt = test_runner.update_timed_recovery_delay([Role::Confirmation].into(), 5);
+
+    // Assert
+    receipt.expect_specific_failure(|error| {
+        matches!(
+            error,
+            RuntimeError::ModuleError(ModuleError::AuthError(AuthError::Unauthorized { .. })),
+        )
+    });
+}
+
+#[test]
+pub fn initiate_recovery_as_primary_during_normal_operations_with_unlocked_primary_succeeds() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    let primary_role = rule!(require(RADIX_TOKEN));
+    let recovery_role = rule!(require(RADIX_TOKEN));
+    let confirmation_role = rule!(require(RADIX_TOKEN));
+
+    // Act
+    let receipt = test_runner.initiate_recovery(
+        Role::Primary,
+        primary_role,
+        recovery_role,
+        confirmation_role,
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn initiate_recovery_as_recovery_during_normal_operations_with_unlocked_primary_succeeds() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    let primary_role = rule!(require(RADIX_TOKEN));
+    let recovery_role = rule!(require(RADIX_TOKEN));
+    let confirmation_role = rule!(require(RADIX_TOKEN));
+
+    // Act
+    let receipt = test_runner.initiate_recovery(
+        Role::Recovery,
+        primary_role,
+        recovery_role,
+        confirmation_role,
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn initiate_recovery_as_confirmation_during_normal_operations_with_unlocked_primary_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    let primary_role = rule!(require(RADIX_TOKEN));
+    let recovery_role = rule!(require(RADIX_TOKEN));
+    let confirmation_role = rule!(require(RADIX_TOKEN));
+
+    // Act
+    let receipt = test_runner.initiate_recovery(
+        Role::Confirmation,
+        primary_role,
+        recovery_role,
+        confirmation_role,
+    );
+
+    // Assert
+    let asserted_against = AccessRule::Protected(AccessRuleNode::AnyOf(vec![
+        AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticResource(test_runner.primary_role_badge),
+        )),
+        AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticResource(test_runner.recovery_role_badge),
+        )),
+    ]));
+    receipt.expect_specific_failure(|error| {
+        error.to_owned()
+            == RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+                AccessControllerError::RuleAssertionFailed { asserted_against },
+            ))
+    });
+}
+
+#[test]
+pub fn lock_primary_role_as_primary_during_normal_operations_with_unlocked_primary_succeeds() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    // Act
+    let receipt = test_runner.lock_primary_role(Role::Primary);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn lock_primary_role_as_recovery_during_normal_operations_with_unlocked_primary_succeeds() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    // Act
+    let receipt = test_runner.lock_primary_role(Role::Recovery);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn lock_primary_role_as_confirmation_during_normal_operations_with_unlocked_primary_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    // Act
+    let receipt = test_runner.lock_primary_role(Role::Confirmation);
+
+    // Assert
+    let asserted_against = AccessRule::Protected(AccessRuleNode::AnyOf(vec![
+        AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticResource(test_runner.primary_role_badge),
+        )),
+        AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticResource(test_runner.recovery_role_badge),
+        )),
+    ]));
+    receipt.expect_specific_failure(|error| {
+        error.to_owned()
+            == RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+                AccessControllerError::RuleAssertionFailed { asserted_against },
+            ))
+    });
+}
+
+#[test]
+pub fn unlock_primary_role_as_primary_during_normal_operations_with_locked_primary_succeeds() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+    test_runner
+        .unlock_primary_role(Role::Primary)
+        .expect_commit_success();
+
+    // Act
+    let receipt = test_runner.unlock_primary_role(Role::Primary);
+
+    // Assert
+    let asserted_against = AccessRule::Protected(AccessRuleNode::AnyOf(vec![
+        AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticResource(test_runner.confirmation_role_badge),
+        )),
+        AccessRuleNode::ProofRule(ProofRule::Require(
+            SoftResourceOrNonFungible::StaticResource(test_runner.recovery_role_badge),
+        )),
+    ]));
+    receipt.expect_specific_failure(|error| {
+        error.to_owned()
+            == RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+                AccessControllerError::RuleAssertionFailed { asserted_against },
+            ))
+    });
+}
+
+#[test]
+pub fn unlock_primary_role_as_recovery_during_normal_operations_with_locked_primary_succeeds() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+    test_runner
+        .unlock_primary_role(Role::Primary)
+        .expect_commit_success();
+
+    // Act
+    let receipt = test_runner.unlock_primary_role(Role::Recovery);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn unlock_primary_role_as_confirmation_during_normal_operations_with_locked_primary_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+    test_runner
+        .unlock_primary_role(Role::Primary)
+        .expect_commit_success();
+
+    // Act
+    let receipt = test_runner.unlock_primary_role(Role::Confirmation);
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn initiate_recovery_as_primary_during_normal_operations_with_locked_primary_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    let primary_role = rule!(require(RADIX_TOKEN));
+    let recovery_role = rule!(require(RADIX_TOKEN));
+    let confirmation_role = rule!(require(RADIX_TOKEN));
+
+    // Act
+    let receipt = test_runner.initiate_recovery(
+        Role::Primary,
+        primary_role,
+        recovery_role,
+        confirmation_role,
+    );
+
+    // Assert
+    let asserted_against = AccessRule::Protected(AccessRuleNode::ProofRule(require(
+        test_runner.recovery_role_badge,
+    )));
+    receipt.expect_specific_failure(|error| {
+        error.to_owned()
+            == RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+                AccessControllerError::RuleAssertionFailed { asserted_against },
+            ))
+    });
+}
+
+#[test]
+pub fn initiate_recovery_as_recovery_during_normal_operations_with_locked_primary_succeeds() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    let primary_role = rule!(require(RADIX_TOKEN));
+    let recovery_role = rule!(require(RADIX_TOKEN));
+    let confirmation_role = rule!(require(RADIX_TOKEN));
+
+    // Act
+    let receipt = test_runner.initiate_recovery(
+        Role::Recovery,
+        primary_role,
+        recovery_role,
+        confirmation_role,
+    );
+
+    // Assert
+    receipt.expect_commit_success();
+}
+
+#[test]
+pub fn initiate_recovery_as_confirmation_during_normal_operations_with_locked_primary_fails() {
+    // Arrange
+    let mut test_runner = AccessControllerTestRunner::new(10);
+
+    let primary_role = rule!(require(RADIX_TOKEN));
+    let recovery_role = rule!(require(RADIX_TOKEN));
+    let confirmation_role = rule!(require(RADIX_TOKEN));
+
+    // Act
+    let receipt = test_runner.initiate_recovery(
+        Role::Confirmation,
+        primary_role,
+        recovery_role,
+        confirmation_role,
+    );
+
+    // Assert
+    let asserted_against = AccessRule::Protected(AccessRuleNode::ProofRule(require(
+        test_runner.recovery_role_badge,
+    )));
+    receipt.expect_specific_failure(|error| {
+        error.to_owned()
+            == RuntimeError::ApplicationError(ApplicationError::AccessControllerError(
+                AccessControllerError::RuleAssertionFailed { asserted_against },
+            ))
+    });
+}
+
 struct AccessControllerTestRunner {
-    test_runner: TestRunner,
+    pub test_runner: TestRunner,
 
-    account: (ComponentAddress, PublicKey),
+    pub account: (ComponentAddress, PublicKey),
 
-    access_controller_component_address: ComponentAddress,
-    primary_role_badge: ResourceAddress,
-    recovery_role_badge: ResourceAddress,
-    confirmation_role_badge: ResourceAddress,
+    pub access_controller_component_address: ComponentAddress,
+    pub primary_role_badge: ResourceAddress,
+    pub recovery_role_badge: ResourceAddress,
+    pub confirmation_role_badge: ResourceAddress,
 
-    timed_recovery_delay_in_hours: u16,
+    pub timed_recovery_delay_in_hours: u16,
 }
 
 impl AccessControllerTestRunner {
@@ -77,6 +438,7 @@ impl AccessControllerTestRunner {
                 "create_proof",
                 scrypto_encode(&AccessControllerCreateProofMethodArgs {}).unwrap(),
             )
+            .pop_from_auth_zone(|builder, _| builder)
             .build();
         self.execute_manifest(manifest)
     }
