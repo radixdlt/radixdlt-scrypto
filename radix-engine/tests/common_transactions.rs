@@ -97,7 +97,7 @@ fn creating_a_fungible_resource_with_no_initial_supply_with_owner_succeeds() {
             ),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -133,7 +133,7 @@ fn creating_a_fungible_resource_with_initial_supply_with_owner_succeeds() {
             initial_supply = initial_supply,
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -161,7 +161,7 @@ fn creating_a_non_fungible_resource_with_initial_supply_succeeds() {
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply.rtm"),
             account_component_address =
                 account_component_address.display(bech32_encoder),
-                non_fungible_local_id = "1u64"
+                non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -177,7 +177,7 @@ fn creating_a_non_fungible_resource_with_no_initial_supply_with_owner_succeeds()
             ),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -191,8 +191,8 @@ fn creating_a_non_fungible_resource_with_initial_supply_with_owner_succeeds() {
             include_str!("../../transaction/examples/resources/creation/non_fungible/with_initial_supply_with_owner.rtm"),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "1u64",
-            non_fungible_local_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#",
+            non_fungible_local_id = "#1#"
         );
         (manifest, Vec::new())
     });
@@ -214,7 +214,7 @@ fn publish_package_succeeds() {
             abi_blob_hash = hash(&abi_blob),
             account_component_address = account_component_address.display(bech32_encoder),
             auth_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            auth_badge_non_fungible_local_id = "1u64"
+            auth_badge_non_fungible_local_id = "#1#"
         );
         (manifest, vec![code_blob, abi_blob])
     });
@@ -236,7 +236,7 @@ fn publish_package_with_owner_succeeds() {
             abi_blob_hash = hash(&abi_blob),
             account_component_address = account_component_address.display(bech32_encoder),
             owner_badge_resource_address = RADIX_TOKEN.display(bech32_encoder),
-            owner_badge_non_fungible_local_id = "1u64"
+            owner_badge_non_fungible_local_id = "#1#"
         );
         (manifest, vec![code_blob, abi_blob])
     });
@@ -283,7 +283,7 @@ fn minting_of_non_fungible_resource_succeeds() {
                 mintable_resource_address = mintable_resource_address.display(bech32_encoder),
                 minter_badge_resource_address =
                     minter_badge_resource_address.display(bech32_encoder),
-                non_fungible_local_id = "1u64"
+                non_fungible_local_id = "#1#"
             );
             (manifest, Vec::new())
         },
