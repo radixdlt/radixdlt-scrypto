@@ -53,6 +53,18 @@ impl TryFrom<&[u8]> for ComponentAddress {
 }
 
 impl ComponentAddress {
+    pub fn raw(&self) -> [u8; 26] {
+        match self {
+            Self::Normal(v) => v.clone(),
+            Self::Account(v) => v.clone(),
+            Self::EcdsaSecp256k1VirtualAccount(v) => v.clone(),
+            Self::EddsaEd25519VirtualAccount(v) => v.clone(),
+            Self::Clock(v) => v.clone(),
+            Self::EpochManager(v) => v.clone(),
+            Self::Validator(v) => v.clone(),
+        }
+    }
+
     pub fn to_vec(&self) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.push(EntityType::component(self).id());

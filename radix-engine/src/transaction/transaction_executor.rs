@@ -117,6 +117,7 @@ where
     ) -> TransactionReceipt {
         let transaction_hash = transaction.transaction_hash();
         let auth_zone_params = transaction.auth_zone_params();
+        let pre_allocated_ids = transaction.pre_allocated_ids();
         let instructions = transaction.instructions();
         let blobs = transaction.blobs();
 
@@ -155,7 +156,8 @@ where
         // Invoke the function/method
         let track_receipt = {
             let mut module = KernelModule::new(execution_config);
-            let mut id_allocator = IdAllocator::new(IdSpace::Application, transaction_hash.clone());
+            let mut id_allocator =
+                IdAllocator::new(transaction_hash.clone(), pre_allocated_ids.clone());
 
             let mut kernel = Kernel::new(
                 auth_zone_params.clone(),

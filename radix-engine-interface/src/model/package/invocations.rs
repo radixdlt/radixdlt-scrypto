@@ -10,6 +10,7 @@ use sbor::rust::vec::Vec;
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct PackagePublishInvocation {
+    pub package_address: Option<[u8; 26]>, // TODO: Clean this up
     pub code: Vec<u8>,
     pub abi: Vec<u8>,
     pub royalty_config: BTreeMap<String, RoyaltyConfig>,

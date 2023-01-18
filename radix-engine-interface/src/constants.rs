@@ -1,318 +1,59 @@
+use crate::address;
 use crate::construct_address;
 use crate::model::*;
 
-// After changing Radix Engine ID allocation, you will most likely need to update the addresses below.
-//
-// To obtain the new addresses, uncomment the println code in `id_allocator.rs` and
-// run `cd radix-engine && cargo test -- bootstrap_receipt_should_match_constants --nocapture`.
-//
-// We've arranged the addresses in the order they're created in the genesis transaction.
-
 /// The XRD resource address.
-pub const RADIX_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    83,
-    241,
-    195,
-    226,
-    12,
-    194,
-    56,
-    53,
-    94,
-    35,
-    176,
-    29,
-    236,
-    187,
-    0,
-    167,
-    136,
-    92,
-    42,
-    130,
-    100,
-    141,
-    94,
-    133,
-    157,
-    79
-);
+pub const RADIX_TOKEN: ResourceAddress = address!(EntityType::Resource, 0);
 
 /// The ECDSA virtual resource address.
-pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    183,
-    5,
-    84,
-    120,
-    29,
-    187,
-    91,
-    52,
-    106,
-    12,
-    202,
-    40,
-    56,
-    242,
-    194,
-    46,
-    214,
-    59,
-    64,
-    82,
-    248,
-    103,
-    140,
-    64,
-    210,
-    19
-);
+pub const ECDSA_SECP256K1_TOKEN: ResourceAddress = address!(EntityType::Resource, 1);
 
 /// The ED25519 virtual resource address.
-pub const EDDSA_ED25519_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    251,
-    209,
-    29,
-    182,
-    229,
-    138,
-    124,
-    19,
-    239,
-    132,
-    175,
-    139,
-    211,
-    54,
-    92,
-    87,
-    123,
-    125,
-    29,
-    48,
-    97,
-    12,
-    125,
-    6,
-    131,
-    208
-);
+pub const EDDSA_ED25519_TOKEN: ResourceAddress = address!(EntityType::Resource, 2);
 
 /// The system token which allows access to system resources (e.g. setting epoch)
-pub const SYSTEM_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    236,
-    106,
-    120,
-    159,
-    143,
-    13,
-    221,
-    145,
-    4,
-    37,
-    227,
-    231,
-    245,
-    106,
-    85,
-    104,
-    249,
-    221,
-    70,
-    50,
-    6,
-    109,
-    237,
-    77,
-    32,
-    128
-);
+pub const SYSTEM_TOKEN: ResourceAddress = address!(EntityType::Resource, 3);
 
-pub const PACKAGE_TOKEN: ResourceAddress = construct_address!(
-    EntityType::Resource,
-    134,
-    200,
-    228,
-    103,
-    133,
-    177,
-    187,
-    93,
-    75,
-    253,
-    216,
-    113,
-    213,
-    14,
-    160,
-    1,
-    198,
-    32,
-    10,
-    164,
-    246,
-    154,
-    20,
-    240,
-    118,
-    153
-);
+pub const PACKAGE_TOKEN: ResourceAddress = address!(EntityType::Resource, 4);
 
 /// The address of the faucet package.
-pub const FAUCET_PACKAGE: PackageAddress = construct_address!(
-    EntityType::Package,
-    139,
-    102,
-    112,
-    90,
-    86,
-    241,
-    123,
-    106,
-    194,
-    118,
-    77,
-    122,
-    228,
-    192,
-    200,
-    254,
-    97,
-    228,
-    48,
-    125,
-    233,
-    170,
-    107,
-    105,
-    87,
-    105
-);
+pub const FAUCET_PACKAGE: PackageAddress = address!(EntityType::Package, 0);
 pub const FAUCET_BLUEPRINT: &str = "Faucet";
 
 /// The address of the account package.
-pub const ACCOUNT_PACKAGE: PackageAddress = construct_address!(
-    EntityType::Package,
-    210,
-    4,
-    203,
-    199,
-    253,
-    87,
-    86,
-    55,
-    225,
-    160,
-    209,
-    125,
-    34,
-    246,
-    206,
-    141,
-    224,
-    160,
-    236,
-    54,
-    219,
-    221,
-    233,
-    10,
-    33,
-    79
-);
+pub const ACCOUNT_PACKAGE: PackageAddress = address!(EntityType::Package, 1);
 pub const ACCOUNT_BLUEPRINT: &str = "Account";
 
 /// The address of the faucet component, test network only.
 pub const FAUCET_COMPONENT: ComponentAddress = construct_address!(
     EntityType::NormalComponent,
-    40,
-    156,
-    235,
-    208,
-    229,
-    187,
-    10,
-    150,
-    196,
-    91,
-    63,
-    192,
-    121,
-    92,
-    203,
-    114,
-    52,
-    69,
-    201,
-    205,
-    238,
-    241,
-    201,
-    63,
-    80,
-    32
-);
-
-pub const EPOCH_MANAGER: ComponentAddress = construct_address!(
-    EntityType::EpochManager,
-    35,
-    155,
-    229,
-    30,
-    222,
-    8,
-    221,
-    168,
-    219,
-    134,
-    181,
-    56,
-    151,
-    220,
-    111,
-    15,
-    215,
-    94,
-    242,
-    121,
-    133,
-    172,
-    20,
-    173,
-    92,
-    247
-);
-
-pub const CLOCK: ComponentAddress = construct_address!(
-    EntityType::Clock,
-    165,
-    188,
-    29,
-    247,
-    198,
-    205,
-    88,
-    38,
-    100,
-    237,
-    238,
-    138,
+    57,
+    78,
+    78,
+    153,
     179,
-    163,
-    134,
+    175,
+    144,
+    54,
+    157,
+    76,
+    67,
+    70,
+    161,
+    216,
+    233,
+    38,
+    187,
+    32,
+    234,
     127,
+    84,
     0,
-    192,
-    123,
-    58,
-    33,
-    192,
-    116,
-    237,
-    220,
-    13
+    140,
+    48,
+    198,
+    110
 );
+
+pub const CLOCK: ComponentAddress = address!(EntityType::Clock, 0);
+pub const EPOCH_MANAGER: ComponentAddress = address!(EntityType::EpochManager, 0);

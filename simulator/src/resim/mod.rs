@@ -162,6 +162,7 @@ pub fn handle_system_transaction<O: std::io::Write>(
         instructions,
         blobs,
         nonce,
+        pre_allocated_ids: BTreeSet::new(),
     };
 
     let receipt = execute_and_commit_transaction(

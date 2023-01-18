@@ -187,7 +187,6 @@ where
                     &mut self.heap,
                     &mut self.track,
                     true,
-                    true,
                 )?;
 
                 Ok(true)
@@ -288,8 +287,6 @@ where
             Ok(())
         })?;
 
-        self.current_frame.verify_allocated_ids_empty()?;
-
         Ok(())
     }
 
@@ -347,6 +344,7 @@ where
                     &mut self.track,
                 )
                 .map_err(RuntimeError::ModuleError)?;
+            self.id_allocator.pre_execute_invocation();
         }
 
         // Call Frame Push
@@ -371,6 +369,7 @@ where
             self.current_frame
                 .drop_all_locks(&mut self.heap, &mut self.track)?;
 
+            self.id_allocator.post_execute_invocation()?;
             self.module
                 .post_execute_invocation(
                     &self.prev_frame_stack.last().unwrap().actor,
@@ -809,96 +808,7 @@ where
 
     fn allocate_node_id(&mut self, node_type: RENodeType) -> Result<RENodeId, RuntimeError> {
         // TODO: Add costing
-
-        let node_id = match node_type {
-            RENodeType::AuthZoneStack => self
-                .id_allocator
-                .new_auth_zone_id()
-                .map(|id| RENodeId::AuthZoneStack(id)),
-            RENodeType::Bucket => self
-                .id_allocator
-                .new_bucket_id()
-                .map(|id| RENodeId::Bucket(id)),
-            RENodeType::Proof => self
-                .id_allocator
-                .new_proof_id()
-                .map(|id| RENodeId::Proof(id)),
-            RENodeType::TransactionRuntime => self
-                .id_allocator
-                .new_transaction_hash_id()
-                .map(|id| RENodeId::TransactionRuntime(id)),
-            RENodeType::Worktop => Ok(RENodeId::Worktop),
-            RENodeType::Logger => Ok(RENodeId::Logger),
-            RENodeType::Vault => self
-                .id_allocator
-                .new_vault_id()
-                .map(|id| RENodeId::Vault(id)),
-            RENodeType::KeyValueStore => self
-                .id_allocator
-                .new_kv_store_id()
-                .map(|id| RENodeId::KeyValueStore(id)),
-            RENodeType::NonFungibleStore => self
-                .id_allocator
-                .new_nf_store_id()
-                .map(|id| RENodeId::NonFungibleStore(id)),
-            RENodeType::Package => {
-                // Security Alert: ensure ID allocating will practically never fail
-                self.id_allocator
-                    .new_package_id()
-                    .map(|id| RENodeId::Package(id))
-            }
-            RENodeType::ResourceManager => self
-                .id_allocator
-                .new_resource_manager_id()
-                .map(|id| RENodeId::ResourceManager(id)),
-            RENodeType::Component => self
-                .id_allocator
-                .new_component_id()
-                .map(|id| RENodeId::Component(id)),
-            RENodeType::EpochManager => self
-                .id_allocator
-                .new_component_id()
-                .map(|id| RENodeId::EpochManager(id)),
-            RENodeType::Validator => self
-                .id_allocator
-                .new_validator_id()
-                .map(|id| RENodeId::Validator(id)),
-            RENodeType::Clock => self
-                .id_allocator
-                .new_component_id()
-                .map(|id| RENodeId::Clock(id)),
-            RENodeType::GlobalPackage => self
-                .id_allocator
-                .new_package_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Package(address))),
-            RENodeType::GlobalEpochManager => self
-                .id_allocator
-                .new_epoch_manager_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
-            RENodeType::GlobalValidator => self
-                .id_allocator
-                .new_validator_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
-            RENodeType::GlobalClock => self
-                .id_allocator
-                .new_clock_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
-            RENodeType::GlobalResourceManager => self
-                .id_allocator
-                .new_resource_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Resource(address))),
-            RENodeType::GlobalAccount => self
-                .id_allocator
-                .new_account_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
-            RENodeType::GlobalComponent => self
-                .id_allocator
-                .new_component_address()
-                .map(|address| RENodeId::Global(GlobalAddress::Component(address))),
-        }
-        .map_err(|e| RuntimeError::KernelError(KernelError::IdAllocationError(e)))?;
-
-        self.current_frame.add_allocated_id(node_id);
+        let node_id = self.id_allocator.allocate_node_id(node_type)?;
 
         Ok(node_id)
     }
@@ -1019,13 +929,13 @@ where
             _ => false,
         };
 
+        self.id_allocator.take_node_id(node_id)?;
         self.current_frame.create_node(
             node_id,
             re_node,
             &mut self.heap,
             &mut self.track,
             push_to_store,
-            false,
         )?;
 
         // Restore current mode
