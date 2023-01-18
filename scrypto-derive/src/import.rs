@@ -333,9 +333,6 @@ fn get_native_type(ty: &SchemaType) -> Result<(Type, Vec<Item>)> {
         SchemaType::ResourceAddress => {
             parse_quote! {::scrypto::model::ResourceAddress }
         }
-        SchemaType::SystemAddress => {
-            parse_quote! { ::scrypto::model::SystemAddress}
-        }
         SchemaType::Own => parse_quote! { ::scrypto::radix_engine_interface::data::types::Own },
         SchemaType::Bucket => parse_quote! {::scrypto::model::Bucket },
         SchemaType::Proof => parse_quote! { ::scrypto::model::Proof},

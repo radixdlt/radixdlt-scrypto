@@ -60,7 +60,7 @@ impl ProofSubstate {
                 for proof in &proofs {
                     for (container_id, (_, locked_amount_or_ids)) in &proof.evidence {
                         let new_amount = locked_amount_or_ids.amount();
-                        if let Some(existing) = max.get_mut(&container_id) {
+                        if let Some(existing) = max.get_mut(container_id) {
                             *existing = Decimal::max(*existing, new_amount);
                         } else {
                             max.insert(container_id.clone(), new_amount);
@@ -85,7 +85,7 @@ impl ProofSubstate {
                         let new_ids = locked_amount_or_ids
                             .ids()
                             .expect("Failed to list non-fungible IDS on non-fungible proof");
-                        if let Some(ids) = max.get_mut(&container_id) {
+                        if let Some(ids) = max.get_mut(container_id) {
                             ids.extend(new_ids);
                         } else {
                             max.insert(container_id.clone(), new_ids);

@@ -1043,7 +1043,7 @@ impl<'a> SubstateRef<'a> {
             SubstateRef::Validator(substate) => {
                 let mut references = HashSet::new();
                 let mut owned_nodes = HashSet::new();
-                references.insert(GlobalAddress::System(substate.manager));
+                references.insert(GlobalAddress::Component(substate.manager));
                 owned_nodes.insert(RENodeId::Vault(substate.stake_vault_id));
                 (references, owned_nodes)
             }

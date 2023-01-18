@@ -113,9 +113,9 @@ blueprint! {
             Clock::current_time_rounded_to_minutes().seconds_since_unix_epoch
         }
 
-        pub fn set_current_time(clock: SystemAddress, current_time_ms: i64) {
+        pub fn set_current_time(clock: ComponentAddress, current_time_ms: i64) {
             let input =
-                RadixEngineInput::Invoke(SerializedInvocation::Native(NativeInvocation::Clock(
+                RadixEngineInput::Invoke(CallTableInvocation::Native(NativeInvocation::Clock(
                     ClockInvocation::SetCurrentTime(ClockSetCurrentTimeInvocation {
                         receiver: clock,
                         current_time_ms,

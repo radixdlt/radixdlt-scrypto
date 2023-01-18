@@ -10,6 +10,7 @@ use crate::*;
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateInvocation {
+    pub component_address: [u8; 26], // TODO: Clean this up
     pub validator_set: BTreeMap<EcdsaSecp256k1PublicKey, Bucket>,
     pub initial_epoch: u64,
     pub rounds_per_epoch: u64,
@@ -23,6 +24,7 @@ impl Clone for EpochManagerCreateInvocation {
         }
 
         Self {
+            component_address: self.component_address,
             validator_set,
             initial_epoch: self.initial_epoch,
             rounds_per_epoch: self.rounds_per_epoch,
@@ -31,22 +33,25 @@ impl Clone for EpochManagerCreateInvocation {
 }
 
 impl Invocation for EpochManagerCreateInvocation {
-    type Output = SystemAddress;
+    type Output = ComponentAddress;
 }
 
 impl SerializableInvocation for EpochManagerCreateInvocation {
-    type ScryptoOutput = SystemAddress;
+    type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<SerializedInvocation> for EpochManagerCreateInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerCreateInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::Create(self)).into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct EpochManagerGetCurrentEpochMethodArgs {}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerGetCurrentEpochInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
 }
 
 impl Invocation for EpochManagerGetCurrentEpochInvocation {
@@ -57,15 +62,20 @@ impl SerializableInvocation for EpochManagerGetCurrentEpochInvocation {
     type ScryptoOutput = u64;
 }
 
-impl Into<SerializedInvocation> for EpochManagerGetCurrentEpochInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerGetCurrentEpochInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(self)).into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct EpochManagerSetEpochMethodArgs {
+    pub epoch: u64,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerSetEpochInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub epoch: u64,
 }
 
@@ -77,15 +87,20 @@ impl SerializableInvocation for EpochManagerSetEpochInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for EpochManagerSetEpochInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerSetEpochInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(self)).into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct EpochManagerNextRoundMethodArgs {
+    pub round: u64,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerNextRoundInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub round: u64,
 }
 
@@ -97,28 +112,33 @@ impl SerializableInvocation for EpochManagerNextRoundInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for EpochManagerNextRoundInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerNextRoundInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(self)).into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct EpochManagerCreateValidatorMethodArgs {
+    pub validator: EcdsaSecp256k1PublicKey,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerCreateValidatorInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub key: EcdsaSecp256k1PublicKey,
 }
 
 impl Invocation for EpochManagerCreateValidatorInvocation {
-    type Output = SystemAddress;
+    type Output = ComponentAddress;
 }
 
 impl SerializableInvocation for EpochManagerCreateValidatorInvocation {
-    type ScryptoOutput = SystemAddress;
+    type ScryptoOutput = ComponentAddress;
 }
 
-impl Into<SerializedInvocation> for EpochManagerCreateValidatorInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerCreateValidatorInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(self)).into()
     }
 }
@@ -130,9 +150,15 @@ pub enum UpdateValidator {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct EpochManagerUpdateValidatorMethodArgs {
+    pub validator_address: ComponentAddress,
+    pub update: UpdateValidator,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct EpochManagerUpdateValidatorInvocation {
-    pub receiver: SystemAddress,
-    pub validator_address: SystemAddress,
+    pub receiver: ComponentAddress,
+    pub validator_address: ComponentAddress,
     pub update: UpdateValidator,
 }
 
@@ -145,15 +171,18 @@ impl SerializableInvocation for EpochManagerUpdateValidatorInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for EpochManagerUpdateValidatorInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for EpochManagerUpdateValidatorInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(self)).into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorRegisterMethodArgs {}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorRegisterInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
 }
 
 impl Invocation for ValidatorRegisterInvocation {
@@ -164,15 +193,18 @@ impl SerializableInvocation for ValidatorRegisterInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for ValidatorRegisterInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ValidatorRegisterInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Validator(ValidatorInvocation::Register(self)).into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUnregisterValidatorMethodArgs {}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorUnregisterInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
 }
 
 impl Invocation for ValidatorUnregisterInvocation {
@@ -183,15 +215,20 @@ impl SerializableInvocation for ValidatorUnregisterInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for ValidatorUnregisterInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ValidatorUnregisterInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Validator(ValidatorInvocation::Unregister(self)).into()
     }
 }
 
 #[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorStakeMethodArgs {
+    pub stake: Bucket,
+}
+
+#[derive(Debug, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorStakeInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub stake: Bucket,
 }
 
@@ -212,15 +249,20 @@ impl SerializableInvocation for ValidatorStakeInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for ValidatorStakeInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ValidatorStakeInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Validator(ValidatorInvocation::Stake(self)).into()
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub struct ValidatorUnstakeMethodArgs {
+    pub amount: Decimal,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub struct ValidatorUnstakeInvocation {
-    pub receiver: SystemAddress,
+    pub receiver: ComponentAddress,
     pub amount: Decimal,
 }
 
@@ -232,8 +274,8 @@ impl SerializableInvocation for ValidatorUnstakeInvocation {
     type ScryptoOutput = Bucket;
 }
 
-impl Into<SerializedInvocation> for ValidatorUnstakeInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ValidatorUnstakeInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Validator(ValidatorInvocation::Unstake(self)).into()
     }
 }

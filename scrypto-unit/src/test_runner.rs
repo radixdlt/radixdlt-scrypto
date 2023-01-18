@@ -411,21 +411,8 @@ impl TestRunner {
         substate.node_deref()
     }
 
-    pub fn deref_system_address(&mut self, system_address: SystemAddress) -> RENodeId {
-        let substate: GlobalAddressSubstate = self
-            .substate_store()
-            .get_substate(&SubstateId(
-                RENodeId::Global(GlobalAddress::System(system_address)),
-                SubstateOffset::Global(GlobalOffset::Global),
-            ))
-            .map(|output| output.substate.to_runtime().into())
-            .unwrap();
-
-        substate.node_deref()
-    }
-
-    pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> SystemAddress {
-        let node_id = self.deref_system_address(EPOCH_MANAGER);
+    pub fn get_validator_with_key(&mut self, key: &EcdsaSecp256k1PublicKey) -> ComponentAddress {
+        let node_id = self.deref_component_address(EPOCH_MANAGER);
         let substate_id = SubstateId(
             node_id,
             SubstateOffset::EpochManager(EpochManagerOffset::CurrentValidatorSet),
@@ -474,7 +461,7 @@ impl TestRunner {
         }
     }
 
-    pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, SystemAddress) {
+    pub fn new_validator(&mut self) -> (EcdsaSecp256k1PublicKey, ComponentAddress) {
         let (pub_key, _) = self.new_key_pair();
         let address = self.new_validator_with_pub_key(pub_key);
         (pub_key, address)
@@ -483,14 +470,18 @@ impl TestRunner {
     pub fn new_validator_with_pub_key(
         &mut self,
         pub_key: EcdsaSecp256k1PublicKey,
-    ) -> SystemAddress {
+    ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .lock_fee(FAUCET_COMPONENT, 10.into())
             .create_validator(pub_key)
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.expect_commit_success();
-        receipt.expect_commit().entity_changes.new_system_addresses[0]
+        let address = receipt
+            .expect_commit()
+            .entity_changes
+            .new_component_addresses[0];
+        address
     }
 
     pub fn publish_package(
@@ -949,6 +940,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::system_role()]),
         );
@@ -969,6 +961,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
@@ -990,6 +983,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );
@@ -1011,6 +1005,7 @@ impl TestRunner {
                 instructions,
                 blobs,
                 nonce,
+                pre_allocated_ids: BTreeSet::new(),
             }
             .get_executable(vec![AuthAddresses::validator_role()]),
         );

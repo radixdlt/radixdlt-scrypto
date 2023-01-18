@@ -352,40 +352,54 @@ impl ManifestBuilder {
     }
 
     pub fn create_validator(&mut self, key: EcdsaSecp256k1PublicKey) -> &mut Self {
-        self.add_instruction(BasicInstruction::CreateValidator { key });
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: EPOCH_MANAGER,
+            method_name: "create_validator".to_string(),
+            args: args!(key),
+        });
         self
     }
 
-    pub fn register_validator(&mut self, validator_address: SystemAddress) -> &mut Self {
-        self.add_instruction(BasicInstruction::RegisterValidator { validator_address });
+    pub fn register_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "register".to_string(),
+            args: args!(),
+        });
         self
     }
 
-    pub fn unregister_validator(&mut self, validator_address: SystemAddress) -> &mut Self {
-        self.add_instruction(BasicInstruction::UnregisterValidator { validator_address });
+    pub fn unregister_validator(&mut self, validator_address: ComponentAddress) -> &mut Self {
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "unregister".to_string(),
+            args: args!(),
+        });
         self
     }
 
     pub fn stake_validator(
         &mut self,
-        validator_address: SystemAddress,
+        validator_address: ComponentAddress,
         bucket: ManifestBucket,
     ) -> &mut Self {
-        self.add_instruction(BasicInstruction::StakeValidator {
-            validator_address,
-            stake: bucket,
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "stake".to_string(),
+            args: args!(bucket)
         });
         self
     }
 
     pub fn unstake_validator(
         &mut self,
-        validator_address: SystemAddress,
+        validator_address: ComponentAddress,
         amount: Decimal,
     ) -> &mut Self {
-        self.add_instruction(BasicInstruction::UnstakeValidator {
-            validator_address,
-            amount,
+        self.add_instruction(BasicInstruction::CallMethod {
+            component_address: validator_address,
+            method_name: "unstake".to_string(),
+            args: args!(amount)
         });
         self
     }

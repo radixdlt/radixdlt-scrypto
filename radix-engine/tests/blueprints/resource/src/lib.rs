@@ -3,7 +3,7 @@ use scrypto::prelude::*;
 #[derive(NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
-    #[scrypto(mutable)]
+    #[mutable]
     pub available: bool,
 }
 

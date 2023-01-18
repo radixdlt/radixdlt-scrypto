@@ -109,6 +109,7 @@ impl TransactionValidator<NotarizedTransaction> for NotarizedTransactionValidato
                     }
                     .enforced(),
                 ],
+                pre_allocated_ids: BTreeSet::new(),
             },
         ))
     }
@@ -170,6 +171,7 @@ impl NotarizedTransactionValidator {
                     }
                     .with_skipped_assertion_if(flags.permit_invalid_header_epoch),
                 ],
+                pre_allocated_ids: BTreeSet::new(),
             },
         ))
     }
@@ -283,12 +285,6 @@ impl NotarizedTransactionValidator {
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
                 }
-                BasicInstruction::StakeValidator { stake, .. } => {
-                    id_validator
-                        .drop_bucket(stake)
-                        .map_err(TransactionValidationError::IdValidationError)?;
-                }
-                BasicInstruction::UnstakeValidator { .. } => {}
                 BasicInstruction::RecallResource { .. } => {}
                 BasicInstruction::SetMetadata { .. } => {}
                 BasicInstruction::SetPackageRoyaltyConfig { .. } => {}
@@ -303,9 +299,6 @@ impl NotarizedTransactionValidator {
                 BasicInstruction::CreateFungibleResourceWithOwner { .. } => {}
                 BasicInstruction::CreateNonFungibleResource { .. } => {}
                 BasicInstruction::CreateNonFungibleResourceWithOwner { .. } => {}
-                BasicInstruction::CreateValidator { .. } => {}
-                BasicInstruction::RegisterValidator { .. } => {}
-                BasicInstruction::UnregisterValidator { .. } => {}
             }
         }
 

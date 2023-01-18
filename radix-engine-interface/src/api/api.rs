@@ -1,4 +1,5 @@
 use super::types::*;
+use crate::data::ScryptoValue;
 use crate::model::*;
 use sbor::rust::fmt::Debug;
 use sbor::rust::format;
@@ -36,9 +37,17 @@ pub trait ActorApi<E: Debug> {
     fn fn_identifier(&mut self) -> Result<FnIdentifier, E>;
 }
 
+pub trait ComponentApi<E> {
+    fn invoke_method(
+        &mut self,
+        receiver: ScryptoReceiver,
+        method_name: &str,
+        args: &ScryptoValue,
+    ) -> Result<ScryptoValue, E>;
+}
+
 pub trait InvokableModel<E>:
-    Invokable<ParsedScryptoInvocation, E>
-    + Invokable<ScryptoInvocation, E>
+    Invokable<ScryptoInvocation, E>
     + Invokable<EpochManagerCreateInvocation, E>
     + Invokable<EpochManagerNextRoundInvocation, E>
     + Invokable<EpochManagerGetCurrentEpochInvocation, E>

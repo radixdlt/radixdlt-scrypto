@@ -7,8 +7,6 @@ use std::process::Stdio;
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::punctuated::*;
-use syn::token::*;
 use syn::*;
 
 #[allow(dead_code)]
@@ -39,73 +37,99 @@ pub fn print_generated_code<S: ToString>(kind: &str, code: S) {
     }
 }
 
-pub fn extract_attributes(attrs: &[Attribute]) -> HashMap<String, Option<String>> {
-    let mut configs = HashMap::new();
-
+pub fn extract_attributes(
+    attrs: &[Attribute],
+    name: &str,
+) -> Option<HashMap<String, Option<String>>> {
     for attr in attrs {
-        if !attr.path.is_ident("sbor") {
+        if !attr.path.is_ident(name) {
             continue;
         }
 
-        if let Ok(parsed) = attr.parse_args_with(Punctuated::<Expr, Comma>::parse_terminated) {
-            parsed.into_iter().for_each(|s| match s {
-                Expr::Assign(assign) => {
-                    if let Expr::Path(path_expr) = assign.left.as_ref() {
-                        if let Some(ident) = path_expr.path.get_ident() {
-                            if let Expr::Lit(ExprLit {
-                                lit: Lit::Str(s), ..
-                            }) = assign.right.as_ref()
-                            {
-                                configs.insert(ident.to_string(), Some(s.value()));
+        let mut fields = HashMap::new();
+        if let Ok(meta) = attr.parse_meta() {
+            if let Meta::List(MetaList { nested, .. }) = meta {
+                nested.into_iter().for_each(|m| match m {
+                    NestedMeta::Meta(m) => match m {
+                        Meta::NameValue(name_value) => {
+                            if let Some(ident) = name_value.path.get_ident() {
+                                if let Lit::Str(s) = name_value.lit {
+                                    fields.insert(ident.to_string(), Some(s.value()));
+                                }
                             }
                         }
-                    }
-                }
-                Expr::Path(path_expr) => {
-                    if let Some(ident) = path_expr.path.get_ident() {
-                        configs.insert(ident.to_string(), None);
-                    }
-                }
-                _ => {}
-            })
+                        Meta::Path(path) => {
+                            if let Some(ident) = path.get_ident() {
+                                fields.insert(ident.to_string(), None);
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                })
+            }
         }
+        return Some(fields);
     }
 
-    configs
+    None
 }
 
 pub fn is_decoding_skipped(f: &Field) -> bool {
-    let parsed = extract_attributes(&f.attrs);
-    parsed.contains_key("skip") || parsed.contains_key("skip_encoding")
+    if let Some(fields) = extract_attributes(&f.attrs, "sbor") {
+        fields.contains_key("skip") || fields.contains_key("skip_decode")
+    } else {
+        false
+    }
 }
 
 pub fn is_encoding_skipped(f: &Field) -> bool {
-    let parsed = extract_attributes(&f.attrs);
-    parsed.contains_key("skip") || parsed.contains_key("skip_decoding")
+    if let Some(fields) = extract_attributes(&f.attrs, "sbor") {
+        fields.contains_key("skip") || fields.contains_key("skip_encode")
+    } else {
+        false
+    }
+}
+
+pub fn is_describing_skipped(f: &Field) -> bool {
+    if let Some(fields) = extract_attributes(&f.attrs, "sbor") {
+        fields.contains_key("skip") || fields.contains_key("skip_describe")
+    } else {
+        false
+    }
 }
 
 pub fn get_custom_value_kind(attributes: &[Attribute]) -> Option<String> {
-    extract_attributes(attributes)
-        .get("custom_value_kind")
-        .cloned()
-        .unwrap_or(None)
+    if let Some(fields) = extract_attributes(attributes, "sbor") {
+        fields.get("custom_value_kind").cloned().unwrap_or_default()
+    } else {
+        None
+    }
 }
 
 pub fn get_custom_type_kind(attributes: &[Attribute]) -> Option<String> {
-    extract_attributes(attributes)
-        .get("custom_type_kind")
-        .cloned()
-        .unwrap_or(None)
+    if let Some(fields) = extract_attributes(attributes, "sbor") {
+        fields.get("custom_type_kind").cloned().unwrap_or_default()
+    } else {
+        None
+    }
+}
+
+pub fn get_generic_categorize_bounds(attributes: &[Attribute]) -> Option<String> {
+    if let Some(fields) = extract_attributes(attributes, "sbor") {
+        fields
+            .get("generic_categorize_bounds")
+            .cloned()
+            .unwrap_or_default()
+    } else {
+        None
+    }
 }
 
 pub fn get_generic_type_names_requiring_categorize_bound(
     attributes: &[Attribute],
 ) -> HashSet<String> {
-    let contents = extract_attributes(attributes)
-        .get("generic_categorize_bounds")
-        .cloned()
-        .unwrap_or(None);
-    let Some(comma_separated_types) = contents else {
+    let Some(comma_separated_types) = get_generic_categorize_bounds(attributes) else {
         return HashSet::new();
     };
     comma_separated_types
@@ -122,9 +146,9 @@ pub fn get_code_hash_const_array_token_stream(input: &TokenStream) -> TokenStrea
 }
 
 pub fn get_hash_of_code(input: &TokenStream) -> [u8; 20] {
-    let buffer = const_sha1::ConstBuffer::new();
+    let buffer = const_sha1::ConstSlice::new();
     let buffer = buffer.push_slice(input.to_string().as_bytes());
-    const_sha1::sha1(&buffer).bytes()
+    const_sha1::sha1(buffer.as_slice()).as_bytes()
 }
 
 pub fn get_unique_types<'a>(types: &[&'a syn::Type]) -> Vec<&'a syn::Type> {
@@ -159,7 +183,7 @@ pub fn build_decode_generics<'a>(
     // Extract owned generic to allow mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };
 
-    let (custom_value_kind_generic, need_to_add_cti_generic): (Path, bool) =
+    let (custom_value_kind_generic, need_to_add_cvk_generic): (Path, bool) =
         if let Some(path) = custom_value_kind {
             (parse_str(path.as_str())?, false)
         } else if let Some(path) = context_custom_value_kind {
@@ -195,7 +219,7 @@ pub fn build_decode_generics<'a>(
         .params
         .push(parse_quote!(#decoder_generic: ::sbor::Decoder<#custom_value_kind_generic>));
 
-    if need_to_add_cti_generic {
+    if need_to_add_cvk_generic {
         impl_generics
             .params
             .push(parse_quote!(#custom_value_kind_generic: ::sbor::CustomValueKind));
@@ -229,7 +253,7 @@ pub fn build_encode_generics<'a>(
     // Extract owned generic to allow mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };
 
-    let (custom_value_kind_generic, need_to_add_cti_generic): (Path, bool) =
+    let (custom_value_kind_generic, need_to_add_cvk_generic): (Path, bool) =
         if let Some(path) = custom_value_kind {
             (parse_str(path.as_str())?, false)
         } else if let Some(path) = context_custom_value_kind {
@@ -265,7 +289,7 @@ pub fn build_encode_generics<'a>(
         .params
         .push(parse_quote!(#encoder_generic: ::sbor::Encoder<#custom_value_kind_generic>));
 
-    if need_to_add_cti_generic {
+    if need_to_add_cvk_generic {
         impl_generics
             .params
             .push(parse_quote!(#custom_value_kind_generic: ::sbor::CustomValueKind));
@@ -283,7 +307,7 @@ pub fn build_encode_generics<'a>(
 pub fn build_describe_generics<'a>(
     original_generics: &'a Generics,
     attributes: &'a [Attribute],
-    context_custom_value_kind: Option<&'static str>,
+    context_custom_type_kind: Option<&'static str>,
 ) -> syn::Result<(Generics, Generics, Option<&'a WhereClause>, Path)> {
     let custom_type_kind = get_custom_type_kind(attributes);
     let generic_type_names_needing_categorize_bound =
@@ -297,8 +321,8 @@ pub fn build_describe_generics<'a>(
     let (custom_type_kind_generic, need_to_add_ctk_generic): (Path, bool) =
         if let Some(path) = custom_type_kind {
             (parse_str(path.as_str())?, false)
-        } else if let Some(path) = context_custom_value_kind {
-            (parse_str(path)?, false)
+        } else if let Some(path) = context_custom_type_kind {
+            (parse_str(&path)?, false)
         } else {
             let custom_type_label = find_free_generic_name(original_generics, "C")?;
             (parse_str(&custom_type_label)?, true)
@@ -350,7 +374,7 @@ pub fn build_custom_categorize_generic<'a>(
     // Unwrap for mutation
     let mut impl_generics: Generics = parse_quote! { #impl_generics };
 
-    let sbor_cti = if let Some(path) = custom_value_kind {
+    let sbor_cvk = if let Some(path) = custom_value_kind {
         parse_str(path.as_str())?
     } else if let Some(path) = context_custom_value_kind {
         parse_str(path)?
@@ -363,7 +387,7 @@ pub fn build_custom_categorize_generic<'a>(
         custom_value_kind_generic
     };
 
-    Ok((impl_generics, ty_generics, where_clause, sbor_cti))
+    Ok((impl_generics, ty_generics, where_clause, sbor_cvk))
 }
 
 fn find_free_generic_name(generics: &Generics, name_prefix: &str) -> syn::Result<String> {
@@ -403,19 +427,29 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_extract_attributes() {
-        let attr = parse_quote! {
+    fn test_extract_attribute_name_values() {
+        let attr: Attribute = parse_quote! {
             #[sbor(skip, custom_value_kind = "NoCustomValueKind")]
         };
         assert_eq!(
-            extract_attributes(&[attr]),
-            HashMap::from([
+            extract_attributes(&[attr.clone()], "sbor"),
+            Some(HashMap::from([
                 ("skip".to_owned(), None),
                 (
                     "custom_value_kind".to_owned(),
                     Some("NoCustomValueKind".to_owned())
                 )
-            ])
+            ]))
         );
+        assert_eq!(extract_attributes(&[attr], "mutable"), None);
+    }
+
+    #[test]
+    fn test_extract_attribute_path() {
+        let attr: Attribute = parse_quote! {
+            #[mutable]
+        };
+        assert_eq!(extract_attributes(&[attr.clone()], "sbor"), None);
+        assert_eq!(extract_attributes(&[attr], "mutable"), Some(HashMap::new()));
     }
 }

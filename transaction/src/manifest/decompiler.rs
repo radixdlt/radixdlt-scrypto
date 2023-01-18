@@ -158,7 +158,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "RETURN_TO_WORKTOP\n    Bucket({});",
                 context
                     .bucket_names
-                    .get(&bucket_id)
+                    .get(bucket_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id.0))
             )?;
@@ -211,7 +211,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "PUSH_TO_AUTH_ZONE\n    Proof({});",
                 context
                     .proof_names
-                    .get(&proof_id)
+                    .get(proof_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", proof_id.0))
             )?;
@@ -283,7 +283,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "CREATE_PROOF_FROM_BUCKET\n    Bucket({})\n    Proof(\"{}\");",
                 context
                     .bucket_names
-                    .get(&bucket_id)
+                    .get(bucket_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id.0)),
                 name
@@ -301,7 +301,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "CLONE_PROOF\n    Proof({})\n    Proof(\"{}\");",
                 context
                     .proof_names
-                    .get(&proof_id)
+                    .get(proof_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", proof_id.0)),
                 name
@@ -313,7 +313,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "DROP_PROOF\n    Proof({});",
                 context
                     .proof_names
-                    .get(&proof_id)
+                    .get(proof_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", proof_id.0)),
             )?;
@@ -382,7 +382,7 @@ pub fn decompile_instruction<F: fmt::Write>(
                 "BURN_RESOURCE\n    Bucket({});",
                 context
                     .bucket_names
-                    .get(&bucket_id)
+                    .get(bucket_id)
                     .map(|name| format!("\"{}\"", name))
                     .unwrap_or(format!("{}u32", bucket_id.0)),
             )?;
@@ -546,47 +546,6 @@ pub fn decompile_instruction<F: fmt::Write>(
             format_typed_value(f, context, &initial_supply)?;
             f.write_str(";")?;
         }
-        BasicInstruction::CreateValidator { key } => {
-            f.write_str("CREATE_VALIDATOR")?;
-            format_typed_value(f, context, key)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::RegisterValidator { validator_address } => {
-            f.write_str("REGISTER_VALIDATOR")?;
-            format_typed_value(f, context, validator_address)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::UnregisterValidator { validator_address } => {
-            f.write_str("UNREGISTER_VALIDATOR")?;
-            format_typed_value(f, context, validator_address)?;
-            f.write_str(";")?;
-        }
-        BasicInstruction::StakeValidator {
-            validator_address,
-            stake: bucket_id,
-        } => {
-            write!(
-                f,
-                "STAKE_VALIDATOR SystemAddress(\"{}\") Bucket(\"{}\");",
-                validator_address.display(context.bech32_encoder),
-                context
-                    .bucket_names
-                    .get(&bucket_id)
-                    .map(|name| format!("\"{}\"", name))
-                    .unwrap_or(format!("{}u32", bucket_id.0)),
-            )?;
-        }
-        BasicInstruction::UnstakeValidator {
-            validator_address,
-            amount,
-        } => {
-            write!(
-                f,
-                "UNSTAKE_VALIDATOR SystemAddress(\"{}\") Decimal(\"{}\");",
-                validator_address.display(context.bech32_encoder),
-                amount,
-            )?;
-        }
     }
     Ok(())
 }
@@ -627,13 +586,6 @@ pub fn format_entity_address<F: fmt::Write>(
             write!(
                 f,
                 "ResourceAddress(\"{}\")",
-                &address.display(context.bech32_encoder)
-            )?;
-        }
-        GlobalAddress::System(address) => {
-            write!(
-                f,
-                "SystemAddress(\"{}\")",
                 &address.display(context.bech32_encoder)
             )?;
         }

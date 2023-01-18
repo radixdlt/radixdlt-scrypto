@@ -245,23 +245,6 @@ impl Parser {
                     initial_supply: self.parse_value()?,
                 }
             }
-            TokenKind::CreateValidator => Instruction::CreateValidator {
-                key: self.parse_value()?,
-            },
-            TokenKind::RegisterValidator => Instruction::RegisterValidator {
-                validator: self.parse_value()?,
-            },
-            TokenKind::UnregisterValidator => Instruction::UnregisterValidator {
-                validator: self.parse_value()?,
-            },
-            TokenKind::StakeValidator => Instruction::StakeValidator {
-                validator: self.parse_value()?,
-                stake: self.parse_value()?,
-            },
-            TokenKind::UnstakeValidator => Instruction::UnstakeValidator {
-                validator: self.parse_value()?,
-                amount: self.parse_value()?,
-            },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
             }
@@ -308,7 +291,6 @@ impl Parser {
 
             /* Global address */
             TokenKind::PackageAddress |
-            TokenKind::SystemAddress |
             TokenKind::ComponentAddress |
             TokenKind::ResourceAddress |
             /* RE types */
@@ -399,7 +381,6 @@ impl Parser {
         match token.kind {
             // RE interpreted types
             TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
-            TokenKind::SystemAddress => Ok(Value::SystemAddress(self.parse_values_one()?.into())),
             TokenKind::ComponentAddress => {
                 Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
             }
@@ -528,7 +509,6 @@ impl Parser {
             TokenKind::PackageAddress => Ok(Type::PackageAddress),
             TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
             TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
-            TokenKind::SystemAddress => Ok(Type::SystemAddress),
             TokenKind::Own => Ok(Type::Own),
 
             // TX interpreted types

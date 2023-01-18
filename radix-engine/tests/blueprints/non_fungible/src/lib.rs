@@ -5,7 +5,7 @@ use scrypto::radix_engine_interface::api::api::Invokable;
 #[derive(NonFungibleData)]
 pub struct Sandwich {
     pub name: String,
-    #[scrypto(mutable)]
+    #[mutable]
     pub available: bool,
 }
 

@@ -23,10 +23,10 @@ const MINUTES_TO_MS_FACTOR: i64 = SECONDS_TO_MS_FACTOR * MINUTES_TO_SECONDS_FACT
 
 pub struct Clock;
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockCreateInvocation {
+impl ExecutableInvocation for ClockCreateInvocation {
     type Exec = Self;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         _deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -41,9 +41,12 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCreateInvocation {
 }
 
 impl Executor for ClockCreateInvocation {
-    type Output = SystemAddress;
+    type Output = ComponentAddress;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Self::Output, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi + EngineApi<RuntimeError>,
     {
@@ -75,13 +78,15 @@ impl Executor for ClockCreateInvocation {
             ),
         )?;
 
-        let global_node_id = system_api.allocate_node_id(RENodeType::GlobalClock)?;
+        let global_node_id = RENodeId::Global(GlobalAddress::Component(ComponentAddress::Clock(
+            self.component_address,
+        )));
         system_api.create_node(
             global_node_id,
             RENode::Global(GlobalAddressSubstate::Clock(underlying_node_id.into())),
         )?;
 
-        let system_address: SystemAddress = global_node_id.into();
+        let system_address: ComponentAddress = global_node_id.into();
         let mut node_refs_to_copy = HashSet::new();
         node_refs_to_copy.insert(global_node_id);
 
@@ -96,10 +101,10 @@ impl Executor for ClockCreateInvocation {
 
 pub struct ClockSetCurrentTimeExecutable(RENodeId, i64);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
+impl ExecutableInvocation for ClockSetCurrentTimeInvocation {
     type Exec = ClockSetCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -107,7 +112,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor =
@@ -122,7 +127,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockSetCurrentTimeInvocation {
 impl Executor for ClockSetCurrentTimeExecutable {
     type Output = ();
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<((), CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<((), CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -145,10 +153,10 @@ impl Executor for ClockSetCurrentTimeExecutable {
 
 pub struct ClockGetCurrentTimeExecutable(RENodeId, TimePrecision);
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
+impl ExecutableInvocation for ClockGetCurrentTimeInvocation {
     type Exec = ClockGetCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -156,7 +164,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor =
@@ -170,7 +178,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockGetCurrentTimeInvocation {
 impl Executor for ClockGetCurrentTimeExecutable {
     type Output = Instant;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(Instant, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(Instant, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {
@@ -199,10 +210,10 @@ pub struct ClockCompareCurrentTimeExecutable {
     operator: TimeComparisonOperator,
 }
 
-impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocation {
+impl ExecutableInvocation for ClockCompareCurrentTimeInvocation {
     type Exec = ClockCompareCurrentTimeExecutable;
 
-    fn resolve<D: ResolverApi<W>>(
+    fn resolve<D: ResolverApi>(
         self,
         deref: &mut D,
     ) -> Result<(ResolvedActor, CallFrameUpdate, Self::Exec), RuntimeError>
@@ -210,7 +221,7 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocatio
         Self: Sized,
     {
         let mut call_frame_update = CallFrameUpdate::empty();
-        let receiver = RENodeId::Global(GlobalAddress::System(self.receiver));
+        let receiver = RENodeId::Global(GlobalAddress::Component(self.receiver));
         let resolved_receiver = deref_and_update(receiver, &mut call_frame_update, deref)?;
 
         let actor = ResolvedActor::method(
@@ -231,7 +242,10 @@ impl<W: WasmEngine> ExecutableInvocation<W> for ClockCompareCurrentTimeInvocatio
 impl Executor for ClockCompareCurrentTimeExecutable {
     type Output = bool;
 
-    fn execute<Y>(self, system_api: &mut Y) -> Result<(bool, CallFrameUpdate), RuntimeError>
+    fn execute<Y, W: WasmEngine>(
+        self,
+        system_api: &mut Y,
+    ) -> Result<(bool, CallFrameUpdate), RuntimeError>
     where
         Y: SystemApi,
     {

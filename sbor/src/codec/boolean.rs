@@ -31,5 +31,4 @@ impl<X: CustomValueKind, D: Decoder<X>> Decode<X, D> for bool {
     }
 }
 
-#[cfg(feature = "schema")]
 describe_basic_well_known_type!(bool, BOOL_ID);

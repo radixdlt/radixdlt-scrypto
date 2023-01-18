@@ -71,6 +71,7 @@ fn next_round_with_validator_auth_succeeds() {
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -101,6 +102,7 @@ fn next_epoch_with_validator_auth_succeeds() {
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -256,6 +258,7 @@ fn registered_validator_with_no_stake_does_not_become_part_of_validator_on_epoch
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -303,6 +306,7 @@ fn registered_validator_with_stake_does_become_part_of_validator_on_epoch_change
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -356,6 +360,7 @@ fn unregistered_validator_gets_removed_on_epoch_change() {
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -409,6 +414,7 @@ fn unstaked_validator_gets_less_stake_on_epoch_change() {
             instructions,
             blobs: vec![],
             nonce: 0,
+            pre_allocated_ids: BTreeSet::new(),
         }
         .get_executable(vec![AuthAddresses::validator_role()]),
     );
@@ -433,8 +439,11 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
+    let mut pre_allocated_ids = BTreeSet::new();
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            component_address: EPOCH_MANAGER.raw(),
             validator_set: BTreeMap::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
@@ -446,6 +455,7 @@ fn epoch_manager_create_should_fail_with_supervisor_privilege() {
             instructions,
             blobs,
             nonce: 0,
+            pre_allocated_ids,
         }
         .get_executable(vec![]),
     );
@@ -462,8 +472,11 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
+    let mut pre_allocated_ids = BTreeSet::new();
+    pre_allocated_ids.insert(RENodeId::Global(GlobalAddress::Component(EPOCH_MANAGER)));
     let instructions = vec![Instruction::System(NativeInvocation::EpochManager(
         EpochManagerInvocation::Create(EpochManagerCreateInvocation {
+            component_address: EPOCH_MANAGER.raw(),
             validator_set: BTreeMap::new(),
             initial_epoch: 1u64,
             rounds_per_epoch: 1u64,
@@ -475,6 +488,7 @@ fn epoch_manager_create_should_succeed_with_system_privilege() {
             instructions,
             blobs,
             nonce: 0,
+            pre_allocated_ids,
         }
         .get_executable(vec![AuthAddresses::system_role()]),
     );

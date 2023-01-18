@@ -3,7 +3,8 @@ mod decode;
 mod describe;
 mod encode;
 mod legacy_describe;
-mod utils;
+mod non_fungible_data;
+mod scrypto_sbor;
 
 use proc_macro::TokenStream;
 
@@ -15,7 +16,7 @@ use proc_macro::TokenStream;
 ///     array: Vec<A>
 /// }
 /// ```
-#[proc_macro_derive(LegacyDescribe, attributes(skip))]
+#[proc_macro_derive(LegacyDescribe, attributes(legacy_skip))]
 pub fn legacy_describe(input: TokenStream) -> TokenStream {
     legacy_describe::handle_describe(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
@@ -98,6 +99,36 @@ pub fn categorize(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(ScryptoDescribe, attributes(sbor))]
 pub fn describe(input: TokenStream) -> TokenStream {
     describe::handle_describe(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derive code that implements `ScryptoCategorize`, `ScryptoEncode`, `ScryptoDecode`, and `ScryptoDescribe` traits for this struct or enum.
+///
+#[proc_macro_derive(ScryptoSbor, attributes(sbor))]
+pub fn scrypto_sbor(input: TokenStream) -> TokenStream {
+    scrypto_sbor::handle_scrypto_sbor(proc_macro2::TokenStream::from(input))
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Derive code that describe a non-fungible data structure.
+///
+/// # Example
+///
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// #[derive(NonFungibleData)]
+/// pub struct MyStruct {
+///     pub field_1: u32,
+///     #[mutable]
+///     pub field_2: String,
+/// }
+/// ```
+#[proc_macro_derive(NonFungibleData, attributes(mutable))]
+pub fn non_fungible_data(input: TokenStream) -> TokenStream {
+    non_fungible_data::handle_non_fungible_data(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

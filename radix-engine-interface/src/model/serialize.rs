@@ -5,8 +5,9 @@ use radix_engine_interface::data::ReplaceManifestValuesError;
 use sbor::rust::collections::{HashMap, HashSet};
 use sbor::rust::fmt::Debug;
 
+// TODO: Remove enum
 #[derive(Debug, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum SerializedInvocation {
+pub enum CallTableInvocation {
     Native(NativeInvocation),
     Scrypto(ScryptoInvocation),
 }
@@ -53,9 +54,9 @@ impl NativeInvocation {
     }
 }
 
-impl Into<SerializedInvocation> for NativeInvocation {
-    fn into(self) -> SerializedInvocation {
-        SerializedInvocation::Native(self)
+impl Into<CallTableInvocation> for NativeInvocation {
+    fn into(self) -> CallTableInvocation {
+        CallTableInvocation::Native(self)
     }
 }
 
@@ -381,45 +382,65 @@ impl NativeInvocation {
             NativeInvocation::EpochManager(epoch_manager_method) => match epoch_manager_method {
                 EpochManagerInvocation::Create(..) => {}
                 EpochManagerInvocation::GetCurrentEpoch(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 EpochManagerInvocation::NextRound(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 EpochManagerInvocation::SetEpoch(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 EpochManagerInvocation::CreateValidator(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 EpochManagerInvocation::UpdateValidator(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
             },
             NativeInvocation::Validator(method) => match method {
                 ValidatorInvocation::Register(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ValidatorInvocation::Unregister(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ValidatorInvocation::Stake(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(invocation.receiver)));
                 }
                 ValidatorInvocation::Unstake(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(invocation.receiver)));
                 }
             },
             NativeInvocation::Clock(clock_method) => match clock_method {
                 ClockInvocation::Create(..) => {}
                 ClockInvocation::SetCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ClockInvocation::GetCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
                 ClockInvocation::CompareCurrentTime(invocation) => {
-                    refs.insert(RENodeId::Global(GlobalAddress::System(invocation.receiver)));
+                    refs.insert(RENodeId::Global(GlobalAddress::Component(
+                        invocation.receiver,
+                    )));
                 }
             },
             NativeInvocation::Logger(method) => match method {

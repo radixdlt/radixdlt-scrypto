@@ -258,11 +258,11 @@ mod tests {
     pub fn test_encode_index_map_and_set() {
         let mut bytes = Vec::with_capacity(512);
         let mut encoder = BasicEncoder::new(&mut bytes);
-        let mut set = IndexSet::<u8>::new();
+        let mut set = index_set_new::<u8>();
         set.insert(1);
         set.insert(2);
         encoder.encode(&set).unwrap();
-        let mut map = IndexMap::<u8, u8>::new();
+        let mut map = index_map_new::<u8, u8>();
         map.insert(1, 2);
         map.insert(3, 4);
         encoder.encode(&map).unwrap();

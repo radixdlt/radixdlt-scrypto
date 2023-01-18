@@ -1,7 +1,6 @@
 mod ast;
 mod blueprint;
 mod import;
-mod non_fungible_data;
 mod utils;
 
 use proc_macro::TokenStream;
@@ -94,27 +93,6 @@ pub fn blueprint(input: TokenStream) -> TokenStream {
 #[proc_macro]
 pub fn import(input: TokenStream) -> TokenStream {
     import::handle_import(proc_macro2::TokenStream::from(input))
-        .unwrap_or_else(|err| err.to_compile_error())
-        .into()
-}
-
-/// Derive code that describe a non-fungible data structure.
-///
-/// # Example
-///
-/// ```ignore
-/// use scrypto::prelude::*;
-///
-/// #[derive(NonFungibleData)]
-/// pub struct MyStruct {
-///     pub field_1: u32,
-///     #[scrypto(mutable)]
-///     pub field_2: String,
-/// }
-/// ```
-#[proc_macro_derive(NonFungibleData, attributes(scrypto))]
-pub fn non_fungible_data(input: TokenStream) -> TokenStream {
-    non_fungible_data::handle_non_fungible_data(proc_macro2::TokenStream::from(input))
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

@@ -19,8 +19,8 @@ impl SerializableInvocation for MetadataSetInvocation {
     type ScryptoOutput = ();
 }
 
-impl Into<SerializedInvocation> for MetadataSetInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for MetadataSetInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Metadata(MetadataInvocation::Set(self)).into()
     }
 }
@@ -39,8 +39,8 @@ impl SerializableInvocation for MetadataGetInvocation {
     type ScryptoOutput = Option<String>;
 }
 
-impl Into<SerializedInvocation> for MetadataGetInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for MetadataGetInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Metadata(MetadataInvocation::Get(self)).into()
     }
 }

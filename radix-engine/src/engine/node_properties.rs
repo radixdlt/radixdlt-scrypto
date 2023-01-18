@@ -158,6 +158,10 @@ impl VisibilityProperties {
                         FnIdentifier::Scrypto(..) => match &actor.receiver {
                             None => match (node_id, offset) {
                                 (
+                                    _,
+                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                ) => true,
+                                (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),
                                 ) => true,
@@ -171,6 +175,10 @@ impl VisibilityProperties {
                                 receiver: RENodeId::Component(component_address),
                                 ..
                             }) => match (node_id, offset) {
+                                (
+                                    _,
+                                    SubstateOffset::Package(PackageOffset::Info), // TODO: Remove
+                                ) => true,
                                 (
                                     RENodeId::KeyValueStore(_),
                                     SubstateOffset::KeyValueStore(KeyValueStoreOffset::Entry(..)),

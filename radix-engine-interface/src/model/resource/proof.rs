@@ -24,8 +24,8 @@ impl SerializableInvocation for ProofGetAmountInvocation {
     type ScryptoOutput = Decimal;
 }
 
-impl Into<SerializedInvocation> for ProofGetAmountInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ProofGetAmountInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Proof(ProofInvocation::GetAmount(self)).into()
     }
 }
@@ -43,8 +43,8 @@ impl SerializableInvocation for ProofGetNonFungibleIdsInvocation {
     type ScryptoOutput = BTreeSet<NonFungibleId>;
 }
 
-impl Into<SerializedInvocation> for ProofGetNonFungibleIdsInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ProofGetNonFungibleIdsInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Proof(ProofInvocation::GetNonFungibleIds(self)).into()
     }
 }
@@ -62,8 +62,8 @@ impl SerializableInvocation for ProofGetResourceAddressInvocation {
     type ScryptoOutput = ResourceAddress;
 }
 
-impl Into<SerializedInvocation> for ProofGetResourceAddressInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ProofGetResourceAddressInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Proof(ProofInvocation::GetResourceAddress(self)).into()
     }
 }
@@ -81,8 +81,8 @@ impl SerializableInvocation for ProofCloneInvocation {
     type ScryptoOutput = Proof;
 }
 
-impl Into<SerializedInvocation> for ProofCloneInvocation {
-    fn into(self) -> SerializedInvocation {
+impl Into<CallTableInvocation> for ProofCloneInvocation {
+    fn into(self) -> CallTableInvocation {
         NativeInvocation::Proof(ProofInvocation::Clone(self)).into()
     }
 }
