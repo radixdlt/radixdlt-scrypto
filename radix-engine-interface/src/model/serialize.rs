@@ -27,6 +27,7 @@ pub enum NativeInvocation {
     Proof(ProofInvocation),
     Worktop(WorktopInvocation),
     TransactionRuntime(TransactionRuntimeInvocation),
+    AccessController(AccessControllerInvocation),
 }
 
 impl Into<CallTableInvocation> for NativeInvocation {
@@ -183,6 +184,19 @@ pub enum WorktopInvocation {
     AssertContainsAmount(WorktopAssertContainsAmountInvocation),
     AssertContainsNonFungibles(WorktopAssertContainsNonFungiblesInvocation),
     Drain(WorktopDrainInvocation),
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
+pub enum AccessControllerInvocation {
+    CreateGlobal(AccessControllerCreateGlobalInvocation),
+    CreateProof(AccessControllerCreateProofInvocation),
+    UpdateTimedRecoveryDelay(AccessControllerUpdateTimedRecoveryDelayInvocation),
+    InitiateRecovery(AccessControllerInitiateRecoveryInvocation),
+    QuickConfirmRecovery(AccessControllerQuickConfirmRecoveryInvocation),
+    TimedConfirmRecovery(AccessControllerTimedConfirmRecoveryInvocation),
+    CancelRecovery(AccessControllerCancelRecoveryInvocation),
+    LockPrimaryRole(AccessControllerLockPrimaryRoleInvocation),
+    UnlockPrimaryRole(AccessControllerUnlockPrimaryRoleInvocation),
 }
 
 impl NativeInvocation {
@@ -429,6 +443,37 @@ impl NativeInvocation {
                 TransactionRuntimeInvocation::Get(..) => {}
                 TransactionRuntimeInvocation::GenerateUuid(..) => {}
             },
+            NativeInvocation::AccessController(access_controller_method) => {
+                match access_controller_method {
+                    AccessControllerInvocation::CreateGlobal(..) => {}
+                    AccessControllerInvocation::CreateProof(
+                        AccessControllerCreateProofInvocation { receiver },
+                    )
+                    | AccessControllerInvocation::UpdateTimedRecoveryDelay(
+                        AccessControllerUpdateTimedRecoveryDelayInvocation { receiver, .. },
+                    )
+                    | AccessControllerInvocation::InitiateRecovery(
+                        AccessControllerInitiateRecoveryInvocation { receiver, .. },
+                    )
+                    | AccessControllerInvocation::QuickConfirmRecovery(
+                        AccessControllerQuickConfirmRecoveryInvocation { receiver, .. },
+                    )
+                    | AccessControllerInvocation::TimedConfirmRecovery(
+                        AccessControllerTimedConfirmRecoveryInvocation { receiver, .. },
+                    )
+                    | AccessControllerInvocation::CancelRecovery(
+                        AccessControllerCancelRecoveryInvocation { receiver, .. },
+                    )
+                    | AccessControllerInvocation::LockPrimaryRole(
+                        AccessControllerLockPrimaryRoleInvocation { receiver, .. },
+                    )
+                    | AccessControllerInvocation::UnlockPrimaryRole(
+                        AccessControllerUnlockPrimaryRoleInvocation { receiver, .. },
+                    ) => {
+                        refs.insert(RENodeId::Global(GlobalAddress::Component(*receiver)));
+                    }
+                }
+            }
         }
 
         refs

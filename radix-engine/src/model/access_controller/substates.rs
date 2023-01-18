@@ -36,10 +36,3 @@ pub struct RuleSet {
     recovery_role: AccessRule,
     confirmation_role: AccessRule,
 }
-
-#[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
-pub enum Role {
-    Primary,
-    Recovery,
-    Confirmation,
-}

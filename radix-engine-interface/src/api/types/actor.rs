@@ -738,3 +738,243 @@ pub enum TransactionRuntimeFn {
 pub enum TransactionProcessorFn {
     Run,
 }
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    EnumString,
+    EnumVariantNames,
+    IntoStaticStr,
+    AsRefStr,
+    Display,
+    ScryptoCategorize,
+    ScryptoEncode,
+    ScryptoDecode,
+    LegacyDescribe,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum AccessControllerFn {
+    CreateGlobal,
+    CreateProof,
+    UpdateTimedRecoveryDelay,
+    InitiateRecovery,
+    QuickConfirmRecovery,
+    TimedConfirmRecovery,
+    CancelRecovery,
+    LockPrimaryRole,
+    UnlockPrimaryRole,
+}
+
+pub struct AccessControllerPackage;
+
+impl AccessControllerPackage {
+    pub fn resolve_method_invocation(
+        receiver: ComponentAddress,
+        method_name: &str,
+        args: &[u8],
+    ) -> Result<NativeInvocation, ResolveError> {
+        let invocation = match receiver {
+            ComponentAddress::AccessController(..) => {
+                let access_controller_fn = AccessControllerFn::from_str(method_name)
+                    .map_err(|_| ResolveError::NotAMethod)?;
+
+                match access_controller_fn {
+                    AccessControllerFn::CreateGlobal => {
+                        return Err(ResolveError::NotAMethod);
+                    }
+
+                    AccessControllerFn::CreateProof => {
+                        scrypto_decode::<AccessControllerCreateProofMethodArgs>(args)
+                            .map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::AccessController(AccessControllerInvocation::CreateProof(
+                            AccessControllerCreateProofInvocation { receiver },
+                        ))
+                    }
+                    AccessControllerFn::UpdateTimedRecoveryDelay => {
+                        let args = scrypto_decode::<
+                            AccessControllerUpdateTimedRecoveryDelayMethodArgs,
+                        >(args)
+                        .map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::AccessController(
+                            AccessControllerInvocation::UpdateTimedRecoveryDelay(
+                                AccessControllerUpdateTimedRecoveryDelayInvocation {
+                                    receiver,
+                                    timed_recovery_delay_in_hours: args
+                                        .timed_recovery_delay_in_hours,
+                                },
+                            ),
+                        )
+                    }
+                    AccessControllerFn::InitiateRecovery => {
+                        let args =
+                            scrypto_decode::<AccessControllerInitiateRecoveryMethodArgs>(args)
+                                .map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::AccessController(
+                            AccessControllerInvocation::InitiateRecovery(
+                                AccessControllerInitiateRecoveryInvocation {
+                                    receiver,
+                                    proposer: args.proposer,
+                                    proposed_primary_role: args.proposed_primary_role,
+                                    proposed_recovery_role: args.proposed_recovery_role,
+                                    proposed_confirmation_role: args.proposed_confirmation_role,
+                                },
+                            ),
+                        )
+                    }
+                    AccessControllerFn::QuickConfirmRecovery => {
+                        let args =
+                            scrypto_decode::<AccessControllerQuickConfirmRecoveryMethodArgs>(args)
+                                .map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::AccessController(
+                            AccessControllerInvocation::QuickConfirmRecovery(
+                                AccessControllerQuickConfirmRecoveryInvocation {
+                                    receiver,
+                                    proposer: args.proposer,
+                                    proposed_primary_role: args.proposed_primary_role,
+                                    proposed_recovery_role: args.proposed_recovery_role,
+                                    proposed_confirmation_role: args.proposed_confirmation_role,
+                                },
+                            ),
+                        )
+                    }
+                    AccessControllerFn::TimedConfirmRecovery => {
+                        let args =
+                            scrypto_decode::<AccessControllerTimedConfirmRecoveryMethodArgs>(args)
+                                .map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::AccessController(
+                            AccessControllerInvocation::TimedConfirmRecovery(
+                                AccessControllerTimedConfirmRecoveryInvocation {
+                                    receiver,
+                                    proposer: args.proposer,
+                                    proposed_primary_role: args.proposed_primary_role,
+                                    proposed_recovery_role: args.proposed_recovery_role,
+                                    proposed_confirmation_role: args.proposed_confirmation_role,
+                                },
+                            ),
+                        )
+                    }
+                    AccessControllerFn::CancelRecovery => {
+                        let args = scrypto_decode::<AccessControllerCancelRecoveryMethodArgs>(args)
+                            .map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::AccessController(
+                            AccessControllerInvocation::CancelRecovery(
+                                AccessControllerCancelRecoveryInvocation {
+                                    receiver,
+                                    proposer: args.proposer,
+                                },
+                            ),
+                        )
+                    }
+                    AccessControllerFn::LockPrimaryRole => {
+                        scrypto_decode::<AccessControllerLockPrimaryRoleMethodArgs>(args)
+                            .map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::AccessController(
+                            AccessControllerInvocation::LockPrimaryRole(
+                                AccessControllerLockPrimaryRoleInvocation { receiver },
+                            ),
+                        )
+                    }
+                    AccessControllerFn::UnlockPrimaryRole => {
+                        scrypto_decode::<AccessControllerUnlockPrimaryRoleMethodArgs>(args)
+                            .map_err(ResolveError::DecodeError)?;
+                        NativeInvocation::AccessController(
+                            AccessControllerInvocation::UnlockPrimaryRole(
+                                AccessControllerUnlockPrimaryRoleInvocation { receiver },
+                            ),
+                        )
+                    }
+                }
+            }
+            _ => return Err(ResolveError::NotAMethod),
+            // ComponentAddress::EpochManager(..) => {
+            //     let epoch_manager_fn =
+            //         EpochManagerFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+            //     match epoch_manager_fn {
+            //         EpochManagerFn::Create => {
+            //             return Err(ResolveError::NotAMethod);
+            //         }
+            //         EpochManagerFn::GetCurrentEpoch => {
+            //             let _args: EpochManagerGetCurrentEpochMethodArgs =
+            //                 scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+            //             NativeInvocation::EpochManager(EpochManagerInvocation::GetCurrentEpoch(
+            //                 EpochManagerGetCurrentEpochInvocation { receiver },
+            //             ))
+            //         }
+            //         EpochManagerFn::NextRound => {
+            //             let args: EpochManagerNextRoundMethodArgs =
+            //                 scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+            //             NativeInvocation::EpochManager(EpochManagerInvocation::NextRound(
+            //                 EpochManagerNextRoundInvocation {
+            //                     receiver,
+            //                     round: args.round,
+            //                 },
+            //             ))
+            //         }
+            //         EpochManagerFn::SetEpoch => {
+            //             let args: EpochManagerSetEpochMethodArgs =
+            //                 scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+            //             NativeInvocation::EpochManager(EpochManagerInvocation::SetEpoch(
+            //                 EpochManagerSetEpochInvocation {
+            //                     receiver,
+            //                     epoch: args.epoch,
+            //                 },
+            //             ))
+            //         }
+            //         EpochManagerFn::CreateValidator => {
+            //             let args: EpochManagerCreateValidatorMethodArgs =
+            //                 scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+            //             NativeInvocation::EpochManager(EpochManagerInvocation::CreateValidator(
+            //                 EpochManagerCreateValidatorInvocation {
+            //                     receiver,
+            //                     key: args.validator,
+            //                 },
+            //             ))
+            //         }
+            //         EpochManagerFn::UpdateValidator => {
+            //             let args: EpochManagerUpdateValidatorMethodArgs =
+            //                 scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+            //             NativeInvocation::EpochManager(EpochManagerInvocation::UpdateValidator(
+            //                 EpochManagerUpdateValidatorInvocation {
+            //                     receiver,
+            //                     validator_address: args.validator_address,
+            //                     register: args.register,
+            //                     key: args.key,
+            //                 },
+            //             ))
+            //         }
+            //     }
+            // }
+            // ComponentAddress::Validator(..) => {
+            //     let validator_fn =
+            //         ValidatorFn::from_str(method_name).map_err(|_| ResolveError::NotAMethod)?;
+
+            //     match validator_fn {
+            //         ValidatorFn::Register => {
+            //             let _args: ValidatorRegisterMethodArgs =
+            //                 scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+            //             NativeInvocation::Validator(ValidatorInvocation::Register(
+            //                 ValidatorRegisterInvocation { receiver },
+            //             ))
+            //         }
+            //         ValidatorFn::Unregister => {
+            //             let _args: ValidatorUnregisterValidatorMethodArgs =
+            //                 scrypto_decode(args).map_err(ResolveError::DecodeError)?;
+            //             NativeInvocation::Validator(ValidatorInvocation::Unregister(
+            //                 ValidatorUnregisterInvocation { receiver },
+            //             ))
+            //         }
+            //     }
+            // }
+            // _ => return Err(ResolveError::NotAMethod),
+        };
+
+        Ok(invocation)
+    }
+}
