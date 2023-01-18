@@ -225,6 +225,17 @@ impl FeeTable {
                     TransactionProcessorFn::Run => self.fixed_high,
                 }
             }
+            NativeFn::AccessController(access_controller_fn) => match access_controller_fn {
+                AccessControllerFn::CreateGlobal => self.fixed_low,
+                AccessControllerFn::CreateProof => self.fixed_low,
+                AccessControllerFn::UpdateTimedRecoveryDelay => self.fixed_low,
+                AccessControllerFn::InitiateRecovery => self.fixed_low,
+                AccessControllerFn::QuickConfirmRecovery => self.fixed_low,
+                AccessControllerFn::TimedConfirmRecovery => self.fixed_low,
+                AccessControllerFn::CancelRecovery => self.fixed_low,
+                AccessControllerFn::LockPrimaryRole => self.fixed_low,
+                AccessControllerFn::UnlockPrimaryRole => self.fixed_low,
+            },
         }
     }
 

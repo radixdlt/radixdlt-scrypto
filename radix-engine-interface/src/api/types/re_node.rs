@@ -94,6 +94,7 @@ impl Into<[u8; 36]> for RENodeId {
             RENodeId::EpochManager(id) => id,
             RENodeId::Validator(id) => id,
             RENodeId::Clock(id) => id,
+            RENodeId::AccessController(id) => id,
             _ => panic!("Not a stored id"),
         }
     }
