@@ -536,6 +536,35 @@ pub fn generate_instruction(
                 generate_non_fungible_mint_params,
             )?,
         },
+
+        ast::Instruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_hours,
+        } => BasicInstruction::CreateAccessController {
+            controlled_asset: generate_typed_value(
+                controlled_asset,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
+            primary_role: generate_typed_value(primary_role, resolver, bech32_decoder, blobs)?,
+            recovery_role: generate_typed_value(recovery_role, resolver, bech32_decoder, blobs)?,
+            confirmation_role: generate_typed_value(
+                confirmation_role,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
+            timed_recovery_delay_in_hours: generate_typed_value(
+                timed_recovery_delay_in_hours,
+                resolver,
+                bech32_decoder,
+                blobs,
+            )?,
+        },
     })
 }
 

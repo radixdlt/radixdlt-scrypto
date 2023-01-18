@@ -129,6 +129,7 @@ pub enum TokenKind {
     CreateFungibleResourceWithOwner,
     CreateNonFungibleResource,
     CreateNonFungibleResourceWithOwner,
+    CreateAccessController,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -470,6 +471,7 @@ impl Lexer {
             "CREATE_NON_FUNGIBLE_RESOURCE_WITH_OWNER" => {
                 Ok(TokenKind::CreateNonFungibleResourceWithOwner)
             }
+            "CREATE_ACCESS_CONTROLLER" => Ok(TokenKind::CreateAccessController),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }

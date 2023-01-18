@@ -847,6 +847,24 @@ impl ManifestBuilder {
         .0
     }
 
+    pub fn create_access_controller(
+        &mut self,
+        controlled_asset: ManifestBucket,
+        primary_role: AccessRule,
+        confirmation_role: AccessRule,
+        recovery_role: AccessRule,
+        timed_recovery_delay_in_hours: u64,
+    ) -> &mut Self {
+        self.add_instruction(BasicInstruction::CreateAccessController {
+            controlled_asset,
+            primary_role,
+            recovery_role,
+            confirmation_role,
+            timed_recovery_delay_in_hours,
+        })
+        .0
+    }
+
     /// Creates resource proof from an account.
     pub fn create_proof_from_account_by_ids(
         &mut self,

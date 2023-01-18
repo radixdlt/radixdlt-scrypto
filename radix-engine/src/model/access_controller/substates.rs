@@ -10,10 +10,10 @@ pub struct AccessControllerSubstate {
     /// role X.
     active_rule_set: RuleSet,
 
-    // TODO: KVStore would be better here but we need the ability to just delete recoveries once one
-    // of them is completed successfully. Migrate to KVStore once it has this ability.
-    /// Maps the proposed rule set to the role that proposed at and when it was proposed.
-    ongoing_recoveries: Option<HashMap<RuleSet, (Role, Instant)>>,
+    /// Maps the role proposing the rule set changes to their proposed rule set a timestamp of when
+    /// the recovery was initiated. Since [`Role`] is used as the key here, we can have a maximum of
+    /// three entries in this [`HashMap`] at any given time.
+    ongoing_recoveries: Option<HashMap<Role, (RuleSet, Instant)>>,
 
     /// The amount of time (in hours) that it takes for timed recovery to be done.
     timed_recovery_delay_in_hours: u16,
