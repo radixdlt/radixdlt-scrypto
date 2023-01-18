@@ -380,22 +380,24 @@ impl WasmInstance for WasmerInstance {
         }
 
         let input: Vec<Val> = args.into_iter().map(|a| Val::I64(a as i64)).collect();
-        let result = self
+        let return_data = self
             .instance
             .exports
             .get_function(func_name)
             .map_err(|_| {
                 InvokeError::Error(WasmRuntimeError::UnknownWasmFunction(func_name.to_string()))
             })?
-            .call(&input);
+            .call(&input)
+            .map_err(|e| {
+                let err: InvokeError<WasmRuntimeError> = e.into();
+                err
+            })?;
 
-        if let Ok(return_data) = result {
-            if let Some(v) = return_data.as_ref().get(0).and_then(|x| x.i64()) {
-                return read_slice(&self.instance, v as u64).map_err(InvokeError::Error);
-            }
+        if let Some(v) = return_data.as_ref().get(0).and_then(|x| x.i64()) {
+            read_slice(&self.instance, v as u64).map_err(InvokeError::Error)
+        } else {
+            Err(InvokeError::Error(WasmRuntimeError::InvalidExportReturn))
         }
-
-        Err(InvokeError::Error(WasmRuntimeError::InvalidReturn))
     }
 }
 

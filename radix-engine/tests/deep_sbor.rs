@@ -107,7 +107,7 @@ fn malicious_component_replying_with_large_payload_is_handled_well_by_engine() {
     receipt.expect_specific_failure(|f| {
         matches!(
             f,
-            RuntimeError::InterpreterError(InterpreterError::InvalidReturn(
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(
                 DecodeError::MaxDepthExceeded(_)
             ))
         )

@@ -77,8 +77,9 @@ impl Executor for ScryptoExecutor {
                     InvokeError::Downstream(runtime_error) => runtime_error,
                 })?
         };
-        let output = IndexedScryptoValue::from_vec(output)
-            .map_err(|e| RuntimeError::InterpreterError(InterpreterError::InvalidReturn(e)))?;
+        let output = IndexedScryptoValue::from_vec(output).map_err(|e| {
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(e))
+        })?;
 
         let rtn = if !match_schema_with_value(&rtn_type, output.as_value()) {
             Err(RuntimeError::KernelError(

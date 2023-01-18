@@ -81,20 +81,20 @@ pub enum InvalidTable {
 /// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug, Clone, PartialEq, Eq, ScryptoCategorize, ScryptoEncode, ScryptoDecode)]
 pub enum WasmRuntimeError {
-    /// Error when reading from wasm memory.
+    /// Error when reading wasm memory.
     MemoryAccessError,
 
-    /// WASM attempted to call undefined function index.
-    UnknownHostFunctionIndex(usize),
+    /// WASM attempted to call undefined host function, addressed by offset.
+    UnknownHostFunction(usize),
 
-    /// Host attempted to call unknown function.
+    /// Host attempted to call unknown WASM function, addressed by name.
     UnknownWasmFunction(String),
 
     /// WASM interpreter error, such as traps.
     InterpreterError(String),
 
-    /// WASM function doesn't return a valid data.
-    InvalidReturn,
+    /// WASM function return is not a `u64`, which points to a valid memory range.
+    InvalidExportReturn,
 
     //=============
     // SHIM ERRORS

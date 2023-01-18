@@ -109,7 +109,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     receipt.expect_specific_failure(|e| {
         matches!(
             e,
-            RuntimeError::InterpreterError(InterpreterError::InvalidReturn(..))
+            RuntimeError::InterpreterError(InterpreterError::InvalidScryptoReturn(..))
         )
     });
 }

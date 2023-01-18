@@ -282,7 +282,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }
-            _ => Err(WasmRuntimeError::UnknownHostFunctionIndex(index).into()),
+            _ => Err(WasmRuntimeError::UnknownHostFunction(index).into()),
         }
     }
 }
@@ -304,7 +304,7 @@ impl WasmInstance for WasmiInstance {
             .map(|a| RuntimeValue::I64(a as i64))
             .collect();
 
-        let result = self
+        let return_data = self
             .module_ref
             .clone()
             .invoke_export(func_name, &args, &mut externals)
@@ -313,10 +313,10 @@ impl WasmInstance for WasmiInstance {
                 err
             })?;
 
-        if let Some(RuntimeValue::I64(v)) = result {
+        if let Some(RuntimeValue::I64(v)) = return_data {
             externals.read_slice(v as u64)
         } else {
-            Err(WasmRuntimeError::InvalidReturn)
+            Err(WasmRuntimeError::InvalidExportReturn)
         }
         .map_err(InvokeError::Error)
     }
